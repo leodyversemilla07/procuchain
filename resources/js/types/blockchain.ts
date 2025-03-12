@@ -154,3 +154,51 @@ export interface SignatoryDetails {
     signature_hash?: string;
     [key: string]: any;
 }
+
+/**
+ * Defines the structure for Purchase Request Document metadata
+ */
+export interface PRDocument {
+    document_type?: string;
+    submission_date?: Date;
+    municipal_offices?: string;
+    signatory_details?: string;
+}
+
+/**
+ * Defines the complete Purchase Request Document data including the file and metadata
+ */
+export interface PRDocumentData {
+    pr_document_file: File | null;
+    pr_document_metadata: PRDocument;
+}
+
+/**
+ * Municipal offices options for the select dropdown
+ */
+export const MUNICIPAL_OFFICES = [
+    { value: "MA", label: "Municipal Administrator's Office - MA" },
+    { value: "MHRMO", label: "Municipal Human Resource Management Office - MHRMO" },
+    { value: "GSO", label: "General Services Office - GSO" },
+    { value: "MPDO", label: "Municipal Planning and Development Office - MPDO" },
+    { value: "SBO", label: "Sangguniang Bayan Office - SBO" },
+    { value: "DILG", label: "DILG Office - DILG" },
+    { value: "MAO", label: "Municipal Accounting Office - MAO" },
+    { value: "MBO", label: "Municipal Budget Office - MBO" },
+    { value: "MTO", label: "Municipal Treasurer's Office - MTO" },
+    { value: "MAssO", label: "Municipal Assessor's Office - MAssO" },
+    { value: "BPLO", label: "Business Permits and Licensing Office - BPLO" },
+    { value: "MCRO", label: "Municipal Civil Registrar's Office - MCRO" },
+    { value: "MHO", label: "Municipal Health Office - MHO" },
+    { value: "MSWDO", label: "Municipal Social Welfare and Development Office - MSWDO" },
+    { value: "MYSD", label: "Municipal Youth and Sports Development - MYSD" },
+    { value: "PESO", label: "Public Employment Services Office - PESO" },
+    { value: "MAgO", label: "Municipal Agriculture Office - MAgO" },
+    { value: "MEO", label: "Municipal Engineering Office - MEO" },
+    { value: "MENRO", label: "Municipal Environment and Natural Resources Office - MENRO" },
+    { value: "MDRRMO", label: "Municipal Disaster Risk Reduction and Management Office - MDRRMO" },
+    { value: "BP", label: "Bamboo Plantation - BP" },
+    { value: "SH", label: "Slaughter House - SH" },
+    { value: "Tourism", label: "Municipal Tourism Office - Tourism" },
+    { value: "GIST", label: "GIST Office - GIST" }
+];

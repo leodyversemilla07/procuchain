@@ -98,7 +98,7 @@ export function DataTablePagination<TData>({
                             <SelectValue placeholder={pageSize} />
                         </SelectTrigger>
                         <SelectContent className="border-sidebar-border/70 dark:border-sidebar-border shadow-lg">
-                            {[10, 15, 20, 25, 30, 35, 40, 45, 50].map((size) => (
+                            {[10, 25, 50, 100, 250].map((size) => (
                                 <SelectItem
                                     key={size}
                                     value={`${size}`}
@@ -107,6 +107,13 @@ export function DataTablePagination<TData>({
                                     {size}
                                 </SelectItem>
                             ))}
+                            <SelectItem
+                                key="all"
+                                value="9999"
+                                className="dark:text-gray-200 dark:hover:bg-gray-700 hover:bg-gray-100"
+                            >
+                                All
+                            </SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

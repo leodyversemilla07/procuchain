@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Table2 } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Table2, Upload } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getNavItemsByRole = (role: string): NavItem[] => {
@@ -20,6 +20,11 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Procurement List',
                     url: '/bac-secretariat/procurements-list',
                     icon: Table2,
+                },
+                {
+                    title: 'Purchase Request Initiation',
+                    url: '/bac-secretariat/procurement/pr-initiation',
+                    icon: Upload,
                 }
             ];
         case 'bac_chairman':
@@ -28,6 +33,11 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Dashboard',
                     url: '/bac-chairman/dashboard',
                     icon: LayoutGrid,
+                },
+                {
+                    title: 'Procurement List',
+                    url: '/bac-chairman/procurements-list',
+                    icon: Table2,
                 }
             ];
         case 'hope':
@@ -36,6 +46,11 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Dashboard',
                     url: '/hope/dashboard',
                     icon: LayoutGrid,
+                },
+                {
+                    title: 'Procurement List',
+                    url: '/hope/procurements-list',
+                    icon: Table2,
                 }
             ];
         default:
