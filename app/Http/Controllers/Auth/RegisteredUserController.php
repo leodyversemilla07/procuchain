@@ -32,7 +32,7 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -46,6 +46,15 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return to_route('dashboard');
+        switch ($user->role) {
+            case 'bac_secretariat':
+                return to_route('bac-secretariat.dashboard');
+            case 'bac_chairman':
+                return to_route('bac-chairman.dashboard');
+            case 'hope':
+                return to_route('hope.dashboard');
+            default:
+                return to_route('home');
+        }
     }
 }

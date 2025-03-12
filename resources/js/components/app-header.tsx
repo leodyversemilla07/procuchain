@@ -15,13 +15,41 @@ import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        url: '/dashboard',
-        icon: LayoutGrid,
-    },
-];
+const getNavItemsByRole = (role: string): NavItem[] => {
+    switch (role) {
+        case 'bac_secretariat':
+            return [
+                {
+                    title: 'Dashboard',
+                    url: '/bac-secretariat/dashboard',
+                    icon: LayoutGrid,
+                },
+                {
+                    title: 'Generate Purchase Request',
+                    url: '/dashboard',
+                    icon: LayoutGrid,
+                }
+            ];
+        case 'bac_chairman':
+            return [
+                {
+                    title: 'Dashboard',
+                    url: '/bac-chairman/dashboard',
+                    icon: LayoutGrid,
+                }
+            ];
+        case 'hope':
+            return [
+                {
+                    title: 'Dashboard',
+                    url: '/hope/dashboard',
+                    icon: LayoutGrid,
+                }
+            ];
+        default:
+            return [];
+    }
+};
 
 const rightNavItems: NavItem[] = [
     {
@@ -46,6 +74,8 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const getInitials = useInitials();
+
+    const mainNavItems = getNavItemsByRole(auth.user.role);
     return (
         <>
             <div className="border-sidebar-border/80 border-b">
