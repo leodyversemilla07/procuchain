@@ -143,7 +143,8 @@ class ProcurementController extends BaseController
         $timestamp = now()->toIso8601String();
 
         try {
-            $userAddress = "15rdrfaw6xydP81YhJkSXXuHR4T7vFviung6NW";
+            // $userAddress = "15rdrfaw6xydP81YhJkSXXuHR4T7vFviung6NW";
+            $userAddress = $this->getUserBlockchainAddress();
 
             $metadataArray = [];
 
@@ -180,15 +181,26 @@ class ProcurementController extends BaseController
                 ];
             }
 
-            $this->publishDocuments($procurementId, $procurementTitle, 'PRInitiation', 'PR Initiation', 'PR Submitted', $metadataArray, $userAddress);
+            $this->publishDocuments($procurementId, $procurementTitle, 'PR Initiation', 'PR Submitted', $metadataArray, $userAddress);
 
             // Return JSON response for success case
-            return response()->json([
+            // return response()->json([
+            //     'success' => true,
+            //     'procurementId' => $procurementId,
+            //     'procurementTitle' => $procurementTitle,
+            //     'documentCount' => count($metadataArray),
+            //     'timestamp' => $timestamp
+            // ]);
+            // return Inertia::render('bac-secretariat/procurements-list', [
+            //     'success' => true,
+            //     'procurementId' => $procurementId,
+            //     'procurementTitle' => $procurementTitle,
+            //     'documentCount' => count($metadataArray),
+            //     'timestamp' => $timestamp
+            // ]);
+            return redirect()->route('bac-secretariat.procurements-list.index', ['procurementId' => $procurementId])->with([
                 'success' => true,
-                'procurementId' => $procurementId,
-                'procurementTitle' => $procurementTitle,
-                'documentCount' => count($metadataArray),
-                'timestamp' => $timestamp
+                'message' => 'Documents published successfully'
             ]);
         } catch (Exception $e) {
             // Return JSON response for error case

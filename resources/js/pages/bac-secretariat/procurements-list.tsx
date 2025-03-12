@@ -267,7 +267,7 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
             ),
             cell: ({ row }) => (
                 <div className="font-medium text-blue-600 dark:text-blue-400">
-                    <Link href={`/procurement/${row.getValue("id")}`} className="hover:underline">
+                    <Link href={`procurements-list/${row.getValue("id")}`} className="hover:underline">
                         {row.getValue("id")}
                     </Link>
                 </div>
@@ -284,7 +284,7 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
 
                 return (
                     <div className="max-w-[200px] truncate font-medium">
-                        <Link href={`/procurement/${id}`} className="hover:text-blue-600 hover:underline">
+                        <Link href={`procurements-list/${id}`} className="hover:text-blue-600 hover:underline">
                             {title}
                         </Link>
                     </div>
@@ -530,14 +530,14 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                                         <TabsList className="h-9 bg-gray-100 dark:bg-gray-800/60 p-1">
                                             <TabsTrigger
                                                 value="table"
-                                                className="text-xs px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 dark:data-[state=active]:text-blue-400"
+                                                className="text-xs px-3 data-[state=active]:bg-primary data-[state=active]:text-white dark:data-[state=active]:bg-primary/90 dark:data-[state=active]:text-white/95"
                                             >
                                                 <Table2Icon className="h-3.5 w-3.5 mr-1.5" />
                                                 Table
                                             </TabsTrigger>
                                             <TabsTrigger
                                                 value="kanban"
-                                                className="text-xs px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 dark:data-[state=active]:text-blue-400"
+                                                className="text-xs px-3 data-[state=active]:bg-primary data-[state=active]:text-white dark:data-[state=active]:bg-primary/90 dark:data-[state=active]:text-white/95"
                                             >
                                                 <LayersIcon className="h-3.5 w-3.5 mr-1.5" />
                                                 Kanban
@@ -547,10 +547,10 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                                 </div>
                                 <div className="flex gap-2">
                                     <Button
-                                        className="bg-blue-600 hover:bg-blue-700 text-sm font-medium shadow-sm transition-colors dark:bg-blue-700/90 dark:hover:bg-blue-700 dark:text-white/95 flex-1 sm:flex-none"
+                                        className="bg-primary hover:bg-primary/90 text-sm font-medium shadow-sm transition-colors dark:bg-primary/90 dark:hover:bg-primary/80 dark:text-white/95"
                                         asChild
                                     >
-                                        <Link href="/create" className="flex items-center justify-center">
+                                        <Link href="/bac-secretariat/procurement/pr-initiation" className="flex items-center justify-center">
                                             <PlusIcon className="h-3.5 w-3.5 mr-1.5" />
                                             New Procurement
                                         </Link>
@@ -615,7 +615,7 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                                     className="bg-primary hover:bg-primary/90 text-sm font-medium shadow-sm transition-colors dark:bg-primary/90 dark:hover:bg-primary/80 dark:text-white/95"
                                     asChild
                                 >
-                                    <Link href="/create" className="flex items-center">
+                                    <Link href="/bac-secretariat/procurement/pr-initiation" className="flex items-center">
                                         <PlusIcon className="h-4 w-4 mr-1.5" />
                                         Create First Procurement
                                     </Link>

@@ -25,6 +25,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('bac-secretariat/dashboard', [BacSecretariatController::class, 'index'])
             ->name('bac-secretariat.dashboard');
 
+        Route::get('bac-secretariat/procurement/pr-initiation', [BacSecretariatController::class, 'prInitiation'])
+            ->name('bac-secretariat.procurement.pr-initiation');
+
+        Route::post('bac-secretariat/publish-pr-initiation', [ProcurementController::class, 'publishPrInitiation'])
+            ->name('publish-pr-initiation');
+
         Route::get('bac-secretariat/procurements-list', [ProcurementController::class, 'index'])
             ->name('bac-secretariat.procurements-list.index');
 

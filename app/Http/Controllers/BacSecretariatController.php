@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Inertia\Inertia;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Log;
 
 class BacSecretariatController extends BaseController
 {
@@ -18,5 +16,10 @@ class BacSecretariatController extends BaseController
     public function index()
     {
         return Inertia::render('bac-secretariat/dashboard');
+    }
+
+    public function prInitiation()
+    {
+        return Inertia::render('bac-secretariat/pr-initiation');
     }
 }
