@@ -113,7 +113,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                             <Input
                                 id="blockchain_address"
                                 value={auth.user.blockchain_address}
-                                className="mt-1 block w-full bg-muted"
+                                className="mt-1 block w-full bg-muted font-mono"
                                 readOnly
                                 disabled
                             />
