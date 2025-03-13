@@ -130,6 +130,67 @@ class ProcurementController extends BaseController
         $this->multiChain->publishFrom($userAddress, self::STREAM_EVENTS, $streamKey, $eventData);
     }
 
+    /**
+     * Handle phase transition across all streams consistently.
+     * 
+     * @param string $procurementId
+     * @param string $procurementTitle
+     * @param string $fromState
+     * @param string $toState
+     * @param string $fromPhase
+     * @param string $toPhase
+     * @param string $userAddress
+     * @param string $details
+     * @return void
+     */
+    private function handlePhaseTransition($procurementId, $procurementTitle, $fromState, $toState, $fromPhase, $toPhase, $userAddress, $details)
+    {
+        // Log transition start
+        Log::info('Phase transition beginning', [
+            'procurement_id' => $procurementId,
+            'from_phase' => $fromPhase,
+            'to_phase' => $toPhase,
+            'from_state' => $fromState,
+            'to_state' => $toState
+        ]);
+        
+        $timestamp = now()->toIso8601String();
+        $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+        
+        // Update state with new phase explicitly
+        $stateData = [
+            'procurement_id' => $procurementId,
+            'procurement_title' => $procurementTitle,
+            'current_state' => $toState,
+            'phase_identifier' => $toPhase,
+            'timestamp' => $timestamp,
+            'user_address' => $userAddress,
+        ];
+        
+        // Direct publish to state stream to ensure phase is updated
+        $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $stateData);
+        
+        // Log the phase transition event - using the new phase
+        $this->logEvent(
+            $procurementId, 
+            $procurementTitle, 
+            $toPhase, 
+            $details, 
+            0, 
+            $userAddress, 
+            'phase_transition', 
+            'workflow', 
+            'info', 
+            $timestamp
+        );
+        
+        Log::info('Phase transition completed', [
+            'procurement_id' => $procurementId,
+            'new_phase' => $toPhase,
+            'new_state' => $toState
+        ]);
+    }
+
     // Phase 1: PR Initiation
     public function publishPrInitiation(Request $request)
     {
@@ -183,24 +244,14 @@ class ProcurementController extends BaseController
 
             $this->publishDocuments($procurementId, $procurementTitle, 'PR Initiation', 'PR Submitted', $metadataArray, $userAddress);
 
-            // Return JSON response for success case
-            // return response()->json([
-            //     'success' => true,
-            //     'procurementId' => $procurementId,
-            //     'procurementTitle' => $procurementTitle,
-            //     'documentCount' => count($metadataArray),
-            //     'timestamp' => $timestamp
-            // ]);
-            // return Inertia::render('bac-secretariat/procurements-list', [
-            //     'success' => true,
-            //     'procurementId' => $procurementId,
-            //     'procurementTitle' => $procurementTitle,
-            //     'documentCount' => count($metadataArray),
-            //     'timestamp' => $timestamp
-            // ]);
-            return redirect()->route('bac-secretariat.procurements-list.index', ['procurementId' => $procurementId])->with([
+            // Return JSON response for success case instead of redirecting
+            return response()->json([
                 'success' => true,
-                'message' => 'Documents published successfully'
+                'message' => 'Documents published successfully',
+                'procurementId' => $procurementId,
+                'procurementTitle' => $procurementTitle,
+                'documentCount' => count($metadataArray),
+                'timestamp' => $timestamp
             ]);
         } catch (Exception $e) {
             // Return JSON response for error case
@@ -210,6 +261,391 @@ class ProcurementController extends BaseController
                 'procurementId' => $procurementId,
                 'procurementTitle' => $procurementTitle
             ], 500);
+        }
+    }
+
+    // Phase 2: Pre-Procurement Conference Decision
+    public function publishPreProcurementDecision(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $conferenceHeld = $request->boolean('conference_held');
+        $timestamp = now()->toIso8601String();
+
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            
+            if ($conferenceHeld) {
+                // Conference was held - update state using direct API call
+                $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+                $stateData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'current_state' => 'Pre-Procurement Conference Held',
+                    'phase_identifier' => 'Pre-Procurement', 
+                    'timestamp' => $timestamp,
+                    'user_address' => $userAddress,
+                ];
+                $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $stateData);
+                
+                // Log the decision event
+                $this->logEvent(
+                    $procurementId, 
+                    $procurementTitle, 
+                    'Pre-Procurement', 
+                    'Pre-procurement conference was held - documents pending upload', 
+                    0, 
+                    $userAddress, 
+                    'decision', 
+                    'workflow', 
+                    'info', 
+                    $timestamp
+                );
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pre-procurement conference recorded as held. Please upload the conference documents.',
+                    'nextPhase' => 'Pre-Procurement',
+                    'procurementId' => $procurementId,
+                    'procurementTitle' => $procurementTitle,
+                    'documentsRequired' => true
+                ]);
+            } else {
+                // Conference was not held - skip to Bid Invitation phase
+                // Handle phase transition from PR Initiation to Bid Invitation
+                $this->handlePhaseTransition(
+                    $procurementId,
+                    $procurementTitle,
+                    'PR Submitted',           // from state
+                    'Pre-Procurement Skipped', // to state
+                    'PR Initiation',          // from phase
+                    'Bid Invitation',         // to phase
+                    $userAddress,
+                    'Pre-procurement conference skipped - proceeding to Bid Invitation'
+                );
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pre-procurement conference skipped. Proceeding to Bid Invitation phase.',
+                    'nextPhase' => 'Bid Invitation',
+                    'procurementId' => $procurementId,
+                    'procurementTitle' => $procurementTitle,
+                    'documentsRequired' => false
+                ]);
+            }
+        } catch (Exception $e) {
+            Log::error('Error processing pre-procurement decision', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'errorMessage' => 'Failed to process pre-procurement decision: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Upload Pre-Procurement Documents (new endpoint)
+    public function uploadPreProcurementDocuments(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $minutesFile = $request->file('minutes_file');
+        $attendanceFile = $request->file('attendance_file');
+        $meetingDate = $request->input('meeting_date');
+        $participants = $request->input('participants');
+        $timestamp = now()->toIso8601String();
+        
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            $metadataArray = [];
+            
+            // Process minutes file
+            if ($minutesFile) {
+                $fileKey = "$procurementId-$procurementTitle/PreProcurement/$procurementId-$procurementTitle-Minutes." . $minutesFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($minutesFile), 'private');
+                $hash = hash('sha256', file_get_contents($minutesFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Minutes',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $minutesFile->getSize(),
+                    'meeting_date' => $meetingDate,
+                    'participants' => $participants,
+                ];
+            }
+            
+            // Process attendance file
+            if ($attendanceFile) {
+                $fileKey = "$procurementId-$procurementTitle/PreProcurement/$procurementId-$procurementTitle-Attendance." . $attendanceFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($attendanceFile), 'private');
+                $hash = hash('sha256', file_get_contents($attendanceFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Attendance',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $attendanceFile->getSize(),
+                    'meeting_date' => $meetingDate,
+                    'participants' => $participants,
+                ];
+            }
+            
+            // Get stream key
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+            
+            // Prepare document items for blockchain
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'phase_identifier' => 'Pre-Procurement', // Use current phase for documents
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => $docData,
+                ];
+            }
+            
+            // 1. Publish documents with current phase
+            $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+            
+            // 2. Log document upload event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Pre-Procurement', 
+                'Uploaded ' . count($metadataArray) . " finalized Pre-Procurement documents", 
+                count($metadataArray), 
+                $userAddress, 
+                'document_upload', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // 3. Update state to completed in current phase
+            $intermediateStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Pre-Procurement Completed',
+                'phase_identifier' => 'Pre-Procurement', // Still in Pre-Procurement phase
+                'timestamp' => $timestamp,
+                'user_address' => $userAddress,
+            ];
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $intermediateStateData);
+            
+            // 4. Now perform the phase transition with slight delay to ensure proper ordering
+            $newTimestamp = now()->addSecond()->toIso8601String();
+            
+            // 5. Transition to next phase with a new explicit state update
+            $transitionStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Pre-Procurement Completed',
+                'phase_identifier' => 'Bid Invitation', // Change to next phase
+                'timestamp' => $newTimestamp, // Use newer timestamp to ensure this becomes the latest state
+                'user_address' => $userAddress,
+            ];
+            
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $transitionStateData);
+            
+            // 6. Log the phase transition event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Bid Invitation', // Use the destination phase
+                'Proceeding to Bid Invitation phase after completing Pre-Procurement', 
+                0, 
+                $userAddress, 
+                'phase_transition', 
+                'workflow', 
+                'info', 
+                $newTimestamp
+            );
+            
+            Log::info('Phase transition completed', [
+                'procurement_id' => $procurementId,
+                'from_phase' => 'Pre-Procurement',
+                'to_phase' => 'Bid Invitation',
+                'current_state' => 'Pre-Procurement Completed'
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'Pre-procurement conference documents uploaded successfully. Proceeding to Bid Invitation phase.'
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error uploading pre-procurement documents', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to upload pre-procurement documents: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    // Phase 3: Bid Invitation Publication
+    public function publishBidInvitation(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $bidInvitationFile = $request->file('bid_invitation_file');
+        $metadata = $request->input('metadata');
+        $timestamp = now()->toIso8601String();
+
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            
+            $metadataArray = [];
+            
+            if ($bidInvitationFile) {
+                $fileKey = "$procurementId-$procurementTitle/BidInvitation/$procurementId-$procurementTitle-BidInvitation." . $bidInvitationFile->getClientOriginalExtension();
+        Storage::disk('spaces')->put($fileKey, file_get_contents($bidInvitationFile), 'private');
+                $hash = hash('sha256', file_get_contents($bidInvitationFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Bid Invitation',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $bidInvitationFile->getSize(),
+                    'submission_date' => $metadata['submission_date'] ?? now()->format('Y-m-d'),
+                    'signatory_details' => $metadata['signatory_details'] ?? '',
+                ];
+            }
+            
+            // Get stream key
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+            
+            // Prepare document items for blockchain
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'phase_identifier' => 'Bid Invitation', // Use current phase for documents
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => $docData,
+                ];
+            }
+            
+            // 1. Publish documents with current phase
+            $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+            
+            // 2. Log document upload event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Bid Invitation', 
+                'Uploaded ' . count($metadataArray) . " finalized Bid Invitation documents", 
+                count($metadataArray), 
+                $userAddress, 
+                'document_upload', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // 3. Update state to "Bid Invitation Published" in current phase
+            $currentStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Bid Invitation Published',
+                'phase_identifier' => 'Bid Invitation',
+                'timestamp' => $timestamp,
+                'user_address' => $userAddress,
+            ];
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $currentStateData);
+            
+            // 4. Log additional publication event
+            $this->logEvent(
+                $procurementId,
+                $procurementTitle,
+                'Bid Invitation',
+                'Published bid invitation to PhilGEPS',
+                1,
+                $userAddress,
+                'publication',
+                'workflow',
+                'info',
+                $timestamp
+            );
+            
+            // 5. Now perform the phase transition with slight delay to ensure proper ordering
+            $newTimestamp = now()->addSecond()->toIso8601String();
+            
+            // 6. Transition to next phase with a new explicit state update
+            $transitionStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Bid Invitation Published',
+                'phase_identifier' => 'Bid Opening', // Change to next phase
+                'timestamp' => $newTimestamp, // Use newer timestamp to ensure this becomes the latest state
+                'user_address' => $userAddress,
+            ];
+            
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $transitionStateData);
+            
+            // 7. Log the phase transition event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Bid Opening', // Use the destination phase
+                'Proceeding to Bid Opening phase after publishing Bid Invitation', 
+                0, 
+                $userAddress, 
+                'phase_transition', 
+                'workflow', 
+                'info', 
+                $newTimestamp
+            );
+            
+            Log::info('Phase transition completed', [
+                'procurement_id' => $procurementId,
+                'from_phase' => 'Bid Invitation',
+                'to_phase' => 'Bid Opening',
+                'current_state' => 'Bid Invitation Published'
+            ]);
+            
+            // Changed from JSON response to redirect response
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'Bid invitation published successfully. Proceeding to Bid Opening phase.'
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error publishing bid invitation', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to publish bid invitation: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -391,6 +827,2176 @@ class ProcurementController extends BaseController
             return Inertia::render('bac-secretariat/procurements-list', [
                 'procurements' => [],
                 'error' => 'Failed to retrieve procurements: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show the pre-procurement document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showPreProcurementUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct state
+            if ($latestState['data']['current_state'] !== 'Pre-Procurement Conference Held') {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not eligible for pre-procurement document upload');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+            ];
+            
+            // Fix: Use the correct component path - adjust to match the actual location of your component
+            return Inertia::render('bac-secretariat/procurement-phase/pre-procurement-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load pre-procurement upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading pre-procurement upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show the bid invitation document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showBidInvitationUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct phase and state
+            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
+            $currentState = $latestState['data']['current_state'] ?? '';
+            
+            if ($phaseIdentifier !== 'Bid Invitation' || 
+                ($currentState !== 'Pre-Procurement Skipped' && $currentState !== 'Pre-Procurement Completed')) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not eligible for bid invitation document upload');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+            ];
+            
+            // Ensure we're using the correct component path
+            return Inertia::render('bac-secretariat/procurement-phase/bid-invitation-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load bid invitation upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading bid invitation upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show the bid submission document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showBidSubmissionUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct phase and state
+            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
+            $currentState = $latestState['data']['current_state'] ?? '';
+            
+            if ($phaseIdentifier !== 'Bid Opening' || $currentState !== 'Bid Invitation Published') {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not eligible for bid submission and opening');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+            ];
+            
+            // Ensure we're using the correct component path
+            return Inertia::render('bac-secretariat/procurement-phase/bid-submission-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load bid submission upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading bid submission upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload bid submission documents.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function uploadBidSubmissionDocuments(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $bidDocuments = $request->file('bid_documents', []);
+        $biddersData = $request->input('bidders_data', []);
+        $openingDateTime = $request->input('opening_date_time');
+        $timestamp = now()->toIso8601String();
+        
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            $metadataArray = [];
+            
+            foreach ($bidDocuments as $index => $file) {
+                if ($file && isset($biddersData[$index])) {
+                    $bidderName = $biddersData[$index]['bidder_name'] ?? 'Unknown Bidder';
+                    $bidValue = $biddersData[$index]['bid_value'] ?? '0';
+                    
+                    $safeNamePart = preg_replace('/[^a-zA-Z0-9-]/', '-', $bidderName);
+                    $fileKey = "$procurementId-$procurementTitle/BidOpening/$procurementId-$procurementTitle-Bid-$safeNamePart." . $file->getClientOriginalExtension();
+                    
+                    Storage::disk('spaces')->put($fileKey, file_get_contents($file), 'private');
+                    $hash = hash('sha256', file_get_contents($file->getRealPath()));
+                    
+                    $metadataArray[] = [
+                        'document_type' => 'Bid Document',
+                        'hash' => $hash,
+                        'file_key' => $fileKey,
+                        'file_size' => $file->getSize(),
+                        'bidder_name' => $bidderName,
+                        'bid_value' => $bidValue,
+                        'opening_date_time' => $openingDateTime,
+                    ];
+                }
+            }
+            
+            // Only proceed if we have documents
+            if (count($metadataArray) > 0) {
+                // Get stream key
+                $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+                
+                // Prepare document items for blockchain
+                $documentItems = [];
+                foreach ($metadataArray as $index => $metadata) {
+                    $docData = [
+                        'procurement_id' => $procurementId,
+                        'procurement_title' => $procurementTitle,
+                        'phase_identifier' => 'Bid Opening', // Use current phase for documents
+                        'timestamp' => $timestamp,
+                        'document_index' => $index + 1,
+                        'document_type' => $metadata['document_type'],
+                        'hash' => $metadata['hash'],
+                        'file_key' => $metadata['file_key'],
+                        'user_address' => $userAddress,
+                        'file_size' => $metadata['file_size'],
+                        'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                    ];
+                    $documentItems[] = [
+                        'key' => $streamKey,
+                        'data' => $docData,
+                    ];
+                }
+                
+                // 1. Publish documents with current phase
+                $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+                
+                // 2. Log document upload event
+                $this->logEvent(
+                    $procurementId, 
+                    $procurementTitle, 
+                    'Bid Opening', 
+                    'Uploaded ' . count($metadataArray) . " finalized Bid Opening documents", 
+                    count($metadataArray), 
+                    $userAddress, 
+                    'document_upload', 
+                    'workflow', 
+                    'info', 
+                    $timestamp
+                );
+                
+                // 3. Update state to completed in current phase
+                $currentStateData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'current_state' => 'Bids Opened',
+                    'phase_identifier' => 'Bid Opening', // Still in Bid Opening phase
+                    'timestamp' => $timestamp,
+                    'user_address' => $userAddress,
+                ];
+                $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $currentStateData);
+                
+                // 4. Now perform the phase transition with slight delay to ensure proper ordering
+                $newTimestamp = now()->addSecond()->toIso8601String();
+                
+                // 5. Transition to next phase with a new explicit state update
+                $transitionStateData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'current_state' => 'Bids Opened',
+                    'phase_identifier' => 'Bid Evaluation', // Change to next phase
+                    'timestamp' => $newTimestamp, // Use newer timestamp to ensure this becomes the latest state
+                    'user_address' => $userAddress,
+                ];
+                
+                $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $transitionStateData);
+                
+                // 6. Log the phase transition event
+                $this->logEvent(
+                    $procurementId, 
+                    $procurementTitle, 
+                    'Bid Evaluation', // Use the destination phase
+                    'Proceeding to Bid Evaluation phase after opening bids', 
+                    0, 
+                    $userAddress, 
+                    'phase_transition', 
+                    'workflow', 
+                    'info', 
+                    $newTimestamp
+                );
+                
+                Log::info('Phase transition completed', [
+                    'procurement_id' => $procurementId,
+                    'from_phase' => 'Bid Opening',
+                    'to_phase' => 'Bid Evaluation',
+                    'current_state' => 'Bids Opened'
+                ]);
+                
+                return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                    'success' => true,
+                    'message' => count($metadataArray) . ' bid documents uploaded successfully. Proceeding to Bid Evaluation phase.'
+                ]);
+            } else {
+                return redirect()->back()->withErrors([
+                    'error' => 'No valid bid documents were provided.'
+                ]);
+            }
+            
+        } catch (Exception $e) {
+            Log::error('Error uploading bid documents', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to upload bid documents: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show the bid evaluation document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showBidEvaluationUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct phase and state
+            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
+            $currentState = $latestState['data']['current_state'] ?? '';
+            
+            if ($phaseIdentifier !== 'Bid Evaluation' || $currentState !== 'Bids Opened') {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not eligible for bid evaluation upload');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+            ];
+            
+            // Ensure we're using the correct component path
+            return Inertia::render('bac-secretariat/procurement-phase/bid-evaluation-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load bid evaluation upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading bid evaluation upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload bid evaluation documents.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function uploadBidEvaluationDocuments(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $summaryFile = $request->file('summary_file');
+        $abstractFile = $request->file('abstract_file');
+        $evaluationDate = $request->input('evaluation_date');
+        $evaluatorNames = $request->input('evaluator_names');
+        $timestamp = now()->toIso8601String();
+        
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            $metadataArray = [];
+            
+            // Process summary file
+            if ($summaryFile) {
+                $fileKey = "$procurementId-$procurementTitle/BidEvaluation/$procurementId-$procurementTitle-EvaluationSummary." . $summaryFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($summaryFile), 'private');
+                $hash = hash('sha256', file_get_contents($summaryFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Evaluation Summary',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $summaryFile->getSize(),
+                    'evaluation_date' => $evaluationDate,
+                    'evaluator_names' => $evaluatorNames,
+                ];
+            }
+            
+            // Process abstract file
+            if ($abstractFile) {
+                $fileKey = "$procurementId-$procurementTitle/BidEvaluation/$procurementId-$procurementTitle-Abstract." . $abstractFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($abstractFile), 'private');
+                $hash = hash('sha256', file_get_contents($abstractFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Abstract',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $abstractFile->getSize(),
+                    'evaluation_date' => $evaluationDate,
+                    'evaluator_names' => $evaluatorNames,
+                ];
+            }
+            
+            // Get stream key
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+            
+            // Prepare document items for blockchain
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'phase_identifier' => 'Bid Evaluation', // Use current phase for documents
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => $docData,
+                ];
+            }
+            
+            // 1. Publish documents with current phase
+            $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+            
+            // 2. Log document upload event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Bid Evaluation', 
+                'Uploaded ' . count($metadataArray) . " finalized Bid Evaluation documents", 
+                count($metadataArray), 
+                $userAddress, 
+                'document_upload', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // 3. Update state to completed in current phase
+            $currentStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Bids Evaluated',
+                'phase_identifier' => 'Bid Evaluation', 
+                'timestamp' => $timestamp,
+                'user_address' => $userAddress,
+            ];
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $currentStateData);
+            
+            // Log completion of current phase
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Bid Evaluation', 
+                'Completed bid evaluation with ' . count($metadataArray) . " documents", 
+                count($metadataArray), 
+                $userAddress, 
+                'state_change', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // Add a small sleep to ensure blockchain transaction ordering
+            usleep(500000); // 500ms delay
+            
+            // 4. Now perform the phase transition with slight delay to ensure proper ordering
+            $newTimestamp = now()->toIso8601String(); // Get a fresh timestamp after the delay
+            
+            // 5. Transition to next phase with a new explicit state update
+            $transitionStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Bids Evaluated',
+                'phase_identifier' => 'Post-Qualification', // Change to next phase
+                'timestamp' => $newTimestamp, // Use newer timestamp to ensure this becomes the latest state
+                'user_address' => $userAddress,
+            ];
+            
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $transitionStateData);
+            
+            // 6. Log the phase transition event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Post-Qualification', // Use the destination phase
+                'Proceeding to Post-Qualification phase after completing Bid Evaluation', 
+                0, 
+                $userAddress, 
+                'phase_transition', 
+                'workflow', 
+                'info', 
+                $newTimestamp
+            );
+            
+            Log::info('Phase transition completed', [
+                'procurement_id' => $procurementId,
+                'from_phase' => 'Bid Evaluation',
+                'to_phase' => 'Post-Qualification',
+                'current_state' => 'Bids Evaluated'
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'Bid evaluation documents uploaded successfully. Proceeding to Post-Qualification phase.'
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error uploading bid evaluation documents', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to upload bid evaluation documents: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show the post-qualification document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showPostQualificationUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct phase and state
+            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
+            $currentState = $latestState['data']['current_state'] ?? '';
+            
+            Log::info('Showing Post-Qualification upload form', [
+                'procurement_id' => $id,
+                'phase_identifier' => $phaseIdentifier,
+                'current_state' => $currentState
+            ]);
+            
+            if ($phaseIdentifier !== 'Post-Qualification' || $currentState !== 'Bids Evaluated') {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not eligible for post-qualification document upload');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+            ];
+            
+            // Render the post-qualification upload component
+            return Inertia::render('bac-secretariat/procurement-phase/post-qualification-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load post-qualification upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading post-qualification upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload post-qualification documents.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function uploadPostQualificationDocuments(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $taxReturnFile = $request->file('tax_return_file');
+        $financialStatementFile = $request->file('financial_statement_file');
+        $verificationReportFile = $request->file('verification_report_file');
+        $submissionDate = $request->input('submission_date');
+        $outcome = $request->input('outcome');
+        $timestamp = now()->toIso8601String();
+        
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            $metadataArray = [];
+            
+            // Process tax return file
+            if ($taxReturnFile) {
+                $fileKey = "$procurementId-$procurementTitle/PostQualification/$procurementId-$procurementTitle-TaxReturn." . $taxReturnFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($taxReturnFile), 'private');
+                $hash = hash('sha256', file_get_contents($taxReturnFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Tax Return',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $taxReturnFile->getSize(),
+                    'submission_date' => $submissionDate,
+                    'outcome' => $outcome,
+                ];
+            }
+            
+            // Process financial statement file
+            if ($financialStatementFile) {
+                $fileKey = "$procurementId-$procurementTitle/PostQualification/$procurementId-$procurementTitle-FinancialStatement." . $financialStatementFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($financialStatementFile), 'private');
+                $hash = hash('sha256', file_get_contents($financialStatementFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Financial Statement',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $financialStatementFile->getSize(),
+                    'submission_date' => $submissionDate,
+                    'outcome' => $outcome,
+                ];
+            }
+            
+            // Process verification report file
+            if ($verificationReportFile) {
+                $fileKey = "$procurementId-$procurementTitle/PostQualification/$procurementId-$procurementTitle-VerificationReport." . $verificationReportFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($verificationReportFile), 'private');
+                $hash = hash('sha256', file_get_contents($verificationReportFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Verification Report',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $verificationReportFile->getSize(),
+                    'submission_date' => $submissionDate,
+                    'outcome' => $outcome,
+                ];
+            }
+            
+            // Get stream key
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+            
+            // Prepare document items for blockchain
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'phase_identifier' => 'Post-Qualification', // Use current phase for documents
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => $docData,
+                ];
+            }
+            
+            // 1. Publish documents with current phase
+            $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+            
+            // 2. Log document upload event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Post-Qualification', 
+                'Uploaded ' . count($metadataArray) . " finalized Post-Qualification documents (" . $outcome . ")", 
+                count($metadataArray), 
+                $userAddress, 
+                'document_upload', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // 3. Update state to completed in current phase
+            $verifiedState = $outcome === 'Verified' ? 'Post-Qualification Verified' : 'Post-Qualification Failed';
+            $currentStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => $verifiedState,
+                'phase_identifier' => 'Post-Qualification', 
+                'timestamp' => $timestamp,
+                'user_address' => $userAddress,
+            ];
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $currentStateData);
+            
+            // 4. Now perform the phase transition with slight delay to ensure proper ordering
+            $newTimestamp = now()->addSecond()->toIso8601String();
+            
+            // 5. Transition to next phase with a new explicit state update
+            // Only proceed to next phase if verification is successful
+            if ($outcome === 'Verified') {
+                $transitionStateData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'current_state' => $verifiedState,
+                    'phase_identifier' => 'BAC Resolution', // Change to next phase
+                    'timestamp' => $newTimestamp, // Use newer timestamp to ensure this becomes the latest state
+                    'user_address' => $userAddress,
+                ];
+                
+                $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $transitionStateData);
+                
+                // 6. Log the phase transition event
+                $this->logEvent(
+                    $procurementId, 
+                    $procurementTitle, 
+                    'BAC Resolution', // Use the destination phase
+                    'Proceeding to BAC Resolution phase after successful Post-Qualification', 
+                    0, 
+                    $userAddress, 
+                    'phase_transition', 
+                    'workflow', 
+                    'info', 
+                    $newTimestamp
+                );
+                
+                Log::info('Phase transition completed', [
+                    'procurement_id' => $procurementId,
+                    'from_phase' => 'Post-Qualification',
+                    'to_phase' => 'BAC Resolution',
+                    'current_state' => $verifiedState
+                ]);
+            } else {
+                // Log event for failed post-qualification
+                $this->logEvent(
+                    $procurementId, 
+                    $procurementTitle, 
+                    'Post-Qualification', 
+                    'Post-Qualification failed - procurement process halted', 
+                    0, 
+                    $userAddress, 
+                    'status_update', 
+                    'workflow', 
+                    'warning', 
+                    $newTimestamp
+                );
+                
+                Log::info('Post-qualification failed', [
+                    'procurement_id' => $procurementId,
+                    'outcome' => $outcome
+                ]);
+            }
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'Post-qualification documents uploaded successfully with outcome: ' . $outcome
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error uploading post-qualification documents', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to upload post-qualification documents: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show the BAC Resolution document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showBacResolutionUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct phase and state
+            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
+            $currentState = $latestState['data']['current_state'] ?? '';
+            
+            Log::info('Showing BAC Resolution upload form', [
+                'procurement_id' => $id,
+                'phase_identifier' => $phaseIdentifier,
+                'current_state' => $currentState
+            ]);
+            
+            if ($phaseIdentifier !== 'BAC Resolution' || $currentState !== 'Post-Qualification Verified') {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not eligible for BAC Resolution document upload');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+            ];
+            
+            // Render the BAC Resolution upload component
+            return Inertia::render('bac-secretariat/procurement-phase/bac-resolution-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load BAC Resolution upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading BAC Resolution upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload BAC Resolution document.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function uploadBacResolutionDocument(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $bacResolutionFile = $request->file('bac_resolution_file');
+        $issuanceDate = $request->input('issuance_date');
+        $signatoryDetails = $request->input('signatory_details');
+        $timestamp = now()->toIso8601String();
+        
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            $metadataArray = [];
+            
+            // Process BAC Resolution file
+            if ($bacResolutionFile) {
+                $fileKey = "$procurementId-$procurementTitle/BACResolution/$procurementId-$procurementTitle-BACResolution." . $bacResolutionFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($bacResolutionFile), 'private');
+                $hash = hash('sha256', file_get_contents($bacResolutionFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'BAC Resolution',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $bacResolutionFile->getSize(),
+                    'issuance_date' => $issuanceDate,
+                    'signatory_details' => $signatoryDetails,
+                ];
+            }
+            
+            // Get stream key
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+            
+            // Prepare document items for blockchain
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'phase_identifier' => 'BAC Resolution', // Use current phase for documents
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => $docData,
+                ];
+            }
+            
+            // 1. Publish documents with current phase
+            $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+            
+            // 2. Log document upload event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'BAC Resolution', 
+                'Uploaded ' . count($metadataArray) . " finalized BAC Resolution document", 
+                count($metadataArray), 
+                $userAddress, 
+                'document_upload', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // 3. Update state in current phase
+            $currentStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Resolution Recorded',
+                'phase_identifier' => 'BAC Resolution', 
+                'timestamp' => $timestamp,
+                'user_address' => $userAddress,
+            ];
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $currentStateData);
+            
+            // 4. Now perform the phase transition with slight delay to ensure proper ordering
+            $newTimestamp = now()->addSecond()->toIso8601String();
+            
+            // 5. Transition to next phase with a new explicit state update
+            $transitionStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Resolution Recorded',
+                'phase_identifier' => 'Notice Of Award', // Change to next phase
+                'timestamp' => $newTimestamp, // Use newer timestamp to ensure this becomes the latest state
+                'user_address' => $userAddress,
+            ];
+            
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $transitionStateData);
+            
+            // 6. Log the phase transition event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Notice Of Award', // Use the destination phase
+                'Proceeding to Notice Of Award phase after recording BAC Resolution', 
+                0, 
+                $userAddress, 
+                'phase_transition', 
+                'workflow', 
+                'info', 
+                $newTimestamp
+            );
+            
+            Log::info('Phase transition completed', [
+                'procurement_id' => $procurementId,
+                'from_phase' => 'BAC Resolution',
+                'to_phase' => 'Notice Of Award',
+                'current_state' => 'Resolution Recorded'
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'BAC Resolution document uploaded successfully. Proceeding to Notice Of Award phase.'
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error uploading BAC Resolution document', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to upload BAC Resolution document: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show the Notice of Award document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showNoaUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct phase and state
+            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
+            $currentState = $latestState['data']['current_state'] ?? '';
+            
+            Log::info('Showing Notice of Award upload form', [
+                'procurement_id' => $id,
+                'phase_identifier' => $phaseIdentifier,
+                'current_state' => $currentState
+            ]);
+            
+            if ($phaseIdentifier !== 'Notice Of Award' || $currentState !== 'Resolution Recorded') {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not eligible for Notice of Award document upload');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+            ];
+            
+            // Render the NOA upload component
+            return Inertia::render('bac-secretariat/procurement-phase/noa-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load Notice of Award upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading Notice of Award upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload Notice of Award document.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function uploadNoaDocument(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $noaFile = $request->file('noa_file');
+        $issuanceDate = $request->input('issuance_date');
+        $signatoryDetails = $request->input('signatory_details');
+        $timestamp = now()->toIso8601String();
+        
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            $metadataArray = [];
+            
+            // Process Notice of Award file
+            if ($noaFile) {
+                $fileKey = "$procurementId-$procurementTitle/NoticeOfAward/$procurementId-$procurementTitle-NOA." . $noaFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($noaFile), 'private');
+                $hash = hash('sha256', file_get_contents($noaFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Notice of Award',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $noaFile->getSize(),
+                    'issuance_date' => $issuanceDate,
+                    'signatory_details' => $signatoryDetails,
+                ];
+            }
+            
+            // Get stream key
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+            
+            // Prepare document items for blockchain
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'phase_identifier' => 'Notice Of Award', // Use current phase for documents
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => $docData,
+                ];
+            }
+            
+            // 1. Publish documents with current phase
+            $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+            
+            // 2. Log document upload event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Notice Of Award', 
+                'Uploaded ' . count($metadataArray) . " finalized Notice of Award document", 
+                count($metadataArray), 
+                $userAddress, 
+                'document_upload', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // 3. Update state in current phase
+            $currentStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Awarded',
+                'phase_identifier' => 'Notice Of Award', 
+                'timestamp' => $timestamp,
+                'user_address' => $userAddress,
+            ];
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $currentStateData);
+            
+            // 4. Log additional publication event
+            $publicationTimestamp = now()->addSecond()->toIso8601String();
+            $this->logEvent(
+                $procurementId,
+                $procurementTitle,
+                'Notice Of Award',
+                'Published Notice of Award to PhilGEPS',
+                1,
+                $userAddress,
+                'publication',
+                'workflow',
+                'info',
+                $publicationTimestamp
+            );
+            
+            // 5. Now perform the phase transition with slight delay to ensure proper ordering
+            $newTimestamp = now()->addSeconds(2)->toIso8601String();
+            
+            // 6. Transition to next phase with a new explicit state update
+            $transitionStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Awarded',
+                'phase_identifier' => 'Performance Bond', // Change to next phase
+                'timestamp' => $newTimestamp, // Use newer timestamp to ensure this becomes the latest state
+                'user_address' => $userAddress,
+            ];
+            
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $transitionStateData);
+            
+            // 7. Log the phase transition event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Performance Bond', // Use the destination phase
+                'Proceeding to Performance Bond phase after recording Notice of Award', 
+                0, 
+                $userAddress, 
+                'phase_transition', 
+                'workflow', 
+                'info', 
+                $newTimestamp
+            );
+            
+            Log::info('Phase transition completed', [
+                'procurement_id' => $procurementId,
+                'from_phase' => 'Notice Of Award',
+                'to_phase' => 'Performance Bond',
+                'current_state' => 'Awarded'
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'Notice of Award document uploaded and published successfully. Proceeding to Performance Bond phase.'
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error uploading Notice of Award document', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to upload Notice of Award document: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show the Performance Bond document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showPerformanceBondUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct phase and state
+            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
+            $currentState = $latestState['data']['current_state'] ?? '';
+            
+            Log::info('Showing Performance Bond upload form', [
+                'procurement_id' => $id,
+                'phase_identifier' => $phaseIdentifier,
+                'current_state' => $currentState
+            ]);
+            
+            if ($phaseIdentifier !== 'Performance Bond' || $currentState !== 'Awarded') {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not eligible for Performance Bond document upload');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+            ];
+            
+            // Render the Performance Bond upload component
+            return Inertia::render('bac-secretariat/procurement-phase/performance-bond-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load Performance Bond upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading Performance Bond upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload Performance Bond document.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function uploadPerformanceBondDocument(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $performanceBondFile = $request->file('performance_bond_file');
+        $submissionDate = $request->input('submission_date');
+        $bondAmount = $request->input('bond_amount');
+        $timestamp = now()->toIso8601String();
+        
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            $metadataArray = [];
+            
+            // Process Performance Bond file
+            if ($performanceBondFile) {
+                $fileKey = "$procurementId-$procurementTitle/PerformanceBond/$procurementId-$procurementTitle-PerformanceBond." . $performanceBondFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($performanceBondFile), 'private');
+                $hash = hash('sha256', file_get_contents($performanceBondFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Performance Bond',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $performanceBondFile->getSize(),
+                    'submission_date' => $submissionDate,
+                    'bond_amount' => $bondAmount,
+                ];
+            }
+            
+            // Get stream key
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+            
+            // Prepare document items for blockchain
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'phase_identifier' => 'Performance Bond', // Use current phase for documents
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => $docData,
+                ];
+            }
+            
+            // 1. Publish documents with current phase
+            $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+            
+            // 2. Log document upload event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Performance Bond', 
+                'Uploaded ' . count($metadataArray) . " finalized Performance Bond document", 
+                count($metadataArray), 
+                $userAddress, 
+                'document_upload', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // 3. Update state in current phase
+            $currentStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Performance Bond Recorded',
+                'phase_identifier' => 'Performance Bond', 
+                'timestamp' => $timestamp,
+                'user_address' => $userAddress,
+            ];
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $currentStateData);
+            
+            // 4. Now perform the phase transition with slight delay to ensure proper ordering
+            $newTimestamp = now()->addSecond()->toIso8601String();
+            
+            // 5. Transition to next phase with a new explicit state update
+            $transitionStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Performance Bond Recorded',
+                'phase_identifier' => 'Contract And PO', // Change to next phase
+                'timestamp' => $newTimestamp, // Use newer timestamp to ensure this becomes the latest state
+                'user_address' => $userAddress,
+            ];
+            
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $transitionStateData);
+            
+            // 6. Log the phase transition event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Contract And PO', // Use the destination phase
+                'Proceeding to Contract And PO phase after recording Performance Bond', 
+                0, 
+                $userAddress, 
+                'phase_transition', 
+                'workflow', 
+                'info', 
+                $newTimestamp
+            );
+            
+            Log::info('Phase transition completed', [
+                'procurement_id' => $procurementId,
+                'from_phase' => 'Performance Bond',
+                'to_phase' => 'Contract And PO',
+                'current_state' => 'Performance Bond Recorded'
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'Performance Bond document uploaded successfully. Proceeding to Contract And PO phase.'
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error uploading Performance Bond document', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to upload Performance Bond document: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show the Contract and PO document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showContractPOUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct phase and state
+            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
+            $currentState = $latestState['data']['current_state'] ?? '';
+            
+            Log::info('Showing Contract and PO upload form', [
+                'procurement_id' => $id,
+                'phase_identifier' => $phaseIdentifier,
+                'current_state' => $currentState
+            ]);
+            
+            if ($phaseIdentifier !== 'Contract And PO' || $currentState !== 'Performance Bond Recorded') {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not eligible for Contract and PO document upload');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+            ];
+            
+            // Render the Contract and PO upload component
+            return Inertia::render('bac-secretariat/procurement-phase/contract-po-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load Contract and PO upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading Contract and PO upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload Contract and PO documents.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function uploadContractPODocuments(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $contractFile = $request->file('contract_file');
+        $poFile = $request->file('po_file');
+        $signingDate = $request->input('signing_date');
+        $timestamp = now()->toIso8601String();
+        
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            $metadataArray = [];
+            
+            // Process Contract file
+            if ($contractFile) {
+                $fileKey = "$procurementId-$procurementTitle/ContractPO/$procurementId-$procurementTitle-Contract." . $contractFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($contractFile), 'private');
+                $hash = hash('sha256', file_get_contents($contractFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Contract',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $contractFile->getSize(),
+                    'signing_date' => $signingDate,
+                ];
+            }
+            
+            // Process Purchase Order file
+            if ($poFile) {
+                $fileKey = "$procurementId-$procurementTitle/ContractPO/$procurementId-$procurementTitle-PurchaseOrder." . $poFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($poFile), 'private');
+                $hash = hash('sha256', file_get_contents($poFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'PO',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $poFile->getSize(),
+                    'signing_date' => $signingDate,
+                ];
+            }
+            
+            // Get stream key
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+            
+            // Prepare document items for blockchain
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'phase_identifier' => 'Contract And PO',
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => $docData,
+                ];
+            }
+            
+            // 1. Publish documents with current phase
+            $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+            
+            // 2. Log document upload event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Contract And PO', 
+                'Uploaded ' . count($metadataArray) . " finalized contract and PO documents", 
+                count($metadataArray), 
+                $userAddress, 
+                'document_upload', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // 3. Update state in current phase
+            $currentStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Contract And PO Recorded',
+                'phase_identifier' => 'Contract And PO', 
+                'timestamp' => $timestamp,
+                'user_address' => $userAddress,
+            ];
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $currentStateData);
+            
+            // 4. Now perform the phase transition with slight delay to ensure proper ordering
+            $newTimestamp = now()->addSecond()->toIso8601String();
+            
+            // 5. Transition to next phase with a new explicit state update
+            $transitionStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Contract And PO Recorded',
+                'phase_identifier' => 'Notice To Proceed', // Change to next phase
+                'timestamp' => $newTimestamp, // Use newer timestamp to ensure this becomes the latest state
+                'user_address' => $userAddress,
+            ];
+            
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $transitionStateData);
+            
+            // 6. Log the phase transition event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Notice To Proceed', // Use the destination phase
+                'Proceeding to Notice To Proceed phase after recording Contract and PO', 
+                0, 
+                $userAddress, 
+                'phase_transition', 
+                'workflow', 
+                'info', 
+                $newTimestamp
+            );
+            
+            Log::info('Phase transition completed', [
+                'procurement_id' => $procurementId,
+                'from_phase' => 'Contract And PO',
+                'to_phase' => 'Notice To Proceed',
+                'current_state' => 'Contract And PO Recorded'
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'Contract and PO documents uploaded successfully. Proceeding to Notice To Proceed phase.'
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error uploading Contract and PO documents', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to upload Contract and PO documents: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show the Notice to Proceed document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showNTPUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct phase and state
+            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
+            $currentState = $latestState['data']['current_state'] ?? '';
+            
+            Log::info('Showing Notice to Proceed upload form', [
+                'procurement_id' => $id,
+                'phase_identifier' => $phaseIdentifier,
+                'current_state' => $currentState
+            ]);
+            
+            if ($phaseIdentifier !== 'Notice To Proceed' || $currentState !== 'Contract And PO Recorded') {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not eligible for Notice to Proceed document upload');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+            ];
+            
+            // Render the NTP upload component
+            return Inertia::render('bac-secretariat/procurement-phase/ntp-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load Notice to Proceed upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading Notice to Proceed upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload Notice to Proceed document.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function uploadNTPDocument(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $ntpFile = $request->file('ntp_file');
+        $issuanceDate = $request->input('issuance_date');
+        $timestamp = now()->toIso8601String();
+        
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            $metadataArray = [];
+            
+            // Process NTP file
+            if ($ntpFile) {
+                $fileKey = "$procurementId-$procurementTitle/NTP/$procurementId-$procurementTitle-NTP." . $ntpFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($ntpFile), 'private');
+                $hash = hash('sha256', file_get_contents($ntpFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Notice to Proceed',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $ntpFile->getSize(),
+                    'issuance_date' => $issuanceDate,
+                ];
+            }
+            
+            // Get stream key
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+            
+            // Prepare document items for blockchain
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'phase_identifier' => 'Notice To Proceed',
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => $docData,
+                ];
+            }
+            
+            // 1. Publish documents with current phase
+            $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+            
+            // 2. Log document upload event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Notice To Proceed', 
+                'Uploaded ' . count($metadataArray) . " finalized NTP", 
+                count($metadataArray), 
+                $userAddress, 
+                'document_upload', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // 3. Update state in current phase
+            $currentStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'NTP Recorded',
+                'phase_identifier' => 'Notice To Proceed', 
+                'timestamp' => $timestamp,
+                'user_address' => $userAddress,
+            ];
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $currentStateData);
+            
+            // 4. Log publication event
+            $publicationTimestamp = now()->addSecond()->toIso8601String();
+            $this->logEvent(
+                $procurementId,
+                $procurementTitle,
+                'Notice To Proceed',
+                'Published NTP to PhilGEPS',
+                1,
+                $userAddress,
+                'publication',
+                'workflow',
+                'info',
+                $publicationTimestamp
+            );
+            
+            // 5. Now perform the phase transition with slight delay to ensure proper ordering
+            $newTimestamp = now()->addSeconds(2)->toIso8601String();
+            
+            // 6. Transition to next phase with a new explicit state update
+            $transitionStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'NTP Recorded',
+                'phase_identifier' => 'Monitoring', // Change to next phase
+                'timestamp' => $newTimestamp, // Use newer timestamp to ensure this becomes the latest state
+                'user_address' => $userAddress,
+            ];
+            
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $transitionStateData);
+            
+            // 7. Log the phase transition event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Monitoring', // Use the destination phase
+                'Proceeding to Monitoring phase after recording NTP', 
+                0, 
+                $userAddress, 
+                'phase_transition', 
+                'workflow', 
+                'info', 
+                $newTimestamp
+            );
+            
+            Log::info('Phase transition completed', [
+                'procurement_id' => $procurementId,
+                'from_phase' => 'Notice To Proceed',
+                'to_phase' => 'Monitoring',
+                'current_state' => 'NTP Recorded'
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'Notice to Proceed document uploaded and published successfully. Proceeding to Monitoring phase.'
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error uploading Notice to Proceed document', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to upload Notice to Proceed document: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show the Monitoring document upload form.
+     *
+     * @param string $id
+     * @return \Inertia\Response
+     */
+    public function showMonitoringUpload($id)
+    {
+        try {
+            // Get procurement details
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? ''
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($id) {
+                    return $mappedItem['procurementId'] === $id;
+                })
+                ->sortByDesc(function ($item) {
+                    return $item['data']['timestamp'] ?? '';
+                });
+
+            if ($procurementStates->isEmpty()) {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'Procurement not found');
+            }
+
+            $latestState = $procurementStates->first();
+            
+            // Check if the procurement is in the correct phase
+            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
+            
+            Log::info('Showing Monitoring upload form', [
+                'procurement_id' => $id,
+                'phase_identifier' => $phaseIdentifier
+            ]);
+            
+            if ($phaseIdentifier !== 'Monitoring') {
+                return redirect()->route('bac-secretariat.procurements-list.index')
+                    ->with('error', 'This procurement is not in the Monitoring phase');
+            }
+            
+            $procurement = [
+                'id' => $id,
+                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+            ];
+            
+            // Render the Monitoring upload component
+            return Inertia::render('bac-secretariat/procurement-phase/monitoring-upload', [
+                'procurement' => $procurement,
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Failed to load Monitoring upload form:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')
+                ->with('error', 'Error loading Monitoring upload form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload Monitoring document.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function uploadMonitoringDocument(Request $request)
+    {
+        $procurementId = $request->input('procurement_id');
+        $procurementTitle = $request->input('procurement_title');
+        $complianceFile = $request->file('compliance_file');
+        $reportDate = $request->input('report_date');
+        $reportNotes = $request->input('report_notes');
+        $timestamp = now()->toIso8601String();
+        
+        try {
+            $userAddress = $this->getUserBlockchainAddress();
+            $metadataArray = [];
+            
+            // Process compliance report file
+            if ($complianceFile) {
+                $fileKey = "$procurementId-$procurementTitle/Monitoring/$procurementId-$procurementTitle-ComplianceReport." . $complianceFile->getClientOriginalExtension();
+                Storage::disk('spaces')->put($fileKey, file_get_contents($complianceFile), 'private');
+                $hash = hash('sha256', file_get_contents($complianceFile->getRealPath()));
+                
+                $metadataArray[] = [
+                    'document_type' => 'Compliance Report',
+                    'hash' => $hash,
+                    'file_key' => $fileKey,
+                    'file_size' => $complianceFile->getSize(),
+                    'report_date' => $reportDate,
+                    'report_notes' => $reportNotes,
+                ];
+            }
+            
+            // Get stream key
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+            
+            // Prepare document items for blockchain
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'phase_identifier' => 'Monitoring',
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'phase_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => $docData,
+                ];
+            }
+            
+            // 1. Publish documents with current phase
+            $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
+            
+            // 2. Log document upload event
+            $this->logEvent(
+                $procurementId, 
+                $procurementTitle, 
+                'Monitoring', 
+                'Uploaded ' . count($metadataArray) . " finalized compliance report", 
+                count($metadataArray), 
+                $userAddress, 
+                'document_upload', 
+                'workflow', 
+                'info', 
+                $timestamp
+            );
+            
+            // 3. Update state to confirm monitoring state
+            $currentStateData = [
+                'procurement_id' => $procurementId,
+                'procurement_title' => $procurementTitle,
+                'current_state' => 'Monitoring',
+                'phase_identifier' => 'Monitoring', 
+                'timestamp' => $timestamp,
+                'user_address' => $userAddress,
+            ];
+            $this->multiChain->publishFrom($userAddress, self::STREAM_STATE, $streamKey, $currentStateData);
+            
+            Log::info('Monitoring document uploaded', [
+                'procurement_id' => $procurementId,
+                'document_count' => count($metadataArray)
+            ]);
+            
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'Compliance report uploaded successfully. Notifications sent to BAC Chairman and HOPE.'
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error uploading compliance report', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to upload compliance report: ' . $e->getMessage()
             ]);
         }
     }
