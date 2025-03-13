@@ -77,29 +77,29 @@ export function ProcurementDetailsStep({
               </Alert>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Procurement ID */}
-              <div className="space-y-4 border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-4">
+              <div className="space-y-4 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-card p-6 transition-all hover:shadow-md">
                 <FormField
                   control={form.control}
                   name="procurement_id"
                   rules={{ required: "Procurement ID is required" }}
                   render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <FormLabel className="flex items-center text-base">
-                          <span>Procurement ID</span>
-                          <Badge variant="outline" className="ml-2 text-xs">Required</Badge>
+                    <FormItem className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <FormLabel className="flex items-center gap-2 text-base font-medium">
+                          Procurement ID
+                          <Badge variant="destructive" className="font-normal">Required</Badge>
                         </FormLabel>
                         {hasError('procurement_id') && (
-                          <p className="text-xs text-destructive">
+                          <span className="text-xs font-medium text-destructive">
                             {errors.procurement_id}
-                          </p>
+                          </span>
                         )}
                       </div>
 
                       <div className="relative">
-                        <FileText className="absolute left-3 h-4 w-4 text-muted-foreground top-3" />
+                        <FileText className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <FormControl>
                           <Input
                             {...field}
@@ -111,8 +111,12 @@ export function ProcurementDetailsStep({
                               setShowValidationSummary(false);
                             }}
                             placeholder="Enter procurement ID (e.g. PR-2023-001)"
-                            className="pl-10"
-                            required
+                            className={`pl-10 ${hasError('procurement_id')
+                              ? 'border-destructive focus-visible:ring-destructive'
+                              : getFieldStatus('procurement_id') === 'valid'
+                                ? 'border-green-500 dark:border-green-600'
+                                : ''
+                              }`}
                           />
                         </FormControl>
                         {getFieldStatus('procurement_id') === 'valid' && (
@@ -121,16 +125,16 @@ export function ProcurementDetailsStep({
                       </div>
 
                       <TooltipProvider>
-                        <Tooltip delayDuration={300}>
+                        <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-help">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                               <HelpCircle className="h-3.5 w-3.5 text-primary" />
-                              <span>Unique identifier for tracking (Required)</span>
+                              <span>Unique identifier for tracking</span>
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent side="bottom" align="center">
-                            <p className="text-sm font-medium">Procurement ID</p>
-                            <p className="text-xs">The unique identifier for this procurement request.</p>
+                          <TooltipContent side="bottom" className="max-w-xs">
+                            <p className="font-medium">Procurement ID</p>
+                            <p className="text-xs opacity-90">The unique identifier used to track this procurement request in the system.</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -140,27 +144,27 @@ export function ProcurementDetailsStep({
               </div>
 
               {/* Procurement Title */}
-              <div className="space-y-4 border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-4">
+              <div className="space-y-4 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-card p-6 transition-all hover:shadow-md">
                 <FormField
                   control={form.control}
                   name="procurement_title"
                   rules={{ required: "Procurement Title is required" }}
                   render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <FormLabel className="flex items-center text-base">
-                          <span>Procurement Title</span>
-                          <Badge variant="outline" className="ml-2 text-xs">Required</Badge>
+                    <FormItem className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <FormLabel className="flex items-center gap-2 text-base font-medium">
+                          Procurement Title
+                          <Badge variant="destructive" className="font-normal">Required</Badge>
                         </FormLabel>
                         {hasError('procurement_title') && (
-                          <p className="text-xs text-destructive">
+                          <span className="text-xs font-medium text-destructive">
                             {errors.procurement_title}
-                          </p>
+                          </span>
                         )}
                       </div>
 
                       <div className="relative">
-                        <Tag className="absolute left-3.5 h-4.5 w-4.5 text-gray-500 dark:text-gray-400 top-3" />
+                        <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <FormControl>
                           <div className="relative">
                             <Input
@@ -173,22 +177,21 @@ export function ProcurementDetailsStep({
                                 setShowValidationSummary(false);
                               }}
                               placeholder="Enter descriptive title for this procurement"
-                              className={`pl-10 py-2.5 transition-all duration-200 shadow-sm rounded-lg text-base ${hasError('procurement_title')
-                                ? 'border-red-300 dark:border-red-800 focus-visible:ring-red-500'
-                                : data.procurement_title?.length > 0
-                                  ? 'border-green-300 dark:border-green-800/60'
-                                  : 'border-gray-200 dark:border-gray-700 focus-visible:ring-blue-400'
+                              className={`pl-10 ${hasError('procurement_title')
+                                ? 'border-destructive focus-visible:ring-destructive'
+                                : getFieldStatus('procurement_title') === 'valid'
+                                  ? 'border-green-500 dark:border-green-600'
+                                  : ''
                                 }`}
-                              required
                             />
-                            {data.procurement_title?.length > 0 && (
+                            {data.procurement_title && (
                               <button
                                 type="button"
                                 onClick={() => {
                                   handleFieldChange('procurement_title', '');
-                                  field.onChange({ target: { value: '' } });
+                                  field.onChange('');
                                 }}
-                                className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                                className="absolute right-10 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
                                 aria-label="Clear procurement title"
                               >
                                 <XCircle className="h-4 w-4" />
@@ -197,25 +200,21 @@ export function ProcurementDetailsStep({
                           </div>
                         </FormControl>
                         {getFieldStatus('procurement_title') === 'valid' && (
-                          <CheckCircle2 className="absolute right-3.5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-green-500" />
+                          <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
                         )}
                       </div>
 
                       <TooltipProvider>
-                        <Tooltip delayDuration={300}>
+                        <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-help">
-                              <HelpCircle className="h-3.5 w-3.5 text-blue-500" />
-                              <span>Descriptive title for the procurement (Required)</span>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <HelpCircle className="h-3.5 w-3.5 text-primary" />
+                              <span>Descriptive title for the procurement</span>
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent
-                            side="bottom"
-                            align="center"
-                            className="bg-blue-50 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 border-blue-100 dark:border-blue-800 text-sm font-medium px-3 py-2 shadow-lg"
-                          >
-                            <p className="text-sm font-medium">Procurement Title</p>
-                            <p className="text-xs">A descriptive title that clearly identifies what is being procured.</p>
+                          <TooltipContent side="bottom" className="max-w-xs">
+                            <p className="font-medium">Procurement Title</p>
+                            <p className="text-xs opacity-90">A clear and descriptive title that identifies the purpose of this procurement request.</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

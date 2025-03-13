@@ -1,3 +1,4 @@
+import React from 'react';
 import { ClipboardList, FileCheck, Files, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -55,55 +56,72 @@ export function StepIndicator({
   const completionPercentage = Math.round((completedSteps / steps.length) * 100);
 
   return (
-    <div className="w-full mb-6">
-      {/* Overall progress indicator (optional) */}
+    <div className="w-full max-w-4xl mx-auto mb-8 px-6">
       {showPercentage && (
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">
+        <div className="flex items-center justify-between mb-8 bg-muted/20 p-5 rounded-xl shadow-sm backdrop-blur-sm">
+          <span className="text-sm font-semibold flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-primary/90" />
             Completion Progress
           </span>
-          <span className="text-sm font-semibold text-primary">
-            {completionPercentage}%
-          </span>
+          <div className="flex items-center gap-4">
+            <div className="w-48 h-2.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-700 ease-out"
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+            <span className="text-sm font-bold text-primary min-w-[3ch] tabular-nums">
+              {completionPercentage}%
+            </span>
+          </div>
         </div>
       )}
 
       <nav aria-label="Progress indicator" className="mx-auto">
-        <ol role="list" className="flex justify-between items-center gap-2">
-          {steps.map((step, index) => {
-            const isActive = step.id === currentStep;
-            
-            return (
-              <li key={step.id} className={cn(
-                "flex-1 relative",
-                index !== steps.length - 1 ? "after:content-[''] after:absolute after:top-1/2 after:w-full after:h-0.5 after:bg-muted after:-translate-y-1/2 after:left-1/2 after:z-0" : ""
-              )}>
-                <div className="relative flex flex-col items-center group">
-                  <span className="flex items-center justify-center w-10 h-10 rounded-full z-10 bg-background border text-muted-foreground">
-                    {step.isComplete ? (
-                      <CheckCircle2 className="w-5 h-5 text-primary" />
-                    ) : (
-                      isActive ? (
-                        <span className="w-2.5 h-2.5 bg-primary rounded-full" />
-                      ) : (
-                        <step.icon className="w-5 h-5" />
-                      )
-                    )}
-                  </span>
-                  
-                  <div className="mt-2 text-center">
-                    <div className="text-xs font-medium">
-                      {step.name}
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground hidden md:block">
-                      {step.description}
-                    </div>
+        <div className="flex justify-between items-center">
+          {steps.map((step, index) => (
+            <React.Fragment key={step.id}>
+              <div className="flex flex-col items-center group relative">
+                <div className={cn(
+                  "flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300",
+                  "transform hover:scale-105 hover:shadow-lg",
+                  currentStep >= step.id
+                    ? "bg-primary border-primary/90 shadow-primary/20 shadow-lg"
+                    : "bg-background border-muted hover:border-primary/40 hover:bg-primary/5"
+                )}>
+                  {step.isComplete ? (
+                    <CheckCircle2 className="w-6 h-6 text-white animate-appearance-in" />
+                  ) : (
+                    <step.icon className={cn(
+                      "w-6 h-6",
+                      currentStep >= step.id ? "text-white" : "text-muted-foreground"
+                    )} />
+                  )}
+                </div>
+                <div className="mt-3 text-center">
+                  <div className={cn(
+                    "text-sm font-semibold tracking-tight transition-colors duration-300",
+                    currentStep >= step.id ? "text-primary" : "text-muted-foreground group-hover:text-primary/70"
+                  )}>
+                    {step.name}
+                  </div>
+                  <div className="mt-1.5 text-xs text-muted-foreground/80 hidden md:block max-w-[140px]">
+                    {step.description}
                   </div>
                 </div>
-              </li>
-            );
-          })}
-        </ol>
+              </div>
+
+              {index < steps.length - 1 && (
+                <div className="w-full mx-4">
+                  <div className={cn(
+                    "h-0.5 transition-all duration-500 ease-out",
+                    currentStep > step.id ? "bg-primary shadow-sm" : "bg-muted"
+                  )}></div>
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
       </nav>
     </div>
   );

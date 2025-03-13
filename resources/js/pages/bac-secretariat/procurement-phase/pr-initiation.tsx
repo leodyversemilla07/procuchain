@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
+import axios from 'axios'; // Add this import
 import { FormProvider, useForm as useReactHookForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import * as z from 'zod';
@@ -12,6 +13,7 @@ import { SupportingDocumentsStep } from '@/components/pr-initiation/steps/suppor
 import { FormSummary } from '@/components/pr-initiation/form-summary';
 import { FormNavigation } from '@/components/pr-initiation/form-navigation';
 import { BreadcrumbItem } from '@/types';
+import { PreProcurementModal } from '@/components/pre-procurement/pre-procurement-modal';
 
 interface SupportingFileMetadata {
     document_type: string;
@@ -148,6 +150,9 @@ export default function PRInitiationForm() {
     });
     const [isDragging, setIsDragging] = useState(false);
     const [showValidationSummary, setShowValidationSummary] = useState(false);
+    const [showPreProcurementModal, setShowPreProcurementModal] = useState(false);
+    const [showBidInvitationModal, setShowBidInvitationModal] = useState(false);
+    const [submittedProcurement, setSubmittedProcurement] = useState<{ id: string, title: string } | null>(null);
 
     const [submissionDate, setSubmissionDate] = useState<Date | undefined>(() => {
         try {
@@ -317,10 +322,65 @@ export default function PRInitiationForm() {
                 }
             });
 
-            router.post('/bac-secretariat/publish-pr-initiation', formData, {
-                forceFormData: true,
-            });
+            // Use axios instead of router.post to prevent automatic redirection
+            axios.post('/bac-secretariat/publish-pr-initiation', formData)
+                .then(response => {
+                    if (response.data.success) {
+                        // Store procurement info for modals
+                        setSubmittedProcurement({
+                            id: response.data.procurementId,
+                            title: response.data.procurementTitle
+                        });
+
+                        // Show pre-procurement modal after successful PR submission
+                        setShowPreProcurementModal(true);
+                    } else {
+                        // Handle unexpected success=false
+                        console.error('Error in PR initiation:', response.data);
+                        alert('An error occurred while submitting the procurement request.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error in PR initiation:', error);
+                    alert('An error occurred while submitting the procurement request: ' +
+                        (error.response?.data?.errorMessage || 'Unknown error'));
+                });
         })(e);
+    };
+
+    // Handle phase transitions
+    const handlePreProcurementComplete = (nextPhase?: string, conferenceHeld?: boolean) => {
+        setShowPreProcurementModal(false);
+
+        // If conference was held, redirect to procurement list where they can upload documents
+        if (conferenceHeld === true) {
+            router.visit('/bac-secretariat/procurements-list', {
+                method: 'get',
+                preserveState: false
+            });
+            return;
+        }
+
+        // If the next phase is Bid Invitation (when conference was not held), show that modal
+        if (nextPhase === 'Bid Invitation') {
+            setShowBidInvitationModal(true);
+        } else {
+            // Otherwise redirect to the procurement list
+            router.visit('/bac-secretariat/procurements-list', {
+                method: 'get',
+                preserveState: false
+            });
+        }
+    };
+
+    const handleBidInvitationComplete = (nextPhase?: string) => {
+        setShowBidInvitationModal(false);
+
+        // Redirect to the procurement list after bid invitation is completed
+        router.visit('/bac-secretariat/procurements-list', {
+            method: 'get',
+            preserveState: false
+        });
     };
 
     // Form validation
@@ -340,7 +400,6 @@ export default function PRInitiationForm() {
     const validateStep = (step: number): boolean => {
         clearErrors();
         let isValid = true;
-
         if (step === 1) {
             if (!data.procurement_id) {
                 setError('procurement_id', 'Procurement ID is required');
@@ -351,8 +410,7 @@ export default function PRInitiationForm() {
                 isValid = false;
             }
             setFormCompletion(prev => ({ ...prev, details: isValid }));
-        }
-        else if (step === 2) {
+        } else if (step === 2) {
             if (!data.pr_file) {
                 setError('pr_file', 'PR File is required');
                 isValid = false;
@@ -370,8 +428,7 @@ export default function PRInitiationForm() {
                 isValid = false;
             }
             setFormCompletion(prev => ({ ...prev, prDocument: isValid }));
-        }
-        else if (step === 3) {
+        } else if (step === 3) {
             // Only validate if there are supporting files
             if (data.supporting_files.length > 0) {
                 data.supporting_files.forEach((file, index) => {
@@ -421,7 +478,6 @@ export default function PRInitiationForm() {
     const handlePrevStep = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         e.stopPropagation();
-
         setCurrentStep(Math.max(1, currentStep - 1));
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -549,7 +605,18 @@ export default function PRInitiationForm() {
                                         if (key === 'pr_document_file') {
                                             setData('pr_file', value);
                                         } else if (key === 'pr_document_metadata') {
-                                            setData('pr_metadata', value);
+                                            if (!data.pr_metadata.submission_date) {
+                                                // Set default submission date to now when not already set
+                                                const now = new Date();
+                                                const formattedDate = format(now, 'yyyy-MM-dd');
+                                                setData('pr_metadata', {
+                                                    ...value,
+                                                    submission_date: formattedDate
+                                                });
+                                                handleDateChange(now);
+                                            } else {
+                                                setData('pr_metadata', value);
+                                            }
                                         } else {
                                             setData(key as any, value);
                                         }
@@ -557,7 +624,7 @@ export default function PRInitiationForm() {
                                     errors={errors as Record<string, string>}
                                     isDragging={isDragging}
                                     hasError={hasError}
-                                    submissionDate={submissionDate}
+                                    submissionDate={submissionDate || new Date()}
                                     handleDateChange={handleDateChange}
                                     handleDragEnter={handleDragEnter}
                                     handleDragLeave={handleDragLeave}
@@ -573,15 +640,34 @@ export default function PRInitiationForm() {
                                             ...data,
                                             supporting_metadata: Object.fromEntries(
                                                 data.supporting_metadata.map((meta, index) => {
-                                                    // Safely convert submission_date to Date object if it's a string
-                                                    let submissionDate;
+                                                    const now = new Date();
+                                                    const formattedNow = format(now, 'yyyy-MM-dd');
+
+                                                    // Set submission date to now if not already set
+                                                    if (!meta.submission_date) {
+                                                        handleSupportingMetadataChange(index, 'submission_date', formattedNow);
+                                                        handleSupportingDateChange(index, now);
+                                                    }
+
+                                                    let submissionDate = now;
                                                     try {
                                                         if (meta.submission_date && typeof meta.submission_date === 'string') {
-                                                            submissionDate = parse(meta.submission_date, 'yyyy-MM-dd', new Date());
+                                                            const parsed = parse(meta.submission_date, 'yyyy-MM-dd', new Date());
+                                                            if (parsed && !isNaN(parsed.getTime())) {
+                                                                submissionDate = parsed;
+                                                            } else {
+                                                                // If parsing fails, use current date
+                                                                submissionDate = now;
+                                                                handleSupportingMetadataChange(index, 'submission_date', formattedNow);
+                                                                handleSupportingDateChange(index, now);
+                                                            }
                                                         }
                                                     } catch (error) {
                                                         console.error('Error parsing supporting document date:', error);
-                                                        submissionDate = undefined;
+                                                        // On error, use current date
+                                                        submissionDate = now;
+                                                        handleSupportingMetadataChange(index, 'submission_date', formattedNow);
+                                                        handleSupportingDateChange(index, now);
                                                     }
 
                                                     return [
@@ -648,6 +734,19 @@ export default function PRInitiationForm() {
                     </form>
                 </FormProvider>
             </div>
+
+            {/* Pre-Procurement Modal */}
+            {showPreProcurementModal && submittedProcurement && (
+                <PreProcurementModal
+                    open={showPreProcurementModal}
+                    onOpenChange={(open) => {
+                        if (!open) handlePreProcurementComplete();
+                    }}
+                    procurementId={submittedProcurement.id}
+                    procurementTitle={submittedProcurement.title}
+                    onComplete={handlePreProcurementComplete}
+                />
+            )}
         </AppLayout>
     );
 }

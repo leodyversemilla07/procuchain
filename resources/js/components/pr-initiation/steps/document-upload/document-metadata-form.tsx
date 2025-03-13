@@ -45,7 +45,7 @@ export function DocumentMetadataForm({
                         <div className="flex justify-between items-center">
                             <Label htmlFor="document_type" className="flex items-center">
                                 <span>Document Type</span>
-                                <Badge variant="outline" className="ml-2 text-xs">Required</Badge>
+                                <Badge variant="destructive" className="ml-2 text-xs">Required</Badge>
                             </Label>
                             {hasError('pr_metadata.document_type') && (
                                 <p className="text-xs text-destructive">
@@ -53,8 +53,8 @@ export function DocumentMetadataForm({
                                 </p>
                             )}
                         </div>
-                        <div className="relative">
-                            <FileUp className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <div className="relative flex items-center">
+                            <FileUp className="absolute left-3 h-4 w-4 text-muted-foreground" />
                             <Input
                                 id="document_type"
                                 placeholder="Enter document type"
@@ -70,7 +70,7 @@ export function DocumentMetadataForm({
                         <div className="flex justify-between items-center">
                             <Label htmlFor="municipal_offices" className="flex items-center">
                                 <span>Municipal Office</span>
-                                <Badge variant="outline" className="ml-2 text-xs">Required</Badge>
+                                <Badge variant="destructive" className="ml-2 text-xs">Required</Badge>
                             </Label>
                             {hasError('pr_metadata.municipal_offices') && (
                                 <p className="text-xs text-destructive">
@@ -78,22 +78,22 @@ export function DocumentMetadataForm({
                                 </p>
                             )}
                         </div>
-                        <div className="relative">
-                            <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
-                            <Select
-                                value={metadata.municipal_offices || ''}
-                                onValueChange={(value) => updateMetadata('municipal_offices', value)}
-                            >
-                                <SelectTrigger className="pl-10">
+                        <Select
+                            value={metadata.municipal_offices || ''}
+                            onValueChange={(value) => updateMetadata('municipal_offices', value)}
+                        >
+                            <SelectTrigger className="w-full">
+                                <div className="flex items-center gap-2">
+                                    <Building2 className="h-4 w-4 text-muted-foreground" />
                                     <SelectValue placeholder="Select municipal office" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {MUNICIPAL_OFFICES.map((office) => (
-                                        <SelectItem key={office.value} value={office.value}>{office.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {MUNICIPAL_OFFICES.map((office) => (
+                                    <SelectItem key={office.value} value={office.value}>{office.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
@@ -104,7 +104,7 @@ export function DocumentMetadataForm({
                         <div className="flex justify-between items-center">
                             <Label htmlFor="submission_date" className="flex items-center">
                                 <span>Submission Date</span>
-                                <Badge variant="outline" className="ml-2 text-xs">Required</Badge>
+                                <Badge variant="destructive" className="ml-2 text-xs">Required</Badge>
                             </Label>
                             {hasError('pr_metadata.submission_date') && (
                                 <p className="text-xs text-destructive">
@@ -146,7 +146,7 @@ export function DocumentMetadataForm({
                         <div className="flex justify-between items-center">
                             <Label htmlFor="signatory_details" className="flex items-center">
                                 <span>Signatory Details</span>
-                                <Badge variant="outline" className="ml-2 text-xs">Required</Badge>
+                                <Badge variant="destructive" className="ml-2 text-xs">Required</Badge>
                             </Label>
                             {hasError('pr_metadata.signatory_details') && (
                                 <p className="text-xs text-destructive">
@@ -154,8 +154,8 @@ export function DocumentMetadataForm({
                                 </p>
                             )}
                         </div>
-                        <div className="relative">
-                            <User2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <div className="relative flex items-center">
+                            <User2 className="absolute left-3 h-4 w-4 text-muted-foreground" />
                             <Input
                                 id="signatory_details"
                                 placeholder="Name and position of signatory"

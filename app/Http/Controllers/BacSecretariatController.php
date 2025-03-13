@@ -20,6 +20,6 @@ class BacSecretariatController extends BaseController
 
     public function prInitiation()
     {
-        return Inertia::render('bac-secretariat/pr-initiation');
+        return Inertia::render('bac-secretariat/procurement-phase/pr-initiation');
     }
 }
