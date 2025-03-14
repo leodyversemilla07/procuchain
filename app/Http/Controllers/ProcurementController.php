@@ -191,6 +191,377 @@ class ProcurementController extends BaseController
         ]);
     }
 
+    /**
+     * Display a listing of all procurements.
+     *
+     * @return \Inertia\Response
+     */
+    public function index()
+    {
+        try {
+            // Get all states from the blockchain to find the latest state for each procurement
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Group by procurement ID to find the latest state for each
+            $procurementsByKey = collect($allStates)
+                ->map(function ($item) {
+                    // Parse the JSON data if it's in string format
+                    $data = $item['data'];
+                    return [
+                        'id' => $data['procurement_id'] ?? '',
+                        'title' => $data['procurement_title'] ?? '',
+                        'phase_identifier' => $data['phase_identifier'] ?? '',
+                        'current_state' => $data['current_state'] ?? '',
+                        'user_address' => $data['user_address'] ?? '',
+                        'timestamp' => $data['timestamp'] ?? '',
+                        // Using timestamp as lastUpdated for the UI
+                        'lastUpdated' => date('Y-m-d', strtotime($data['timestamp'] ?? 'now')),
+                        'procurement_id' => $data['procurement_id'] ?? '',
+                        'procurement_title' => $data['procurement_title'] ?? '',
+                        // This will be updated later after counting documents
+                        'documentCount' => 0
+                    ];
+                })
+                ->groupBy('id')
+                ->map(function ($group) {
+                    // Return only the latest state for each procurement ID
+                    return $group->sortByDesc('timestamp')->first();
+                })
+                ->values()
+                ->toArray(); // Convert to array before modifying elements
+
+            // Get document counts for each procurement - now working with a plain array
+            foreach ($procurementsByKey as $key => $procurement) {
+                $procId = $procurement['id'];
+                $procTitle = $procurement['title'];
+                $streamKey = $this->getStreamKey($procId, $procTitle);
+
+                // Count documents for this procurement
+                $documents = $this->multiChain->listStreamKeyItems(self::STREAM_DOCUMENTS, $streamKey);
+                $procurementsByKey[$key]['documentCount'] = count($documents);
+            }
+
+            // Return the data to the index page using Inertia
+            return Inertia::render('bac-secretariat/procurements-list', [
+                'procurements' => $procurementsByKey
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to retrieve procurements:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // If there's an error, we'll return an empty array to avoid breaking the frontend
+            return Inertia::render('bac-secretariat/procurements-list', [
+                'procurements' => [],
+                'error' => 'Failed to retrieve procurements: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function show($procurementId)
+    {
+        try {
+            // Get all states for this procurement ID to find the complete history
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Filter to get only states for this procurement
+            $procurementStates = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'item' => $item,
+                        'data' => $data,
+                        'procurementId' => $data['procurement_id'] ?? '',
+                        'timestamp' => $data['timestamp'] ?? '',
+                        'phase_identifier' => $data['phase_identifier'] ?? '',
+                        'current_state' => $data['current_state'] ?? '',
+                    ];
+                })
+                ->filter(function ($mappedItem) use ($procurementId) {
+                    return $mappedItem['procurementId'] === $procurementId;
+                })
+                ->sortByDesc('timestamp');
+
+            if ($procurementStates->isEmpty()) {
+                return Inertia::render('bac-secretariat/show', ['message' => 'Procurement not found']);
+            }
+
+            // Get the latest state
+            $latestState = $procurementStates->first();
+            $procurementTitle = $latestState['data']['procurement_title'] ?? '';
+            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
+
+            // Get documents for this procurement - increased limit to 1000 to ensure all documents are retrieved
+            $documents = $this->multiChain->listStreamKeyItems(self::STREAM_DOCUMENTS, $streamKey, 1000);
+
+            // Debug log for PR Initiation issues
+            Log::info("Found " . count($documents) . " documents for procurement $procurementId");
+
+            // Check for documents that might be PR Initiation but aren't properly tagged
+            $potentialPrDocs = collect($documents)->filter(function ($doc) {
+                $data = $doc['data'];
+                $docType = strtolower($data['document_type'] ?? '');
+                $fileKey = strtolower($data['file_key'] ?? '');
+
+                return (
+                    strpos($docType, 'purchase') !== false ||
+                    strpos($docType, 'pr') !== false ||
+                    strpos($fileKey, 'prinitiation') !== false ||
+                    strpos($fileKey, 'purchase') !== false
+                );
+            });
+
+            if ($potentialPrDocs->count() > 0) {
+                Log::info("Found {$potentialPrDocs->count()} potential PR documents", [
+                    'first_doc' => $potentialPrDocs->first()['data']
+                ]);
+            }
+
+            $parsedDocuments = collect($documents)->map(function ($doc) {
+                $data = $doc['data'];
+
+                // Generate spaces URL
+                $spaces_url = '';
+                if (isset($data['file_key'])) {
+                    $spaces_url = Storage::disk('spaces')->temporaryUrl($data['file_key'], now()->addMinutes(30));
+                }
+
+                // If phase_identifier is missing but looks like a PR document, tag it
+                $phase_identifier = $data['phase_identifier'] ?? '';
+                if (empty($phase_identifier)) {
+                    $docType = strtolower($data['document_type'] ?? '');
+                    $fileKey = strtolower($data['file_key'] ?? '');
+
+                    if (
+                        strpos($docType, 'purchase') !== false ||
+                        strpos($docType, 'pr') !== false ||
+                        strpos($fileKey, 'prinitiation') !== false ||
+                        strpos($fileKey, 'pr/') !== false ||
+                        strpos($fileKey, '/pr/') !== false ||
+                        strpos($fileKey, 'purchase') !== false
+                    ) {
+                        $phase_identifier = 'PR Initiation';
+                        Log::info("Auto-tagged document as PR Initiation", ['doc_type' => $data['document_type'], 'file_key' => $data['file_key']]);
+                    }
+                }
+
+                return [
+                    'procurement_id' => $data['procurement_id'] ?? '',
+                    'procurement_title' => $data['procurement_title'] ?? '',
+                    'user_address' => $data['user_address'] ?? '',
+                    'timestamp' => $data['timestamp'] ?? '',
+                    'phase_identifier' => $phase_identifier,
+                    'document_index' => $data['document_index'] ?? 0,
+                    'document_type' => $data['document_type'] ?? '',
+                    'hash' => $data['hash'] ?? '',
+                    'file_key' => $data['file_key'] ?? '',
+                    'file_size' => $data['file_size'] ?? 0,
+                    'phase_metadata' => $data['phase_metadata'] ?? [],
+                    'spaces_url' => $spaces_url,
+                    'formatted_date' => isset($data['timestamp']) ?
+                        date('M d, Y h:i A', strtotime($data['timestamp'])) : '',
+                ];
+            });
+
+            // Group documents by phase for easier navigation
+            $documentsByPhase = $parsedDocuments->groupBy('phase_identifier')->map(function ($docs) {
+                return $docs->sortByDesc('timestamp')->values();
+            })->toArray();
+
+            // Define the standard procurement phases in order
+            $procurementPhases = [
+                'PR Initiation',
+                'Pre-Procurement',
+                'Bid Invitation',
+                'Bid Opening',
+                'Bid Evaluation',
+                'Post-Qualification',
+                'BAC Resolution',
+                'Notice Of Award',
+                'Performance Bond',
+                'Contract And PO',
+                'Notice To Proceed',
+                'Monitoring'
+            ];
+
+            // Check if PR Initiation documents are missing but exist in procurement documents
+            // This addresses the case where documents might exist but aren't properly categorized
+            if (!isset($documentsByPhase['PR Initiation'])) {
+                $prDocs = $parsedDocuments->filter(function ($doc) {
+                    $docType = strtolower($doc['document_type'] ?? '');
+                    $fileKey = strtolower($doc['file_key'] ?? '');
+
+                    return (
+                        strpos($docType, 'purchase') !== false ||
+                        strpos($docType, 'pr') !== false ||
+                        strpos($docType, 'aip') !== false ||
+                        strpos($docType, 'certificate') !== false ||
+                        strpos($fileKey, 'prinitiation') !== false ||
+                        strpos($fileKey, '/pr/') !== false ||
+                        strpos($fileKey, 'purchase') !== false
+                    );
+                })->values()->toArray();
+
+                if (!empty($prDocs)) {
+                    $documentsByPhase['PR Initiation'] = $prDocs;
+                    Log::info("Added " . count($prDocs) . " PR Initiation documents that were not properly categorized");
+                }
+            }
+
+            // Ensure all phases are represented in documents_by_phase, even if empty
+            foreach ($procurementPhases as $phase) {
+                if (!isset($documentsByPhase[$phase])) {
+                    $documentsByPhase[$phase] = [];
+                }
+            }
+
+            // Get events for this procurement
+            $events = $this->multiChain->listStreamKeyItems(self::STREAM_EVENTS, $streamKey);
+            $parsedEvents = collect($events)->map(function ($event) {
+                $data = $event['data'];
+                return [
+                    'procurement_id' => $data['procurement_id'] ?? '',
+                    'procurement_title' => $data['procurement_title'] ?? '',
+                    'user_address' => $data['user_address'] ?? '',
+                    'timestamp' => $data['timestamp'] ?? '',
+                    'phase_identifier' => $data['phase_identifier'] ?? '',
+                    'event_type' => $data['event_type'] ?? '',
+                    'details' => $data['details'] ?? '',
+                    'category' => $data['category'] ?? '',
+                    'severity' => $data['severity'] ?? '',
+                    'document_count' => $data['document_count'] ?? 0,
+                    'formatted_date' => isset($data['timestamp']) ?
+                        date('M d, Y h:i A', strtotime($data['timestamp'])) : '',
+                ];
+            })->sortByDesc('timestamp')->values()->toArray();
+
+            // Group events by phase for better organization
+            $eventsByPhase = collect($parsedEvents)->groupBy('phase_identifier')->map(function ($events) {
+                return $events->values();
+            })->toArray();
+
+            // Create phase history by grouping states
+            $phaseHistory = $procurementStates->groupBy('phase_identifier')
+                ->map(function ($phaseStates) {
+                    return $phaseStates->sortBy('timestamp')->values();
+                })->toArray();
+
+            // Create a phase summary with status, dates, and counts
+            $phaseSummary = [];
+            foreach ($procurementPhases as $phase) {
+                // Fix: Ensure we always have a Collection, not an array
+                $phaseStates = collect($phaseHistory[$phase] ?? []);
+                $phaseDocuments = isset($documentsByPhase[$phase]) ? $documentsByPhase[$phase] : [];
+                $phaseEvents = isset($eventsByPhase[$phase]) ? $eventsByPhase[$phase] : [];
+
+                // Find the latest state for this phase
+                $latestPhaseState = $phaseStates->isEmpty() ? null : $phaseStates->sortByDesc('timestamp')->first();
+
+                // Determine if the phase was completed or skipped
+                $isCompleted = !empty($latestPhaseState);
+                $isSkipped = $isCompleted && strpos($latestPhaseState['current_state'], 'Skipped') !== false;
+
+                // Determine phase status
+                $status = 'Not Started';
+                if ($isSkipped) {
+                    $status = 'Skipped';
+                } elseif ($isCompleted) {
+                    // Check if this is the current phase
+                    if ($phase === $latestState['phase_identifier']) {
+                        $status = 'Current';
+                    } else {
+                        $status = 'Completed';
+                    }
+                } elseif (array_search($phase, $procurementPhases) < array_search($latestState['phase_identifier'], $procurementPhases)) {
+                    // If phase is before the current phase, it should be completed
+                    $status = 'Completed';
+                }
+
+                // Start and end dates
+                $startDate = $phaseStates->isEmpty() ? null :
+                    date('Y-m-d H:i:s', strtotime($phaseStates->first()['timestamp'] ?? 'now'));
+                $endDate = $phaseStates->isEmpty() ? null :
+                    date('Y-m-d H:i:s', strtotime($phaseStates->sortByDesc('timestamp')->first()['timestamp'] ?? 'now'));
+
+                $phaseSummary[$phase] = [
+                    'name' => $phase,
+                    'status' => $status,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'document_count' => count($phaseDocuments),
+                    'event_count' => count($phaseEvents),
+                    'latest_state' => $latestPhaseState ? $latestPhaseState['current_state'] : null,
+                ];
+            }
+
+            // Format state according to BlockchainProcurementState interface
+            $procurementState = [
+                'procurement_id' => $latestState['data']['procurement_id'] ?? '',
+                'procurement_title' => $latestState['data']['procurement_title'] ?? '',
+                'user_address' => $latestState['data']['user_address'] ?? '',
+                'timestamp' => $latestState['data']['timestamp'] ?? '',
+                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
+                'current_state' => $latestState['data']['current_state'] ?? '',
+                'formatted_date' => isset($latestState['data']['timestamp']) ?
+                    date('M d, Y h:i A', strtotime($latestState['data']['timestamp'])) : '',
+            ];
+
+            // Create a timeline of all state changes
+            $timeline = $procurementStates->map(function ($state) {
+                return [
+                    'phase' => $state['phase_identifier'],
+                    'state' => $state['current_state'],
+                    'timestamp' => $state['timestamp'],
+                    'formatted_date' => isset($state['timestamp']) ?
+                        date('M d, Y h:i A', strtotime($state['timestamp'])) : '',
+                ];
+            })->values()->toArray();
+
+            $procurement = [
+                'id' => $procurementId,
+                'title' => $procurementTitle,
+                'documents' => $parsedDocuments->toArray(),
+                'documents_by_phase' => $documentsByPhase,
+                'state' => $procurementState,
+                'events' => $parsedEvents,
+                'events_by_phase' => $eventsByPhase,
+                'phase_summary' => $phaseSummary,
+                'phase_history' => $phaseHistory,
+                'timeline' => $timeline,
+                'current_phase' => $latestState['phase_identifier'],
+                'phases' => $procurementPhases, // All possible phases in order
+            ];
+
+
+            // Log for debugging the phases
+            Log::info('Documents by phase in show method:', [
+                'phase_keys' => array_keys($documentsByPhase),
+                'pr_docs_count' => isset($documentsByPhase['PR Initiation']) ? count($documentsByPhase['PR Initiation']) : 0
+            ]);
+
+            // Return the data to the view
+            return Inertia::render('bac-secretariat/show', [
+                'procurement' => $procurement,
+                'now' => now()->toIso8601String(),
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to retrieve procurement:', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return Inertia::render('bac-secretariat/show', [
+                'error' => 'Failed to retrieve procurement: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+
+
     // Phase 1: PR Initiation
     public function publishPrInitiation(Request $request)
     {
@@ -649,576 +1020,6 @@ class ProcurementController extends BaseController
         }
     }
 
-    public function show(Request $request, $procurementId)
-    {
-        try {
-            // Get all states for this procurement ID to find the complete history
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'item' => $item,
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? '',
-                        'timestamp' => $data['timestamp'] ?? '',
-                        'phase_identifier' => $data['phase_identifier'] ?? '',
-                        'current_state' => $data['current_state'] ?? '',
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($procurementId) {
-                    return $mappedItem['procurementId'] === $procurementId;
-                })
-                ->sortByDesc('timestamp');
-
-            if ($procurementStates->isEmpty()) {
-                return Inertia::render('bac-secretariat/show', ['message' => 'Procurement not found']);
-            }
-
-            // Get the latest state
-            $latestState = $procurementStates->first();
-            $procurementTitle = $latestState['data']['procurement_title'] ?? '';
-            $streamKey = $this->getStreamKey($procurementId, $procurementTitle);
-
-            // Get documents for this procurement - increased limit to 1000 to ensure all documents are retrieved
-            $documents = $this->multiChain->listStreamKeyItems(self::STREAM_DOCUMENTS, $streamKey, 1000);
-            
-            // Debug log for PR Initiation issues
-            Log::info("Found " . count($documents) . " documents for procurement $procurementId");
-            
-            // Check for documents that might be PR Initiation but aren't properly tagged
-            $potentialPrDocs = collect($documents)->filter(function($doc) {
-                $data = $doc['data'];
-                $docType = strtolower($data['document_type'] ?? '');
-                $fileKey = strtolower($data['file_key'] ?? '');
-                
-                return (
-                    strpos($docType, 'purchase') !== false || 
-                    strpos($docType, 'pr') !== false ||
-                    strpos($fileKey, 'prinitiation') !== false ||
-                    strpos($fileKey, 'purchase') !== false
-                );
-            });
-            
-            if ($potentialPrDocs->count() > 0) {
-                Log::info("Found {$potentialPrDocs->count()} potential PR documents", [
-                    'first_doc' => $potentialPrDocs->first()['data']
-                ]);
-            }
-            
-            $parsedDocuments = collect($documents)->map(function ($doc) {
-                $data = $doc['data'];
-
-                // Generate spaces URL
-                $spaces_url = '';
-                if (isset($data['file_key'])) {
-                    $spaces_url = Storage::disk('spaces')->temporaryUrl($data['file_key'], now()->addMinutes(30));
-                }
-
-                // If phase_identifier is missing but looks like a PR document, tag it
-                $phase_identifier = $data['phase_identifier'] ?? '';
-                if (empty($phase_identifier)) {
-                    $docType = strtolower($data['document_type'] ?? '');
-                    $fileKey = strtolower($data['file_key'] ?? '');
-                    
-                    if (strpos($docType, 'purchase') !== false || 
-                        strpos($docType, 'pr') !== false ||
-                        strpos($fileKey, 'prinitiation') !== false ||
-                        strpos($fileKey, 'pr/') !== false ||
-                        strpos($fileKey, '/pr/') !== false ||
-                        strpos($fileKey, 'purchase') !== false) {
-                        $phase_identifier = 'PR Initiation';
-                        Log::info("Auto-tagged document as PR Initiation", ['doc_type' => $data['document_type'], 'file_key' => $data['file_key']]);
-                    }
-                }
-
-                return [
-                    'procurement_id' => $data['procurement_id'] ?? '',
-                    'procurement_title' => $data['procurement_title'] ?? '',
-                    'user_address' => $data['user_address'] ?? '',
-                    'timestamp' => $data['timestamp'] ?? '',
-                    'phase_identifier' => $phase_identifier,
-                    'document_index' => $data['document_index'] ?? 0,
-                    'document_type' => $data['document_type'] ?? '',
-                    'hash' => $data['hash'] ?? '',
-                    'file_key' => $data['file_key'] ?? '',
-                    'file_size' => $data['file_size'] ?? 0,
-                    'phase_metadata' => $data['phase_metadata'] ?? [],
-                    'spaces_url' => $spaces_url,
-                    'formatted_date' => isset($data['timestamp']) ?
-                        date('M d, Y h:i A', strtotime($data['timestamp'])) : '',
-                ];
-            });
-
-            // Group documents by phase for easier navigation
-            $documentsByPhase = $parsedDocuments->groupBy('phase_identifier')->map(function ($docs) {
-                return $docs->sortByDesc('timestamp')->values();
-            })->toArray();
-            
-            // Define the standard procurement phases in order
-            $procurementPhases = [
-                'PR Initiation',
-                'Pre-Procurement',
-                'Bid Invitation',
-                'Bid Opening',
-                'Bid Evaluation',
-                'Post-Qualification',
-                'BAC Resolution',
-                'Notice Of Award',
-                'Performance Bond',
-                'Contract And PO',
-                'Notice To Proceed',
-                'Monitoring'
-            ];
-            
-            // Check if PR Initiation documents are missing but exist in procurement documents
-            // This addresses the case where documents might exist but aren't properly categorized
-            if (!isset($documentsByPhase['PR Initiation'])) {
-                $prDocs = $parsedDocuments->filter(function($doc) {
-                    $docType = strtolower($doc['document_type'] ?? '');
-                    $fileKey = strtolower($doc['file_key'] ?? '');
-                    
-                    return (
-                        strpos($docType, 'purchase') !== false || 
-                        strpos($docType, 'pr') !== false ||
-                        strpos($docType, 'aip') !== false ||
-                        strpos($docType, 'certificate') !== false ||
-                        strpos($fileKey, 'prinitiation') !== false ||
-                        strpos($fileKey, '/pr/') !== false ||
-                        strpos($fileKey, 'purchase') !== false
-                    );
-                })->values()->toArray();
-                
-                if (!empty($prDocs)) {
-                    $documentsByPhase['PR Initiation'] = $prDocs;
-                    Log::info("Added " . count($prDocs) . " PR Initiation documents that were not properly categorized");
-                }
-            }
-            
-            // Ensure all phases are represented in documents_by_phase, even if empty
-            foreach ($procurementPhases as $phase) {
-                if (!isset($documentsByPhase[$phase])) {
-                    $documentsByPhase[$phase] = [];
-                }
-            }
-
-            // Get events for this procurement
-            $events = $this->multiChain->listStreamKeyItems(self::STREAM_EVENTS, $streamKey);
-            $parsedEvents = collect($events)->map(function ($event) {
-                $data = $event['data'];
-                return [
-                    'procurement_id' => $data['procurement_id'] ?? '',
-                    'procurement_title' => $data['procurement_title'] ?? '',
-                    'user_address' => $data['user_address'] ?? '',
-                    'timestamp' => $data['timestamp'] ?? '',
-                    'phase_identifier' => $data['phase_identifier'] ?? '',
-                    'event_type' => $data['event_type'] ?? '',
-                    'details' => $data['details'] ?? '',
-                    'category' => $data['category'] ?? '',
-                    'severity' => $data['severity'] ?? '',
-                    'document_count' => $data['document_count'] ?? 0,
-                    'formatted_date' => isset($data['timestamp']) ?
-                        date('M d, Y h:i A', strtotime($data['timestamp'])) : '',
-                ];
-            })->sortByDesc('timestamp')->values()->toArray();
-
-            // Group events by phase for better organization
-            $eventsByPhase = collect($parsedEvents)->groupBy('phase_identifier')->map(function ($events) {
-                return $events->values();
-            })->toArray();
-
-            // Create phase history by grouping states
-            $phaseHistory = $procurementStates->groupBy('phase_identifier')
-                ->map(function ($phaseStates) {
-                    return $phaseStates->sortBy('timestamp')->values();
-                })->toArray();
-
-            // Create a phase summary with status, dates, and counts
-            $phaseSummary = [];
-            foreach ($procurementPhases as $phase) {
-                // Fix: Ensure we always have a Collection, not an array
-                $phaseStates = collect($phaseHistory[$phase] ?? []);
-                $phaseDocuments = isset($documentsByPhase[$phase]) ? $documentsByPhase[$phase] : [];
-                $phaseEvents = isset($eventsByPhase[$phase]) ? $eventsByPhase[$phase] : [];
-
-                // Find the latest state for this phase
-                $latestPhaseState = $phaseStates->isEmpty() ? null : $phaseStates->sortByDesc('timestamp')->first();
-
-                // Determine if the phase was completed or skipped
-                $isCompleted = !empty($latestPhaseState);
-                $isSkipped = $isCompleted && strpos($latestPhaseState['current_state'], 'Skipped') !== false;
-
-                // Determine phase status
-                $status = 'Not Started';
-                if ($isSkipped) {
-                    $status = 'Skipped';
-                } elseif ($isCompleted) {
-                    // Check if this is the current phase
-                    if ($phase === $latestState['phase_identifier']) {
-                        $status = 'Current';
-                    } else {
-                        $status = 'Completed';
-                    }
-                } elseif (array_search($phase, $procurementPhases) < array_search($latestState['phase_identifier'], $procurementPhases)) {
-                    // If phase is before the current phase, it should be completed
-                    $status = 'Completed';
-                }
-
-                // Start and end dates
-                $startDate = $phaseStates->isEmpty() ? null :
-                    date('Y-m-d H:i:s', strtotime($phaseStates->first()['timestamp'] ?? 'now'));
-                $endDate = $phaseStates->isEmpty() ? null :
-                    date('Y-m-d H:i:s', strtotime($phaseStates->sortByDesc('timestamp')->first()['timestamp'] ?? 'now'));
-
-                $phaseSummary[$phase] = [
-                    'name' => $phase,
-                    'status' => $status,
-                    'start_date' => $startDate,
-                    'end_date' => $endDate,
-                    'document_count' => count($phaseDocuments),
-                    'event_count' => count($phaseEvents),
-                    'latest_state' => $latestPhaseState ? $latestPhaseState['current_state'] : null,
-                ];
-            }
-
-            // Format state according to BlockchainProcurementState interface
-            $procurementState = [
-                'procurement_id' => $latestState['data']['procurement_id'] ?? '',
-                'procurement_title' => $latestState['data']['procurement_title'] ?? '',
-                'user_address' => $latestState['data']['user_address'] ?? '',
-                'timestamp' => $latestState['data']['timestamp'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'formatted_date' => isset($latestState['data']['timestamp']) ?
-                    date('M d, Y h:i A', strtotime($latestState['data']['timestamp'])) : '',
-            ];
-
-            // Create a timeline of all state changes
-            $timeline = $procurementStates->map(function ($state) {
-                return [
-                    'phase' => $state['phase_identifier'],
-                    'state' => $state['current_state'],
-                    'timestamp' => $state['timestamp'],
-                    'formatted_date' => isset($state['timestamp']) ?
-                        date('M d, Y h:i A', strtotime($state['timestamp'])) : '',
-                ];
-            })->values()->toArray();
-
-            $procurement = [
-                'id' => $procurementId,
-                'title' => $procurementTitle,
-                'documents' => $parsedDocuments->toArray(),
-                'documents_by_phase' => $documentsByPhase,
-                'state' => $procurementState,
-                'events' => $parsedEvents,
-                'events_by_phase' => $eventsByPhase,
-                'phase_summary' => $phaseSummary,
-                'phase_history' => $phaseHistory,
-                'timeline' => $timeline,
-                'current_phase' => $latestState['phase_identifier'],
-                'phases' => $procurementPhases, // All possible phases in order
-            ];
-
-
-            // Log for debugging the phases
-            Log::info('Documents by phase in show method:', [
-                'phase_keys' => array_keys($documentsByPhase),
-                'pr_docs_count' => isset($documentsByPhase['PR Initiation']) ? count($documentsByPhase['PR Initiation']) : 0
-            ]);
-
-            // Return the data to the view
-            return Inertia::render('bac-secretariat/show', [
-                'procurement' => $procurement,
-                'now' => now()->toIso8601String(),
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to retrieve procurement:', [
-                'procurement_id' => $procurementId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return Inertia::render('bac-secretariat/show', [
-                'error' => 'Failed to retrieve procurement: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * Display a listing of all procurements.
-     *
-     * @return \Inertia\Response
-     */
-    public function index()
-    {
-        try {
-            // Get all states from the blockchain to find the latest state for each procurement
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Group by procurement ID to find the latest state for each
-            $procurementsByKey = collect($allStates)
-                ->map(function ($item) {
-                    // Parse the JSON data if it's in string format
-                    $data = $item['data'];
-                    return [
-                        'id' => $data['procurement_id'] ?? '',
-                        'title' => $data['procurement_title'] ?? '',
-                        'phase_identifier' => $data['phase_identifier'] ?? '',
-                        'current_state' => $data['current_state'] ?? '',
-                        'user_address' => $data['user_address'] ?? '',
-                        'timestamp' => $data['timestamp'] ?? '',
-                        // Using timestamp as lastUpdated for the UI
-                        'lastUpdated' => date('Y-m-d', strtotime($data['timestamp'] ?? 'now')),
-                        'procurement_id' => $data['procurement_id'] ?? '',
-                        'procurement_title' => $data['procurement_title'] ?? '',
-                        // This will be updated later after counting documents
-                        'documentCount' => 0
-                    ];
-                })
-                ->groupBy('id')
-                ->map(function ($group) {
-                    // Return only the latest state for each procurement ID
-                    return $group->sortByDesc('timestamp')->first();
-                })
-                ->values()
-                ->toArray(); // Convert to array before modifying elements
-
-            // Get document counts for each procurement - now working with a plain array
-            foreach ($procurementsByKey as $key => $procurement) {
-                $procId = $procurement['id'];
-                $procTitle = $procurement['title'];
-                $streamKey = $this->getStreamKey($procId, $procTitle);
-
-                // Count documents for this procurement
-                $documents = $this->multiChain->listStreamKeyItems(self::STREAM_DOCUMENTS, $streamKey);
-                $procurementsByKey[$key]['documentCount'] = count($documents);
-            }
-
-            // Return the data to the index page using Inertia
-            return Inertia::render('bac-secretariat/procurements-list', [
-                'procurements' => $procurementsByKey
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to retrieve procurements:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            // If there's an error, we'll return an empty array to avoid breaking the frontend
-            return Inertia::render('bac-secretariat/procurements-list', [
-                'procurements' => [],
-                'error' => 'Failed to retrieve procurements: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * Show the pre-procurement document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showPreProcurementUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct state
-            if ($latestState['data']['current_state'] !== 'Pre-Procurement Conference Held') {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not eligible for pre-procurement document upload');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-            ];
-
-            // Fix: Use the correct component path - adjust to match the actual location of your component
-            return Inertia::render('bac-secretariat/procurement-phase/pre-procurement-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load pre-procurement upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading pre-procurement upload form: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Show the bid invitation document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showBidInvitationUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct phase and state
-            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
-            $currentState = $latestState['data']['current_state'] ?? '';
-
-            if (
-                $phaseIdentifier !== 'Bid Invitation' ||
-                ($currentState !== 'Pre-Procurement Skipped' && $currentState !== 'Pre-Procurement Completed')
-            ) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not eligible for bid invitation document upload');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-            ];
-
-            // Ensure we're using the correct component path
-            return Inertia::render('bac-secretariat/procurement-phase/bid-invitation-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load bid invitation upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading bid invitation upload form: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Show the bid submission document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showBidSubmissionUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct phase and state
-            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
-            $currentState = $latestState['data']['current_state'] ?? '';
-
-            if ($phaseIdentifier !== 'Bid Opening' || $currentState !== 'Bid Invitation Published') {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not eligible for bid submission and opening');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-            ];
-
-            // Ensure we're using the correct component path
-            return Inertia::render('bac-secretariat/procurement-phase/bid-submission-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load bid submission upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading bid submission upload form: ' . $e->getMessage());
-        }
-    }
-
     /**
      * Upload bid submission documents.
      *
@@ -1371,74 +1172,6 @@ class ProcurementController extends BaseController
             return redirect()->back()->withErrors([
                 'error' => 'Failed to upload bid documents: ' . $e->getMessage()
             ]);
-        }
-    }
-
-    /**
-     * Show the bid evaluation document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showBidEvaluationUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct phase and state
-            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
-            $currentState = $latestState['data']['current_state'] ?? '';
-
-            if ($phaseIdentifier !== 'Bid Evaluation' || $currentState !== 'Bids Opened') {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not eligible for bid evaluation upload');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-            ];
-
-            // Ensure we're using the correct component path
-            return Inertia::render('bac-secretariat/procurement-phase/bid-evaluation-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load bid evaluation upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading bid evaluation upload form: ' . $e->getMessage());
         }
     }
 
@@ -1614,80 +1347,6 @@ class ProcurementController extends BaseController
             return redirect()->back()->withErrors([
                 'error' => 'Failed to upload bid evaluation documents: ' . $e->getMessage()
             ]);
-        }
-    }
-
-    /**
-     * Show the post-qualification document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showPostQualificationUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct phase and state
-            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
-            $currentState = $latestState['data']['current_state'] ?? '';
-
-            Log::info('Showing Post-Qualification upload form', [
-                'procurement_id' => $id,
-                'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
-            ]);
-
-            if ($phaseIdentifier !== 'Post-Qualification' || $currentState !== 'Bids Evaluated') {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not eligible for post-qualification document upload');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-            ];
-
-            // Render the post-qualification upload component
-            return Inertia::render('bac-secretariat/procurement-phase/post-qualification-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load post-qualification upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading post-qualification upload form: ' . $e->getMessage());
         }
     }
 
@@ -1890,80 +1549,6 @@ class ProcurementController extends BaseController
     }
 
     /**
-     * Show the BAC Resolution document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showBacResolutionUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct phase and state
-            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
-            $currentState = $latestState['data']['current_state'] ?? '';
-
-            Log::info('Showing BAC Resolution upload form', [
-                'procurement_id' => $id,
-                'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
-            ]);
-
-            if ($phaseIdentifier !== 'BAC Resolution' || $currentState !== 'Post-Qualification Verified') {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not eligible for BAC Resolution document upload');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-            ];
-
-            // Render the BAC Resolution upload component
-            return Inertia::render('bac-secretariat/procurement-phase/bac-resolution-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load BAC Resolution upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading BAC Resolution upload form: ' . $e->getMessage());
-        }
-    }
-
-    /**
      * Upload BAC Resolution document.
      *
      * @param Request $request
@@ -2101,80 +1686,6 @@ class ProcurementController extends BaseController
             return redirect()->back()->withErrors([
                 'error' => 'Failed to upload BAC Resolution document: ' . $e->getMessage()
             ]);
-        }
-    }
-
-    /**
-     * Show the Notice of Award document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showNoaUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct phase and state
-            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
-            $currentState = $latestState['data']['current_state'] ?? '';
-
-            Log::info('Showing Notice of Award upload form', [
-                'procurement_id' => $id,
-                'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
-            ]);
-
-            if ($phaseIdentifier !== 'Notice Of Award' || $currentState !== 'Resolution Recorded') {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not eligible for Notice of Award document upload');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-            ];
-
-            // Render the NOA upload component
-            return Inertia::render('bac-secretariat/procurement-phase/noa-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load Notice of Award upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Notice of Award upload form: ' . $e->getMessage());
         }
     }
 
@@ -2335,80 +1846,6 @@ class ProcurementController extends BaseController
     }
 
     /**
-     * Show the Performance Bond document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showPerformanceBondUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct phase and state
-            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
-            $currentState = $latestState['data']['current_state'] ?? '';
-
-            Log::info('Showing Performance Bond upload form', [
-                'procurement_id' => $id,
-                'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
-            ]);
-
-            if ($phaseIdentifier !== 'Performance Bond' || $currentState !== 'Awarded') {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not eligible for Performance Bond document upload');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-            ];
-
-            // Render the Performance Bond upload component
-            return Inertia::render('bac-secretariat/procurement-phase/performance-bond-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load Performance Bond upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Performance Bond upload form: ' . $e->getMessage());
-        }
-    }
-
-    /**
      * Upload Performance Bond document.
      *
      * @param Request $request
@@ -2549,79 +1986,7 @@ class ProcurementController extends BaseController
         }
     }
 
-    /**
-     * Show the Contract and PO document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showContractPOUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
 
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct phase and state
-            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
-            $currentState = $latestState['data']['current_state'] ?? '';
-
-            Log::info('Showing Contract and PO upload form', [
-                'procurement_id' => $id,
-                'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
-            ]);
-
-            if ($phaseIdentifier !== 'Contract And PO' || $currentState !== 'Performance Bond Recorded') {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not eligible for Contract and PO document upload');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-            ];
-
-            // Render the Contract and PO upload component
-            return Inertia::render('bac-secretariat/procurement-phase/contract-po-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load Contract and PO upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Contract and PO upload form: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Upload Contract and PO documents.
@@ -2778,79 +2143,7 @@ class ProcurementController extends BaseController
         }
     }
 
-    /**
-     * Show the Notice to Proceed document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showNTPUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
 
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct phase and state
-            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
-            $currentState = $latestState['data']['current_state'] ?? '';
-
-            Log::info('Showing Notice to Proceed upload form', [
-                'procurement_id' => $id,
-                'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
-            ]);
-
-            if ($phaseIdentifier !== 'Notice To Proceed' || $currentState !== 'Contract And PO Recorded') {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not eligible for Notice to Proceed document upload');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-            ];
-
-            // Render the NTP upload component
-            return Inertia::render('bac-secretariat/procurement-phase/ntp-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load Notice to Proceed upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Notice to Proceed upload form: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Upload Notice to Proceed document.
@@ -3003,78 +2296,6 @@ class ProcurementController extends BaseController
             return redirect()->back()->withErrors([
                 'error' => 'Failed to upload Notice to Proceed document: ' . $e->getMessage()
             ]);
-        }
-    }
-
-    /**
-     * Show the Monitoring document upload form.
-     *
-     * @param string $id
-     * @return \Inertia\Response
-     */
-    public function showMonitoringUpload($id)
-    {
-        try {
-            // Get procurement details
-            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
-
-            // Filter to get only states for this procurement
-            $procurementStates = collect($allStates)
-                ->map(function ($item) {
-                    $data = $item['data'];
-                    return [
-                        'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
-                    ];
-                })
-                ->filter(function ($mappedItem) use ($id) {
-                    return $mappedItem['procurementId'] === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['timestamp'] ?? '';
-                });
-
-            if ($procurementStates->isEmpty()) {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'Procurement not found');
-            }
-
-            $latestState = $procurementStates->first();
-
-            // Check if the procurement is in the correct phase
-            $phaseIdentifier = $latestState['data']['phase_identifier'] ?? '';
-
-            Log::info('Showing Monitoring upload form', [
-                'procurement_id' => $id,
-                'phase_identifier' => $phaseIdentifier
-            ]);
-
-            if ($phaseIdentifier !== 'Monitoring') {
-                return redirect()->route('bac-secretariat.procurements-list.index')
-                    ->with('error', 'This procurement is not in the Monitoring phase');
-            }
-
-            $procurement = [
-                'id' => $id,
-                'title' => $latestState['data']['procurement_title'] ?? 'Unknown',
-                'current_state' => $latestState['data']['current_state'] ?? '',
-                'phase_identifier' => $latestState['data']['phase_identifier'] ?? '',
-            ];
-
-            // Render the Monitoring upload component
-            return Inertia::render('bac-secretariat/procurement-phase/monitoring-upload', [
-                'procurement' => $procurement,
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to load Monitoring upload form:', [
-                'procurement_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Monitoring upload form: ' . $e->getMessage());
         }
     }
 

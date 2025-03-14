@@ -25,31 +25,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('bac-secretariat/dashboard', [BacSecretariatController::class, 'index'])
             ->name('bac-secretariat.dashboard');
 
-        Route::get('bac-secretariat/procurement/pr-initiation', [BacSecretariatController::class, 'prInitiation'])
-            ->name('bac-secretariat.procurement.pr-initiation');
-
-        Route::post('bac-secretariat/publish-pr-initiation', [ProcurementController::class, 'publishPrInitiation'])
-            ->name('publish-pr-initiation');
-
         Route::get('bac-secretariat/procurements-list', [ProcurementController::class, 'index'])
             ->name('bac-secretariat.procurements-list.index');
 
         Route::get('bac-secretariat/procurements-list/{id}', [ProcurementController::class, 'show'])
             ->name('bac-secretariat.procurements.show');
 
+
+
+        Route::get('bac-secretariat/procurement/pr-initiation', [BacSecretariatController::class, 'prInitiation'])
+            ->name('bac-secretariat.procurement.pr-initiation');
+
+        Route::post('bac-secretariat/publish-pr-initiation', [ProcurementController::class, 'publishPrInitiation'])
+            ->name('publish-pr-initiation');
+
+        // Pre-Procurement Upload routes
+        Route::get('/bac-secretariat/pre-procurement-upload/{id}', [BacSecretariatController::class, 'showPreProcurementUpload'])
+            ->name('bac-secretariat.pre-procurement-upload');
+
         // Pre-Procurement Conference Decision route
         Route::post('/bac-secretariat/publish-pre-procurement-decision', [ProcurementController::class, 'publishPreProcurementDecision'])
             ->name('bac-secretariat.publish-pre-procurement-decision');
-
-        // Pre-Procurement Upload routes
-        Route::get('/bac-secretariat/pre-procurement-upload/{id}', [ProcurementController::class, 'showPreProcurementUpload'])
-            ->name('bac-secretariat.pre-procurement-upload');
 
         Route::post('/bac-secretariat/upload-pre-procurement-documents', [ProcurementController::class, 'uploadPreProcurementDocuments'])
             ->name('bac-secretariat.upload-pre-procurement-documents');
 
         // Bid Invitation Upload routes
-        Route::get('/bac-secretariat/bid-invitation-upload/{id}', [ProcurementController::class, 'showBidInvitationUpload'])
+        Route::get('/bac-secretariat/bid-invitation-upload/{id}', [BacSecretariatController::class, 'showBidInvitationUpload'])
             ->name('bac-secretariat.bid-invitation-upload');
 
         // Bid Invitation Publication route
@@ -57,71 +59,67 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('bac-secretariat.publish-bid-invitation');
 
         // Bid Submission and Opening routes
-        Route::get('/bac-secretariat/bid-submission-upload/{id}', [ProcurementController::class, 'showBidSubmissionUpload'])
+        Route::get('/bac-secretariat/bid-submission-upload/{id}', [BacSecretariatController::class, 'showBidSubmissionUpload'])
             ->name('bac-secretariat.bid-submission-upload');
 
         Route::post('/bac-secretariat/upload-bid-submission-documents', [ProcurementController::class, 'uploadBidSubmissionDocuments'])
             ->name('bac-secretariat.upload-bid-submission-documents');
 
         // Bid Evaluation routes
-        Route::get('/bac-secretariat/bid-evaluation-upload/{id}', [ProcurementController::class, 'showBidEvaluationUpload'])
+        Route::get('/bac-secretariat/bid-evaluation-upload/{id}', [BacSecretariatController::class, 'showBidEvaluationUpload'])
             ->name('bac-secretariat.bid-evaluation-upload');
 
         Route::post('/bac-secretariat/upload-bid-evaluation-documents', [ProcurementController::class, 'uploadBidEvaluationDocuments'])
             ->name('bac-secretariat.upload-bid-evaluation-documents');
 
         // Post-Qualification routes
-        Route::get('/bac-secretariat/post-qualification-upload/{id}', [ProcurementController::class, 'showPostQualificationUpload'])
+        Route::get('/bac-secretariat/post-qualification-upload/{id}', [BacSecretariatController::class, 'showPostQualificationUpload'])
             ->name('bac-secretariat.post-qualification-upload');
 
         Route::post('/bac-secretariat/upload-post-qualification-documents', [ProcurementController::class, 'uploadPostQualificationDocuments'])
             ->name('bac-secretariat.upload-post-qualification-documents');
 
         // BAC Resolution routes
-        Route::get('/bac-secretariat/bac-resolution-upload/{id}', [ProcurementController::class, 'showBacResolutionUpload'])
+        Route::get('/bac-secretariat/bac-resolution-upload/{id}', [BacSecretariatController::class, 'showBacResolutionUpload'])
             ->name('bac-secretariat.bac-resolution-upload');
 
         Route::post('/bac-secretariat/upload-bac-resolution-document', [ProcurementController::class, 'uploadBacResolutionDocument'])
             ->name('bac-secretariat.upload-bac-resolution-document');
 
         // Notice of Award routes
-        Route::get('/bac-secretariat/noa-upload/{id}', [ProcurementController::class, 'showNoaUpload'])
+        Route::get('/bac-secretariat/noa-upload/{id}', [BacSecretariatController::class, 'showNoaUpload'])
             ->name('bac-secretariat.noa-upload');
-    
+
         Route::post('/bac-secretariat/upload-noa-document', [ProcurementController::class, 'uploadNoaDocument'])
             ->name('bac-secretariat.upload-noa-document');
 
         // Performance Bond routes
-        Route::get('/bac-secretariat/performance-bond-upload/{id}', [ProcurementController::class, 'showPerformanceBondUpload'])
+        Route::get('/bac-secretariat/performance-bond-upload/{id}', [BacSecretariatController::class, 'showPerformanceBondUpload'])
             ->name('bac-secretariat.performance-bond-upload');
 
         Route::post('/bac-secretariat/upload-performance-bond-document', [ProcurementController::class, 'uploadPerformanceBondDocument'])
             ->name('bac-secretariat.upload-performance-bond-document');
 
         // Contract and PO routes
-        Route::get('/bac-secretariat/contract-po-upload/{id}', [ProcurementController::class, 'showContractPOUpload'])
+        Route::get('/bac-secretariat/contract-po-upload/{id}', [BacSecretariatController::class, 'showContractPOUpload'])
             ->name('bac-secretariat.contract-po-upload');
 
         Route::post('/bac-secretariat/upload-contract-po-documents', [ProcurementController::class, 'uploadContractPODocuments'])
             ->name('bac-secretariat.upload-contract-po-documents');
 
         // Notice to Proceed routes
-        Route::get('/bac-secretariat/ntp-upload/{id}', [ProcurementController::class, 'showNTPUpload'])
+        Route::get('/bac-secretariat/ntp-upload/{id}', [BacSecretariatController::class, 'showNTPUpload'])
             ->name('bac-secretariat.ntp-upload');
 
         Route::post('/bac-secretariat/upload-ntp-document', [ProcurementController::class, 'uploadNTPDocument'])
             ->name('bac-secretariat.upload-ntp-document');
 
         // Monitoring routes
-        Route::get('/bac-secretariat/monitoring-upload/{id}', [ProcurementController::class, 'showMonitoringUpload'])
+        Route::get('/bac-secretariat/monitoring-upload/{id}', [BacSecretariatController::class, 'showMonitoringUpload'])
             ->name('bac-secretariat.monitoring-upload');
 
         Route::post('/bac-secretariat/upload-monitoring-document', [ProcurementController::class, 'uploadMonitoringDocument'])
             ->name('bac-secretariat.upload-monitoring-document');
-
-        // Debug route for document categorization issues
-        Route::get('/bac-secretariat/debug-documents/{procurementId}', [BacSecretariatController::class, 'debugDocuments'])
-            ->name('bac-secretariat.debug-documents');
     });
 
     Route::middleware(['role:bac_chairman'])->group(function () {
