@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, FileText, Upload, AlertCircle, Plus, Trash2, Clock, DollarSign, User, FileUp, X, ClipboardList } from 'lucide-react';
+import { CalendarIcon, FileText, Upload, AlertCircle, Plus, Trash2, Clock, PhilippinePeso, User, FileUp, X, ClipboardList } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -368,7 +368,7 @@ export default function BidSubmissionUpload({ procurement, errors = {} }: BidSub
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="flex items-center">
-                                  <DollarSign className="h-4 w-4 mr-2" />
+                                  <PhilippinePeso className="h-4 w-4 mr-2" />
                                   Bid Value
                                 </FormLabel>
                                 <FormControl>

@@ -118,6 +118,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('/bac-secretariat/upload-monitoring-document', [ProcurementController::class, 'uploadMonitoringDocument'])
             ->name('bac-secretariat.upload-monitoring-document');
+
+        // Debug route for document categorization issues
+        Route::get('/bac-secretariat/debug-documents/{procurementId}', [BacSecretariatController::class, 'debugDocuments'])
+            ->name('bac-secretariat.debug-documents');
     });
 
     Route::middleware(['role:bac_chairman'])->group(function () {
