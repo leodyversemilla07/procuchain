@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\MultiChainService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
-use App\Services\MultiChainService;
 
 class ProcurementController extends BaseController
 {
@@ -31,7 +30,7 @@ class ProcurementController extends BaseController
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             Log::error('User not authenticated when trying to get blockchain address');
             throw new Exception('User must be logged in to perform this action');
         }
@@ -46,7 +45,7 @@ class ProcurementController extends BaseController
 
     private function getStreamKey($procurementId, $procurementTitle)
     {
-        return $procurementId . '-' . preg_replace('/[^a-zA-Z0-9-]/', '-', $procurementTitle);
+        return $procurementId.'-'.preg_replace('/[^a-zA-Z0-9-]/', '-', $procurementTitle);
     }
 
     private function publishDocuments($procurementId, $procurementTitle, $phaseIdentifier, $state, $metadataArray, $userAddress, $requiresManualPublish = false)
@@ -56,7 +55,7 @@ class ProcurementController extends BaseController
 
         try {
             if (empty($userAddress)) {
-                throw new Exception("Cannot publish documents: BAC secretariat blockchain address is not set");
+                throw new Exception('Cannot publish documents: BAC secretariat blockchain address is not set');
             }
 
             $documentItems = [];
@@ -82,12 +81,12 @@ class ProcurementController extends BaseController
             $this->multiChain->publishMultiFrom($userAddress, self::STREAM_DOCUMENTS, $documentItems);
 
             $this->updateState($procurementId, $procurementTitle, $state, $phaseIdentifier, $userAddress, $timestamp);
-            $this->logEvent($procurementId, $procurementTitle, $phaseIdentifier, 'Uploaded ' . count($metadataArray) . " finalized $phaseIdentifier documents", count($metadataArray), $userAddress, 'document_upload', 'workflow', 'info', $timestamp);
+            $this->logEvent($procurementId, $procurementTitle, $phaseIdentifier, 'Uploaded '.count($metadataArray)." finalized $phaseIdentifier documents", count($metadataArray), $userAddress, 'document_upload', 'workflow', 'info', $timestamp);
         } catch (Exception $e) {
             Log::error('Error publishing documents', [
                 'procurement_id' => $procurementId,
                 'error' => $e->getMessage(),
-                'user_address' => $userAddress
+                'user_address' => $userAddress,
             ]);
             throw $e;
         }
@@ -136,7 +135,7 @@ class ProcurementController extends BaseController
             'from_phase' => $fromPhase,
             'to_phase' => $toPhase,
             'from_state' => $fromState,
-            'to_state' => $toState
+            'to_state' => $toState,
         ]);
 
         $timestamp = now()->toIso8601String();
@@ -169,7 +168,7 @@ class ProcurementController extends BaseController
         Log::info('Phase transition completed', [
             'procurement_id' => $procurementId,
             'new_phase' => $toPhase,
-            'new_state' => $toState
+            'new_state' => $toState,
         ]);
     }
 
@@ -190,7 +189,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($prFile) {
-                $prFileKey = "$procurementId-$procurementTitle/PRInitiation/$procurementId-$procurementTitle-PurchaseRequest." . $prFile->getClientOriginalExtension();
+                $prFileKey = "$procurementId-$procurementTitle/PRInitiation/$procurementId-$procurementTitle-PurchaseRequest.".$prFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($prFileKey, file_get_contents($prFile), 'private');
                 $prHash = hash('sha256', file_get_contents($prFile->getRealPath()));
 
@@ -207,7 +206,7 @@ class ProcurementController extends BaseController
 
             foreach ($supportingFiles as $index => $file) {
                 $documentType = preg_replace('/[^a-zA-Z0-9-]/', '-', $supportingMetadata[$index]['document_type']);
-                $fileKey = "$procurementId-$procurementTitle/PRInitiation/$procurementId-$procurementTitle-supporting-$documentType-" . ($index + 1) . '.' . $file->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/PRInitiation/$procurementId-$procurementTitle-supporting-$documentType-".($index + 1).'.'.$file->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($file), 'private');
                 $hash = hash('sha256', file_get_contents($file->getRealPath()));
 
@@ -230,11 +229,11 @@ class ProcurementController extends BaseController
                 'procurementId' => $procurementId,
                 'procurementTitle' => $procurementTitle,
                 'documentCount' => count($metadataArray),
-                'timestamp' => $timestamp
+                'timestamp' => $timestamp,
             ]);
         } catch (Exception $e) {
             return redirect()->back()->withErrors([
-                'error' => 'Failed to publish documents: ' . $e->getMessage()
+                'error' => 'Failed to publish documents: '.$e->getMessage(),
             ]);
         }
     }
@@ -304,16 +303,16 @@ class ProcurementController extends BaseController
                 'nextPhase' => $nextPhase,
                 'procurementId' => $procurementId,
                 'procurementTitle' => $procurementTitle,
-                'documentsRequired' => $documentsRequired
+                'documentsRequired' => $documentsRequired,
             ]);
         } catch (Exception $e) {
             Log::error('Error processing pre-procurement decision', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to process pre-procurement decision: ' . $e->getMessage()
+                'error' => 'Failed to process pre-procurement decision: '.$e->getMessage(),
             ]);
         }
     }
@@ -333,7 +332,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($minutesFile) {
-                $fileKey = "$procurementId-$procurementTitle/PreProcurement/$procurementId-$procurementTitle-Minutes." . $minutesFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/PreProcurement/$procurementId-$procurementTitle-Minutes.".$minutesFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($minutesFile), 'private');
                 $hash = hash('sha256', file_get_contents($minutesFile->getRealPath()));
 
@@ -348,7 +347,7 @@ class ProcurementController extends BaseController
             }
 
             if ($attendanceFile) {
-                $fileKey = "$procurementId-$procurementTitle/PreProcurement/$procurementId-$procurementTitle-Attendance." . $attendanceFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/PreProcurement/$procurementId-$procurementTitle-Attendance.".$attendanceFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($attendanceFile), 'private');
                 $hash = hash('sha256', file_get_contents($attendanceFile->getRealPath()));
 
@@ -391,7 +390,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'Pre-Procurement',
-                'Uploaded ' . count($metadataArray) . " finalized Pre-Procurement documents",
+                'Uploaded '.count($metadataArray).' finalized Pre-Procurement documents',
                 count($metadataArray),
                 $userAddress,
                 'document_upload',
@@ -440,22 +439,22 @@ class ProcurementController extends BaseController
                 'procurement_id' => $procurementId,
                 'from_phase' => 'Pre-Procurement',
                 'to_phase' => 'Bid Invitation',
-                'current_state' => 'Pre-Procurement Completed'
+                'current_state' => 'Pre-Procurement Completed',
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')->with([
                 'success' => true,
-                'message' => 'Pre-procurement conference documents uploaded successfully. Proceeding to Bid Invitation phase.'
+                'message' => 'Pre-procurement conference documents uploaded successfully. Proceeding to Bid Invitation phase.',
             ]);
 
         } catch (Exception $e) {
             Log::error('Error uploading pre-procurement documents', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to upload pre-procurement documents: ' . $e->getMessage()
+                'error' => 'Failed to upload pre-procurement documents: '.$e->getMessage(),
             ]);
         }
     }
@@ -474,7 +473,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($bidInvitationFile) {
-                $fileKey = "$procurementId-$procurementTitle/BidInvitation/$procurementId-$procurementTitle-BidInvitation." . $bidInvitationFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/BidInvitation/$procurementId-$procurementTitle-BidInvitation.".$bidInvitationFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($bidInvitationFile), 'private');
                 $hash = hash('sha256', file_get_contents($bidInvitationFile->getRealPath()));
 
@@ -517,7 +516,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'Bid Invitation',
-                'Uploaded ' . count($metadataArray) . " finalized Bid Invitation documents",
+                'Uploaded '.count($metadataArray).' finalized Bid Invitation documents',
                 count($metadataArray),
                 $userAddress,
                 'document_upload',
@@ -579,22 +578,22 @@ class ProcurementController extends BaseController
                 'procurement_id' => $procurementId,
                 'from_phase' => 'Bid Invitation',
                 'to_phase' => 'Bid Opening',
-                'current_state' => 'Bid Invitation Published'
+                'current_state' => 'Bid Invitation Published',
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')->with([
                 'success' => true,
-                'message' => 'Bid invitation published successfully. Proceeding to Bid Opening phase.'
+                'message' => 'Bid invitation published successfully. Proceeding to Bid Opening phase.',
             ]);
 
         } catch (Exception $e) {
             Log::error('Error publishing bid invitation', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to publish bid invitation: ' . $e->getMessage()
+                'error' => 'Failed to publish bid invitation: '.$e->getMessage(),
             ]);
         }
     }
@@ -618,7 +617,7 @@ class ProcurementController extends BaseController
                     $bidValue = $biddersData[$index]['bid_value'] ?? '0';
 
                     $safeNamePart = preg_replace('/[^a-zA-Z0-9-]/', '-', $bidderName);
-                    $fileKey = "$procurementId-$procurementTitle/BidOpening/$procurementId-$procurementTitle-Bid-$safeNamePart." . $file->getClientOriginalExtension();
+                    $fileKey = "$procurementId-$procurementTitle/BidOpening/$procurementId-$procurementTitle-Bid-$safeNamePart.".$file->getClientOriginalExtension();
 
                     Storage::disk('spaces')->put($fileKey, file_get_contents($file), 'private');
                     $hash = hash('sha256', file_get_contents($file->getRealPath()));
@@ -665,7 +664,7 @@ class ProcurementController extends BaseController
                     $procurementId,
                     $procurementTitle,
                     'Bid Opening',
-                    'Uploaded ' . count($metadataArray) . " finalized Bid Opening documents",
+                    'Uploaded '.count($metadataArray).' finalized Bid Opening documents',
                     count($metadataArray),
                     $userAddress,
                     'document_upload',
@@ -714,27 +713,27 @@ class ProcurementController extends BaseController
                     'procurement_id' => $procurementId,
                     'from_phase' => 'Bid Opening',
                     'to_phase' => 'Bid Evaluation',
-                    'current_state' => 'Bids Opened'
+                    'current_state' => 'Bids Opened',
                 ]);
 
                 return redirect()->route('bac-secretariat.procurements-list.index')->with([
                     'success' => true,
-                    'message' => count($metadataArray) . ' bid documents uploaded successfully. Proceeding to Bid Evaluation phase.'
+                    'message' => count($metadataArray).' bid documents uploaded successfully. Proceeding to Bid Evaluation phase.',
                 ]);
             } else {
                 return redirect()->back()->withErrors([
-                    'error' => 'No valid bid documents were provided.'
+                    'error' => 'No valid bid documents were provided.',
                 ]);
             }
 
         } catch (Exception $e) {
             Log::error('Error uploading bid documents', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to upload bid documents: ' . $e->getMessage()
+                'error' => 'Failed to upload bid documents: '.$e->getMessage(),
             ]);
         }
     }
@@ -754,7 +753,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($summaryFile) {
-                $fileKey = "$procurementId-$procurementTitle/BidEvaluation/$procurementId-$procurementTitle-EvaluationSummary." . $summaryFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/BidEvaluation/$procurementId-$procurementTitle-EvaluationSummary.".$summaryFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($summaryFile), 'private');
                 $hash = hash('sha256', file_get_contents($summaryFile->getRealPath()));
 
@@ -769,7 +768,7 @@ class ProcurementController extends BaseController
             }
 
             if ($abstractFile) {
-                $fileKey = "$procurementId-$procurementTitle/BidEvaluation/$procurementId-$procurementTitle-Abstract." . $abstractFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/BidEvaluation/$procurementId-$procurementTitle-Abstract.".$abstractFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($abstractFile), 'private');
                 $hash = hash('sha256', file_get_contents($abstractFile->getRealPath()));
 
@@ -812,7 +811,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'Bid Evaluation',
-                'Uploaded ' . count($metadataArray) . " finalized Bid Evaluation documents",
+                'Uploaded '.count($metadataArray).' finalized Bid Evaluation documents',
                 count($metadataArray),
                 $userAddress,
                 'document_upload',
@@ -835,7 +834,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'Bid Evaluation',
-                'Completed bid evaluation with ' . count($metadataArray) . " documents",
+                'Completed bid evaluation with '.count($metadataArray).' documents',
                 count($metadataArray),
                 $userAddress,
                 'state_change',
@@ -876,22 +875,22 @@ class ProcurementController extends BaseController
                 'procurement_id' => $procurementId,
                 'from_phase' => 'Bid Evaluation',
                 'to_phase' => 'Post-Qualification',
-                'current_state' => 'Bids Evaluated'
+                'current_state' => 'Bids Evaluated',
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')->with([
                 'success' => true,
-                'message' => 'Bid evaluation documents uploaded successfully. Proceeding to Post-Qualification phase.'
+                'message' => 'Bid evaluation documents uploaded successfully. Proceeding to Post-Qualification phase.',
             ]);
 
         } catch (Exception $e) {
             Log::error('Error uploading bid evaluation documents', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to upload bid evaluation documents: ' . $e->getMessage()
+                'error' => 'Failed to upload bid evaluation documents: '.$e->getMessage(),
             ]);
         }
     }
@@ -912,7 +911,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($taxReturnFile) {
-                $fileKey = "$procurementId-$procurementTitle/PostQualification/$procurementId-$procurementTitle-TaxReturn." . $taxReturnFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/PostQualification/$procurementId-$procurementTitle-TaxReturn.".$taxReturnFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($taxReturnFile), 'private');
                 $hash = hash('sha256', file_get_contents($taxReturnFile->getRealPath()));
 
@@ -927,7 +926,7 @@ class ProcurementController extends BaseController
             }
 
             if ($financialStatementFile) {
-                $fileKey = "$procurementId-$procurementTitle/PostQualification/$procurementId-$procurementTitle-FinancialStatement." . $financialStatementFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/PostQualification/$procurementId-$procurementTitle-FinancialStatement.".$financialStatementFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($financialStatementFile), 'private');
                 $hash = hash('sha256', file_get_contents($financialStatementFile->getRealPath()));
 
@@ -942,7 +941,7 @@ class ProcurementController extends BaseController
             }
 
             if ($verificationReportFile) {
-                $fileKey = "$procurementId-$procurementTitle/PostQualification/$procurementId-$procurementTitle-VerificationReport." . $verificationReportFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/PostQualification/$procurementId-$procurementTitle-VerificationReport.".$verificationReportFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($verificationReportFile), 'private');
                 $hash = hash('sha256', file_get_contents($verificationReportFile->getRealPath()));
 
@@ -985,7 +984,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'Post-Qualification',
-                'Uploaded ' . count($metadataArray) . " finalized Post-Qualification documents (" . $outcome . ")",
+                'Uploaded '.count($metadataArray).' finalized Post-Qualification documents ('.$outcome.')',
                 count($metadataArray),
                 $userAddress,
                 'document_upload',
@@ -1036,7 +1035,7 @@ class ProcurementController extends BaseController
                     'procurement_id' => $procurementId,
                     'from_phase' => 'Post-Qualification',
                     'to_phase' => 'BAC Resolution',
-                    'current_state' => $verifiedState
+                    'current_state' => $verifiedState,
                 ]);
             } else {
                 $this->logEvent(
@@ -1054,23 +1053,23 @@ class ProcurementController extends BaseController
 
                 Log::info('Post-qualification failed', [
                     'procurement_id' => $procurementId,
-                    'outcome' => $outcome
+                    'outcome' => $outcome,
                 ]);
             }
 
             return redirect()->route('bac-secretariat.procurements-list.index')->with([
                 'success' => true,
-                'message' => 'Post-qualification documents uploaded successfully with outcome: ' . $outcome
+                'message' => 'Post-qualification documents uploaded successfully with outcome: '.$outcome,
             ]);
 
         } catch (Exception $e) {
             Log::error('Error uploading post-qualification documents', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to upload post-qualification documents: ' . $e->getMessage()
+                'error' => 'Failed to upload post-qualification documents: '.$e->getMessage(),
             ]);
         }
     }
@@ -1089,7 +1088,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($bacResolutionFile) {
-                $fileKey = "$procurementId-$procurementTitle/BACResolution/$procurementId-$procurementTitle-BACResolution." . $bacResolutionFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/BACResolution/$procurementId-$procurementTitle-BACResolution.".$bacResolutionFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($bacResolutionFile), 'private');
                 $hash = hash('sha256', file_get_contents($bacResolutionFile->getRealPath()));
 
@@ -1132,7 +1131,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'BAC Resolution',
-                'Uploaded ' . count($metadataArray) . " finalized BAC Resolution document",
+                'Uploaded '.count($metadataArray).' finalized BAC Resolution document',
                 count($metadataArray),
                 $userAddress,
                 'document_upload',
@@ -1181,22 +1180,22 @@ class ProcurementController extends BaseController
                 'procurement_id' => $procurementId,
                 'from_phase' => 'BAC Resolution',
                 'to_phase' => 'Notice Of Award',
-                'current_state' => 'Resolution Recorded'
+                'current_state' => 'Resolution Recorded',
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')->with([
                 'success' => true,
-                'message' => 'BAC Resolution document uploaded successfully. Proceeding to Notice Of Award phase.'
+                'message' => 'BAC Resolution document uploaded successfully. Proceeding to Notice Of Award phase.',
             ]);
 
         } catch (Exception $e) {
             Log::error('Error uploading BAC Resolution document', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to upload BAC Resolution document: ' . $e->getMessage()
+                'error' => 'Failed to upload BAC Resolution document: '.$e->getMessage(),
             ]);
         }
     }
@@ -1215,7 +1214,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($noaFile) {
-                $fileKey = "$procurementId-$procurementTitle/NoticeOfAward/$procurementId-$procurementTitle-NOA." . $noaFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/NoticeOfAward/$procurementId-$procurementTitle-NOA.".$noaFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($noaFile), 'private');
                 $hash = hash('sha256', file_get_contents($noaFile->getRealPath()));
 
@@ -1258,7 +1257,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'Notice Of Award',
-                'Uploaded ' . count($metadataArray) . " finalized Notice of Award document",
+                'Uploaded '.count($metadataArray).' finalized Notice of Award document',
                 count($metadataArray),
                 $userAddress,
                 'document_upload',
@@ -1321,22 +1320,22 @@ class ProcurementController extends BaseController
                 'procurement_id' => $procurementId,
                 'from_phase' => 'Notice Of Award',
                 'to_phase' => 'Performance Bond',
-                'current_state' => 'Awarded'
+                'current_state' => 'Awarded',
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')->with([
                 'success' => true,
-                'message' => 'Notice of Award document uploaded and published successfully. Proceeding to Performance Bond phase.'
+                'message' => 'Notice of Award document uploaded and published successfully. Proceeding to Performance Bond phase.',
             ]);
 
         } catch (Exception $e) {
             Log::error('Error uploading Notice of Award document', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to upload Notice of Award document: ' . $e->getMessage()
+                'error' => 'Failed to upload Notice of Award document: '.$e->getMessage(),
             ]);
         }
     }
@@ -1355,7 +1354,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($performanceBondFile) {
-                $fileKey = "$procurementId-$procurementTitle/PerformanceBond/$procurementId-$procurementTitle-PerformanceBond." . $performanceBondFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/PerformanceBond/$procurementId-$procurementTitle-PerformanceBond.".$performanceBondFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($performanceBondFile), 'private');
                 $hash = hash('sha256', file_get_contents($performanceBondFile->getRealPath()));
 
@@ -1398,7 +1397,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'Performance Bond',
-                'Uploaded ' . count($metadataArray) . " finalized Performance Bond document",
+                'Uploaded '.count($metadataArray).' finalized Performance Bond document',
                 count($metadataArray),
                 $userAddress,
                 'document_upload',
@@ -1447,22 +1446,22 @@ class ProcurementController extends BaseController
                 'procurement_id' => $procurementId,
                 'from_phase' => 'Performance Bond',
                 'to_phase' => 'Contract And PO',
-                'current_state' => 'Performance Bond Recorded'
+                'current_state' => 'Performance Bond Recorded',
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')->with([
                 'success' => true,
-                'message' => 'Performance Bond document uploaded successfully. Proceeding to Contract And PO phase.'
+                'message' => 'Performance Bond document uploaded successfully. Proceeding to Contract And PO phase.',
             ]);
 
         } catch (Exception $e) {
             Log::error('Error uploading Performance Bond document', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to upload Performance Bond document: ' . $e->getMessage()
+                'error' => 'Failed to upload Performance Bond document: '.$e->getMessage(),
             ]);
         }
     }
@@ -1481,7 +1480,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($contractFile) {
-                $fileKey = "$procurementId-$procurementTitle/ContractPO/$procurementId-$procurementTitle-Contract." . $contractFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/ContractPO/$procurementId-$procurementTitle-Contract.".$contractFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($contractFile), 'private');
                 $hash = hash('sha256', file_get_contents($contractFile->getRealPath()));
 
@@ -1495,7 +1494,7 @@ class ProcurementController extends BaseController
             }
 
             if ($poFile) {
-                $fileKey = "$procurementId-$procurementTitle/ContractPO/$procurementId-$procurementTitle-PurchaseOrder." . $poFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/ContractPO/$procurementId-$procurementTitle-PurchaseOrder.".$poFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($poFile), 'private');
                 $hash = hash('sha256', file_get_contents($poFile->getRealPath()));
 
@@ -1537,7 +1536,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'Contract And PO',
-                'Uploaded ' . count($metadataArray) . " finalized contract and PO documents",
+                'Uploaded '.count($metadataArray).' finalized contract and PO documents',
                 count($metadataArray),
                 $userAddress,
                 'document_upload',
@@ -1586,22 +1585,22 @@ class ProcurementController extends BaseController
                 'procurement_id' => $procurementId,
                 'from_phase' => 'Contract And PO',
                 'to_phase' => 'Notice To Proceed',
-                'current_state' => 'Contract And PO Recorded'
+                'current_state' => 'Contract And PO Recorded',
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')->with([
                 'success' => true,
-                'message' => 'Contract and PO documents uploaded successfully. Proceeding to Notice To Proceed phase.'
+                'message' => 'Contract and PO documents uploaded successfully. Proceeding to Notice To Proceed phase.',
             ]);
 
         } catch (Exception $e) {
             Log::error('Error uploading Contract and PO documents', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to upload Contract and PO documents: ' . $e->getMessage()
+                'error' => 'Failed to upload Contract and PO documents: '.$e->getMessage(),
             ]);
         }
     }
@@ -1619,7 +1618,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($ntpFile) {
-                $fileKey = "$procurementId-$procurementTitle/NTP/$procurementId-$procurementTitle-NTP." . $ntpFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/NTP/$procurementId-$procurementTitle-NTP.".$ntpFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($ntpFile), 'private');
                 $hash = hash('sha256', file_get_contents($ntpFile->getRealPath()));
 
@@ -1661,7 +1660,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'Notice To Proceed',
-                'Uploaded ' . count($metadataArray) . " finalized NTP",
+                'Uploaded '.count($metadataArray).' finalized NTP',
                 count($metadataArray),
                 $userAddress,
                 'document_upload',
@@ -1724,22 +1723,22 @@ class ProcurementController extends BaseController
                 'procurement_id' => $procurementId,
                 'from_phase' => 'Notice To Proceed',
                 'to_phase' => 'Monitoring',
-                'current_state' => 'NTP Recorded'
+                'current_state' => 'NTP Recorded',
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')->with([
                 'success' => true,
-                'message' => 'Notice to Proceed document uploaded and published successfully. Proceeding to Monitoring phase.'
+                'message' => 'Notice to Proceed document uploaded and published successfully. Proceeding to Monitoring phase.',
             ]);
 
         } catch (Exception $e) {
             Log::error('Error uploading Notice to Proceed document', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to upload Notice to Proceed document: ' . $e->getMessage()
+                'error' => 'Failed to upload Notice to Proceed document: '.$e->getMessage(),
             ]);
         }
     }
@@ -1758,7 +1757,7 @@ class ProcurementController extends BaseController
             $metadataArray = [];
 
             if ($complianceFile) {
-                $fileKey = "$procurementId-$procurementTitle/Monitoring/$procurementId-$procurementTitle-ComplianceReport." . $complianceFile->getClientOriginalExtension();
+                $fileKey = "$procurementId-$procurementTitle/Monitoring/$procurementId-$procurementTitle-ComplianceReport.".$complianceFile->getClientOriginalExtension();
                 Storage::disk('spaces')->put($fileKey, file_get_contents($complianceFile), 'private');
                 $hash = hash('sha256', file_get_contents($complianceFile->getRealPath()));
 
@@ -1801,7 +1800,7 @@ class ProcurementController extends BaseController
                 $procurementId,
                 $procurementTitle,
                 'Monitoring',
-                'Uploaded ' . count($metadataArray) . " finalized compliance report",
+                'Uploaded '.count($metadataArray).' finalized compliance report',
                 count($metadataArray),
                 $userAddress,
                 'document_upload',
@@ -1822,22 +1821,22 @@ class ProcurementController extends BaseController
 
             Log::info('Monitoring document uploaded', [
                 'procurement_id' => $procurementId,
-                'document_count' => count($metadataArray)
+                'document_count' => count($metadataArray),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')->with([
                 'success' => true,
-                'message' => 'Compliance report uploaded successfully. Notifications sent to BAC Chairman and HOPE.'
+                'message' => 'Compliance report uploaded successfully. Notifications sent to BAC Chairman and HOPE.',
             ]);
 
         } catch (Exception $e) {
             Log::error('Error uploading compliance report', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return redirect()->back()->withErrors([
-                'error' => 'Failed to upload compliance report: ' . $e->getMessage()
+                'error' => 'Failed to upload compliance report: '.$e->getMessage(),
             ]);
         }
     }

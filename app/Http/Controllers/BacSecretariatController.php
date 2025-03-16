@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\MultichainService;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
-use App\Services\MultichainService;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class BacSecretariatController extends BaseController
 {
@@ -33,7 +33,7 @@ class BacSecretariatController extends BaseController
 
     private function getStreamKey($procurementId, $procurementTitle)
     {
-        return $procurementId . '-' . preg_replace('/[^a-zA-Z0-9-]/', '-', $procurementTitle);
+        return $procurementId.'-'.preg_replace('/[^a-zA-Z0-9-]/', '-', $procurementTitle);
     }
 
     public function indexProcurementsList()
@@ -44,6 +44,7 @@ class BacSecretariatController extends BaseController
             $procurementsByKey = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'id' => $data['procurement_id'] ?? '',
                         'title' => $data['procurement_title'] ?? '',
@@ -54,7 +55,7 @@ class BacSecretariatController extends BaseController
                         'lastUpdated' => date('Y-m-d', strtotime($data['timestamp'] ?? 'now')),
                         'procurement_id' => $data['procurement_id'] ?? '',
                         'procurement_title' => $data['procurement_title'] ?? '',
-                        'documentCount' => 0
+                        'documentCount' => 0,
                     ];
                 })
                 ->groupBy('id')
@@ -75,18 +76,18 @@ class BacSecretariatController extends BaseController
             }
 
             return Inertia::render('bac-secretariat/procurements-list', [
-                'procurements' => $sortedProcurements
+                'procurements' => $sortedProcurements,
             ]);
 
         } catch (Exception $e) {
             Log::error('Failed to retrieve procurements:', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return Inertia::render('bac-secretariat/procurements-list', [
                 'procurements' => [],
-                'error' => 'Failed to retrieve procurements: ' . $e->getMessage()
+                'error' => 'Failed to retrieve procurements: '.$e->getMessage(),
             ]);
         }
     }
@@ -104,6 +105,7 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'item' => $item,
                         'data' => $data,
@@ -128,24 +130,23 @@ class BacSecretariatController extends BaseController
 
             $documents = $this->multiChain->listStreamKeyItems(self::STREAM_DOCUMENTS, $streamKey, 1000);
 
-            Log::info("Found " . count($documents) . " documents for procurement $procurementId");
+            Log::info('Found '.count($documents)." documents for procurement $procurementId");
 
             $potentialPrDocs = collect($documents)->filter(function ($doc) {
                 $data = $doc['data'];
                 $docType = strtolower($data['document_type'] ?? '');
                 $fileKey = strtolower($data['file_key'] ?? '');
 
-                return (
+                return
                     strpos($docType, 'purchase') !== false ||
                     strpos($docType, 'pr') !== false ||
                     strpos($fileKey, 'prinitiation') !== false ||
-                    strpos($fileKey, 'purchase') !== false
-                );
+                    strpos($fileKey, 'purchase') !== false;
             });
 
             if ($potentialPrDocs->count() > 0) {
                 Log::info("Found {$potentialPrDocs->count()} potential PR documents", [
-                    'first_doc' => $potentialPrDocs->first()['data']
+                    'first_doc' => $potentialPrDocs->first()['data'],
                 ]);
             }
 
@@ -171,7 +172,7 @@ class BacSecretariatController extends BaseController
                         strpos($fileKey, 'purchase') !== false
                     ) {
                         $phase_identifier = 'PR Initiation';
-                        Log::info("Auto-tagged document as PR Initiation", ['doc_type' => $data['document_type'], 'file_key' => $data['file_key']]);
+                        Log::info('Auto-tagged document as PR Initiation', ['doc_type' => $data['document_type'], 'file_key' => $data['file_key']]);
                     }
                 }
 
@@ -209,33 +210,32 @@ class BacSecretariatController extends BaseController
                 'Performance Bond',
                 'Contract And PO',
                 'Notice To Proceed',
-                'Monitoring'
+                'Monitoring',
             ];
 
-            if (!isset($documentsByPhase['PR Initiation'])) {
+            if (! isset($documentsByPhase['PR Initiation'])) {
                 $prDocs = $parsedDocuments->filter(function ($doc) {
                     $docType = strtolower($doc['document_type'] ?? '');
                     $fileKey = strtolower($doc['file_key'] ?? '');
 
-                    return (
+                    return
                         strpos($docType, 'purchase') !== false ||
                         strpos($docType, 'pr') !== false ||
                         strpos($docType, 'aip') !== false ||
                         strpos($docType, 'certificate') !== false ||
                         strpos($fileKey, 'prinitiation') !== false ||
                         strpos($fileKey, '/pr/') !== false ||
-                        strpos($fileKey, 'purchase') !== false
-                    );
+                        strpos($fileKey, 'purchase') !== false;
                 })->values()->toArray();
 
-                if (!empty($prDocs)) {
+                if (! empty($prDocs)) {
                     $documentsByPhase['PR Initiation'] = $prDocs;
-                    Log::info("Added " . count($prDocs) . " PR Initiation documents that were not properly categorized");
+                    Log::info('Added '.count($prDocs).' PR Initiation documents that were not properly categorized');
                 }
             }
 
             foreach ($procurementPhases as $phase) {
-                if (!isset($documentsByPhase[$phase])) {
+                if (! isset($documentsByPhase[$phase])) {
                     $documentsByPhase[$phase] = [];
                 }
             }
@@ -243,6 +243,7 @@ class BacSecretariatController extends BaseController
             $events = $this->multiChain->listStreamKeyItems(self::STREAM_EVENTS, $streamKey);
             $parsedEvents = collect($events)->map(function ($event) {
                 $data = $event['data'];
+
                 return [
                     'procurement_id' => $data['procurement_id'] ?? '',
                     'procurement_title' => $data['procurement_title'] ?? '',
@@ -276,7 +277,7 @@ class BacSecretariatController extends BaseController
 
                 $latestPhaseState = $phaseStates->isEmpty() ? null : $phaseStates->sortByDesc('timestamp')->first();
 
-                $isCompleted = !empty($latestPhaseState);
+                $isCompleted = ! empty($latestPhaseState);
                 $isSkipped = $isCompleted && strpos($latestPhaseState['current_state'], 'Skipped') !== false;
 
                 $status = 'Not Started';
@@ -346,7 +347,7 @@ class BacSecretariatController extends BaseController
 
             Log::info('Documents by phase in show method:', [
                 'phase_keys' => array_keys($documentsByPhase),
-                'pr_docs_count' => isset($documentsByPhase['PR Initiation']) ? count($documentsByPhase['PR Initiation']) : 0
+                'pr_docs_count' => isset($documentsByPhase['PR Initiation']) ? count($documentsByPhase['PR Initiation']) : 0,
             ]);
 
             return Inertia::render('bac-secretariat/show', [
@@ -358,11 +359,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to retrieve procurement:', [
                 'procurement_id' => $procurementId,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return Inertia::render('bac-secretariat/show', [
-                'error' => 'Failed to retrieve procurement: ' . $e->getMessage()
+                'error' => 'Failed to retrieve procurement: '.$e->getMessage(),
             ]);
         }
     }
@@ -375,9 +376,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -413,11 +415,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load pre-procurement upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading pre-procurement upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading pre-procurement upload form: '.$e->getMessage());
         }
     }
 
@@ -429,9 +431,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -474,11 +477,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load bid invitation upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading bid invitation upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading bid invitation upload form: '.$e->getMessage());
         }
     }
 
@@ -490,9 +493,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -532,11 +536,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load bid submission upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading bid submission upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading bid submission upload form: '.$e->getMessage());
         }
     }
 
@@ -548,9 +552,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -590,11 +595,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load bid evaluation upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading bid evaluation upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading bid evaluation upload form: '.$e->getMessage());
         }
     }
 
@@ -606,9 +611,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -631,7 +637,7 @@ class BacSecretariatController extends BaseController
             Log::info('Showing Post-Qualification upload form', [
                 'procurement_id' => $id,
                 'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
+                'current_state' => $currentState,
             ]);
 
             if ($phaseIdentifier !== 'Post-Qualification' || $currentState !== 'Bids Evaluated') {
@@ -654,11 +660,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load post-qualification upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading post-qualification upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading post-qualification upload form: '.$e->getMessage());
         }
     }
 
@@ -670,9 +676,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -695,7 +702,7 @@ class BacSecretariatController extends BaseController
             Log::info('Showing BAC Resolution upload form', [
                 'procurement_id' => $id,
                 'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
+                'current_state' => $currentState,
             ]);
 
             if ($phaseIdentifier !== 'BAC Resolution' || $currentState !== 'Post-Qualification Verified') {
@@ -718,11 +725,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load BAC Resolution upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading BAC Resolution upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading BAC Resolution upload form: '.$e->getMessage());
         }
     }
 
@@ -734,9 +741,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -759,7 +767,7 @@ class BacSecretariatController extends BaseController
             Log::info('Showing Notice of Award upload form', [
                 'procurement_id' => $id,
                 'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
+                'current_state' => $currentState,
             ]);
 
             if ($phaseIdentifier !== 'Notice Of Award' || $currentState !== 'Resolution Recorded') {
@@ -782,11 +790,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load Notice of Award upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Notice of Award upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading Notice of Award upload form: '.$e->getMessage());
         }
     }
 
@@ -798,9 +806,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -823,7 +832,7 @@ class BacSecretariatController extends BaseController
             Log::info('Showing Performance Bond upload form', [
                 'procurement_id' => $id,
                 'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
+                'current_state' => $currentState,
             ]);
 
             if ($phaseIdentifier !== 'Performance Bond' || $currentState !== 'Awarded') {
@@ -846,11 +855,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load Performance Bond upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Performance Bond upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading Performance Bond upload form: '.$e->getMessage());
         }
     }
 
@@ -862,9 +871,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -887,7 +897,7 @@ class BacSecretariatController extends BaseController
             Log::info('Showing Contract and PO upload form', [
                 'procurement_id' => $id,
                 'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
+                'current_state' => $currentState,
             ]);
 
             if ($phaseIdentifier !== 'Contract And PO' || $currentState !== 'Performance Bond Recorded') {
@@ -910,11 +920,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load Contract and PO upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Contract and PO upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading Contract and PO upload form: '.$e->getMessage());
         }
     }
 
@@ -926,9 +936,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -951,7 +962,7 @@ class BacSecretariatController extends BaseController
             Log::info('Showing Notice to Proceed upload form', [
                 'procurement_id' => $id,
                 'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
+                'current_state' => $currentState,
             ]);
 
             if ($phaseIdentifier !== 'Notice To Proceed' || $currentState !== 'Contract And PO Recorded') {
@@ -974,11 +985,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load Notice to Proceed upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Notice to Proceed upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading Notice to Proceed upload form: '.$e->getMessage());
         }
     }
 
@@ -990,9 +1001,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -1013,7 +1025,7 @@ class BacSecretariatController extends BaseController
 
             Log::info('Showing Monitoring upload form', [
                 'procurement_id' => $id,
-                'phase_identifier' => $phaseIdentifier
+                'phase_identifier' => $phaseIdentifier,
             ]);
 
             if ($phaseIdentifier !== 'Monitoring') {
@@ -1036,14 +1048,14 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load Monitoring upload form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Monitoring upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading Monitoring upload form: '.$e->getMessage());
         }
     }
-    
+
     public function showCompleteStatus($id)
     {
         try {
@@ -1052,9 +1064,10 @@ class BacSecretariatController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
-                        'procurementId' => $data['procurement_id'] ?? ''
+                        'procurementId' => $data['procurement_id'] ?? '',
                     ];
                 })
                 ->filter(function ($mappedItem) use ($id) {
@@ -1077,7 +1090,7 @@ class BacSecretariatController extends BaseController
             Log::info('Showing Complete Status form', [
                 'procurement_id' => $id,
                 'phase_identifier' => $phaseIdentifier,
-                'current_state' => $currentState
+                'current_state' => $currentState,
             ]);
 
             if ($phaseIdentifier !== 'Monitoring') {
@@ -1099,11 +1112,11 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to load Complete Status form:', [
                 'procurement_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Complete Status form: ' . $e->getMessage());
+                ->with('error', 'Error loading Complete Status form: '.$e->getMessage());
         }
     }
 }

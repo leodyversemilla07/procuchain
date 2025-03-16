@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller as BaseController;
-use Inertia\Inertia;
 use App\Services\MultiChainService;
+use Exception;
+use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Exception;
+use Inertia\Inertia;
 
 class HopeController extends BaseController
 {
@@ -34,7 +33,7 @@ class HopeController extends BaseController
 
     private function getStreamKey($procurementId, $procurementTitle)
     {
-        return $procurementId . '-' . preg_replace('/[^a-zA-Z0-9-]/', '-', $procurementTitle);
+        return $procurementId.'-'.preg_replace('/[^a-zA-Z0-9-]/', '-', $procurementTitle);
     }
 
     public function indexProcurementsList()
@@ -45,6 +44,7 @@ class HopeController extends BaseController
             $procurementsByKey = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'id' => $data['procurement_id'] ?? '',
                         'title' => $data['procurement_title'] ?? '',
@@ -55,7 +55,7 @@ class HopeController extends BaseController
                         'lastUpdated' => date('Y-m-d', strtotime($data['timestamp'] ?? 'now')),
                         'procurement_id' => $data['procurement_id'] ?? '',
                         'procurement_title' => $data['procurement_title'] ?? '',
-                        'documentCount' => 0
+                        'documentCount' => 0,
                     ];
                 })
                 ->groupBy('id')
@@ -76,18 +76,18 @@ class HopeController extends BaseController
             }
 
             return Inertia::render('hope/procurements-list', [
-                'procurements' => $sortedProcurements
+                'procurements' => $sortedProcurements,
             ]);
 
         } catch (Exception $e) {
             Log::error('Failed to retrieve procurements:', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return Inertia::render('hope/procurements-list', [
                 'procurements' => [],
-                'error' => 'Failed to retrieve procurements: ' . $e->getMessage()
+                'error' => 'Failed to retrieve procurements: '.$e->getMessage(),
             ]);
         }
     }
@@ -100,6 +100,7 @@ class HopeController extends BaseController
             $procurementStates = collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'item' => $item,
                         'data' => $data,
@@ -124,24 +125,23 @@ class HopeController extends BaseController
 
             $documents = $this->multiChain->listStreamKeyItems(self::STREAM_DOCUMENTS, $streamKey, 1000);
 
-            Log::info("Found " . count($documents) . " documents for procurement $procurementId");
+            Log::info('Found '.count($documents)." documents for procurement $procurementId");
 
             $potentialPrDocs = collect($documents)->filter(function ($doc) {
                 $data = $doc['data'];
                 $docType = strtolower($data['document_type'] ?? '');
                 $fileKey = strtolower($data['file_key'] ?? '');
 
-                return (
+                return
                     strpos($docType, 'purchase') !== false ||
                     strpos($docType, 'pr') !== false ||
                     strpos($fileKey, 'prinitiation') !== false ||
-                    strpos($fileKey, 'purchase') !== false
-                );
+                    strpos($fileKey, 'purchase') !== false;
             });
 
             if ($potentialPrDocs->count() > 0) {
                 Log::info("Found {$potentialPrDocs->count()} potential PR documents", [
-                    'first_doc' => $potentialPrDocs->first()['data']
+                    'first_doc' => $potentialPrDocs->first()['data'],
                 ]);
             }
 
@@ -167,7 +167,7 @@ class HopeController extends BaseController
                         strpos($fileKey, 'purchase') !== false
                     ) {
                         $phase_identifier = 'PR Initiation';
-                        Log::info("Auto-tagged document as PR Initiation", ['doc_type' => $data['document_type'], 'file_key' => $data['file_key']]);
+                        Log::info('Auto-tagged document as PR Initiation', ['doc_type' => $data['document_type'], 'file_key' => $data['file_key']]);
                     }
                 }
 
@@ -205,33 +205,32 @@ class HopeController extends BaseController
                 'Performance Bond',
                 'Contract And PO',
                 'Notice To Proceed',
-                'Monitoring'
+                'Monitoring',
             ];
 
-            if (!isset($documentsByPhase['PR Initiation'])) {
+            if (! isset($documentsByPhase['PR Initiation'])) {
                 $prDocs = $parsedDocuments->filter(function ($doc) {
                     $docType = strtolower($doc['document_type'] ?? '');
                     $fileKey = strtolower($doc['file_key'] ?? '');
 
-                    return (
+                    return
                         strpos($docType, 'purchase') !== false ||
                         strpos($docType, 'pr') !== false ||
                         strpos($docType, 'aip') !== false ||
                         strpos($docType, 'certificate') !== false ||
                         strpos($fileKey, 'prinitiation') !== false ||
                         strpos($fileKey, '/pr/') !== false ||
-                        strpos($fileKey, 'purchase') !== false
-                    );
+                        strpos($fileKey, 'purchase') !== false;
                 })->values()->toArray();
 
-                if (!empty($prDocs)) {
+                if (! empty($prDocs)) {
                     $documentsByPhase['PR Initiation'] = $prDocs;
-                    Log::info("Added " . count($prDocs) . " PR Initiation documents that were not properly categorized");
+                    Log::info('Added '.count($prDocs).' PR Initiation documents that were not properly categorized');
                 }
             }
 
             foreach ($procurementPhases as $phase) {
-                if (!isset($documentsByPhase[$phase])) {
+                if (! isset($documentsByPhase[$phase])) {
                     $documentsByPhase[$phase] = [];
                 }
             }
@@ -239,6 +238,7 @@ class HopeController extends BaseController
             $events = $this->multiChain->listStreamKeyItems(self::STREAM_EVENTS, $streamKey);
             $parsedEvents = collect($events)->map(function ($event) {
                 $data = $event['data'];
+
                 return [
                     'procurement_id' => $data['procurement_id'] ?? '',
                     'procurement_title' => $data['procurement_title'] ?? '',
@@ -272,7 +272,7 @@ class HopeController extends BaseController
 
                 $latestPhaseState = $phaseStates->isEmpty() ? null : $phaseStates->sortByDesc('timestamp')->first();
 
-                $isCompleted = !empty($latestPhaseState);
+                $isCompleted = ! empty($latestPhaseState);
                 $isSkipped = $isCompleted && strpos($latestPhaseState['current_state'], 'Skipped') !== false;
 
                 $status = 'Not Started';
@@ -342,7 +342,7 @@ class HopeController extends BaseController
 
             Log::info('Documents by phase in show method:', [
                 'phase_keys' => array_keys($documentsByPhase),
-                'pr_docs_count' => isset($documentsByPhase['PR Initiation']) ? count($documentsByPhase['PR Initiation']) : 0
+                'pr_docs_count' => isset($documentsByPhase['PR Initiation']) ? count($documentsByPhase['PR Initiation']) : 0,
             ]);
 
             return Inertia::render('hope/show', [
@@ -354,11 +354,11 @@ class HopeController extends BaseController
             Log::error('Failed to retrieve procurement:', [
                 'procurement_id' => $procurementId,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return Inertia::render('hope/show', [
-                'error' => 'Failed to retrieve procurement: ' . $e->getMessage()
+                'error' => 'Failed to retrieve procurement: '.$e->getMessage(),
             ]);
         }
     }
