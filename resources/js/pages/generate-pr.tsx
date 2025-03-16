@@ -148,7 +148,7 @@ export default function Create() {
 
             try {
                 jsonResponse = JSON.parse(responseText);
-            } catch (parseError) {
+            } catch {
                 console.error('Error parsing response:', responseText);
                 throw new Error(`Server returned invalid JSON. Status: ${response.status}`);
             }
@@ -619,7 +619,7 @@ export default function Create() {
 
                 {/* Use the Footer component */}
                 <Footer />
-                
+
                 {/* Add global styles */}
                 <style>{`
                     body {

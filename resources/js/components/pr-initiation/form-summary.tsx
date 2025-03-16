@@ -1,8 +1,26 @@
-import React from 'react';
 import { CheckCircle, FileCheck, Files, Edit, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+interface PRMetadata {
+  document_type?: string;
+  submission_date?: string;
+  municipal_offices?: string;
+}
+
+interface SupportingMetadata {
+  document_type?: string;
+}
+
+interface FormData {
+  procurement_id?: string;
+  procurement_title?: string;
+  pr_file?: File;
+  pr_metadata: PRMetadata;
+  supporting_files: (File | null)[];
+  supporting_metadata: SupportingMetadata[];
+}
 
 interface FormCompletionState {
   details: boolean;
@@ -10,8 +28,8 @@ interface FormCompletionState {
   supporting: boolean;
 }
 
-interface FormSummaryProps {
-  data: any;
+export interface FormSummaryProps {
+  data: FormData;
   setCurrentStep: (step: number) => void;
   formCompletion: FormCompletionState;
   addSupportingFile: () => void;
@@ -133,8 +151,8 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addSupportin
               <div className="flex flex-col items-center justify-center p-6 text-center">
                 <FileCheck className="h-8 w-8 text-muted mb-2" />
                 <p className="text-muted-foreground">No PR document uploaded</p>
-                <Button 
-                  variant="link" 
+                <Button
+                  variant="link"
                   onClick={() => setCurrentStep(2)}
                   className="mt-2"
                 >
@@ -158,7 +176,7 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addSupportin
                 )}
               </CardTitle>
               <CardDescription>
-                {data.supporting_files.length > 0 
+                {data.supporting_files.length > 0
                   ? `${data.supporting_files.filter(Boolean).length} document${data.supporting_files.filter(Boolean).length !== 1 ? 's' : ''} attached`
                   : 'Optional supporting files'}
               </CardDescription>
@@ -202,7 +220,7 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addSupportin
                         </p>
                       </div>
                     </div>
-                    
+
                     {data.supporting_metadata[index] && data.supporting_metadata[index].document_type && (
                       <div className="mt-2 text-sm">
                         <Badge variant="outline" className="text-xs">
@@ -218,8 +236,8 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addSupportin
             <div className="flex flex-col items-center justify-center p-6 text-center">
               <Files className="h-8 w-8 text-muted mb-2" />
               <p className="text-muted-foreground">No supporting documents attached</p>
-              <Button 
-                variant="link" 
+              <Button
+                variant="link"
                 onClick={addSupportingFile}
                 className="mt-2"
               >

@@ -7,7 +7,7 @@ import { PRDocument, PRDocumentData } from '@/types/blockchain';
 
 interface PRDocumentStepProps {
   data: PRDocumentData;
-  setData: (key: string, value: any) => void;
+  setData: (key: string, value: File | null | Record<string, unknown> | Date | undefined) => void;
   errors: Record<string, string>;
   isDragging: boolean;
   hasError: (field: string) => boolean;
@@ -43,7 +43,7 @@ export function PRDocumentStep({
   }, [data.pr_document_metadata]);
 
   // Update metadata with new value while preserving existing values
-  const updateMetadata = useCallback((key: keyof PRDocument, value: any) => {
+  const updateMetadata = useCallback((key: keyof PRDocument, value: string | number | boolean | Date | null | undefined) => {
     setData('pr_document_metadata', {
       ...getMetadata(),
       [key]: value

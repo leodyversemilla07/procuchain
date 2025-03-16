@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { FileUp, CalendarIcon, Building2, User2, Upload, Trash2, Files, FileCheck, FileX, FileText, AlertCircle, Plus } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -35,8 +35,8 @@ interface SupportingDocumentsStepProps {
   addSupportingFile: () => void;
   removeSupportingFile: (index: number) => void;
   hasError: (field: string) => boolean;
-  useCustomMetadata: { [key: number]: boolean };
-  toggleCustomMetadata: (index: number) => void;
+  useCustomMetadata: { [key: number]: boolean };  // Kept in interface but won't destructure
+  toggleCustomMetadata: (index: number) => void;  // Kept in interface but won't destructure
   handleSupportingFileChange: (e: React.ChangeEvent<HTMLInputElement>, index: number) => void;
   handleSupportingMetadataChange: (index: number, field: string, value: string) => void;
   handleSupportingDateChange: (index: number, date: Date | undefined) => void;
@@ -45,7 +45,7 @@ interface SupportingDocumentsStepProps {
   handleDragOver: (e: React.DragEvent) => void;
   handleSupportingFileDrop: (e: React.DragEvent, index: number) => void;
   supportingDates: { [key: number]: Date | undefined };
-  setData: (key: string, value: any) => void;
+  setData: (key: string, value: (File | null)[] | { [key: number]: SupportingDocument }) => void;
 }
 
 // Utility functions moved outside component to prevent recreation on each render
@@ -71,8 +71,6 @@ export function SupportingDocumentsStep({
   errors,
   isDragging,
   hasError,
-  useCustomMetadata,
-  toggleCustomMetadata,
   handleSupportingFileChange,
   handleSupportingMetadataChange,
   handleSupportingDateChange,
@@ -83,13 +81,6 @@ export function SupportingDocumentsStep({
   supportingDates,
   setData
 }: SupportingDocumentsStepProps) {
-  // Calculate remaining required documents using useMemo to avoid recalculation on every render
-  const remainingRequiredDocs = useMemo(() => {
-    return Math.max(0, 10 - supportingFileIndices.length);
-  }, [supportingFileIndices.length]);
-
-  const [date, setDate] = React.useState<Date>()
-
   return (
     <Card className="border-sidebar-border/70 dark:border-sidebar-border">
       <CardHeader>

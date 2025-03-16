@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Upload, FileX, FileCheck, FileText, Info, AlertCircle } from 'lucide-react';
+import { Upload, FileX, FileCheck, FileText, Info } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';

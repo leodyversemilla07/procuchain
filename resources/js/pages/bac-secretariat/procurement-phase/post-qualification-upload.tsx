@@ -7,9 +7,8 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, FileText, Upload, AlertCircle, X, FileUp, Users, ClipboardList, CheckCircle, XCircle } from 'lucide-react';
+import { CalendarIcon, FileText, Upload, AlertCircle, X, FileUp, ClipboardList, CheckCircle, XCircle } from 'lucide-react';
 import {
   Card,
   CardContent,

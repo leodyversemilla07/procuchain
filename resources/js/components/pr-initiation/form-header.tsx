@@ -1,9 +1,8 @@
-import { FileText, ListChecks, HelpCircle, CheckCircle, CheckSquare } from 'lucide-react';
+import { FileText, ListChecks, CheckCircle, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ValidationDialog } from '@/components/pr-initiation/validation-dialog';
-import { useState } from 'react';
 
 interface FormCompletionState {
   details: boolean;

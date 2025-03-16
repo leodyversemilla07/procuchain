@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Table2, Upload } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Table2, Upload, Beaker } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getNavItemsByRole = (role: string): NavItem[] => {
@@ -25,6 +25,11 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Purchase Request Initiation',
                     url: '/bac-secretariat/procurement/pr-initiation',
                     icon: Upload,
+                },
+                {
+                    title: 'Testing',
+                    url: '/bac-secretariat/testing',
+                    icon: Beaker,
                 }
             ];
         case 'bac_chairman':

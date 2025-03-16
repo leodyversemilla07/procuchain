@@ -6,8 +6,6 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 import { BreadcrumbItem } from '@/types';
-
-// Import shadcn UI components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,19 +16,18 @@ import { toast } from "sonner";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/bac-secretariat/dashboard' },
-    { title: 'Procurement List', href: '/bac-secretariat/procurements-list' },
+    { title: 'Dashboard', href: '/hope/dashboard' },
+    { title: 'Procurement List', href: '/hope/procurements-list' },
     { title: 'Procurement Details', href: '#' },
 ];
 
-// Define the Procurement interface
 interface Document {
     file_key: string;
     document_type: string;
     spaces_url?: string;
     hash?: string;
     file_size?: number;
-    phase_identifier?: string; // Add phase identifier field
+    phase_identifier?: string;
     phase_metadata?: {
         submission_date?: string;
         municipal_offices?: string;
@@ -52,8 +49,8 @@ interface Document {
         approved_by?: string;
         appropriation?: string;
         funding_source?: string;
-        meeting_date?: string; // Added for Pre-Procurement
-        participants?: string; // Added for Pre-Procurement
+        meeting_date?: string;
+        participants?: string;
     };
     procurement_id?: string;
     procurement_title?: string;
@@ -114,12 +111,11 @@ interface Procurement {
     documents_by_phase?: Record<string, Document[]>;
     events_by_phase?: Record<string, Event[]>;
     phase_summary?: Record<string, PhaseSummary>;
-    phase_history?: Record<string, TimelineItem[]>; // Specific type instead of any[]
+    phase_history?: Record<string, TimelineItem[]>; // Changed from any[] to TimelineItem[]
     current_phase?: string;
     phases?: string[];
 }
 
-// Define the phase order array
 const phaseOrder = [
     'PR Initiation',
     'Pre-Procurement',
@@ -136,7 +132,6 @@ const phaseOrder = [
     'Other Documents'
 ];
 
-// Define the props interface
 interface ShowProps {
     procurement: Procurement;
     now?: string;
@@ -206,7 +201,6 @@ function getStatusColor(state: string): { variant: "default" | "destructive" | "
         }
     };
 
-    // Default status for any unmatched state
     const defaultStatus = {
         variant: "outline" as const,
         icon: <AlertCircle className="w-4 h-4 mr-1.5" />
@@ -215,11 +209,9 @@ function getStatusColor(state: string): { variant: "default" | "destructive" | "
     return states[state.toLowerCase()] || defaultStatus;
 }
 
-// Functional component with typed props
 export default function Show({ procurement, now, error }: ShowProps) {
     const [activeTab, setActiveTab] = useState('documents');
 
-    // Add debugging to see the actual procurement data structure
     useEffect(() => {
         console.log("Procurement data details:", {
             id: procurement.id,
@@ -233,12 +225,10 @@ export default function Show({ procurement, now, error }: ShowProps) {
                 .filter((v, i, a) => a.indexOf(v) === i)
         });
 
-        // Debug the first few documents to see their structure
         if (procurement.documents.length > 0) {
             console.log("Sample documents:", procurement.documents.slice(0, 3));
         }
 
-        // Check if documents_by_phase has expected phases
         if (procurement.documents_by_phase) {
             console.log("Documents by phase keys:", Object.keys(procurement.documents_by_phase));
         }
@@ -316,11 +306,9 @@ export default function Show({ procurement, now, error }: ShowProps) {
     };
 
     const getDocumentIcon = () => {
-        // Since we're only using PDF files, just return the PDF icon
         return <FileText className="w-6 h-6 text-red-500" />;
     };
 
-    // Format file size to human-readable format
     const formatFileSize = (bytes?: number): string => {
         if (!bytes) return 'Unknown size';
 
@@ -338,7 +326,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
 
     const statusInfo = getStatusColor(procurement.state.current_state);
 
-    // Define the phase order for proper display sequence
     const phaseOrder = procurement.phases || [
         'PR Initiation',
         'Pre-Procurement',
@@ -355,7 +342,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
         'Other Documents'
     ];
 
-    // Improved function to normalize phase names for better matching
     const normalizePhase = (phase: string): string => {
         if (!phase) return '';
         return phase.toLowerCase()
@@ -363,15 +349,11 @@ export default function Show({ procurement, now, error }: ShowProps) {
             .trim();
     };
 
-    // Enhanced function to better detect PR Initiation documents
     const getDocumentPhase = (doc: Document): string => {
-        // First check for explicit phase identifier
         if (doc.phase_identifier) return doc.phase_identifier;
 
-        // Try to determine from document type
         const docTypeLower = (doc.document_type || '').toLowerCase();
 
-        // Special checks for PR Initiation documents
         if (docTypeLower.includes('purchase') ||
             docTypeLower.includes('pr') ||
             docTypeLower === 'aip' ||
@@ -381,7 +363,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
             return 'PR Initiation';
         }
 
-        // Check if the file path contains phase information
         if (doc.file_key) {
             const filePath = doc.file_key.toLowerCase();
             if (filePath.includes('/prinitiation/') ||
@@ -396,10 +377,8 @@ export default function Show({ procurement, now, error }: ShowProps) {
         return 'Other Documents';
     };
 
-    // Create documents_by_phase if not provided by backend, or use the one from backend
     let docsByPhase = procurement.documents_by_phase || {};
 
-    // If documents_by_phase is empty but we have documents, group them manually
     if (Object.keys(docsByPhase).length === 0 && procurement.documents.length > 0) {
         docsByPhase = procurement.documents.reduce((groups: Record<string, Document[]>, doc) => {
             const phase = getDocumentPhase(doc);
@@ -409,10 +388,8 @@ export default function Show({ procurement, now, error }: ShowProps) {
         }, {});
     }
 
-    // If PR Initiation documents are still missing, check for them specifically
     if (!docsByPhase['PR Initiation'] && procurement.documents.length > 0) {
         const prInitiationDocs = procurement.documents.filter(doc => {
-            // More aggressive checks for PR documents
             const docType = (doc.document_type || '').toLowerCase();
             const fileKey = (doc.file_key || '').toLowerCase();
 
@@ -429,26 +406,20 @@ export default function Show({ procurement, now, error }: ShowProps) {
         }
     }
 
-    // Log what we've grouped
     console.log("Documents grouped by phase:", Object.keys(docsByPhase).map(phase =>
         `${phase}: ${docsByPhase[phase]?.length || 0}`
     ));
 
-    // Sort phases according to the defined order, with case-insensitive matching
     const sortedPhases = Object.keys(docsByPhase).sort(
         (a, b) => {
-            // Find index in phaseOrder using case-insensitive matching
             const aIndex = phaseOrder.findIndex(p => normalizePhase(p) === normalizePhase(a));
             const bIndex = phaseOrder.findIndex(p => normalizePhase(p) === normalizePhase(b));
 
-            // If both phases are found in the predefined order, sort by that order
             if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
 
-            // If only one phase is found, prioritize the found one
             if (aIndex !== -1) return -1;
             if (bIndex !== -1) return 1;
 
-            // If neither is found, sort alphabetically
             return a.localeCompare(b);
         }
     );
@@ -467,7 +438,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                     </Alert>
                 ) : (
                     <>
-                        {/* Header Card */}
                         <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border">
                             <CardHeader className="relative z-10 p-4 sm:p-6">
                                 <div className="space-y-3 sm:space-y-4">
@@ -508,7 +478,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                             </CardHeader>
                         </Card>
 
-                        {/* Tabs */}
                         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
                             <TabsList className="mb-3 sm:mb-4 grid grid-cols-2 w-full max-w-[300px]">
                                 <TabsTrigger value="documents" className="flex items-center">
@@ -522,7 +491,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                             </TabsList>
 
                             <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border">
-                                {/* Documents Tab */}
                                 <TabsContent value="documents" className="p-0 m-0">
                                     <CardHeader className="border-b p-4 sm:p-6">
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-1 sm:mb-2">
@@ -562,7 +530,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                                                     <Button
                                                         variant="outline"
                                                         onClick={() => {
-                                                            // Force re-categorization of documents
                                                             const reprocessedDocs = procurement.documents.reduce((groups: Record<string, Document[]>, doc) => {
                                                                 const phase = getDocumentPhase(doc);
                                                                 if (!groups[phase]) groups[phase] = [];
@@ -570,7 +537,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                                                                 return groups;
                                                             }, {});
 
-                                                            // Update the state
                                                             console.log("Manually re-processed documents:", reprocessedDocs);
                                                         }}
                                                         className="mb-4"
@@ -582,7 +548,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                                             </div>
                                         ) : (
                                             <div className="overflow-visible">
-                                                {/* Display documents grouped by phase in the correct order */}
                                                 {sortedPhases.map(phase => (
                                                     <div key={phase} className="border-b border-neutral-200 dark:border-neutral-700 last:border-b-0">
                                                         <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50">
@@ -649,7 +614,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                                                                         )}
                                                                     </div>
 
-                                                                    {/* Document Hash */}
                                                                     {doc.hash && (
                                                                         <div className="mt-3 ml-0 sm:ml-11 max-w-full overflow-hidden">
                                                                             <Card className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
@@ -709,7 +673,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                                                                         </div>
                                                                     )}
 
-                                                                    {/* Phase Metadata */}
                                                                     {doc.phase_metadata && Object.keys(doc.phase_metadata).some(key => !!doc.phase_metadata![key as keyof typeof doc.phase_metadata]) && (
                                                                         <div className="mt-3 sm:mt-4 ml-0 sm:ml-11 max-w-full overflow-hidden">
                                                                             <Card className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
@@ -721,7 +684,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                                                                                 </CardHeader>
                                                                                 <CardContent className="p-2.5 sm:p-3.5 pt-1 sm:pt-1">
                                                                                     <div className="space-y-2.5 sm:space-y-3.5">
-                                                                                        {/* Common fields */}
                                                                                         {doc.phase_metadata.submission_date && (
                                                                                             <MetadataItem
                                                                                                 icon={<Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />}
@@ -849,7 +811,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                                                                                             />
                                                                                         )}
 
-                                                                                        {/* PR specific fields */}
                                                                                         {doc.phase_metadata.pr_number && (
                                                                                             <MetadataItem
                                                                                                 icon={<FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />}
@@ -898,7 +859,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                                                                                             />
                                                                                         )}
 
-                                                                                        {/* Pre-Procurement specific fields */}
                                                                                         {doc.phase_metadata.meeting_date && (
                                                                                             <MetadataItem
                                                                                                 icon={<Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />}
@@ -931,7 +891,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                                     </CardContent>
                                 </TabsContent>
 
-                                {/* Timeline Tab */}
                                 <TabsContent value="timeline" className="p-0 m-0">
                                     <CardHeader className="border-b p-4 sm:p-6">
                                         <div className="flex items-center space-x-2 sm:space-x-3 mb-1 sm:mb-2">
@@ -957,7 +916,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
                                             </div>
                                         ) : (
                                             <div className="relative pl-6 sm:pl-8">
-                                                {/* Timeline Progress Bar - Now perfectly centered with the circles */}
                                                 <div className="absolute left-6 sm:left-8 top-0 bottom-8 w-[2px] bg-gradient-to-b from-primary via-primary/60 to-primary/20 z-0"></div>
 
                                                 {renderTimeline(procurement, now)}
@@ -974,7 +932,6 @@ export default function Show({ procurement, now, error }: ShowProps) {
     );
 }
 
-// Helper component for rendering metadata items
 const MetadataItem = ({ icon, label, value }: { icon: JSX.Element, label: string, value: string }) => {
     return (
         <div className="flex items-start group">
@@ -997,7 +954,6 @@ const MetadataItem = ({ icon, label, value }: { icon: JSX.Element, label: string
     );
 };
 
-// Add these helper functions after the existing function definitions
 const getEventIconContent = (type: string) => {
     const typeLower = type.toLowerCase();
 
@@ -1028,36 +984,34 @@ const getEventIconColor = (type: string) => {
     const typeLower = type.toLowerCase();
 
     if (typeLower.includes('create') || typeLower.includes('new')) {
-        return { bgColor: '#dcfce7', textColor: '#16a34a' }; // Green
+        return { bgColor: '#dcfce7', textColor: '#16a34a' };
     }
 
     if (typeLower.includes('update') || typeLower.includes('change')) {
-        return { bgColor: '#dbeafe', textColor: '#2563eb' }; // Blue
+        return { bgColor: '#dbeafe', textColor: '#2563eb' };
     }
 
     if (typeLower.includes('approve') || typeLower.includes('confirm')) {
-        return { bgColor: '#d1fae5', textColor: '#059669' }; // Emerald
+        return { bgColor: '#d1fae5', textColor: '#059669' };
     }
 
     if (typeLower.includes('reject') || typeLower.includes('decline')) {
-        return { bgColor: '#fee2e2', textColor: '#dc2626' }; // Red
+        return { bgColor: '#fee2e2', textColor: '#dc2626' };
     }
 
     if (typeLower.includes('document') || typeLower.includes('upload')) {
-        return { bgColor: '#f3e8ff', textColor: '#9333ea' }; // Purple
+        return { bgColor: '#f3e8ff', textColor: '#9333ea' };
     }
 
-    return { bgColor: '#f3f4f6', textColor: '#6b7280' }; // Gray
+    return { bgColor: '#f3f4f6', textColor: '#6b7280' };
 };
 
-// Helper function to check if an event is a document upload event
 const isDocumentUploadEvent = (eventType: string, category?: string, documentCount?: number): boolean => {
     return eventType.toLowerCase().includes('document_upload') ||
         eventType.toLowerCase().includes('upload') ||
         (category === 'workflow' && typeof documentCount === 'number' && documentCount > 0);
 };
 
-// Helper function to create document count element if applicable
 const createDocumentCountElement = (count?: number): JSX.Element | null => {
     if (!count || count <= 0) return null;
 
@@ -1069,7 +1023,6 @@ const createDocumentCountElement = (count?: number): JSX.Element | null => {
     );
 };
 
-// Style constants for timeline icons
 const TIMELINE_ICON_STYLES = {
     documentUpload: {
         bgColor: '#f0f9ff',
@@ -1077,10 +1030,7 @@ const TIMELINE_ICON_STYLES = {
     }
 };
 
-// Replace the existing timeline rendering code in the component
-// This will be called from the timeline tab content
 const renderTimeline = (procurement: Procurement, now?: string) => {
-    // Combine timeline and events for chronological display
     const allTimelineItems: Array<{
         timestamp: string;
         formatted_date: string;
@@ -1090,7 +1040,6 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
         phase_identifier?: string;
     }> = [];
 
-    // Process phase transitions (from timeline)
     if (procurement.timeline) {
         procurement.timeline.forEach((item, index) => {
             const phaseIndex = phaseOrder.findIndex(
@@ -1105,7 +1054,6 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                 phase_identifier: item.phase,
                 content: (
                     <div key={`state-${item.timestamp}-${index}`} className="relative mb-8 pb-2 group">
-                        {/* Timeline node with improved visuals */}
                         <div className="absolute -left-[18px] sm:-left-[20px] top-0 z-10 transform -translate-x-1/2">
                             <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full ring-4 ring-white dark:ring-gray-900 bg-blue-100 
                                 flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg">
@@ -1113,9 +1061,7 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                             </div>
                         </div>
 
-                        {/* Content with proper left margin and enhanced hover effect */}
                         <div className="ml-4 sm:ml-6 pt-1 transition-all duration-300 group-hover:translate-x-1">
-                            {/* Date & time with improved visuals */}
                             <div className="mb-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                                 <time className="text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-400 flex items-center transition-colors group-hover:text-primary">
                                     <Calendar className="inline-flex w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 text-neutral-400 dark:text-neutral-500 transition-colors group-hover:text-primary" />
@@ -1135,7 +1081,6 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                                 </time>
                             </div>
 
-                            {/* Content container with improved styling */}
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2.5">
                                     <h3 className="text-sm sm:text-base font-semibold tracking-tight transition-colors group-hover:text-primary">
@@ -1172,26 +1117,20 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
         });
     }
 
-    // Process events with enhanced styling
     procurement.events.forEach((event, index) => {
-        // Determine the phase order for this event
         const phaseIndex = event.phase_identifier ?
             phaseOrder.findIndex(
                 p => p.toLowerCase() === (event.phase_identifier?.toLowerCase() ?? '')
             ) : 999;
 
-        // Prepare event display elements
         let eventDetails = event.details;
         let eventIcon = getEventIconContent(event.event_type);
         let eventIconStyles = getEventIconColor(event.event_type);
 
-        // Handle document upload events
         if (isDocumentUploadEvent(event.event_type, event.category, event.document_count)) {
-            // Use special styling for document uploads
             eventIconStyles = TIMELINE_ICON_STYLES.documentUpload;
             eventIcon = <FileCheck className="w-4 h-4" />;
 
-            // Add document count information if available
             const documentCountElement = createDocumentCountElement(event.document_count);
             if (documentCountElement) {
                 eventDetails = (
@@ -1211,7 +1150,6 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
             phase_identifier: event.phase_identifier,
             content: (
                 <div key={`event-${event.timestamp}-${index}`} className="relative mb-8 pb-2 group">
-                    {/* Timeline node - Enhanced with hover effects */}
                     <div className="absolute -left-[18px] sm:-left-[20px] top-0 z-10 transform -translate-x-1/2">
                         <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full ring-4 ring-white dark:ring-gray-900 
                             flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
@@ -1220,9 +1158,7 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                         </div>
                     </div>
 
-                    {/* Content with improved hover animations */}
                     <div className="ml-4 sm:ml-6 pt-1 transition-all duration-300 group-hover:translate-x-1">
-                        {/* Date & time with hover effects */}
                         <div className="mb-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                             <time className="text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-400 flex items-center transition-colors group-hover:text-primary">
                                 <Calendar className="inline-flex w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 text-neutral-400 dark:text-neutral-500 transition-colors group-hover:text-primary" />
@@ -1242,24 +1178,19 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                             </time>
                         </div>
 
-                        {/* Content container with improved card visuals */}
                         <div className="space-y-2">
                             <div className="flex flex-wrap items-center gap-2">
                                 <h3 className="text-sm sm:text-base font-semibold tracking-tight transition-colors group-hover:text-primary">
                                     {event.event_type.replace(/_/g, ' ')}
                                 </h3>
-                                {event.phase_identifier && (
-                                    <Badge variant="outline" className="text-[10px] sm:text-xs transition-all duration-300 
-                                        group-hover:border-primary/30 group-hover:bg-primary/5">
-                                        {event.phase_identifier}
-                                    </Badge>
-                                )}
-                                {event.category && (
-                                    <Badge variant="secondary" className="text-[10px] sm:text-xs capitalize transition-all duration-300 
-                                        group-hover:bg-secondary/80">
-                                        {event.category}
-                                    </Badge>
-                                )}
+                                <Badge variant="outline" className="text-[10px] sm:text-xs transition-all duration-300 
+                                    group-hover:border-primary/30 group-hover:bg-primary/5">
+                                    {event.phase_identifier}
+                                </Badge>
+                                <Badge variant="secondary" className="text-[10px] sm:text-xs capitalize transition-all duration-300 
+                                    group-hover:bg-secondary/80">
+                                    {event.category}
+                                </Badge>
                             </div>
 
                             <Card className="bg-white dark:bg-gray-800 shadow-sm border border-neutral-200 dark:border-neutral-700
@@ -1268,7 +1199,6 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                                     <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
                                         {eventDetails}
                                     </p>
-                                    {/* Document count is now handled in the custom eventDetails above */}
                                 </CardContent>
                             </Card>
                         </div>
@@ -1278,12 +1208,10 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
         });
     });
 
-    // Sort items primarily by timestamp for chronological order
     allTimelineItems.sort((a, b) => {
         return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
 
-    // Group by date for better visual separation
     const itemsByDate: Record<string, typeof allTimelineItems> = {};
     allTimelineItems.forEach(item => {
         const date = new Date(item.timestamp).toLocaleDateString(undefined, {
@@ -1295,12 +1223,10 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
         itemsByDate[date].push(item);
     });
 
-    // Render the timeline with enhanced date separators
     return (
         <div className="relative">
             {Object.entries(itemsByDate).map(([date, items]) => (
                 <div key={date} className="mb-12">
-                    {/* Improved date separator with background blur and transition effect */}
                     {Object.keys(itemsByDate).length > 1 && (
                         <div className="sticky top-0 z-20 mb-6 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm transition-all duration-300 hover:bg-white/100 dark:hover:bg-gray-900/100">
                             <div className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary shadow-sm transition-all duration-300 hover:bg-primary/20 hover:shadow">
@@ -1310,14 +1236,11 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                         </div>
                     )}
 
-                    {/* Render items for this date */}
                     <div>
                         {items.map((item, i) => (
                             <Fragment key={`${date}-${i}`}>
-                                {/* Enhanced phase headers with background gradient and animation */}
                                 {i > 0 && item.phase_identifier && item.phase_identifier !== items[i - 1].phase_identifier && (
                                     <div className="relative my-12 group">
-                                        {/* Phase marker with pulse animation on hover */}
                                         <div className="absolute -left-[18px] sm:-left-[20px] top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
                                             <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-r from-primary to-primary/80 
                                                 text-white text-xs font-bold shadow-md transition-all duration-500 
@@ -1326,7 +1249,6 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                                             </div>
                                         </div>
 
-                                        {/* Phase divider line with enhanced gradient and label with animation */}
                                         <div className="ml-4 sm:ml-6">
                                             <div className="h-0.5 bg-gradient-to-r from-primary via-primary/50 to-transparent dark:from-primary dark:via-primary/40 dark:to-transparent w-full relative">
                                                 <span className="absolute -top-3 left-0 bg-white dark:bg-gray-900 pr-3 text-xs font-semibold tracking-wider text-primary transform transition-all duration-300 
@@ -1338,7 +1260,6 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                                     </div>
                                 )}
 
-                                {/* The actual timeline item */}
                                 {item.content}
                             </Fragment>
                         ))}
@@ -1346,7 +1267,6 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                 </div>
             ))}
 
-            {/* Enhanced end of timeline marker with subtle animation */}
             <div className="relative pt-4 group">
                 <div className="absolute -left-[18px] sm:-left-[20px] transform -translate-x-1/2 z-10">
                     <div className="h-6 w-6 rounded-full bg-neutral-200 dark:bg-neutral-700 border-4 border-white dark:border-gray-900
@@ -1360,7 +1280,6 @@ const renderTimeline = (procurement: Procurement, now?: string) => {
                 </div>
             </div>
 
-            {/* Current time indicator if 'now' prop is provided */}
             {now && (
                 <div className="relative mt-6 pt-2">
                     <div className="absolute -left-[18px] sm:-left-[20px] transform -translate-x-1/2 z-20">

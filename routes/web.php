@@ -25,15 +25,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('bac-secretariat/dashboard', [BacSecretariatController::class, 'index'])
             ->name('bac-secretariat.dashboard');
 
-        Route::get('bac-secretariat/procurements-list', [ProcurementController::class, 'index'])
+        Route::get('bac-secretariat/procurements-list', [BacSecretariatController::class, 'indexProcurementsList'])
             ->name('bac-secretariat.procurements-list.index');
 
-        Route::get('bac-secretariat/procurements-list/{id}', [ProcurementController::class, 'show'])
+        Route::get('bac-secretariat/procurements-list/{id}', [BacSecretariatController::class, 'showProcurement'])
             ->name('bac-secretariat.procurements.show');
 
-
-
-        Route::get('bac-secretariat/procurement/pr-initiation', [BacSecretariatController::class, 'prInitiation'])
+        Route::get('bac-secretariat/procurement/pr-initiation', [BacSecretariatController::class, 'showPrInitiation'])
             ->name('bac-secretariat.procurement.pr-initiation');
 
         Route::post('bac-secretariat/publish-pr-initiation', [ProcurementController::class, 'publishPrInitiation'])
@@ -120,12 +118,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('/bac-secretariat/upload-monitoring-document', [ProcurementController::class, 'uploadMonitoringDocument'])
             ->name('bac-secretariat.upload-monitoring-document');
+
+        Route::get('/bac-secretariat/testing', function() {
+            return Inertia::render('testing');
+        })->name('bac-secretariat.testing');
     });
 
     Route::middleware(['role:bac_chairman'])->group(function () {
         Route::get('bac-chairman/dashboard', [BacChairmanController::class, 'index'])
             ->name('bac-chairman.dashboard');
 
+        Route::get('bac-chairman/procurements-list', [BacChairmanController::class, 'indexProcurementsList'])
+            ->name('bac-chairman.procurements-list.index');
+
+        Route::get('bac-chairman/procurements-list/{id}', [BacChairmanController::class, 'showProcurement'])
+            ->name('bac-chairman.procurements.show');
 
     });
 
@@ -133,7 +140,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('hope/dashboard', [HopeController::class, 'index'])
             ->name('hope.dashboard');
 
+        Route::get('hope/procurements-list', [HopeController::class, 'indexProcurementsList'])
+            ->name('bac-chairman.procurements-list.index');
 
+        Route::get('hope/procurements-list/{id}', [HopeController::class, 'showProcurement'])
+            ->name('hope.procurements.show');
     });
 
 });
