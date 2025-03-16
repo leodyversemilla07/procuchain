@@ -67,7 +67,7 @@ export interface BlockchainProcurementDocument {
     file_key: string;
     user_address: string;
     file_size: number;
-    phase_metadata: Record<string, any>;
+    phase_metadata: Record<string, unknown>;
     spaces_url?: string;
 }
 
@@ -110,9 +110,9 @@ export interface Procurement {
     documents: Document[];
     state: ProcurementState;
     events: Event[];
-    raw_state?: any;
-    raw_documents?: any;
-    raw_events?: any;
+    raw_state?: Record<string, unknown>;
+    raw_documents?: Record<string, unknown>[];
+    raw_events?: Record<string, unknown>[];
 }
 
 export interface PrInitiationResponse {
@@ -127,7 +127,7 @@ export interface PrInitiationResponse {
 export interface PrInitiationMetadata {
     submission_date: string;
     municipal_offices: string[] | string;
-    signatory_details: Record<string, any>;
+    signatory_details: Record<string, unknown>;
 }
 
 export interface DocumentMetadata {
@@ -137,8 +137,8 @@ export interface DocumentMetadata {
     file_size: number;
     submission_date?: string;
     municipal_offices?: string[] | string;
-    signatory_details?: Record<string, any>;
-    [key: string]: any;
+    signatory_details?: Record<string, unknown>;
+    [key: string]: unknown;
 }
 
 export interface StreamPublication {
@@ -152,7 +152,7 @@ export interface SignatoryDetails {
     office: string;
     signature_date?: string;
     signature_hash?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 /**

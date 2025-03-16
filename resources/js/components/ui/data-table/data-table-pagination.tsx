@@ -22,10 +22,14 @@ interface DataTablePaginationProps<TData> {
 export function DataTablePagination<TData>({
     table,
 }: DataTablePaginationProps<TData>) {
+    // Extract values for dependencies to avoid complex expressions in the dependency array
+    const currentPageIndex = table.getState().pagination.pageIndex;
+    const pageCount = table.getPageCount();
+
     // Generate pagination numbers with ellipsis for large datasets
     const pageNumbers = useMemo(() => {
-        const currentPage = table.getState().pagination.pageIndex + 1;
-        const totalPages = table.getPageCount();
+        const currentPage = currentPageIndex + 1;
+        const totalPages = pageCount;
 
         if (totalPages === 0) {
             return [];
@@ -63,7 +67,7 @@ export function DataTablePagination<TData>({
         }
 
         return pages;
-    }, [table.getState().pagination.pageIndex, table.getPageCount()]);
+    }, [currentPageIndex, pageCount]);
 
     const currentEntries = table.getFilteredRowModel().rows.length;
     const pageIndex = table.getState().pagination.pageIndex;

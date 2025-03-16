@@ -44,11 +44,6 @@ interface BidSubmissionUploadProps {
   errors?: Record<string, string>;
 }
 
-interface BidderData {
-  bidder_name: string;
-  bid_value: string;
-}
-
 const bidderSchema = z.object({
   file: z.custom<File>((v) => v instanceof File, { message: "Bid document is required" })
     .refine((file) => file?.type === 'application/pdf', { message: "Only PDF files are allowed" })

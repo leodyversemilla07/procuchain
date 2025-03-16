@@ -18,11 +18,11 @@ import {
 } from 'lucide-react';
 
 interface ProcurementDetailsStepProps {
-  data: any;
-  errors: Record<string, any>;
+  data: Record<string, string | undefined>;
+  errors: Record<string, string>;
   hasError: (field: string) => boolean;
-  handleFieldChange: (field: string, value: any) => void;
-  clearErrors: any;
+  handleFieldChange: (field: string, value: string) => void;
+  clearErrors: (field: string) => void;
 }
 
 export function ProcurementDetailsStep({
@@ -39,7 +39,7 @@ export function ProcurementDetailsStep({
   // Helper function to render field validation state
   const getFieldStatus = (fieldName: string) => {
     if (hasError(fieldName)) return 'error';
-    if (data[fieldName]?.length > 0) return 'valid';
+    if (data[fieldName] && data[fieldName]!.length > 0) return 'valid';
     return 'required';
   };
 

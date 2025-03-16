@@ -12,7 +12,7 @@ import { PRDocument, MUNICIPAL_OFFICES } from '@/types/blockchain';
 
 interface DocumentMetadataFormProps {
     metadata: PRDocument;
-    updateMetadata: (key: keyof PRDocument, value: any) => void;
+    updateMetadata: (key: keyof PRDocument, value: string | Date | undefined) => void;
     errors: Record<string, string>;
     hasError: (field: string) => boolean;
     submissionDate: Date | undefined;
@@ -30,6 +30,15 @@ export function DocumentMetadataForm({
     submissionDate,
     onDateChange
 }: DocumentMetadataFormProps) {
+    // Immediately update municipal office value when selected
+    const handleOfficeChange = (value: string) => {
+        // Using setTimeout with 0ms delay ensures the update happens 
+        // after the current event cycle, fixing the select issue
+        setTimeout(() => {
+            updateMetadata('municipal_offices', value);
+        }, 0);
+    };
+
     return (
         <div className="space-y-6">
             <h3 className="text-base font-medium border-b pb-2 flex items-center gap-2">
@@ -65,7 +74,7 @@ export function DocumentMetadataForm({
                         </div>
                     </div>
 
-                    {/* Municipal Office Field */}
+                    {/* Municipal Office Field - Updated with improved selection handling */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="municipal_offices" className="flex items-center">
@@ -80,15 +89,20 @@ export function DocumentMetadataForm({
                         </div>
                         <Select
                             value={metadata.municipal_offices || ''}
-                            onValueChange={(value) => updateMetadata('municipal_offices', value)}
+                            onValueChange={handleOfficeChange}
                         >
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger 
+                                className={cn(
+                                    "w-full", 
+                                    hasError('pr_metadata.municipal_offices') ? 'border-destructive' : ''
+                                )}
+                            >
                                 <div className="flex items-center gap-2">
                                     <Building2 className="h-4 w-4 text-muted-foreground" />
                                     <SelectValue placeholder="Select municipal office" />
                                 </div>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent position="popper">
                                 {MUNICIPAL_OFFICES.map((office) => (
                                     <SelectItem key={office.value} value={office.value}>{office.label}</SelectItem>
                                 ))}
@@ -141,7 +155,7 @@ export function DocumentMetadataForm({
                         </div>
                     </div>
 
-                    {/* Signatory Details Field */}
+                    {/* Signatory Details Field - Also updated for consistency */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="signatory_details" className="flex items-center">

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
-import axios from 'axios'; // Add this import
+import React, { useState, useEffect, useReducer } from 'react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { FormProvider, useForm as useReactHookForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import * as z from 'zod';
@@ -10,19 +9,21 @@ import { StepIndicator } from '@/components/pr-initiation/step-indicator';
 import { ProcurementDetailsStep } from '@/components/pr-initiation/steps/procurement-details-step';
 import { PRDocumentStep } from '@/components/pr-initiation/steps/pr-document-step';
 import { SupportingDocumentsStep } from '@/components/pr-initiation/steps/supporting-documents-step';
-import { FormSummary } from '@/components/pr-initiation/form-summary';
+import { FormSummary, FormSummaryProps } from '@/components/pr-initiation/form-summary';
 import { FormNavigation } from '@/components/pr-initiation/form-navigation';
 import { BreadcrumbItem } from '@/types';
-import { PreProcurementModal } from '@/components/pre-procurement/pre-procurement-modal';
+import { toast } from 'sonner';
 
+// Simplified interfaces
 interface SupportingFileMetadata {
     document_type: string;
     submission_date?: string;
     municipal_offices?: string;
     signatory_details?: string;
+    [key: string]: string | undefined;
 }
 
-interface FormData {
+interface PRInitiationFormData {
     procurement_id: string;
     procurement_title: string;
     pr_file: File | null;
@@ -34,112 +35,114 @@ interface FormData {
     };
     supporting_files: (File | null)[];
     supporting_metadata: SupportingFileMetadata[];
-    [key: string]: any; // Index signature to satisfy FormDataType constraint
+    [key: string]: any; // Simplified index signature
+}
+
+type ComponentFormData = FormSummaryProps['data'];
+
+// Simple structure for flash data
+interface FlashData {
+    success?: boolean;
+    message?: string;
+    procurementId?: string;
+    procurementTitle?: string;
+    documentCount?: number;
+    timestamp?: string;
+    [key: string]: any;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-    {
-        title: 'PR Initiation',
-        href: '#',
-    },
+    { title: 'Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Purchase Request Initiation', href: '#' },
 ];
 
+// Define a form validation schema once
+const formValidationSchema = {
+    step1: {
+        procurement_id: (value: string) => !!value || 'Procurement ID is required',
+        procurement_title: (value: string) => !!value || 'Procurement Title is required',
+    },
+    step2: {
+        pr_file: (value: File | null) => !!value || 'PR File is required',
+        'pr_metadata.submission_date': (value: string) => !!value || 'Submission date is required',
+        'pr_metadata.municipal_offices': (value: string) => !!value || 'Municipal office is required',
+        'pr_metadata.signatory_details': (value: string) => !!value || 'Signatory details are required',
+    },
+    step3: {
+        supporting_files: (files: (File | null)[]) =>
+            files.length === 0 || files.every(file => file !== null) || 'All supporting documents must have files'
+    }
+};
+
+// Simple date parser that handles common formats
+function parseDate(dateStr: string): Date | undefined {
+    if (!dateStr) return undefined;
+
+    try {
+        // Try direct parsing first for ISO format
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) return date;
+
+        // If that fails, try parsing yyyy-MM-dd format
+        const [year, month, day] = dateStr.split('-').map(Number);
+        if (year && month && day) {
+            return new Date(year, month - 1, day);
+        }
+
+        return undefined;
+    } catch {
+        return undefined;
+    }
+}
+
 export default function PRInitiationForm() {
-    const { data, setData, post, processing, errors, setError, clearErrors } = useForm<FormData>({
+    const pageProps = usePage().props;
+
+    // Use Inertia form for API interactions and server-side validation
+    const { data, setData, post, processing, errors, setError, clearErrors } = useForm<PRInitiationFormData>({
         procurement_id: '',
         procurement_title: '',
-        pr_file: null as File | null,
+        pr_file: null,
         pr_metadata: {
-            document_type: 'PR',
+            document_type: 'Purchase Request',
             submission_date: '',
             municipal_offices: '',
             signatory_details: ''
         },
-        supporting_files: [] as (File | null)[],
-        supporting_metadata: [] as SupportingFileMetadata[]
+        supporting_files: [],
+        supporting_metadata: []
     });
 
-    // Form schema for validation
+    // React Hook Form for client-side validation
     const formSchema = z.object({
         procurement_id: z.string().min(1, "Procurement ID is required"),
         procurement_title: z.string().min(1, "Procurement Title is required"),
-        // Add more validation rules as needed
     });
 
-    function parse(dateStr: string, format: string, baseDate: Date): Date | undefined {
-        try {
-            // Expecting format 'yyyy-MM-dd'
-            const [year, month, day] = dateStr.split('-').map(Number);
-
-            // Check if we have valid numbers
-            if (!year || !month || !day) {
-                return undefined;
-            }
-
-            // Create new date (month is 0-based in JavaScript)
-            const parsedDate = new Date(year, month - 1, day);
-
-            // Validate the date is valid
-            if (isNaN(parsedDate.getTime())) {
-                return undefined;
-            }
-
-            return parsedDate;
-        } catch (error) {
-            return undefined;
-        }
-    }
-
-    function zodResolver<T extends z.ZodType>(schema: T) {
-        return async (values: any) => {
+    const form = useReactHookForm<z.infer<typeof formSchema>>({
+        resolver: async (values) => {
             try {
-                const validatedData = await schema.parseAsync(values);
-                return {
-                    values: validatedData,
-                    errors: {}
-                };
+                const validatedData = await formSchema.parseAsync(values);
+                return { values: validatedData, errors: {} };
             } catch (error) {
                 if (error instanceof z.ZodError) {
-                    const errors = error.errors.reduce((acc: any, curr) => {
+                    const errors = error.errors.reduce((acc: Record<string, { type: string; message: string }>, curr) => {
                         const path = curr.path.join('.');
-                        acc[path] = {
-                            type: 'validation',
-                            message: curr.message
-                        };
+                        acc[path] = { type: 'validation', message: curr.message };
                         return acc;
                     }, {});
-
-                    return {
-                        values: {},
-                        errors: errors
-                    };
+                    return { values: {}, errors };
                 }
-                return {
-                    values: {},
-                    errors: {
-                        '': {
-                            type: 'validation',
-                            message: 'Validation failed'
-                        }
-                    }
-                };
+                return { values: {}, errors: { '': { type: 'validation', message: 'Validation failed' } } };
             }
-        };
-    }
-
-    const form = useReactHookForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+        },
         defaultValues: {
             procurement_id: data.procurement_id,
             procurement_title: data.procurement_title,
         },
     });
 
-    // State management
+    // Core state
     const [currentStep, setCurrentStep] = useState(1);
     const [supportingFileCount, setSupportingFileCount] = useState(0);
     const [useCustomMetadata, setUseCustomMetadata] = useState<{ [key: number]: boolean }>({});
@@ -150,78 +153,72 @@ export default function PRInitiationForm() {
     });
     const [isDragging, setIsDragging] = useState(false);
     const [showValidationSummary, setShowValidationSummary] = useState(false);
-    const [showPreProcurementModal, setShowPreProcurementModal] = useState(false);
-    const [showBidInvitationModal, setShowBidInvitationModal] = useState(false);
     const [submittedProcurement, setSubmittedProcurement] = useState<{ id: string, title: string } | null>(null);
 
-    const [submissionDate, setSubmissionDate] = useState<Date | undefined>(() => {
-        try {
-            if (data.pr_metadata.submission_date && typeof data.pr_metadata.submission_date === 'string') {
-                return parse(data.pr_metadata.submission_date, 'yyyy-MM-dd', new Date());
-            }
-            return undefined;
-        } catch (error) {
-            console.error('Error parsing submission date:', error);
-            return undefined;
-        }
-    });
 
+
+    // Date handling
+    const [submissionDate, setSubmissionDate] = useState<Date | undefined>(() =>
+        data.pr_metadata.submission_date ? parseDate(data.pr_metadata.submission_date) : undefined
+    );
     const [supportingDates, setSupportingDates] = useState<{ [key: number]: Date | undefined }>({});
 
-    // Handle field changes
+    // Simplified field change handler
     const handleFieldChange = (field: string, value: any) => {
         setData(field as any, value);
-        form.setValue(field as any, value);
+        if (field === 'procurement_id' || field === 'procurement_title') {
+            form.setValue(field, value as string, { shouldValidate: true });
+        }
     };
 
-    // Handle date changes
+    // Simplified date change handling
     const handleDateChange = (date: Date | undefined) => {
         setSubmissionDate(date);
-        if (date) {
-            const formattedDate = format(date, 'yyyy-MM-dd');
-            setData('pr_metadata', { ...data.pr_metadata, submission_date: formattedDate });
+        if (!date) return;
 
-            const updatedMetadata = [...data.supporting_metadata];
-            updatedMetadata.forEach((metadata, index) => {
-                if (!useCustomMetadata[index]) {
-                    metadata.submission_date = formattedDate;
-                }
-            });
-            setData('supporting_metadata', updatedMetadata);
-        }
+        const formattedDate = format(date, 'yyyy-MM-dd');
+        setData('pr_metadata', { ...data.pr_metadata, submission_date: formattedDate });
+
+        // Update supporting docs that use the same date
+        const updatedMetadata = data.supporting_metadata.map((metadata, index) =>
+            useCustomMetadata[index] ? metadata : { ...metadata, submission_date: formattedDate }
+        );
+        setData('supporting_metadata', updatedMetadata);
     };
 
     const handleSupportingDateChange = (index: number, date: Date | undefined) => {
-        const newSupportingDates = { ...supportingDates };
-        newSupportingDates[index] = date;
-        setSupportingDates(newSupportingDates);
+        if (!date) return;
 
-        if (date) {
-            const formattedDate = format(date, 'yyyy-MM-dd');
-            handleSupportingMetadataChange(index, 'submission_date', formattedDate);
-        }
+        // Update date state
+        setSupportingDates(prev => ({ ...prev, [index]: date }));
+
+        // Update metadata
+        const formattedDate = format(date, 'yyyy-MM-dd');
+        handleSupportingMetadataChange(index, 'submission_date', formattedDate);
     };
 
-    // Initialize supporting dates from metadata
+    // Sync supporting dates with metadata
     useEffect(() => {
         const dates: { [key: number]: Date | undefined } = {};
         data.supporting_metadata.forEach((metadata, index) => {
-            if (metadata.submission_date && typeof metadata.submission_date === 'string') {
-                dates[index] = parse(metadata.submission_date, 'yyyy-MM-dd', new Date());
+            if (metadata.submission_date) {
+                dates[index] = parseDate(metadata.submission_date);
             }
         });
         setSupportingDates(dates);
-    }, []);
+    }, [data.supporting_metadata]);
 
+    // Simplified file handlers
     const handleSupportingFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-        const files = e.target.files;
-        if (files && files.length > 0) {
+        const file = e.target.files?.[0] || null;
+        if (file) {
             const updatedFiles = [...data.supporting_files];
-            updatedFiles[index] = files[0];
+            updatedFiles[index] = file;
             setData('supporting_files', updatedFiles);
         }
     };
 
+    // Simplified metadata change handler
     const handleSupportingMetadataChange = (index: number, field: string, value: string) => {
         const updatedMetadata = [...data.supporting_metadata];
         if (!updatedMetadata[index]) {
@@ -236,208 +233,96 @@ export default function PRInitiationForm() {
         setData('supporting_metadata', updatedMetadata);
     };
 
-    // Supporting files management
+    // Supporting files management - simplified
     const addSupportingFile = () => {
-        const newIndex = supportingFileCount;
-        setSupportingFileCount(newIndex + 1);
+        const newCount = supportingFileCount + 1;
+        setSupportingFileCount(newCount);
 
-        const updatedFiles = [...data.supporting_files];
-        updatedFiles[newIndex] = null;
-
-        const updatedMetadata = [...data.supporting_metadata];
-        updatedMetadata[newIndex] = {
-            document_type: '',
-            submission_date: data.pr_metadata.submission_date,
-            municipal_offices: data.pr_metadata.municipal_offices,
-            signatory_details: data.pr_metadata.signatory_details
-        };
-
+        // Add empty file and metadata
         setData({
             ...data,
-            supporting_files: updatedFiles,
-            supporting_metadata: updatedMetadata
-        });
-
-        // Mark the supporting files step as potentially invalid since we just added an empty slot
-        setFormCompletion(prev => ({
-            ...prev,
-            supporting: false
-        }));
-    };
-
-    const removeSupportingFile = (index: number) => {
-        const updatedFiles = [...data.supporting_files];
-        const updatedMetadata = [...data.supporting_metadata];
-
-        updatedFiles.splice(index, 1);
-        updatedMetadata.splice(index, 1);
-
-        setData({
-            ...data,
-            supporting_files: updatedFiles,
-            supporting_metadata: updatedMetadata
-        });
-
-        setSupportingFileCount(supportingFileCount - 1);
-    };
-
-    // Handle form submission
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        form.handleSubmit(() => {
-            // Validate all steps, not just 1 and 2
-            if (!validateStep(1) || !validateStep(2) || (data.supporting_files.length > 0 && !validateStep(3))) {
-                setShowValidationSummary(true);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('procurement_id', data.procurement_id);
-            formData.append('procurement_title', data.procurement_title);
-
-            if (data.pr_file) {
-                formData.append('pr_file', data.pr_file);
-                formData.append('pr_metadata[document_type]', data.pr_metadata.document_type);
-                formData.append('pr_metadata[submission_date]', data.pr_metadata.submission_date || '');
-                formData.append('pr_metadata[municipal_offices]', data.pr_metadata.municipal_offices || '');
-                formData.append('pr_metadata[signatory_details]', data.pr_metadata.signatory_details || '');
-            }
-
-            data.supporting_files.forEach((file, index) => {
-                if (file) {
-                    formData.append(`supporting_files[${index}]`, file);
-
-                    const metadata = data.supporting_metadata[index] || {
-                        document_type: '',
-                        submission_date: '',
-                        municipal_offices: '',
-                        signatory_details: ''
-                    };
-
-                    formData.append(`supporting_metadata[${index}][document_type]`, metadata.document_type || '');
-                    formData.append(`supporting_metadata[${index}][submission_date]`, metadata.submission_date || data.pr_metadata.submission_date || '');
-                    formData.append(`supporting_metadata[${index}][municipal_offices]`, metadata.municipal_offices || data.pr_metadata.municipal_offices || '');
-                    formData.append(`supporting_metadata[${index}][signatory_details]`, metadata.signatory_details || data.pr_metadata.signatory_details || '');
+            supporting_files: [...data.supporting_files, null],
+            supporting_metadata: [
+                ...data.supporting_metadata,
+                {
+                    document_type: '',
+                    submission_date: data.pr_metadata.submission_date,
+                    municipal_offices: data.pr_metadata.municipal_offices,
+                    signatory_details: data.pr_metadata.signatory_details
                 }
-            });
-
-            // Use axios instead of router.post to prevent automatic redirection
-            axios.post('/bac-secretariat/publish-pr-initiation', formData)
-                .then(response => {
-                    if (response.data.success) {
-                        // Store procurement info for modals
-                        setSubmittedProcurement({
-                            id: response.data.procurementId,
-                            title: response.data.procurementTitle
-                        });
-
-                        // Show pre-procurement modal after successful PR submission
-                        setShowPreProcurementModal(true);
-                    } else {
-                        // Handle unexpected success=false
-                        console.error('Error in PR initiation:', response.data);
-                        alert('An error occurred while submitting the procurement request.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error in PR initiation:', error);
-                    alert('An error occurred while submitting the procurement request: ' +
-                        (error.response?.data?.errorMessage || 'Unknown error'));
-                });
-        })(e);
-    };
-
-    // Handle phase transitions
-    const handlePreProcurementComplete = (nextPhase?: string, conferenceHeld?: boolean) => {
-        setShowPreProcurementModal(false);
-
-        // If conference was held, redirect to procurement list where they can upload documents
-        if (conferenceHeld === true) {
-            router.visit('/bac-secretariat/procurements-list', {
-                method: 'get',
-                preserveState: false
-            });
-            return;
-        }
-
-        // If the next phase is Bid Invitation (when conference was not held), show that modal
-        if (nextPhase === 'Bid Invitation') {
-            setShowBidInvitationModal(true);
-        } else {
-            // Otherwise redirect to the procurement list
-            router.visit('/bac-secretariat/procurements-list', {
-                method: 'get',
-                preserveState: false
-            });
-        }
-    };
-
-    const handleBidInvitationComplete = (nextPhase?: string) => {
-        setShowBidInvitationModal(false);
-
-        // Redirect to the procurement list after bid invitation is completed
-        router.visit('/bac-secretariat/procurements-list', {
-            method: 'get',
-            preserveState: false
+            ]
         });
+
+        // Mark supporting step as incomplete
+        setFormCompletion(prev => ({ ...prev, supporting: false }));
     };
 
-    // Form validation
-    const toggleCustomMetadata = (index: number) => {
-        setUseCustomMetadata({
-            ...useCustomMetadata,
-            [index]: !useCustomMetadata[index]
+    // Simplified file removal
+    const removeSupportingFile = (index: number) => {
+        setData({
+            ...data,
+            supporting_files: data.supporting_files.filter((_, i) => i !== index),
+            supporting_metadata: data.supporting_metadata.filter((_, i) => i !== index)
         });
+
+        setSupportingFileCount(prev => prev - 1);
     };
 
-    const supportingFileIndices = Array.from({ length: data.supporting_files.length }, (_, i) => i);
-
-    const hasError = (field: string) => {
-        return Object.keys(errors).some(error => error === field || error.startsWith(`${field}.`));
-    };
-
+    // Unified form validation
     const validateStep = (step: number): boolean => {
         clearErrors();
         let isValid = true;
+
         if (step === 1) {
-            if (!data.procurement_id) {
-                setError('procurement_id', 'Procurement ID is required');
-                isValid = false;
-            }
-            if (!data.procurement_title) {
-                setError('procurement_title', 'Procurement Title is required');
-                isValid = false;
-            }
+            // Validate procurement details
+            Object.entries(formValidationSchema.step1).forEach(([field, validator]) => {
+                const errorMessage = validator(data[field as keyof PRInitiationFormData]);
+                if (errorMessage !== true) {
+                    setError(field, errorMessage);
+                    isValid = false;
+                }
+            });
             setFormCompletion(prev => ({ ...prev, details: isValid }));
-        } else if (step === 2) {
-            if (!data.pr_file) {
-                setError('pr_file', 'PR File is required');
-                isValid = false;
-            }
-            if (!data.pr_metadata.submission_date) {
-                setError('pr_metadata.submission_date', 'Submission date is required');
-                isValid = false;
-            }
-            if (!data.pr_metadata.municipal_offices) {
-                setError('pr_metadata.municipal_offices', 'Municipal office is required');
-                isValid = false;
-            }
-            if (!data.pr_metadata.signatory_details) {
-                setError('pr_metadata.signatory_details', 'Signatory details are required');
-                isValid = false;
-            }
+        }
+        else if (step === 2) {
+            // Validate PR document
+            Object.entries(formValidationSchema.step2).forEach(([field, validator]) => {
+                let value;
+                if (field.includes('.')) {
+                    const [parent, child] = field.split('.');
+                    value = data[parent as keyof PRInitiationFormData]?.[child];
+                } else {
+                    value = data[field as keyof PRInitiationFormData];
+                }
+
+                const errorMessage = validator(value);
+                if (errorMessage !== true) {
+                    setError(field, errorMessage);
+                    isValid = false;
+                }
+            });
             setFormCompletion(prev => ({ ...prev, prDocument: isValid }));
-        } else if (step === 3) {
+        }
+        else if (step === 3) {
             // Only validate if there are supporting files
             if (data.supporting_files.length > 0) {
+                // Check each file
                 data.supporting_files.forEach((file, index) => {
                     if (!file) {
                         setError(`supporting_files.${index}`, 'A file is required for each supporting document');
                         isValid = false;
                     }
                 });
-                setFormCompletion(prev => ({ ...prev, supporting: isValid && data.supporting_files.length > 0 }));
+
+                // Check document types
+                data.supporting_metadata.forEach((meta, index) => {
+                    if (!meta.document_type) {
+                        setError(`supporting_metadata.${index}.document_type`, 'Document type is required');
+                        isValid = false;
+                    }
+                });
+
+                setFormCompletion(prev => ({ ...prev, supporting: isValid }));
             } else {
                 // If no supporting files, this step is valid
                 setFormCompletion(prev => ({ ...prev, supporting: true }));
@@ -447,25 +332,86 @@ export default function PRInitiationForm() {
         return isValid;
     };
 
-    // Track form completion status
-    useEffect(() => {
-        const allSupportingFilesValid = data.supporting_files.length > 0 &&
-            data.supporting_files.every(file => file !== null) &&
-            data.supporting_metadata.every(meta => meta.document_type !== '');
+    // Check if the form as a whole is valid
+    const isFormValid = () => {
+        return validateStep(1) &&
+            validateStep(2) &&
+            (data.supporting_files.length === 0 || validateStep(3));
+    };
 
-        setFormCompletion(prev => ({
+    // Enhanced form submission
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        // Early return if validation fails
+        if (!isFormValid()) {
+            setShowValidationSummary(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
+        // Submit the form
+        post('/bac-secretariat/publish-pr-initiation', {
+            onSuccess: handleSubmissionSuccess,
+            onError: handleSubmissionError,
+            preserveState: true,
+            preserveScroll: true,
+            forceFormData: true
+        });
+    };
+
+    // Handle successful PR submission
+    const handleSubmissionSuccess = (page: any) => {
+        const responseFlash = page.props.flash as FlashData;
+
+        if (responseFlash?.procurementId && responseFlash?.procurementTitle) {
+            setSubmittedProcurement({
+                id: responseFlash.procurementId,
+                title: responseFlash.procurementTitle
+            });
+
+            toast.success("Purchase Request successfully submitted");
+        }
+    };
+
+    // Handle submission errors
+    const handleSubmissionError = (errors: any) => {
+        console.error('Submission error:', errors);
+        toast.error("Failed to submit Purchase Request");
+    };
+
+    // Simple toggle function
+    const toggleCustomMetadata = (index: number) => {
+        setUseCustomMetadata(prev => ({
             ...prev,
+            [index]: !prev[index]
+        }));
+    };
+
+    // Simplified array creation
+    const supportingFileIndices = Array.from({ length: data.supporting_files.length }, (_, i) => i);
+
+    // Simple error checker
+    const hasError = (field: string) => {
+        return Object.keys(errors).some(error => error === field || error.startsWith(`${field}.`));
+    };
+
+    // Form completion tracking
+    useEffect(() => {
+        setFormCompletion({
             details: !!data.procurement_id && !!data.procurement_title,
             prDocument: !!data.pr_file && !!data.pr_metadata.submission_date &&
                 !!data.pr_metadata.municipal_offices && !!data.pr_metadata.signatory_details,
-            supporting: data.supporting_files.length === 0 || allSupportingFilesValid
-        }));
+            supporting: data.supporting_files.length === 0 || (
+                data.supporting_files.every(file => file !== null) &&
+                data.supporting_metadata.every(meta => meta.document_type !== '')
+            )
+        });
     }, [data]);
 
-    // Navigation between steps
+    // Simplified step navigation
     const handleNextStep = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
-        e.stopPropagation();
 
         if (validateStep(currentStep)) {
             setCurrentStep(Math.min(3, currentStep + 1));
@@ -477,59 +423,51 @@ export default function PRInitiationForm() {
 
     const handlePrevStep = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
-        e.stopPropagation();
         setCurrentStep(Math.max(1, currentStep - 1));
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // Simple percentage calculation
     const getFormCompletionPercentage = () => {
-        let percentage = 0;
-        if (formCompletion.details) percentage += 33.3;
-        if (formCompletion.prDocument) percentage += 33.3;
-        if (formCompletion.supporting) percentage += 33.3;
-        return Math.round(percentage);
+        let completed = 0;
+        if (formCompletion.details) completed++;
+        if (formCompletion.prDocument) completed++;
+        if (formCompletion.supporting) completed++;
+
+        return Math.round((completed / 3) * 100);
     };
 
-    // File drag and drop handlers
-    const handleDragEnter = (e: React.DragEvent) => {
+    // Unified file drag/drop handler
+    const handleFileDragEvent = (e: React.DragEvent, action: 'enter' | 'leave' | 'over' | 'drop', index?: number) => {
         e.preventDefault();
         e.stopPropagation();
-        setIsDragging(true);
-    };
 
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-    };
+        if (action === 'enter') {
+            setIsDragging(true);
+        }
+        else if (action === 'leave') {
+            setIsDragging(false);
+        }
+        else if (action === 'drop') {
+            setIsDragging(false);
 
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-    };
+            if (!e.dataTransfer.files.length) return;
 
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
+            const file = e.dataTransfer.files[0];
 
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            setData('pr_file', e.dataTransfer.files[0]);
+            if (index !== undefined) {
+                // For supporting files
+                const updatedFiles = [...data.supporting_files];
+                updatedFiles[index] = file;
+                setData('supporting_files', updatedFiles);
+            } else {
+                // For PR file
+                setData('pr_file', file);
+            }
         }
     };
 
-    const handleSupportingFileDrop = (e: React.DragEvent, index: number) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            const updatedFiles = [...data.supporting_files];
-            updatedFiles[index] = e.dataTransfer.files[0];
-            setData('supporting_files', updatedFiles);
-        }
-    };
-
+    // Simple date formatter
     const formatDateForDisplay = (dateValue: Date | string | undefined): string => {
         if (!dateValue) return 'Not set';
 
@@ -543,12 +481,21 @@ export default function PRInitiationForm() {
             }
 
             return 'Invalid date';
-        } catch (error) {
-            console.error('Error formatting date:', error);
+        } catch {
             return 'Invalid date';
         }
     };
 
+    // Simplified conversion function
+    const convertToComponentFormData = (formData: PRInitiationFormData): ComponentFormData => {
+        return {
+            ...formData,
+            pr_file: formData.pr_file || undefined,
+            supporting_files: formData.supporting_files.map(file => file || undefined),
+        } as unknown as ComponentFormData;
+    };
+
+    // The rest of your JSX rendering code remains largely the same
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Purchase Request" />
@@ -583,8 +530,11 @@ export default function PRInitiationForm() {
                         <div className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border bg-white dark:bg-black/80 p-6">
                             {currentStep === 1 && (
                                 <ProcurementDetailsStep
-                                    data={data}
-                                    errors={errors}
+                                    data={{
+                                        procurement_id: data.procurement_id,
+                                        procurement_title: data.procurement_title
+                                    }}
+                                    errors={errors as Record<string, string>}
                                     hasError={hasError}
                                     handleFieldChange={handleFieldChange}
                                     clearErrors={clearErrors}
@@ -601,24 +551,27 @@ export default function PRInitiationForm() {
                                             submission_date: submissionDate || new Date()
                                         }
                                     }}
-                                    setData={(key: string, value: any) => {
+                                    setData={(key: string, value: unknown) => {
                                         if (key === 'pr_document_file') {
-                                            setData('pr_file', value);
+                                            setData('pr_file', value as File | null);
                                         } else if (key === 'pr_document_metadata') {
                                             if (!data.pr_metadata.submission_date) {
-                                                // Set default submission date to now when not already set
                                                 const now = new Date();
                                                 const formattedDate = format(now, 'yyyy-MM-dd');
                                                 setData('pr_metadata', {
-                                                    ...value,
+                                                    ...data.pr_metadata,
+                                                    ...(value as Record<string, string>),
                                                     submission_date: formattedDate
                                                 });
                                                 handleDateChange(now);
                                             } else {
-                                                setData('pr_metadata', value);
+                                                setData('pr_metadata', {
+                                                    ...data.pr_metadata,
+                                                    ...(value as Record<string, string>)
+                                                });
                                             }
                                         } else {
-                                            setData(key as any, value);
+                                            setData(key as any, value as any);
                                         }
                                     }}
                                     errors={errors as Record<string, string>}
@@ -626,10 +579,10 @@ export default function PRInitiationForm() {
                                     hasError={hasError}
                                     submissionDate={submissionDate || new Date()}
                                     handleDateChange={handleDateChange}
-                                    handleDragEnter={handleDragEnter}
-                                    handleDragLeave={handleDragLeave}
-                                    handleDragOver={handleDragOver}
-                                    handleDrop={handleDrop}
+                                    handleDragEnter={(e) => handleFileDragEvent(e, 'enter')}
+                                    handleDragLeave={(e) => handleFileDragEvent(e, 'leave')}
+                                    handleDragOver={(e) => handleFileDragEvent(e, 'over')}
+                                    handleDrop={(e) => handleFileDragEvent(e, 'drop')}
                                 />
                             )}
 
@@ -643,32 +596,14 @@ export default function PRInitiationForm() {
                                                     const now = new Date();
                                                     const formattedNow = format(now, 'yyyy-MM-dd');
 
-                                                    // Set submission date to now if not already set
+                                                    // Set default submission date if missing
                                                     if (!meta.submission_date) {
                                                         handleSupportingMetadataChange(index, 'submission_date', formattedNow);
                                                         handleSupportingDateChange(index, now);
+                                                        meta.submission_date = formattedNow;
                                                     }
 
-                                                    let submissionDate = now;
-                                                    try {
-                                                        if (meta.submission_date && typeof meta.submission_date === 'string') {
-                                                            const parsed = parse(meta.submission_date, 'yyyy-MM-dd', new Date());
-                                                            if (parsed && !isNaN(parsed.getTime())) {
-                                                                submissionDate = parsed;
-                                                            } else {
-                                                                // If parsing fails, use current date
-                                                                submissionDate = now;
-                                                                handleSupportingMetadataChange(index, 'submission_date', formattedNow);
-                                                                handleSupportingDateChange(index, now);
-                                                            }
-                                                        }
-                                                    } catch (error) {
-                                                        console.error('Error parsing supporting document date:', error);
-                                                        // On error, use current date
-                                                        submissionDate = now;
-                                                        handleSupportingMetadataChange(index, 'submission_date', formattedNow);
-                                                        handleSupportingDateChange(index, now);
-                                                    }
+                                                    const submissionDate = parseDate(meta.submission_date) || now;
 
                                                     return [
                                                         index,
@@ -680,7 +615,7 @@ export default function PRInitiationForm() {
                                                 })
                                             )
                                         }}
-                                        setData={setData}
+                                        setData={(key: string, value: unknown) => setData(key as any, value as any)}
                                         supportingFileIndices={supportingFileIndices}
                                         addSupportingFile={addSupportingFile}
                                         removeSupportingFile={removeSupportingFile}
@@ -692,16 +627,16 @@ export default function PRInitiationForm() {
                                         handleSupportingFileChange={handleSupportingFileChange}
                                         handleSupportingMetadataChange={handleSupportingMetadataChange}
                                         handleSupportingDateChange={handleSupportingDateChange}
-                                        handleDragEnter={handleDragEnter}
-                                        handleDragLeave={handleDragLeave}
-                                        handleDragOver={handleDragOver}
-                                        handleSupportingFileDrop={handleSupportingFileDrop}
+                                        handleDragEnter={(e) => handleFileDragEvent(e, 'enter')}
+                                        handleDragLeave={(e) => handleFileDragEvent(e, 'leave')}
+                                        handleDragOver={(e) => handleFileDragEvent(e, 'over')}
+                                        handleSupportingFileDrop={(e, index) => handleFileDragEvent(e, 'drop', index)}
                                         supportingDates={supportingDates}
                                     />
 
                                     <div className="mt-8 pt-8 border-t">
                                         <FormSummary
-                                            data={{
+                                            data={convertToComponentFormData({
                                                 ...data,
                                                 pr_metadata: {
                                                     ...data.pr_metadata,
@@ -711,7 +646,7 @@ export default function PRInitiationForm() {
                                                     ...meta,
                                                     submission_date: formatDateForDisplay(meta.submission_date)
                                                 }))
-                                            }}
+                                            })}
                                             setCurrentStep={setCurrentStep}
                                             formCompletion={formCompletion}
                                             addSupportingFile={addSupportingFile}
@@ -734,19 +669,6 @@ export default function PRInitiationForm() {
                     </form>
                 </FormProvider>
             </div>
-
-            {/* Pre-Procurement Modal */}
-            {showPreProcurementModal && submittedProcurement && (
-                <PreProcurementModal
-                    open={showPreProcurementModal}
-                    onOpenChange={(open) => {
-                        if (!open) handlePreProcurementComplete();
-                    }}
-                    procurementId={submittedProcurement.id}
-                    procurementTitle={submittedProcurement.title}
-                    onComplete={handlePreProcurementComplete}
-                />
-            )}
         </AppLayout>
     );
 }

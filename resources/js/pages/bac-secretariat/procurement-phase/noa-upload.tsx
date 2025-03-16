@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, FileText, Upload, AlertCircle, X, FileUp, Users, ClipboardList, Award } from 'lucide-react';
+import { CalendarIcon, FileText, Upload, AlertCircle, X, FileUp, Users, Award } from 'lucide-react';
 import {
   Card,
   CardContent,

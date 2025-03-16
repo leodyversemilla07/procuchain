@@ -47,13 +47,12 @@ export function FormNavigation({
       <div className="flex items-center gap-4">
         {isLastStep ? (
           <Button
-            type="submit"
+            type="submit" // Changed from "button" to "submit" to properly trigger form submission
             variant="default"
-            className={`${
-              allComplete
-                ? 'bg-primary hover:bg-primary/90'
-                : 'bg-muted hover:bg-muted/90'
-            } text-white px-6`}
+            className={`${allComplete
+              ? 'bg-primary hover:bg-primary/90'
+              : 'bg-muted hover:bg-muted/90'
+              } text-white px-6`}
             disabled={processing || !allComplete}
           >
             {processing ? (

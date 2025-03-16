@@ -6,7 +6,6 @@ import {
     CheckCircleIcon,
     AlertCircleIcon,
     ClockIcon,
-    PlusIcon,
     FileEditIcon,
     ShareIcon,
     DownloadIcon,
@@ -14,16 +13,11 @@ import {
     LayersIcon,
     BarChart4Icon,
     ExternalLinkIcon,
-    Table2Icon,
-    FileUpIcon, // Import for file upload icon
+    Table2Icon
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link } from '@inertiajs/react';
-
-// Layouts
 import AppLayout from '@/layouts/app-layout';
-
-// Components - UI
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -36,22 +30,14 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Data Table Components
 import { DataTable } from "@/components/ui/data-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table";
 import { DataTableCheckbox } from "@/components/ui/data-table";
-
-import { PreProcurementModal } from '@/components/pre-procurement/pre-procurement-modal';
-
-// Types
 import { type BreadcrumbItem } from '@/types';
 import { ColumnDef } from "@tanstack/react-table";
 import { ProcurementListItem, PhaseIdentifier, ProcurementState } from '@/types/blockchain';
 import { toast } from "sonner";
 
-
-// Define the props interface
 interface ShowProps {
     procurements: ProcurementListItem[];
     error?: string;
@@ -60,7 +46,7 @@ interface ShowProps {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
-        href: '/bac-secretariat/dashboard',
+        href: '/hope/dashboard',
     },
     {
         title: 'Procurement List',
@@ -68,7 +54,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// Define view types
 type ViewType = 'table' | 'kanban';
 
 export default function ProcuremenstList({ procurements: initialProcurements, error: initialError }: ShowProps) {
@@ -78,9 +63,8 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
     const [viewType, setViewType] = useState<ViewType>('table');
     const [error, setError] = useState<string | undefined>(initialError);
 
-    const [modalOpen, setModalOpen] = useState(false);
-
     useEffect(() => {
+        // Force table view on component mount
         setViewType('table');
 
         if (initialError) {
@@ -94,7 +78,6 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
         setProcurements(initialProcurements || []);
     }, [initialProcurements]);
 
-    // Add this function to your component
     const exportToCSV = (selectedProcurements: ProcurementListItem[]) => {
         try {
             setLoading(true); // Use setLoading to indicate export operation started
@@ -109,7 +92,6 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                 'Timestamp'
             ];
 
-            // Map data to arrays of values
             const data = selectedProcurements.map(proc => [
                 proc.id,
                 proc.title,
@@ -120,11 +102,9 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                 proc.timestamp
             ]);
 
-            // Create CSV content
             const csvContent = [
                 headers.join(','),
                 ...data.map(row => row.map(value => {
-                    // Handle values with commas or quotes by wrapping in quotes
                     if (value === null || value === undefined) return '';
                     const stringValue = String(value);
                     return stringValue.includes(',') || stringValue.includes('"')
@@ -133,30 +113,23 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                 }).join(','))
             ].join('\n');
 
-            // Create a Blob with the CSV data
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 
-            // Create a temporary URL for the blob
             const url = URL.createObjectURL(blob);
 
-            // Create a link element
             const link = document.createElement('a');
 
-            // Set link properties
             const fileName = `procurements-export-${new Date().toISOString().slice(0, 10)}.csv`;
             link.setAttribute('href', url);
             link.setAttribute('download', fileName);
             link.style.visibility = 'hidden';
 
-            // Add to document, click and remove
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            // Clean up by revoking the object URL
             URL.revokeObjectURL(url);
 
-            // Show success message with toast
             toast.success(`Successfully exported ${selectedProcurements.length} procurements to CSV`, {
                 description: `File: ${fileName}`,
                 duration: 5000,
@@ -191,7 +164,6 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
         },
     ];
 
-    // State badge styling function with more refined styling based on ProcurementState
     const getStateBadgeStyle = (state: ProcurementState): string => {
         switch (state) {
             case 'PR Submitted':
@@ -223,7 +195,6 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
         }
     };
 
-    // Phase badge styling function with more refined styling based on PhaseIdentifier
     const getPhaseBadgeStyle = (phase: PhaseIdentifier): string => {
         switch (phase) {
             case 'PR Initiation':
@@ -255,7 +226,6 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
         }
     };
 
-    // Define table columns with checkbox column and improved styling
     const columns: ColumnDef<ProcurementListItem>[] = [
         {
             id: "select",
@@ -311,12 +281,12 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
             },
         },
         {
-            accessorKey: "phase_identifier", // Changed from "phase"
+            accessorKey: "phase_identifier",
             header: ({ column }) => (
                 <DataTableColumnHeader column={column} title="Phase" />
             ),
             cell: ({ row }) => {
-                const phase = row.getValue("phase_identifier") as PhaseIdentifier; // Use correct type
+                const phase = row.getValue("phase_identifier") as PhaseIdentifier;
 
                 return (
                     <Badge variant="outline" className={getPhaseBadgeStyle(phase)}>
@@ -329,12 +299,12 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
             },
         },
         {
-            accessorKey: "current_state", // Changed from "state"
+            accessorKey: "current_state",
             header: ({ column }) => (
                 <DataTableColumnHeader column={column} title="State" />
             ),
             cell: ({ row }) => {
-                const state = row.getValue("current_state") as ProcurementState; // Use correct type
+                const state = row.getValue("current_state") as ProcurementState;
 
                 return (
                     <Badge variant="outline" className={getStateBadgeStyle(state)}>
@@ -396,8 +366,6 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
             cell: ({ row }) => {
                 const procurement = row.original;
                 const id = procurement.id;
-                const currentState = procurement.current_state;
-                const phase = procurement.phase_identifier;
 
                 return (
                     <div className="flex justify-end space-x-1">
@@ -418,287 +386,12 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                                 <TooltipContent>View Details</TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
-
-                        {/* Show upload button for Pre-Procurement phase when conference was held but documents not uploaded */}
-                        {currentState === 'PR Initiation' && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-green-600 dark:text-green-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/pre-procurement-upload/${id}`}>
-                                                <FileUpIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload Pre-Procurement Documents</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-
-                        {(phase === 'PR Initiation' && currentState === 'PR Submitted') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            onClick={() => setModalOpen(true)}
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-amber-600 dark:text-amber-400"
-                                        >
-                                            <FileUpIcon className="h-4 w-4" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Record Pre-Procurement Conference Decision</TooltipContent>
-                                </Tooltip>
-                                {/* Move the PreProcurementModal outside of the TooltipTrigger */}
-                                <PreProcurementModal
-                                    open={modalOpen}
-                                    onOpenChange={setModalOpen}
-                                    procurementId={row.original.id}
-                                    procurementTitle={row.original.title}
-                                    onComplete={() => {
-                                        // Refresh the procurement data or handle completion
-                                        window.location.reload();
-                                    }}
-                                />
-                            </TooltipProvider>
-                        )}
-
-                        {(phase === 'Pre-Procurement' && currentState === 'Pre-Procurement Conference Held') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-green-600 dark:text-green-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/pre-procurement-upload/${id}`}>
-                                                <FileUpIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload Pre-Procurement Documents</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-
-                        {/* Show upload button for Bid Invitation phase */}
-                        {(phase === 'Bid Invitation' && currentState === 'Pre-Procurement Skipped' ||
-                            currentState === 'Pre-Procurement Completed') && (
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-8 w-8 p-0 text-amber-600 dark:text-amber-400"
-                                                asChild
-                                            >
-                                                <Link href={`/bac-secretariat/bid-invitation-upload/${id}`}>
-                                                    <FileUpIcon className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Upload Bid Invitation Documents</TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            )}
-
-                        {(phase === 'Bid Opening' && currentState === 'Bid Invitation Published') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-blue-600 dark:text-blue-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/bid-submission-upload/${id}`}>
-                                                <FileUpIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload Bid Submission Documents</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-
-                        {/* Show upload button for Bid Evaluation phase */}
-                        {(phase === 'Bid Evaluation' && currentState === 'Bids Opened') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-indigo-600 dark:text-indigo-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/bid-evaluation-upload/${id}`}>
-                                                <BarChart4Icon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload Bid Evaluation Documents</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-
-                        {/* Show upload button for Post-Qualification phase */}
-                        {(phase === 'Post-Qualification' && currentState === 'Bids Evaluated') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-purple-600 dark:text-purple-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/post-qualification-upload/${id}`}>
-                                                <FileUpIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload Post-Qualification Documents</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-
-                        {(phase === 'BAC Resolution' && currentState === 'Post-Qualification Verified') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-emerald-600 dark:text-emerald-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/bac-resolution-upload/${id}`}>
-                                                <FileUpIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload BAC Resolution Documents</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-
-                        {(phase === 'Notice Of Award' && currentState === 'Resolution Recorded') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-green-600 dark:text-green-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/noa-upload/${id}`}>
-                                                <FileUpIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload Notice of Award</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-
-                        {(phase === 'Performance Bond' && currentState === 'Awarded') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-orange-600 dark:text-orange-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/performance-bond-upload/${id}`}>
-                                                <FileUpIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload Performance Bond</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-
-                        {(phase === 'Contract And PO' && currentState === 'Performance Bond Recorded') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-lime-600 dark:text-lime-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/contract-po-upload/${id}`}>
-                                                <FileUpIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload Contract & PO</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-
-                        {(phase === 'Notice To Proceed' && currentState === 'Contract And PO Recorded') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-cyan-600 dark:text-cyan-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/ntp-upload/${id}`}>
-                                                <FileUpIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload Notice to Proceed</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-
-                        {(phase === 'Monitoring' && currentState === 'NTP Recorded') && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400"
-                                            asChild
-                                        >
-                                            <Link href={`/bac-secretariat/monitoring-upload/${id}`}>
-                                                <FileUpIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Upload Monitoring Documents</TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
                     </div>
                 );
             },
         },
     ];
 
-    // KanbanCard component for displaying procurement in kanban view
     const KanbanCard = ({ procurement }: { procurement: ProcurementListItem }) => {
         return (
             <Card className="mb-2 cursor-pointer hover:border-blue-600 dark:hover:border-blue-500 transition-all duration-200 shadow-sm border-sidebar-border/70 dark:border-sidebar-border">
@@ -757,58 +450,19 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                             </div>
                         </div>
                     </div>
-                    {/* Add action buttons at the bottom */}
                     <div className="flex justify-end space-x-1 mt-2">
                         <Link href={`procurements-list/${procurement.id}`}>
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                                 <FileTextIcon className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                             </Button>
                         </Link>
-
-                        {procurement.current_state === 'Pre-Procurement Conference Held' && (
-                            <Link href={`/bac-secretariat/pre-procurement-upload/${procurement.id}`}>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                    <FileUpIcon className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-                                </Button>
-                            </Link>
-                        )}
-
-                        {(procurement.phase_identifier === 'Bid Invitation' &&
-                            (procurement.current_state === 'Pre-Procurement Skipped' ||
-                                procurement.current_state === 'Pre-Procurement Completed')) && (
-                                <Link href={`/bac-secretariat/bid-invitation-upload/${procurement.id}`}>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                        <FileUpIcon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                                    </Button>
-                                </Link>
-                            )}
-
-                        {(procurement.phase_identifier === 'Bid Opening' &&
-                            procurement.current_state === 'Bid Invitation Published') && (
-                                <Link href={`/bac-secretariat/bid-submission-upload/${procurement.id}`}>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                        <FileUpIcon className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                                    </Button>
-                                </Link>
-                            )}
-
-                        {(procurement.phase_identifier === 'Bid Evaluation' &&
-                            procurement.current_state === 'Bids Opened') && (
-                                <Link href={`/bac-secretariat/bid-evaluation-upload/${procurement.id}`}>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                        <BarChart4Icon className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-                                    </Button>
-                                </Link>
-                            )}
                     </div>
                 </CardContent>
             </Card>
         );
     };
 
-    // KanbanBoard component for kanban view
     const KanbanBoard = ({ procurements }: { procurements: ProcurementListItem[] }) => {
-        // Group procurements by phase_identifier
         const phases = [...new Set(procurements.map(proc => proc.phase_identifier))].filter(Boolean) as PhaseIdentifier[];
 
         const procurementsByPhase: Record<string, ProcurementListItem[]> = {};
@@ -885,17 +539,6 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                                         </TabsList>
                                     </Tabs>
                                 </div>
-                                <div className="flex gap-2">
-                                    <Button
-                                        className="bg-primary hover:bg-primary/90 text-sm font-medium shadow-sm transition-colors dark:bg-primary/90 dark:hover:bg-primary/80 dark:text-white/95"
-                                        asChild
-                                    >
-                                        <Link href="/bac-secretariat/procurement/pr-initiation" className="flex items-center justify-center">
-                                            <PlusIcon className="h-3.5 w-3.5 mr-1.5" />
-                                            New Procurement
-                                        </Link>
-                                    </Button>
-                                </div>
                             </div>
                         </div>
                         <div className="mt-4 flex items-center text-xs text-gray-500 dark:text-gray-400">
@@ -949,17 +592,8 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                                 </div>
                                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No procurement records found</h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-6">
-                                    There are no procurement records in the blockchain yet. Start by creating your first procurement to begin tracking it on the blockchain.
+                                    There are no procurement records in the blockchain yet.
                                 </p>
-                                <Button
-                                    className="bg-primary hover:bg-primary/90 text-sm font-medium shadow-sm transition-colors dark:bg-primary/90 dark:hover:bg-primary/80 dark:text-white/95"
-                                    asChild
-                                >
-                                    <Link href="/bac-secretariat/procurement/pr-initiation" className="flex items-center">
-                                        <PlusIcon className="h-4 w-4 mr-1.5" />
-                                        Create First Procurement
-                                    </Link>
-                                </Button>
                             </div>
                         ) : (
                             <Tabs value={viewType} className="w-full">

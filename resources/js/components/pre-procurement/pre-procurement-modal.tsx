@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { router } from '@inertiajs/react';
-import axios from 'axios';
+import React from 'react';
+import { useForm } from '@inertiajs/react';
+import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { LoaderCircle } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -28,54 +29,51 @@ export function PreProcurementModal({
     procurementTitle,
     onComplete
 }: PreProcurementModalProps) {
-    const [conferenceHeld, setConferenceHeld] = useState<boolean | null>(null);
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [processing, setProcessing] = useState<boolean>(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { data, setData, post, processing, errors, reset, setError } = useForm({
+        procurement_id: procurementId,
+        procurement_title: procurementTitle,
+        conference_held: undefined as boolean | undefined,
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setErrors({});
 
-        // Validate form inputs
-        if (conferenceHeld === null) {
-            setErrors({ conferenceHeld: 'Please select whether a conference was held' });
+        if (data.conference_held === undefined) {
+            setError('conference_held', 'Please select whether a conference was held');
             return;
         }
 
-        setProcessing(true);
-        setIsSubmitting(true);
-
-        const formData = new FormData();
-        formData.append('procurement_id', procurementId);
-        formData.append('procurement_title', procurementTitle);
-        formData.append('conference_held', conferenceHeld ? '1' : '0');
-
-        axios.post('/bac-secretariat/publish-pre-procurement-decision', formData)
-            .then(response => {
-                setProcessing(false);
-                setIsSubmitting(false);
+        post('/bac-secretariat/publish-pre-procurement-decision', {
+            onSuccess: (response) => {
                 onOpenChange(false);
 
-                // Call onComplete callback when done, passing the next phase information
-                if (onComplete && response.data.success) {
-                    onComplete(response.data.nextPhase, conferenceHeld);
+                const message = data.conference_held
+                    ? "You will now proceed to upload pre-procurement documents."
+                    : "The pre-procurement phase has been skipped.";
+
+                toast.success("Decision submitted successfully!", { description: message });
+
+                if (onComplete && response?.props?.success) {
+                    onComplete(
+                        response?.props?.nextPhase as string | undefined,
+                        data.conference_held
+                    );
                 }
-            })
-            .catch(error => {
-                setProcessing(false);
-                setIsSubmitting(false);
-                setErrors(error.response?.data?.errors || { general: 'An error occurred' });
-            });
+
+                reset();
+            }
+        });
+    };
+
+    const handleConferenceSelection = (value: string) => {
+        setData('conference_held', value === 'true');
     };
 
     return (
         <Dialog
             open={open}
             onOpenChange={(newOpen) => {
-                if (isSubmitting) return;
-                if (!newOpen && open && onComplete) onComplete();
-                onOpenChange(newOpen);
+                if (!processing) onOpenChange(newOpen);
             }}
         >
             <DialogContent className="sm:max-w-[500px] p-6">
@@ -98,9 +96,10 @@ export function PreProcurementModal({
                                 Was a pre-procurement conference held?
                             </Label>
                             <RadioGroup
-                                value={conferenceHeld === null ? undefined : conferenceHeld.toString()}
-                                onValueChange={(value) => setConferenceHeld(value === 'true')}
+                                value={data.conference_held === undefined ? undefined : data.conference_held.toString()}
+                                onValueChange={handleConferenceSelection}
                                 className="grid grid-cols-2 gap-4 pt-2"
+                                aria-label="Pre-procurement conference status"
                             >
                                 <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
                                     <RadioGroupItem value="true" id="conference-yes" />
@@ -111,17 +110,19 @@ export function PreProcurementModal({
                                     <Label htmlFor="conference-no" className="cursor-pointer">No</Label>
                                 </div>
                             </RadioGroup>
-                            {errors.conferenceHeld && (
-                                <p className="text-red-500 text-sm mt-2">{errors.conferenceHeld}</p>
+                            {errors.conference_held && (
+                                <p className="text-red-500 text-sm mt-2" id="conference-error" aria-live="polite">
+                                    {errors.conference_held}
+                                </p>
                             )}
                         </div>
 
-                        {conferenceHeld !== null && (
-                            <div className={`p-4 rounded-lg ${conferenceHeld
+                        {data.conference_held !== undefined && (
+                            <div className={`p-4 rounded-lg ${data.conference_held
                                 ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                                 : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
                                 }`}>
-                                {conferenceHeld ? (
+                                {data.conference_held ? (
                                     <p>You'll be directed to the procurement list to upload the pre-procurement documents.</p>
                                 ) : (
                                     <p>This will skip the pre-procurement phase and proceed to Bid Invitation Publication.</p>
@@ -138,10 +139,7 @@ export function PreProcurementModal({
                         >
                             {processing ? (
                                 <span className="flex items-center gap-2">
-                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
+                                    <LoaderCircle className="h-4 w-4 animate-spin" />
                                     Processing...
                                 </span>
                             ) : "Submit Decision"}

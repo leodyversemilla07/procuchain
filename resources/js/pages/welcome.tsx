@@ -1,23 +1,10 @@
-import { type SharedData } from '@/types';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+
+import { Head, Link } from '@inertiajs/react';
+import { useEffect } from 'react';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 
 export default function Welcome() {
-    const { auth } = usePage<SharedData>().props;
-    const [scrolled, setScrolled] = useState(false);
-
-    // Handle scroll effect for header
-    useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    // Simple fade-in animation on page load
     useEffect(() => {
         const timer = setTimeout(() => {
             document.querySelector('.fade-in-content')?.classList.add('is-visible');
