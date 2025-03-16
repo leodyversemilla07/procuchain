@@ -30,7 +30,7 @@ class MultichainService
         try {
             $info = $this->client->getinfo();
 
-            if (!$this->client->success()) {
+            if (! $this->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Connection failed - Error %d: %s',
@@ -69,7 +69,7 @@ class MultichainService
         try {
             $info = $this->client->getinfo();
 
-            if (!$this->client->success()) {
+            if (! $this->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -85,9 +85,9 @@ class MultichainService
             Log::error('Failed to get blockchain info', [
                 'error' => $e->getMessage(),
                 'error_code' => $this->client->errorcode(),
-                'error_message' => $this->client->errormessage()
+                'error_message' => $this->client->errormessage(),
             ]);
-            throw new Exception('Failed to get blockchain info: ' . $e->getMessage());
+            throw new Exception('Failed to get blockchain info: '.$e->getMessage());
         }
     }
 
@@ -96,7 +96,7 @@ class MultichainService
         try {
             $txid = $this->client->publishfrom($fromAddress, $stream, $key, bin2hex(json_encode($data)));
 
-            if (!$this->client->success()) {
+            if (! $this->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -122,7 +122,7 @@ class MultichainService
                 'key' => $key,
                 'from_address' => $fromAddress,
             ]);
-            throw new Exception('Failed to publish to blockchain: ' . $e->getMessage());
+            throw new Exception('Failed to publish to blockchain: '.$e->getMessage());
         }
     }
 
@@ -142,7 +142,7 @@ class MultichainService
                 $formattedItems,
             );
 
-            if (!$this->client->success()) {
+            if (! $this->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -167,7 +167,7 @@ class MultichainService
                 'error_message' => $this->client->errormessage(),
                 'from_address' => $fromAddress,
             ]);
-            throw new Exception('Failed to publish multiple items to blockchain: ' . $e->getMessage());
+            throw new Exception('Failed to publish multiple items to blockchain: '.$e->getMessage());
         }
     }
 
@@ -177,7 +177,7 @@ class MultichainService
             $start = -$count;
             $items = $this->client->liststreamkeyitems($stream, $key, $verbose, $count, $start, $localOrdering);
 
-            if (!$this->client->success()) {
+            if (! $this->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -198,7 +198,7 @@ class MultichainService
                 'key' => $key,
                 'error' => $e->getMessage(),
             ]);
-            throw new Exception('Failed to list stream key items: ' . $e->getMessage());
+            throw new Exception('Failed to list stream key items: '.$e->getMessage());
         }
     }
 
@@ -208,7 +208,7 @@ class MultichainService
             $start = -$count;
             $items = $this->client->liststreamitems($stream, $verbose, $count, $start, $localOrdering);
 
-            if (!$this->client->success()) {
+            if (! $this->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -228,7 +228,7 @@ class MultichainService
                 'stream' => $stream,
                 'error' => $e->getMessage(),
             ]);
-            throw new Exception('Failed to list stream items: ' . $e->getMessage());
+            throw new Exception('Failed to list stream items: '.$e->getMessage());
         }
     }
 
@@ -238,7 +238,7 @@ class MultichainService
             $start = -$count;
             $items = $this->client->liststreampublisheritems($stream, $address, $verbose, $count, $start, $localOrdering);
 
-            if (!$this->client->success()) {
+            if (! $this->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -259,7 +259,7 @@ class MultichainService
                 'address' => $address,
                 'error' => $e->getMessage(),
             ]);
-            throw new Exception('Failed to list stream publisher items: ' . $e->getMessage());
+            throw new Exception('Failed to list stream publisher items: '.$e->getMessage());
         }
     }
 }

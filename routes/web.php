@@ -1,12 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\BacChairmanController;
+use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\HopeController;
 use App\Http\Controllers\PrGeneratorController;
 use App\Http\Controllers\ProcurementController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -17,7 +17,6 @@ Route::get('generate-pr-show', [PrGeneratorController::class, 'index'])
 
 Route::post('generate-pr-store', [PrGeneratorController::class, 'store'])
     ->name('generate-pr.store');
-
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -119,7 +118,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/bac-secretariat/upload-monitoring-document', [ProcurementController::class, 'uploadMonitoringDocument'])
             ->name('bac-secretariat.upload-monitoring-document');
 
-        Route::get('/bac-secretariat/testing', function() {
+        Route::get('/bac-secretariat/testing', function () {
             return Inertia::render('testing');
         })->name('bac-secretariat.testing');
     });
@@ -149,5 +148,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

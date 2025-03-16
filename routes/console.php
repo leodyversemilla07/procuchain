@@ -1,8 +1,8 @@
 <?php
 
+use App\Console\Commands\MultiChainSetup;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
-use App\Console\Commands\MultiChainSetup;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

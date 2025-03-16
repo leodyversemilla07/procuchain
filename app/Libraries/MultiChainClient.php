@@ -69,7 +69,7 @@ class MultiChainClient
             'method' => $method,
             'params' => $params,
         ];
-        if (!is_null($this->chainname)) {
+        if (! is_null($this->chainname)) {
             $request['chain_name'] = $this->chainname;
         }
 
@@ -81,19 +81,19 @@ class MultiChainClient
         $result = null;
 
         $decoded = null;
-        if (!is_null($encoded)) {
+        if (! is_null($encoded)) {
             $decoded = json_decode($encoded, true);
         }
 
-        if (!is_null($decoded)) {
+        if (! is_null($decoded)) {
             if (array_key_exists('error', $decoded) && array_key_exists('result', $decoded)) {
                 $this->error_code = 0;
-                if (!is_null($decoded['error'])) {
+                if (! is_null($decoded['error'])) {
                     $this->error_code = $decoded['error']['code'];
                     $this->error_message = $decoded['error']['message'];
                     if ($this->error_code == -1) {
                         if (strpos($this->error_message, "\n\n") !== false) {
-                            $this->error_message = "Wrong parameters. Usage:\n\n" . $this->error_message;
+                            $this->error_message = "Wrong parameters. Usage:\n\n".$this->error_message;
                         }
                     }
                 } else {
@@ -133,7 +133,7 @@ class MultiChainClient
     private function call_fsockopen($method, $params)
     {
         $fp = fsockopen($this->host, $this->port);
-        $strUserPass64 = base64_encode($this->username . ':' . $this->password);
+        $strUserPass64 = base64_encode($this->username.':'.$this->password);
 
         $payload = $this->prepare_payload($method, $params);
 
@@ -145,12 +145,12 @@ class MultiChainClient
             fwrite($fp, "Host: $this->host\r\n");
             fwrite($fp, "Authorization: Basic $strUserPass64\r\n");
             fwrite($fp, "Content-type: application/json\r\n");
-            fwrite($fp, 'Content-length: ' . strlen($payload) . "\r\n");
+            fwrite($fp, 'Content-length: '.strlen($payload)."\r\n");
             fwrite($fp, "Connection: close\r\n\r\n");
-            fwrite($fp, $payload . "\r\n\r\n");
+            fwrite($fp, $payload."\r\n\r\n");
 
             $chunks = [];
-            while (!feof($fp)) {
+            while (! feof($fp)) {
                 $chunks[] = fgets($fp, 32768);
             }
             $response = implode('', $chunks);
@@ -178,8 +178,8 @@ class MultiChainClient
 
     private function call_curl($method, $params)
     {
-        $url = ($this->usessl ? 'https' : 'http') . '://' . $this->host . ':' . $this->port . '/';
-        $strUserPass64 = base64_encode($this->username . ':' . $this->password);
+        $url = ($this->usessl ? 'https' : 'http').'://'.$this->host.':'.$this->port.'/';
+        $strUserPass64 = base64_encode($this->username.':'.$this->password);
 
         $payload = $this->prepare_payload($method, $params);
 
@@ -194,16 +194,16 @@ class MultiChainClient
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-            if (!$this->verifyssl) {
+            if (! $this->verifyssl) {
                 curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             }
 
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
-                'Content-Length: ' . strlen($payload),
+                'Content-Length: '.strlen($payload),
                 'Connection: close',
-                'Authorization: Basic ' . $strUserPass64,
+                'Authorization: Basic '.$strUserPass64,
             ]);
 
             $encoded = curl_exec($ch);

@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Inertia\Inertia;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Exception;
+use Inertia\Inertia;
 
 class PrGeneratorController extends Controller
 {
@@ -77,13 +76,13 @@ class PrGeneratorController extends Controller
                 'purchaseRequest' => $validated,
                 'items' => $items,
                 'grandTotal' => $grandTotal,
-                'additional_specs' => [] // Add this to prevent undefined variable errors
+                'additional_specs' => [], // Add this to prevent undefined variable errors
             ];
 
             // Log data being sent to view
             Log::info('Data being sent to PDF view', [
                 'itemsCount' => count($items),
-                'grandTotal' => $grandTotal
+                'grandTotal' => $grandTotal,
             ]);
 
             // Generate PDF
@@ -99,27 +98,27 @@ class PrGeneratorController extends Controller
             // Create directory with proper error handling
             $tempDir = 'temp_pdfs';
             $storagePath = public_path($tempDir);
-            
-            if (!file_exists($storagePath)) {
-                if (!mkdir($storagePath, 0755, true)) {
+
+            if (! file_exists($storagePath)) {
+                if (! mkdir($storagePath, 0755, true)) {
                     throw new Exception("Failed to create directory: $storagePath");
                 }
             }
 
             // Check if directory is writable
-            if (!is_writable($storagePath)) {
+            if (! is_writable($storagePath)) {
                 throw new Exception("Directory is not writable: $storagePath");
             }
 
             // Save PDF to a temporary file with a unique name
-            $fileName = 'PR_' . str_replace(['/', '\\', ' '], '_', $validated['pr_no']) . '_' . time() . '.pdf';
-            $path = $storagePath . '/' . $fileName;
+            $fileName = 'PR_'.str_replace(['/', '\\', ' '], '_', $validated['pr_no']).'_'.time().'.pdf';
+            $path = $storagePath.'/'.$fileName;
 
             // Save the PDF
             $pdf->save($path);
 
             // Check if file was successfully created
-            if (!file_exists($path)) {
+            if (! file_exists($path)) {
                 throw new Exception("Failed to create PDF file at: $path");
             }
 
@@ -127,19 +126,19 @@ class PrGeneratorController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'PDF generated successfully',
-                'download_url' => url($tempDir . '/' . $fileName)
+                'download_url' => url($tempDir.'/'.$fileName),
             ]);
         } catch (Exception $e) {
             // Log the error with detailed info
-            Log::error('PDF Generation Error: ' . $e->getMessage(), [
+            Log::error('PDF Generation Error: '.$e->getMessage(), [
                 'exception' => $e,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             // Return error response with specific error message
             return response()->json([
                 'success' => false,
-                'error' => 'Failed to generate PDF: ' . $e->getMessage()
+                'error' => 'Failed to generate PDF: '.$e->getMessage(),
             ], 500);
         }
     }
