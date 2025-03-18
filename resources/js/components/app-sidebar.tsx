@@ -25,11 +25,6 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Purchase Request Initiation',
                     url: '/bac-secretariat/procurement/pr-initiation',
                     icon: Upload,
-                },
-                {
-                    title: 'Testing',
-                    url: '/bac-secretariat/testing',
-                    icon: Beaker,
                 }
             ];
         case 'bac_chairman':

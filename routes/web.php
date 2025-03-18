@@ -117,10 +117,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('/bac-secretariat/upload-monitoring-document', [ProcurementController::class, 'uploadMonitoringDocument'])
             ->name('bac-secretariat.upload-monitoring-document');
-
-        Route::get('/bac-secretariat/testing', function () {
-            return Inertia::render('testing');
-        })->name('bac-secretariat.testing');
     });
 
     Route::middleware(['role:bac_chairman'])->group(function () {
