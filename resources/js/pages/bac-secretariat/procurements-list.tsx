@@ -115,9 +115,10 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                 proc.title,
                 proc.phase_identifier,
                 proc.current_state,
-                proc.document_count,
-                proc.last_updated,
-                proc.timestamp
+                // Fix: Use correct property names from the ProcurementListItem type
+                proc.document_count || 0, // Default to 0 if undefined
+                proc.last_updated || 'N/A', // Default to 'N/A' if undefined
+                proc.timestamp || new Date().toISOString() // Default to current time if undefined
             ]);
 
             // Create CSV content
@@ -360,12 +361,12 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
             },
         },
         {
-            accessorKey: "documentCount",
+            accessorKey: "document_count",
             header: ({ column }) => (
                 <DataTableColumnHeader column={column} title="Documents" />
             ),
             cell: ({ row }) => {
-                const docCount = row.getValue("documentCount") as number;
+                const docCount = row.getValue("document_count") as number;
 
                 return (
                     <div className="flex items-center gap-1">
@@ -376,12 +377,12 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
             },
         },
         {
-            accessorKey: "lastUpdated",
+            accessorKey: "last_updated",
             header: ({ column }) => (
                 <DataTableColumnHeader column={column} title="Last Updated" />
             ),
             cell: ({ row }) => {
-                const date = row.getValue("lastUpdated") as string;
+                const date = row.getValue("last_updated") as string;
 
                 return (
                     <div className="flex items-center gap-1">

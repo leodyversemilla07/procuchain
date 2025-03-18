@@ -171,7 +171,7 @@ class MultichainService
         }
     }
 
-    public function listStreamKeyItems(string $stream, string $key, int $count = 10, bool $verbose = false, bool $localOrdering = false): array
+    public function listStreamKeyItems(string $stream, string $key, int $count = 1000, bool $verbose = false, bool $localOrdering = false): array
     {
         try {
             $start = -$count;
@@ -202,7 +202,7 @@ class MultichainService
         }
     }
 
-    public function listStreamItems(string $stream, bool $verbose = false, int $count = 10, bool $localOrdering = false): array
+    public function listStreamItems(string $stream, bool $verbose = false, int $count = 1000, bool $localOrdering = false): array
     {
         try {
             $start = -$count;
@@ -232,7 +232,7 @@ class MultichainService
         }
     }
 
-    public function listStreamPublisherItems(string $stream, string $address, bool $verbose = false, int $count = 10, bool $localOrdering = false): array
+    public function listStreamPublisherItems(string $stream, string $address, bool $verbose = false, int $count = 1000, bool $localOrdering = false): array
     {
         try {
             $start = -$count;

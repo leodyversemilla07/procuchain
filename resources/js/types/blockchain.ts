@@ -100,8 +100,8 @@ export interface ProcurementListItem {
     current_state: string;
     user_address: string;
     timestamp: string;
-    last_updated: string;
     document_count: number;
+    last_updated: string;
 }
 
 export interface Procurement {
