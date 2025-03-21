@@ -95,12 +95,6 @@ export default function PreProcurementUpload({ procurement, errors = {} }: PrePr
         toast.success("Documents uploaded successfully!", {
           description: "Pre-procurement conference documents have been submitted."
         });
-
-        setTimeout(() => {
-          router.visit('/bac-secretariat/procurements-list', {
-            method: 'get'
-          });
-        }, 1500);
       },
       onError: (errors) => {
         setServerErrors(errors);

@@ -90,12 +90,7 @@ export default function ContractPOUpload({ procurement, errors = {} }: ContractP
         toast.success("Documents uploaded successfully!", {
           description: "Contract and Purchase Order documents have been recorded."
         });
-
-        setTimeout(() => {
-          router.visit('/bac-secretariat/procurements-list', {
-            method: 'get'
-          });
-        }, 1500);
+        // Remove the redirect - let server handle it
       },
       onError: (errors) => {
         setServerErrors(errors);

@@ -158,6 +158,7 @@ export default function BidSubmissionUpload({ procurement, errors = {} }: BidSub
         toast.success("Documents uploaded successfully!", {
           description: "Bid submission documents have been submitted."
         });
+        // Remove the redirect if present - let server handle it
       },
       onError: (errors) => {
         setServerErrors(errors);

@@ -82,14 +82,9 @@ export default function NTPUpload({ procurement, errors = {} }: NTPUploadProps) 
     router.post('/bac-secretariat/upload-ntp-document', formData, {
       onSuccess: () => {
         toast.success("Notice to Proceed uploaded successfully!", {
-          description: "The NTP has been recorded and will be published to PhilGEPS."
+          description: "NTP document has been submitted and published to PhilGEPS."
         });
-
-        setTimeout(() => {
-          router.visit('/bac-secretariat/procurements-list', {
-            method: 'get'
-          });
-        }, 1500);
+        // Remove the redirect - let server handle it
       },
       onError: (errors) => {
         setServerErrors(errors);

@@ -90,12 +90,7 @@ export default function NoaUpload({ procurement, errors = {} }: NoaUploadProps) 
         toast.success("Notice of Award uploaded successfully!", {
           description: "NOA document has been submitted and published to PhilGEPS."
         });
-
-        setTimeout(() => {
-          router.visit('/bac-secretariat/procurements-list', {
-            method: 'get'
-          });
-        }, 1500);
+        // Remove the redirect - let server handle it
       },
       onError: (errors) => {
         setServerErrors(errors);

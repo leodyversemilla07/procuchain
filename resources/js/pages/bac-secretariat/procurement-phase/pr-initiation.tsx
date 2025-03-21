@@ -255,10 +255,17 @@ export default function PRInitiationForm() {
 
         // Mark supporting step as incomplete
         setFormCompletion(prev => ({ ...prev, supporting: false }));
+
+        // Add toast notification for supporting file
+        toast.info("New supporting document added", {
+            description: "Please upload the file and complete the details"
+        });
     };
 
     // Simplified file removal
     const removeSupportingFile = (index: number) => {
+        const fileName = data.supporting_files[index]?.name || "Supporting document";
+
         setData({
             ...data,
             supporting_files: data.supporting_files.filter((_, i) => i !== index),
@@ -266,6 +273,11 @@ export default function PRInitiationForm() {
         });
 
         setSupportingFileCount(prev => prev - 1);
+
+        // Add toast notification for file removal
+        toast.info(`${fileName} removed`, {
+            description: "The supporting document has been removed"
+        });
     };
 
     // Unified form validation
@@ -347,8 +359,16 @@ export default function PRInitiationForm() {
         if (!isFormValid()) {
             setShowValidationSummary(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            toast.error("Form validation failed", {
+                description: "Please fix all errors before submitting"
+            });
             return;
         }
+
+        // Show submission toast
+        toast.loading("Submitting Purchase Request...", {
+            id: "pr-submission"
+        });
 
         // Submit the form
         post('/bac-secretariat/publish-pr-initiation', {
@@ -364,20 +384,30 @@ export default function PRInitiationForm() {
     const handleSubmissionSuccess = (page: any) => {
         const responseFlash = page.props.flash as FlashData;
 
+        // Dismiss the loading toast
+        toast.dismiss("pr-submission");
+
         if (responseFlash?.procurementId && responseFlash?.procurementTitle) {
             setSubmittedProcurement({
                 id: responseFlash.procurementId,
                 title: responseFlash.procurementTitle
             });
 
-            toast.success("Purchase Request successfully submitted");
+            toast.success("Purchase Request successfully submitted", {
+                description: `Procurement #${responseFlash.procurementId} has been initiated`
+            });
         }
     };
 
     // Handle submission errors
     const handleSubmissionError = (errors: any) => {
         console.error('Submission error:', errors);
-        toast.error("Failed to submit Purchase Request");
+
+        // Dismiss the loading toast and show error
+        toast.dismiss("pr-submission");
+        toast.error("Failed to submit Purchase Request", {
+            description: "Please check your connection and try again"
+        });
     };
 
     // Simple toggle function
@@ -416,8 +446,22 @@ export default function PRInitiationForm() {
         if (validateStep(currentStep)) {
             setCurrentStep(Math.min(3, currentStep + 1));
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Add toast notification for step progress
+            if (currentStep === 1) {
+                toast.success("Procurement details saved", {
+                    description: "Please complete the PR document details"
+                });
+            } else if (currentStep === 2) {
+                toast.success("PR document details saved", {
+                    description: "You can now add supporting documents"
+                });
+            }
         } else {
             setShowValidationSummary(true);
+            toast.error("Please fix the validation errors", {
+                description: "Some required fields need attention"
+            });
         }
     };
 
@@ -460,9 +504,15 @@ export default function PRInitiationForm() {
                 const updatedFiles = [...data.supporting_files];
                 updatedFiles[index] = file;
                 setData('supporting_files', updatedFiles);
+                toast.success(`Supporting file added: ${file.name}`, {
+                    description: "File has been attached to your request"
+                });
             } else {
                 // For PR file
                 setData('pr_file', file);
+                toast.success(`PR document added: ${file.name}`, {
+                    description: "Purchase Request document has been attached"
+                });
             }
         }
     };
