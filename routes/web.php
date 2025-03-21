@@ -12,7 +12,10 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-Route::get('generate-pr-show', [PrGeneratorController::class, 'index'])
+// Route::get('generate-pr-show', [PrGeneratorController::class, 'index'])
+//     ->name('generate-pr.index');
+
+Route::inertia('/generate-pr-show', 'generate-pr')
     ->name('generate-pr.index');
 
 Route::post('generate-pr-store', [PrGeneratorController::class, 'store'])

@@ -118,15 +118,10 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
 
     router.post('/bac-secretariat/upload-post-qualification-documents', formData, {
       onSuccess: () => {
-        toast.success("Documents uploaded successfully!", {
-          description: "Post-qualification documents have been submitted."
+        toast.success("Post-qualification documents uploaded successfully!", {
+          description: `Outcome recorded as "${values.outcome}".`
         });
-
-        setTimeout(() => {
-          router.visit('/bac-secretariat/procurements-list', {
-            method: 'get'
-          });
-        }, 1500);
+        // Remove the redirect if present - let server handle it
       },
       onError: (errors) => {
         setServerErrors(errors);

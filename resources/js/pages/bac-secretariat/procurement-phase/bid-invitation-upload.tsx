@@ -90,12 +90,7 @@ export default function BidInvitationUpload({ procurement, errors = {} }: BidInv
         toast.success("Bid invitation published successfully!", {
           description: "The bid invitation documents have been uploaded and published."
         });
-
-        setTimeout(() => {
-          router.visit('/bac-secretariat/procurements-list', {
-            method: 'get'
-          });
-        }, 1500);
+        // Remove the redirect - let server handle it
       },
       onError: (errors) => {
         setServerErrors(errors);

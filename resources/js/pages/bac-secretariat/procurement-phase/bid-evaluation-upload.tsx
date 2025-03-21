@@ -93,10 +93,6 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
         toast.success("Documents uploaded successfully!", {
           description: "Bid evaluation documents have been submitted."
         });
-
-        setTimeout(() => {
-          router.visit('/bac-secretariat/procurements-list');
-        }, 1500);
       },
       onError: (errors) => {
         setValidationErrors(errors);

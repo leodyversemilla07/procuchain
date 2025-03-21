@@ -90,12 +90,7 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
         toast.success("Resolution uploaded successfully!", {
           description: "BAC Resolution document has been submitted."
         });
-
-        setTimeout(() => {
-          router.visit('/bac-secretariat/procurements-list', {
-            method: 'get'
-          });
-        }, 1500);
+        // Remove the redirect - let server handle it
       },
       onError: (errors) => {
         setServerErrors(errors);

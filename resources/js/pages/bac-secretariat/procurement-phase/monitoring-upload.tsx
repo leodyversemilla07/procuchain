@@ -88,12 +88,7 @@ export default function MonitoringUpload({ procurement, errors = {} }: Monitorin
         toast.success("Compliance report uploaded successfully!", {
           description: "The report has been recorded and relevant stakeholders have been notified."
         });
-
-        setTimeout(() => {
-          router.visit('/bac-secretariat/procurements-list', {
-            method: 'get'
-          });
-        }, 1500);
+        // Remove the redirect - let server handle it
       },
       onError: (errors) => {
         setServerErrors(errors);

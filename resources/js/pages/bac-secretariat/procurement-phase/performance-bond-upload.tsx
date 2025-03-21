@@ -90,14 +90,9 @@ export default function PerformanceBondUpload({ procurement, errors = {} }: Perf
     router.post('/bac-secretariat/upload-performance-bond-document', formData, {
       onSuccess: () => {
         toast.success("Performance Bond uploaded successfully!", {
-          description: "Performance Bond document has been recorded."
+          description: "Performance Bond document has been submitted."
         });
-
-        setTimeout(() => {
-          router.visit('/bac-secretariat/procurements-list', {
-            method: 'get'
-          });
-        }, 1500);
+        // Remove the redirect if present - let server handle it
       },
       onError: (errors) => {
         setServerErrors(errors);
