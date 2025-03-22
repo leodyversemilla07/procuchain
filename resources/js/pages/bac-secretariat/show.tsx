@@ -133,7 +133,7 @@ const phaseOrder = [
     'Contract And PO',
     'Notice To Proceed',
     'Monitoring',
-    'Other Documents'
+    'Completed'
 ];
 
 // Define the props interface
@@ -203,7 +203,11 @@ function getStatusColor(state: string): { variant: "default" | "destructive" | "
         'monitoring': {
             variant: "secondary",
             icon: <FileCheck className="w-4 h-4 mr-1.5" />
-        }
+        },
+        'completed': {
+            variant: "default",
+            icon: <CheckCircle className="w-4 h-4 mr-1.5" />
+        },
     };
 
     // Default status for any unmatched state
@@ -305,6 +309,10 @@ export default function Show({ procurement, now, error }: ShowProps) {
                 variant: "secondary",
                 icon: <FileCheck className="w-4 h-4 mr-1.5" />
             },
+            'completed': {
+                variant: "default",
+                icon: <CheckCircle className="w-4 h-4 mr-1.5" />
+            },
         };
 
         const defaultStatus = {
@@ -352,7 +360,7 @@ export default function Show({ procurement, now, error }: ShowProps) {
         'Contract And PO',
         'Notice To Proceed',
         'Monitoring',
-        'Other Documents'
+        'Completed',
     ];
 
     // Improved function to normalize phase names for better matching

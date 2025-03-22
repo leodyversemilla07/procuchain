@@ -52,10 +52,10 @@ class BacChairmanController extends BaseController
                         'current_state' => $data['current_state'] ?? '',
                         'user_address' => $data['user_address'] ?? '',
                         'timestamp' => $data['timestamp'] ?? '',
-                        'lastUpdated' => date('Y-m-d', strtotime($data['timestamp'] ?? 'now')),
+                        'last_updated' => date('Y-m-d', strtotime($data['timestamp'] ?? 'now')),
                         'procurement_id' => $data['procurement_id'] ?? '',
                         'procurement_title' => $data['procurement_title'] ?? '',
-                        'documentCount' => 0,
+                        'document_count' => 0,
                     ];
                 })
                 ->groupBy('id')
@@ -72,7 +72,7 @@ class BacChairmanController extends BaseController
                 $streamKey = $this->getStreamKey($procId, $procTitle);
 
                 $documents = $this->multiChain->listStreamKeyItems(self::STREAM_DOCUMENTS, $streamKey);
-                $sortedProcurements[$key]['documentCount'] = count($documents);
+                $sortedProcurements[$key]['document_count'] = count($documents);
             }
 
             return Inertia::render('bac-chairman/procurements-list', [

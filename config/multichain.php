@@ -15,7 +15,7 @@ return [
 
     'rpc' => [
         'host' => env('MULTICHAIN_HOST', '127.0.0.1'),
-        'port' => env('MULTICHAIN_PORT', '6719'),
+        'port' => env('MULTICHAIN_PORT', '2778'),
         'username' => env('MULTICHAIN_USERNAME', 'multichainrpc'),
         'password' => env('MULTICHAIN_PASSWORD'),
     ],

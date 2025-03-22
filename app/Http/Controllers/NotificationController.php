@@ -23,7 +23,7 @@ class NotificationController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
-        // Count unread notifications   
+        // Count unread notifications
         $unreadCount = $user->unreadNotifications()->count();
 
         return response()->json([
@@ -50,6 +50,7 @@ class NotificationController extends Controller
 
         if ($notification) {
             $notification->markAsRead();
+
             return response()->json(['message' => 'Notification marked as read']);
         }
 
