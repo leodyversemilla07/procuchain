@@ -120,6 +120,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('/bac-secretariat/upload-monitoring-document', [ProcurementController::class, 'uploadMonitoringDocument'])
             ->name('bac-secretariat.upload-monitoring-document');
+
+        // Mark procurement as complete routes
+        Route::get('/bac-secretariat/mark-complete/{id}', [ProcurementController::class, 'showMarkComplete'])
+            ->name('bac-secretariat.mark-complete.show');
+
+        // Add this with your other bac-secretariat routes
+        Route::post('/bac-secretariat/complete-procurement/{id}', [ProcurementController::class, 'completeProcess'])
+            ->name('bac-secretariat.complete-procurement');
     });
 
     Route::middleware(['role:bac_chairman'])->group(function () {

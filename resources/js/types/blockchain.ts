@@ -16,7 +16,8 @@ export enum PhaseIdentifier {
     PERFORMANCE_BOND = 'Performance Bond',
     CONTRACT_AND_PO = 'Contract And PO',
     NOTICE_TO_PROCEED = 'Notice To Proceeed',
-    MONITORING = 'Monitoring'
+    MONITORING = 'Monitoring',
+    COMPLETED = 'Completed'
 }
 
 export enum ProcurementState {
@@ -32,7 +33,8 @@ export enum ProcurementState {
     PERFORMANCE_BOND_RECORDED = 'Performance Bond Recorded',
     CONTRACT_AND_PO_RECORDED = 'Contract And PO Recorded',
     NTP_RECORDED = 'NTP Recorded',
-    MONITORING = 'Monitoring'
+    MONITORING = 'Monitoring',
+    COMPLETED = 'Completed',
 }
 
 export enum EventType {

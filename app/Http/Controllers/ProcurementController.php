@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\MultiChainService;
+use App\Models\User;
 use App\Notifications\ProcurementPhaseNotification;
+use App\Services\MultiChainService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Notification;
-use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 
 class ProcurementController extends BaseController
 {
@@ -37,6 +37,7 @@ class ProcurementController extends BaseController
                 $response->headers->set('Pragma', 'no-cache');
                 $response->headers->set('Expires', 'Sat, 01 Jan 1990 00:00:00 GMT');
             }
+
             return $response;
         });
     }
@@ -76,8 +77,9 @@ class ProcurementController extends BaseController
             if (Cache::has($idempotencyKey)) {
                 Log::warning('Duplicate document publish detected and prevented', [
                     'procurement_id' => $procurementId,
-                    'phase' => $phaseIdentifier
+                    'phase' => $phaseIdentifier,
                 ]);
+
                 return; // Skip duplicate publishing
             }
 
@@ -204,17 +206,17 @@ class ProcurementController extends BaseController
 
     /**
      * Consolidated method to handle phase updates and send a single notification
-     * 
-     * @param string $procurementId The procurement ID
-     * @param string $procurementTitle The procurement title
-     * @param string $phaseIdentifier The phase identifier
-     * @param string $currentState The current state
-     * @param string $timestamp The timestamp
-     * @param int $documentCount Number of documents
-     * @param string $actionType Type of action
-     * @param bool $phaseTransition Whether this is a phase transition
-     * @param string $nextPhase The next phase (if transitioning)
-     * @param string $nextTimestamp Timestamp for the transition
+     *
+     * @param  string  $procurementId  The procurement ID
+     * @param  string  $procurementTitle  The procurement title
+     * @param  string  $phaseIdentifier  The phase identifier
+     * @param  string  $currentState  The current state
+     * @param  string  $timestamp  The timestamp
+     * @param  int  $documentCount  Number of documents
+     * @param  string  $actionType  Type of action
+     * @param  bool  $phaseTransition  Whether this is a phase transition
+     * @param  string  $nextPhase  The next phase (if transitioning)
+     * @param  string  $nextTimestamp  Timestamp for the transition
      * @return void
      */
     private function handlePhaseUpdateWithNotification(
@@ -237,6 +239,7 @@ class ProcurementController extends BaseController
                 Log::warning('No BAC Chairman or HOPE users found to notify for procurement update', [
                     'procurement_id' => $procurementId,
                 ]);
+
                 return;
             }
 
@@ -2111,6 +2114,89 @@ class ProcurementController extends BaseController
             return redirect()->back()->withErrors([
                 'error' => 'Failed to upload compliance report: ' . $e->getMessage(),
             ]);
+        }
+    }
+
+    public function completeProcess($id)
+    {
+        try {
+            $request = request();
+            $request->validate([
+                'remarks' => 'required|string',
+                'confirmed' => 'required|boolean|accepted',
+            ]);
+
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+            $procurementState = collect($allStates)
+                ->map(function ($item) {
+                    return [
+                        'id' => $item['data']['procurement_id'] ?? '',
+                        'title' => $item['data']['procurement_title'] ?? '',
+                    ];
+                })
+                ->firstWhere('id', $id);
+
+            if (!$procurementState) {
+                return response()->json(['message' => 'Procurement not found'], 404);
+            }
+
+            $userAddress = $this->getUserBlockchainAddress();
+            $procurementTitle = $procurementState['title'];
+            $timestamp = now()->toIso8601String();
+
+            // Update the state to completed - change both state and phase to "Completed"
+            $this->updateState(
+                $id,
+                $procurementTitle,
+                'Completed',
+                'Completed', // Changed from 'Monitoring' to 'Completed'
+                $userAddress,
+                $timestamp
+            );
+
+            // Log the completion event with updated phase
+            $this->logEvent(
+                $id,
+                $procurementTitle,
+                'Completed', // Changed from 'Monitoring' to 'Completed'
+                $request->remarks,
+                0,
+                $userAddress,
+                'Procurement Completed',
+                'workflow',
+                'info',
+                $timestamp
+            );
+
+            // Send notification about completion with updated phase
+            $this->handlePhaseUpdateWithNotification(
+                $id,
+                $procurementTitle,
+                'Completed', // Changed from 'Monitoring' to 'Completed'
+                'Completed',
+                $timestamp,
+                0,
+                'completed'
+            );
+
+            Log::info('Procurement process completed', [
+                'procurement_id' => $id,
+                'procurement_title' => $procurementTitle,
+            ]);
+
+            return redirect()->route('bac-secretariat.procurements-list.index')->with([
+                'success' => true,
+                'message' => 'Procurement successfully marked as completed.',
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to complete procurement:', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json(['message' => 'Failed to mark procurement as complete: ' . $e->getMessage()], 500);
         }
     }
 }

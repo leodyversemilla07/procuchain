@@ -4,9 +4,9 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\DatabaseMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Notifications\Messages\DatabaseMessage;
 
 class ProcurementPhaseNotification extends Notification implements ShouldQueue
 {
@@ -36,8 +36,8 @@ class ProcurementPhaseNotification extends Notification implements ShouldQueue
 
     /**
      * Generate the appropriate URL based on user role
-     * 
-     * @param object $notifiable The notifiable user
+     *
+     * @param  object  $notifiable  The notifiable user
      * @return string The role-specific URL
      */
     protected function getRoleSpecificUrl(object $notifiable): string
@@ -59,9 +59,6 @@ class ProcurementPhaseNotification extends Notification implements ShouldQueue
 
     /**
      * Format the action type in a more readable way
-     * 
-     * @param string $actionType
-     * @return string
      */
     protected function formatActionType(string $actionType): string
     {
@@ -109,8 +106,8 @@ class ProcurementPhaseNotification extends Notification implements ShouldQueue
 
         $emailMessage = (new MailMessage)
             ->subject($subject)
-            ->greeting('Dear ' . $notifiable->name . ',')
-            ->line("This is to inform you that there has been an update to the procurement process:");
+            ->greeting('Dear '.$notifiable->name.',')
+            ->line('This is to inform you that there has been an update to the procurement process:');
 
         // Main update message
         if ($this->data['document_count'] > 0) {
@@ -124,9 +121,9 @@ class ProcurementPhaseNotification extends Notification implements ShouldQueue
         }
 
         // Add phase transition information if applicable
-        if (!empty($this->data['next_phase'])) {
+        if (! empty($this->data['next_phase'])) {
             $emailMessage->line('')
-                ->line("**Phase Transition:**")
+                ->line('**Phase Transition:**')
                 ->line("The procurement process is now moving to the **{$this->data['next_phase']}** phase.");
         }
 
@@ -136,7 +133,7 @@ class ProcurementPhaseNotification extends Notification implements ShouldQueue
             ->line("- **Title:** {$this->data['procurement_title']}")
             ->line("- **ID:** {$this->data['procurement_id']}")
             ->line("- **Current Status:** {$this->data['current_state']}")
-            ->line("- **Last Updated:** " . date('F j, Y \a\t g:i a', strtotime($this->data['timestamp'])));
+            ->line('- **Last Updated:** '.date('F j, Y \a\t g:i a', strtotime($this->data['timestamp'])));
 
         // Add call to action
         $emailMessage->action('View Procurement Details', $url)
@@ -166,13 +163,13 @@ class ProcurementPhaseNotification extends Notification implements ShouldQueue
             'document_count' => $this->data['document_count'] ?? 0,
             'action_type' => $this->data['action_type'] ?? 'updated',
         ];
-        
+
         // Include next phase information if available
-        if (!empty($this->data['next_phase'])) {
+        if (! empty($this->data['next_phase'])) {
             $data['next_phase'] = $this->data['next_phase'];
             $data['next_phase_timestamp'] = $this->data['next_timestamp'] ?? null;
         }
-        
+
         return $data;
     }
 
@@ -188,11 +185,11 @@ class ProcurementPhaseNotification extends Notification implements ShouldQueue
 
         $actionText = $this->formatActionType($this->data['action_type'] ?? 'updated');
 
-        $title = $this->data['phase_identifier'] . ' Update';
+        $title = $this->data['phase_identifier'].' Update';
         $message = "The {$this->data['phase_identifier']} phase {$actionText} for \"{$this->data['procurement_title']}\". Current state: {$this->data['current_state']}";
 
         // Add phase transition info to the message if applicable
-        if (!empty($this->data['next_phase'])) {
+        if (! empty($this->data['next_phase'])) {
             $message .= ". The procurement is now moving to the {$this->data['next_phase']} phase.";
             $title = "Phase Transition: {$this->data['phase_identifier']} to {$this->data['next_phase']}";
         }
@@ -211,7 +208,7 @@ class ProcurementPhaseNotification extends Notification implements ShouldQueue
         ];
 
         // Add next phase info if available
-        if (!empty($this->data['next_phase'])) {
+        if (! empty($this->data['next_phase'])) {
             $data['next_phase'] = $this->data['next_phase'];
             $data['next_phase_timestamp'] = $this->data['next_timestamp'] ?? null;
         }

@@ -6,6 +6,7 @@ use App\Services\MultichainService;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
 
 class MultiChainSetup extends Command
 {
@@ -49,6 +50,9 @@ class MultiChainSetup extends Command
         }
         file_put_contents(base_path('.env'), $envContent);
 
+        // Update the user database with the new addresses
+        $this->syncAddressesToDatabase($addresses);
+
         $streams = [
             'procurement.documents',
             'procurement.state',
@@ -73,7 +77,7 @@ class MultiChainSetup extends Command
             $globalPerms = array_intersect($perms, ['send', 'connect', 'receive', 'create', 'issue', 'mine', 'activate', 'admin']);
             $streamPerms = array_diff($perms, $globalPerms);
 
-            if (! empty($globalPerms)) {
+            if (!empty($globalPerms)) {
                 $this->grantPermissions($address, implode(',', $globalPerms));
             }
 
@@ -92,7 +96,7 @@ class MultiChainSetup extends Command
         try {
             $result = $this->multichainService->client->create('stream', $streamName, true);
 
-            if (! $this->multichainService->client->success()) {
+            if (!$this->multichainService->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -118,7 +122,7 @@ class MultiChainSetup extends Command
                 'error_code' => $this->multichainService->client->errorcode(),
                 'error_message' => $this->multichainService->client->errormessage(),
             ]);
-            throw new Exception('Failed to create new stream: '.$e->getMessage());
+            throw new Exception('Failed to create new stream: ' . $e->getMessage());
         }
     }
 
@@ -127,7 +131,7 @@ class MultiChainSetup extends Command
         try {
             $address = $this->multichainService->client->getnewaddress();
 
-            if (! $this->multichainService->client->success()) {
+            if (!$this->multichainService->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -147,7 +151,7 @@ class MultiChainSetup extends Command
                 'error_code' => $this->multichainService->client->errorcode(),
                 'error_message' => $this->multichainService->client->errormessage(),
             ]);
-            throw new Exception('Failed to create new blockchain address: '.$e->getMessage());
+            throw new Exception('Failed to create new blockchain address: ' . $e->getMessage());
         }
     }
 
@@ -156,7 +160,7 @@ class MultiChainSetup extends Command
         try {
             $this->multichainService->client->grant($address, $permission);
 
-            if (! $this->multichainService->client->success()) {
+            if (!$this->multichainService->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -179,7 +183,32 @@ class MultiChainSetup extends Command
                 'error_code' => $this->multichainService->client->errorcode(),
                 'error_message' => $this->multichainService->client->errormessage(),
             ]);
-            throw new Exception('Failed to grant permissions: '.$e->getMessage());
+            throw new Exception('Failed to grant permissions: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Sync blockchain addresses to the user database
+     */
+    protected function syncAddressesToDatabase(array $addresses): void
+    {
+        $this->info('Syncing blockchain addresses to user database...');
+
+        $secretariatAddress = $addresses['MULTICHAIN_BAC_SECRETARIAT_ADDRESS'];
+        $chairmanAddress = $addresses['MULTICHAIN_BAC_CHAIRMAN_ADDRESS'];
+        $hopeAddress = $addresses['MULTICHAIN_HOPE_ADDRESS'];
+
+        // Update users based on role
+        $secretariatUpdated = User::where('role', 'bac_secretariat')
+            ->update(['blockchain_address' => $secretariatAddress]);
+
+        $chairmanUpdated = User::where('role', 'bac_chairman')
+            ->update(['blockchain_address' => $chairmanAddress]);
+
+        $hopeUpdated = User::where('role', 'hope')
+            ->update(['blockchain_address' => $hopeAddress]);
+
+        $totalUpdated = $secretariatUpdated + $chairmanUpdated + $hopeUpdated;
+        $this->info("Updated blockchain addresses for {$totalUpdated} users in the database");
     }
 }

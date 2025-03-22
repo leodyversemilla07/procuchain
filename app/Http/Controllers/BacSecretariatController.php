@@ -28,12 +28,235 @@ class BacSecretariatController extends BaseController
 
     public function index()
     {
-        return Inertia::render('bac-secretariat/dashboard');
+        try {
+            // Fetch all procurement states from the blockchain
+            $allStates = $this->multiChain->listStreamItems(self::STREAM_STATE, true, 1000, -1000);
+
+            // Process and group procurements by ID
+            $procurementsByKey = collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    return [
+                        'id' => $data['procurement_id'] ?? '',
+                        'title' => $data['procurement_title'] ?? '',
+                        'phase' => $data['phase_identifier'] ?? '',
+                        'state' => $data['current_state'] ?? '',
+                        'user_address' => $data['user_address'] ?? '',
+                        'user' => \App\Models\User::where('blockchain_address', $data['user_address'] ?? '')->first()?->name ?? 'Unknown',
+                        'timestamp' => $data['timestamp'] ?? '',
+                    ];
+                })
+                ->groupBy('id')
+                ->map(function ($group) {
+                    return $group->sortByDesc('timestamp')->first();
+                });
+
+            // Get the most recent procurements
+            $recentProcurements = $procurementsByKey->sortByDesc('timestamp')
+                ->take(10)
+                ->values()
+                ->map(function ($item) {
+                    return [
+                        'id' => $item['id'],
+                        'title' => $item['title'],
+                        'phase' => $item['phase'],
+                        'state' => $item['state']
+                    ];
+                })
+                ->toArray();
+
+            // Calculate statistics
+            $ongoingProjects = $procurementsByKey->filter(function ($item) {
+                return $item['phase'] !== 'Monitoring' ||
+                    ($item['phase'] === 'Monitoring' && $item['state'] !== 'Completed');
+            })->count();
+
+            // Fetch recent activities from events stream - improved version
+            $allEvents = $this->multiChain->listStreamItems(self::STREAM_EVENTS, true, 300, -300);
+            $recentActivities = collect($allEvents)
+                ->map(function ($item) {
+                    $data = $item['data'];
+                    
+                    // Format the action label for better readability
+                    $actionLabel = $this->formatActionLabel($data['event_type'] ?? '', $data['details'] ?? '');
+                    
+                    return [
+                        'id' => $data['procurement_id'] ?? '',
+                        'title' => $data['procurement_title'] ?? '',
+                        'action' => $actionLabel,
+                        'details' => $data['details'] ?? '',
+                        'raw_event_type' => $data['event_type'] ?? '',
+                        'phase' => $data['phase_identifier'] ?? '',
+                        'date' => $data['timestamp'] ?? now()->toIso8601String(),
+                        'user' => \App\Models\User::where('blockchain_address', $data['user_address'] ?? '')->first()?->name ?? 'Unknown',
+                        'timestamp' => strtotime($data['timestamp'] ?? 'now'),
+                    ];
+                })
+                ->filter(function ($item) {
+                    // Ensure we have valid data
+                    return !empty($item['id']) && !empty($item['title']);
+                })
+                ->sortByDesc('timestamp')
+                ->take(8)  // Show more recent activities
+                ->values()
+                ->toArray();
+
+            // Identify priority actions based on procurement states
+            $priorityActions = [];
+            foreach ($procurementsByKey as $procurement) {
+                $id = $procurement['id'];
+                $title = $procurement['title'];
+                $phase = $procurement['phase'];
+                $state = $procurement['state'];
+
+                if ($phase === 'PR Initiation' && $state === 'PR Submitted') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Continue PR Processing',
+                        'route' => "/bac-secretariat/procurements-list",
+                    ];
+                } elseif ($phase === 'Pre-Procurement' && $state === 'Pre-Procurement Conference Held') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Upload Pre-Procurement Documents',
+                        'route' => "/bac-secretariat/pre-procurement-upload/{$id}",
+                    ];
+                } elseif ($phase === 'Bid Invitation' && ($state === 'Pre-Procurement Completed' || $state === 'Pre-Procurement Skipped')) {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Upload Bid Invitation',
+                        'route' => "/bac-secretariat/bid-invitation-upload/{$id}",
+                    ];
+                } elseif ($phase === 'Bid Opening' && $state === 'Bid Invitation Published') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Upload Bid Submission',
+                        'route' => "/bac-secretariat/bid-submission-upload/{$id}",
+                    ];
+                } elseif ($phase === 'Bid Evaluation' && $state === 'Bids Opened') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Upload Bid Evaluation',
+                        'route' => "/bac-secretariat/bid-evaluation-upload/{$id}",
+                    ];
+                } elseif ($phase === 'Post-Qualification' && $state === 'Bids Evaluated') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Upload Post-Qualification Documents',
+                        'route' => "/bac-secretariat/post-qualification-upload/{$id}",
+                    ];
+                } elseif ($phase === 'BAC Resolution' && $state === 'Post-Qualification Verified') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Record BAC Resolution',
+                        'route' => "/bac-secretariat/bac-resolution-upload/{$id}",
+                    ];
+                } elseif ($phase === 'Notice Of Award' && $state === 'Resolution Recorded') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Upload Notice of Award',
+                        'route' => "/bac-secretariat/noa-upload/{$id}",
+                    ];
+                } elseif ($phase === 'Performance Bond' && $state === 'Awarded') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Upload Performance Bond',
+                        'route' => "/bac-secretariat/performance-bond-upload/{$id}",
+                    ];
+                } elseif ($phase === 'Contract And PO' && $state === 'Performance Bond Recorded') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Upload Contract and PO',
+                        'route' => "/bac-secretariat/contract-po-upload/{$id}",
+                    ];
+                } elseif ($phase === 'Notice To Proceed' && $state === 'Contract And PO Recorded') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Upload Notice to Proceed',
+                        'route' => "/bac-secretariat/ntp-upload/{$id}",
+                    ];
+                } elseif ($phase === 'Monitoring' && $state !== 'Completed') {
+                    $priorityActions[] = [
+                        'id' => $id,
+                        'title' => $title,
+                        'action' => 'Mark Procurement as Complete',
+                        'route' => "/bac-secretariat/procurements-list",
+                    ];
+                }
+            }
+
+            // Count total documents
+            $totalDocuments = 0;
+            foreach ($procurementsByKey as $procurement) {
+                $id = $procurement['id'];
+                $title = $procurement['title'];
+                $streamKey = $this->getStreamKey($id, $title);
+                $documents = $this->multiChain->listStreamKeyItems(self::STREAM_DOCUMENTS, $streamKey);
+                $totalDocuments += count($documents);
+            }
+
+            // Count completed biddings
+            $completedBiddings = $procurementsByKey->filter(function ($item) {
+                return in_array($item['phase'], [
+                    'Notice Of Award',
+                    'Performance Bond',
+                    'Contract And PO',
+                    'Notice To Proceed',
+                    'Monitoring',
+                    'Completed'
+                ]);
+            })->count();
+
+            // Prepare stats
+            $stats = [
+                'ongoingProjects' => $ongoingProjects,
+                'pendingActions' => count($priorityActions),
+                'completedBiddings' => $completedBiddings,
+                'totalDocuments' => $totalDocuments
+            ];
+
+            return Inertia::render('bac-secretariat/dashboard', [
+                'recentProcurements' => $recentProcurements,
+                'recentActivities' => $recentActivities,
+                'priorityActions' => array_slice($priorityActions, 0, 3),
+                'stats' => $stats
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to retrieve dashboard data:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return Inertia::render('bac-secretariat/dashboard', [
+                'recentProcurements' => [],
+                'recentActivities' => [],
+                'priorityActions' => [],
+                'stats' => [
+                    'ongoingProjects' => 0,
+                    'pendingActions' => 0,
+                    'completedBiddings' => 0,
+                    'totalDocuments' => 0
+                ],
+                'error' => 'Failed to retrieve dashboard data: ' . $e->getMessage()
+            ]);
+        }
     }
 
     private function getStreamKey($procurementId, $procurementTitle)
     {
-        return $procurementId.'-'.preg_replace('/[^a-zA-Z0-9-]/', '-', $procurementTitle);
+        return $procurementId . '-' . preg_replace('/[^a-zA-Z0-9-]/', '-', $procurementTitle);
     }
 
     public function indexProcurementsList()
@@ -87,7 +310,7 @@ class BacSecretariatController extends BaseController
 
             return Inertia::render('bac-secretariat/procurements-list', [
                 'procurements' => [],
-                'error' => 'Failed to retrieve procurements: '.$e->getMessage(),
+                'error' => 'Failed to retrieve procurements: ' . $e->getMessage(),
             ]);
         }
     }
@@ -130,7 +353,7 @@ class BacSecretariatController extends BaseController
 
             $documents = $this->multiChain->listStreamKeyItems(self::STREAM_DOCUMENTS, $streamKey, 1000);
 
-            Log::info('Found '.count($documents)." documents for procurement $procurementId");
+            Log::info('Found ' . count($documents) . " documents for procurement $procurementId");
 
             $potentialPrDocs = collect($documents)->filter(function ($doc) {
                 $data = $doc['data'];
@@ -213,7 +436,7 @@ class BacSecretariatController extends BaseController
                 'Monitoring',
             ];
 
-            if (! isset($documentsByPhase['PR Initiation'])) {
+            if (!isset($documentsByPhase['PR Initiation'])) {
                 $prDocs = $parsedDocuments->filter(function ($doc) {
                     $docType = strtolower($doc['document_type'] ?? '');
                     $fileKey = strtolower($doc['file_key'] ?? '');
@@ -228,14 +451,14 @@ class BacSecretariatController extends BaseController
                         strpos($fileKey, 'purchase') !== false;
                 })->values()->toArray();
 
-                if (! empty($prDocs)) {
+                if (!empty($prDocs)) {
                     $documentsByPhase['PR Initiation'] = $prDocs;
-                    Log::info('Added '.count($prDocs).' PR Initiation documents that were not properly categorized');
+                    Log::info('Added ' . count($prDocs) . ' PR Initiation documents that were not properly categorized');
                 }
             }
 
             foreach ($procurementPhases as $phase) {
-                if (! isset($documentsByPhase[$phase])) {
+                if (!isset($documentsByPhase[$phase])) {
                     $documentsByPhase[$phase] = [];
                 }
             }
@@ -277,7 +500,7 @@ class BacSecretariatController extends BaseController
 
                 $latestPhaseState = $phaseStates->isEmpty() ? null : $phaseStates->sortByDesc('timestamp')->first();
 
-                $isCompleted = ! empty($latestPhaseState);
+                $isCompleted = !empty($latestPhaseState);
                 $isSkipped = $isCompleted && strpos($latestPhaseState['current_state'], 'Skipped') !== false;
 
                 $status = 'Not Started';
@@ -363,7 +586,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return Inertia::render('bac-secretariat/show', [
-                'error' => 'Failed to retrieve procurement: '.$e->getMessage(),
+                'error' => 'Failed to retrieve procurement: ' . $e->getMessage(),
             ]);
         }
     }
@@ -419,7 +642,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading pre-procurement upload form: '.$e->getMessage());
+                ->with('error', 'Error loading pre-procurement upload form: ' . $e->getMessage());
         }
     }
 
@@ -481,7 +704,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading bid invitation upload form: '.$e->getMessage());
+                ->with('error', 'Error loading bid invitation upload form: ' . $e->getMessage());
         }
     }
 
@@ -540,7 +763,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading bid submission upload form: '.$e->getMessage());
+                ->with('error', 'Error loading bid submission upload form: ' . $e->getMessage());
         }
     }
 
@@ -599,7 +822,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading bid evaluation upload form: '.$e->getMessage());
+                ->with('error', 'Error loading bid evaluation upload form: ' . $e->getMessage());
         }
     }
 
@@ -664,7 +887,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading post-qualification upload form: '.$e->getMessage());
+                ->with('error', 'Error loading post-qualification upload form: ' . $e->getMessage());
         }
     }
 
@@ -729,7 +952,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading BAC Resolution upload form: '.$e->getMessage());
+                ->with('error', 'Error loading BAC Resolution upload form: ' . $e->getMessage());
         }
     }
 
@@ -794,7 +1017,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Notice of Award upload form: '.$e->getMessage());
+                ->with('error', 'Error loading Notice of Award upload form: ' . $e->getMessage());
         }
     }
 
@@ -859,7 +1082,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Performance Bond upload form: '.$e->getMessage());
+                ->with('error', 'Error loading Performance Bond upload form: ' . $e->getMessage());
         }
     }
 
@@ -924,7 +1147,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Contract and PO upload form: '.$e->getMessage());
+                ->with('error', 'Error loading Contract and PO upload form: ' . $e->getMessage());
         }
     }
 
@@ -989,7 +1212,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Notice to Proceed upload form: '.$e->getMessage());
+                ->with('error', 'Error loading Notice to Proceed upload form: ' . $e->getMessage());
         }
     }
 
@@ -1052,7 +1275,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Monitoring upload form: '.$e->getMessage());
+                ->with('error', 'Error loading Monitoring upload form: ' . $e->getMessage());
         }
     }
 
@@ -1116,7 +1339,38 @@ class BacSecretariatController extends BaseController
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Complete Status form: '.$e->getMessage());
+                ->with('error', 'Error loading Complete Status form: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Convert raw event types to more readable action labels
+     * 
+     * @param string $eventType The raw event type
+     * @param string $details Additional details about the event
+     * @return string Formatted action label
+     */
+    private function formatActionLabel(string $eventType, string $details): string
+    {
+        switch (strtolower($eventType)) {
+            case 'document_upload':
+                return 'Uploaded Documents';
+            case 'phase_transition':
+                return 'Phase Transition';
+            case 'decision':
+                if (strpos(strtolower($details), 'pre-procurement') !== false) {
+                    return 'Pre-Procurement Decision';
+                }
+                return 'Decision Made';
+            case 'publication':
+                return 'Published Documents';
+            case 'procurement completed':
+                return 'Completed Procurement';
+            default:
+                // Try to format the raw event type for better display
+                $words = explode('_', $eventType);
+                $formatted = array_map('ucfirst', $words);
+                return implode(' ', $formatted);
         }
     }
 }

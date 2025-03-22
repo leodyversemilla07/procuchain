@@ -43,6 +43,7 @@ import { DataTableColumnHeader } from "@/components/ui/data-table";
 import { DataTableCheckbox } from "@/components/ui/data-table";
 
 import { PreProcurementModal } from '@/components/pre-procurement/pre-procurement-modal';
+import { MarkCompleteDialog } from '@/components/procurement/mark-complete-dialog';
 
 // Types
 import { type BreadcrumbItem } from '@/types';
@@ -79,6 +80,9 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
     const [error, setError] = useState<string | undefined>(initialError);
 
     const [modalOpen, setModalOpen] = useState(false);
+    const [markCompleteDialogOpen, setMarkCompleteDialogOpen] = useState(false);
+    const [selectedProcurementId, setSelectedProcurementId] = useState<string>('');
+    const [selectedProcurementTitle, setSelectedProcurementTitle] = useState<string>('');
 
     useEffect(() => {
         setViewType('table');
@@ -219,6 +223,8 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                 return 'bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-900';
             case 'Monitoring':
                 return 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+            case 'Completed':
+                return 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900';
             default:
                 return 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800';
         }
@@ -251,6 +257,8 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                 return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
             case 'Monitoring':
                 return 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800';
+            case 'Completed':
+                return 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
             default:
                 return 'bg-gray-50 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
         }
@@ -352,6 +360,7 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                         {state === 'Contract And PO Recorded' && <FileTextIcon className="h-3 w-3 mr-1" />}
                         {state === 'NTP Recorded' && <FileTextIcon className="h-3 w-3 mr-1" />}
                         {state === 'Monitoring' && <AlertCircleIcon className="h-3 w-3 mr-1" />}
+                        {state === 'Completed' && <CheckIcon className="h-3 w-3 mr-1" />}
                         {state}
                     </Badge>
                 );
@@ -394,6 +403,9 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
         },
         {
             id: "actions",
+            header: ({ column }) => (
+                <DataTableColumnHeader column={column} title="Actions" className="text-right" />
+            ),
             cell: ({ row }) => {
                 const procurement = row.original;
                 const id = procurement.id;
@@ -693,6 +705,41 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                                 </Tooltip>
                             </TooltipProvider>
                         )}
+
+                        {(phase === 'Monitoring' && currentState === 'Monitoring') && (
+                            <>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0 text-green-600 dark:text-green-400"
+                                                onClick={() => {
+                                                    setMarkCompleteDialogOpen(true);
+                                                    setSelectedProcurementId(id);
+                                                    setSelectedProcurementTitle(procurement.title);
+                                                }}
+                                            >
+                                                <CheckIcon className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Mark Procurement as Complete</TooltipContent>
+                                    </Tooltip>
+
+                                    <MarkCompleteDialog
+                                        open={markCompleteDialogOpen}
+                                        onOpenChange={setMarkCompleteDialogOpen}
+                                        procurementId={selectedProcurementId}
+                                        procurementTitle={selectedProcurementTitle}
+                                        onComplete={() => {
+                                            // Refresh the page to show updated status
+                                            window.location.reload();
+                                        }}
+                                    />
+                                </TooltipProvider>
+                            </>
+                        )}
                     </div>
                 );
             },
@@ -736,6 +783,7 @@ export default function ProcuremenstList({ procurements: initialProcurements, er
                                                 {procurement.current_state === 'Contract And PO Recorded' && <FileTextIcon className="h-3 w-3 mr-1 flex-shrink-0" />}
                                                 {procurement.current_state === 'NTP Recorded' && <FileTextIcon className="h-3 w-3 mr-1 flex-shrink-0" />}
                                                 {procurement.current_state === 'Monitoring' && <AlertCircleIcon className="h-3 w-3 mr-1 flex-shrink-0" />}
+                                                {procurement.current_state === 'Completed' && <CheckIcon className="h-3 w-3 mr-1 flex-shrink-0" />}
                                                 <span className="truncate inline-block overflow-hidden">{procurement.current_state}</span>
                                             </Badge>
                                         </TooltipTrigger>
