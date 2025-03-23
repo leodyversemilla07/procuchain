@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
 
-class MultiChainSetup extends Command
+class MultichainSetup extends Command
 {
     /**
      * The name and signature of the console command.
