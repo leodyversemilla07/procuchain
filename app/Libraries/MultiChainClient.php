@@ -7,7 +7,7 @@ define('MC_OPT_CHAIN_NAME', 1);
 define('MC_OPT_USE_CURL', 2);
 define('MC_OPT_VERIFY_SSL', 3);
 
-class MultiChainClient
+class MultichainClient
 {
     private $host;
 

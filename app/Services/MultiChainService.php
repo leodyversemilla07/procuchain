@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Libraries\MultiChainClient;
+use App\Libraries\MultichainClient;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -12,7 +12,7 @@ class MultichainService
 
     public function __construct()
     {
-        $this->client = new MultiChainClient(
+        $this->client = new MultichainClient(
             config('multichain.rpc.host'),
             config('multichain.rpc.port'),
             config('multichain.rpc.username'),
