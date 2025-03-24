@@ -12,8 +12,11 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-// Route::get('generate-pr-show', [PrGeneratorController::class, 'index'])
-//     ->name('generate-pr.index');
+Route::inertia('/bidding', 'bidding')
+    ->name('bidding');
+
+Route::inertia('/procurement', 'procurement')
+    ->name('procurement');
 
 Route::inertia('/generate-pr-show', 'generate-pr')
     ->name('generate-pr.index');
@@ -155,5 +158,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';
