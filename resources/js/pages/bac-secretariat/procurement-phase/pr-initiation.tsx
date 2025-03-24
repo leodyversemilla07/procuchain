@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useReducer } from 'react';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Head, useForm } from '@inertiajs/react';
 import { FormProvider, useForm as useReactHookForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import * as z from 'zod';
@@ -35,41 +35,40 @@ interface PRInitiationFormData {
     };
     supporting_files: (File | null)[];
     supporting_metadata: SupportingFileMetadata[];
-    [key: string]: any; // Simplified index signature
+    [key: string]: string | number | boolean | null | undefined | File | File[] | (File | null)[] | {
+        document_type: string;
+        submission_date: string;
+        municipal_offices: string;
+        signatory_details: string;
+    } | SupportingFileMetadata[];
 }
 
 type ComponentFormData = FormSummaryProps['data'];
-
-// Simple structure for flash data
-interface FlashData {
-    success?: boolean;
-    message?: string;
-    procurementId?: string;
-    procurementTitle?: string;
-    documentCount?: number;
-    timestamp?: string;
-    [key: string]: any;
-}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Purchase Request Initiation', href: '#' },
 ];
-
-// Define a form validation schema once
+// Define a form validation schema with proper typing
 const formValidationSchema = {
     step1: {
-        procurement_id: (value: string) => !!value || 'Procurement ID is required',
-        procurement_title: (value: string) => !!value || 'Procurement Title is required',
+        procurement_id: (value: string | undefined): true | string =>
+            !!value || 'Procurement ID is required',
+        procurement_title: (value: string | undefined): true | string =>
+            !!value || 'Procurement Title is required',
     },
     step2: {
-        pr_file: (value: File | null) => !!value || 'PR File is required',
-        'pr_metadata.submission_date': (value: string) => !!value || 'Submission date is required',
-        'pr_metadata.municipal_offices': (value: string) => !!value || 'Municipal office is required',
-        'pr_metadata.signatory_details': (value: string) => !!value || 'Signatory details are required',
+        pr_file: (value: File | null | undefined): true | string =>
+            !!value || 'PR File is required',
+        'pr_metadata.submission_date': (value: string | undefined): true | string =>
+            !!value || 'Submission date is required',
+        'pr_metadata.municipal_offices': (value: string | undefined): true | string =>
+            !!value || 'Municipal office is required',
+        'pr_metadata.signatory_details': (value: string | undefined): true | string =>
+            !!value || 'Signatory details are required',
     },
     step3: {
-        supporting_files: (files: (File | null)[]) =>
+        supporting_files: (files: (File | null)[]): true | string =>
             files.length === 0 || files.every(file => file !== null) || 'All supporting documents must have files'
     }
 };
@@ -96,7 +95,7 @@ function parseDate(dateStr: string): Date | undefined {
 }
 
 export default function PRInitiationForm() {
-    const pageProps = usePage().props;
+
 
     // Use Inertia form for API interactions and server-side validation
     const { data, setData, post, processing, errors, setError, clearErrors } = useForm<PRInitiationFormData>({
@@ -153,9 +152,6 @@ export default function PRInitiationForm() {
     });
     const [isDragging, setIsDragging] = useState(false);
     const [showValidationSummary, setShowValidationSummary] = useState(false);
-    const [submittedProcurement, setSubmittedProcurement] = useState<{ id: string, title: string } | null>(null);
-
-
 
     // Date handling
     const [submissionDate, setSubmissionDate] = useState<Date | undefined>(() =>
@@ -164,8 +160,8 @@ export default function PRInitiationForm() {
     const [supportingDates, setSupportingDates] = useState<{ [key: number]: Date | undefined }>({});
 
     // Simplified field change handler
-    const handleFieldChange = (field: string, value: any) => {
-        setData(field as any, value);
+    const handleFieldChange = (field: string, value: string | number | boolean | null | File | undefined) => {
+        setData(field as keyof PRInitiationFormData, value as never);
         if (field === 'procurement_id' || field === 'procurement_title') {
             form.setValue(field, value as string, { shouldValidate: true });
         }
@@ -280,65 +276,48 @@ export default function PRInitiationForm() {
         });
     };
 
-    // Unified form validation
+    // Simplified form validation
     const validateStep = (step: number): boolean => {
         clearErrors();
+
+        // Select validation schema based on step
+        const schema = step === 1 ? formValidationSchema.step1 :
+            step === 2 ? formValidationSchema.step2 :
+                formValidationSchema.step3;
+
+        // Track validation status
         let isValid = true;
 
-        if (step === 1) {
-            // Validate procurement details
-            Object.entries(formValidationSchema.step1).forEach(([field, validator]) => {
-                const errorMessage = validator(data[field as keyof PRInitiationFormData]);
-                if (errorMessage !== true) {
-                    setError(field, errorMessage);
-                    isValid = false;
+        // Loop through validation rules for the current step
+        Object.entries(schema).forEach(([field, validator]) => {
+            // Get field value (handling nested fields)
+            let value;
+            if (field.includes('.')) {
+                const [parent, child] = field.split('.');
+                const parentValue = data[parent as keyof PRInitiationFormData];
+                // Type guard to ensure we're accessing an object with string keys
+                if (parentValue && typeof parentValue === 'object' && parentValue !== null && !Array.isArray(parentValue)) {
+                    value = (parentValue as Record<string, unknown>)[child];
                 }
-            });
-            setFormCompletion(prev => ({ ...prev, details: isValid }));
-        }
-        else if (step === 2) {
-            // Validate PR document
-            Object.entries(formValidationSchema.step2).forEach(([field, validator]) => {
-                let value;
-                if (field.includes('.')) {
-                    const [parent, child] = field.split('.');
-                    value = data[parent as keyof PRInitiationFormData]?.[child];
-                } else {
-                    value = data[field as keyof PRInitiationFormData];
-                }
-
-                const errorMessage = validator(value);
-                if (errorMessage !== true) {
-                    setError(field, errorMessage);
-                    isValid = false;
-                }
-            });
-            setFormCompletion(prev => ({ ...prev, prDocument: isValid }));
-        }
-        else if (step === 3) {
-            // Only validate if there are supporting files
-            if (data.supporting_files.length > 0) {
-                // Check each file
-                data.supporting_files.forEach((file, index) => {
-                    if (!file) {
-                        setError(`supporting_files.${index}`, 'A file is required for each supporting document');
-                        isValid = false;
-                    }
-                });
-
-                // Check document types
-                data.supporting_metadata.forEach((meta, index) => {
-                    if (!meta.document_type) {
-                        setError(`supporting_metadata.${index}.document_type`, 'Document type is required');
-                        isValid = false;
-                    }
-                });
-
-                setFormCompletion(prev => ({ ...prev, supporting: isValid }));
             } else {
-                // If no supporting files, this step is valid
-                setFormCompletion(prev => ({ ...prev, supporting: true }));
+                value = data[field as keyof PRInitiationFormData];
             }
+
+            // Validate and set error if needed
+            const errorMessage = validator(value);
+            if (errorMessage !== true) {
+                setError(field, errorMessage);
+                isValid = false;
+            }
+        });
+
+        // Update form completion state
+        if (step === 1) {
+            setFormCompletion(prev => ({ ...prev, details: isValid }));
+        } else if (step === 2) {
+            setFormCompletion(prev => ({ ...prev, prDocument: isValid }));
+        } else if (step === 3) {
+            setFormCompletion(prev => ({ ...prev, supporting: isValid }));
         }
 
         return isValid;
@@ -351,6 +330,7 @@ export default function PRInitiationForm() {
             (data.supporting_files.length === 0 || validateStep(3));
     };
 
+    // Enhanced form submission
     // Enhanced form submission
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -380,27 +360,19 @@ export default function PRInitiationForm() {
         });
     };
 
-    // Handle successful PR submission
-    const handleSubmissionSuccess = (page: any) => {
-        const responseFlash = page.props.flash as FlashData;
-
+    // Simplified success handler without flash dependency
+    const handleSubmissionSuccess = () => {
         // Dismiss the loading toast
         toast.dismiss("pr-submission");
 
-        if (responseFlash?.procurementId && responseFlash?.procurementTitle) {
-            setSubmittedProcurement({
-                id: responseFlash.procurementId,
-                title: responseFlash.procurementTitle
-            });
-
-            toast.success("Purchase Request successfully submitted", {
-                description: `Procurement #${responseFlash.procurementId} has been initiated`
-            });
-        }
+        // Display success message
+        toast.success("Purchase Request successfully submitted", {
+            description: "Your procurement request has been initiated"
+        });
     };
 
     // Handle submission errors
-    const handleSubmissionError = (errors: any) => {
+    const handleSubmissionError = (errors: Record<string, string>) => {
         console.error('Submission error:', errors);
 
         // Dismiss the loading toast and show error
@@ -621,7 +593,7 @@ export default function PRInitiationForm() {
                                                 });
                                             }
                                         } else {
-                                            setData(key as any, value as any);
+                                            setData(key as keyof PRInitiationFormData, value as never);
                                         }
                                     }}
                                     errors={errors as Record<string, string>}
@@ -665,7 +637,7 @@ export default function PRInitiationForm() {
                                                 })
                                             )
                                         }}
-                                        setData={(key: string, value: unknown) => setData(key as any, value as any)}
+                                        setData={(key: string, value: unknown) => setData(key as keyof PRInitiationFormData, value as never)}
                                         supportingFileIndices={supportingFileIndices}
                                         addSupportingFile={addSupportingFile}
                                         removeSupportingFile={removeSupportingFile}

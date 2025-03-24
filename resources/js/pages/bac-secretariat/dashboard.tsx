@@ -3,13 +3,12 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from 'react';
 import { toast } from "sonner";
 import {
     FileText,
-    AlertCircle,
     CheckCircle,
     Clock,
     BarChart3,
@@ -20,7 +19,6 @@ import {
     PlusIcon,
     ExternalLinkIcon,
     Bell,
-    CalendarDays,
     ArrowRight,
     FileTextIcon
 } from "lucide-react";
@@ -62,13 +60,13 @@ interface DashboardProps {
         totalDocuments: number;
     };
     error?: string;
-    [key: string]: any; // Add index signature to satisfy PageProps constraint
+    [key: string]: unknown; // Add index signature to satisfy PageProps constraint
 }
 
 export default function Dashboard() {
     const { recentProcurements = [], recentActivities = [], priorityActions = [], stats, error } = usePage<DashboardProps>().props;
     const [showDebug, setShowDebug] = useState(false);
-    
+
     // For demonstration, we'll show toast notification on component mount
     useEffect(() => {
         if (error) {
@@ -82,7 +80,7 @@ export default function Dashboard() {
                 duration: 3000,
             });
         }
-        
+
         // Log data to console for debugging
         console.log("Dashboard data loaded:", {
             recentProcurements: recentProcurements,
@@ -160,25 +158,25 @@ export default function Dashboard() {
         const date = new Date(dateString);
         const now = new Date();
         const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-        
+
         if (diffInSeconds < 60) return 'Just now';
         if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min ago`;
         if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hr ago`;
         if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} day ago`;
-        
-        return new Date(dateString).toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric'
+
+        return new Date(dateString).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
         });
     };
-    
+
     const getActionIcon = (action: string) => {
         const actionLower = action.toLowerCase();
-        
-        if (actionLower.includes('upload') || actionLower.includes('document')) 
+
+        if (actionLower.includes('upload') || actionLower.includes('document'))
             return <FileUpIcon className="h-3.5 w-3.5" />;
         if (actionLower.includes('phase') || actionLower.includes('transition'))
-            return <ArrowRight className="h-3.5 w-3.5" />; 
+            return <ArrowRight className="h-3.5 w-3.5" />;
         if (actionLower.includes('pre-procurement'))
             return <FileTextIcon className="h-3.5 w-3.5" />;
         if (actionLower.includes('decision'))
@@ -191,27 +189,27 @@ export default function Dashboard() {
             return <PlusIcon className="h-3.5 w-3.5" />;
         if (actionLower.includes('review') || actionLower.includes('evaluate'))
             return <FileTextIcon className="h-3.5 w-3.5" />;
-            
+
         return <ActivityIcon className="h-3.5 w-3.5" />;
     };
-    
+
     const getActionBadgeStyle = (action: string): string => {
         action = action.toLowerCase();
-        if (action.includes('upload') || action.includes('document')) 
-          return 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+        if (action.includes('upload') || action.includes('document'))
+            return 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
         if (action.includes('submit') || action.includes('add'))
-          return 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+            return 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
         if (action.includes('approve') || action.includes('complete') || action.includes('awarded'))
-          return 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
+            return 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
         if (action.includes('review') || action.includes('evaluate') || action.includes('verification'))
-          return 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
+            return 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
         return 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
     };
 
     // Before the return statement, add a debug component
     const DebugPanel = () => {
         if (!showDebug) return null;
-        
+
         return (
             <div className="bg-gray-100 dark:bg-gray-900 p-4 mb-8 rounded-md border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold mb-2">Debug Information</h3>
@@ -255,7 +253,7 @@ export default function Dashboard() {
 
                 {/* Debug Panel */}
                 <DebugPanel />
-                
+
                 {/* Key Metrics */}
                 <div>
                     <h2 className="text-lg font-semibold mb-4">Procurement Summary</h2>
@@ -400,8 +398,8 @@ export default function Dashboard() {
                                             recentActivities.map((activity, index) => (
                                                 <div key={index} className={`${index < recentActivities.length - 1 ? "border-b pb-3" : ""}`}>
                                                     <div className="flex items-center justify-between">
-                                                        <Link href={`/bac-secretariat/procurements-list/${activity.id}`} 
-                                                              className="font-medium text-primary hover:underline text-sm max-w-[70%] truncate">
+                                                        <Link href={`/bac-secretariat/procurements-list/${activity.id}`}
+                                                            className="font-medium text-primary hover:underline text-sm max-w-[70%] truncate">
                                                             {activity.title || `Procurement #${activity.id}`}
                                                         </Link>
                                                         <span className="text-xs text-muted-foreground">
@@ -410,8 +408,8 @@ export default function Dashboard() {
                                                     </div>
                                                     <div className="mt-1.5 flex items-center justify-between">
                                                         <div className="flex items-center">
-                                                            <Badge variant="outline" 
-                                                                   className={`${getActionBadgeStyle(activity.action)} text-xs mr-2 flex items-center gap-1`}>
+                                                            <Badge variant="outline"
+                                                                className={`${getActionBadgeStyle(activity.action)} text-xs mr-2 flex items-center gap-1`}>
                                                                 {getActionIcon(activity.action)}
                                                                 <span>{activity.action}</span>
                                                             </Badge>
@@ -430,13 +428,13 @@ export default function Dashboard() {
                                                 <Clock className="mx-auto h-8 w-8 text-muted-foreground opacity-20 mb-2" />
                                                 <p>No recent activities found</p>
                                                 <p className="text-xs text-muted-foreground mt-2">
-                                                    Activities will appear here when procurement actions are taken.<br/>
+                                                    Activities will appear here when procurement actions are taken.<br />
                                                     Try refreshing if you've recently performed actions.
                                                 </p>
-                                                <Button 
-                                                    variant="outline" 
-                                                    size="sm" 
-                                                    className="mt-4" 
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="mt-4"
                                                     onClick={() => window.location.reload()}
                                                 >
                                                     Refresh Data
