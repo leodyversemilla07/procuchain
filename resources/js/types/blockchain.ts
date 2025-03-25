@@ -176,31 +176,51 @@ export interface PRDocumentData {
 }
 
 /**
+ * Categories for organizing municipal offices
+ */
+export const OFFICE_CATEGORIES = {
+    "Executive Offices": ["MO", "OMA", "VMO/SBO", "BAC"],
+    "Financial & Administrative": ["MTO", "MACCO", "MBO", "GSO", "HRMO", "MCRO", "MASSO", "COA"],
+    "Planning & Development": ["MPDO", "MEO", "MENRO", "Zoning", "BPLO"],
+    "Social Services": ["MSWDO", "MHO", "MDDRMO", "PDAO", "OSCA", "YDS", "PESO"],
+    "Agricultural & Resources": ["MAGO", "BAMBOO", "SLAUGHTER"],
+    "Special Programs & Others": ["TOURISM", "COOPERATIVES", "KALAHI", "GIST", "MARKET"]
+};
+
+/**
  * Municipal offices options for the select dropdown
  */
 export const MUNICIPAL_OFFICES = [
-    { value: "MA", label: "Municipal Administrator's Office - MA" },
-    { value: "MHRMO", label: "Municipal Human Resource Management Office - MHRMO" },
-    { value: "GSO", label: "General Services Office - GSO" },
-    { value: "MPDO", label: "Municipal Planning and Development Office - MPDO" },
-    { value: "SBO", label: "Sangguniang Bayan Office - SBO" },
-    { value: "DILG", label: "DILG Office - DILG" },
-    { value: "MAO", label: "Municipal Accounting Office - MAO" },
-    { value: "MBO", label: "Municipal Budget Office - MBO" },
-    { value: "MTO", label: "Municipal Treasurer's Office - MTO" },
-    { value: "MAssO", label: "Municipal Assessor's Office - MAssO" },
-    { value: "BPLO", label: "Business Permits and Licensing Office - BPLO" },
-    { value: "MCRO", label: "Municipal Civil Registrar's Office - MCRO" },
-    { value: "MHO", label: "Municipal Health Office - MHO" },
-    { value: "MSWDO", label: "Municipal Social Welfare and Development Office - MSWDO" },
-    { value: "MYSD", label: "Municipal Youth and Sports Development - MYSD" },
-    { value: "PESO", label: "Public Employment Services Office - PESO" },
-    { value: "MAgO", label: "Municipal Agriculture Office - MAgO" },
-    { value: "MEO", label: "Municipal Engineering Office - MEO" },
-    { value: "MENRO", label: "Municipal Environment and Natural Resources Office - MENRO" },
-    { value: "MDRRMO", label: "Municipal Disaster Risk Reduction and Management Office - MDRRMO" },
-    { value: "BP", label: "Bamboo Plantation - BP" },
-    { value: "SH", label: "Slaughter House - SH" },
-    { value: "Tourism", label: "Municipal Tourism Office - Tourism" },
-    { value: "GIST", label: "GIST Office - GIST" }
+    { value: "MO", label: "MO - Mayor's Office" },
+    { value: "OMA", label: "OMA - Office of the Municipal Administrator" },
+    { value: "VMO/SBO", label: "VMO/SBO - Vice Mayor's Office / Sangguniang Bayan Office" },
+    { value: "BAC", label: "BAC - Bids and Awards Committee Office" },
+    { value: "MTO", label: "MTO - Municipal Treasurer's Office" },
+    { value: "MACCO", label: "MACCO - Municipal Accountant's Office" },
+    { value: "MBO", label: "MBO - Municipal Budget Office" },
+    { value: "GSO", label: "GSO - General Services Office" },
+    { value: "MPDO", label: "MPDO - Municipal Planning and Development Office" },
+    { value: "MEO", label: "MEO - Municipal Engineering Office" },
+    { value: "HRMO", label: "HRMO - Human Resource Management Office" },
+    { value: "MSWDO", label: "MSWDO - Municipal Social Welfare and Development Office" },
+    { value: "MHO", label: "MHO - Municipal Health Office" },
+    { value: "MAGO", label: "MAGO - Municipal Agriculture Office" },
+    { value: "MDDRMO", label: "MDDRMO - Municipal Disaster Risk Reduction and Management Office" },
+    { value: "MENRO", label: "MENRO - Municipal Environment and Natural Resources Office" },
+    { value: "BPLO", label: "BPLO - Business Permits and Licensing Office" },
+    { value: "MCRO", label: "MCRO - Municipal Civil Registrar's Office" },
+    { value: "MASSO", label: "MASSO - Municipal Assessor's Office" },
+    { value: "COA", label: "COA - Commission on Audit" },
+    { value: "MARKET", label: "MARKET - Market Administration Office" },
+    { value: "TOURISM", label: "TOURISM - Tourism Office" },
+    { value: "PESO", label: "PESO - Public Employment Service Office" },
+    { value: "YDS", label: "YDS - Youth Development Services" },
+    { value: "PDAO", label: "PDAO - Persons with Disability Affairs Office" },
+    { value: "OSCA", label: "OSCA - Office of the Senior Citizens Affairs" },
+    { value: "COOPERATIVES", label: "COOPERATIVES - Cooperatives Development Office" },
+    { value: "KALAHI", label: "KALAHI - Kapit-Bisig Laban sa Kahirapan – Comprehensive and Integrated Delivery of Social Services" },
+    { value: "GIST", label: "GIST - Gloria Institute of Science and Technology Office" },
+    { value: "Zoning", label: "Zoning - Zoning Office" },
+    { value: "SLAUGHTER", label: "SLAUGHTER - Slaughterhouse Office" },
+    { value: "BAMBOO", label: "BAMBOO - Bamboo Plantation" }
 ];

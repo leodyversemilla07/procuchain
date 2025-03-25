@@ -30,15 +30,6 @@ export function DocumentMetadataForm({
     submissionDate,
     onDateChange
 }: DocumentMetadataFormProps) {
-    // Immediately update municipal office value when selected
-    const handleOfficeChange = (value: string) => {
-        // Using setTimeout with 0ms delay ensures the update happens 
-        // after the current event cycle, fixing the select issue
-        setTimeout(() => {
-            updateMetadata('municipal_offices', value);
-        }, 0);
-    };
-
     return (
         <div className="space-y-6">
             <h3 className="text-base font-medium border-b pb-2 flex items-center gap-2">
@@ -74,7 +65,7 @@ export function DocumentMetadataForm({
                         </div>
                     </div>
 
-                    {/* Municipal Office Field - Updated with improved selection handling */}
+                    {/* Municipal Office Field - Direct implementation without custom handler */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="municipal_offices" className="flex items-center">
@@ -89,11 +80,11 @@ export function DocumentMetadataForm({
                         </div>
                         <Select
                             value={metadata.municipal_offices || ''}
-                            onValueChange={handleOfficeChange}
+                            onValueChange={(value) => updateMetadata('municipal_offices', value)}
                         >
-                            <SelectTrigger 
+                            <SelectTrigger
                                 className={cn(
-                                    "w-full", 
+                                    "w-full",
                                     hasError('pr_metadata.municipal_offices') ? 'border-destructive' : ''
                                 )}
                             >
