@@ -1,10 +1,10 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import { BarChart2, CheckCircle, ChevronRight, FileText, Lock, Search, Activity } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { BarChart2, CheckCircle, FileText, Lock, Activity } from 'lucide-react';
+import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     Accordion,
@@ -22,7 +22,6 @@ interface ProcurementPhase {
 }
 
 export default function Procurement() {
-    const [isMobile, setIsMobile] = useState(false);
     const [activePhase, setActivePhase] = useState<number | null>(null);
 
     // Helper function to get short names for phases
@@ -138,26 +137,11 @@ export default function Procurement() {
         }
     ];
 
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-
-        // Check on initial load
-        checkMobile();
-
-        // Add listener for window resize
-        window.addEventListener('resize', checkMobile);
-
-        // Clean up
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
     return (
         <>
             <Head title="Procurement System">
-                <link rel="preconnect" href="https://fonts.bunny.net" />
-                <link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700|inter:400,500,600&display=swap" rel="stylesheet" />
+                <Link rel="preconnect" href="https://fonts.bunny.net" />
+                <Link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700|inter:400,500,600&display=swap" rel="stylesheet" />
             </Head>
             <div className={`min-h-screen flex flex-col overflow-x-hidden bg-gradient-to-br from-white to-teal-50 text-gray-900 dark:from-gray-950 dark:to-gray-900 dark:text-white relative`}>
                 <Header />
@@ -178,7 +162,7 @@ export default function Procurement() {
                                         </span>
                                     </h1>
                                     <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 max-w-2xl">
-                                        Explore the complete procurement process from request initiation to monitoring, 
+                                        Explore the complete procurement process from request initiation to monitoring,
                                         ensuring transparency and compliance at every step of your procurement journey.
                                     </p>
                                     <div className="flex flex-wrap gap-4 mb-6">
@@ -196,7 +180,7 @@ export default function Procurement() {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 {/* Visual Side */}
                                 <div className="md:w-2/5 bg-gradient-to-br from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20 p-8 flex items-center justify-center">
                                     <div className="relative">

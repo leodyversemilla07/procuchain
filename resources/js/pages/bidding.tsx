@@ -1,14 +1,14 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import { Award, Clock, Download, FileText, Search, Shield, Users, ChevronRight } from 'lucide-react';
+import { Award, Clock, Download, FileText, Search, Shield, Users, } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface BidDocument {
     id: number;
@@ -25,13 +25,12 @@ interface BidDocument {
 }
 
 export default function Bidding() {
-    const [isMobile, setIsMobile] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [isLoading, setIsLoading] = useState(true);
 
     // In a real application, this data would be fetched from an API
-    const [bidDocuments, setBidDocuments] = useState<BidDocument[]>([
+    const [bidDocuments] = useState<BidDocument[]>([
         {
             id: 1,
             procurement_id: "PROC-2023-001",
@@ -100,16 +99,6 @@ export default function Bidding() {
     ]);
 
     useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-
-        // Check on initial load
-        checkMobile();
-
-        // Add listener for window resize
-        window.addEventListener('resize', checkMobile);
-
         // Simulate API loading
         const timer = setTimeout(() => {
             setIsLoading(false);
@@ -117,10 +106,18 @@ export default function Bidding() {
 
         // Clean up
         return () => {
-            window.removeEventListener('resize', checkMobile);
             clearTimeout(timer);
         };
     }, []);
+
+    // Helper function to check if a bid is closing soon (within 7 days)
+    const isClosingSoon = (closingDate: string): boolean => {
+        const today = new Date();
+        const closing = new Date(closingDate);
+        const differenceInTime = closing.getTime() - today.getTime();
+        const differenceInDays = differenceInTime / (1000 * 3600 * 24);
+        return differenceInDays > 0 && differenceInDays <= 7;
+    };
 
     // Filter documents based on search term and category
     const filteredDocuments = bidDocuments.filter(doc =>
@@ -136,8 +133,8 @@ export default function Bidding() {
     return (
         <>
             <Head title="Bid Invitations">
-                <link rel="preconnect" href="https://fonts.bunny.net" />
-                <link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700|inter:400,500,600&display=swap" rel="stylesheet" />
+                <Link rel="preconnect" href="https://fonts.bunny.net" />
+                <Link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700|inter:400,500,600&display=swap" rel="stylesheet" />
             </Head>
             <div className={`min-h-screen flex flex-col overflow-x-hidden bg-gradient-to-br from-white to-teal-50 text-gray-900 dark:from-gray-950 dark:to-gray-900 dark:text-white relative`}>
                 <Header />
@@ -259,7 +256,13 @@ export default function Bidding() {
                                             </TableHeader>
                                             <TableBody className="divide-y divide-gray-200 dark:divide-gray-700">
                                                 {filteredDocuments.map((document) => (
-                                                    <TableRow key={document.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+                                                    <TableRow
+                                                        key={document.id}
+                                                        className={`hover:bg-gray-50/50 dark:hover:bg-gray-800/50 ${document.status === 'Open' && isClosingSoon(document.closing_date)
+                                                                ? 'bg-amber-50 dark:bg-amber-900/20'
+                                                                : ''
+                                                            }`}
+                                                    >
                                                         <TableCell className="whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                             {document.procurement_id}
                                                         </TableCell>
@@ -274,6 +277,12 @@ export default function Bidding() {
                                                         </TableCell>
                                                         <TableCell className="whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                             {document.closing_date}
+                                                            {document.status === 'Open' && isClosingSoon(document.closing_date) && (
+                                                                <Badge variant="outline" className="ml-2 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800">
+                                                                    <Clock className="h-3 w-3 mr-1" />
+                                                                    Closing Soon
+                                                                </Badge>
+                                                            )}
                                                         </TableCell>
                                                         <TableCell className="whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                             {document.signatory_details}
