@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Providers\RouteServiceProvider;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ use Inertia\Response;
 class RegisteredUserController extends Controller
 {
     /**
-     * Show the registration page.
+     * Display the registration view.
      */
     public function create(): Response
     {
@@ -32,29 +33,35 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => 'nullable|string|in:bac_secretariat,bac_chairman,hope',
         ]);
+
+        // Set default role if not provided
+        $role = $request->role ?? 'bac_secretariat';
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => $role,
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        switch ($user->role) {
+        // Redirect based on user role
+        switch ($role) {
             case 'bac_secretariat':
-                return to_route('bac-secretariat.dashboard');
+                return redirect(route('bac-secretariat.dashboard'));
             case 'bac_chairman':
-                return to_route('bac-chairman.dashboard');
+                return redirect(route('bac-chairman.dashboard'));
             case 'hope':
-                return to_route('hope.dashboard');
+                return redirect(route('hope.dashboard'));
             default:
-                return to_route('home');
+                return redirect('/');
         }
     }
 }
