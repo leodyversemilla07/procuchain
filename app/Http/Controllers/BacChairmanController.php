@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\MultiChainService;
+use App\Services\MultichainService;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +19,7 @@ class BacChairmanController extends BaseController
 
     private const STREAM_EVENTS = 'procurement.events';
 
-    public function __construct(MultiChainService $multiChain)
+    public function __construct(MultichainService $multiChain)
     {
         $this->multiChain = $multiChain;
         $this->middleware('auth');
@@ -33,7 +33,7 @@ class BacChairmanController extends BaseController
 
     private function getStreamKey($procurementId, $procurementTitle)
     {
-        return $procurementId.'-'.preg_replace('/[^a-zA-Z0-9-]/', '-', $procurementTitle);
+        return $procurementId . '-' . preg_replace('/[^a-zA-Z0-9-]/', '-', $procurementTitle);
     }
 
     public function indexProcurementsList()
@@ -87,7 +87,7 @@ class BacChairmanController extends BaseController
 
             return Inertia::render('bac-chairman/procurements-list', [
                 'procurements' => [],
-                'error' => 'Failed to retrieve procurements: '.$e->getMessage(),
+                'error' => 'Failed to retrieve procurements: ' . $e->getMessage(),
             ]);
         }
     }
@@ -125,7 +125,7 @@ class BacChairmanController extends BaseController
 
             $documents = $this->multiChain->listStreamKeyItems(self::STREAM_DOCUMENTS, $streamKey, 1000);
 
-            Log::info('Found '.count($documents)." documents for procurement $procurementId");
+            Log::info('Found ' . count($documents) . " documents for procurement $procurementId");
 
             $potentialPrDocs = collect($documents)->filter(function ($doc) {
                 $data = $doc['data'];
@@ -208,7 +208,7 @@ class BacChairmanController extends BaseController
                 'Monitoring',
             ];
 
-            if (! isset($documentsByPhase['PR Initiation'])) {
+            if (!isset($documentsByPhase['PR Initiation'])) {
                 $prDocs = $parsedDocuments->filter(function ($doc) {
                     $docType = strtolower($doc['document_type'] ?? '');
                     $fileKey = strtolower($doc['file_key'] ?? '');
@@ -223,14 +223,14 @@ class BacChairmanController extends BaseController
                         strpos($fileKey, 'purchase') !== false;
                 })->values()->toArray();
 
-                if (! empty($prDocs)) {
+                if (!empty($prDocs)) {
                     $documentsByPhase['PR Initiation'] = $prDocs;
-                    Log::info('Added '.count($prDocs).' PR Initiation documents that were not properly categorized');
+                    Log::info('Added ' . count($prDocs) . ' PR Initiation documents that were not properly categorized');
                 }
             }
 
             foreach ($procurementPhases as $phase) {
-                if (! isset($documentsByPhase[$phase])) {
+                if (!isset($documentsByPhase[$phase])) {
                     $documentsByPhase[$phase] = [];
                 }
             }
@@ -272,7 +272,7 @@ class BacChairmanController extends BaseController
 
                 $latestPhaseState = $phaseStates->isEmpty() ? null : $phaseStates->sortByDesc('timestamp')->first();
 
-                $isCompleted = ! empty($latestPhaseState);
+                $isCompleted = !empty($latestPhaseState);
                 $isSkipped = $isCompleted && strpos($latestPhaseState['current_state'], 'Skipped') !== false;
 
                 $status = 'Not Started';
@@ -358,7 +358,7 @@ class BacChairmanController extends BaseController
             ]);
 
             return Inertia::render('bac-chairman/show', [
-                'error' => 'Failed to retrieve procurement: '.$e->getMessage(),
+                'error' => 'Failed to retrieve procurement: ' . $e->getMessage(),
             ]);
         }
     }
