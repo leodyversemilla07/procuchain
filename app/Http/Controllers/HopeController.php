@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\MultiChainService;
+use App\Services\MultichainService;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +19,7 @@ class HopeController extends BaseController
 
     private const STREAM_EVENTS = 'procurement.events';
 
-    public function __construct(MultiChainService $multiChain)
+    public function __construct(MultichainService $multiChain)
     {
         $this->multiChain = $multiChain;
         $this->middleware('auth');
