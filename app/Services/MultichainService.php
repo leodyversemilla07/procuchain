@@ -28,24 +28,49 @@ class MultichainService
     public function testConnection(): array
     {
         try {
+            // First check if we can connect to the server
+            if (!$this->isServerReachable()) {
+                return [
+                    'success' => false,
+                    'error' => 'Cannot connect to MultiChain server at ' . 
+                               config('multichain.rpc.host') . ':' . 
+                               config('multichain.rpc.port'),
+                    'error_code' => 'CONNECTION_FAILED',
+                ];
+            }
+            
             $info = $this->client->getinfo();
 
             if (! $this->client->success()) {
+                // More detailed error for debugging
+                $errorCode = $this->client->errorcode();
+                $errorMessage = $this->client->errormessage();
+                
+                // Check for authentication issues
+                if ($errorCode == 401) {
+                    return [
+                        'success' => false,
+                        'error' => 'Authentication failed. Please check your MultiChain credentials.',
+                        'error_code' => $errorCode,
+                        'error_message' => $errorMessage,
+                    ];
+                }
+                
                 throw new Exception(
                     sprintf(
                         'Connection failed - Error %d: %s',
-                        $this->client->errorcode(),
-                        $this->client->errormessage()
+                        $errorCode,
+                        $errorMessage
                     )
                 );
             }
 
             return [
                 'success' => true,
-                'chain' => $info['chainname'],
-                'version' => $info['version'],
-                'protocol' => $info['protocol'],
-                'node_address' => $info['nodeaddress'],
+                'chain' => $info['chainname'] ?? config('multichain.chain_name'),
+                'version' => $info['version'] ?? 'unknown',
+                'protocol' => $info['protocol'] ?? 'unknown',
+                'node_address' => $info['nodeaddress'] ?? config('multichain.node_address'),
             ];
 
         } catch (Exception $e) {
@@ -62,6 +87,25 @@ class MultichainService
                 'error_message' => $this->client->errormessage(),
             ];
         }
+    }
+    
+    /**
+     * Check if the MultiChain server is reachable
+     */
+    private function isServerReachable(): bool
+    {
+        $host = config('multichain.rpc.host');
+        $port = config('multichain.rpc.port');
+        
+        // Try to establish a socket connection
+        $connection = @fsockopen($host, $port, $errno, $errstr, 5);
+        
+        if (is_resource($connection)) {
+            fclose($connection);
+            return true;
+        }
+        
+        return false;
     }
 
     public function getInfo(): array
