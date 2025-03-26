@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +22,7 @@ class ConfirmablePasswordController extends Controller
     }
 
     /**
-     * Confirm the user's password.
+     * Store a newly confirmed password.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -29,13 +30,24 @@ class ConfirmablePasswordController extends Controller
             'email' => $request->user()->email,
             'password' => $request->password,
         ])) {
-            throw ValidationException::withMessages([
+            return back()->withErrors([
                 'password' => __('auth.password'),
             ]);
         }
 
         $request->session()->put('auth.password_confirmed_at', time());
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Redirect to the appropriate dashboard based on user role
+        $user = $request->user();
+        switch ($user->role) {
+            case 'bac_secretariat':
+                return redirect()->intended(route('bac-secretariat.dashboard'));
+            case 'bac_chairman':
+                return redirect()->intended(route('bac-chairman.dashboard'));
+            case 'hope':
+                return redirect()->intended(route('hope.dashboard'));
+            default:
+                return redirect()->intended('/'); // Fallback to home page
+        }
     }
 }
