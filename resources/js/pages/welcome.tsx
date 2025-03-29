@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { FileText } from 'lucide-react';
@@ -25,8 +25,8 @@ export default function Welcome() {
     return (
         <>
             <Head title="Welcome">
-                <Link rel="preconnect" href="https://fonts.bunny.net" />
-                <Link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700|inter:400,500,600&display=swap" rel="stylesheet" />
+                <link rel="preconnect" href="https://fonts.bunny.net" />
+                <link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700|inter:400,500,600&display=swap" rel="stylesheet" />
             </Head>
             <div className={`${isMobile ? 'min-h-screen' : 'h-screen'} flex flex-col ${isMobile ? 'overflow-y-auto' : 'overflow-hidden'} bg-gradient-to-br from-white to-teal-50 text-gray-900 dark:from-gray-950 dark:to-gray-900 dark:text-white relative`}>
                 <Header />

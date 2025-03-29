@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { FileText } from 'lucide-react';
 
 interface Item {
     unit: string;
@@ -190,17 +191,48 @@ export default function Create() {
                     <div className="absolute top-[50%] left-[30%] w-72 h-72 bg-blue-300/10 dark:bg-blue-600/5 rounded-full blur-3xl"></div>
                 </div>
 
-                {/* Hero Section - Welcome Style */}
-                <div className="fade-in-content opacity-0 transition-opacity duration-1000 pt-36 pb-12 relative z-1">
+                {/* Hero Section - Updated to match other pages */}
+                <div className="fade-in-content opacity-0 transition-opacity duration-1000 pt-24 pb-12 relative z-1">
                     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                        {/* Form Section Header */}
-                        <div className="text-center" id="generate-form">
-                            <h2 className="text-3xl font-bold mb-4 text-gray-800 dark:text-white">
-                                Create Your Purchase Request
-                            </h2>
-                            <p className="text-xl max-w-3xl mx-auto text-gray-600 dark:text-gray-300">
-                                Fill out the form below to generate a professional purchase request document.
-                            </p>
+                        {/* Hero Section - Improved */}
+                        <div className="mb-12 bg-white dark:bg-gray-800/50 rounded-xl shadow-sm overflow-hidden">
+                            <div className="flex flex-col md:flex-row">
+                                {/* Content Side */}
+                                <div className="p-8 md:p-10 md:w-3/5">
+                                    <div className="inline-block p-2 bg-teal-100/60 dark:bg-teal-900/30 rounded-lg text-teal-700 dark:text-teal-300 mb-4">
+                                        <FileText className="w-5 h-5" />
+                                    </div>
+                                    <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+                                        <span className="bg-gradient-to-r from-teal-600 to-teal-400 bg-clip-text text-transparent">
+                                            Create Your Purchase Request
+                                        </span>
+                                    </h1>
+                                    <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 max-w-2xl">
+                                        Fill out the form below to generate a professional purchase request document that follows
+                                        standard procurement protocols.
+                                    </p>
+                                </div>
+
+                                {/* Visual Side */}
+                                <div className="md:w-2/5 bg-gradient-to-br from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20 p-8 flex items-center justify-center">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-teal-500/10 dark:bg-teal-500/5 rounded-full animate-pulse"></div>
+                                        <div className="relative flex items-center justify-center p-6 rounded-full bg-white dark:bg-gray-800 shadow-md">
+                                            <FileText className="w-16 h-16 text-teal-600 dark:text-teal-400" />
+                                        </div>
+                                        <div className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/3">
+                                            <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full shadow-sm">
+                                                <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                            </div>
+                                        </div>
+                                        <div className="absolute bottom-0 left-0 transform -translate-x-1/3 translate-y-1/4">
+                                            <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full shadow-sm">
+                                                <FileText className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
