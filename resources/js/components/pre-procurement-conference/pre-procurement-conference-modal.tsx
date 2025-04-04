@@ -29,7 +29,7 @@ export function PreProcurementModal({
     procurementTitle,
     onComplete
 }: PreProcurementModalProps) {
-    const { data, setData, post, processing, errors, reset, setError } = useForm({
+    const form = useForm({
         procurement_id: procurementId,
         procurement_title: procurementTitle,
         conference_held: undefined as boolean | undefined,
@@ -38,16 +38,16 @@ export function PreProcurementModal({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (data.conference_held === undefined) {
-            setError('conference_held', 'Please select whether a conference was held');
+        if (form.data.conference_held === undefined) {
+            form.setError('conference_held', 'Please select whether a conference was held');
             return;
         }
 
-        post('/bac-secretariat/publish-pre-procurement-conference-decision', {
+        form.post('/bac-secretariat/publish-pre-procurement-conference-decision', {
             onSuccess: (response) => {
                 onOpenChange(false);
 
-                const message = data.conference_held
+                const message = form.data.conference_held
                     ? "You will now proceed to upload pre-procurement documents."
                     : "The pre-procurement phase has been skipped.";
 
@@ -56,24 +56,24 @@ export function PreProcurementModal({
                 if (onComplete && response?.props?.success) {
                     onComplete(
                         response?.props?.nextPhase as string | undefined,
-                        data.conference_held
+                        form.data.conference_held
                     );
                 }
 
-                reset();
+                form.reset();
             }
         });
     };
 
     const handleConferenceSelection = (value: string) => {
-        setData('conference_held', value === 'true');
+        form.setData('conference_held', value === 'true');
     };
 
     return (
         <Dialog
             open={open}
             onOpenChange={(newOpen) => {
-                if (!processing) onOpenChange(newOpen);
+                if (!form.processing) onOpenChange(newOpen);
             }}
         >
             <DialogContent className="sm:max-w-[500px] p-6">
@@ -96,33 +96,37 @@ export function PreProcurementModal({
                                 Was a pre-procurement conference held?
                             </Label>
                             <RadioGroup
-                                value={data.conference_held === undefined ? undefined : data.conference_held.toString()}
+                                value={form.data.conference_held === undefined ? undefined : form.data.conference_held.toString()}
                                 onValueChange={handleConferenceSelection}
                                 className="grid grid-cols-2 gap-4 pt-2"
                                 aria-label="Pre-procurement conference status"
                             >
-                                <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
-                                    <RadioGroupItem value="true" id="conference-yes" />
-                                    <Label htmlFor="conference-yes" className="cursor-pointer">Yes</Label>
-                                </div>
-                                <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
-                                    <RadioGroupItem value="false" id="conference-no" />
-                                    <Label htmlFor="conference-no" className="cursor-pointer">No</Label>
-                                </div>
+                                <Label htmlFor="conference-yes" className="w-full m-0">
+                                    <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
+                                        <RadioGroupItem value="true" id="conference-yes" />
+                                        <span className="cursor-pointer">Yes</span>
+                                    </div>
+                                </Label>
+                                <Label htmlFor="conference-no" className="w-full m-0">
+                                    <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
+                                        <RadioGroupItem value="false" id="conference-no" />
+                                        <span className="cursor-pointer">No</span>
+                                    </div>
+                                </Label>
                             </RadioGroup>
-                            {errors.conference_held && (
+                            {form.errors.conference_held && (
                                 <p className="text-red-500 text-sm mt-2" id="conference-error" aria-live="polite">
-                                    {errors.conference_held}
+                                    {form.errors.conference_held}
                                 </p>
                             )}
                         </div>
 
-                        {data.conference_held !== undefined && (
-                            <div className={`p-4 rounded-lg ${data.conference_held
+                        {form.data.conference_held !== undefined && (
+                            <div className={`p-4 rounded-lg ${form.data.conference_held
                                 ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                                 : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
                                 }`}>
-                                {data.conference_held ? (
+                                {form.data.conference_held ? (
                                     <p>You'll be directed to the procurement list to upload the pre-procurement documents.</p>
                                 ) : (
                                     <p>This will skip the pre-procurement phase and proceed to Bid Invitation Publication.</p>
@@ -134,10 +138,10 @@ export function PreProcurementModal({
                     <DialogFooter className="mt-8">
                         <Button
                             type="submit"
-                            disabled={processing}
+                            disabled={form.processing}
                             className="w-full sm:w-auto min-w-[140px] transition-all"
                         >
-                            {processing ? (
+                            {form.processing ? (
                                 <span className="flex items-center gap-2">
                                     <LoaderCircle className="h-4 w-4 animate-spin" />
                                     Processing...

@@ -8,7 +8,7 @@ export enum StreamType {
 
 export enum Stage {
     PROCUREMENT_INITIATION = 'Procurement Initiation',
-    PRE_PROCUREMENT = 'Pre-Procurement',
+    PRE_PROCUREMENT_CONFERENCE = 'Pre-Procurement Conference',
     BIDDING_DOCUMENTS = 'Bidding Documents',
     PRE_BID_CONFERENCE = 'Pre-Bid Conference',
     SUPPLEMENTAL_BID_BULLETIN = 'Supplemental Bid Bulletin',
@@ -27,8 +27,8 @@ export enum Stage {
 export enum Status {
     PROCUREMENT_SUBMITTED = 'Procurement Submitted',
     PRE_PROCUREMENT_CONFERENCE_HELD = 'Pre-Procurement Conference Held',
-    PRE_PROCUREMENT_SKIPPED = 'Pre-Procurement Skipped',
-    PRE_PROCUREMENT_COMPLETED = 'Pre-Procurement Completed',
+    PRE_PROCUREMENT_CONFERENCE_SKIPPED = 'Pre-Procurement Conference Skipped',
+    PRE_PROCUREMENT_CONFERENCE_COMPLETED = 'Pre-Procurement Conference Completed',
     BIDDING_DOCUMENTS_PUBLISHED = 'Bidding Documents Published',
     SUPPLEMENTAL_BULLETINS_ONGOING = 'Supplemental Bulletins Ongoing',
     SUPPLEMENTAL_BULLETINS_COMPLETED = 'Supplemental Bulletins Completed',

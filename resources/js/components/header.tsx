@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { Menu, X } from 'lucide-react';
 import { type SharedData } from '@/types';
+import AppLogoIcon from './app-logo-icon';
 
 export default function Header() {
     const { auth } = usePage<SharedData>().props;
@@ -51,9 +52,8 @@ export default function Header() {
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     {/* Logo section with enhanced animation */}
                     <Link href={route('home')} className="flex items-center space-x-3 group">
-                        <div className="h-11 w-11 rounded-xl bg-gradient-to-tr from-teal-600 via-teal-500 to-teal-400 flex items-center justify-center overflow-hidden relative transform transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 shadow-lg">
-                            <span className="text-white font-bold text-xl relative z-10 group-hover:scale-110 transition-transform duration-300">P</span>
-                            <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rotate-180"></div>
+                        <div className="h-11 w-11 rounded-xl overflow-hidden transform transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 shadow-lg">
+                            <AppLogoIcon className="w-full h-full object-cover" />
                         </div>
                         <span className="font-bold text-xl bg-gradient-to-r from-teal-600 to-teal-400 bg-clip-text text-transparent group-hover:to-teal-500 transition-all duration-300">ProcuChain</span>
                     </Link>

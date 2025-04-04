@@ -37,12 +37,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/bac-secretariat/procurements-list/{id}', [BacSecretariatController::class, 'showProcurement'])
             ->name('bac-secretariat.procurements.show');
 
-        
         Route::get('/bac-secretariat/procurement/procurement-initiation', [ProcurementController::class, 'showProcurementInitiation'])
             ->name('bac-secretariat.procurement.procurement-initiation');
 
-        Route::get('/bac-secretariat/pre-procurement-upload/{id}', [ProcurementController::class, 'showPreProcurementUpload'])
-            ->name('bac-secretariat.pre-procurement-upload');
+        Route::get('/bac-secretariat/pre-procurement-conference-upload/{id}', [ProcurementController::class, 'showPreProcurementConferenceUpload'])
+            ->name('bac-secretariat.pre-procurement-conference-upload');
 
         Route::get('/bac-secretariat/bidding-documents-upload/{id}', [ProcurementController::class, 'showBiddingDocumentsUpload'])
             ->name('bac-secretariat.bidding-documents-upload');
@@ -74,7 +73,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/bac-secretariat/complete-status/{id}', [ProcurementController::class, 'showCompleteStatus'])
             ->name('bac-secretariat.complete-status');
 
-
         Route::post('/bac-secretariat/publish-procurement-initiation', [ProcurementController::class, 'publishProcurementInitiation'])
             ->name('publish-procurement-initiation');
 
@@ -92,7 +90,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('/bac-secretariat/publish-supplemental-bid-bulletin-decision', [ProcurementController::class, 'publishSupplementalBidBulletinDecision'])
             ->name('bac-secretariat.publish-supplemental-bid-bulletin-decision');
-            
+
         Route::post('/bac-secretariat/upload-supplemental-bid-bulletin-documents', [ProcurementController::class, 'uploadSupplementalBidBulletinDocuments'])
             ->name('bac-secretariat.upload-supplemental-bid-bulletin-documents');
 
@@ -155,5 +153,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

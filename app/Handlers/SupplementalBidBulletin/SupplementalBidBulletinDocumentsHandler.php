@@ -4,10 +4,10 @@ namespace App\Handlers\SupplementalBidBulletin;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
 {
@@ -15,24 +15,25 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
     {
         try {
             $data = $this->prepareHandlingData($request);
-            
-            if (!$data['bulletinFile']) {
+
+            if (! $data['bulletinFile']) {
                 return [
                     'success' => false,
-                    'message' => 'No bulletin file uploaded'
+                    'message' => 'No bulletin file uploaded',
                 ];
             }
 
             return $this->processUpload($data);
         } catch (Exception $e) {
             Log::error('Error uploading supplemental bid bulletin', ['error' => $e->getMessage()]);
+
             return [
                 'success' => false,
-                'message' => 'Failed to upload supplemental bid bulletin: ' . $e->getMessage()
+                'message' => 'Failed to upload supplemental bid bulletin: '.$e->getMessage(),
             ];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -45,10 +46,10 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
-            'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING
+            'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
         ];
     }
-    
+
     private function processUpload(array $data): array
     {
         $metadataArray = $this->uploadAndPrepareMetadata(
@@ -57,7 +58,7 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
                 'document_type' => 'Supplemental Bid Bulletin',
                 'bulletin_number' => $data['bulletinNumber'],
                 'bulletin_title' => $data['bulletinTitle'],
-                'issue_date' => $data['issueDate']
+                'issue_date' => $data['issueDate'],
             ]],
             $data['procurementId'],
             $data['procurementTitle'],
@@ -94,8 +95,8 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => 'Supplemental Bid Bulletin #' . $data['bulletinNumber'] . ' uploaded successfully',
-            'metadata' => $metadataArray[0]
+            'message' => 'Supplemental Bid Bulletin #'.$data['bulletinNumber'].' uploaded successfully',
+            'metadata' => $metadataArray[0],
         ];
     }
 }

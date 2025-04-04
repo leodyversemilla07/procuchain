@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\UserRoleEnums;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
 class BidOpeningDocumentsRequest extends FormRequest
@@ -24,14 +24,14 @@ class BidOpeningDocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id'      => 'required|string|max:50',
-            'procurement_title'   => 'required|string|min:5|max:255',
-            'bid_documents'       => 'required|array|min:1',
-            'bid_documents.*'     => 'required|file|mimes:pdf|max:10240',
-            'bidders_data'        => 'required|array|min:1',
+            'procurement_id' => 'required|string|max:50',
+            'procurement_title' => 'required|string|min:5|max:255',
+            'bid_documents' => 'required|array|min:1',
+            'bid_documents.*' => 'required|file|mimes:pdf|max:10240',
+            'bidders_data' => 'required|array|min:1',
             'bidders_data.*.bidder_name' => 'required|string|min:1|max:255',
-            'bidders_data.*.bid_value'   => 'required|string|min:1|max:100',
-            'opening_date_time'   => 'required|date_format:Y-m-d H:i:s',
+            'bidders_data.*.bid_value' => 'required|string|min:1|max:100',
+            'opening_date_time' => 'required|date_format:Y-m-d H:i:s',
         ];
     }
 }

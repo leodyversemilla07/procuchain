@@ -13,12 +13,19 @@ define('MC_OPT_VERIFY_SSL', 3);
 class MultichainClient
 {
     private $host;
+
     private $port;
+
     private $username;
+
     private $password;
+
     private $chainname;
+
     private $error_code = 0;
+
     private $error_message = '';
+
     private $usessl = false;
 
     private $transport;
@@ -32,7 +39,7 @@ class MultichainClient
         $this->chainname = null;
         $this->usessl = $usessl;
 
-        $this->transport = $usessl ? new CurlTransport() : new SocketTransport();
+        $this->transport = $usessl ? new CurlTransport : new SocketTransport;
     }
 
     public function setoption($option, $value)
@@ -42,7 +49,7 @@ class MultichainClient
                 $this->chainname = $value;
                 break;
             case MC_OPT_USE_CURL:
-                $this->transport = $value ? new CurlTransport() : new SocketTransport();
+                $this->transport = $value ? new CurlTransport : new SocketTransport;
                 break;
             case MC_OPT_VERIFY_SSL:
                 if ($this->transport instanceof CurlTransport) {
@@ -58,23 +65,24 @@ class MultichainClient
 
     public function __call($method, $params)
     {
-        $url = ($this->usessl ? 'https' : 'http') . '://' . $this->host . ':' . $this->port . '/';
+        $url = ($this->usessl ? 'https' : 'http').'://'.$this->host.':'.$this->port.'/';
         $payload = $this->preparePayload($method, $params);
-        $strUserPass64 = base64_encode($this->username . ':' . $this->password);
+        $strUserPass64 = base64_encode($this->username.':'.$this->password);
 
         $headers = [
             'Content-Type: application/json',
-            'Content-Length: ' . strlen($payload),
+            'Content-Length: '.strlen($payload),
             'Connection: close',
-            'Authorization: Basic ' . $strUserPass64,
+            'Authorization: Basic '.$strUserPass64,
         ];
 
         $response = $this->transport->execute($url, $headers, $payload);
 
-        if (!$response['success']) {
+        if (! $response['success']) {
             $error = $this->transport->getLastError();
             $this->error_code = $error['code'];
             $this->error_message = $error['message'];
+
             return null;
         }
 
@@ -89,7 +97,7 @@ class MultichainClient
             'params' => $params,
         ];
 
-        if (!is_null($this->chainname)) {
+        if (! is_null($this->chainname)) {
             $request['chain_name'] = $this->chainname;
         }
 
@@ -107,7 +115,7 @@ class MultichainClient
             return null;
         }
 
-        if (!$this->isValidResponseStructure($decoded)) {
+        if (! $this->isValidResponseStructure($decoded)) {
             return null;
         }
 
@@ -115,10 +123,12 @@ class MultichainClient
 
         if ($this->hasError($decoded)) {
             $this->handleError($decoded['error']);
+
             return null;
         }
 
         $this->error_message = '';
+
         return $decoded['result'];
     }
 
@@ -128,8 +138,10 @@ class MultichainClient
             if ($this->error_code == 200) {
                 $this->error_message = 'Missing Response';
             }
+
             return true;
         }
+
         return false;
     }
 
@@ -138,23 +150,27 @@ class MultichainClient
         $decoded = json_decode($encoded, true);
         if (is_null($decoded)) {
             $this->error_message = 'Invalid JSON Response';
+
             return null;
         }
+
         return $decoded;
     }
 
     private function isValidResponseStructure($decoded)
     {
-        if (!array_key_exists('error', $decoded) || !array_key_exists('result', $decoded)) {
+        if (! array_key_exists('error', $decoded) || ! array_key_exists('result', $decoded)) {
             $this->error_message = 'Invalid Response Structure';
+
             return false;
         }
+
         return true;
     }
 
     private function hasError($decoded)
     {
-        return !is_null($decoded['error']);
+        return ! is_null($decoded['error']);
     }
 
     private function handleError($error)
@@ -163,7 +179,7 @@ class MultichainClient
         $this->error_message = $error['message'];
 
         if ($this->error_code == -1 && strpos($this->error_message, "\n\n") !== false) {
-            $this->error_message = "Wrong parameters. Usage:\n\n" . $this->error_message;
+            $this->error_message = "Wrong parameters. Usage:\n\n".$this->error_message;
         }
     }
 

@@ -2,9 +2,9 @@
 
 namespace App\Handlers\PerformanceBondContractAndPo;
 
-use App\Handlers\BaseStageShowUploadHandler;
-use App\Enums\StatusEnums;
 use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
+use App\Handlers\BaseStageShowUploadHandler;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +18,7 @@ class PerformanceBondContractAndPoShowUploadHandler extends BaseStageShowUploadH
                 StatusEnums::AWARDED->value,
                 StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->value
             );
-            
+
             return $this->renderUploadForm(
                 $procurement,
                 'bac-secretariat/procurement-stage/performance-bond-upload'
@@ -31,7 +31,7 @@ class PerformanceBondContractAndPoShowUploadHandler extends BaseStageShowUploadH
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Performance Bond upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading Performance Bond upload form: '.$e->getMessage());
         }
     }
 }

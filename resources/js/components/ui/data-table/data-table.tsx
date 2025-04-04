@@ -11,7 +11,6 @@ import {
     getFilteredRowModel,
     RowSelectionState
 } from "@tanstack/react-table";
-
 import {
     Table,
     TableBody,
@@ -25,12 +24,12 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ChevronDownIcon, SearchIcon, XIcon } from "lucide-react";
+import { ChevronDownIcon, CircleXIcon, SearchIcon, XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
-    data: readonly TData[];  // Changed from TData[] to readonly TData[] for more flexibility
+    data: readonly TData[];
     searchColumn?: string;
     searchPlaceholder?: string;
     onRowSelectionChange?: (selectedRows: TData[]) => void;
@@ -68,12 +67,11 @@ export function DataTable<TData, TValue>({
         enableRowSelection: true,
         initialState: {
             pagination: {
-                pageSize: 10, // Changed from 8 to 10
+                pageSize: 10,
             },
         },
     });
 
-    // Get the selected rows data whenever selection changes
     useEffect(() => {
         if (onRowSelectionChange) {
             const selectedRows = table
@@ -83,7 +81,6 @@ export function DataTable<TData, TValue>({
         }
     }, [rowSelection, onRowSelectionChange, table]);
 
-    // Handle search input changes
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSearchValue(value);
@@ -92,7 +89,6 @@ export function DataTable<TData, TValue>({
         }
     };
 
-    // Clear search input
     const clearSearch = () => {
         setSearchValue("");
         if (searchColumn) {
@@ -100,7 +96,6 @@ export function DataTable<TData, TValue>({
         }
     };
 
-    // Get the selected rows for bulk actions
     const selectedRows = table
         .getSelectedRowModel()
         .rows.map((row) => row.original) as TData[];
@@ -201,8 +196,8 @@ export function DataTable<TData, TValue>({
                                     key={row.id}
                                     data-state={row.getIsSelected() ? "selected" : undefined}
                                     className={`border-b border-sidebar-border/30 dark:border-sidebar-border/70 ${row.getIsSelected()
-                                            ? "bg-primary/5 dark:bg-primary/10 text-gray-900 dark:text-gray-100"
-                                            : "hover:bg-muted/30 dark:hover:bg-muted/10"
+                                        ? "bg-primary/5 dark:bg-primary/10 text-gray-900 dark:text-gray-100"
+                                        : "hover:bg-muted/30 dark:hover:bg-muted/10"
                                         }`}
                                 >
                                     {row.getVisibleCells().map((cell) => (
@@ -219,9 +214,7 @@ export function DataTable<TData, TValue>({
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-32 text-center">
                                     <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 py-8">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
+                                        <CircleXIcon className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-2" />
                                         <p className="text-base">No records found</p>
                                         <p className="text-sm mt-1">Try adjusting your search or filter to find what you're looking for.</p>
                                     </div>

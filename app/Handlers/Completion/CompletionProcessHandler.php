@@ -4,10 +4,10 @@ namespace App\Handlers\Completion;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class CompletionProcessHandler extends BaseStageHandler
 {
@@ -15,13 +15,15 @@ class CompletionProcessHandler extends BaseStageHandler
     {
         try {
             $data = $this->prepareHandlingData($request);
+
             return $this->completeProcurement($data);
         } catch (Exception $e) {
             Log::error('Error in CompleteProcessHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to mark procurement as complete: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to mark procurement as complete: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -31,10 +33,10 @@ class CompletionProcessHandler extends BaseStageHandler
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::COMPLETED,
-            'status' => StatusEnums::COMPLETED
+            'status' => StatusEnums::COMPLETED,
         ];
     }
-    
+
     private function completeProcurement(array $data): array
     {
         $this->blockchainService->updateStatus(

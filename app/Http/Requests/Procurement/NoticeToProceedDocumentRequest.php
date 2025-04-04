@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\UserRoleEnums;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
 class NoticeToProceedDocumentRequest extends FormRequest
@@ -24,10 +24,10 @@ class NoticeToProceedDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id'   => 'required|string|max:50',
-            'procurement_title'=> 'required|string|min:5|max:255',
-            'ntp_file'         => 'required|file|mimes:pdf|max:10240',
-            'issuance_date'    => 'required|date_format:Y-m-d|before_or_equal:today',
+            'procurement_id' => 'required|string|max:50',
+            'procurement_title' => 'required|string|min:5|max:255',
+            'ntp_file' => 'required|file|mimes:pdf|max:10240',
+            'issuance_date' => 'required|date_format:Y-m-d|before_or_equal:today',
         ];
     }
 }

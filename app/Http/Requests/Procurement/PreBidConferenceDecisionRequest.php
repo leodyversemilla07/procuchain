@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\UserRoleEnums;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
 class PreBidConferenceDecisionRequest extends FormRequest
@@ -24,10 +24,10 @@ class PreBidConferenceDecisionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id'   => 'required|string|max:50',
-            'procurement_title'=> 'required|string|min:5|max:255',
-            'conference_held'  => 'required|boolean',
-            'needs_bulletins'  => 'sometimes|boolean',
+            'procurement_id' => 'required|string|max:50',
+            'procurement_title' => 'required|string|min:5|max:255',
+            'conference_held' => 'required|boolean',
+            'needs_bulletins' => 'sometimes|boolean',
         ];
     }
 }

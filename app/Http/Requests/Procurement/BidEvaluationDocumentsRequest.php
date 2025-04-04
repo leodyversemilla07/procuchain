@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\UserRoleEnums;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
 class BidEvaluationDocumentsRequest extends FormRequest
@@ -24,12 +24,12 @@ class BidEvaluationDocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id'    => 'required|string|max:50',
+            'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'summary_file'      => 'required|file|mimes:pdf|max:10240',
-            'abstract_file'     => 'required|file|mimes:pdf|max:10240',
-            'evaluation_date'   => 'required|date_format:Y-m-d|before_or_equal:today',
-            'evaluator_names'   => 'required|string|min:1|max:500',
+            'summary_file' => 'required|file|mimes:pdf|max:10240',
+            'abstract_file' => 'required|file|mimes:pdf|max:10240',
+            'evaluation_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'evaluator_names' => 'required|string|min:1|max:500',
         ];
     }
 }

@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Handlers\ProcurementViewHandler;
 use Exception;
+use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
-use Illuminate\Routing\Controller as BaseController;
 
 class BacChairmanController extends BaseController
 {
@@ -28,6 +28,7 @@ class BacChairmanController extends BaseController
     {
         try {
             $procurements = $this->procurementHandler->getProcurementsList();
+
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => $procurements,
             ]);
@@ -36,9 +37,10 @@ class BacChairmanController extends BaseController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => [],
-                'error' => 'Failed to retrieve procurements: ' . $e->getMessage(),
+                'error' => 'Failed to retrieve procurements: '.$e->getMessage(),
             ]);
         }
     }
@@ -47,8 +49,8 @@ class BacChairmanController extends BaseController
     {
         try {
             $procurement = $this->procurementHandler->getProcurementDetails($procurementId);
-            
-            if (!$procurement) {
+
+            if (! $procurement) {
                 return Inertia::render('procurements/show', ['message' => 'Procurement not found']);
             }
 
@@ -65,7 +67,7 @@ class BacChairmanController extends BaseController
             ]);
 
             return Inertia::render('procurements/show', [
-                'error' => 'Failed to retrieve procurement: ' . $e->getMessage(),
+                'error' => 'Failed to retrieve procurement: '.$e->getMessage(),
             ]);
         }
     }

@@ -106,7 +106,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
 
         $emailMessage = (new MailMessage)
             ->subject($subject)
-            ->greeting('Dear ' . $notifiable->name . ',')
+            ->greeting('Dear '.$notifiable->name.',')
             ->line('This is to inform you that there has been an update to the procurement process:');
 
         // Main update message
@@ -121,7 +121,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
         }
 
         // Add stage transition information if applicable
-        if (!empty($this->data['next_stage'])) {
+        if (! empty($this->data['next_stage'])) {
             $emailMessage->line('')
                 ->line('**Stage Transition:**')
                 ->line("The procurement process is now moving to the **{$this->data['next_stage']}** stage.");
@@ -133,7 +133,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
             ->line("- **Title:** {$this->data['procurement_title']}")
             ->line("- **ID:** {$this->data['procurement_id']}")
             ->line("- **Current Status:** {$this->data['current_status']}")
-            ->line('- **Last Updated:** ' . date('F j, Y \a\t g:i a', strtotime($this->data['timestamp'])));
+            ->line('- **Last Updated:** '.date('F j, Y \a\t g:i a', strtotime($this->data['timestamp'])));
 
         // Add call to action
         $emailMessage->action('View Procurement Details', $url)
@@ -165,7 +165,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
         ];
 
         // Include next stage information if available
-        if (!empty($this->data['next_stage'])) {
+        if (! empty($this->data['next_stage'])) {
             $data['next_stage'] = $this->data['next_stage'];
             $data['next_stage_timestamp'] = $this->data['next_timestamp'] ?? null;
         }
@@ -185,11 +185,11 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
 
         $actionText = $this->formatActionType($this->data['action_type'] ?? 'updated');
 
-        $title = $this->data['stage_identifier'] . ' Update';
+        $title = $this->data['stage_identifier'].' Update';
         $message = "The {$this->data['stage_identifier']} stage {$actionText} for \"{$this->data['procurement_title']}\". Current status: {$this->data['current_status']}";
 
         // Add stage transition info to the message if applicable
-        if (!empty($this->data['next_stage'])) {
+        if (! empty($this->data['next_stage'])) {
             $message .= ". The procurement is now moving to the {$this->data['next_stage']} stage.";
             $title = "Stage Transition: {$this->data['stage_identifier']} to {$this->data['next_stage']}";
         }
@@ -208,7 +208,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
         ];
 
         // Add next stage info if available
-        if (!empty($this->data['next_stage'])) {
+        if (! empty($this->data['next_stage'])) {
             $data['next_stage'] = $this->data['next_stage'];
             $data['next_stage_timestamp'] = $this->data['next_timestamp'] ?? null;
         }

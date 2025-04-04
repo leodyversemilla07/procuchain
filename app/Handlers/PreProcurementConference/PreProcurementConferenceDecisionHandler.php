@@ -4,10 +4,10 @@ namespace App\Handlers\PreProcurementConference;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class PreProcurementConferenceDecisionHandler extends BaseStageHandler
 {
@@ -23,9 +23,10 @@ class PreProcurementConferenceDecisionHandler extends BaseStageHandler
             }
         } catch (Exception $e) {
             Log::error('Error in PreProcurementDecisionHandler', ['error' => $e->getMessage()]);
+
             return [
                 'success' => false,
-                'message' => 'Failed to process ' . StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName() . ' decision: ' . $e->getMessage()
+                'message' => 'Failed to process '.StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName().' decision: '.$e->getMessage(),
             ];
         }
     }
@@ -40,7 +41,7 @@ class PreProcurementConferenceDecisionHandler extends BaseStageHandler
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::PRE_PROCUREMENT_CONFERENCE,
             'initialStage' => StageEnums::PROCUREMENT_INITIATION,
-            'nextStage' => StageEnums::BIDDING_DOCUMENTS
+            'nextStage' => StageEnums::BIDDING_DOCUMENTS,
         ];
     }
 
@@ -82,7 +83,7 @@ class PreProcurementConferenceDecisionHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $status->getDisplayName() . '. Please upload documents.'
+            'message' => $status->getDisplayName().'. Please upload documents.',
         ];
     }
 
@@ -116,8 +117,8 @@ class PreProcurementConferenceDecisionHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $status->getDisplayName() .
-                '. Proceeding to ' . $data['nextStage']->getDisplayName() . '.'
+            'message' => $status->getDisplayName().
+                '. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
 }

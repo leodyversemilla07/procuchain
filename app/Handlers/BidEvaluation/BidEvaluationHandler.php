@@ -4,10 +4,10 @@ namespace App\Handlers\BidEvaluation;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class BidEvaluationHandler extends BaseStageHandler
 {
@@ -19,13 +19,15 @@ class BidEvaluationHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
             $metadataArray = $this->prepareDocumentsMetadata($data);
+
             return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error in BidEvaluationHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to upload ' . StageEnums::BID_EVALUATION->getDisplayName() . ' documents: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to upload '.StageEnums::BID_EVALUATION->getDisplayName().' documents: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -39,14 +41,14 @@ class BidEvaluationHandler extends BaseStageHandler
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::BID_EVALUATION,
             'nextStage' => StageEnums::POST_QUALIFICATION,
-            'status' => StatusEnums::BIDS_EVALUATED
+            'status' => StatusEnums::BIDS_EVALUATED,
         ];
     }
-    
+
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
-        
+
         if ($data['summaryFile']) {
             $metadataArray = array_merge($metadataArray, $this->uploadAndPrepareMetadata(
                 [$data['summaryFile']],
@@ -66,10 +68,10 @@ class BidEvaluationHandler extends BaseStageHandler
                 $data['currentStage']->getStoragePathSegment()
             ));
         }
-        
+
         return $metadataArray;
     }
-    
+
     private function processDocuments(array $data, array $metadataArray): array
     {
         $this->blockchainService->publishDocuments(
@@ -89,7 +91,7 @@ class BidEvaluationHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['nextStage']->getDisplayName(),
             $data['userAddress'],
-            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after ' . $data['currentStage']->getDisplayName()
+            'Proceeding to '.$data['nextStage']->getDisplayName().' after '.$data['currentStage']->getDisplayName()
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -106,7 +108,7 @@ class BidEvaluationHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.'
+            'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
 }

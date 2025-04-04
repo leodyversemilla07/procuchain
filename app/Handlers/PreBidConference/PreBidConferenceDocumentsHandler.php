@@ -2,14 +2,12 @@
 
 namespace App\Handlers\PreBidConference;
 
-use App\Enums\ProcurementStage;
-use App\Enums\ProcurementStatus;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class PreBidConferenceDocumentsHandler extends BaseStageHandler
 {
@@ -18,13 +16,15 @@ class PreBidConferenceDocumentsHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
             $metadataArray = $this->prepareDocumentsMetadata($data);
+
             return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error in UploadPreBidDocumentsHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to upload pre-bid conference documents: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to upload pre-bid conference documents: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -40,14 +40,14 @@ class PreBidConferenceDocumentsHandler extends BaseStageHandler
             'currentStage' => StageEnums::BIDDING_DOCUMENTS,
             'bulletinsStage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
             'bidOpeningStage' => StageEnums::BID_OPENING,
-            'status' => StatusEnums::PRE_BID_CONFERENCE_HELD
+            'status' => StatusEnums::PRE_BID_CONFERENCE_HELD,
         ];
     }
-    
+
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
-        
+
         if ($data['minutesFile']) {
             $metadataArray = array_merge($metadataArray, $this->uploadAndPrepareMetadata(
                 [$data['minutesFile']],
@@ -67,10 +67,10 @@ class PreBidConferenceDocumentsHandler extends BaseStageHandler
                 $data['currentStage']->getStoragePathSegment()
             ));
         }
-        
+
         return $metadataArray;
     }
-    
+
     private function processDocuments(array $data, array $metadataArray): array
     {
         $this->blockchainService->publishDocuments(
@@ -113,7 +113,7 @@ class PreBidConferenceDocumentsHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => 'Pre-bid conference documents uploaded successfully. Proceeding to ' . $nextStage->getDisplayName() . '.'
+            'message' => 'Pre-bid conference documents uploaded successfully. Proceeding to '.$nextStage->getDisplayName().'.',
         ];
     }
 }

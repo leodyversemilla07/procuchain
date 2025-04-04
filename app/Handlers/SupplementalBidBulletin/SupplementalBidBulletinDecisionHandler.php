@@ -4,24 +4,21 @@ namespace App\Handlers\SupplementalBidBulletin;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
-{    
+{
     /**
      * Handle supplemental bid bulletin completion decision.
-     * 
-     * @param Request $request
-     * @return array
      */
     public function handle(Request $request): array
     {
         try {
             $data = $this->prepareHandlingData($request);
-            
+
             if ($data['hasMoreBulletins']) {
                 return $this->handleMoreBulletins($data);
             } else {
@@ -29,13 +26,14 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
             }
         } catch (Exception $e) {
             Log::error('Error completing supplemental bid bulletins', ['error' => $e->getMessage()]);
+
             return [
                 'success' => false,
-                'message' => 'Failed to process supplemental bid bulletin decision: ' . $e->getMessage()
+                'message' => 'Failed to process supplemental bid bulletin decision: '.$e->getMessage(),
             ];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -48,11 +46,11 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
             'nextStage' => StageEnums::BID_OPENING,
         ];
     }
-    
+
     private function handleMoreBulletins(array $data): array
     {
         $status = StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING;
-        
+
         $this->blockchainService->updateStatus(
             $data['procurementId'],
             $data['procurementTitle'],
@@ -61,7 +59,7 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
             $data['userAddress'],
             $data['timestamp']
         );
-        
+
         $this->blockchainService->logEvent(
             $data['procurementId'],
             $data['procurementTitle'],
@@ -74,17 +72,17 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
             'info',
             $data['timestamp']
         );
-        
+
         return [
             'success' => true,
-            'message' => 'Please upload additional supplemental bid bulletins.'
+            'message' => 'Please upload additional supplemental bid bulletins.',
         ];
     }
-    
+
     private function handleBulletinsCompleted(array $data): array
     {
         $status = StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED;
-        
+
         $this->blockchainService->handleStageTransition(
             $data['procurementId'],
             $data['procurementTitle'],
@@ -95,7 +93,7 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
             $data['userAddress'],
             'All supplemental bid bulletins issued'
         );
-        
+
         $this->notificationService->notifyStageUpdate(
             $data['procurementId'],
             $data['procurementTitle'],
@@ -107,11 +105,11 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
             true,
             $data['nextStage']->getDisplayName()
         );
-        
+
         return [
             'success' => true,
-            'message' => $status->getDisplayName() . 
-                '. Proceeding to ' . $data['nextStage']->getDisplayName() . '.'
+            'message' => $status->getDisplayName().
+                '. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
 }

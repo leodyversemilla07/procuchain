@@ -2,9 +2,9 @@
 
 namespace App\Handlers\Completion;
 
-use App\Handlers\BaseStageShowUploadHandler;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageShowUploadHandler;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +18,7 @@ class CompletionDocumentsShowUploadHandler extends BaseStageShowUploadHandler
                 StatusEnums::MONITORING->value,
                 StageEnums::COMPLETION->value
             );
-            
+
             return $this->renderUploadForm(
                 $procurement,
                 'bac-secretariat/procurement-stage/completion-upload'
@@ -31,7 +31,7 @@ class CompletionDocumentsShowUploadHandler extends BaseStageShowUploadHandler
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Completion Upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading Completion Upload form: '.$e->getMessage());
         }
     }
 }

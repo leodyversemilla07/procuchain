@@ -25,6 +25,7 @@ class NotificationService
             Log::warning('No BAC Chairman or HOPE users found to notify for procurement update', [
                 'procurement_id' => $procurementId,
             ]);
+
             return;
         }
 
@@ -38,7 +39,7 @@ class NotificationService
             'action_type' => $actionType,
         ];
 
-        if ($stageTransition && !empty($nextStage)) {
+        if ($stageTransition && ! empty($nextStage)) {
             $notificationData['next_stage'] = $nextStage;
             $notificationData['transition_message'] = "This procurement will now proceed to the {$nextStage} stage.";
         }

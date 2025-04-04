@@ -2,11 +2,11 @@
 
 namespace App\Handlers;
 
+use App\Enums\StreamEnums;
 use App\Services\BlockchainService;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
-use App\Enums\StreamEnums;
 
 abstract class BaseStageShowUploadHandler
 {
@@ -19,19 +19,13 @@ abstract class BaseStageShowUploadHandler
 
     /**
      * This method must be implemented by all concrete stage handlers
-     * 
-     * @param string $id
+     *
      * @return mixed
      */
     abstract public function handle(string $id);
 
     /**
      * Get procurement status from blockchain
-     * 
-     * @param string $id
-     * @param string $requiredStatus
-     * @param string $requiredStage
-     * @return array
      */
     protected function getProcurementStatus(string $id, string $requiredStatus, string $requiredStage): array
     {
@@ -41,6 +35,7 @@ abstract class BaseStageShowUploadHandler
             $procurementStatuses = collect($allStatuses)
                 ->map(function ($item) {
                     $data = $item['data'];
+
                     return [
                         'data' => $data,
                         'procurementId' => $data['procurement_id'] ?? '',
@@ -86,9 +81,7 @@ abstract class BaseStageShowUploadHandler
 
     /**
      * Render the upload form view
-     * 
-     * @param array $procurement
-     * @param string $viewPath
+     *
      * @return mixed
      */
     protected function renderUploadForm(array $procurement, string $viewPath)

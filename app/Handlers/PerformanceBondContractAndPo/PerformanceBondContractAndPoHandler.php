@@ -4,10 +4,10 @@ namespace App\Handlers\PerformanceBondContractAndPo;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class PerformanceBondContractAndPoHandler extends BaseStageHandler
 {
@@ -19,13 +19,15 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
             $metadataArray = $this->prepareDocumentsMetadata($data);
+
             return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error in PerformanceBondContractAndPoHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to upload ' . StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName() . ' documents: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to upload '.StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName().' documents: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -41,14 +43,14 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO,
             'nextStage' => StageEnums::NOTICE_TO_PROCEED,
-            'status' => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED
+            'status' => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
         ];
     }
-    
+
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
-        
+
         if ($data['performanceBondFile']) {
             $metadataArray = array_merge($metadataArray, $this->uploadAndPrepareMetadata(
                 [$data['performanceBondFile']],
@@ -78,10 +80,10 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
                 'ContractPO'
             ));
         }
-        
+
         return $metadataArray;
     }
-    
+
     private function processDocuments(array $data, array $metadataArray): array
     {
         $this->blockchainService->publishDocuments(
@@ -101,7 +103,7 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['nextStage']->getDisplayName(),
             $data['userAddress'],
-            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after recording documents'
+            'Proceeding to '.$data['nextStage']->getDisplayName().' stage after recording documents'
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -118,7 +120,7 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage.'
+            'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().' stage.',
         ];
     }
 }

@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableColumnHeader } from '@/components/ui/data-table';
 import { DataTableCheckbox } from '@/components/ui/data-table';
-import { PreProcurementModal } from '@/components/pre-procurement/pre-procurement-modal';
+import { PreProcurementModal } from '@/components/pre-procurement-conference/pre-procurement-conference-modal';
 import { MarkCompleteDialog } from '@/components/procurement/mark-complete-dialog';
 import AppLayout from '@/layouts/app-layout';
 import { ActionButtons } from '@/components/procurements-list/action-buttons';
@@ -20,6 +20,7 @@ import { KanbanBoard } from '@/components/procurements-list/kanban-board';
 import { getBreadcrumbs, getStatusBadgeStyle, getStageBadgeStyle } from '@/lib/procurements-list-utils';
 import { CalendarIcon, DownloadIcon, FileIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ShowProps {
     procurements: ProcurementListItem[];
@@ -180,9 +181,18 @@ export default function ProcurementsList({ procurements: initialProcurements, er
             accessorKey: 'stage',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Stage" />,
             cell: ({ row }) => (
-                <Badge variant="outline" className={getStageBadgeStyle(row.getValue('stage'))}>
-                    {row.getValue('stage')}
-                </Badge>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="truncate max-w-[150px]">
+                            <Badge variant="outline" className={getStageBadgeStyle(row.getValue('stage'))}>
+                                {row.getValue('stage')}
+                            </Badge>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {row.getValue('stage')}
+                    </TooltipContent>
+                </Tooltip>
             ),
             filterFn: (row, id, value) => value.includes(row.getValue(id)),
         },
@@ -190,9 +200,18 @@ export default function ProcurementsList({ procurements: initialProcurements, er
             accessorKey: 'current_status',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
             cell: ({ row }) => (
-                <Badge variant="outline" className={getStatusBadgeStyle(row.getValue('current_status'))}>
-                    {row.getValue('current_status')}
-                </Badge>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="truncate max-w-[150px]">
+                            <Badge variant="outline" className={getStatusBadgeStyle(row.getValue('current_status'))}>
+                                {row.getValue('current_status')}
+                            </Badge>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {row.getValue('current_status')}
+                    </TooltipContent>
+                </Tooltip>
             ),
             filterFn: (row, id, value) => value.includes(row.getValue(id)),
         },

@@ -4,10 +4,10 @@ namespace App\Handlers\PostQualification;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class PostQualificationHandler extends BaseStageHandler
 {
@@ -19,7 +19,7 @@ class PostQualificationHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
             $metadataArray = $this->prepareDocumentsMetadata($data);
-            
+
             $this->blockchainService->publishDocuments(
                 $data['procurementId'],
                 $data['procurementTitle'],
@@ -29,19 +29,20 @@ class PostQualificationHandler extends BaseStageHandler
                 $data['userAddress']
             );
 
-            return $data['outcome'] === 'Verified' 
+            return $data['outcome'] === 'Verified'
                 ? $this->handleVerificationPassed($data, $metadataArray)
                 : $this->handleVerificationFailed($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error in PostQualificationHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to upload ' . StageEnums::POST_QUALIFICATION->getDisplayName() . ' documents: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to upload '.StageEnums::POST_QUALIFICATION->getDisplayName().' documents: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         $outcome = $request->input('outcome');
-        
+
         return [
             'procurementId' => $request->input('procurement_id'),
             'procurementTitle' => $request->input('procurement_title'),
@@ -54,12 +55,12 @@ class PostQualificationHandler extends BaseStageHandler
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::POST_QUALIFICATION,
             'nextStage' => StageEnums::BAC_RESOLUTION,
-            'status' => $outcome === 'Verified' ? 
-                StatusEnums::POST_QUALIFICATION_VERIFIED : 
-                StatusEnums::POST_QUALIFICATION_FAILED
+            'status' => $outcome === 'Verified' ?
+                StatusEnums::POST_QUALIFICATION_VERIFIED :
+                StatusEnums::POST_QUALIFICATION_FAILED,
         ];
     }
-    
+
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
@@ -93,10 +94,10 @@ class PostQualificationHandler extends BaseStageHandler
                 $data['currentStage']->getStoragePathSegment()
             ));
         }
-        
+
         return $metadataArray;
     }
-    
+
     private function handleVerificationPassed(array $data, array $metadataArray): array
     {
         $this->blockchainService->handleStageTransition(
@@ -107,7 +108,7 @@ class PostQualificationHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['nextStage']->getDisplayName(),
             $data['userAddress'],
-            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after successful ' . $data['currentStage']->getDisplayName()
+            'Proceeding to '.$data['nextStage']->getDisplayName().' after successful '.$data['currentStage']->getDisplayName()
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -124,19 +125,19 @@ class PostQualificationHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.'
+            'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
-    
+
     private function handleVerificationFailed(array $data, array $metadataArray): array
     {
         $newTimestamp = now()->addSecond()->toIso8601String();
-        
+
         $this->blockchainService->logEvent(
             $data['procurementId'],
             $data['procurementTitle'],
             $data['currentStage']->getDisplayName(),
-            $data['currentStage']->getDisplayName() . ' failed - procurement process halted',
+            $data['currentStage']->getDisplayName().' failed - procurement process halted',
             0,
             $data['userAddress'],
             'status_update',
@@ -154,12 +155,12 @@ class PostQualificationHandler extends BaseStageHandler
             count($metadataArray),
             'failed',
             false,
-            ''  
+            ''
         );
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully with outcome: ' . $data['outcome'] . '. Procurement process halted.'
+            'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully with outcome: '.$data['outcome'].'. Procurement process halted.',
         ];
     }
 }

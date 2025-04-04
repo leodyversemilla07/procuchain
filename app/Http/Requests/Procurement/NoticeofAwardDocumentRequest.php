@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\UserRoleEnums;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
 class NoticeofAwardDocumentRequest extends FormRequest
@@ -24,10 +24,10 @@ class NoticeofAwardDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id'    => 'required|string|max:50',
+            'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'noa_file'          => 'required|file|mimes:pdf|max:10240',
-            'issuance_date'     => 'required|date_format:Y-m-d|before_or_equal:today',
+            'noa_file' => 'required|file|mimes:pdf|max:10240',
+            'issuance_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'signatory_details' => 'required|string|min:5|max:500',
         ];
     }

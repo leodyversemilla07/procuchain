@@ -5,6 +5,7 @@ namespace App\Libraries\Multichain;
 class SocketTransport implements TransportInterface
 {
     private $lastErrorCode = 0;
+
     private $lastErrorMessage = '';
 
     public function execute(string $url, array $headers, string $payload): array
@@ -14,9 +15,10 @@ class SocketTransport implements TransportInterface
         $port = $parsedUrl['port'];
 
         $fp = fsockopen($host, $port);
-        if (!$fp) {
+        if (! $fp) {
             $this->lastErrorCode = 502;
             $this->lastErrorMessage = 'Unable to Connect';
+
             return ['success' => false, 'data' => null];
         }
 
@@ -27,21 +29,22 @@ class SocketTransport implements TransportInterface
             fwrite($fp, "$header\r\n");
         }
 
-        fwrite($fp, "Content-length: " . strlen($payload) . "\r\n");
+        fwrite($fp, 'Content-length: '.strlen($payload)."\r\n");
         fwrite($fp, "Connection: close\r\n\r\n");
-        fwrite($fp, $payload . "\r\n\r\n");
+        fwrite($fp, $payload."\r\n\r\n");
 
         $chunks = [];
-        while (!feof($fp)) {
+        while (! feof($fp)) {
             $chunks[] = fgets($fp, 32768);
         }
         $response = implode('', $chunks);
         fclose($fp);
 
         $header_end = strpos($response, "\r\n\r\n");
-        if (!$header_end) {
+        if (! $header_end) {
             $this->lastErrorCode = 502;
             $this->lastErrorMessage = 'Invalid Response';
+
             return ['success' => false, 'data' => null];
         }
 
@@ -57,7 +60,7 @@ class SocketTransport implements TransportInterface
         return [
             'success' => ($httpCode >= 200 && $httpCode < 300),
             'data' => $encoded,
-            'http_code' => $httpCode
+            'http_code' => $httpCode,
         ];
     }
 
@@ -65,7 +68,7 @@ class SocketTransport implements TransportInterface
     {
         return [
             'code' => $this->lastErrorCode,
-            'message' => $this->lastErrorMessage
+            'message' => $this->lastErrorMessage,
         ];
     }
 }

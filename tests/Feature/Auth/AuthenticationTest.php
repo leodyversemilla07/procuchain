@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -14,7 +13,7 @@ test('login screen can be rendered', function () {
 test('users can authenticate using the login screen and are redirected to correct dashboard', function () {
     // Test for BAC-Secretariat role - use bac_secretariat (with underscore) to match the database
     $secretariatUser = User::factory()->create([
-        'role' => 'bac_secretariat'
+        'role' => 'bac_secretariat',
     ]);
 
     $response = $this->post('/login', [
@@ -28,7 +27,7 @@ test('users can authenticate using the login screen and are redirected to correc
 
     // Test for BAC-Chairman role - use bac_chairman (with underscore) to match the database
     $chairmanUser = User::factory()->create([
-        'role' => 'bac_chairman'
+        'role' => 'bac_chairman',
     ]);
 
     $response = $this->post('/login', [
@@ -42,7 +41,7 @@ test('users can authenticate using the login screen and are redirected to correc
 
     // Test for Hope role
     $hopeUser = User::factory()->create([
-        'role' => 'hope'
+        'role' => 'hope',
     ]);
 
     $response = $this->post('/login', [

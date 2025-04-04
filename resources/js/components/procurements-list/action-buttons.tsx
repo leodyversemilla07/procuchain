@@ -54,22 +54,22 @@ export const ActionButtons = ({
                 </TooltipProvider>
             )}
 
-            {stage === Stage.PRE_PROCUREMENT && status === Status.PRE_PROCUREMENT_CONFERENCE_HELD && (
+            {stage === Stage.PRE_PROCUREMENT_CONFERENCE && status === Status.PRE_PROCUREMENT_CONFERENCE_HELD && (
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="sm" className={`${buttonSize} p-0 text-green-600 dark:text-green-400`}>
-                                <Link href={`/bac-secretariat/pre-procurement-upload/${id}`}>
+                                <Link href={`/bac-secretariat/pre-procurement-conference-upload/${id}`}>
                                     <FileUpIcon className={iconSize} />
                                 </Link>
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Upload Pre-Procurement Documents</TooltipContent>
+                        <TooltipContent>Upload Pre-Procurement Conference Documents</TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
             )}
 
-            {(stage === Stage.BIDDING_DOCUMENTS && (status === Status.PRE_PROCUREMENT_SKIPPED || status === Status.PRE_PROCUREMENT_COMPLETED)) && (
+            {(stage === Stage.BIDDING_DOCUMENTS && (status === Status.PRE_PROCUREMENT_CONFERENCE_SKIPPED || status === Status.PRE_PROCUREMENT_CONFERENCE_COMPLETED)) && (
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
