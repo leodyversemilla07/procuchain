@@ -1,40 +1,50 @@
+import { StartupSnapshotCallbackFn } from "node:v8";
+
 export enum StreamType {
     DOCUMENTS = 'procurement.documents',
-    STATE = 'procurement.state',
+    STATE = 'procurement.status',
     EVENTS = 'procurement.events'
 }
 
-export enum PhaseIdentifier {
-    PR_INITIATION = 'PR Initiation',
+export enum Stage {
+    PROCUREMENT_INITIATION = 'Procurement Initiation',
     PRE_PROCUREMENT = 'Pre-Procurement',
-    BID_INVITATION = 'Bid Invitation',
+    BIDDING_DOCUMENTS = 'Bidding Documents',
+    PRE_BID_CONFERENCE = 'Pre-Bid Conference',
+    SUPPLEMENTAL_BID_BULLETIN = 'Supplemental Bid Bulletin',
     BID_OPENING = 'Bid Opening',
     BID_EVALUATION = 'Bid Evaluation',
     POST_QUALIFICATION = 'Post-Qualification',
     BAC_RESOLUTION = 'BAC Resolution',
-    NOTICE_OF_AWARD = 'Notice Of Award',
-    PERFORMANCE_BOND = 'Performance Bond',
-    CONTRACT_AND_PO = 'Contract And PO',
-    NOTICE_TO_PROCEED = 'Notice To Proceeed',
+    NOTICE_OF_AWARD = 'Notice of Award',
+    PERFORMANCE_BOND_CONTRACT_AND_PO = 'Performance Bond, Contract and PO',
+    NOTICE_TO_PROCEED = 'Notice to Proceed',
     MONITORING = 'Monitoring',
-    COMPLETED = 'Completed'
+    COMPLETED = 'Completed',
+    COMPLETION = 'Completion'
 }
 
-export enum ProcurementState {
-    PR_SUBMITTED = 'PR Submitted',
+export enum Status {
+    PROCUREMENT_SUBMITTED = 'Procurement Submitted',
+    PRE_PROCUREMENT_CONFERENCE_HELD = 'Pre-Procurement Conference Held',
     PRE_PROCUREMENT_SKIPPED = 'Pre-Procurement Skipped',
     PRE_PROCUREMENT_COMPLETED = 'Pre-Procurement Completed',
-    BID_INVITATION_PUBLISHED = 'Bid Invitation Published',
+    BIDDING_DOCUMENTS_PUBLISHED = 'Bidding Documents Published',
+    SUPPLEMENTAL_BULLETINS_ONGOING = 'Supplemental Bulletins Ongoing',
+    SUPPLEMENTAL_BULLETINS_COMPLETED = 'Supplemental Bulletins Completed',
+    PRE_BID_CONFERENCE_HELD = 'Pre-Bid Conference Held',
+    PRE_BID_CONFERENCE_SKIPPED = 'Pre-Bid Conference Skipped',
     BIDS_OPENED = 'Bids Opened',
     BIDS_EVALUATED = 'Bids Evaluated',
     POST_QUALIFICATION_VERIFIED = 'Post-Qualification Verified',
+    POST_QUALIFICATION_FAILED = 'Post-Qualification Failed',
     RESOLUTION_RECORDED = 'Resolution Recorded',
     AWARDED = 'Awarded',
-    PERFORMANCE_BOND_RECORDED = 'Performance Bond Recorded',
-    CONTRACT_AND_PO_RECORDED = 'Contract And PO Recorded',
+    PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED = 'Performance Bond, Contract and PO Recorded',
     NTP_RECORDED = 'NTP Recorded',
     MONITORING = 'Monitoring',
-    COMPLETED = 'Completed',
+    COMPLETION_DOCUMENTS_UPLOADED = 'Completion Documents Uploaded',
+    COMPLETED = 'Completed'
 }
 
 export enum EventType {
@@ -61,7 +71,7 @@ export enum EventSeverity {
 export interface BlockchainProcurementDocument {
     procurement_id: string;
     procurement_title: string;
-    phase_identifier: string;
+    stage: string;
     timestamp: string;
     document_index: number;
     document_type: string;
@@ -69,15 +79,15 @@ export interface BlockchainProcurementDocument {
     file_key: string;
     user_address: string;
     file_size: number;
-    phase_metadata: Record<string, unknown>;
+    stage_metadata: Record<string, unknown>;
     spaces_url?: string;
 }
 
 export interface BlockchainProcurementState {
     procurement_id: string;
     procurement_title: string;
-    current_state: string;
-    phase_identifier: string;
+    current_status: string;
+    stage: string;
     timestamp: string;
     user_address: string;
 }
@@ -86,7 +96,7 @@ export interface BlockchainProcurementEvent {
     procurement_id: string;
     procurement_title: string;
     event_type: string;
-    phase_identifier: string;
+    stage: string;
     timestamp: string;
     user_address: string;
     details: string;
@@ -98,8 +108,8 @@ export interface BlockchainProcurementEvent {
 export interface ProcurementListItem {
     id: string;
     title: string;
-    phase_identifier: string;
-    current_state: string;
+    stage: string;
+    current_status: Status;
     user_address: string;
     timestamp: string;
     document_count: number;
@@ -110,9 +120,9 @@ export interface Procurement {
     procurement_id: string;
     procurement_title: string;
     documents: Document[];
-    state: ProcurementState;
+    status: Status;
     events: Event[];
-    raw_state?: Record<string, unknown>;
+    raw_status?: Record<string, unknown>;
     raw_documents?: Record<string, unknown>[];
     raw_events?: Record<string, unknown>[];
 }
@@ -126,7 +136,7 @@ export interface PrInitiationResponse {
     error_message?: string;
 }
 
-export interface PrInitiationMetadata {
+export interface ProcurementInitiationMetadata {
     submission_date: string;
     municipal_offices: string[] | string;
     signatory_details: Record<string, unknown>;
@@ -145,7 +155,7 @@ export interface DocumentMetadata {
 
 export interface StreamPublication {
     key: string;
-    data: Document | ProcurementState | Event;
+    data: Document | StartupSnapshotCallbackFn | Event;
 }
 
 export interface SignatoryDetails {
@@ -160,7 +170,7 @@ export interface SignatoryDetails {
 /**
  * Defines the structure for Purchase Request Document metadata
  */
-export interface PRDocument {
+export interface ProcurementInitiationDocument {
     document_type?: string;
     submission_date?: Date;
     municipal_offices?: string;
@@ -170,9 +180,9 @@ export interface PRDocument {
 /**
  * Defines the complete Purchase Request Document data including the file and metadata
  */
-export interface PRDocumentData {
-    pr_document_file: File | null;
-    pr_document_metadata: PRDocument;
+export interface ProcurementInitiationDocumentData {
+    procurement_initiation_document_file: File | null;
+    procurement_initiation: ProcurementInitiationDocument;
 }
 
 /**

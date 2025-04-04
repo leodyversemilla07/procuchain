@@ -12,10 +12,11 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Stage } from '@/types/blockchain';
 
-interface ProcurementPhase {
+interface ProcurementStage {
     id: number;
-    phase: string;
+    phase: Stage;
     description: string;
     documents: string[];
     icon: React.ReactNode;
@@ -24,7 +25,6 @@ interface ProcurementPhase {
 export default function Procurement() {
     const [activePhase, setActivePhase] = useState<number | null>(null);
 
-    // Helper function to get short names for phases
     const getPhaseShortName = (phaseName: string): string => {
         if (phaseName.includes("Purchase Request")) return "PR";
         if (phaseName.includes("Pre-Procurement")) return "Pre-Proc";
@@ -42,106 +42,114 @@ export default function Procurement() {
         return phaseName.split(" ")[0];
     };
 
-    const procurementPhases: ProcurementPhase[] = [
+    // Update the procurementPhases array
+    const procurementStages: ProcurementStage[] = [
         {
             id: 1,
-            phase: "Purchase Request (PR) Initiation",
-            description: "Record finalized PR and supporting documents with general and phase-specific metadata.",
+            phase: Stage.PROCUREMENT_INITIATION,
+            description: "Record finalized procurement request and supporting documents with general and phase-specific metadata.",
             documents: ["Purchase Request", "Certificate of Availability of Funds", "Annual Investment Plan"],
             icon: <FileText className="w-6 h-6" />
         },
         {
             id: 2,
-            phase: "Pre-Procurement Conference Decision",
-            description: "Record optional finalized conference documents or decision to skip.",
+            phase: Stage.PRE_PROCUREMENT,
+            description: "Record pre-procurement conference documents and decisions.",
             documents: ["Conference Minutes", "Attendance Sheet"],
             icon: <Activity className="w-6 h-6" />
         },
         {
             id: 3,
-            phase: "Bid Invitation Publication",
-            description: "Record and publish finalized bid invitation document(s).",
-            documents: ["Bid Invitation"],
+            phase: Stage.BIDDING_DOCUMENTS,
+            description: "Record and publish finalized bidding documents.",
+            documents: ["Bid Documents", "Technical Specifications"],
             icon: <FileText className="w-6 h-6" />
         },
         {
             id: 4,
-            phase: "Bid Submission and Opening",
-            description: "Record multiple finalized bid documents post-opening.",
-            documents: ["Bid Documents", "Opening Minutes"],
-            icon: <FileText className="w-6 h-6" />
-        },
-        {
-            id: 5,
-            phase: "Bid Evaluation",
-            description: "Record finalized evaluation reports.",
-            documents: ["Evaluation Summary", "Abstract"],
+            phase: Stage.PRE_BID_CONFERENCE,
+            description: "Record pre-bid conference proceedings and clarifications.",
+            documents: ["Conference Minutes", "Attendance Sheet", "Clarifications"],
             icon: <Activity className="w-6 h-6" />
         },
         {
+            id: 5,
+            phase: Stage.SUPPLEMENTAL_BID_BULLETIN,
+            description: "Record and publish supplemental bulletins if any.",
+            documents: ["Supplemental Bulletins", "Amendments"],
+            icon: <FileText className="w-6 h-6" />
+        },
+        {
             id: 6,
-            phase: "Post-Qualification",
-            description: "Record finalized post-qualification documents and outcome.",
-            documents: ["Tax Return", "Financial Statement", "Verification Report"],
-            icon: <CheckCircle className="w-6 h-6" />
+            phase: Stage.BID_OPENING,
+            description: "Record bid opening proceedings and submitted bids.",
+            documents: ["Bid Opening Minutes", "Submitted Bids"],
+            icon: <Activity className="w-6 h-6" />
         },
         {
             id: 7,
-            phase: "BAC Resolution",
-            description: "Record finalized BAC resolution document(s).",
+            phase: Stage.BID_EVALUATION,
+            description: "Record bid evaluation results and recommendations.",
+            documents: ["Evaluation Report", "Abstract of Bids"],
+            icon: <CheckCircle className="w-6 h-6" />
+        },
+        {
+            id: 8,
+            phase: Stage.POST_QUALIFICATION,
+            description: "Record post-qualification verification results.",
+            documents: ["Verification Report", "Supporting Documents"],
+            icon: <Activity className="w-6 h-6" />
+        },
+        {
+            id: 9,
+            phase: Stage.BAC_RESOLUTION,
+            description: "Record BAC resolution and recommendations.",
             documents: ["BAC Resolution"],
             icon: <FileText className="w-6 h-6" />
         },
         {
-            id: 8,
-            phase: "Notice of Award (NOA)",
-            description: "Record and publish finalized NOA document(s).",
+            id: 10,
+            phase: Stage.NOTICE_OF_AWARD,
+            description: "Record and publish notice of award.",
             documents: ["Notice of Award"],
             icon: <FileText className="w-6 h-6" />
         },
         {
-            id: 9,
-            phase: "Performance Bond",
-            description: "Record finalized performance bond document(s).",
-            documents: ["Performance Bond"],
+            id: 11,
+            phase: Stage.PERFORMANCE_BOND_CONTRACT_AND_PO,
+            description: "Record performance bond, contract, and purchase order documents.",
+            documents: ["Performance Bond", "Contract", "Purchase Order"],
             icon: <Lock className="w-6 h-6" />
         },
         {
-            id: 10,
-            phase: "Contract and Purchase Order (PO)",
-            description: "Record finalized contract and PO documents.",
-            documents: ["Contract", "Purchase Order"],
-            icon: <FileText className="w-6 h-6" />
-        },
-        {
-            id: 11,
-            phase: "Notice to Proceed (NTP)",
-            description: "Record and publish finalized NTP document(s).",
+            id: 12,
+            phase: Stage.NOTICE_TO_PROCEED,
+            description: "Record and publish notice to proceed.",
             documents: ["Notice to Proceed"],
             icon: <FileText className="w-6 h-6" />
         },
         {
-            id: 12,
-            phase: "Monitoring and Compliance",
-            description: "Record optional finalized compliance documents and enable monitoring.",
-            documents: ["Compliance Report"],
-            icon: <Activity className="w-6 h-6" />
-        }
-        ,
-        {
             id: 13,
-            phase: "Completion and Closure",
-            description: "Record project completion documents and close the procurement process.",
+            phase: Stage.MONITORING,
+            description: "Record monitoring reports and updates.",
+            documents: ["Monitoring Reports", "Progress Updates"],
+            icon: <Activity className="w-6 h-6" />
+        },
+        {
+            id: 14,
+            phase: Stage.COMPLETED,
+            description: "Record completion documents and close the procurement process.",
             documents: ["Completion Certificate", "Final Payment", "Inspection Report"],
             icon: <CheckCircle className="w-6 h-6" />
         }
     ];
 
+
     return (
         <>
             <Head title="Procurement System">
                 <link rel="preconnect" href="https://fonts.bunny.net" />
-                <link href="https://fonts.bunny.net/css?family=outfit:400,500,600,700|inter:400,500,600&display=swap" rel="stylesheet" />
+                <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
             </Head>
             <div className={`min-h-screen flex flex-col overflow-x-hidden bg-gradient-to-br from-white to-teal-50 text-gray-900 dark:from-gray-950 dark:to-gray-900 dark:text-white relative`}>
                 <Header />
@@ -212,13 +220,11 @@ export default function Procurement() {
                                 {/* Desktop Timeline */}
                                 <div className="hidden md:block">
                                     <div className="relative">
-                                        {/* Timeline line */}
                                         <div className="absolute top-5 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700"></div>
 
-                                        {/* Timeline points */}
                                         <div className="flex justify-between relative">
-                                            {procurementPhases.map((phase, index) => (
-                                                <div key={phase.id} className={`flex flex-col items-center relative w-8 ${index === 0 ? 'ml-0' : ''} ${index === procurementPhases.length - 1 ? 'mr-0' : ''}`}>
+                                            {procurementStages.map((phase, index) => (
+                                                <div key={phase.id} className={`flex flex-col items-center relative w-8 ${index === 0 ? 'ml-0' : ''} ${index === procurementStages.length - 1 ? 'mr-0' : ''}`}>
                                                     <Button
                                                         variant={activePhase === phase.id ? "default" : "outline"}
                                                         size="icon"
@@ -235,22 +241,21 @@ export default function Procurement() {
                                         </div>
                                     </div>
 
-                                    {/* Phase details */}
                                     <div className="mt-16 pt-4 border-t border-gray-200 dark:border-gray-700">
                                         {activePhase ? (
                                             <div className="animate-fadeIn">
                                                 <div className="flex items-start">
                                                     <div className="flex-shrink-0 mr-4">
                                                         <div className="w-12 h-12 bg-teal-100 dark:bg-teal-900/30 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-400">
-                                                            {procurementPhases.find(p => p.id === activePhase)?.icon}
+                                                            {procurementStages.find(p => p.id === activePhase)?.icon}
                                                         </div>
                                                     </div>
                                                     <div>
                                                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                                                            Phase {activePhase}: {procurementPhases.find(p => p.id === activePhase)?.phase}
+                                                            Phase {activePhase}: {procurementStages.find(p => p.id === activePhase)?.phase}
                                                         </h3>
                                                         <p className="text-gray-600 dark:text-gray-300 mb-4">
-                                                            {procurementPhases.find(p => p.id === activePhase)?.description}
+                                                            {procurementStages.find(p => p.id === activePhase)?.description}
                                                         </p>
                                                         <div>
                                                             <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Required Documents:</h4>
@@ -261,7 +266,7 @@ export default function Procurement() {
                                                                     </TableRow>
                                                                 </TableHeader>
                                                                 <TableBody>
-                                                                    {procurementPhases.find(p => p.id === activePhase)?.documents.map((doc, index) => (
+                                                                    {procurementStages.find(p => p.id === activePhase)?.documents.map((doc, index) => (
                                                                         <TableRow key={index}>
                                                                             <TableCell className="text-gray-600 dark:text-gray-300">{doc}</TableCell>
                                                                         </TableRow>
@@ -283,7 +288,7 @@ export default function Procurement() {
                                 {/* Mobile Accordion */}
                                 <div className="md:hidden">
                                     <Accordion type="single" collapsible className="w-full">
-                                        {procurementPhases.map((phase) => (
+                                        {procurementStages.map((phase) => (
                                             <AccordionItem key={phase.id} value={`phase-${phase.id}`}>
                                                 <AccordionTrigger className="hover:no-underline">
                                                     <div className="flex items-center">
