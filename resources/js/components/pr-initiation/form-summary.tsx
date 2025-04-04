@@ -1,41 +1,35 @@
-import { CheckCircle, FileCheck, Files, Edit, Plus } from 'lucide-react';
+import { CheckCircle, Files, Edit, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-interface PRMetadata {
+interface Metadata {
   document_type?: string;
   submission_date?: string;
   municipal_offices?: string;
-}
-
-interface SupportingMetadata {
-  document_type?: string;
+  signatory_details?: string;
 }
 
 interface FormData {
   procurement_id?: string;
   procurement_title?: string;
-  pr_file?: File;
-  pr_metadata: PRMetadata;
-  supporting_files: (File | null)[];
-  supporting_metadata: SupportingMetadata[];
+  files?: (File | undefined)[];
+  metadata?: Metadata[];
 }
 
 interface FormCompletionState {
   details: boolean;
-  prDocument: boolean;
-  supporting: boolean;
+  document?: boolean;
 }
 
 export interface FormSummaryProps {
   data: FormData;
-  setCurrentStep: (step: number) => void;
+  setCurrentStep?: (step: number) => void;
   formCompletion: FormCompletionState;
-  addSupportingFile: () => void;
+  addFile?: () => void;
 }
 
-export function FormSummary({ data, setCurrentStep, formCompletion, addSupportingFile }: FormSummaryProps) {
+export function FormSummary({ data, setCurrentStep, formCompletion, addFile }: FormSummaryProps) {
   const formatBytes = (bytes: number, decimals = 2) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -44,6 +38,29 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addSupportin
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
+
+  // Function to handle edit button click based on whether we have steps
+  const handleEditClick = (step: number) => {
+    if (setCurrentStep) {
+      setCurrentStep(step);
+    }
+  };
+
+  // Use either the new data structure or the old one
+  const procurementId = data.procurement_id || '';
+  const procurementTitle = data.procurement_title || '';
+  const files = data.files || [];
+  const metadata = data.metadata?.slice(1) || data.metadata || [];
+
+  // Function to add a document
+  const handleAddDocument = () => {
+    if (addFile) {
+      addFile();
+    }
+  };
+
+  // Check completion field
+  const isDetailsComplete = formCompletion.details;
 
   return (
     <div className="space-y-4">
@@ -57,21 +74,23 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addSupportin
               <div>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <span>Procurement Details</span>
-                  {formCompletion.details && (
+                  {isDetailsComplete && (
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   )}
                 </CardTitle>
                 <CardDescription>Basic procurement information</CardDescription>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCurrentStep(1)}
-                className="text-primary gap-1.5"
-              >
-                <Edit className="h-3.5 w-3.5" />
-                <span>Edit</span>
-              </Button>
+              {setCurrentStep && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEditClick(1)}
+                  className="text-primary gap-1.5"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                  <span>Edit</span>
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="p-4">
@@ -79,174 +98,104 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addSupportin
               <div className="py-2 flex flex-col sm:flex-row sm:gap-4">
                 <dt className="font-medium sm:w-1/3">Procurement ID</dt>
                 <dd className="text-muted-foreground mt-1 sm:mt-0 sm:w-2/3">
-                  {data.procurement_id || <span className="text-muted italic">Not provided</span>}
+                  {procurementId || <span className="text-muted italic">Not provided</span>}
                 </dd>
               </div>
               <div className="py-2 flex flex-col sm:flex-row sm:gap-4">
                 <dt className="font-medium sm:w-1/3">Procurement Title</dt>
                 <dd className="text-muted-foreground mt-1 sm:mt-0 sm:w-2/3">
-                  {data.procurement_title || <span className="text-muted italic">Not provided</span>}
+                  {procurementTitle || <span className="text-muted italic">Not provided</span>}
                 </dd>
               </div>
             </dl>
           </CardContent>
         </Card>
 
-        {/* PR Document Summary */}
         <Card className="border-sidebar-border/70 dark:border-sidebar-border">
           <CardHeader className="border-b pb-3">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <span>PR Document</span>
-                  {formCompletion.prDocument && (
+                  <span>Documents</span>
+                  {formCompletion.document && (
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   )}
                 </CardTitle>
-                <CardDescription>Purchase Request document</CardDescription>
+                <CardDescription>
+                  {files.length > 0
+                    ? `${files.filter(Boolean).length} document${files.filter(Boolean).length !== 1 ? 's' : ''} attached`
+                    : 'Optional supporting files'}
+                </CardDescription>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCurrentStep(2)}
-                className="text-primary gap-1.5"
-              >
-                <Edit className="h-3.5 w-3.5" />
-                <span>Edit</span>
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddDocument}
+                  className="gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add File</span>
+                </Button>
+                {setCurrentStep && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditClick(3)}
+                    className="text-primary gap-1.5"
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                    <span>Edit</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-4">
-            {data.pr_file ? (
-              <div className="rounded-md border p-3">
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 rounded-md p-2">
-                    <FileCheck className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{data.pr_file.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatBytes(data.pr_file.size)} • {data.pr_file.type || 'Unknown type'}
-                    </p>
-                  </div>
-                </div>
+            {files.length > 0 ? (
+              <div className="space-y-3">
+                {files.map((file, index) => (
+                  file && (
+                    <div key={index} className="rounded-md border p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-primary/10 rounded-md p-2">
+                          <Files className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{file.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatBytes(file.size)} • {file.type || 'Unknown type'}
+                          </p>
+                        </div>
+                      </div>
 
-                <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {data.pr_metadata.document_type || 'PR'}
-                    </Badge>
-                    <span className="text-muted-foreground">
-                      {data.pr_metadata.submission_date || 'No date specified'}
-                    </span>
-                  </div>
-                  {data.pr_metadata.municipal_offices && (
-                    <div className="text-muted-foreground truncate">
-                      Office: {data.pr_metadata.municipal_offices}
+                      {metadata[index] && metadata[index].document_type && (
+                        <div className="mt-2 text-sm">
+                          <Badge variant="outline" className="text-xs">
+                            {metadata[index].document_type}
+                          </Badge>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  )
+                ))}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-6 text-center">
-                <FileCheck className="h-8 w-8 text-muted mb-2" />
-                <p className="text-muted-foreground">No PR document uploaded</p>
+                <Files className="h-8 w-8 text-muted mb-2" />
+                <p className="text-muted-foreground">No supporting documents attached</p>
                 <Button
                   variant="link"
-                  onClick={() => setCurrentStep(2)}
+                  onClick={handleAddDocument}
                   className="mt-2"
                 >
-                  Upload Document
+                  Add Supporting Document
                 </Button>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Supporting Documents Summary */}
-      <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-        <CardHeader className="border-b pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <span>Supporting Documents</span>
-                {formCompletion.supporting && (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                )}
-              </CardTitle>
-              <CardDescription>
-                {data.supporting_files.length > 0
-                  ? `${data.supporting_files.filter(Boolean).length} document${data.supporting_files.filter(Boolean).length !== 1 ? 's' : ''} attached`
-                  : 'Optional supporting files'}
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addSupportingFile}
-                className="gap-1.5"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Add File</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCurrentStep(3)}
-                className="text-primary gap-1.5"
-              >
-                <Edit className="h-3.5 w-3.5" />
-                <span>Edit</span>
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4">
-          {data.supporting_files.length > 0 ? (
-            <div className="space-y-3">
-              {data.supporting_files.map((file: File | null, index: number) => (
-                file && (
-                  <div key={index} className="rounded-md border p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-primary/10 rounded-md p-2">
-                        <Files className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{file.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatBytes(file.size)} • {file.type || 'Unknown type'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {data.supporting_metadata[index] && data.supporting_metadata[index].document_type && (
-                      <div className="mt-2 text-sm">
-                        <Badge variant="outline" className="text-xs">
-                          {data.supporting_metadata[index].document_type}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                )
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center p-6 text-center">
-              <Files className="h-8 w-8 text-muted mb-2" />
-              <p className="text-muted-foreground">No supporting documents attached</p>
-              <Button
-                variant="link"
-                onClick={addSupportingFile}
-                className="mt-2"
-              >
-                Add Supporting Document
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

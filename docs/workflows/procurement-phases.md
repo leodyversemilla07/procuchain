@@ -13,7 +13,7 @@
 
 ### **Detailed Workflow**
 
-#### **Phase 1: Purchase Request (PR) Initiation**
+#### **Phase 1: Procurement Initiation**
 
 -   **Objective**: Record finalized PR and supporting documents with general and phase-specific metadata.
 -   **BAC Secretariat Actions**:
@@ -42,7 +42,7 @@
     -   Notifies BAC Chairman and HOPE via dashboard/email.
 -   **Monitoring**: BAC Chairman/HOPE query `liststreamitems` for `PROC-001-PRInitiation-*`, view documents via URLs, see metadata in dashboard.
 
-#### **Phase 2: Pre-Procurement Conference Decision**
+#### **Phase 2: Pre-Procurement Conference**
 
 -   **Objective**: Record optional finalized conference documents or decision to skip.
 -   **BAC Secretariat Actions**:
@@ -70,29 +70,36 @@
     -   Notifies BAC Chairman and HOPE.
 -   **Monitoring**: BAC Chairman/HOPE see decision or documents with metadata.
 
-#### **Phase 3: Bid Invitation Publication**
+#### **Phase 3: Bidding Documents**
 
--   **Objective**: Record and publish finalized bid invitation document(s).
+-   **Objective**: Record and publish finalized bidding documents.
 -   **BAC Secretariat Actions**:
-    -   Uploads one finalized bid invitation to Spaces, enters `submission_date`, `signatory_details`.
+    -   Uploads finalized bidding documents to Spaces via dashboard.
+    -   Enters metadata:
+        -   **General**: Document type—auto-filled: timestamp, user.
+        -   **Phase-Specific**: `issuance_date`, `signatory_details`.
 -   **System Actions**:
-    -   Hashes and uploads:
-        -   **`procurement.documents`**:
-            -   **Key**: `PROC-001-BidInvitation-BACSecretariat-20250221123510-1`
-            -   **Value**: `{ "procurement_id": "PROC-001", "phase_identifier": "Bid Invitation", "timestamp": "2025-02-21T12:35:10Z", "document_type": "Bid Invitation", "hash": "<SHA-256>", "spaces_url": "<URL>", "user": "BACSecretariat", "file_size": 786432, "phase_metadata": { "submission_date": "2025-02-21", "signatory_details": "Jane Smith" } }`
-        -   **`procurement.state`**:
-            -   **Key**: `PROC-001`
-            -   **Value**: `{ "current_state": "Bid Invitation Published", "phase_identifier": "Bid Invitation", "timestamp": "2025-02-21T12:35:10Z", "user": "BACSecretariat", "history": [{"state": "Pre-Procurement Completed", ...}] }`
-        -   **`procurement.events`**:
-            -   **Key**: `PROC-001-BACSecretariat-20250221123510-upload`
-            -   **Value**: `{ "event_type": "document_upload", "timestamp": "2025-02-21T12:35:10Z", "user": "BACSecretariat", "details": "Uploaded 1 finalized bid invitation", "category": "document", "severity": "info", "document_count": 1 }`
-            -   **Key**: `PROC-001-BACSecretariat-20250221123512-publication`
-            -   **Value**: `{ "event_type": "publication", "timestamp": "2025-02-21T12:35:12Z", "user": "BACSecretariat", "details": "Published bid invitation to PhilGEPS", "category": "workflow", "severity": "info", "document_count": 1 }`
-    -   Publishes to PhilGEPS/agency website via API.
-    -   Notifies BAC Chairman and HOPE.
--   **Monitoring**: BAC Chairman/HOPE view bid invitation and publication status.
+    -   **`procurement.documents`**:
+        -   **Key**: `PROC-001-BiddingDocuments-BACSecretariat-{timestamp}-1`
+        -   **Value**: `{ "procurement_id": "PROC-001", "phase_identifier": "Bidding Documents", ... }`
+    -   **`procurement.state`**: Updates to "Bidding Documents Published"
+    -   **`procurement.events`**: Logs document upload and publication
 
-#### **Phase 4: Bid Submission and Opening**
+#### **Phase 4: Pre-Bid Conference**
+
+-   **Objective**: Record pre-bid conference documentation.
+-   **BAC Secretariat Actions**:
+    -   Uploads conference minutes and attendance.
+    -   Enters metadata: `conference_date`, `attendees`.
+
+#### **Phase 5: Supplemental Bid Bulletin**
+
+-   **Objective**: Record any supplemental bulletins.
+-   **BAC Secretariat Actions**:
+    -   Uploads bulletin documents.
+    -   Enters metadata: `bulletin_number`, `issuance_date`.
+
+#### **Phase 6: Bid Opening**
 
 -   **Objective**: Record multiple finalized bid documents post-opening.
 -   **BAC Secretariat Actions**:
@@ -114,7 +121,7 @@
     -   Notifies BAC Chairman and HOPE.
 -   **Monitoring**: BAC Chairman/HOPE see all five bids with bidder-specific metadata.
 
-#### **Phase 5: Bid Evaluation**
+#### **Phase 7: Bid Evaluation**
 
 -   **Objective**: Record finalized evaluation reports.
 -   **BAC Secretariat Actions**:
@@ -135,7 +142,7 @@
     -   Notifies BAC Chairman and HOPE.
 -   **Monitoring**: BAC Chairman/HOPE review evaluation details.
 
-#### **Phase 6: Post-Qualification**
+#### **Phase 8: Post-Qualification**
 
 -   **Objective**: Record finalized post-qualification documents and outcome.
 -   **BAC Secretariat Actions**:
@@ -158,7 +165,7 @@
     -   Notifies BAC Chairman and HOPE.
 -   **Monitoring**: BAC Chairman/HOPE see verification outcome and documents.
 
-#### **Phase 7: BAC Resolution**
+#### **Phase 9: BAC Resolution**
 
 -   **Objective**: Record finalized BAC resolution document(s).
 -   **BAC Secretariat Actions**:
@@ -177,7 +184,7 @@
     -   Notifies BAC Chairman and HOPE.
 -   **Monitoring**: BAC Chairman/HOPE review resolution details.
 
-#### **Phase 8: Notice of Award (NOA)**
+#### **Phase 10: Notice of Award**
 
 -   **Objective**: Record and publish finalized NOA document(s).
 -   **BAC Secretariat Actions**:
@@ -199,33 +206,17 @@
     -   Notifies BAC Chairman, HOPE, and bidder.
 -   **Monitoring**: BAC Chairman/HOPE track award status.
 
-#### **Phase 9: Performance Bond**
+#### **Phase 11: Performance Bond, Contract and PO**
 
--   **Objective**: Record finalized performance bond document(s).
+-   **Objective**: Record finalized performance bond, contract, and PO documents.
 -   **BAC Secretariat Actions**:
     -   Uploads one finalized performance bond to Spaces, enters `submission_date`, `bond_amount`.
+    -   Uploads two finalized documents (contract, PO) to Spaces, enters `signing_date`.
 -   **System Actions**:
     -   Hashes and uploads:
         -   **`procurement.documents`**:
             -   **Key**: `PROC-001-PerformanceBond-BACSecretariat-20250221124100-1`
             -   **Value**: `{ "procurement_id": "PROC-001", "phase_identifier": "Performance Bond", "timestamp": "2025-02-21T12:41:00Z", "document_type": "Performance Bond", "hash": "<SHA-256>", "spaces_url": "<URL>", "user": "BACSecretariat", "file_size": 786432, "phase_metadata": { "submission_date": "2025-02-21", "bond_amount": "500000" } }`
-        -   **`procurement.state`**:
-            -   **Key**: `PROC-001`
-            -   **Value**: `{ "current_state": "Performance Bond Recorded", "phase_identifier": "Performance Bond", "timestamp": "2025-02-21T12:41:00Z", "user": "BACSecretariat", "history": [{"state": "Awarded", ...}] }`
-        -   **`procurement.events`**:
-            -   **Key**: `PROC-001-BACSecretariat-20250221124100-upload`
-            -   **Value**: `{ "event_type": "document_upload", "timestamp": "2025-02-21T12:41:00Z", "user": "BACSecretariat", "details": "Uploaded 1 finalized performance bond", "category": "document", "severity": "info", "document_count": 1 }`
-    -   Notifies BAC Chairman and HOPE.
--   **Monitoring**: BAC Chairman/HOPE verify bond details.
-
-#### **Phase 10: Contract and Purchase Order (PO)**
-
--   **Objective**: Record finalized contract and PO documents.
--   **BAC Secretariat Actions**:
-    -   Uploads two finalized documents (contract, PO) to Spaces, enters `signing_date`.
--   **System Actions**:
-    -   Hashes and uploads:
-        -   **`procurement.documents`**:
             -   **Key**: `PROC-001-ContractPO-BACSecretariat-20250221124200-1`
             -   **Value**: `{ "procurement_id": "PROC-001", "phase_identifier": "Contract & PO", "timestamp": "2025-02-21T12:42:00Z", "document_type": "Contract", "hash": "<SHA-256-1>", "spaces_url": "<URL1>", "user": "BACSecretariat", "file_size": 917504, "phase_metadata": { "signing_date": "2025-02-21" } }`
             -   **Key**: `PROC-001-ContractPO-BACSecretariat-20250221124200-2`
@@ -239,7 +230,7 @@
     -   Notifies BAC Chairman and HOPE.
 -   **Monitoring**: BAC Chairman/HOPE review contract details.
 
-#### **Phase 11: Notice to Proceed (NTP)**
+#### **Phase 12: Notice to Proceed**
 
 -   **Objective**: Record and publish finalized NTP document(s).
 -   **BAC Secretariat Actions**:
@@ -261,7 +252,7 @@
     -   Notifies BAC Chairman, HOPE, and supplier.
 -   **Monitoring**: BAC Chairman/HOPE track NTP issuance.
 
-#### **Phase 12: Monitoring and Compliance**
+#### **Phase 13: Monitoring**
 
 -   **Objective**: Record optional finalized compliance documents and enable monitoring.
 -   **BAC Secretariat Actions**:
@@ -284,6 +275,17 @@
         -   Filters by `procurement_id`, phase, date.
         -   Shows general (e.g., hash) and phase-specific metadata (e.g., `bid_value`) per document.
         -   Exports reports (e.g., phase durations).
+
+#### **Phase 14: Completion**
+
+-   **Objective**: Record final completion documents and close procurement.
+-   **BAC Secretariat Actions**:
+    -   Uploads completion certificate and final inspection report.
+    -   Enters metadata: `completion_date`, `final_amount`.
+-   **System Actions**:
+    -   Updates state to "Completed"
+    -   Logs final documentation
+    -   Archives procurement record
 
 ---
 
@@ -326,4 +328,4 @@
     -   **Phase-Specific**: Captures unique details (e.g., `bid_value` in Phase 4, `bond_amount` in Phase 9).
 -   **Monitoring**: Dashboard separates metadata types for clarity.
 
-This detailed workflow fully supports general and phase-specific metadata, ensuring all documents are tracked with their hashes across the 12 phases. Let me know if you need implementation code or further refinements!
+This detailed workflow fully supports general and phase-specific metadata, ensuring all documents are tracked with their hashes across the 14 phases. Let me know if you need implementation code or further refinements!

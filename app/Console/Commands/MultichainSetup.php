@@ -37,6 +37,12 @@ class MultichainSetup extends Command
      */
     public function handle()
     {
+        $this->info('╔══════════════════════════════════════╗');
+        $this->info('║      MultiChain Setup Starting       ║');
+        $this->info('╚══════════════════════════════════════╝');
+        $this->newLine();
+
+        $this->info('<fg=blue>📍 Step 1: Generating Blockchain Addresses...</>');
         $addresses = [
             'BAC_SECRETARIAT_ADDRESS' => $this->createNewAddress(),
             'BAC_CHAIRMAN_ADDRESS' => $this->createNewAddress(),
@@ -46,26 +52,37 @@ class MultichainSetup extends Command
         $envContent = file_get_contents(base_path('.env'));
         foreach ($addresses as $key => $address) {
             $envContent = preg_replace("/$key=.*/", "$key=$address", $envContent);
-            $this->info("$key: $address");
+            $this->line("  └─ <fg=green>✓</> $key: <fg=yellow>$address</>");
         }
         file_put_contents(base_path('.env'), $envContent);
 
-        // Update the user database with the new addresses
+        $this->newLine();
+        $this->info('<fg=blue>📍 Step 2: Syncing Addresses to Database...</>');
         $this->syncAddressesToDatabase($addresses);
 
+        $this->newLine();
+        $this->info('<fg=blue>📍 Step 3: Creating Blockchain Streams...</>');
         $streams = [
             'procurement.documents',
-            'procurement.state',
+            'procurement.status',
             'procurement.events',
             'procurement.corrections',
         ];
 
         $streamIds = [];
-        foreach ($streams as $stream) {
-            $streamIds[$stream] = $this->createNewStream($stream);
-            $this->info("Stream $stream: {$streamIds[$stream]}");
-        }
+        $bar = $this->output->createProgressBar(count($streams));
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %message%');
 
+        foreach ($streams as $stream) {
+            $bar->setMessage("Creating $stream...");
+            $streamIds[$stream] = $this->createNewStream($stream);
+            $this->line("\n  └─ <fg=green>✓</> Stream <options=bold>$stream</> created with ID: <fg=yellow>{$streamIds[$stream]}</>");
+            $bar->advance();
+        }
+        $bar->finish();
+
+        $this->newLine(2);
+        $this->info('<fg=blue>📍 Step 4: Setting Up Permissions...</>');
         $permissions = [
             'BAC_SECRETARIAT_ADDRESS' => ['connect', 'receive', 'send', 'create', 'write', 'read', 'activate', 'admin'],
             'BAC_CHAIRMAN_ADDRESS' => ['connect', 'receive', 'read'],
@@ -73,12 +90,14 @@ class MultichainSetup extends Command
         ];
 
         foreach ($permissions as $role => $perms) {
+            $this->line("\n<fg=yellow>➤ Configuring $role:</>");
             $address = $addresses[$role];
             $globalPerms = array_intersect($perms, ['send', 'connect', 'receive', 'create', 'issue', 'mine', 'activate', 'admin']);
             $streamPerms = array_diff($perms, $globalPerms);
 
             if (!empty($globalPerms)) {
                 $this->grantPermissions($address, implode(',', $globalPerms));
+                $this->line("  └─ <fg=green>✓</> Global permissions granted");
             }
 
             foreach ($streams as $stream) {
@@ -86,9 +105,23 @@ class MultichainSetup extends Command
                     $this->grantPermissions($address, "$stream.$perm");
                 }
             }
+            $this->line("  └─ <fg=green>✓</> Stream permissions granted");
         }
 
-        $this->info('MultiChain setup completed successfully!');
+        $this->newLine(2);
+        $this->info('╔══════════════════════════════════════╗');
+        $this->info('║    🎉 MultiChain Setup Complete!     ║');
+        $this->info('║        Everything is ready!          ║');
+        $this->info('╚══════════════════════════════════════╝');
+
+        $this->table(
+            ['Component', 'Status'],
+            [
+                ['Addresses', '<fg=green>✓ Generated & Synced</>'],
+                ['Streams', '<fg=green>✓ Created & Subscribed</>'],
+                ['Permissions', '<fg=green>✓ Configured</>']
+            ]
+        );
     }
 
     public function createNewStream(string $streamName): string
@@ -194,9 +227,10 @@ class MultichainSetup extends Command
     {
         $this->info('Syncing blockchain addresses to user database...');
 
-        $secretariatAddress = $addresses['MULTICHAIN_BAC_SECRETARIAT_ADDRESS'];
-        $chairmanAddress = $addresses['MULTICHAIN_BAC_CHAIRMAN_ADDRESS'];
-        $hopeAddress = $addresses['MULTICHAIN_HOPE_ADDRESS'];
+        // Fix the keys to match those used in handle() method
+        $secretariatAddress = $addresses['BAC_SECRETARIAT_ADDRESS'];
+        $chairmanAddress = $addresses['BAC_CHAIRMAN_ADDRESS'];
+        $hopeAddress = $addresses['HOPE_ADDRESS'];
 
         // Update users based on role
         $secretariatUpdated = User::where('role', 'bac_secretariat')

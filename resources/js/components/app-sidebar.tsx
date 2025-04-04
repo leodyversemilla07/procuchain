@@ -22,8 +22,8 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     icon: Table2,
                 },
                 {
-                    title: 'Purchase Request Initiation',
-                    url: '/bac-secretariat/procurement/pr-initiation',
+                    title: 'Procurement Initiation',
+                    url: '/bac-secretariat/procurement/procurement-initiation',
                     icon: Upload,
                 }
             ];

@@ -43,7 +43,7 @@ export function PreProcurementModal({
             return;
         }
 
-        post('/bac-secretariat/publish-pre-procurement-decision', {
+        post('/bac-secretariat/publish-pre-procurement-conference-decision', {
             onSuccess: (response) => {
                 onOpenChange(false);
 
