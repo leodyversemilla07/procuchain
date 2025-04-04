@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\UserRoleEnums;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
 class PostQualificationDocumentsRequest extends FormRequest
@@ -24,13 +24,13 @@ class PostQualificationDocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id'             => 'required|string|max:50',
-            'procurement_title'          => 'required|string|min:5|max:255',
-            'tax_return_file'            => 'sometimes|file|mimes:pdf|max:10240',
-            'financial_statement_file'   => 'sometimes|file|mimes:pdf|max:10240',
-            'verification_report_file'   => 'sometimes|file|mimes:pdf|max:10240',
-            'submission_date'            => 'required|date_format:Y-m-d|before_or_equal:today',
-            'outcome'                    => 'required|string|min:5|max:500',
+            'procurement_id' => 'required|string|max:50',
+            'procurement_title' => 'required|string|min:5|max:255',
+            'tax_return_file' => 'sometimes|file|mimes:pdf|max:10240',
+            'financial_statement_file' => 'sometimes|file|mimes:pdf|max:10240',
+            'verification_report_file' => 'sometimes|file|mimes:pdf|max:10240',
+            'submission_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'outcome' => 'required|string|min:5|max:500',
         ];
     }
 }

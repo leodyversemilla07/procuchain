@@ -2,9 +2,9 @@
 
 namespace App\Handlers\BiddingDocuments;
 
-use App\Handlers\BaseStageShowUploadHandler;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageShowUploadHandler;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +18,7 @@ class BiddingDocumentsShowUploadHandler extends BaseStageShowUploadHandler
                 StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED->value,
                 StageEnums::BIDDING_DOCUMENTS->value
             );
-            
+
             return $this->renderUploadForm(
                 $procurement,
                 'bac-secretariat/procurement-stage/bid-invitation-upload'
@@ -31,7 +31,7 @@ class BiddingDocumentsShowUploadHandler extends BaseStageShowUploadHandler
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading bid invitation upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading bid invitation upload form: '.$e->getMessage());
         }
     }
 }

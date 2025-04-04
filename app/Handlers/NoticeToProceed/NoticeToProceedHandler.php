@@ -4,10 +4,10 @@ namespace App\Handlers\NoticeToProceed;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class NoticeToProceedHandler extends BaseStageHandler
 {
@@ -19,13 +19,15 @@ class NoticeToProceedHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
             $metadataArray = $this->prepareDocumentsMetadata($data);
+
             return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error in NoticeToProceedHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to upload ' . StageEnums::NOTICE_TO_PROCEED->getDisplayName() . ' document: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to upload '.StageEnums::NOTICE_TO_PROCEED->getDisplayName().' document: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -37,14 +39,14 @@ class NoticeToProceedHandler extends BaseStageHandler
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::NOTICE_TO_PROCEED,
             'nextStage' => StageEnums::MONITORING,
-            'status' => StatusEnums::NTP_RECORDED
+            'status' => StatusEnums::NTP_RECORDED,
         ];
     }
-    
+
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
-        
+
         if ($data['ntpFile']) {
             $metadataArray = array_merge($metadataArray, $this->uploadAndPrepareMetadata(
                 [$data['ntpFile']],
@@ -54,10 +56,10 @@ class NoticeToProceedHandler extends BaseStageHandler
                 $data['currentStage']->getStoragePathSegment()
             ));
         }
-        
+
         return $metadataArray;
     }
-    
+
     private function processDocuments(array $data, array $metadataArray): array
     {
         $this->blockchainService->publishDocuments(
@@ -68,7 +70,7 @@ class NoticeToProceedHandler extends BaseStageHandler
             $metadataArray,
             $data['userAddress']
         );
-        
+
         // Log publication to PhilGEPS
         $publicationTimestamp = now()->addSecond()->toIso8601String();
         $this->blockchainService->logEvent(
@@ -92,7 +94,7 @@ class NoticeToProceedHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['nextStage']->getDisplayName(),
             $data['userAddress'],
-            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after recording ' . $data['currentStage']->getDisplayName()
+            'Proceeding to '.$data['nextStage']->getDisplayName().' stage after recording '.$data['currentStage']->getDisplayName()
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -109,7 +111,7 @@ class NoticeToProceedHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' document uploaded and published successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage.'
+            'message' => $data['currentStage']->getDisplayName().' document uploaded and published successfully. Proceeding to '.$data['nextStage']->getDisplayName().' stage.',
         ];
     }
 }

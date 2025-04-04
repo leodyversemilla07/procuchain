@@ -29,6 +29,7 @@ class HopeController extends BaseController
     {
         try {
             $procurements = $this->procurementHandler->getProcurementsList();
+
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => $procurements,
             ]);
@@ -37,9 +38,10 @@ class HopeController extends BaseController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => [],
-                'error' => 'Failed to retrieve procurements: ' . $e->getMessage(),
+                'error' => 'Failed to retrieve procurements: '.$e->getMessage(),
             ]);
         }
     }
@@ -49,7 +51,7 @@ class HopeController extends BaseController
         try {
             $procurement = $this->procurementHandler->getProcurementDetails($procurementId);
 
-            if (!$procurement) {
+            if (! $procurement) {
                 return Inertia::render('procurements/show', ['message' => 'Procurement not found']);
             }
 
@@ -66,7 +68,7 @@ class HopeController extends BaseController
             ]);
 
             return Inertia::render('procurements/show', [
-                'error' => 'Failed to retrieve procurement: ' . $e->getMessage(),
+                'error' => 'Failed to retrieve procurement: '.$e->getMessage(),
             ]);
         }
     }

@@ -2,9 +2,9 @@
 
 namespace App\Handlers\NoticeOfAward;
 
-use App\Handlers\BaseStageShowUploadHandler;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageShowUploadHandler;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +18,7 @@ class NoticeOfAwardShowUploadHandler extends BaseStageShowUploadHandler
                 StatusEnums::RESOLUTION_RECORDED->value,
                 StageEnums::NOTICE_OF_AWARD->value
             );
-            
+
             return $this->renderUploadForm(
                 $procurement,
                 'bac-secretariat/procurement-stage/noa-upload'
@@ -31,7 +31,7 @@ class NoticeOfAwardShowUploadHandler extends BaseStageShowUploadHandler
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading Notice of Award upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading Notice of Award upload form: '.$e->getMessage());
         }
     }
 }

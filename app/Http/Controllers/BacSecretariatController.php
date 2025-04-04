@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
+use App\Enums\StreamEnums;
 use App\Handlers\ProcurementViewHandler;
 use App\Services\MultichainService;
 use App\Services\StreamKeyService;
@@ -10,14 +13,12 @@ use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
-use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
-use App\Enums\StreamEnums;
-
 class BacSecretariatController extends BaseController
 {
     private $multiChain;
+
     private $streamKeyService;
+
     private $procurementHandler;
 
     public function __construct(MultichainService $multiChain, StreamKeyService $streamKeyService, ProcurementViewHandler $procurementHandler)
@@ -57,14 +58,14 @@ class BacSecretariatController extends BaseController
                 'ongoingProjects' => $ongoingProjects,
                 'pendingActions' => count($priorityActions),
                 'completedBiddings' => $completedBiddings,
-                'totalDocuments' => $totalDocuments
+                'totalDocuments' => $totalDocuments,
             ];
 
             return Inertia::render('bac-secretariat/dashboard', [
                 'recentProcurements' => $recentProcurements,
                 'recentActivities' => $recentActivities,
                 'priorityActions' => array_slice($priorityActions, 0, 3),
-                'stats' => $stats
+                'stats' => $stats,
             ]);
 
         } catch (Exception $e) {
@@ -81,9 +82,9 @@ class BacSecretariatController extends BaseController
                     'ongoingProjects' => 0,
                     'pendingActions' => 0,
                     'completedBiddings' => 0,
-                    'totalDocuments' => 0
+                    'totalDocuments' => 0,
                 ],
-                'error' => 'Failed to retrieve dashboard data: ' . $e->getMessage()
+                'error' => 'Failed to retrieve dashboard data: '.$e->getMessage(),
             ]);
         }
     }
@@ -93,6 +94,7 @@ class BacSecretariatController extends BaseController
         return collect($allStates)
             ->map(function ($item) {
                 $data = $item['data'];
+
                 return [
                     'id' => $data['procurement_id'] ?? '',
                     'title' => $data['procurement_title'] ?? '',
@@ -119,7 +121,7 @@ class BacSecretariatController extends BaseController
                     'id' => $item['id'],
                     'title' => $item['title'],
                     'stage' => $item['stage'],
-                    'status' => $item['status']
+                    'status' => $item['status'],
                 ];
             })
             ->toArray();
@@ -128,10 +130,12 @@ class BacSecretariatController extends BaseController
     private function getRecentActivities()
     {
         $allEvents = $this->multiChain->listStreamItems(StreamEnums::EVENTS->value, true, 300, -300);
+
         return collect($allEvents)
             ->map(function ($item) {
                 $data = $item['data'];
                 $actionLabel = $this->formatActionLabel($data['event_type'] ?? '', $data['details'] ?? '');
+
                 return [
                     'id' => $data['procurement_id'] ?? '',
                     'title' => $data['procurement_title'] ?? '',
@@ -145,7 +149,7 @@ class BacSecretariatController extends BaseController
                 ];
             })
             ->filter(function ($item) {
-                return !empty($item['id']) && !empty($item['title']);
+                return ! empty($item['id']) && ! empty($item['title']);
             })
             ->sortByDesc('timestamp')
             ->take(8)
@@ -171,7 +175,7 @@ class BacSecretariatController extends BaseController
                     'id' => $id,
                     'title' => $title,
                     'action' => 'Continue Procurement Processing',
-                    'route' => "/bac-secretariat/procurements-list",
+                    'route' => '/bac-secretariat/procurements-list',
                 ];
             } elseif (
                 $stage === StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName() &&
@@ -272,7 +276,7 @@ class BacSecretariatController extends BaseController
                     'id' => $id,
                     'title' => $title,
                     'action' => 'Mark Procurement as Complete',
-                    'route' => "/bac-secretariat/procurements-list",
+                    'route' => '/bac-secretariat/procurements-list',
                 ];
             }
         }
@@ -288,6 +292,7 @@ class BacSecretariatController extends BaseController
             $documents = $this->multiChain->listStreamKeyItems(StreamEnums::DOCUMENTS->value, $streamKey);
             $totalDocuments += count($documents);
         }
+
         return $totalDocuments;
     }
 
@@ -300,16 +305,16 @@ class BacSecretariatController extends BaseController
                 'Contract And PO',
                 'Notice To Proceed',
                 'Monitoring',
-                'Completed'
+                'Completed',
             ]);
         })->count();
     }
 
     /**
      * Convert raw event types to more readable action labels
-     * 
-     * @param string $eventType The raw event type
-     * @param string $details Additional details about the event
+     *
+     * @param  string  $eventType  The raw event type
+     * @param  string  $details  Additional details about the event
      * @return string Formatted action label
      */
     private function formatActionLabel(string $eventType, string $details): string
@@ -323,6 +328,7 @@ class BacSecretariatController extends BaseController
                 if (strpos(strtolower($details), 'pre-procurement') !== false) {
                     return 'Pre-Procurement Decision';
                 }
+
                 return 'Decision Made';
             case 'publication':
                 return 'Published Documents';
@@ -332,6 +338,7 @@ class BacSecretariatController extends BaseController
                 // Try to format the raw event type for better display
                 $words = explode('_', $eventType);
                 $formatted = array_map('ucfirst', $words);
+
                 return implode(' ', $formatted);
         }
     }
@@ -340,6 +347,7 @@ class BacSecretariatController extends BaseController
     {
         try {
             $procurements = $this->procurementHandler->getProcurementsList();
+
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => $procurements,
             ]);
@@ -348,9 +356,10 @@ class BacSecretariatController extends BaseController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => [],
-                'error' => 'Failed to retrieve procurements: ' . $e->getMessage(),
+                'error' => 'Failed to retrieve procurements: '.$e->getMessage(),
             ]);
         }
     }
@@ -360,7 +369,7 @@ class BacSecretariatController extends BaseController
         try {
             $procurement = $this->procurementHandler->getProcurementDetails($procurementId);
 
-            if (!$procurement) {
+            if (! $procurement) {
                 return Inertia::render('procurements/show', ['message' => 'Procurement not found']);
             }
 
@@ -377,7 +386,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return Inertia::render('procurements/show', [
-                'error' => 'Failed to retrieve procurement: ' . $e->getMessage(),
+                'error' => 'Failed to retrieve procurement: '.$e->getMessage(),
             ]);
         }
     }

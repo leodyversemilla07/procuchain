@@ -4,10 +4,10 @@ namespace App\Handlers\Monitoring;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class MonitoringHandler extends BaseStageHandler
 {
@@ -19,13 +19,15 @@ class MonitoringHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
             $metadataArray = $this->prepareDocumentsMetadata($data);
+
             return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error in MonitoringHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to upload compliance report: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to upload compliance report: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -37,14 +39,14 @@ class MonitoringHandler extends BaseStageHandler
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::MONITORING,
-            'status' => StatusEnums::MONITORING
+            'status' => StatusEnums::MONITORING,
         ];
     }
-    
+
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
-        
+
         if ($data['complianceFile']) {
             $metadataArray = array_merge($metadataArray, $this->uploadAndPrepareMetadata(
                 [$data['complianceFile']],
@@ -54,10 +56,10 @@ class MonitoringHandler extends BaseStageHandler
                 $data['currentStage']->getStoragePathSegment()
             ));
         }
-        
+
         return $metadataArray;
     }
-    
+
     private function processDocuments(array $data, array $metadataArray): array
     {
         $this->blockchainService->publishDocuments(
@@ -84,7 +86,7 @@ class MonitoringHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => 'Compliance report uploaded successfully. Notifications sent to BAC Chairman and HOPE.'
+            'message' => 'Compliance report uploaded successfully. Notifications sent to BAC Chairman and HOPE.',
         ];
     }
 }

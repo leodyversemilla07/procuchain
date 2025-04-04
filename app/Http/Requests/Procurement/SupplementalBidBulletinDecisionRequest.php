@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\UserRoleEnums;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
 class SupplementalBidBulletinDecisionRequest extends FormRequest
@@ -24,9 +24,9 @@ class SupplementalBidBulletinDecisionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id'   => 'required|string|max:50',
-            'procurement_title'=> 'required|string|min:5|max:255',
-            'has_more_bulletins'=> 'required|boolean',
+            'procurement_id' => 'required|string|max:50',
+            'procurement_title' => 'required|string|min:5|max:255',
+            'has_more_bulletins' => 'required|boolean',
         ];
     }
 }

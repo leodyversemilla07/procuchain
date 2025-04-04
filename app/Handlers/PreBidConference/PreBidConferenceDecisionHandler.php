@@ -4,24 +4,21 @@ namespace App\Handlers\PreBidConference;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class PreBidConferenceDecisionHandler extends BaseStageHandler
 {
     /**
      * Handle pre-bid conference decision.
-     * 
-     * @param Request $request
-     * @return array
      */
     public function handle(Request $request): array
     {
         try {
             $data = $this->prepareHandlingData($request);
-            
+
             if ($data['conferenceHeld']) {
                 if ($data['needsBulletins']) {
                     return $this->handleConferenceWithBulletins($data);
@@ -33,13 +30,14 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             }
         } catch (Exception $e) {
             Log::error('Error in PreBidConferenceHandler', ['error' => $e->getMessage()]);
+
             return [
                 'success' => false,
-                'message' => 'Failed to process ' . StageEnums::BIDDING_DOCUMENTS->getDisplayName() . ' decision: ' . $e->getMessage()
+                'message' => 'Failed to process '.StageEnums::BIDDING_DOCUMENTS->getDisplayName().' decision: '.$e->getMessage(),
             ];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -54,7 +52,7 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             'bidOpeningStage' => StageEnums::BID_OPENING,
         ];
     }
-    
+
     private function handleConferenceWithBulletins(array $data): array
     {
         $status = StatusEnums::PRE_BID_CONFERENCE_HELD;
@@ -84,11 +82,11 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $status->getDisplayName() .
-                '. Proceeding to ' . $data['bulletinsStage']->getDisplayName() . '.'
+            'message' => $status->getDisplayName().
+                '. Proceeding to '.$data['bulletinsStage']->getDisplayName().'.',
         ];
     }
-    
+
     private function handleConferenceWithoutBulletins(array $data): array
     {
         $status = StatusEnums::PRE_BID_CONFERENCE_HELD;
@@ -118,11 +116,11 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $status->getDisplayName() .
-                '. Proceeding directly to ' . $data['bidOpeningStage']->getDisplayName() . '.'
+            'message' => $status->getDisplayName().
+                '. Proceeding directly to '.$data['bidOpeningStage']->getDisplayName().'.',
         ];
     }
-    
+
     private function handleConferenceSkipped(array $data): array
     {
         $status = StatusEnums::PRE_BID_CONFERENCE_SKIPPED;
@@ -152,8 +150,8 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $status->getDisplayName() .
-                '. Proceeding to ' . $data['bidOpeningStage']->getDisplayName() . '.'
+            'message' => $status->getDisplayName().
+                '. Proceeding to '.$data['bidOpeningStage']->getDisplayName().'.',
         ];
     }
 }

@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
 use App\Services\MultichainService;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use App\Models\User;
 
 class MultichainSetup extends Command
 {
@@ -95,9 +95,9 @@ class MultichainSetup extends Command
             $globalPerms = array_intersect($perms, ['send', 'connect', 'receive', 'create', 'issue', 'mine', 'activate', 'admin']);
             $streamPerms = array_diff($perms, $globalPerms);
 
-            if (!empty($globalPerms)) {
+            if (! empty($globalPerms)) {
                 $this->grantPermissions($address, implode(',', $globalPerms));
-                $this->line("  └─ <fg=green>✓</> Global permissions granted");
+                $this->line('  └─ <fg=green>✓</> Global permissions granted');
             }
 
             foreach ($streams as $stream) {
@@ -105,7 +105,7 @@ class MultichainSetup extends Command
                     $this->grantPermissions($address, "$stream.$perm");
                 }
             }
-            $this->line("  └─ <fg=green>✓</> Stream permissions granted");
+            $this->line('  └─ <fg=green>✓</> Stream permissions granted');
         }
 
         $this->newLine(2);
@@ -119,7 +119,7 @@ class MultichainSetup extends Command
             [
                 ['Addresses', '<fg=green>✓ Generated & Synced</>'],
                 ['Streams', '<fg=green>✓ Created & Subscribed</>'],
-                ['Permissions', '<fg=green>✓ Configured</>']
+                ['Permissions', '<fg=green>✓ Configured</>'],
             ]
         );
     }
@@ -129,7 +129,7 @@ class MultichainSetup extends Command
         try {
             $result = $this->multichainService->client->create('stream', $streamName, true);
 
-            if (!$this->multichainService->client->success()) {
+            if (! $this->multichainService->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -155,7 +155,7 @@ class MultichainSetup extends Command
                 'error_code' => $this->multichainService->client->errorcode(),
                 'error_message' => $this->multichainService->client->errormessage(),
             ]);
-            throw new Exception('Failed to create new stream: ' . $e->getMessage());
+            throw new Exception('Failed to create new stream: '.$e->getMessage());
         }
     }
 
@@ -164,7 +164,7 @@ class MultichainSetup extends Command
         try {
             $address = $this->multichainService->client->getnewaddress();
 
-            if (!$this->multichainService->client->success()) {
+            if (! $this->multichainService->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -184,7 +184,7 @@ class MultichainSetup extends Command
                 'error_code' => $this->multichainService->client->errorcode(),
                 'error_message' => $this->multichainService->client->errormessage(),
             ]);
-            throw new Exception('Failed to create new blockchain address: ' . $e->getMessage());
+            throw new Exception('Failed to create new blockchain address: '.$e->getMessage());
         }
     }
 
@@ -193,7 +193,7 @@ class MultichainSetup extends Command
         try {
             $this->multichainService->client->grant($address, $permission);
 
-            if (!$this->multichainService->client->success()) {
+            if (! $this->multichainService->client->success()) {
                 throw new Exception(
                     sprintf(
                         'Error %d: %s',
@@ -216,7 +216,7 @@ class MultichainSetup extends Command
                 'error_code' => $this->multichainService->client->errorcode(),
                 'error_message' => $this->multichainService->client->errormessage(),
             ]);
-            throw new Exception('Failed to grant permissions: ' . $e->getMessage());
+            throw new Exception('Failed to grant permissions: '.$e->getMessage());
         }
     }
 

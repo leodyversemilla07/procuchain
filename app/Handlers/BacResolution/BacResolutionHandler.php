@@ -4,10 +4,10 @@ namespace App\Handlers\BacResolution;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class BacResolutionHandler extends BaseStageHandler
 {
@@ -19,13 +19,15 @@ class BacResolutionHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
             $metadataArray = $this->prepareDocumentsMetadata($data);
+
             return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error in BacResolutionHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to upload ' . StageEnums::BAC_RESOLUTION->getDisplayName() . ' document: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to upload '.StageEnums::BAC_RESOLUTION->getDisplayName().' document: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -38,14 +40,14 @@ class BacResolutionHandler extends BaseStageHandler
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::BAC_RESOLUTION,
             'nextStage' => StageEnums::NOTICE_OF_AWARD,
-            'status' => StatusEnums::RESOLUTION_RECORDED
+            'status' => StatusEnums::RESOLUTION_RECORDED,
         ];
     }
-    
+
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
-        
+
         if ($data['bacResolutionFile']) {
             $metadataArray = array_merge($metadataArray, $this->uploadAndPrepareMetadata(
                 [$data['bacResolutionFile']],
@@ -55,10 +57,10 @@ class BacResolutionHandler extends BaseStageHandler
                 $data['currentStage']->getStoragePathSegment()
             ));
         }
-        
+
         return $metadataArray;
     }
-    
+
     private function processDocuments(array $data, array $metadataArray): array
     {
         $this->blockchainService->publishDocuments(
@@ -78,7 +80,7 @@ class BacResolutionHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['nextStage']->getDisplayName(),
             $data['userAddress'],
-            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after recording ' . $data['currentStage']->getDisplayName()
+            'Proceeding to '.$data['nextStage']->getDisplayName().' after recording '.$data['currentStage']->getDisplayName()
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -95,7 +97,7 @@ class BacResolutionHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' document uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.'
+            'message' => $data['currentStage']->getDisplayName().' document uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
 }

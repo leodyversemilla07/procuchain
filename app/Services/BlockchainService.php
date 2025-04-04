@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Services\MultichainService;
-use App\Services\StreamKeyService;
 use App\Enums\StreamEnums;
 
 class BlockchainService
@@ -57,12 +55,12 @@ class BlockchainService
         $this->multiChain->publishMultiFrom($userAddress, StreamEnums::DOCUMENTS->value, $documentItems);
 
         $this->updateStatus($procurementId, $procurementTitle, $status, $state, $userAddress, $timestamp);
-       
+
         $this->logEvent(
             $procurementId,
             $procurementTitle,
             $state,
-            'Uploaded ' . count($metadataArray) . " finalized $state documents",
+            'Uploaded '.count($metadataArray)." finalized $state documents",
             count($metadataArray),
             $userAddress,
             'document_upload',

@@ -23,6 +23,7 @@ class ProcurementViewHandler
     public function getProcurementsList()
     {
         $allStatuses = $this->blockchainService->getClient()->listStreamItems(StreamEnums::STATUS->value, true, 1000, -1000);
+
         return $this->transformer->transformProcurementsList($allStatuses);
     }
 

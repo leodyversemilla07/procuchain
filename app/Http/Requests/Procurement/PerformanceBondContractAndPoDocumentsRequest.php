@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\UserRoleEnums;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
 class PerformanceBondContractAndPoDocumentsRequest extends FormRequest
@@ -24,14 +24,14 @@ class PerformanceBondContractAndPoDocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id'          => 'required|string|max:50',
-            'procurement_title'       => 'required|string|min:5|max:255',
-            'performance_bond_file'   => 'required|file|mimes:pdf|max:10240',
-            'submission_date'         => 'required|date_format:Y-m-d|before_or_equal:today',
-            'bond_amount'             => 'required|string|min:1|max:100',
-            'contract_file'           => 'required|file|mimes:pdf|max:10240',
-            'po_file'                 => 'required|file|mimes:pdf|max:10240',
-            'signing_date'            => 'required|date_format:Y-m-d|before_or_equal:today',
+            'procurement_id' => 'required|string|max:50',
+            'procurement_title' => 'required|string|min:5|max:255',
+            'performance_bond_file' => 'required|file|mimes:pdf|max:10240',
+            'submission_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'bond_amount' => 'required|string|min:1|max:100',
+            'contract_file' => 'required|file|mimes:pdf|max:10240',
+            'po_file' => 'required|file|mimes:pdf|max:10240',
+            'signing_date' => 'required|date_format:Y-m-d|before_or_equal:today',
         ];
     }
 }

@@ -7,9 +7,9 @@ export const getStatusBadgeStyle = (state: Status): string => {
             return 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900';
         case 'Pre-Procurement Conference Held':
             return 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900';
-        case 'Pre-Procurement Skipped':
+        case 'Pre-Procurement Conference Skipped':
             return 'bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900';
-        case 'Pre-Procurement Completed':
+        case 'Pre-Procurement Conference Completed':
             return 'bg-lime-50 text-lime-700 border border-lime-200 hover:bg-lime-100 dark:bg-lime-950/40 dark:text-lime-300 dark:border-lime-900';
         case 'Bidding Documents Published':
             return 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900';
@@ -52,7 +52,7 @@ export const getStageBadgeStyle = (phase: Stage): string => {
     switch (phase) {
         case 'Procurement Initiation':
             return 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900';
-        case 'Pre-Procurement':
+        case 'Pre-Procurement Conference':
             return 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900';
         case 'Bidding Documents':
             return 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900';

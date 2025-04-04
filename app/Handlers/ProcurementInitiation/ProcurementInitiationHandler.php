@@ -4,10 +4,10 @@ namespace App\Handlers\ProcurementInitiation;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class ProcurementInitiationHandler extends BaseStageHandler
 {
@@ -16,13 +16,15 @@ class ProcurementInitiationHandler extends BaseStageHandler
         $data = [];
         try {
             $data = $this->prepareHandlingData($request);
+
             return $this->processDocuments($data);
         } catch (Exception $e) {
             Log::error('Error in ProcurementInitiationHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to publish ' . ($data['stage'] ?? StageEnums::PROCUREMENT_INITIATION)->getDisplayName() . ' documents: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to publish '.($data['stage'] ?? StageEnums::PROCUREMENT_INITIATION)->getDisplayName().' documents: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -33,15 +35,15 @@ class ProcurementInitiationHandler extends BaseStageHandler
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'stage' => StageEnums::PROCUREMENT_INITIATION,
-            'status' => StatusEnums::PROCUREMENT_SUBMITTED
+            'status' => StatusEnums::PROCUREMENT_SUBMITTED,
         ];
     }
-    
+
     private function processDocuments(array $data): array
     {
         $metadataArray = [];
-        
-        if (!empty($data['files'])) {
+
+        if (! empty($data['files'])) {
             $uploadedMetadataArray = $this->uploadAndPrepareMetadata(
                 $data['files'],
                 $data['metadata'],
@@ -72,8 +74,8 @@ class ProcurementInitiationHandler extends BaseStageHandler
         );
 
         return [
-            'success' => true, 
-            'message' => $data['stage']->getDisplayName() . ' documents published successfully'
+            'success' => true,
+            'message' => $data['stage']->getDisplayName().' documents published successfully',
         ];
     }
 }

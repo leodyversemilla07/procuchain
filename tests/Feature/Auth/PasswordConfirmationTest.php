@@ -15,11 +15,11 @@ test('confirm password screen can be rendered', function () {
 
 test('password can be confirmed', function () {
     // Create a test route for the test to redirect to
-    Route::get('/test-redirect', fn() => 'Redirected')->name('bac-secretariat.dashboard');
-    
+    Route::get('/test-redirect', fn () => 'Redirected')->name('bac-secretariat.dashboard');
+
     // Create user with a specific role
     $user = User::factory()->create([
-        'role' => 'bac_secretariat'
+        'role' => 'bac_secretariat',
     ]);
 
     $response = $this->actingAs($user)->post('/confirm-password', [

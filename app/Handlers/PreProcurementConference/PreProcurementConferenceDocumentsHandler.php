@@ -4,10 +4,10 @@ namespace App\Handlers\PreProcurementConference;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
 {
@@ -16,13 +16,15 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
             $metadataArray = $this->prepareDocumentsMetadata($data);
+
             return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error in UploadPreProcurementDocumentsHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to upload ' . StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName() . ' documents: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to upload '.StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName().' documents: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -36,14 +38,14 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::PRE_PROCUREMENT_CONFERENCE,
             'nextStage' => StageEnums::BIDDING_DOCUMENTS,
-            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED
+            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
         ];
     }
-    
+
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
-        
+
         if ($data['minutesFile']) {
             $metadataArray = array_merge($metadataArray, $this->uploadAndPrepareMetadata(
                 [$data['minutesFile']],
@@ -63,10 +65,10 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
                 $data['currentStage']->getStoragePathSegment()
             ));
         }
-        
+
         return $metadataArray;
     }
-    
+
     private function processDocuments(array $data, array $metadataArray): array
     {
         $this->blockchainService->publishDocuments(
@@ -86,7 +88,7 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['nextStage']->getDisplayName(),
             $data['userAddress'],
-            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after ' . $data['currentStage']->getDisplayName()
+            'Proceeding to '.$data['nextStage']->getDisplayName().' after '.$data['currentStage']->getDisplayName()
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -103,7 +105,7 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.'
+            'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
 }

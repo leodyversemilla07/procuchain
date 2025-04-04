@@ -4,10 +4,10 @@ namespace App\Handlers\Completion;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class CompletionDocumentsHandler extends BaseStageHandler
 {
@@ -16,13 +16,15 @@ class CompletionDocumentsHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
             $metadataArray = $this->prepareDocumentsMetadata($data);
+
             return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error in CompletionDocumentsHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to upload completion documents: ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to upload completion documents: '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -34,14 +36,14 @@ class CompletionDocumentsHandler extends BaseStageHandler
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::COMPLETION,
-            'status' => StatusEnums::COMPLETION_DOCUMENTS_UPLOADED
+            'status' => StatusEnums::COMPLETION_DOCUMENTS_UPLOADED,
         ];
     }
-    
+
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
-        
+
         if ($data['completionFile']) {
             $metadataArray = array_merge($metadataArray, $this->uploadAndPrepareMetadata(
                 [$data['completionFile']],
@@ -51,10 +53,10 @@ class CompletionDocumentsHandler extends BaseStageHandler
                 $data['currentStage']->getStoragePathSegment()
             ));
         }
-        
+
         return $metadataArray;
     }
-    
+
     private function processDocuments(array $data, array $metadataArray): array
     {
         $this->blockchainService->publishDocuments(
@@ -80,7 +82,7 @@ class CompletionDocumentsHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => 'Completion documents uploaded successfully. Procurement process is now complete.'
+            'message' => 'Completion documents uploaded successfully. Procurement process is now complete.',
         ];
     }
 }

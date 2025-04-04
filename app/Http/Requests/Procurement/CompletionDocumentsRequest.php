@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\UserRoleEnums;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
 class CompletionDocumentsRequest extends FormRequest

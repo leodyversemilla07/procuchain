@@ -2,10 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\StreamEnums;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
-use App\Services\StreamKeyService;
-use App\Enums\StreamEnums;
 
 class ProcurementDataTransformerService
 {
@@ -19,9 +18,9 @@ class ProcurementDataTransformerService
     public function transformProcurementsList($allStatus): array
     {
         return collect($allStatus)
-            ->map(fn($item) => $this->mapStatusToListItem($item))
+            ->map(fn ($item) => $this->mapStatusToListItem($item))
             ->groupBy('id')
-            ->map(fn($group) => $group->sortByDesc('timestamp')->first())
+            ->map(fn ($group) => $group->sortByDesc('timestamp')->first())
             ->sortByDesc('timestamp')
             ->values()
             ->toArray();
@@ -31,13 +30,13 @@ class ProcurementDataTransformerService
     {
         $data = $item['data'];
         $streamKey = $this->streamKeyService->generate(
-            $data['procurement_id'] ?? '', 
+            $data['procurement_id'] ?? '',
             $data['procurement_title'] ?? ''
         );
 
         $documentCount = app(BlockchainService::class)
             ->getClient()
-            ->listStreamKeyItems(StreamEnums::EVENTS->value, $streamKey);
+            ->listStreamKeyItems(StreamEnums::DOCUMENTS->value, $streamKey);
 
         return [
             'id' => $data['procurement_id'] ?? '',
@@ -56,6 +55,7 @@ class ProcurementDataTransformerService
         return collect($status)
             ->map(function ($item) {
                 $data = $item['data'];
+
                 return [
                     'item' => $item,
                     'data' => $data,
@@ -72,21 +72,21 @@ class ProcurementDataTransformerService
     }
 
     public function buildProcurementData(
-        string $procurementId, 
+        string $procurementId,
         string $procurementTitle,
         Collection $procurementStatus,
         BlockchainService $blockchainService
     ): array {
         $latestStatus = $procurementStatus->first();
         $streamKey = $this->streamKeyService->generate($procurementId, $procurementTitle);
-        
+
         $documents = $blockchainService->getClient()->listStreamKeyItems(StreamEnums::DOCUMENTS->value, $streamKey, 1000);
         $events = $blockchainService->getClient()->listStreamKeyItems(StreamEnums::EVENTS->value, $streamKey);
-        
+
         $parsedDocuments = $this->parseDocuments($documents);
         $parsedEvents = $this->parseEvents($events);
         $timeline = $this->buildTimeline($procurementStatus);
-        
+
         return [
             'id' => $procurementId,
             'title' => $procurementTitle,
@@ -94,7 +94,7 @@ class ProcurementDataTransformerService
                 'stage' => $latestStatus['stage'] ?? '',
                 'current_status' => $latestStatus['current_status'] ?? '',
                 'timestamp' => $latestStatus['timestamp'] ?? '',
-                'formatted_date' => isset($latestStatus['timestamp']) ? 
+                'formatted_date' => isset($latestStatus['timestamp']) ?
                     date('M d, Y h:i A', strtotime($latestStatus['timestamp'])) : '',
             ],
             'documents' => $parsedDocuments,
@@ -103,14 +103,13 @@ class ProcurementDataTransformerService
         ];
     }
 
-    private function parseDocuments($documents): array 
+    private function parseDocuments($documents): array
     {
         return collect($documents)->map(function ($doc) {
             $data = $doc['data'];
-            
-            // Only use stage_metadata
+
             $metadata = $data['stage_metadata'] ?? [];
-            if (!is_array($metadata)) {
+            if (! is_array($metadata)) {
                 $metadata = [];
             }
 
@@ -120,20 +119,21 @@ class ProcurementDataTransformerService
                 'timestamp' => $data['timestamp'] ?? '',
                 'stage' => $data['stage'] ?? '',
                 'stage_metadata' => $metadata,
-                'spaces_url' => isset($data['file_key']) ? 
+                'spaces_url' => isset($data['file_key']) ?
                     Storage::disk('spaces')->temporaryUrl($data['file_key'], now()->addMinutes(30)) : '',
                 'hash' => $doc['txid'] ?? null,
                 'file_size' => $data['file_size'] ?? null,
-                'formatted_date' => isset($data['timestamp']) ? 
+                'formatted_date' => isset($data['timestamp']) ?
                     date('M d, Y h:i A', strtotime($data['timestamp'])) : '',
             ];
         })->toArray();
     }
 
-    private function parseEvents($events): array 
+    private function parseEvents($events): array
     {
         return collect($events)->map(function ($event) {
             $data = $event['data'];
+
             return [
                 'event_type' => $data['event_type'] ?? '',
                 'details' => $data['details'] ?? '',
@@ -141,20 +141,20 @@ class ProcurementDataTransformerService
                 'stage' => $data['stage'] ?? $data['phase_identifier'] ?? '',
                 'category' => $data['category'] ?? '',
                 'document_count' => $data['document_count'] ?? null,
-                'formatted_date' => isset($data['timestamp']) ? 
+                'formatted_date' => isset($data['timestamp']) ?
                     date('M d, Y h:i A', strtotime($data['timestamp'])) : '',
             ];
         })->sortByDesc('timestamp')->values()->toArray();
     }
 
-    private function buildTimeline($procurementStatus): array 
+    private function buildTimeline($procurementStatus): array
     {
         return $procurementStatus->map(function ($status) {
             return [
                 'timestamp' => $status['timestamp'],
                 'stage' => $status['stage'],
                 'status' => $status['current_status'],
-                'formatted_date' => date('M d, Y h:i A', strtotime($status['timestamp']))
+                'formatted_date' => date('M d, Y h:i A', strtotime($status['timestamp'])),
             ];
         })->values()->toArray();
     }

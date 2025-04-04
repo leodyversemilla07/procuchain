@@ -5,7 +5,9 @@ namespace App\Libraries\Multichain;
 class CurlTransport implements TransportInterface
 {
     private $verifySSL = true;
+
     private $lastErrorCode = 0;
+
     private $lastErrorMessage = '';
 
     public function setVerifySSL(bool $verify): void
@@ -22,7 +24,7 @@ class CurlTransport implements TransportInterface
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-        if (!$this->verifySSL) {
+        if (! $this->verifySSL) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         }
@@ -33,6 +35,7 @@ class CurlTransport implements TransportInterface
             $this->lastErrorCode = curl_errno($ch);
             $this->lastErrorMessage = curl_error($ch);
             curl_close($ch);
+
             return ['success' => false, 'data' => null];
         }
 
@@ -43,7 +46,7 @@ class CurlTransport implements TransportInterface
         return [
             'success' => ($httpCode >= 200 && $httpCode < 300),
             'data' => $response,
-            'http_code' => $httpCode
+            'http_code' => $httpCode,
         ];
     }
 
@@ -51,7 +54,7 @@ class CurlTransport implements TransportInterface
     {
         return [
             'code' => $this->lastErrorCode,
-            'message' => $this->lastErrorMessage
+            'message' => $this->lastErrorMessage,
         ];
     }
 }

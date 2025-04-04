@@ -4,10 +4,10 @@ namespace App\Handlers\BiddingDocuments;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageHandler;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Exception;
-use App\Handlers\BaseStageHandler;
 
 class BiddingDocumentsHandler extends BaseStageHandler
 {
@@ -16,13 +16,15 @@ class BiddingDocumentsHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
             $metadataArray = $this->prepareDocumentsMetadata($data);
+
             return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error in BiddingDocumentsHandler', ['error' => $e->getMessage()]);
-            return ['success' => false, 'message' => 'Failed to publish ' . StageEnums::BIDDING_DOCUMENTS->getDisplayName() . ': ' . $e->getMessage()];
+
+            return ['success' => false, 'message' => 'Failed to publish '.StageEnums::BIDDING_DOCUMENTS->getDisplayName().': '.$e->getMessage()];
         }
     }
-    
+
     private function prepareHandlingData(Request $request): array
     {
         return [
@@ -33,14 +35,14 @@ class BiddingDocumentsHandler extends BaseStageHandler
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'stage' => StageEnums::BIDDING_DOCUMENTS,
-            'status' => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED
+            'status' => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
         ];
     }
-    
+
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
-        
+
         if ($data['biddingDocumentsFile']) {
             $metadataArray = $this->uploadAndPrepareMetadata(
                 [$data['biddingDocumentsFile']],
@@ -50,10 +52,10 @@ class BiddingDocumentsHandler extends BaseStageHandler
                 $data['stage']->getStoragePathSegment()
             );
         }
-        
+
         return $metadataArray;
     }
-    
+
     private function processDocuments(array $data, array $metadataArray): array
     {
         $this->blockchainService->publishDocuments(
@@ -76,8 +78,8 @@ class BiddingDocumentsHandler extends BaseStageHandler
         );
 
         return [
-            'success' => true, 
-            'message' => $data['stage']->getDisplayName() . ' published successfully'
+            'success' => true,
+            'message' => $data['stage']->getDisplayName().' published successfully',
         ];
     }
 }

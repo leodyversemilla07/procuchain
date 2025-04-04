@@ -20,10 +20,10 @@ test('new users can register with different roles', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('bac-secretariat.dashboard', absolute: false));
-    
+
     // Log out the current user before testing the next one
     $this->post('/logout');
-    
+
     // Test registration with bac_chairman role
     $response = $this->post('/register', [
         'name' => 'Chairman User',
@@ -35,10 +35,10 @@ test('new users can register with different roles', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('bac-chairman.dashboard', absolute: false));
-    
+
     // Log out the current user before testing the next one
     $this->post('/logout');
-    
+
     // Test registration with hope role
     $response = $this->post('/register', [
         'name' => 'Hope User',

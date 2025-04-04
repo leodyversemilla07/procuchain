@@ -2,9 +2,9 @@
 
 namespace App\Handlers\PostQualification;
 
-use App\Handlers\BaseStageShowUploadHandler;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Handlers\BaseStageShowUploadHandler;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +18,7 @@ class PostQualificationShowUploadHandler extends BaseStageShowUploadHandler
                 StatusEnums::BIDS_EVALUATED->value,
                 StageEnums::POST_QUALIFICATION->value
             );
-            
+
             return $this->renderUploadForm(
                 $procurement,
                 'bac-secretariat/procurement-stage/post-qualification-upload'
@@ -31,7 +31,7 @@ class PostQualificationShowUploadHandler extends BaseStageShowUploadHandler
             ]);
 
             return redirect()->route('bac-secretariat.procurements-list.index')
-                ->with('error', 'Error loading post-qualification upload form: ' . $e->getMessage());
+                ->with('error', 'Error loading post-qualification upload form: '.$e->getMessage());
         }
     }
 }

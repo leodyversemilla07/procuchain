@@ -5,14 +5,16 @@ namespace App\Handlers;
 use App\Services\BlockchainService;
 use App\Services\FileStorageService;
 use App\Services\NotificationService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Exception;
 
 abstract class BaseStageHandler implements StageHandlerInterface
 {
     protected $blockchainService;
+
     protected $fileStorageService;
+
     protected $notificationService;
 
     public function __construct(
@@ -27,18 +29,16 @@ abstract class BaseStageHandler implements StageHandlerInterface
 
     /**
      * This method must be implemented by all concrete stage handlers
-     * 
-     * @param Request $request
-     * @return array
      */
     abstract public function handle(Request $request): array;
 
     protected function getUserBlockchainAddress(): string
     {
         $user = Auth::user();
-        if (!$user || empty($user->blockchain_address)) {
+        if (! $user || empty($user->blockchain_address)) {
             throw new Exception('Blockchain address not set for this user.');
         }
+
         return $user->blockchain_address;
     }
 
@@ -60,7 +60,7 @@ abstract class BaseStageHandler implements StageHandlerInterface
 
             $fileKey = $this->fileStorageService->uploadFile(
                 $file,
-                $basePath . '/',
+                $basePath.'/',
                 $sanitizedDocumentType
             );
             $hash = hash('sha256', file_get_contents($file->getRealPath()));
@@ -74,6 +74,7 @@ abstract class BaseStageHandler implements StageHandlerInterface
                 $metadata[$index]
             );
         }
+
         return $metadataArray;
     }
 }

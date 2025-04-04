@@ -8,14 +8,15 @@ class TransportFactory
     {
         switch ($type) {
             case 'curl':
-                $transport = new CurlTransport();
+                $transport = new CurlTransport;
                 if (isset($options['verify_ssl'])) {
                     $transport->setVerifySSL($options['verify_ssl']);
                 }
+
                 return $transport;
 
             case 'socket':
-                return new SocketTransport();
+                return new SocketTransport;
 
             default:
                 throw new \InvalidArgumentException("Unknown transport type: $type");

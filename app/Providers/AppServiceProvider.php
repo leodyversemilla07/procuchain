@@ -2,32 +2,31 @@
 
 namespace App\Providers;
 
-use Barryvdh\DomPDF\ServiceProvider as DomPDFServiceProvider;
-use App\Services\StreamKeyService;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\URL;
+use App\Handlers\BacResolution\BacResolutionHandler;
+use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
+use App\Handlers\BidEvaluation\BidEvaluationHandler;
+use App\Handlers\BidOpening\BidOpeningHandler;
+use App\Handlers\Completion\CompletionDocumentsHandler;
+use App\Handlers\Completion\CompletionProcessHandler;
+use App\Handlers\Monitoring\MonitoringHandler;
+use App\Handlers\NoticeOfAward\NoticeOfAwardHandler;
+use App\Handlers\NoticeToProceed\NoticeToProceedHandler;
+use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
+use App\Handlers\PostQualification\PostQualificationHandler;
+use App\Handlers\PreBidConference\PreBidConferenceDecisionHandler;
+use App\Handlers\PreBidConference\PreBidConferenceDocumentsHandler;
+use App\Handlers\PreProcurementConference\PreProcurementConferenceDecisionHandler;
+use App\Handlers\PreProcurementConference\PreProcurementConferenceDocumentsHandler;
+use App\Handlers\ProcurementInitiation\ProcurementInitiationHandler;
+use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDecisionHandler;
+use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDocumentsHandler;
 use App\Services\BlockchainService;
 use App\Services\FileStorageService;
 use App\Services\NotificationService;
-
-use App\Handlers\ProcurementInitiation\ProcurementInitiationHandler;
-use App\Handlers\PreProcurementConference\PreProcurementConferenceDecisionHandler;
-use App\Handlers\PreProcurementConference\PreProcurementConferenceDocumentsHandler;
-use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
-use App\Handlers\PreBidConference\PreBidConferenceDecisionHandler;
-use App\Handlers\PreBidConference\PreBidConferenceDocumentsHandler;
-use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDecisionHandler;
-use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDocumentsHandler;
-use App\Handlers\BidOpening\BidOpeningHandler;
-use App\Handlers\BidEvaluation\BidEvaluationHandler;
-use App\Handlers\PostQualification\PostQualificationHandler;
-use App\Handlers\BacResolution\BacResolutionHandler;
-use App\Handlers\NoticeOfAward\NoticeOfAwardHandler;
-use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
-use App\Handlers\NoticeToProceed\NoticeToProceedHandler;
-use App\Handlers\Monitoring\MonitoringHandler;
-use App\Handlers\Completion\CompletionProcessHandler;
-use App\Handlers\Completion\CompletionDocumentsHandler;
+use App\Services\StreamKeyService;
+use Barryvdh\DomPDF\ServiceProvider as DomPDFServiceProvider;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
