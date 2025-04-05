@@ -22,8 +22,8 @@ export const KanbanCard = ({
         <Card className="mb-2 cursor-pointer hover:border-blue-600 dark:hover:border-blue-500 transition-all duration-200 shadow-sm border-sidebar-border/70 dark:border-sidebar-border">
             <CardContent className="p-3">
                 <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-1">
-                        <div className="max-w-[80px] flex-shrink-0">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="w-[70px] flex-shrink-0">
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -35,12 +35,12 @@ export const KanbanCard = ({
                                 </Tooltip>
                             </TooltipProvider>
                         </div>
-                        <div className="flex-shrink-0 max-w-[130px] w-full">
+                        <div className="flex-1 min-w-0">
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Badge variant="outline" className={`${getStatusBadgeStyle(procurement.current_status)} text-xs truncate w-full inline-flex justify-end`}>
-                                            <span className="truncate">{procurement.current_status}</span>
+                                        <Badge variant="outline" className={`${getStatusBadgeStyle(procurement.current_status)} text-xs w-full inline-flex items-center justify-end`}>
+                                            <div className="truncate max-w-[120px]">{procurement.current_status}</div>
                                         </Badge>
                                     </TooltipTrigger>
                                     <TooltipContent side="top">{procurement.current_status}</TooltipContent>
