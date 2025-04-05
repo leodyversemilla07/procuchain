@@ -11,128 +11,149 @@ interface ActionButtonsProps {
     onOpenMarkCompleteDialog?: (procurement: ProcurementListItem) => void;
 }
 
+interface ActionButtonItemProps {
+    icon: React.ReactNode;
+    tooltipText: string;
+    onClick?: () => void;
+    href?: string;
+    className?: string;
+    buttonSize: string;
+}
+
+const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonSize }: ActionButtonItemProps) => (
+    <TooltipProvider>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`${buttonSize} p-0 ${className}`}
+                    onClick={onClick}
+                >
+                    {href ? <Link href={href}>{icon}</Link> : icon}
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>{tooltipText}</TooltipContent>
+        </Tooltip>
+    </TooltipProvider>
+);
+
+const useButtonSizes = (variant: 'table' | 'kanban') => ({
+    iconSize: variant === 'table' ? 'h-4 w-4' : 'h-3.5 w-3.5',
+    buttonSize: variant === 'table' ? 'h-8 w-8' : 'h-7 w-7',
+});
+
+const useInitialStageButtons = (procurement: ProcurementListItem, iconSize: string, onOpenPreProcurementModal?: (p: ProcurementListItem) => void) => {
+    const { stage, current_status: status } = procurement;
+    if (stage === Stage.PROCUREMENT_INITIATION && status === Status.PROCUREMENT_SUBMITTED) {
+        return [{
+            icon: <FileUpIcon className={iconSize} />,
+            tooltipText: "Record Pre-Procurement Conference Decision",
+            className: "text-amber-600 dark:text-amber-400",
+            onClick: () => onOpenPreProcurementModal?.(procurement)
+        }];
+    }
+    return [];
+};
+
+const useDocumentUploadButtons = (procurement: ProcurementListItem, iconSize: string) => {
+    const { id, stage, current_status: status } = procurement;
+    const configs = [];
+
+    if (stage === Stage.PRE_PROCUREMENT_CONFERENCE && status === Status.PRE_PROCUREMENT_CONFERENCE_HELD) {
+        configs.push({
+            icon: <FileUpIcon className={iconSize} />,
+            tooltipText: "Upload Pre-Procurement Conference Documents",
+            className: "text-green-600 dark:text-green-400",
+            href: `/bac-secretariat/pre-procurement-conference-upload/${id}`
+        });
+    }
+
+    const canUploadBiddingDocuments = status === Status.PRE_PROCUREMENT_CONFERENCE_SKIPPED ||
+        status === Status.PRE_PROCUREMENT_CONFERENCE_COMPLETED;
+
+    if (stage === Stage.BIDDING_DOCUMENTS && canUploadBiddingDocuments) {
+        configs.push({
+            icon: <FileUpIcon className={iconSize} />,
+            tooltipText: "Upload Bidding Documents",
+            className: "text-amber-600 dark:text-amber-400",
+            href: `/bac-secretariat/bidding-documents-upload/${id}`
+        });
+    }
+
+    return configs;
+};
+
+const useBidProcessButtons = (procurement: ProcurementListItem, iconSize: string) => {
+    const { id, stage, current_status: status } = procurement;
+    const configs = [];
+
+    if (stage === Stage.BID_OPENING && status === Status.BIDDING_DOCUMENTS_PUBLISHED) {
+        configs.push({
+            icon: <FileUpIcon className={iconSize} />,
+            tooltipText: "Upload Bid Submission Documents",
+            className: "text-blue-600 dark:text-blue-400",
+            href: `/bac-secretariat/bid-submission-upload/${id}`
+        });
+    }
+
+    if (stage === Stage.BID_EVALUATION && status === Status.BIDS_OPENED) {
+        configs.push({
+            icon: <BarChart4Icon className={iconSize} />,
+            tooltipText: "Upload Bid Evaluation Documents",
+            className: "text-indigo-600 dark:text-indigo-400",
+            href: `/bac-secretariat/bid-evaluation-upload/${id}`
+        });
+    }
+
+    return configs;
+};
+
+const useMonitoringButtons = (procurement: ProcurementListItem, iconSize: string, onOpenMarkCompleteDialog?: (p: ProcurementListItem) => void) => {
+    const { stage, current_status: status } = procurement;
+    if (stage === Stage.MONITORING && status === Status.MONITORING) {
+        return [{
+            icon: <CheckIcon className={iconSize} />,
+            tooltipText: "Mark Procurement as Complete",
+            className: "text-green-600 dark:text-green-400",
+            onClick: () => onOpenMarkCompleteDialog?.(procurement)
+        }];
+    }
+    return [];
+};
+
 export const ActionButtons = ({
     procurement,
     variant = 'table',
     onOpenPreProcurementModal,
     onOpenMarkCompleteDialog,
 }: ActionButtonsProps) => {
-    const { id, stage, current_status: status } = procurement;
-    const iconSize = variant === 'table' ? 'h-4 w-4' : 'h-3.5 w-3.5';
-    const buttonSize = variant === 'table' ? 'h-8 w-8' : 'h-7 w-7';
+    const { id } = procurement;
+    const { iconSize, buttonSize } = useButtonSizes(variant);
+
+    const buttonConfigs = [
+        ...useInitialStageButtons(procurement, iconSize, onOpenPreProcurementModal),
+        ...useDocumentUploadButtons(procurement, iconSize),
+        ...useBidProcessButtons(procurement, iconSize),
+        ...useMonitoringButtons(procurement, iconSize, onOpenMarkCompleteDialog)
+    ];
 
     return (
         <div className="flex justify-end space-x-1">
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="sm" className={`${buttonSize} p-0 text-blue-600 dark:text-blue-400`}>
-                            <Link href={`procurements-list/${id}`}>
-                                <FileTextIcon className={iconSize} />
-                            </Link>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>View Details</TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-
-            {stage === Stage.PROCUREMENT_INITIATION && status === Status.PROCUREMENT_SUBMITTED && (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`${buttonSize} p-0 text-amber-600 dark:text-amber-400`}
-                                onClick={() => onOpenPreProcurementModal?.(procurement)}
-                            >
-                                <FileUpIcon className={iconSize} />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Record Pre-Procurement Conference Decision</TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
-
-            {stage === Stage.PRE_PROCUREMENT_CONFERENCE && status === Status.PRE_PROCUREMENT_CONFERENCE_HELD && (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" className={`${buttonSize} p-0 text-green-600 dark:text-green-400`}>
-                                <Link href={`/bac-secretariat/pre-procurement-conference-upload/${id}`}>
-                                    <FileUpIcon className={iconSize} />
-                                </Link>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Upload Pre-Procurement Conference Documents</TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
-
-            {(stage === Stage.BIDDING_DOCUMENTS && (status === Status.PRE_PROCUREMENT_CONFERENCE_SKIPPED || status === Status.PRE_PROCUREMENT_CONFERENCE_COMPLETED)) && (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" className={`${buttonSize} p-0 text-amber-600 dark:text-amber-400`}>
-                                <Link href={`/bac-secretariat/bidding-documents-upload/${id}`}>
-                                    <FileUpIcon className={iconSize} />
-                                </Link>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Upload Bidding Documents</TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
-
-            {stage === Stage.BID_OPENING && status === Status.BIDDING_DOCUMENTS_PUBLISHED && (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" className={`${buttonSize} p-0 text-blue-600 dark:text-blue-400`}>
-                                <Link href={`/bac-secretariat/bid-submission-upload/${id}`}>
-                                    <FileUpIcon className={iconSize} />
-                                </Link>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Upload Bid Submission Documents</TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
-
-            {stage === Stage.BID_EVALUATION && status === Status.BIDS_OPENED && (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" className={`${buttonSize} p-0 text-indigo-600 dark:text-indigo-400`}>
-                                <Link href={`/bac-secretariat/bid-evaluation-upload/${id}`}>
-                                    <BarChart4Icon className={iconSize} />
-                                </Link>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Upload Bid Evaluation Documents</TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
-
-            {stage === Stage.MONITORING && status === Status.MONITORING && (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`${buttonSize} p-0 text-green-600 dark:text-green-400`}
-                                onClick={() => onOpenMarkCompleteDialog?.(procurement)}
-                            >
-                                <CheckIcon className={iconSize} />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Mark Procurement as Complete</TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
-
-            {/* Add other conditional buttons as needed */}
+            <ActionButtonItem
+                icon={<FileTextIcon className={iconSize} />}
+                tooltipText="View Details"
+                href={`procurements-list/${id}`}
+                className="text-blue-600 dark:text-blue-400"
+                buttonSize={buttonSize}
+            />
+            {buttonConfigs.map((config, index) => (
+                <ActionButtonItem
+                    key={index}
+                    buttonSize={buttonSize}
+                    {...config}
+                />
+            ))}
         </div>
     );
 };

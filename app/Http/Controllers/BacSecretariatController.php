@@ -2,12 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Enums\StreamEnums;
-use App\Handlers\ProcurementViewHandler;
-use App\Services\MultichainService;
-use App\Services\StreamKeyService;
+use App\Services\BacSecretariatServices;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
@@ -15,17 +11,16 @@ use Inertia\Inertia;
 
 class BacSecretariatController extends BaseController
 {
-    private $multiChain;
+    private $services;
 
-    private $streamKeyService;
-
-    private $procurementHandler;
-
-    public function __construct(MultichainService $multiChain, StreamKeyService $streamKeyService, ProcurementViewHandler $procurementHandler)
+    public function __construct(BacSecretariatServices $services)
     {
-        $this->multiChain = $multiChain;
-        $this->streamKeyService = $streamKeyService;
-        $this->procurementHandler = $procurementHandler;
+        $this->services = $services;
+        $this->setupMiddleware();
+    }
+
+    private function setupMiddleware(): void
+    {
         $this->middleware('auth');
         $this->middleware('role:bac_secretariat');
     }
@@ -33,9 +28,7 @@ class BacSecretariatController extends BaseController
     public function index()
     {
         try {
-            $allStates = $this->multiChain->listStreamItems(StreamEnums::STATUS->value, true, 1000, -1000);
-
-            // Handle null response from multichain
+            $allStates = $this->services->getMultiChain()->listStreamItems(StreamEnums::STATUS->value, true, 1000, -1000);
             if ($allStates === null) {
                 Log::warning('Multichain returned null for stream items');
                 $allStates = [];
@@ -43,29 +36,11 @@ class BacSecretariatController extends BaseController
 
             $procurementsByKey = $this->getProcurementsByKey($allStates);
 
-            $recentProcurements = $this->getRecentProcurements($procurementsByKey);
-            $ongoingProjects = $procurementsByKey->filter(function ($item) {
-                return $item['phase'] !== 'Monitoring' ||
-                    ($item['phase'] === 'Monitoring' && $item['state'] !== 'Completed');
-            })->count();
-
-            $recentActivities = $this->getRecentActivities();
-            $priorityActions = $this->getPriorityActions($procurementsByKey);
-            $totalDocuments = $this->getTotalDocuments($procurementsByKey);
-            $completedBiddings = $this->countCompletedBiddings($procurementsByKey);
-
-            $stats = [
-                'ongoingProjects' => $ongoingProjects,
-                'pendingActions' => count($priorityActions),
-                'completedBiddings' => $completedBiddings,
-                'totalDocuments' => $totalDocuments,
-            ];
-
             return Inertia::render('bac-secretariat/dashboard', [
-                'recentProcurements' => $recentProcurements,
-                'recentActivities' => $recentActivities,
-                'priorityActions' => array_slice($priorityActions, 0, 3),
-                'stats' => $stats,
+                'recentProcurements' => $this->getRecentProcurements($procurementsByKey),
+                'recentActivities' => $this->getRecentActivities(),
+                'priorityActions' => array_slice($this->getPriorityActions($procurementsByKey), 0, 3),
+                'stats' => $this->getDashboardStats($procurementsByKey),
             ]);
 
         } catch (Exception $e) {
@@ -78,15 +53,38 @@ class BacSecretariatController extends BaseController
                 'recentProcurements' => [],
                 'recentActivities' => [],
                 'priorityActions' => [],
-                'stats' => [
-                    'ongoingProjects' => 0,
-                    'pendingActions' => 0,
-                    'completedBiddings' => 0,
-                    'totalDocuments' => 0,
-                ],
+                'stats' => $this->getEmptyStats(),
                 'error' => 'Failed to retrieve dashboard data: '.$e->getMessage(),
             ]);
         }
+    }
+
+    private function getDashboardStats($procurementsByKey): array 
+    {
+        return [
+            'ongoingProjects' => $this->countOngoingProjects($procurementsByKey),
+            'pendingActions' => count($this->getPriorityActions($procurementsByKey)),
+            'completedBiddings' => $this->countCompletedBiddings($procurementsByKey),
+            'totalDocuments' => $this->getTotalDocuments($procurementsByKey),
+        ];
+    }
+
+    private function getEmptyStats(): array
+    {
+        return [
+            'ongoingProjects' => 0,
+            'pendingActions' => 0,
+            'completedBiddings' => 0,
+            'totalDocuments' => 0,
+        ];
+    }
+
+    private function countOngoingProjects($procurementsByKey): int
+    {
+        return $procurementsByKey->filter(function ($item) {
+            return $item['stage'] !== 'Monitoring' ||
+                ($item['stage'] === 'Monitoring' && $item['status'] !== 'Completed');
+        })->count();
     }
 
     private function getProcurementsByKey($allStates)
@@ -99,7 +97,7 @@ class BacSecretariatController extends BaseController
                     'id' => $data['procurement_id'] ?? '',
                     'title' => $data['procurement_title'] ?? '',
                     'stage' => $data['stage'] ?? '',
-                    'state' => $data['current_state'] ?? '',
+                    'status' => $data['current_status'] ?? '',
                     'user_address' => $data['user_address'] ?? '',
                     'user' => \App\Models\User::where('blockchain_address', $data['user_address'] ?? '')->first()?->name ?? 'Unknown',
                     'timestamp' => $data['timestamp'] ?? '',
@@ -121,7 +119,7 @@ class BacSecretariatController extends BaseController
                     'id' => $item['id'],
                     'title' => $item['title'],
                     'stage' => $item['stage'],
-                    'status' => $item['status'],
+                    'status' => $item['status']
                 ];
             })
             ->toArray();
@@ -129,12 +127,15 @@ class BacSecretariatController extends BaseController
 
     private function getRecentActivities()
     {
-        $allEvents = $this->multiChain->listStreamItems(StreamEnums::EVENTS->value, true, 300, -300);
+        $allEvents = $this->services->getMultiChain()->listStreamItems(StreamEnums::EVENTS->value, true, 300, -300);
 
         return collect($allEvents)
             ->map(function ($item) {
                 $data = $item['data'];
-                $actionLabel = $this->formatActionLabel($data['event_type'] ?? '', $data['details'] ?? '');
+                $actionLabel = $this->services->getEventTypeLabelMapper()->getLabel(
+                    $data['event_type'] ?? '',
+                    $data['details'] ?? ''
+                );
 
                 return [
                     'id' => $data['procurement_id'] ?? '',
@@ -149,7 +150,7 @@ class BacSecretariatController extends BaseController
                 ];
             })
             ->filter(function ($item) {
-                return ! empty($item['id']) && ! empty($item['title']);
+                return !empty($item['id']) && !empty($item['title']);
             })
             ->sortByDesc('timestamp')
             ->take(8)
@@ -162,122 +163,15 @@ class BacSecretariatController extends BaseController
         $priorityActions = [];
 
         foreach ($procurementsByKey as $procurement) {
-            $id = $procurement['id'];
-            $title = $procurement['title'];
-            $stage = $procurement['phase'];
-            $status = $procurement['state'];
+            $action = $this->services->getStageTransitionService()->getPriorityAction(
+                $procurement['stage'],
+                $procurement['status'],
+                $procurement['id'],
+                $procurement['title']
+            );
 
-            if (
-                $stage === StageEnums::PROCUREMENT_INITIATION->getDisplayName() &&
-                $status === StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName()
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Continue Procurement Processing',
-                    'route' => '/bac-secretariat/procurements-list',
-                ];
-            } elseif (
-                $stage === StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName() &&
-                $status === StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->getDisplayName()
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Upload Pre-Procurement Conference Documents',
-                    'route' => "/bac-secretariat/pre-procurement-upload/{$id}",
-                ];
-            } elseif (
-                $stage === StageEnums::BIDDING_DOCUMENTS->getDisplayName() &&
-                ($status === StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED->getDisplayName() ||
-                    $status === StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED->getDisplayName())
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Upload Bidding Documents',
-                    'route' => "/bac-secretariat/bid-invitation-upload/{$id}",
-                ];
-            } elseif (
-                $stage === StageEnums::BID_OPENING->getDisplayName() &&
-                $status === StatusEnums::BIDDING_DOCUMENTS_PUBLISHED->getDisplayName()
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Upload Bid Opening Documents',
-                    'route' => "/bac-secretariat/bid-submission-upload/{$id}",
-                ];
-            } elseif (
-                $stage === StageEnums::BID_EVALUATION->getDisplayName() &&
-                $status === StatusEnums::BIDS_OPENED->getDisplayName()
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Upload Bid Evaluation Documents',
-                    'route' => "/bac-secretariat/bid-evaluation-upload/{$id}",
-                ];
-            } elseif (
-                $stage === StageEnums::POST_QUALIFICATION->getDisplayName() &&
-                $status === StatusEnums::BIDS_EVALUATED->getDisplayName()
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Upload Post-Qualification Documents',
-                    'route' => "/bac-secretariat/post-qualification-upload/{$id}",
-                ];
-            } elseif (
-                $stage === StageEnums::BAC_RESOLUTION->getDisplayName() &&
-                $status === StatusEnums::POST_QUALIFICATION_VERIFIED->getDisplayName()
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Record BAC Resolution Documents',
-                    'route' => "/bac-secretariat/bac-resolution-upload/{$id}",
-                ];
-            } elseif (
-                $stage === StageEnums::NOTICE_OF_AWARD->getDisplayName() &&
-                $status === StatusEnums::RESOLUTION_RECORDED->getDisplayName()
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Upload Notice of Award Documents',
-                    'route' => "/bac-secretariat/noa-upload/{$id}",
-                ];
-            } elseif (
-                $stage === StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName() &&
-                $status === StatusEnums::AWARDED->getDisplayName()
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Upload Performance Bond, Contract, and PO Documents',
-                    'route' => "/bac-secretariat/performance-bond-upload/{$id}",
-                ];
-            } elseif (
-                $stage === StageEnums::NOTICE_TO_PROCEED->getDisplayName() &&
-                $status === StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED->getDisplayName()
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Upload Notice to Proceed Documents',
-                    'route' => "/bac-secretariat/ntp-upload/{$id}",
-                ];
-            } elseif (
-                $stage === StageEnums::MONITORING->getDisplayName() &&
-                $status !== StatusEnums::COMPLETED->getDisplayName()
-            ) {
-                $priorityActions[] = [
-                    'id' => $id,
-                    'title' => $title,
-                    'action' => 'Mark Procurement as Complete',
-                    'route' => '/bac-secretariat/procurements-list',
-                ];
+            if ($action !== null) {
+                $priorityActions[] = $action;
             }
         }
 
@@ -288,8 +182,8 @@ class BacSecretariatController extends BaseController
     {
         $totalDocuments = 0;
         foreach ($procurementsByKey as $procurement) {
-            $streamKey = $this->streamKeyService->generate($procurement['id'], $procurement['title']);
-            $documents = $this->multiChain->listStreamKeyItems(StreamEnums::DOCUMENTS->value, $streamKey);
+            $streamKey = $this->services->getStreamKeyService()->generate($procurement['id'], $procurement['title']);
+            $documents = $this->services->getMultiChain()->listStreamKeyItems(StreamEnums::DOCUMENTS->value, $streamKey);
             $totalDocuments += count($documents);
         }
 
@@ -299,7 +193,7 @@ class BacSecretariatController extends BaseController
     private function countCompletedBiddings($procurementsByKey)
     {
         return $procurementsByKey->filter(function ($item) {
-            return in_array($item['phase'], [
+            return in_array($item['stage'], [
                 'Notice Of Award',
                 'Performance Bond',
                 'Contract And PO',
@@ -310,43 +204,10 @@ class BacSecretariatController extends BaseController
         })->count();
     }
 
-    /**
-     * Convert raw event types to more readable action labels
-     *
-     * @param  string  $eventType  The raw event type
-     * @param  string  $details  Additional details about the event
-     * @return string Formatted action label
-     */
-    private function formatActionLabel(string $eventType, string $details): string
-    {
-        switch (strtolower($eventType)) {
-            case 'document_upload':
-                return 'Uploaded Documents';
-            case 'phase_transition':
-                return 'Phase Transition';
-            case 'decision':
-                if (strpos(strtolower($details), 'pre-procurement') !== false) {
-                    return 'Pre-Procurement Decision';
-                }
-
-                return 'Decision Made';
-            case 'publication':
-                return 'Published Documents';
-            case 'procurement completed':
-                return 'Completed Procurement';
-            default:
-                // Try to format the raw event type for better display
-                $words = explode('_', $eventType);
-                $formatted = array_map('ucfirst', $words);
-
-                return implode(' ', $formatted);
-        }
-    }
-
     public function indexProcurementsList()
     {
         try {
-            $procurements = $this->procurementHandler->getProcurementsList();
+            $procurements = $this->services->getProcurementHandler()->getProcurementsList();
 
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => $procurements,
@@ -367,7 +228,7 @@ class BacSecretariatController extends BaseController
     public function showProcurement($procurementId)
     {
         try {
-            $procurement = $this->procurementHandler->getProcurementDetails($procurementId);
+            $procurement = $this->services->getProcurementHandler()->getProcurementDetails($procurementId);
 
             if (! $procurement) {
                 return Inertia::render('procurements/show', ['message' => 'Procurement not found']);

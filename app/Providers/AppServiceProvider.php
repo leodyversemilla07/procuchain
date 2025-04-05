@@ -24,159 +24,87 @@ use App\Services\BlockchainService;
 use App\Services\FileStorageService;
 use App\Services\NotificationService;
 use App\Services\StreamKeyService;
+use App\Services\MultichainService;
+use App\Services\ProcurementStageTransitionService;
+use App\Services\BacSecretariatServices;
+use App\Services\EventTypeLabelMapper;
+use App\Services\ProcurementDataTransformerService;
+use App\Handlers\ProcurementViewHandler;
 use Barryvdh\DomPDF\ServiceProvider as DomPDFServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         $this->app->register(DomPDFServiceProvider::class);
+        $this->registerServices();
+        $this->registerHandlers();
+    }
 
+    private function registerServices(): void 
+    {
+        $this->app->singleton(MultichainService::class);
+        $this->app->singleton(BlockchainService::class);
         $this->app->singleton(StreamKeyService::class);
-
-        $this->app->bind(ProcurementInitiationHandler::class, function ($app) {
-            return new ProcurementInitiationHandler(
+        $this->app->singleton(ProcurementStageTransitionService::class);
+        $this->app->singleton(EventTypeLabelMapper::class);
+        $this->app->singleton(ProcurementDataTransformerService::class);
+        
+        $this->app->singleton(ProcurementViewHandler::class, function ($app) {
+            return new ProcurementViewHandler(
                 $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
+                $app->make(ProcurementDataTransformerService::class)
             );
         });
 
-        $this->app->bind(PreProcurementConferenceDecisionHandler::class, function ($app) {
-            return new PreProcurementConferenceDecisionHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
+        $this->app->singleton(BacSecretariatServices::class, function ($app) {
+            $services = new BacSecretariatServices(
+                $app->make(MultichainService::class),
+                $app->make(StreamKeyService::class),
+                $app->make(ProcurementViewHandler::class)
             );
-        });
 
-        $this->app->bind(PreProcurementConferenceDocumentsHandler::class, function ($app) {
-            return new PreProcurementConferenceDocumentsHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
+            $services->setStageTransitionService($app->make(ProcurementStageTransitionService::class))
+                    ->setEventTypeLabelMapper($app->make(EventTypeLabelMapper::class));
 
-        $this->app->bind(BiddingDocumentsHandler::class, function ($app) {
-            return new BiddingDocumentsHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
+            return $services;
         });
+    }
 
-        $this->app->bind(PreBidConferenceDecisionHandler::class, function ($app) {
-            return new PreBidConferenceDecisionHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
+    private function registerHandlers(): void
+    {
+        $handlers = [
+            ProcurementInitiationHandler::class,
+            PreProcurementConferenceDecisionHandler::class,
+            PreProcurementConferenceDocumentsHandler::class,
+            BiddingDocumentsHandler::class,
+            PreBidConferenceDecisionHandler::class,
+            PreBidConferenceDocumentsHandler::class,
+            SupplementalBidBulletinDecisionHandler::class,
+            SupplementalBidBulletinDocumentsHandler::class,
+            BidOpeningHandler::class,
+            BidEvaluationHandler::class,
+            PostQualificationHandler::class,
+            BacResolutionHandler::class,
+            NoticeOfAwardHandler::class,
+            PerformanceBondContractAndPoHandler::class,
+            NoticeToProceedHandler::class,
+            MonitoringHandler::class,
+            CompletionProcessHandler::class,
+            CompletionDocumentsHandler::class,
+        ];
 
-        $this->app->bind(PreBidConferenceDocumentsHandler::class, function ($app) {
-            return new PreBidConferenceDocumentsHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
+        foreach ($handlers as $handler) {
+            $this->registerHandler($handler);
+        }
+    }
 
-        $this->app->bind(SupplementalBidBulletinDecisionHandler::class, function ($app) {
-            return new SupplementalBidBulletinDecisionHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(SupplementalBidBulletinDocumentsHandler::class, function ($app) {
-            return new SupplementalBidBulletinDocumentsHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(BidOpeningHandler::class, function ($app) {
-            return new BidOpeningHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(BidEvaluationHandler::class, function ($app) {
-            return new BidEvaluationHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(PostQualificationHandler::class, function ($app) {
-            return new PostQualificationHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(BacResolutionHandler::class, function ($app) {
-            return new BacResolutionHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(NoticeOfAwardHandler::class, function ($app) {
-            return new NoticeOfAwardHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(PerformanceBondContractAndPoHandler::class, function ($app) {
-            return new PerformanceBondContractAndPoHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(NoticeToProceedHandler::class, function ($app) {
-            return new NoticeToProceedHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(MonitoringHandler::class, function ($app) {
-            return new MonitoringHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(CompletionProcessHandler::class, function ($app) {
-            return new CompletionProcessHandler(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
-
-        $this->app->bind(CompletionDocumentsHandler::class, function ($app) {
-            return new CompletionDocumentsHandler(
+    private function registerHandler(string $handlerClass): void
+    {
+        $this->app->bind($handlerClass, function ($app) use ($handlerClass) {
+            return new $handlerClass(
                 $app->make(BlockchainService::class),
                 $app->make(FileStorageService::class),
                 $app->make(NotificationService::class)
@@ -184,9 +112,6 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         if (config('app.env') === 'production') {
