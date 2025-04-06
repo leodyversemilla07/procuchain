@@ -21,7 +21,7 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
         } catch (Exception $e) {
             Log::error('Error in UploadPreProcurementDocumentsHandler', ['error' => $e->getMessage()]);
 
-            return ['success' => false, 'message' => 'Failed to upload '.StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName().' documents: '.$e->getMessage()];
+            return ['success' => false, 'message' => 'Failed to upload ' . StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName() . ' documents: ' . $e->getMessage()];
         }
     }
 
@@ -32,13 +32,13 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
             'procurementTitle' => $request->input('procurement_title'),
             'minutesFile' => $request->file('minutes_file'),
             'attendanceFile' => $request->file('attendance_file'),
-            'meetingDate' => $request->input('meeting_date'),
+            'meetingDate' => date('Y-m-d', strtotime($request->input('meeting_date'))),
             'participants' => $request->input('participants'),
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::PRE_PROCUREMENT_CONFERENCE,
             'nextStage' => StageEnums::BIDDING_DOCUMENTS,
-            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
+            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED
         ];
     }
 
@@ -71,6 +71,7 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
 
     private function processDocuments(array $data, array $metadataArray): array
     {
+        // First publish documents
         $this->blockchainService->publishDocuments(
             $data['procurementId'],
             $data['procurementTitle'],
@@ -80,15 +81,16 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
             $data['userAddress']
         );
 
+        // Handle stage transition
         $this->blockchainService->handleStageTransition(
             $data['procurementId'],
             $data['procurementTitle'],
             $data['status']->getDisplayName(),
-            $data['status']->getDisplayName(),
+            StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED->getDisplayName(),
             $data['currentStage']->getDisplayName(),
             $data['nextStage']->getDisplayName(),
             $data['userAddress'],
-            'Proceeding to '.$data['nextStage']->getDisplayName().' after '.$data['currentStage']->getDisplayName()
+            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after completing ' . $data['currentStage']->getDisplayName()
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -105,7 +107,7 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
+            'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
         ];
     }
 }

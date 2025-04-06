@@ -1,4 +1,4 @@
-## Phase 1: Purchase Request (PR) Initiation
+## Stage 1: Procurement Initiation
 
 ### Upload & Metadata Input:
 
@@ -11,7 +11,7 @@ The user uploads scanned copies of the signed Purchase Request documents and man
 
 ---
 
-## Phase 2: Pre-Procurement Conference
+## Stage 2: Pre-Procurement Conference
 
 (The user will be prompted with yes or no for the question of whether a pre-procurement conference is required. If yes, proceed with the pre-conference; if no, proceed to bid invitation without doing a pre-conference.)
 
@@ -26,7 +26,7 @@ The user uploads scanned copies of conference documents (e.g., meeting minutes, 
 
 ---
 
-## Phase 3: Bid Invitation Publication
+## Stage 3: Bidding Documents
 
 ### Upload & Metadata Input:
 
@@ -40,7 +40,7 @@ The user uploads the scanned copy of the signed bid invitation and enters metada
 
 ---
 
-## Phase 4: Bid Submission and Bid Opening
+## Stage 4: Pre-Bid Conference
 
 ### Sealed Bid Submission (Record Only):
 
@@ -57,7 +57,7 @@ When the bid envelopes are opened, the user uploads scanned copies of the bid do
 
 ---
 
-## Phase 5: Bid Evaluation and Abstract Preparation
+## Stage 5: Supplemental Bid Bulletin
 
 ### Upload & Metadata Input:
 
@@ -70,7 +70,7 @@ The user uploads scanned copies of the evaluation reports and abstract of bids, 
 
 ---
 
-## Phase 6: Post-Qualification Process
+## Stage 6: Bid Opening
 
 ### Upload & Metadata Input:
 
@@ -83,7 +83,7 @@ The user uploads scanned copies of additional supporting documents (e.g., income
 
 ---
 
-## Phase 7: BAC Resolution and HOPE Approval
+## Stage 7: Bid Evaluation
 
 ### Upload & Metadata Input:
 
@@ -96,7 +96,7 @@ The user uploads the scanned copy of the signed BAC resolution (and any HOPE app
 
 ---
 
-## Phase 8: Notice of Award (NOA) Issuance
+## Stage 8: Post-Qualification Process
 
 ### Upload & Metadata Input:
 
@@ -110,7 +110,7 @@ The user uploads the scanned copy of the signed Notice of Award and manually ent
 
 ---
 
-## Phase 9: Performance Bond Submission
+## Stage 9: BAC Resolution
 
 ### Upload & Metadata Input:
 
@@ -123,7 +123,7 @@ The user uploads the scanned copy of the performance bond and inputs metadata (e
 
 ---
 
-## Phase 10: Contract Signing and Purchase Order (PO) Issuance
+## Stage 10: Notice of Award
 
 ### Upload & Metadata Input:
 
@@ -136,7 +136,7 @@ The user uploads scanned copies of the signed contract and Purchase Order, manua
 
 ---
 
-## Phase 11: Issuance of Notice to Proceed (NTP)
+## Stage 11: Performance Bond, Contract and PO
 
 ### Upload & Metadata Input:
 
@@ -150,7 +150,7 @@ The user uploads the scanned copy of the signed Notice to Proceed and manually e
 
 ---
 
-## Phase 12: Ongoing Monitoring, Audit, and Compliance
+## Stage 12: Notice to Proceed
 
 ### Dashboard & Real-Time Tracking:
 
@@ -164,6 +164,17 @@ Sends alerts and reminders based on stage-specific deadlines and requirements.
 
 -   Every key action—upload, metadata entry, and cryptographic hash generation—is recorded on the blockchain to ensure a tamper-evident audit trail.
 -   Detailed reports (capturing timelines, status updates, evaluator remarks, and any delay justifications) are generated to support compliance audits and continuous process improvement.
+
+---
+
+## Stage 13: Monitoring
+
+### Upload & Metadata Input:
+The user uploads the final completion documents including completion certificates and enters metadata (e.g., completion date, final amount, stage identifier).
+
+### System Actions:
+- **Blockchain Logging:** Records final cryptographic hashes on the blockchain.
+- **Status Update:** Sets the stage to "Completed" and closes the procurement process.
 
 ---
 

@@ -24,11 +24,11 @@ class PreProcurementConferenceDocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id' => 'required|string|max:50|exists:procurements,id',
+            'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
             'minutes_file' => 'required|file|mimes:pdf|max:10240',
             'attendance_file' => 'required|file|mimes:pdf|max:10240',
-            'meeting_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'meeting_date' => 'required|date',
             'participants' => 'required|string|min:1|max:1000',
         ];
     }

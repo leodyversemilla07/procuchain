@@ -31,10 +31,14 @@ class BiddingDocumentsHandler extends BaseStageHandler
             'procurementId' => $request->input('procurement_id'),
             'procurementTitle' => $request->input('procurement_title'),
             'biddingDocumentsFile' => $request->file('bidding_documents_file'),
+            'issuanceDate' => $request->input('issuance_date'),
+            'validityPeriodStart' => $request->input('validity_period_start'),
+            'validityPeriodEnd' => $request->input('validity_period_end'),
             'metadata' => $request->input('metadata', []),
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
-            'stage' => StageEnums::BIDDING_DOCUMENTS,
+            'currentStage' => StageEnums::BIDDING_DOCUMENTS,
+            'nextStage' => StageEnums::PRE_BID_CONFERENCE,
             'status' => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
         ];
     }
@@ -44,12 +48,21 @@ class BiddingDocumentsHandler extends BaseStageHandler
         $metadataArray = [];
 
         if ($data['biddingDocumentsFile']) {
+            $baseMetadata = [
+                'document_type' => $data['currentStage']->getDisplayName(),
+                'issuance_date' => $data['issuanceDate'],
+                'validity_period' => [
+                    'start_date' => $data['validityPeriodStart'],
+                    'end_date' => $data['validityPeriodEnd']
+                ]
+            ];
+            
             $metadataArray = $this->uploadAndPrepareMetadata(
                 [$data['biddingDocumentsFile']],
-                [$data['metadata'] + ['document_type' => $data['stage']->getDisplayName()]],
+                [$data['metadata'] + $baseMetadata],
                 $data['procurementId'],
                 $data['procurementTitle'],
-                $data['stage']->getStoragePathSegment()
+                $data['currentStage']->getStoragePathSegment()
             );
         }
 
@@ -61,25 +74,39 @@ class BiddingDocumentsHandler extends BaseStageHandler
         $this->blockchainService->publishDocuments(
             $data['procurementId'],
             $data['procurementTitle'],
-            $data['stage']->getDisplayName(),
+            $data['currentStage']->getDisplayName(),
             $data['status']->getDisplayName(),
             $metadataArray,
             $data['userAddress']
         );
 
+        // Handle stage transition
+        $this->blockchainService->handleStageTransition(
+            $data['procurementId'],
+            $data['procurementTitle'],
+            $data['status']->getDisplayName(),
+            $data['status']->getDisplayName(),
+            $data['currentStage']->getDisplayName(),
+            $data['nextStage']->getDisplayName(),
+            $data['userAddress'],
+            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after publishing bidding documents'
+        );
+
         $this->notificationService->notifyStageUpdate(
             $data['procurementId'],
             $data['procurementTitle'],
-            $data['stage']->getDisplayName(),
+            $data['currentStage']->getDisplayName(),
             $data['status']->getDisplayName(),
             $data['timestamp'],
             count($metadataArray),
-            'published'
+            'published',
+            true,
+            $data['nextStage']->getDisplayName()
         );
 
         return [
             'success' => true,
-            'message' => $data['stage']->getDisplayName().' published successfully',
+            'message' => $data['currentStage']->getDisplayName() . ' published successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
         ];
     }
 }

@@ -78,7 +78,7 @@ export function DataTablePagination<TData>({
 
     return (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-sidebar-border/70 dark:border-sidebar-border p-3 rounded-md border shadow-sm">
-            <div className="text-sm text-gray-600 dark:text-gray-300 order-2 sm:order-1">
+            <div className="text-sm text-gray-600 dark:text-gray-300 w-full sm:w-auto text-center sm:text-left">
                 {currentEntries > 0 ? (
                     <>
                         Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of <span className="font-medium">{currentEntries}</span> entries
@@ -88,9 +88,9 @@ export function DataTablePagination<TData>({
                 )}
             </div>
 
-            <div className="flex items-center space-x-2 order-1 sm:order-2">
+            <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
                 {/* Rows per page selector */}
-                <div className="hidden sm:flex items-center space-x-2 mr-4">
+                <div className="flex items-center space-x-2 order-2 sm:order-1">
                     <span className="text-sm text-gray-600 whitespace-nowrap dark:text-gray-300">Rows per page</span>
                     <Select
                         value={`${pageSize}`}
@@ -101,7 +101,7 @@ export function DataTablePagination<TData>({
                         <SelectTrigger className="h-8 w-[70px] border-sidebar-border/70 dark:border-sidebar-border focus:ring-primary focus:border-primary dark:focus:ring-primary dark:focus:border-primary">
                             <SelectValue placeholder={pageSize} />
                         </SelectTrigger>
-                        <SelectContent className="border-sidebar-border/70 dark:border-sidebar-border shadow-lg">
+                        <SelectContent className="border-sidebar-border/70 dark:border-sidebar-border shadow-lg min-w-[70px]">
                             {[10, 25, 50, 100, 250].map((size) => (
                                 <SelectItem
                                     key={size}
@@ -124,7 +124,7 @@ export function DataTablePagination<TData>({
 
                 {/* Pagination controls */}
                 {currentEntries > 0 && (
-                    <div className="flex items-center">
+                    <div className="flex items-center order-1 sm:order-2">
                         <Button
                             variant="outline"
                             size="icon"
@@ -149,7 +149,6 @@ export function DataTablePagination<TData>({
                         <div className="hidden sm:flex mx-2 items-center">
                             {pageNumbers.map((pageNumber, i) => {
                                 if (pageNumber < 0) {
-                                    // Render ellipsis
                                     return (
                                         <span key={`ellipsis-${i}`} className="px-2 text-gray-400 dark:text-gray-500">
                                             …

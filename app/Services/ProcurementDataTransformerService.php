@@ -5,14 +5,19 @@ namespace App\Services;
 use App\Enums\StreamEnums;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use App\Services\Multichain\StreamQueryOptions;
 
 class ProcurementDataTransformerService
 {
     private StreamKeyService $streamKeyService;
+    private BlockchainService $blockchainService;
 
-    public function __construct(StreamKeyService $streamKeyService)
-    {
+    public function __construct(
+        StreamKeyService $streamKeyService,
+        BlockchainService $blockchainService
+    ) {
         $this->streamKeyService = $streamKeyService;
+        $this->blockchainService = $blockchainService;
     }
 
     public function transformProcurementsList($allStatus): array
@@ -34,9 +39,31 @@ class ProcurementDataTransformerService
             $data['procurement_title'] ?? ''
         );
 
-        $documentCount = app(BlockchainService::class)
-            ->getClient()
-            ->listStreamKeyItems(StreamEnums::DOCUMENTS->value, $streamKey);
+        $documentsOptions = StreamQueryOptions::forKey(
+            StreamEnums::DOCUMENTS->value, 
+            $streamKey
+        );
+        
+        $documents = $this->blockchainService->getClient()
+            ->listStreamKeyItems($documentsOptions);
+
+        // Filter valid documents and deduplicate by document type
+        $uniqueDocuments = collect($documents)
+            ->filter(function ($doc) {
+                $data = $doc['data'];
+                return isset($data['document_type']) && 
+                       isset($data['file_key']) && 
+                       !empty($data['file_key']);
+            })
+            ->groupBy(function ($doc) {
+                return $doc['data']['document_type'] ?? '';
+            })
+            ->map(function ($group) {
+                // Keep only the latest version of each document type
+                return $group->sortByDesc(function ($doc) {
+                    return $doc['data']['timestamp'] ?? '';
+                })->first();
+            });
 
         return [
             'id' => $data['procurement_id'] ?? '',
@@ -46,7 +73,7 @@ class ProcurementDataTransformerService
             'user_address' => $data['user_address'] ?? '',
             'timestamp' => $data['timestamp'] ?? '',
             'last_updated' => date('Y-m-d', strtotime($data['timestamp'] ?? 'now')),
-            'document_count' => count($documentCount),
+            'document_count' => $uniqueDocuments->count(),
         ];
     }
 
@@ -80,8 +107,11 @@ class ProcurementDataTransformerService
         $latestStatus = $procurementStatus->first();
         $streamKey = $this->streamKeyService->generate($procurementId, $procurementTitle);
 
-        $documents = $blockchainService->getClient()->listStreamKeyItems(StreamEnums::DOCUMENTS->value, $streamKey, 1000);
-        $events = $blockchainService->getClient()->listStreamKeyItems(StreamEnums::EVENTS->value, $streamKey);
+        $documentsOptions = StreamQueryOptions::forKey(StreamEnums::DOCUMENTS->value, $streamKey, false, 1000);
+        $documents = $this->blockchainService->getClient()->listStreamKeyItems($documentsOptions);
+
+        $eventsOptions = StreamQueryOptions::forKey(StreamEnums::EVENTS->value, $streamKey);
+        $events = $this->blockchainService->getClient()->listStreamKeyItems($eventsOptions);
 
         $parsedDocuments = $this->parseDocuments($documents);
         $parsedEvents = $this->parseEvents($events);
@@ -157,5 +187,29 @@ class ProcurementDataTransformerService
                 'formatted_date' => date('M d, Y h:i A', strtotime($status['timestamp'])),
             ];
         })->values()->toArray();
+    }
+
+    public function transform($id, $title)
+    {
+        $streamKey = $this->streamKeyService->generate($id, $title);
+        
+        $documentsOptions = StreamQueryOptions::forKey(StreamEnums::DOCUMENTS->value, $streamKey);
+        $documents = $this->blockchainService->getClient()
+            ->listStreamKeyItems($documentsOptions);
+
+        // Additional transformation logic can be added here
+    }
+
+    public function getFormattedProcurementData($id, $title)
+    {
+        $streamKey = $this->streamKeyService->generate($id, $title);
+        
+        $documentsOptions = StreamQueryOptions::forKey(StreamEnums::DOCUMENTS->value, $streamKey, false, 1000);
+        $documents = $this->blockchainService->getClient()->listStreamKeyItems($documentsOptions);
+        
+        $eventsOptions = StreamQueryOptions::forKey(StreamEnums::EVENTS->value, $streamKey);
+        $events = $this->blockchainService->getClient()->listStreamKeyItems($eventsOptions);
+
+        // Additional formatting logic can be added here
     }
 }

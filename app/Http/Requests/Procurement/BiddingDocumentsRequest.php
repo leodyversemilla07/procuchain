@@ -27,7 +27,9 @@ class BiddingDocumentsRequest extends FormRequest
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
             'bidding_documents_file' => 'required|file|mimes:pdf|max:10240',
-            'metadata' => 'sometimes|array',
+            'issuance_date' => 'required|date',
+            'validity_period_start' => 'required|date',
+            'validity_period_end' => 'required|date|after:validity_period_start',
         ];
     }
 }

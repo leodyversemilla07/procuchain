@@ -67,6 +67,7 @@ class ProcurementStageTransitionService
             $this->getInitiationAction(),
             $this->getPreProcurementAction(),
             $this->getBiddingDocumentsAction(),
+            $this->getPreBidConferenceAction(),
             $this->getBidOpeningAction(),
             $this->getBidEvaluationAction(),
             $this->getPostQualificationAction(),
@@ -108,6 +109,16 @@ class ProcurementStageTransitionService
             ],
             'action' => 'Upload Bidding Documents',
             'routeTemplate' => '/bac-secretariat/bid-invitation-upload/%s',
+        ];
+    }
+
+    private function getPreBidConferenceAction(): array
+    {
+        return [
+            'stage' => StageEnums::PRE_BID_CONFERENCE->getDisplayName(),
+            'status' => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED->getDisplayName(),
+            'action' => 'Upload Pre-Bid Conference Documents',
+            'routeTemplate' => '/bac-secretariat/pre-bid-conference-upload/%s',
         ];
     }
 

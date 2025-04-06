@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Services\BacSecretariatServices;
+use App\Services\Multichain\StreamQueryOptions;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
@@ -28,7 +29,14 @@ class BacSecretariatController extends BaseController
     public function index()
     {
         try {
-            $allStates = $this->services->getMultiChain()->listStreamItems(StreamEnums::STATUS->value, true, 1000, -1000);
+            $statusOptions = new StreamQueryOptions(
+                StreamEnums::STATUS->value,
+                true,
+                1000,
+                -1000
+            );
+
+            $allStates = $this->services->getMultiChain()->listStreamItems($statusOptions);
             if ($allStates === null) {
                 Log::warning('Multichain returned null for stream items');
                 $allStates = [];
@@ -54,12 +62,12 @@ class BacSecretariatController extends BaseController
                 'recentActivities' => [],
                 'priorityActions' => [],
                 'stats' => $this->getEmptyStats(),
-                'error' => 'Failed to retrieve dashboard data: '.$e->getMessage(),
+                'error' => 'Failed to retrieve dashboard data: ' . $e->getMessage(),
             ]);
         }
     }
 
-    private function getDashboardStats($procurementsByKey): array 
+    private function getDashboardStats($procurementsByKey): array
     {
         return [
             'ongoingProjects' => $this->countOngoingProjects($procurementsByKey),
@@ -127,7 +135,14 @@ class BacSecretariatController extends BaseController
 
     private function getRecentActivities()
     {
-        $allEvents = $this->services->getMultiChain()->listStreamItems(StreamEnums::EVENTS->value, true, 300, -300);
+        $eventsOptions = new StreamQueryOptions(
+            StreamEnums::EVENTS->value,
+            true,
+            300,
+            -300
+        );
+
+        $allEvents = $this->services->getMultiChain()->listStreamItems($eventsOptions);
 
         return collect($allEvents)
             ->map(function ($item) {
@@ -183,7 +198,11 @@ class BacSecretariatController extends BaseController
         $totalDocuments = 0;
         foreach ($procurementsByKey as $procurement) {
             $streamKey = $this->services->getStreamKeyService()->generate($procurement['id'], $procurement['title']);
-            $documents = $this->services->getMultiChain()->listStreamKeyItems(StreamEnums::DOCUMENTS->value, $streamKey);
+            $documentsOptions = StreamQueryOptions::forKey(
+                StreamEnums::DOCUMENTS->value,
+                $streamKey
+            );
+            $documents = $this->services->getMultiChain()->listStreamKeyItems($documentsOptions);
             $totalDocuments += count($documents);
         }
 
@@ -208,7 +227,7 @@ class BacSecretariatController extends BaseController
     {
         try {
             $procurements = $this->services->getProcurementHandler()->getProcurementsList();
-
+            
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => $procurements,
             ]);
@@ -220,7 +239,7 @@ class BacSecretariatController extends BaseController
 
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => [],
-                'error' => 'Failed to retrieve procurements: '.$e->getMessage(),
+                'error' => 'Failed to retrieve procurements: ' . $e->getMessage(),
             ]);
         }
     }
@@ -230,7 +249,7 @@ class BacSecretariatController extends BaseController
         try {
             $procurement = $this->services->getProcurementHandler()->getProcurementDetails($procurementId);
 
-            if (! $procurement) {
+            if (!$procurement) {
                 return Inertia::render('procurements/show', ['message' => 'Procurement not found']);
             }
 
@@ -247,7 +266,7 @@ class BacSecretariatController extends BaseController
             ]);
 
             return Inertia::render('procurements/show', [
-                'error' => 'Failed to retrieve procurement: '.$e->getMessage(),
+                'error' => 'Failed to retrieve procurement: ' . $e->getMessage(),
             ]);
         }
     }

@@ -89,36 +89,66 @@ class PreProcurementConferenceDecisionHandler extends BaseStageHandler
 
     private function handleConferenceSkipped(array $data): array
     {
-        $initialStatus = StatusEnums::PROCUREMENT_SUBMITTED;
-        $status = StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED;
+        try {
+            $status = StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED;
 
-        $this->blockchainService->handleStageTransition(
-            $data['procurementId'],
-            $data['procurementTitle'],
-            $initialStatus->getDisplayName(),
-            $status->getDisplayName(),
-            $data['initialStage']->getDisplayName(),
-            $data['nextStage']->getDisplayName(),
-            $data['userAddress'],
-            'Pre-procurement conference skipped'
-        );
+            // Log the attempt
+            Log::info('Attempting to skip pre-procurement conference', [
+                'procurement_id' => $data['procurementId'],
+                'procurement_title' => $data['procurementTitle']
+            ]);
 
-        $this->notificationService->notifyStageUpdate(
-            $data['procurementId'],
-            $data['procurementTitle'],
-            $data['currentStage']->getDisplayName(),
-            $status->getDisplayName(),
-            $data['timestamp'],
-            0,
-            'skipped',
-            true,
-            $data['nextStage']->getDisplayName()
-        );
+            $this->blockchainService->updateStatus(
+                $data['procurementId'],
+                $data['procurementTitle'],
+                $status->getDisplayName(),
+                $data['nextStage']->getDisplayName(),
+                $data['userAddress'],
+                $data['timestamp']
+            );
 
-        return [
-            'success' => true,
-            'message' => $status->getDisplayName().
-                '. Proceeding to '.$data['nextStage']->getDisplayName().'.',
-        ];
+            $this->blockchainService->logEvent(
+                $data['procurementId'],
+                $data['procurementTitle'],
+                $data['currentStage']->getDisplayName(),
+                'Pre-procurement conference skipped - proceeding to ' . $data['nextStage']->getDisplayName(),
+                0,
+                $data['userAddress'],
+                'decision',
+                'workflow',
+                'info',
+                $data['timestamp']
+            );
+
+            $this->notificationService->notifyStageUpdate(
+                $data['procurementId'],
+                $data['procurementTitle'],
+                $data['currentStage']->getDisplayName(),
+                $status->getDisplayName(),
+                $data['timestamp'],
+                0,
+                'skipped',
+                true,
+                $data['nextStage']->getDisplayName()
+            );
+
+            // Log success
+            Log::info('Successfully skipped pre-procurement conference', [
+                'procurement_id' => $data['procurementId'],
+                'next_stage' => $data['nextStage']->getDisplayName()
+            ]);
+
+            return [
+                'success' => true,
+                'message' => $status->getDisplayName() . '. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+                'nextPhase' => $data['nextStage']->getDisplayName()
+            ];
+        } catch (Exception $e) {
+            Log::error('Failed to handle conference skipped', [
+                'procurement_id' => $data['procurementId'],
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
     }
 }

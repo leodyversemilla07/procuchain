@@ -20,11 +20,7 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             $data = $this->prepareHandlingData($request);
 
             if ($data['conferenceHeld']) {
-                if ($data['needsBulletins']) {
-                    return $this->handleConferenceWithBulletins($data);
-                } else {
-                    return $this->handleConferenceWithoutBulletins($data);
-                }
+                return $this->handleConferenceHeld($data);
             } else {
                 return $this->handleConferenceSkipped($data);
             }
@@ -33,7 +29,7 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
 
             return [
                 'success' => false,
-                'message' => 'Failed to process '.StageEnums::BIDDING_DOCUMENTS->getDisplayName().' decision: '.$e->getMessage(),
+                'message' => 'Failed to process ' . StageEnums::BIDDING_DOCUMENTS->getDisplayName() . ' decision: ' . $e->getMessage(),
             ];
         }
     }
@@ -44,16 +40,14 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             'procurementId' => $request->input('procurement_id'),
             'procurementTitle' => $request->input('procurement_title'),
             'conferenceHeld' => $request->boolean('conference_held'),
-            'needsBulletins' => $request->boolean('needs_bulletins', false),
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
-            'currentStage' => StageEnums::BIDDING_DOCUMENTS,
-            'bulletinsStage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
-            'bidOpeningStage' => StageEnums::BID_OPENING,
+            'currentStage' => StageEnums::PRE_BID_CONFERENCE,
+            'nextStage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
         ];
     }
 
-    private function handleConferenceWithBulletins(array $data): array
+    private function handleConferenceHeld(array $data): array
     {
         $status = StatusEnums::PRE_BID_CONFERENCE_HELD;
 
@@ -63,9 +57,9 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             $status->getDisplayName(),
             $status->getDisplayName(),
             $data['currentStage']->getDisplayName(),
-            $data['bulletinsStage']->getDisplayName(),
+            $data['currentStage']->getDisplayName(),  // Stay in pre-bid conference
             $data['userAddress'],
-            'Pre-bid conference held - supplemental bulletins needed'
+            'Pre-bid conference held'
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -75,49 +69,13 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             $status->getDisplayName(),
             $data['timestamp'],
             0,
-            'held',
             true,
-            $data['bulletinsStage']->getDisplayName()
+            true
         );
 
         return [
             'success' => true,
-            'message' => $status->getDisplayName().
-                '. Proceeding to '.$data['bulletinsStage']->getDisplayName().'.',
-        ];
-    }
-
-    private function handleConferenceWithoutBulletins(array $data): array
-    {
-        $status = StatusEnums::PRE_BID_CONFERENCE_HELD;
-
-        $this->blockchainService->handleStageTransition(
-            $data['procurementId'],
-            $data['procurementTitle'],
-            $status->getDisplayName(),
-            $status->getDisplayName(),
-            $data['currentStage']->getDisplayName(),
-            $data['bidOpeningStage']->getDisplayName(),
-            $data['userAddress'],
-            'Pre-bid conference held - no supplemental bulletins needed'
-        );
-
-        $this->notificationService->notifyStageUpdate(
-            $data['procurementId'],
-            $data['procurementTitle'],
-            $data['currentStage']->getDisplayName(),
-            $status->getDisplayName(),
-            $data['timestamp'],
-            0,
-            'held',
-            true,
-            $data['bidOpeningStage']->getDisplayName()
-        );
-
-        return [
-            'success' => true,
-            'message' => $status->getDisplayName().
-                '. Proceeding directly to '.$data['bidOpeningStage']->getDisplayName().'.',
+            'message' => $status->getDisplayName() . '. Pre-bid conference is in progress.',
         ];
     }
 
@@ -131,7 +89,7 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             $status->getDisplayName(),
             $status->getDisplayName(),
             $data['currentStage']->getDisplayName(),
-            $data['bidOpeningStage']->getDisplayName(),
+            $data['nextStage']->getDisplayName(),  // Move to supplemental bulletin
             $data['userAddress'],
             'Pre-bid conference skipped'
         );
@@ -143,15 +101,13 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             $status->getDisplayName(),
             $data['timestamp'],
             0,
-            'skipped',
             true,
-            $data['bidOpeningStage']->getDisplayName()
+            true
         );
 
         return [
             'success' => true,
-            'message' => $status->getDisplayName().
-                '. Proceeding to '.$data['bidOpeningStage']->getDisplayName().'.',
+            'message' => $status->getDisplayName() . '. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
         ];
     }
 }

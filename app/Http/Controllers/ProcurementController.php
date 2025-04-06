@@ -3,31 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Handlers\BacResolution\BacResolutionHandler;
-use App\Handlers\BacResolution\BacResolutionShowUploadHandler;
 use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
-use App\Handlers\BiddingDocuments\BiddingDocumentsShowUploadHandler;
 use App\Handlers\BidEvaluation\BidEvaluationHandler;
-use App\Handlers\BidEvaluation\BidEvaluationShowUploadHandler;
 use App\Handlers\BidOpening\BidOpeningHandler;
-use App\Handlers\BidOpening\BidOpeningShowUploadHandler;
 use App\Handlers\Completion\CompletionDocumentsHandler;
-use App\Handlers\Completion\CompletionDocumentsShowUploadHandler;
 use App\Handlers\Completion\CompletionProcessHandler;
 use App\Handlers\Monitoring\MonitoringHandler;
-use App\Handlers\Monitoring\MonitoringShowUploadHandler;
 use App\Handlers\NoticeOfAward\NoticeOfAwardHandler;
-use App\Handlers\NoticeOfAward\NoticeOfAwardShowUploadHandler;
 use App\Handlers\NoticeToProceed\NoticeToProceedHandler;
-use App\Handlers\NoticeToProceed\NoticeToProceedShowUploadHandler;
 use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
-use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoShowUploadHandler;
 use App\Handlers\PostQualification\PostQualificationHandler;
-use App\Handlers\PostQualification\PostQualificationShowUploadHandler;
 use App\Handlers\PreBidConference\PreBidConferenceDecisionHandler;
 use App\Handlers\PreBidConference\PreBidConferenceDocumentsHandler;
 use App\Handlers\PreProcurementConference\PreProcurementConferenceDecisionHandler;
 use App\Handlers\PreProcurementConference\PreProcurementConferenceDocumentsHandler;
-use App\Handlers\PreProcurementConference\PreProcurementConferenceShowUploadHandler;
 use App\Handlers\ProcurementInitiation\ProcurementInitiationHandler;
 use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDecisionHandler;
 use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDocumentsHandler;
@@ -49,15 +38,25 @@ use App\Http\Requests\Procurement\PreProcurementConferenceDocumentsRequest;
 use App\Http\Requests\Procurement\ProcurementInitiationRequest;
 use App\Http\Requests\Procurement\SupplementalBidBulletinDecisionRequest;
 use App\Http\Requests\Procurement\SupplementalBidBulletinDocumentsRequest;
+use App\Enums\StreamEnums;
+use App\Enums\StageEnums;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller as BaseController;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Services\BlockchainService;
+use App\Services\Multichain\StreamQueryOptions;
+use Illuminate\Support\Facades\Log;
+use Exception;
+use Illuminate\Http\Request;
 
 class ProcurementController extends BaseController
 {
-    public function __construct()
+    protected $multiChain;
+
+    public function __construct(BlockchainService $blockchainService)
     {
+        $this->multiChain = $blockchainService->getClient();
         $this->middleware('auth');
         $this->middleware('role:bac_secretariat');
 
@@ -80,55 +79,190 @@ class ProcurementController extends BaseController
 
     public function showProcurementInitiation(): Response
     {
-        return Inertia::render('bac-secretariat/procurement-phase/procurement-initiation');
+        return Inertia::render('bac-secretariat/procurement-stage/procurement-initiation');
     }
 
-    public function showBiddingDocumentsUpload($id, BiddingDocumentsShowUploadHandler $handler)
+    private function handleProcurementStageUpload(string $id, string $stageName, string $viewPath)
     {
-        return $handler->handle($id);
+        try {
+            $allStatuses = collect([]);
+            
+            try {
+                $statusOptions = new StreamQueryOptions(
+                    StreamEnums::STATUS->value,
+                    true,
+                    1000,
+                    -1000
+                );
+                
+                $blockchainStatuses = $this->multiChain->listStreamItems($statusOptions);
+                if ($blockchainStatuses && is_array($blockchainStatuses)) {
+                    $allStatuses = collect($blockchainStatuses);
+                }
+            } catch (Exception $e) {
+                Log::warning('Could not fetch blockchain statuses', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+            
+            $procurement = $allStatuses
+                ->map(function ($item) {
+                    $data = $item['data'] ?? [];
+                    return [
+                        'id' => $data['procurement_id'] ?? '',
+                        'title' => $data['title'] ?? $data['procurement_title'] ?? 'Unknown',
+                        'status' => $data['current_status'] ?? $data['status']['current_status'] ?? 'Unknown',
+                        'stage' => $data['stage'] ?? $data['status']['stage'] ?? 'Unknown',
+                        'timestamp' => $data['timestamp'] ?? now()->toIso8601String()
+                    ];
+                })
+                ->filter(function ($item) use ($id) {
+                    return $item['id'] == $id;
+                })
+                ->sortByDesc('timestamp')
+                ->first();
+            
+            if (!$procurement) {
+                $procurement = [
+                    'id' => $id,
+                    'title' => 'Procurement #' . $id,
+                    'status' => 'Unknown',
+                    'stage' => $stageName
+                ];
+            }
+            
+            return Inertia::render($viewPath, [
+                'procurement' => $procurement
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error showing ' . strtolower($stageName) . ' upload page', [
+                'procurement_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return Inertia::render($viewPath, [
+                'procurement' => [
+                    'id' => $id,
+                    'title' => 'Procurement #' . $id,
+                    'status' => 'Unknown',
+                    'stage' => $stageName
+                ],
+                'error' => 'Could not retrieve full procurement details'
+            ]);
+        }
     }
 
-    public function showBidOpeningUpload($id, BidOpeningShowUploadHandler $handler)
+    public function showPreProcurementConferenceUpload($id): Response
     {
-        return $handler->handle($id);
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName(), 
+            'bac-secretariat/procurement-stage/pre-procurement-conference-upload'
+        );
     }
 
-    public function showBidEvaluationUpload($id, BidEvaluationShowUploadHandler $handler)
+    public function showPreBidConferenceUpload($id): Response
     {
-        return $handler->handle($id);
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::PRE_BID_CONFERENCE->getDisplayName(), 
+            'bac-secretariat/procurement-stage/pre-bid-conference-upload'
+        );
     }
 
-    public function showPostQualificationUpload($id, PostQualificationShowUploadHandler $handler)
+    public function showBiddingDocumentsUpload($id)
     {
-        return $handler->handle($id);
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::BIDDING_DOCUMENTS->getDisplayName(), 
+            'bac-secretariat/procurement-stage/bidding-documents-upload'
+        );
     }
 
-    public function showBacResolutionUpload($id, BacResolutionShowUploadHandler $handler)
+    public function showSupplementalBidBulletinUpload($id)
     {
-        return $handler->handle($id);
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::SUPPLEMENTAL_BID_BULLETIN->getDisplayName(), 
+            'bac-secretariat/procurement-stage/supplemental-bid-bulletin-upload'
+        );
     }
 
-    public function showNoaUpload($id, NoticeOfAwardShowUploadHandler $handler)
+    public function showBidOpeningUpload($id)
     {
-        return $handler->handle($id);
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::BID_OPENING->getDisplayName(), 
+            'bac-secretariat/procurement-stage/bid-opening-upload'
+        );
     }
 
-    public function showPerformanceBondContactAndPoUpload($id, PerformanceBondContractAndPoShowUploadHandler $handler)
+    public function showBidEvaluationUpload($id)
     {
-        return $handler->handle($id);
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::BID_EVALUATION->getDisplayName(), 
+            'bac-secretariat/procurement-stage/bid-evaluation-upload'
+        );
     }
 
-    public function showNTPUpload($id, NoticeToProceedShowUploadHandler $handler)
+    public function showPostQualificationUpload($id)
     {
-        return $handler->handle($id);
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::POST_QUALIFICATION->getDisplayName(), 
+            'bac-secretariat/procurement-stage/post-qualification-upload'
+        );
     }
 
-    public function showMonitoringUpload($id, MonitoringShowUploadHandler $handler)
+    public function showBacResolutionUpload($id)
     {
-        return $handler->handle($id);
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::BAC_RESOLUTION->getDisplayName(), 
+            'bac-secretariat/procurement-stage/bac-resolution-upload'
+        );
     }
 
-    public function showCompleteStatus($id, CompletionDocumentsShowUploadHandler $handler)
+    public function showNoaUpload($id)
+    {
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::NOTICE_OF_AWARD->getDisplayName(), 
+            'bac-secretariat/procurement-stage/noa-upload'
+        );
+    }
+
+    public function showPerformanceBondContactAndPoUpload($id)
+    {
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName(), 
+            'bac-secretariat/procurement-stage/contract-po-upload'
+        );
+    }
+
+    public function showNTPUpload($id)
+    {
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::NOTICE_TO_PROCEED->getDisplayName(), 
+            'bac-secretariat/procurement-stage/ntp-upload'
+        );
+    }
+
+    public function showMonitoringUpload($id)
+    {
+        return $this->handleProcurementStageUpload(
+            $id, 
+            StageEnums::MONITORING->getDisplayName(), 
+            'bac-secretariat/procurement-stage/monitoring-upload'
+        );
+    }
+
+    public function showCompleteStatus($id, $handler)
     {
         return $handler->handle($id);
     }
@@ -152,11 +286,6 @@ class ProcurementController extends BaseController
     public function publishProcurementInitiation(ProcurementInitiationRequest $request, ProcurementInitiationHandler $handler): RedirectResponse
     {
         return $this->handleProcurementAction($request, $handler);
-    }
-
-    public function showPreProcurementConferenceUpload($id, PreProcurementConferenceShowUploadHandler $handler)
-    {
-        return $handler->handle($id);
     }
 
     public function publishPreProcurementConferenceDecision(PreProcurementConferenceDecisionRequest $request, PreProcurementConferenceDecisionHandler $handler): RedirectResponse
@@ -242,5 +371,30 @@ class ProcurementController extends BaseController
     public function uploadCompletionDocuments(CompletionDocumentsRequest $request, CompletionDocumentsHandler $handler): RedirectResponse
     {
         return $this->handleProcurementAction($request, $handler);
+    }
+
+    public function saveProcurementDraft(Request $request)
+    {
+        try {
+            // Store draft data in session for now
+            session(['procurement_draft' => $request->all()]);
+            
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Draft saved successfully']);
+            }
+            
+            return back()->with('success', 'Draft saved successfully');
+        } catch (Exception $e) {
+            Log::error('Failed to save procurement draft:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Failed to save draft'], 500);
+            }
+            
+            return back()->withErrors(['error' => 'Failed to save draft']);
+        }
     }
 }

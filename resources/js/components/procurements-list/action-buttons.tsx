@@ -8,6 +8,7 @@ interface ActionButtonsProps {
     procurement: ProcurementListItem;
     variant?: 'table' | 'kanban';
     onOpenPreProcurementModal?: (procurement: ProcurementListItem) => void;
+    onOpenPreBidModal?: (procurement: ProcurementListItem) => void;
     onOpenMarkCompleteDialog?: (procurement: ProcurementListItem) => void;
 }
 
@@ -20,23 +21,29 @@ interface ActionButtonItemProps {
     buttonSize: string;
 }
 
-const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonSize }: ActionButtonItemProps) => (
-    <TooltipProvider>
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`${buttonSize} p-0 ${className}`}
-                    onClick={onClick}
-                >
-                    {href ? <Link href={href}>{icon}</Link> : icon}
-                </Button>
-            </TooltipTrigger>
-            <TooltipContent>{tooltipText}</TooltipContent>
-        </Tooltip>
-    </TooltipProvider>
-);
+const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonSize }: ActionButtonItemProps) => {
+    const button = (
+        <Button
+            variant="ghost"
+            size="sm"
+            className={`${buttonSize} p-0 ${className}`}
+            onClick={onClick}
+        >
+            {icon}
+        </Button>
+    );
+
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    {href ? <Link href={href} className="block">{button}</Link> : button}
+                </TooltipTrigger>
+                <TooltipContent>{tooltipText}</TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
+};
 
 const useButtonSizes = (variant: 'table' | 'kanban') => ({
     iconSize: variant === 'table' ? 'h-4 w-4' : 'h-3.5 w-3.5',
@@ -80,13 +87,31 @@ const useDocumentUploadButtons = (procurement: ProcurementListItem, iconSize: st
             href: `/bac-secretariat/bidding-documents-upload/${id}`
         });
     }
+    
+    if (stage === Stage.PRE_BID_CONFERENCE && status === Status.PRE_BID_CONFERENCE_HELD) {
+        configs.push({
+            icon: <FileUpIcon className={iconSize} />,
+            tooltipText: "Upload Pre-Bid Conference Documents",
+            className: "text-indigo-600 dark:text-indigo-400",
+            href: `/bac-secretariat/pre-bid-conference-upload/${id}`
+        });
+    }
 
     return configs;
 };
 
-const useBidProcessButtons = (procurement: ProcurementListItem, iconSize: string) => {
+const useBidProcessButtons = (procurement: ProcurementListItem, iconSize: string, onOpenPreBidModal?: (p: ProcurementListItem) => void) => {
     const { id, stage, current_status: status } = procurement;
     const configs = [];
+
+    if (stage === Stage.PRE_BID_CONFERENCE && status === Status.BIDDING_DOCUMENTS_PUBLISHED) {
+        configs.push({
+            icon: <FileUpIcon className={iconSize} />,
+            tooltipText: "Record Pre-Bid Conference Decision",
+            className: "text-indigo-600 dark:text-indigo-400",
+            onClick: () => onOpenPreBidModal?.(procurement)
+        });
+    }
 
     if (stage === Stage.BID_OPENING && status === Status.BIDDING_DOCUMENTS_PUBLISHED) {
         configs.push({
@@ -126,6 +151,7 @@ export const ActionButtons = ({
     procurement,
     variant = 'table',
     onOpenPreProcurementModal,
+    onOpenPreBidModal,
     onOpenMarkCompleteDialog,
 }: ActionButtonsProps) => {
     const { id } = procurement;
@@ -134,7 +160,7 @@ export const ActionButtons = ({
     const buttonConfigs = [
         ...useInitialStageButtons(procurement, iconSize, onOpenPreProcurementModal),
         ...useDocumentUploadButtons(procurement, iconSize),
-        ...useBidProcessButtons(procurement, iconSize),
+        ...useBidProcessButtons(procurement, iconSize, onOpenPreBidModal),
         ...useMonitoringButtons(procurement, iconSize, onOpenMarkCompleteDialog)
     ];
 
