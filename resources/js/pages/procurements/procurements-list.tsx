@@ -6,6 +6,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { DataTableColumnHeader } from '@/components/ui/data-table';
 import { DataTableCheckbox } from '@/components/ui/data-table';
 import { PreProcurementModal } from '@/components/pre-procurement-conference/pre-procurement-conference-modal';
+import { PreBidConferenceModal } from '@/components/pre-bid-conference/pre-bid-conference-modal';
 import { MarkCompleteDialog } from '@/components/procurement/mark-complete-dialog';
 import AppLayout from '@/layouts/app-layout';
 import { ActionButtons } from '@/components/procurements-list/action-buttons';
@@ -35,6 +36,7 @@ interface ShowProps {
 
 const useTableColumns = (
     onOpenPreProcurementModal: (procurement: ProcurementListItem) => void,
+    onOpenPreBidModal: (procurement: ProcurementListItem) => void,
     onOpenMarkCompleteDialog: (procurement: ProcurementListItem) => void
 ): ColumnDef<ProcurementListItem>[] => {
     const columns: ColumnDef<ProcurementListItem>[] = [
@@ -97,6 +99,7 @@ const useTableColumns = (
                     procurement={row.original}
                     variant="table"
                     onOpenPreProcurementModal={onOpenPreProcurementModal}
+                    onOpenPreBidModal={onOpenPreBidModal}
                     onOpenMarkCompleteDialog={onOpenMarkCompleteDialog}
                 />
             ),
@@ -115,6 +118,7 @@ interface ProcurementsContentProps {
     columns: ColumnDef<ProcurementListItem>[];
     userRole: string;
     onOpenPreProcurementModal: (procurement: ProcurementListItem) => void;
+    onOpenPreBidModal: (procurement: ProcurementListItem) => void;
     onOpenMarkCompleteDialog: (procurement: ProcurementListItem) => void;
 }
 
@@ -128,6 +132,7 @@ const ProcurementsContent = ({
     columns,
     userRole,
     onOpenPreProcurementModal,
+    onOpenPreBidModal,
     onOpenMarkCompleteDialog,
 }: ProcurementsContentProps) => {
     if (loading) return <LoadingSkeleton />;
@@ -159,6 +164,7 @@ const ProcurementsContent = ({
         <KanbanBoard
             procurements={procurements}
             onOpenPreProcurementModal={onOpenPreProcurementModal}
+            onOpenPreBidModal={onOpenPreBidModal}
             onOpenMarkCompleteDialog={onOpenMarkCompleteDialog}
         />
     );
@@ -176,23 +182,26 @@ export default function ProcurementsList({ procurements: initialProcurements, er
         viewType,
         error,
         modalOpen,
+        preBidModalOpen,
         markCompleteDialogOpen,
         selectedProcurement,
         setSelectedRows,
         setViewType,
         setModalOpen,
+        setPreBidModalOpen,
         setMarkCompleteDialogOpen,
         handleOpenPreProcurementModal,
+        handleOpenPreBidModal,
         handleOpenMarkCompleteDialog,
     } = useProcurementList({ initialProcurements, initialError });
 
-    const columns = useTableColumns(handleOpenPreProcurementModal, handleOpenMarkCompleteDialog);
+    const columns = useTableColumns(handleOpenPreProcurementModal, handleOpenPreBidModal, handleOpenMarkCompleteDialog);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Procurement List" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-sm">
+            <div className="flex h-full flex-1 flex-col gap-4 p-2 sm:p-4">
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-sm overflow-hidden">
                     <ProcurementListHeader
                         userRole={userRole}
                         viewType={viewType}
@@ -200,25 +209,35 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                         procurementsCount={procurements.length}
                         loading={loading}
                     />
-                    <CardContent className="dark:border-t dark:border-sidebar-border">
-                        <ProcurementsContent
-                            loading={loading}
-                            error={error}
-                            procurements={procurements}
-                            viewType={viewType}
-                            selectedRows={selectedRows}
-                            onSelectedRowsChange={setSelectedRows}
-                            columns={columns}
-                            userRole={userRole}
-                            onOpenPreProcurementModal={handleOpenPreProcurementModal}
-                            onOpenMarkCompleteDialog={handleOpenMarkCompleteDialog}
-                        />
+                    <CardContent className="dark:border-t dark:border-sidebar-border p-0 sm:p-4">
+                        <div className="overflow-x-auto">
+                            <ProcurementsContent
+                                loading={loading}
+                                error={error}
+                                procurements={procurements}
+                                viewType={viewType}
+                                selectedRows={selectedRows}
+                                onSelectedRowsChange={setSelectedRows}
+                                columns={columns}
+                                userRole={userRole}
+                                onOpenPreProcurementModal={handleOpenPreProcurementModal}
+                                onOpenPreBidModal={handleOpenPreBidModal}
+                                onOpenMarkCompleteDialog={handleOpenMarkCompleteDialog}
+                            />
+                        </div>
                     </CardContent>
                 </Card>
             </div>
             <PreProcurementModal
                 open={modalOpen}
                 onOpenChange={setModalOpen}
+                procurementId={selectedProcurement.id}
+                procurementTitle={selectedProcurement.title}
+                onComplete={() => window.location.reload()}
+            />
+            <PreBidConferenceModal
+                open={preBidModalOpen}
+                onOpenChange={setPreBidModalOpen}
                 procurementId={selectedProcurement.id}
                 procurementTitle={selectedProcurement.title}
                 onComplete={() => window.location.reload()}

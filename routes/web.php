@@ -43,8 +43,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/bac-secretariat/pre-procurement-conference-upload/{id}', [ProcurementController::class, 'showPreProcurementConferenceUpload'])
             ->name('bac-secretariat.pre-procurement-conference-upload');
 
+        Route::get('/bac-secretariat/pre-bid-conference-upload/{id}', [ProcurementController::class, 'showPreBidConferenceUpload'])
+            ->name('bac-secretariat.pre-bid-conference-upload');
+
         Route::get('/bac-secretariat/bidding-documents-upload/{id}', [ProcurementController::class, 'showBiddingDocumentsUpload'])
             ->name('bac-secretariat.bidding-documents-upload');
+
+        Route::get('/bac-secretariat/supplemental-bid-bulletin-upload/{id}', [ProcurementController::class, 'showSupplementalBidBulletinUpload'])
+            ->name('bac-secretariat.supplemental-bid-bulletin-upload');
 
         Route::get('/bac-secretariat/bid-opening-upload/{id}', [ProcurementController::class, 'showBidOpeningUpload'])
             ->name('bac-secretariat.bid-opening-upload');
@@ -75,6 +81,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('/bac-secretariat/publish-procurement-initiation', [ProcurementController::class, 'publishProcurementInitiation'])
             ->name('publish-procurement-initiation');
+
+        Route::post('/bac-secretariat/save-procurement-draft', [ProcurementController::class, 'saveProcurementDraft'])
+            ->name('bac-secretariat.save-procurement-draft');
 
         Route::post('/bac-secretariat/publish-pre-procurement-conference-decision', [ProcurementController::class, 'publishPreProcurementConferenceDecision'])
             ->name('bac-secretariat.publish-pre-procurement-conference-decision');
@@ -153,5 +162,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

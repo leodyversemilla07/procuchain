@@ -2,6 +2,7 @@
 
 namespace App\Libraries;
 
+use App\Libraries\Multichain\ConnectionConfig;
 use App\Libraries\Multichain\CurlTransport;
 use App\Libraries\Multichain\SocketTransport;
 
@@ -13,33 +14,83 @@ define('MC_OPT_VERIFY_SSL', 3);
 class MultichainClient
 {
     private $host;
-
     private $port;
-
     private $username;
-
     private $password;
-
     private $chainname;
-
     private $error_code = 0;
-
     private $error_message = '';
-
     private $usessl = false;
-
     private $transport;
 
-    public function __construct($host, $port, $username, $password, $usessl = false)
+    /**
+     * Create a new MultichainClient instance
+     * 
+     * @param ConnectionConfig $config Connection configuration object
+     * @return void
+     */
+    public function __construct(ConnectionConfig $config)
     {
-        $this->host = $host;
-        $this->port = $port;
-        $this->username = $username;
-        $this->password = $password;
-        $this->chainname = null;
-        $this->usessl = $usessl;
+        $this->initializeFromConfig($config);
+    }
 
-        $this->transport = $usessl ? new CurlTransport : new SocketTransport;
+    /**
+     * Create a MultichainClient from Laravel configuration
+     * 
+     * @param array $config Configuration array
+     * @return self
+     */
+    public static function fromConfig(array $config): self
+    {
+        return new self(ConnectionConfig::fromConfig($config));
+    }
+
+    /**
+     * Create a MultichainClient from connection parameters
+     * 
+     * @param string $host Host address
+     * @param int $port Port number
+     * @param string $username RPC username
+     * @param string $password RPC password
+     * @param bool $usessl Use SSL connection
+     * @param string|null $chainName Chain name
+     * @param bool $verifySSL Verify SSL certificates
+     * @return self
+     */
+    public static function fromParams(
+        string $host,
+        int $port,
+        string $username,
+        string $password,
+        bool $usessl = false,
+        ?string $chainName = null,
+        bool $verifySSL = true
+    ): self {
+        $config = new ConnectionConfig($host, $port, $username, $password, $usessl, $chainName, $verifySSL);
+        return new self($config);
+    }
+
+    /**
+     * Initialize client from ConnectionConfig object
+     * 
+     * @param ConnectionConfig $config
+     * @return void
+     */
+    private function initializeFromConfig(ConnectionConfig $config): void
+    {
+        $this->host = $config->getHost();
+        $this->port = $config->getPort();
+        $this->username = $config->getUsername();
+        $this->password = $config->getPassword();
+        $this->usessl = $config->useSSL();
+        $this->chainname = $config->getChainName();
+
+        $this->transport = $this->usessl ? new CurlTransport : new SocketTransport;
+
+        // Apply transport settings
+        if ($this->usessl && $this->transport instanceof CurlTransport) {
+            $this->transport->setVerifySSL($config->verifySSL());
+        }
     }
 
     public function setoption($option, $value)
@@ -65,20 +116,20 @@ class MultichainClient
 
     public function __call($method, $params)
     {
-        $url = ($this->usessl ? 'https' : 'http').'://'.$this->host.':'.$this->port.'/';
+        $url = ($this->usessl ? 'https' : 'http') . '://' . $this->host . ':' . $this->port . '/';
         $payload = $this->preparePayload($method, $params);
-        $strUserPass64 = base64_encode($this->username.':'.$this->password);
+        $strUserPass64 = base64_encode($this->username . ':' . $this->password);
 
         $headers = [
             'Content-Type: application/json',
-            'Content-Length: '.strlen($payload),
+            'Content-Length: ' . strlen($payload),
             'Connection: close',
-            'Authorization: Basic '.$strUserPass64,
+            'Authorization: Basic ' . $strUserPass64,
         ];
 
         $response = $this->transport->execute($url, $headers, $payload);
 
-        if (! $response['success']) {
+        if (!$response['success']) {
             $error = $this->transport->getLastError();
             $this->error_code = $error['code'];
             $this->error_message = $error['message'];
@@ -97,7 +148,7 @@ class MultichainClient
             'params' => $params,
         ];
 
-        if (! is_null($this->chainname)) {
+        if (!is_null($this->chainname)) {
             $request['chain_name'] = $this->chainname;
         }
 
@@ -115,7 +166,7 @@ class MultichainClient
             return null;
         }
 
-        if (! $this->isValidResponseStructure($decoded)) {
+        if (!$this->isValidResponseStructure($decoded)) {
             return null;
         }
 
@@ -159,7 +210,7 @@ class MultichainClient
 
     private function isValidResponseStructure($decoded)
     {
-        if (! array_key_exists('error', $decoded) || ! array_key_exists('result', $decoded)) {
+        if (!array_key_exists('error', $decoded) || !array_key_exists('result', $decoded)) {
             $this->error_message = 'Invalid Response Structure';
 
             return false;
@@ -170,7 +221,7 @@ class MultichainClient
 
     private function hasError($decoded)
     {
-        return ! is_null($decoded['error']);
+        return !is_null($decoded['error']);
     }
 
     private function handleError($error)
@@ -179,7 +230,7 @@ class MultichainClient
         $this->error_message = $error['message'];
 
         if ($this->error_code == -1 && strpos($this->error_message, "\n\n") !== false) {
-            $this->error_message = "Wrong parameters. Usage:\n\n".$this->error_message;
+            $this->error_message = "Wrong parameters. Usage:\n\n" . $this->error_message;
         }
     }
 

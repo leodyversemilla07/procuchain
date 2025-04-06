@@ -16,6 +16,7 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
     const [error, setError] = useState<string | undefined>(initialError);
     const [modalOpen, setModalOpen] = useState(false);
     const [markCompleteDialogOpen, setMarkCompleteDialogOpen] = useState(false);
+    const [preBidModalOpen, setPreBidModalOpen] = useState(false);
     const [selectedProcurement, setSelectedProcurement] = useState<{
         id: string;
         title: string;
@@ -41,6 +42,14 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
         setModalOpen(true);
     };
 
+    const handleOpenPreBidModal = (procurement: ProcurementListItem) => {
+        setSelectedProcurement({
+            id: procurement.id,
+            title: procurement.title,
+        });
+        setPreBidModalOpen(true);
+    };
+
     const handleOpenMarkCompleteDialog = (procurement: ProcurementListItem) => {
         setSelectedProcurement({
             id: procurement.id,
@@ -56,14 +65,17 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
         viewType,
         error,
         modalOpen,
+        preBidModalOpen,
         markCompleteDialogOpen,
         selectedProcurement,
         setSelectedRows,
         setLoading,
         setViewType,
         setModalOpen,
+        setPreBidModalOpen,
         setMarkCompleteDialogOpen,
         handleOpenPreProcurementModal,
+        handleOpenPreBidModal,
         handleOpenMarkCompleteDialog,
     };
 };

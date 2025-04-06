@@ -30,7 +30,6 @@ class PreBidConferenceDocumentsRequest extends FormRequest
             'attendance_file' => 'required|file|mimes:pdf|max:10240',
             'meeting_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'participants' => 'required|string|min:1|max:1000',
-            'needs_bulletins' => 'sometimes|boolean',
         ];
     }
 }

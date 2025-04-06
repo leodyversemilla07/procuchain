@@ -103,23 +103,27 @@ export function DataTable<TData, TValue>({
     const selectedRowCount = table.getSelectedRowModel().rows.length;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full max-w-[100vw]">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 {searchColumn && (
-                    <div className="relative w-full sm:w-auto sm:min-w-[300px]">
+                    <div className="relative w-full sm:w-auto sm:min-w-[300px] max-w-full">
                         <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
                         <Input
                             placeholder={searchPlaceholder}
                             value={searchValue}
                             onChange={handleSearchChange}
-                            className="pl-10 pr-10 border-sidebar-border/70 dark:border-sidebar-border rounded-lg shadow-sm dark:placeholder-gray-400 focus:border-primary dark:focus:border-primary focus:ring-primary dark:focus:ring-primary"
+                            className="pl-10 pr-10 w-full border-sidebar-border/70 dark:border-sidebar-border rounded-lg shadow-sm 
+                                dark:placeholder-gray-400 focus:border-primary dark:focus:border-primary 
+                                focus:ring-primary dark:focus:ring-primary"
                         />
                         {searchValue && (
                             <button
                                 onClick={clearSearch}
                                 type="button"
                                 aria-label="Clear search"
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 
+                                    text-gray-400 hover:text-gray-600 dark:text-gray-500 
+                                    dark:hover:text-gray-300"
                             >
                                 <XIcon className="h-4 w-4" />
                             </button>
@@ -128,9 +132,10 @@ export function DataTable<TData, TValue>({
                 )}
 
                 {bulkActions.length > 0 && (
-                    <div className="flex items-center space-x-2 self-end">
+                    <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                         {selectedRowCount > 0 && (
-                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-200 
+                                dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
                                 {selectedRowCount} selected
                             </Badge>
                         )}
@@ -141,9 +146,12 @@ export function DataTable<TData, TValue>({
                                     variant="outline"
                                     size="sm"
                                     disabled={selectedRows.length === 0}
-                                    className={`ml-auto text-gray-700 dark:text-gray-200 hover:text-gray-700 dark:hover:text-gray-200 ${selectedRows.length === 0
-                                        ? 'opacity-50 cursor-not-allowed'
-                                        : 'hover:bg-gray-100 dark:hover:bg-gray-800 border-sidebar-border/70 dark:border-sidebar-border'}`}
+                                    className={`ml-auto text-gray-700 dark:text-gray-200 
+                                        hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap
+                                        ${selectedRows.length === 0
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-800 border-sidebar-border/70 dark:border-sidebar-border'
+                                        }`}
                                 >
                                     Actions <ChevronDownIcon className="ml-2 h-4 w-4" />
                                 </Button>
@@ -153,7 +161,8 @@ export function DataTable<TData, TValue>({
                                     <DropdownMenuItem
                                         key={index}
                                         onClick={() => action.action(selectedRows)}
-                                        className="cursor-pointer flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        className="cursor-pointer flex items-center gap-2 text-gray-700 
+                                            dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                                     >
                                         {action.icon && <span className="text-gray-500 dark:text-gray-400">{action.icon}</span>}
                                         {action.label}
@@ -165,64 +174,70 @@ export function DataTable<TData, TValue>({
                 )}
             </div>
 
-            <div className="rounded-lg overflow-hidden border border-sidebar-border/70 dark:border-sidebar-border shadow-sm">
-                <Table className="w-full">
-                    <TableHeader className="border-b border-sidebar-border/70 dark:border-sidebar-border">
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow
-                                key={headerGroup.id}
-                                className="hover:bg-transparent"
-                            >
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead
-                                        key={header.id}
-                                        className="font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-wider py-3 px-4"
-                                    >
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                            )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
+            <div className="rounded-lg overflow-hidden border border-sidebar-border/70 
+                dark:border-sidebar-border shadow-sm">
+                <div className="overflow-x-auto">
+                    <Table className="w-full min-w-[640px]">
+                        <TableHeader className="border-b border-sidebar-border/70 dark:border-sidebar-border">
+                            {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() ? "selected" : undefined}
-                                    className={`border-b border-sidebar-border/30 dark:border-sidebar-border/70 ${row.getIsSelected()
-                                        ? "bg-primary/5 dark:bg-primary/10 text-gray-900 dark:text-gray-100"
-                                        : "hover:bg-muted/30 dark:hover:bg-muted/10"
-                                        }`}
+                                    key={headerGroup.id}
+                                    className="hover:bg-transparent"
                                 >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell
-                                            key={cell.id}
-                                            className="py-3 px-4"
+                                    {headerGroup.headers.map((header) => (
+                                        <TableHead
+                                            key={header.id}
+                                            className="font-semibold text-xs text-gray-700 dark:text-gray-200 
+                                                uppercase tracking-wider py-3 px-4 whitespace-nowrap"
                                         >
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        </TableCell>
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                    header.column.columnDef.header,
+                                                    header.getContext()
+                                                )}
+                                        </TableHead>
                                     ))}
                                 </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-32 text-center">
-                                    <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 py-8">
-                                        <CircleXIcon className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-2" />
-                                        <p className="text-base">No records found</p>
-                                        <p className="text-sm mt-1">Try adjusting your search or filter to find what you're looking for.</p>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                            ))}
+                        </TableHeader>
+                        <TableBody>
+                            {table.getRowModel().rows?.length ? (
+                                table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.id}
+                                        data-state={row.getIsSelected() ? "selected" : undefined}
+                                        className={`border-b border-sidebar-border/30 dark:border-sidebar-border/70 
+                                            ${row.getIsSelected()
+                                                ? "bg-primary/5 dark:bg-primary/10 text-gray-900 dark:text-gray-100"
+                                                : "hover:bg-muted/30 dark:hover:bg-muted/10"
+                                            }`}
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <TableCell
+                                                key={cell.id}
+                                                className="py-3 px-4"
+                                            >
+                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={columns.length} className="h-32 text-center">
+                                        <div className="flex flex-col items-center justify-center text-gray-500 
+                                            dark:text-gray-400 py-8">
+                                            <CircleXIcon className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-2" />
+                                            <p className="text-base">No records found</p>
+                                            <p className="text-sm mt-1">Try adjusting your search or filter to find what you're looking for.</p>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
 
             <DataTablePagination table={table} />

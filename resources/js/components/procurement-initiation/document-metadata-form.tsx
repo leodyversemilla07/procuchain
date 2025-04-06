@@ -8,20 +8,17 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PRDocument, MUNICIPAL_OFFICES } from '@/types/blockchain';
+import { ProcurementInitiationDocument, MUNICIPAL_OFFICES } from '@/types/blockchain';
 
 interface DocumentMetadataFormProps {
-    metadata: PRDocument;
-    updateMetadata: (key: keyof PRDocument, value: string | Date | undefined) => void;
+    metadata: ProcurementInitiationDocument;
+    updateMetadata: (key: keyof ProcurementInitiationDocument, value: string | Date | undefined) => void;
     errors: Record<string, string>;
     hasError: (field: string) => boolean;
     submissionDate: Date | undefined;
     onDateChange: (date: Date | undefined) => void;
 }
 
-/**
- * Component for collecting PR document metadata
- */
 export function DocumentMetadataForm({
     metadata,
     updateMetadata,
@@ -38,9 +35,7 @@ export function DocumentMetadataForm({
             </h3>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* First Column */}
                 <div className="space-y-4 border rounded-lg p-4">
-                    {/* Document Type Field */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="document_type" className="flex items-center">
@@ -65,7 +60,6 @@ export function DocumentMetadataForm({
                         </div>
                     </div>
 
-                    {/* Municipal Office Field - Direct implementation without custom handler */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="municipal_offices" className="flex items-center">
@@ -85,7 +79,7 @@ export function DocumentMetadataForm({
                             <SelectTrigger
                                 className={cn(
                                     "w-full",
-                                    hasError('pr_metadata.municipal_offices') ? 'border-destructive' : ''
+                                    hasError('document_metadata.municipal_offices') ? 'border-destructive' : ''
                                 )}
                             >
                                 <div className="flex items-center gap-2">
@@ -102,16 +96,14 @@ export function DocumentMetadataForm({
                     </div>
                 </div>
 
-                {/* Second Column */}
                 <div className="space-y-4 border rounded-lg p-4">
-                    {/* Submission Date Field */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="submission_date" className="flex items-center">
                                 <span>Submission Date</span>
                                 <Badge variant="destructive" className="ml-2 text-xs">Required</Badge>
                             </Label>
-                            {hasError('pr_metadata.submission_date') && (
+                            {hasError('document_metadata.submission_date') && (
                                 <p className="text-xs text-destructive">
                                     {errors['pr_metadata.submission_date']}
                                 </p>
@@ -146,16 +138,15 @@ export function DocumentMetadataForm({
                         </div>
                     </div>
 
-                    {/* Signatory Details Field - Also updated for consistency */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="signatory_details" className="flex items-center">
                                 <span>Signatory Details</span>
                                 <Badge variant="destructive" className="ml-2 text-xs">Required</Badge>
                             </Label>
-                            {hasError('pr_metadata.signatory_details') && (
+                            {hasError('document_metadata.signatory_details') && (
                                 <p className="text-xs text-destructive">
-                                    {errors['pr_metadata.signatory_details']}
+                                    {errors['document_metadata.signatory_details']}
                                 </p>
                             )}
                         </div>

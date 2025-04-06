@@ -22,7 +22,14 @@ export function DataTableColumnHeader<TData, TValue>({
     className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
     if (!column.getCanSort()) {
-        return <div className={cn("font-semibold text-xs text-gray-700 dark:text-gray-200", className)}>{title}</div>;
+        return (
+            <div className={cn(
+                "font-semibold text-xs text-gray-700 dark:text-gray-200 truncate max-w-[150px] sm:max-w-none",
+                className
+            )}>
+                {title}
+            </div>
+        );
     }
 
     return (
@@ -32,19 +39,26 @@ export function DataTableColumnHeader<TData, TValue>({
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="-ml-3 h-8 font-semibold text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 data-[state=open]:bg-gray-100 dark:data-[state=open]:bg-gray-700"
+                        className="-ml-3 h-8 font-semibold text-xs text-gray-700 dark:text-gray-200 
+                            hover:bg-gray-100 dark:hover:bg-gray-700 
+                            data-[state=open]:bg-gray-100 dark:data-[state=open]:bg-gray-700
+                            truncate max-w-[150px] sm:max-w-none justify-start"
                     >
-                        <span>{title}</span>
+                        <span className="truncate">{title}</span>
                         {column.getIsSorted() === "desc" ? (
-                            <ArrowDownIcon className="ml-2 h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                            <ArrowDownIcon className="ml-2 h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
                         ) : column.getIsSorted() === "asc" ? (
-                            <ArrowUpIcon className="ml-2 h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                            <ArrowUpIcon className="ml-2 h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
                         ) : (
-                            <ArrowUpDown className="ml-2 h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+                            <ArrowUpDown className="ml-2 h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-gray-500" />
                         )}
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-[150px] p-1.5 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-md">
+                <DropdownMenuContent 
+                    align="start" 
+                    className="min-w-[150px] p-1.5 bg-white dark:bg-gray-800 
+                        border-gray-200 dark:border-gray-700 shadow-md"
+                >
                     <DropdownMenuItem 
                         onClick={() => column.toggleSorting(false)}
                         className={cn(
@@ -72,7 +86,8 @@ export function DataTableColumnHeader<TData, TValue>({
                     <DropdownMenuSeparator className="my-1 h-px bg-gray-200 dark:bg-gray-700" />
                     <DropdownMenuItem 
                         onClick={() => column.toggleVisibility(false)}
-                        className="flex items-center cursor-pointer rounded px-2.5 py-1.5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="flex items-center cursor-pointer rounded px-2.5 py-1.5 
+                            text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                         <EyeOffIcon className="mr-2 h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                         <span>Hide Column</span>

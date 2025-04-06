@@ -329,7 +329,7 @@ export default function Bidding() {
                             </CardHeader>
                             <CardContent>
                                 <p className="text-gray-600 dark:text-gray-300 mb-4">
-                                    Bid invitation documents are published as part of Phase 3 of the procurement process. These documents invite
+                                    Bid invitation documents are published as part of Stage 3 of the procurement process. These documents invite
                                     qualified suppliers or contractors to submit bids for specific goods, services, or infrastructure projects.
                                 </p>
                                 <p className="text-gray-600 dark:text-gray-300">

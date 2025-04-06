@@ -10,12 +10,14 @@ import { getStatusBadgeStyle } from '@/lib/procurements-list-utils';
 interface KanbanCardProps {
     procurement: ProcurementListItem;
     onOpenPreProcurementModal?: (procurement: ProcurementListItem) => void;
+    onOpenPreBidModal?: (procurement: ProcurementListItem) => void;
     onOpenMarkCompleteDialog?: (procurement: ProcurementListItem) => void;
 }
 
 export const KanbanCard = ({
     procurement,
     onOpenPreProcurementModal,
+    onOpenPreBidModal,
     onOpenMarkCompleteDialog,
 }: KanbanCardProps) => {
     return (
@@ -65,6 +67,7 @@ export const KanbanCard = ({
                         procurement={procurement}
                         variant="kanban"
                         onOpenPreProcurementModal={onOpenPreProcurementModal}
+                        onOpenPreBidModal={onOpenPreBidModal}
                         onOpenMarkCompleteDialog={onOpenMarkCompleteDialog}
                     />
                 </div>

@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { FileText, Upload, ClipboardList, CheckCircle2, ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { format } from 'date-fns';
+import { useForm, Head } from '@inertiajs/react';
 import { toast } from 'sonner';
-
+import type { BreadcrumbItem } from '@/types';
+import type { FormSummaryProps } from '@/components/procurement-initiation/form-summary';
 import AppLayout from '@/layouts/app-layout';
-import { FormHeader } from '@/components/pr-initiation/form-header';
-import { ProcurementDetails } from '@/components/pr-initiation/steps/procurement-details';
-import { Documents } from '@/components/pr-initiation/steps/documents';
-import { FormSummary, FormSummaryProps } from '@/components/pr-initiation/form-summary';
-import { ValidationSummary } from '@/components/pr-initiation/validation-summary';
-
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { FormHeader } from '@/components/procurement-initiation/form-header';
+import { ProcurementDetails } from '@/components/procurement-initiation/procurement-details';
+import { Documents } from '@/components/procurement-initiation/documents';
+import { FormSummary } from '@/components/procurement-initiation/form-summary';
 
-import { BreadcrumbItem } from '@/types';
-
-// 1. Type Definitions
 interface FileMetadata {
     document_type: string;
     submission_date: string;
@@ -34,18 +33,43 @@ interface ProcurementInitiationFormData {
 
 type ComponentFormData = FormSummaryProps['data'];
 
-// 2. Constants
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurement Initiation', href: '#' },
 ];
 
-// 3. Helper Functions
+interface FormStep {
+    id: number;
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+}
+
+const formSteps: FormStep[] = [
+    {
+        id: 1,
+        title: "Details",
+        description: "Basic procurement information",
+        icon: <FileText className="h-5 w-5" />,
+    },
+    {
+        id: 2,
+        title: "Documents",
+        description: "Upload required files",
+        icon: <Upload className="h-5 w-5" />,
+    },
+    {
+        id: 3,
+        title: "Review",
+        description: "Verify and submit",
+        icon: <ClipboardList className="h-5 w-5" />,
+    }
+];
+
 function parseDate(dateStr: string): Date | undefined {
     if (!dateStr) return undefined;
 
     try {
-        // Handle different date formats
         const date = new Date(dateStr);
         return !isNaN(date.getTime()) ? date : undefined;
     } catch (e) {
@@ -75,7 +99,6 @@ const prepareFormSummaryData = (
 ): ProcurementInitiationFormData => {
     const result = { ...data };
 
-    // Format submission dates in metadata
     result.metadata = data.metadata.map(meta => ({
         ...meta,
         submission_date: formatDateFn(meta.submission_date)
@@ -85,17 +108,20 @@ const prepareFormSummaryData = (
 };
 
 export default function ProcurementInitiationForm() {
-    // 1. Form state and initialization
     const { data, setData, post, processing, errors, setError, clearErrors } = useForm<ProcurementInitiationFormData>({
         procurement_id: '',
         procurement_title: '',
         file: null,
-        files: [],
-        metadata: [],
+        files: [null],
+        metadata: [{
+            document_type: '',
+            submission_date: '',
+            municipal_offices: '',
+            signatory_details: ''
+        }],
     });
 
-    // 2. Component state variables
-    const [fileCount, setFileCount] = useState(0);
+    const [fileCount, setFileCount] = useState(1);
     const [formCompletion, setFormCompletion] = useState({
         details: false,
         document: false,
@@ -103,9 +129,8 @@ export default function ProcurementInitiationForm() {
     });
     const [isDragging, setIsDragging] = useState(false);
     const [dates, setDates] = useState<Record<number, Date | undefined>>({});
-    const [validationAttempted, setValidationAttempted] = useState(false);
+    const [currentStep, setCurrentStep] = useState(1);
 
-    // 3. Format and conversion helpers
     const formatDateForDisplay = (dateValue: Date | string | undefined): string => {
         if (!dateValue) return 'Not set';
 
@@ -137,7 +162,6 @@ export default function ProcurementInitiationForm() {
         } as ComponentFormData;
     };
 
-    // 4. Form field handlers
     const handleFieldChange = (field: string, value: string | number | boolean | null | File | undefined) => {
         setData(field as keyof ProcurementInitiationFormData, value as never);
 
@@ -155,11 +179,9 @@ export default function ProcurementInitiationForm() {
                 handleMetadataChange(index, 'submission_date', formattedDate);
             } catch (e) {
                 console.error("Error formatting date:", e);
-                // Still update with the raw date if formatting fails
                 handleMetadataChange(index, 'submission_date', date.toISOString().split('T')[0]);
             }
         } else {
-            // Clear the date if undefined
             handleMetadataChange(index, 'submission_date', '');
         }
     };
@@ -194,19 +216,16 @@ export default function ProcurementInitiationForm() {
         }
     };
 
-    // 5. File management functions
     const addFile = () => {
         setFileCount(prevCount => prevCount + 1);
 
         const newFiles = [...data.files, null];
         const newMetadata = [...data.metadata];
         
-        // Get metadata from the last document if available
         const lastIndex = newMetadata.length - 1;
         let newDocMetadata;
         
         if (lastIndex >= 0 && newMetadata[lastIndex]) {
-            // Copy metadata but reset document_type
             newDocMetadata = {
                 document_type: '',
                 submission_date: newMetadata[lastIndex].submission_date || '',
@@ -227,7 +246,6 @@ export default function ProcurementInitiationForm() {
         setData('files', newFiles);
         setData('metadata', newMetadata);
 
-        // Copy date from previous document if available
         if (lastIndex >= 0 && dates[lastIndex]) {
             setDates(prev => ({
                 ...prev,
@@ -251,13 +269,11 @@ export default function ProcurementInitiationForm() {
     };
 
     const validateFile = (file: File): boolean => {
-        // Check file size (10MB limit)
         if (file.size > 10 * 1024 * 1024) {
             toast.error("File too large", { description: "Maximum file size is 10MB" });
             return false;
         }
         
-        // Check file type (add more as needed)
         const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
         
@@ -271,7 +287,6 @@ export default function ProcurementInitiationForm() {
         return true;
     };
 
-    // 6. Drag and drop handlers
     const handleFileDragEvent = (e: React.DragEvent, action: 'enter' | 'leave' | 'over' | 'drop', index?: number) => {
         e.preventDefault();
         e.stopPropagation();
@@ -303,21 +318,18 @@ export default function ProcurementInitiationForm() {
         }
     };
 
-    // Add this function to copy metadata from one document to another
     const copyMetadataFromPrevious = (targetIndex: number) => {
         if (targetIndex <= 0 || !data.metadata[targetIndex - 1]) return;
         
         const updatedMetadata = [...data.metadata];
-        // Copy metadata from the previous document but keep the document_type if it exists
         const currentDocType = updatedMetadata[targetIndex]?.document_type || '';
         updatedMetadata[targetIndex] = {
             ...updatedMetadata[targetIndex - 1],
-            document_type: currentDocType // Preserve the current document type
+            document_type: currentDocType
         };
         
         setData('metadata', updatedMetadata);
         
-        // Also update dates state
         if (dates[targetIndex - 1]) {
             setDates(prev => ({
                 ...prev,
@@ -326,25 +338,22 @@ export default function ProcurementInitiationForm() {
         }
     };
 
-    // Add function to apply first document metadata to all
     const applyMetadataToAll = () => {
         if (!data.metadata[0] || data.files.length <= 1) return;
         
         const sourceMetadata = data.metadata[0];
         const updatedMetadata = [...data.metadata];
         
-        // Apply the first document's metadata to all documents except document_type
         for (let i = 1; i < updatedMetadata.length; i++) {
             const currentDocType = updatedMetadata[i]?.document_type || '';
             updatedMetadata[i] = {
                 ...sourceMetadata,
-                document_type: currentDocType // Preserve each document's type
+                document_type: currentDocType
             };
         }
         
         setData('metadata', updatedMetadata);
         
-        // Also update dates state
         if (dates[0]) {
             const newDates = { ...dates };
             for (let i = 1; i < data.files.length; i++) {
@@ -354,12 +363,10 @@ export default function ProcurementInitiationForm() {
         }
     };
 
-    // 7. Form validation and submission
     const validateForm = (): boolean => {
         clearErrors();
         let isValid = true;
 
-        // Step 1 validations
         if (!data.procurement_id) {
             setError('procurement_id', 'Procurement ID is required');
             isValid = false;
@@ -370,9 +377,7 @@ export default function ProcurementInitiationForm() {
             isValid = false;
         }
 
-        // Step 2 validations - Documents validation
         data.files.forEach((file, index) => {
-            // Only validate metadata if file exists
             if (file) {
                 if (!data.metadata[index]?.document_type) {
                     setError(`metadata.${index}.document_type`, 'Document type is required');
@@ -396,16 +401,24 @@ export default function ProcurementInitiationForm() {
             }
         });
 
-        // Update form completion state
         setFormCompletion({
             details: !!data.procurement_id && !!data.procurement_title,
-            document: data.files.every((file, index) => !file || (
-                !!data.metadata[index]?.document_type &&
-                !!data.metadata[index]?.submission_date &&
-                !!data.metadata[index]?.municipal_offices &&
-                !!data.metadata[index]?.signatory_details
-            )),
-            documents: true
+            document: data.files.some(file => !!file) && data.metadata.every((meta, index) => 
+                !data.files[index] || (
+                    !!meta.document_type &&
+                    !!meta.submission_date &&
+                    !!meta.municipal_offices &&
+                    !!meta.signatory_details
+                )
+            ),
+            documents: data.files.some(file => !!file) && data.metadata.every((meta, index) => 
+                !data.files[index] || (
+                    !!meta.document_type &&
+                    !!meta.submission_date &&
+                    !!meta.municipal_offices &&
+                    !!meta.signatory_details
+                )
+            )
         });
 
         return isValid;
@@ -413,7 +426,6 @@ export default function ProcurementInitiationForm() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setValidationAttempted(true);
 
         if (!validateForm()) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -451,14 +463,12 @@ export default function ProcurementInitiationForm() {
         });
     };
 
-    // 8. Helper functions
     const hasError = (field: string) => {
         return Object.keys(errors).some(error => error === field || error.startsWith(`${field}.`));
     };
 
     const fileIndices = Array.from({ length: data.files.length }, (_, i) => i);
 
-    // 9. Side effects
     useEffect(() => {
         try {
             const newDates: { [key: number]: Date | undefined } = {};
@@ -479,17 +489,35 @@ export default function ProcurementInitiationForm() {
     useEffect(() => {
         setFormCompletion({
             details: !!data.procurement_id && !!data.procurement_title,
-            document: !!data.file && 
-                !!data.metadata[0]?.submission_date &&
-                !!data.metadata[0]?.municipal_offices &&
-                !!data.metadata[0]?.signatory_details,
-            documents: data.files.length === 0 || (
-                data.files.every((file, index) => !file || !!data.metadata[index + 1]?.document_type)
+            document: data.files.some(file => !!file) && data.metadata.every((meta, index) => 
+                !data.files[index] || (
+                    !!meta.document_type &&
+                    !!meta.submission_date &&
+                    !!meta.municipal_offices &&
+                    !!meta.signatory_details
+                )
+            ),
+            documents: data.files.some(file => !!file) && data.metadata.every((meta, index) => 
+                !data.files[index] || (
+                    !!meta.document_type &&
+                    !!meta.submission_date &&
+                    !!meta.municipal_offices &&
+                    !!meta.signatory_details
+                )
             )
         });
     }, [data]);
 
-    // 10. Component props
+    const calculateProgress = () => {
+        let progress = 0;
+        if (formCompletion.details) progress += 33;
+        if (formCompletion.document) progress += 33;
+        if (formCompletion.documents) progress += 34;
+        return progress;
+    };
+
+    const progressValue = calculateProgress();
+
     const procurementDetailsProps = {
         data: {
             procurement_id: data.procurement_id,
@@ -510,7 +538,6 @@ export default function ProcurementInitiationForm() {
                     index,
                     {
                         ...meta,
-                        // More safely handle the submission_date
                         submission_date: meta.submission_date 
                             ? parseDate(meta.submission_date) 
                             : undefined
@@ -544,70 +571,164 @@ export default function ProcurementInitiationForm() {
     const formSummaryProps = {
         data: convertToComponentFormData(prepareFormSummaryData(data, formatDateForDisplay)),
         formCompletion,
-        addFile
+        addFile,
+        setCurrentStep
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Procurement" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border bg-white dark:bg-black/80 p-6">
+            <div className="flex h-full flex-1 flex-col gap-5 p-5">
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-6 shadow-sm">
                     <FormHeader />
-                </div>
-
-                {validationAttempted && (
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border bg-white dark:bg-black/80 p-6">
-                        <ValidationSummary 
-                            errors={errors as Record<string, string>} 
-                            hasErrors={Object.keys(errors).length > 0}
-                            isSubmitting={processing} 
-                        />
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="flex-1 space-y-4">
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border bg-white dark:bg-black/80 p-6">
-                        <div className="space-y-8">
-                            <div className="border-b pb-6">
-                                <h2 className="text-xl font-semibold mb-4">Procurement Details</h2>
-                                <ProcurementDetails {...procurementDetailsProps} />
-                            </div>
-
-                            <div className="border-b pb-6">
-                                <h2 className="text-xl font-semibold mb-4">Document Upload</h2>
-                                <Documents {...documentsProps} />
-                            </div>
-
-                            <div>
-                                <h2 className="text-xl font-semibold mb-4">Procurement Summary</h2>
-                                <FormSummary {...formSummaryProps} />
-                            </div>
+                    
+                    <div className="mt-8">
+                        <Progress value={progressValue} className="h-2" />
+                        
+                        <div className="mt-4 grid grid-cols-3 gap-4">
+                            {formSteps.map((step) => (
+                                <button
+                                    key={step.id}
+                                    onClick={() => setCurrentStep(step.id)}
+                                    className={`flex items-start p-4 rounded-lg transition-all ${
+                                        currentStep === step.id
+                                            ? 'bg-primary/10 border border-primary'
+                                            : 'hover:bg-muted/50'
+                                    }`}
+                                >
+                                    <div className={`rounded-full p-2 mr-3 ${
+                                        currentStep === step.id
+                                            ? 'bg-primary text-white'
+                                            : 'bg-muted'
+                                    }`}>
+                                        {step.icon}
+                                    </div>
+                                    <div className="text-left">
+                                        <h3 className="font-medium flex items-center gap-2">
+                                            {step.title}
+                                            {(
+                                                (step.id === 1 && formCompletion.details) ||
+                                                (step.id === 2 && formCompletion.document) ||
+                                                (step.id === 3 && formCompletion.documents)
+                                            ) && (
+                                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                            )}
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground">{step.description}</p>
+                                    </div>
+                                </button>
+                            ))}
                         </div>
                     </div>
+                </Card>
 
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border bg-white dark:bg-black/80 p-4">
-                        <div className="flex justify-between">
-                            <Button
-                                type="button"
-                                onClick={() => {
-                                    setValidationAttempted(true);
-                                    validateForm();
-                                }}
-                                variant="outline"
-                                className="px-4 py-2"
-                            >
-                                Validate Form
-                            </Button>
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md transition-colors disabled:opacity-50"
-                            >
-                                {processing ? 'Submitting...' : 'Submit Procurement'}
-                            </button>
+                <form onSubmit={handleSubmit} className="flex-1 space-y-5">
+                    {currentStep === 1 && (
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-6 shadow-sm">
+                            <ProcurementDetails {...procurementDetailsProps} />
+                        </Card>
+                    )}
+
+                    {currentStep === 2 && (
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-6 shadow-sm">
+                            <Documents {...documentsProps} />
+                        </Card>
+                    )}
+
+                    {currentStep === 3 && (
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-6 shadow-sm">
+                            <FormSummary {...formSummaryProps} />
+                        </Card>
+                    )}
+
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-5 shadow-sm">
+                        <div className="grid grid-cols-3 items-center">
+                            <div className="flex items-center gap-4">
+                                {currentStep > 1 && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setCurrentStep(currentStep - 1)}
+                                        className="gap-2"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                        Back to {formSteps[currentStep - 2].title}
+                                    </Button>
+                                )}
+                            </div>
+                            
+                            <div className="text-sm text-muted-foreground text-center">
+                                Step {currentStep} of {formSteps.length}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        post('/bac-secretariat/save-procurement-draft', {
+                                            preserveScroll: true,
+                                            preserveState: true,
+                                            headers: {
+                                                'X-Inertia': 'true',
+                                                Accept: 'application/json',
+                                            },
+                                            onSuccess: () => {
+                                                toast.success('Draft saved successfully');
+                                            },
+                                            onError: () => {
+                                                toast.error('Failed to save draft');
+                                            }
+                                        });
+                                    }}
+                                    className="gap-2"
+                                >
+                                    <Save className="h-4 w-4" />
+                                    Save Draft
+                                </Button>
+                                
+                                {currentStep < 3 ? (
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            if (currentStep === 1 && !formCompletion.details) {
+                                                toast.error("Please complete all details before continuing");
+                                                return;
+                                            }
+                                            if (currentStep === 2 && !formCompletion.documents) {
+                                                toast.error("Please complete all document information before continuing");
+                                                return;
+                                            }
+                                            setCurrentStep(currentStep + 1);
+                                        }}
+                                        className="gap-2"
+                                    >
+                                        Continue to {formSteps[currentStep].title}
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="submit"
+                                        disabled={processing || !formCompletion.details || !formCompletion.document || !formCompletion.documents}
+                                        className="bg-primary hover:bg-primary/90 text-white gap-2"
+                                    >
+                                        {processing ? (
+                                            <>
+                                                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                                <span>Submitting Procurement...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="h-4 w-4" />
+                                                Submit Procurement
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    </Card>
                 </form>
             </div>
         </AppLayout>

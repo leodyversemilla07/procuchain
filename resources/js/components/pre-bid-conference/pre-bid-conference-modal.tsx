@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForm, router } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 
-interface PreProcurementModalProps {
+interface PreBidModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     procurementId: string;
@@ -28,13 +28,13 @@ interface PageProps {
     errors?: Record<string, string>;
 }
 
-export function PreProcurementModal({
+export function PreBidConferenceModal({
     open,
     onOpenChange,
     procurementId,
     procurementTitle,
     onComplete
-}: PreProcurementModalProps) {
+}: PreBidModalProps) {
     const form = useForm({
         procurement_id: procurementId,
         procurement_title: procurementTitle,
@@ -45,8 +45,8 @@ export function PreProcurementModal({
         onOpenChange(false);
 
         const message = form.data.conference_held
-            ? "You will now proceed to upload pre-procurement conference documents."
-            : "The pre-procurement conference stage has been skipped.";
+            ? "You will now proceed to upload pre-bid conference documents."
+            : "The pre-bid conference stage has been skipped.";
 
         toast.success("Decision submitted successfully!", { description: message });
 
@@ -55,10 +55,6 @@ export function PreProcurementModal({
                 response.props.nextStage,
                 form.data.conference_held
             );
-        }
-
-        if (!form.data.conference_held) {
-            router.visit('/bac-secretariat/procurements-list');
         }
 
         form.reset();
@@ -78,9 +74,26 @@ export function PreProcurementModal({
             return;
         }
 
+        if (!procurementId) {
+            form.setError('procurement_id', 'Procurement ID is required');
+            return;
+        }
+
+        if (!procurementTitle) {
+            form.setError('procurement_title', 'Procurement title is required');
+            return;
+        }
+
         form.clearErrors();
 
-        form.post('/bac-secretariat/publish-pre-procurement-conference-decision', {
+        // Set all form data at once to ensure consistency
+        form.setData({
+            procurement_id: procurementId,
+            procurement_title: procurementTitle,
+            conference_held: Boolean(form.data.conference_held)
+        });
+
+        form.post('/bac-secretariat/publish-pre-bid-conference-decision', {
             preserveScroll: true,
             preserveState: true,
             onSuccess: handleSuccess,
@@ -89,10 +102,7 @@ export function PreProcurementModal({
     };
 
     const handleConferenceSelection = (value: string) => {
-        form.setData({
-            ...form.data,
-            conference_held: value === 'true'
-        });
+        form.setData('conference_held', value === 'true');
     };
 
     return (
@@ -105,10 +115,10 @@ export function PreProcurementModal({
             <DialogContent className="sm:max-w-[500px] p-6">
                 <DialogHeader className="space-y-3">
                     <DialogTitle className="text-2xl font-semibold tracking-tight">
-                        Pre-Procurement Conference Decision
+                        Pre-Bid Conference Decision
                     </DialogTitle>
                     <DialogDescription className="text-base leading-relaxed">
-                        Please indicate whether a pre-procurement conference was held for this procurement:
+                        Please indicate whether a pre-bid conference was held for this procurement:
                         <span className="block font-medium text-gray-700 dark:text-gray-300 mt-2">
                             {procurementTitle}
                         </span>
@@ -119,13 +129,13 @@ export function PreProcurementModal({
                     <div className="space-y-6">
                         <div className="space-y-4">
                             <Label className="text-base font-medium">
-                                Was a pre-procurement conference held?
+                                Was a pre-bid conference held?
                             </Label>
                             <RadioGroup
                                 value={form.data.conference_held === undefined ? undefined : form.data.conference_held.toString()}
                                 onValueChange={handleConferenceSelection}
                                 className="grid grid-cols-2 gap-4 pt-2"
-                                aria-label="Pre-procurement conference status"
+                                aria-label="Pre-bid conference status"
                             >
                                 <Label htmlFor="conference-yes" className="w-full m-0">
                                     <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
@@ -153,9 +163,9 @@ export function PreProcurementModal({
                                 : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
                                 }`}>
                                 {form.data.conference_held ? (
-                                    <p>You'll be directed to the procurement list to upload the pre-procurement conference documents.</p>
+                                    <p>You'll be directed to the procurement list to upload the pre-bid conference documents.</p>
                                 ) : (
-                                    <p>This will skip the pre-procurement conference stage and proceed to Bidding Documents Publication.</p>
+                                    <p>This will skip the pre-bid conference stage and proceed to Supplemental Bid Bulletin.</p>
                                 )}
                             </div>
                         )}
