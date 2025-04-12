@@ -27,9 +27,6 @@ abstract class BaseStageHandler implements StageHandlerInterface
         $this->notificationService = $notificationService;
     }
 
-    /**
-     * This method must be implemented by all concrete stage handlers
-     */
     abstract public function handle(Request $request): array;
 
     protected function getUserBlockchainAddress(): string

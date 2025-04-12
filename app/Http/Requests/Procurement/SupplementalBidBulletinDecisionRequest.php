@@ -26,7 +26,7 @@ class SupplementalBidBulletinDecisionRequest extends FormRequest
         return [
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'has_more_bulletins' => 'required|boolean',
+            'supplemental_bid_needed' => 'required|boolean', // Change field name here
         ];
     }
 }

@@ -1,15 +1,16 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FileTextIcon, FileUpIcon, BarChart4Icon, CheckIcon } from 'lucide-react';
+import { FileTextIcon, FileUpIcon, BarChart4Icon } from 'lucide-react';
 import { ProcurementListItem, Stage, Status } from '@/types/blockchain';
+import { SharedData } from '@/types';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
     variant?: 'table' | 'kanban';
     onOpenPreProcurementModal?: (procurement: ProcurementListItem) => void;
     onOpenPreBidModal?: (procurement: ProcurementListItem) => void;
-    onOpenMarkCompleteDialog?: (procurement: ProcurementListItem) => void;
+    onOpenSupplementalBidBulletinModal?: (procurement: ProcurementListItem) => void;
 }
 
 interface ActionButtonItemProps {
@@ -50,22 +51,27 @@ const useButtonSizes = (variant: 'table' | 'kanban') => ({
     buttonSize: variant === 'table' ? 'h-8 w-8' : 'h-7 w-7',
 });
 
-const useInitialStageButtons = (procurement: ProcurementListItem, iconSize: string, onOpenPreProcurementModal?: (p: ProcurementListItem) => void) => {
-    const { stage, current_status: status } = procurement;
+const getButtonConfigs = (
+    procurement: ProcurementListItem,
+    iconSize: string,
+    handlers: {
+        onOpenPreProcurementModal?: (p: ProcurementListItem) => void;
+        onOpenPreBidModal?: (p: ProcurementListItem) => void;
+        onOpenSupplementalBidBulletinModal?: (p: ProcurementListItem) => void;
+        onOpenMarkCompleteDialog?: (p: ProcurementListItem) => void;
+    }
+) => {
+    const { id, stage, current_status: status } = procurement;
+    const configs = [];
+
     if (stage === Stage.PROCUREMENT_INITIATION && status === Status.PROCUREMENT_SUBMITTED) {
-        return [{
+        configs.push({
             icon: <FileUpIcon className={iconSize} />,
             tooltipText: "Record Pre-Procurement Conference Decision",
             className: "text-amber-600 dark:text-amber-400",
-            onClick: () => onOpenPreProcurementModal?.(procurement)
-        }];
+            onClick: () => handlers.onOpenPreProcurementModal?.(procurement)
+        });
     }
-    return [];
-};
-
-const useDocumentUploadButtons = (procurement: ProcurementListItem, iconSize: string) => {
-    const { id, stage, current_status: status } = procurement;
-    const configs = [];
 
     if (stage === Stage.PRE_PROCUREMENT_CONFERENCE && status === Status.PRE_PROCUREMENT_CONFERENCE_HELD) {
         configs.push({
@@ -87,30 +93,23 @@ const useDocumentUploadButtons = (procurement: ProcurementListItem, iconSize: st
             href: `/bac-secretariat/bidding-documents-upload/${id}`
         });
     }
-    
-    if (stage === Stage.PRE_BID_CONFERENCE && status === Status.PRE_BID_CONFERENCE_HELD) {
-        configs.push({
-            icon: <FileUpIcon className={iconSize} />,
-            tooltipText: "Upload Pre-Bid Conference Documents",
-            className: "text-indigo-600 dark:text-indigo-400",
-            href: `/bac-secretariat/pre-bid-conference-upload/${id}`
-        });
-    }
 
-    return configs;
-};
-
-const useBidProcessButtons = (procurement: ProcurementListItem, iconSize: string, onOpenPreBidModal?: (p: ProcurementListItem) => void) => {
-    const { id, stage, current_status: status } = procurement;
-    const configs = [];
-
-    if (stage === Stage.PRE_BID_CONFERENCE && status === Status.BIDDING_DOCUMENTS_PUBLISHED) {
-        configs.push({
-            icon: <FileUpIcon className={iconSize} />,
-            tooltipText: "Record Pre-Bid Conference Decision",
-            className: "text-indigo-600 dark:text-indigo-400",
-            onClick: () => onOpenPreBidModal?.(procurement)
-        });
+    if (stage === Stage.PRE_BID_CONFERENCE) {
+        if (status === Status.BIDDING_DOCUMENTS_PUBLISHED) {
+            configs.push({
+                icon: <FileUpIcon className={iconSize} />,
+                tooltipText: "Record Pre-Bid Conference Decision",
+                className: "text-indigo-600 dark:text-indigo-400",
+                onClick: () => handlers.onOpenPreBidModal?.(procurement)
+            });
+        } else if (status === Status.PRE_BID_CONFERENCE_HELD) {
+            configs.push({
+                icon: <FileUpIcon className={iconSize} />,
+                tooltipText: "Upload Pre-Bid Conference Documents",
+                className: "text-indigo-600 dark:text-indigo-400",
+                href: `/bac-secretariat/pre-bid-conference-upload/${id}`
+            });
+        }
     }
 
     if (stage === Stage.BID_OPENING && status === Status.BIDDING_DOCUMENTS_PUBLISHED) {
@@ -131,20 +130,25 @@ const useBidProcessButtons = (procurement: ProcurementListItem, iconSize: string
         });
     }
 
-    return configs;
-};
-
-const useMonitoringButtons = (procurement: ProcurementListItem, iconSize: string, onOpenMarkCompleteDialog?: (p: ProcurementListItem) => void) => {
-    const { stage, current_status: status } = procurement;
-    if (stage === Stage.MONITORING && status === Status.MONITORING) {
-        return [{
-            icon: <CheckIcon className={iconSize} />,
-            tooltipText: "Mark Procurement as Complete",
-            className: "text-green-600 dark:text-green-400",
-            onClick: () => onOpenMarkCompleteDialog?.(procurement)
-        }];
+    if (stage === Stage.SUPPLEMENTAL_BID_BULLETIN) {
+        if (status === Status.PRE_BID_CONFERENCE_COMPLETED) {
+            configs.push({
+                icon: <FileUpIcon className={iconSize} />,
+                tooltipText: "Record Supplemental Bid Bulletin Decision",
+                className: "text-indigo-600 dark:text-indigo-400",
+                onClick: () => handlers.onOpenSupplementalBidBulletinModal?.(procurement)
+            });
+        } else if (status === Status.SUPPLEMENTAL_BID_BULLETINS_ONGOING) {
+            configs.push({
+                icon: <FileUpIcon className={iconSize} />,
+                tooltipText: "Upload Supplemental Bid Bulletin Documents",
+                className: "text-blue-600 dark:text-blue-400",
+                href: `/bac-secretariat/supplemental-bid-bulletin-upload/${id}`
+            });
+        }
     }
-    return [];
+
+    return configs;
 };
 
 export const ActionButtons = ({
@@ -152,17 +156,18 @@ export const ActionButtons = ({
     variant = 'table',
     onOpenPreProcurementModal,
     onOpenPreBidModal,
-    onOpenMarkCompleteDialog,
+    onOpenSupplementalBidBulletinModal,
 }: ActionButtonsProps) => {
     const { id } = procurement;
     const { iconSize, buttonSize } = useButtonSizes(variant);
+    const { auth } = usePage<SharedData>().props;
+    const isBacSecretariat = auth.user?.role === 'bac_secretariat';
 
-    const buttonConfigs = [
-        ...useInitialStageButtons(procurement, iconSize, onOpenPreProcurementModal),
-        ...useDocumentUploadButtons(procurement, iconSize),
-        ...useBidProcessButtons(procurement, iconSize, onOpenPreBidModal),
-        ...useMonitoringButtons(procurement, iconSize, onOpenMarkCompleteDialog)
-    ];
+    const buttonConfigs = getButtonConfigs(procurement, iconSize, {
+        onOpenPreProcurementModal,
+        onOpenPreBidModal,
+        onOpenSupplementalBidBulletinModal,
+    });
 
     return (
         <div className="flex justify-end space-x-1">
@@ -173,7 +178,7 @@ export const ActionButtons = ({
                 className="text-blue-600 dark:text-blue-400"
                 buttonSize={buttonSize}
             />
-            {buttonConfigs.map((config, index) => (
+            {isBacSecretariat && buttonConfigs.map((config, index) => (
                 <ActionButtonItem
                     key={index}
                     buttonSize={buttonSize}

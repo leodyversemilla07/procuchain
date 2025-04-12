@@ -5,11 +5,13 @@ use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\HopeController;
 use App\Http\Controllers\PrGeneratorController;
 use App\Http\Controllers\ProcurementController;
+use App\Http\Controllers\ViewProcurementsController;
+use App\Services\MultichainService;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('welcome');
+    return Inertia::render('home');
 })->name('home');
 
 Route::inertia('/bidding', 'bidding')
@@ -24,17 +26,31 @@ Route::inertia('/generate-pr-show', 'generate-pr')
 Route::post('generate-pr-store', [PrGeneratorController::class, 'store'])
     ->name('generate-pr.store');
 
+Route::get('/test-multichain', function (): \Illuminate\Http\JsonResponse {
+    $multichainService = new MultichainService;
+    $connectionInfo = $multichainService->listStreams();
+
+    return response()->json($connectionInfo);
+});
+
+Route::get('/list-stream-items/{streamName}', function (string $streamName): \Illuminate\Http\JsonResponse {
+    $multichainService = new MultichainService;
+    $items = $multichainService->listStreamItems($streamName);
+
+    return response()->json($items);
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(['role:bac_secretariat'])->group(function () {
 
-        Route::get('/bac-secretariat/dashboard', [BacSecretariatController::class, 'index'])
+        Route::get('/bac-secretariat/dashboard', [BacSecretariatController::class, 'dashboard'])
             ->name('bac-secretariat.dashboard');
 
-        Route::get('/bac-secretariat/procurements-list', [BacSecretariatController::class, 'indexProcurementsList'])
+        Route::get('/bac-secretariat/procurements-list', [ViewProcurementsController::class, 'indexProcurementsList'])
             ->name('bac-secretariat.procurements-list.index');
 
-        Route::get('/bac-secretariat/procurements-list/{id}', [BacSecretariatController::class, 'showProcurement'])
+        Route::get('/bac-secretariat/procurements-list/{id}', [ViewProcurementsController::class, 'showProcurement'])
             ->name('bac-secretariat.procurements.show');
 
         Route::get('/bac-secretariat/procurement/procurement-initiation', [ProcurementController::class, 'showProcurementInitiation'])
@@ -141,10 +157,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('bac-chairman/dashboard', [BacChairmanController::class, 'index'])
             ->name('bac-chairman.dashboard');
 
-        Route::get('bac-chairman/procurements-list', [BacChairmanController::class, 'indexProcurementsList'])
+        Route::get('bac-chairman/procurements-list', [ViewProcurementsController::class, 'indexProcurementsList'])
             ->name('bac-chairman.procurements-list.index');
 
-        Route::get('bac-chairman/procurements-list/{id}', [BacChairmanController::class, 'showProcurement'])
+        Route::get('bac-chairman/procurements-list/{id}', [ViewProcurementsController::class, 'showProcurement'])
             ->name('bac-chairman.procurements.show');
 
     });
@@ -153,14 +169,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('hope/dashboard', [HopeController::class, 'index'])
             ->name('hope.dashboard');
 
-        Route::get('hope/procurements-list', [HopeController::class, 'indexProcurementsList'])
+        Route::get('hope/procurements-list', [ViewProcurementsController::class, 'indexProcurementsList'])
             ->name('bac-chairman.procurements-list.index');
 
-        Route::get('hope/procurements-list/{id}', [HopeController::class, 'showProcurement'])
+        Route::get('hope/procurements-list/{id}', [ViewProcurementsController::class, 'showProcurement'])
             ->name('hope.procurements.show');
     });
 
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

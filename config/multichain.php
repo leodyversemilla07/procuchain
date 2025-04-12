@@ -15,7 +15,7 @@ return [
 
     'rpc' => [
         'host' => env('MULTICHAIN_HOST', '127.0.0.1'),
-        'port' => env('MULTICHAIN_PORT', '2778'),
+        'port' => env('MULTICHAIN_PORT', 4786),
         'username' => env('MULTICHAIN_USERNAME', 'multichainrpc'),
         'password' => env('MULTICHAIN_PASSWORD'),
     ],
@@ -45,7 +45,7 @@ return [
     */
 
     'use_ssl' => env('MULTICHAIN_USE_SSL', false),
-    'verify_ssl' => env('MULTICHAIN_VERIFY_SSL', true),
+    'verify_ssl' => env('MULTICHAIN_VERIFY_SSL', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -58,6 +58,18 @@ return [
     |
     */
 
-    'node_address' => env('MULTICHAIN_NODE_ADDRESS', '192.168.32.101:6719'),
+    'node_address' => env('MULTICHAIN_NODE_ADDRESS'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Connection Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configure timeouts and retry settings for the MultiChain RPC connection.
+    | These settings help manage connection behavior and reliability.
+    |
+    */
+
+    'connection_timeout' => env('MULTICHAIN_CONNECTION_TIMEOUT', 30),
+    'max_retries' => env('MULTICHAIN_MAX_RETRIES', 3),
 ];

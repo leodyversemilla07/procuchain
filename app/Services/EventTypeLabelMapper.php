@@ -11,7 +11,7 @@ class EventTypeLabelMapper
         'procurement completed' => 'Completed Procurement',
     ];
 
-    public function getLabel(string $eventType, string $details = ''): string 
+    public function getLabel(string $eventType, string $details = ''): string
     {
         $eventType = strtolower($eventType);
 
@@ -25,7 +25,6 @@ class EventTypeLabelMapper
             return 'Decision Made';
         }
 
-        // Format unknown event types
         return ucwords(str_replace('_', ' ', $eventType));
     }
 }

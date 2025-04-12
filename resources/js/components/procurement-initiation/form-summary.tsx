@@ -51,26 +51,28 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addFile }: F
   const procurementId = data.procurement_id || '';
   const procurementTitle = data.procurement_title || '';
   const files = data.files || [];
-  const metadata = data.metadata?.slice(1) || data.metadata || [];
+  const metadata = data.metadata || [];  // Remove the slice to show all metadata
 
   const isDetailsComplete = formCompletion.details;
   const isDocumentsComplete = formCompletion.document;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-2xl font-semibold">Review Procurement Details</h2>
+        <h2 className="text-2xl tracking-tight font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          Review Procurement Details
+        </h2>
         <Badge variant="outline" className={cn(
-          "px-3 py-1.5",
+          "px-4 py-2 rounded-lg text-sm font-medium",
           isDetailsComplete && isDocumentsComplete 
             ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
             : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800"
         )}>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {isDetailsComplete && isDocumentsComplete ? (
-              <CheckCircle className="h-4 w-4" />
+              <CheckCircle className="h-4 w-4 shrink-0" />
             ) : (
-              <FileClock className="h-4 w-4" />
+              <FileClock className="h-4 w-4 shrink-0" />
             )}
             <span className="font-medium">
               {isDetailsComplete && isDocumentsComplete ? "Ready to Submit" : "Incomplete"}
@@ -79,18 +81,18 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addFile }: F
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-sm">
-          <CardHeader className="border-b pb-3">
+          <CardHeader className="border-b pb-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <span>Basic Information</span>
                   {isDetailsComplete && (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                   )}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm text-muted-foreground/90">
                   Core procurement identification details
                 </CardDescription>
               </div>
@@ -101,43 +103,45 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addFile }: F
                   onClick={() => handleEditClick(1)}
                   className="text-primary hover:text-primary/90 gap-1.5"
                 >
-                  <Edit className="h-3.5 w-3.5" />
+                  <Edit className="h-3.5 w-3.5 shrink-0" />
                   <span>Edit</span>
                 </Button>
               )}
             </div>
           </CardHeader>
-          <CardContent className="p-4 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">Procurement ID</span>
+          <CardContent className="p-6 space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Building2 className="h-4 w-4 shrink-0 text-primary/70" />
+                    <span>Procurement ID</span>
+                  </div>
+                  <p className="text-lg font-semibold tracking-tight">{procurementId || "Not provided"}</p>
                 </div>
-                <p className="font-semibold">{procurementId || "Not provided"}</p>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Files className="h-4 w-4" />
-                  <span className="text-sm font-medium">Title</span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Files className="h-4 w-4 shrink-0 text-primary/70" />
+                    <span>Title</span>
+                  </div>
+                  <p className="text-lg font-semibold tracking-tight">{procurementTitle || "Not provided"}</p>
                 </div>
-                <p className="font-semibold">{procurementTitle || "Not provided"}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-sm">
-          <CardHeader className="border-b pb-3">
+          <CardHeader className="border-b pb-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <span>Documents & Files</span>
                   {formCompletion.document && (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                   )}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm text-muted-foreground/90">
                   {files.length > 0
                     ? `${files.filter(Boolean).length} document${files.filter(Boolean).length !== 1 ? 's' : ''} attached`
                     : 'No documents attached yet'}
@@ -151,62 +155,62 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addFile }: F
                     onClick={() => handleEditClick(2)}
                     className="text-primary hover:text-primary/90 gap-1.5"
                   >
-                    <Edit className="h-3.5 w-3.5" />
+                    <Edit className="h-3.5 w-3.5 shrink-0" />
                     <span>Edit</span>
                   </Button>
                 )}
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-4">
+          <CardContent className="p-6">
             {files.length > 0 ? (
-              <ScrollArea className="h-[240px] pr-4">
-                <div className="space-y-4">
+              <ScrollArea className="h-[360px] pr-4">
+                <div className="space-y-6">
                   {files.map((file, index) => file && (
                     <div key={index} className="relative">
-                      {index > 0 && <Separator className="my-4" />}
-                      <div className="rounded-lg border bg-card p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="bg-primary/10 rounded-md p-2">
+                      {index > 0 && <Separator className="my-6" />}
+                      <div className="rounded-lg border bg-muted/30 p-5">
+                        <div className="flex items-start gap-4">
+                          <div className="bg-primary/10 rounded-lg p-2.5">
                             <Files className="h-5 w-5 text-primary" />
                           </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="font-medium">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{file.name}</p>
+                            <p className="text-sm text-muted-foreground mt-1">
                               {formatBytes(file.size)} • {file.type || 'Unknown type'}
                             </p>
                           </div>
                         </div>
 
                         {metadata[index] && (
-                          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <FileClock className="h-4 w-4" />
+                          <div className="mt-5 grid grid-cols-2 gap-5">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <FileClock className="h-4 w-4 shrink-0 text-primary/70" />
                                 <span>Document Type</span>
                               </div>
-                              <p className="font-medium">{metadata[index].document_type || "Not specified"}</p>
+                              <p className="font-medium text-foreground">{metadata[index].document_type || "Not specified"}</p>
                             </div>
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Building2 className="h-4 w-4" />
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <Building2 className="h-4 w-4 shrink-0 text-primary/70" />
                                 <span>Office</span>
                               </div>
-                              <p className="font-medium">{metadata[index].municipal_offices || "Not specified"}</p>
+                              <p className="font-medium text-foreground">{metadata[index].municipal_offices || "Not specified"}</p>
                             </div>
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Calendar className="h-4 w-4" />
-                                <span>Date</span>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <Calendar className="h-4 w-4 shrink-0 text-primary/70" />
+                                <span>Submission Date</span>
                               </div>
-                              <p className="font-medium">{metadata[index].submission_date || "Not specified"}</p>
+                              <p className="font-medium text-foreground">{metadata[index].submission_date || "Not specified"}</p>
                             </div>
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <User2 className="h-4 w-4" />
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <User2 className="h-4 w-4 shrink-0 text-primary/70" />
                                 <span>Signatory</span>
                               </div>
-                              <p className="font-medium">{metadata[index].signatory_details || "Not specified"}</p>
+                              <p className="font-medium text-foreground">{metadata[index].signatory_details || "Not specified"}</p>
                             </div>
                           </div>
                         )}
@@ -216,16 +220,16 @@ export function FormSummary({ data, setCurrentStep, formCompletion, addFile }: F
                 </div>
               </ScrollArea>
             ) : (
-              <div className="flex flex-col items-center justify-center p-6 text-center">
-                <Files className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-muted-foreground mb-4">No documents attached yet</p>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Files className="h-10 w-10 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-6 text-sm">No documents attached yet</p>
                 {addFile && (
                   <Button
                     variant="outline"
                     onClick={addFile}
                     className="gap-2"
                   >
-                    <Files className="h-4 w-4" />
+                    <Files className="h-4 w-4 shrink-0" />
                     Add Document
                   </Button>
                 )}

@@ -21,7 +21,7 @@ class BiddingDocumentsHandler extends BaseStageHandler
         } catch (Exception $e) {
             Log::error('Error in BiddingDocumentsHandler', ['error' => $e->getMessage()]);
 
-            return ['success' => false, 'message' => 'Failed to publish '.StageEnums::BIDDING_DOCUMENTS->getDisplayName().': '.$e->getMessage()];
+            return ['success' => false, 'message' => 'Failed to publish ' . StageEnums::BIDDING_DOCUMENTS->getDisplayName() . ': ' . $e->getMessage()];
         }
     }
 
@@ -53,10 +53,10 @@ class BiddingDocumentsHandler extends BaseStageHandler
                 'issuance_date' => $data['issuanceDate'],
                 'validity_period' => [
                     'start_date' => $data['validityPeriodStart'],
-                    'end_date' => $data['validityPeriodEnd']
-                ]
+                    'end_date' => $data['validityPeriodEnd'],
+                ],
             ];
-            
+
             $metadataArray = $this->uploadAndPrepareMetadata(
                 [$data['biddingDocumentsFile']],
                 [$data['metadata'] + $baseMetadata],
@@ -71,6 +71,7 @@ class BiddingDocumentsHandler extends BaseStageHandler
 
     private function processDocuments(array $data, array $metadataArray): array
     {
+        // First publish documents with the published status
         $this->blockchainService->publishDocuments(
             $data['procurementId'],
             $data['procurementTitle'],
@@ -80,14 +81,14 @@ class BiddingDocumentsHandler extends BaseStageHandler
             $data['userAddress']
         );
 
-        // Handle stage transition
+        // Then handle stage transition - this is crucial for advancing stages!
         $this->blockchainService->handleStageTransition(
             $data['procurementId'],
             $data['procurementTitle'],
-            $data['status']->getDisplayName(),
-            $data['status']->getDisplayName(),
-            $data['currentStage']->getDisplayName(),
-            $data['nextStage']->getDisplayName(),
+            StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED->getDisplayName(), // From PRE_PROCUREMENT_CONFERENCE_COMPLETED
+            $data['status']->getDisplayName(),                                    // To BIDDING_DOCUMENTS_PUBLISHED
+            $data['currentStage']->getDisplayName(),                              // From BIDDING_DOCUMENTS
+            $data['nextStage']->getDisplayName(),                                 // To PRE_BID_CONFERENCE
             $data['userAddress'],
             'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after publishing bidding documents'
         );
@@ -98,7 +99,6 @@ class BiddingDocumentsHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['status']->getDisplayName(),
             $data['timestamp'],
-            count($metadataArray),
             'published',
             true,
             $data['nextStage']->getDisplayName()

@@ -25,11 +25,11 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
                 return $this->handleConferenceSkipped($data);
             }
         } catch (Exception $e) {
-            Log::error('Error in PreBidConferenceHandler', ['error' => $e->getMessage()]);
+            Log::error('Error in PreBidConferenceDecisionHandler', ['error' => $e->getMessage()]);
 
             return [
                 'success' => false,
-                'message' => 'Failed to process ' . StageEnums::BIDDING_DOCUMENTS->getDisplayName() . ' decision: ' . $e->getMessage(),
+                'message' => 'Failed to process '.StageEnums::PRE_BID_CONFERENCE->getDisplayName().' decision: '.$e->getMessage(),
             ];
         }
     }
@@ -57,7 +57,7 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             $status->getDisplayName(),
             $status->getDisplayName(),
             $data['currentStage']->getDisplayName(),
-            $data['currentStage']->getDisplayName(),  // Stay in pre-bid conference
+            $data['currentStage']->getDisplayName(), // Stay in pre-bid conference
             $data['userAddress'],
             'Pre-bid conference held'
         );
@@ -68,14 +68,14 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $status->getDisplayName(),
             $data['timestamp'],
-            0,
-            true,
-            true
+            'conference_held', // Action type as string
+            false, // No stage transition
+            '' // No next stage
         );
 
         return [
             'success' => true,
-            'message' => $status->getDisplayName() . '. Pre-bid conference is in progress.',
+            'message' => $status->getDisplayName().'. Pre-bid conference is in progress.',
         ];
     }
 
@@ -89,7 +89,7 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             $status->getDisplayName(),
             $status->getDisplayName(),
             $data['currentStage']->getDisplayName(),
-            $data['nextStage']->getDisplayName(),  // Move to supplemental bulletin
+            $data['nextStage']->getDisplayName(), // Move to supplemental bid bulletin
             $data['userAddress'],
             'Pre-bid conference skipped'
         );
@@ -100,14 +100,14 @@ class PreBidConferenceDecisionHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $status->getDisplayName(),
             $data['timestamp'],
-            0,
-            true,
-            true
+            'conference_skipped', // Action type as string
+            true, // Stage transition occurring
+            $data['nextStage']->getDisplayName() // Next stage specified
         );
 
         return [
             'success' => true,
-            'message' => $status->getDisplayName() . '. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+            'message' => $status->getDisplayName().'. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
 }

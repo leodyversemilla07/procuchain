@@ -10,7 +10,7 @@ class ProcurementStageTransitionService
     public function getPriorityAction(string $currentStage, string $currentStatus, string $id, string $title): ?array
     {
         $stageAction = $this->determineStageAction($currentStage, $currentStatus);
-        
+
         if ($stageAction === null) {
             return null;
         }
@@ -28,7 +28,7 @@ class ProcurementStageTransitionService
         $stageActions = $this->getStageActionsMap();
 
         foreach ($stageActions as $action) {
-            if (!$this->isMatchingStage($action, $currentStage)) {
+            if (! $this->isMatchingStage($action, $currentStage)) {
                 continue;
             }
 
@@ -55,6 +55,7 @@ class ProcurementStageTransitionService
             if (is_array($action['status'])) {
                 return in_array($currentStatus, $action['status'], true);
             }
+
             return $action['status'] === $currentStatus;
         }
 
@@ -199,7 +200,7 @@ class ProcurementStageTransitionService
             'status' => null,
             'action' => 'Mark Procurement as Complete',
             'routeTemplate' => '/bac-secretariat/procurements-list',
-            'statusCheck' => fn($status) => $status !== StatusEnums::COMPLETED->getDisplayName(),
+            'statusCheck' => fn ($status) => $status !== StatusEnums::COMPLETED->getDisplayName(),
         ];
     }
 }

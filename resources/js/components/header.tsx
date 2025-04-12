@@ -1,26 +1,41 @@
 import { useState, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Search } from 'lucide-react';
 import { type SharedData } from '@/types';
 import AppLogoIcon from './app-logo-icon';
 
 export default function Header() {
     const { auth } = usePage<SharedData>().props;
     const [scrolled, setScrolled] = useState(false);
+    const [hideNav, setHideNav] = useState(false);
+    const [lastScrollY, setLastScrollY] = useState(0);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const handleScroll = () => {
-            if (window.scrollY > 20) {
+            const currentScrollY = window.scrollY;
+            
+            // Handle scroll threshold for background
+            if (currentScrollY > 20) {
                 setScrolled(true);
             } else {
                 setScrolled(false);
             }
+
+            // Handle nav show/hide based on scroll direction
+            if (currentScrollY > lastScrollY && currentScrollY > 80) {
+                setHideNav(true);
+            } else {
+                setHideNav(false);
+            }
+
+            setLastScrollY(currentScrollY);
         };
 
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [lastScrollY]);
 
     // Close mobile menu when navigating
     useEffect(() => {
@@ -41,17 +56,28 @@ export default function Header() {
         };
     }, [mobileMenuOpen]);
 
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        // TODO: Implement search functionality
+        console.log('Search query:', searchQuery);
+    };
+
     return (
         <>
-            <header className={`fixed top-0 left-0 right-0 z-50 ${mobileMenuOpen
-                ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl py-3 shadow-lg"
-                : scrolled
-                    ? "bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl py-3 shadow-lg"
-                    : "bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl py-4"
-                } w-full px-4 sm:px-6 md:px-12 border-b border-gray-100/50 dark:border-gray-800/50 transition-all duration-300 ease-in-out`}>
+            <header 
+                role="banner"
+                className={`fixed top-0 left-0 right-0 z-50 transform transition-all duration-300 ease-in-out
+                    ${hideNav ? '-translate-y-full' : 'translate-y-0'}
+                    ${mobileMenuOpen
+                        ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl py-3 shadow-lg"
+                        : scrolled
+                            ? "bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl py-3 shadow-lg"
+                            : "bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl py-4"
+                    } w-full px-4 sm:px-6 md:px-12 border-b border-gray-100/50 dark:border-gray-800/50`}
+            >
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     {/* Logo section with enhanced animation */}
-                    <Link href={route('home')} className="flex items-center space-x-3 group">
+                    <Link href={route('home')} className="flex items-center space-x-3 group" aria-label="Home">
                         <div className="h-11 w-11 rounded-xl overflow-hidden transform transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 shadow-lg">
                             <AppLogoIcon className="w-full h-full object-cover" />
                         </div>
@@ -59,85 +85,125 @@ export default function Header() {
                     </Link>
 
                     {/* Desktop Navigation */}
-                    <nav className="hidden md:flex items-center gap-6">
-                        <Link
-                            href={route('home')}
-                            className="relative px-4 py-2 font-medium text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 hover:text-teal-600 dark:hover:text-teal-400 group"
-                        >
-                            <span className="relative z-10">Home</span>
-                            <div className="absolute inset-0 bg-teal-50 dark:bg-teal-900/30 rounded-lg scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
-                        </Link>
-                        <Link
-                            href={route('bidding')}
-                            className="relative px-4 py-2 font-medium text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 hover:text-teal-600 dark:hover:text-teal-400 group"
-                        >
-                            <span className="relative z-10">Bidding</span>
-                            <div className="absolute inset-0 bg-teal-50 dark:bg-teal-900/30 rounded-lg scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
-                        </Link>
-                        <Link
-                            href={route('procurement')}
-                            className="relative px-4 py-2 font-medium text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 hover:text-teal-600 dark:hover:text-teal-400 group"
-                        >
-                            <span className="relative z-10">Procurement</span>
-                            <div className="absolute inset-0 bg-teal-50 dark:bg-teal-900/30 rounded-lg scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
-                        </Link>
-                        <Link
-                            href={route('generate-pr.index')}
-                            className="relative px-4 py-2 font-medium text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 hover:text-teal-600 dark:hover:text-teal-400 group"
-                        >
-                            <span className="relative z-10">PR Generator</span>
-                            <div className="absolute inset-0 bg-teal-50 dark:bg-teal-900/30 rounded-lg scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
-                        </Link>
+                    <nav className="hidden md:flex items-center gap-6" role="navigation" aria-label="Main navigation">
+                        {/* Search Bar */}
+                        <form onSubmit={handleSearch} className="relative group">
+                            <input
+                                type="search"
+                                placeholder="Search..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-48 pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg
+                                    focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent
+                                    focus:w-64 transition-all duration-300 ease-in-out"
+                            />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        </form>
 
-                        {auth?.user ? (
-                            <>
-                                {auth.user.role === 'hope' ? (
-                                    <Link
-                                        href={route('hope.dashboard')}
-                                        className="relative inline-block px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-lg hover:from-teal-500 hover:to-teal-400 transition-colors duration-200"
-                                    >
-                                        Dashboard
-                                    </Link>
-                                ) : auth.user.role === 'bac_secretariat' ? (
-                                    <Link
-                                        href={route('bac-secretariat.dashboard')}
-                                        className="relative inline-block px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-lg hover:from-teal-500 hover:to-teal-400 transition-colors duration-200"
-                                    >
-                                        Dashboard
-                                    </Link>
-                                ) : auth.user.role === 'bac_chairman' ? (
-                                    <Link
-                                        href={route('bac-chairman.dashboard')}
-                                        className="relative inline-block px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-lg hover:from-teal-500 hover:to-teal-400 transition-colors duration-200"
-                                    >
-                                        Dashboard
-                                    </Link>
-                                ) : null}
-                            </>
-                        ) : (
-                            <>
-                                <Link
-                                    href={route('login')}
-                                    className="relative px-5 py-2.5 font-medium text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 hover:text-teal-600 dark:hover:text-teal-400 group"
+                        {/* Navigation Links */}
+                        <div className="flex items-center gap-2" role="menubar">
+                            <Link
+                                href={route('home')}
+                                role="menuitem"
+                                className="relative px-4 py-2 font-medium text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 hover:text-teal-600 dark:hover:text-teal-400 group"
+                                aria-current={route().current('home') ? 'page' : undefined}
+                            >
+                                <span className="relative z-10">Home</span>
+                                <div className="absolute inset-0 bg-teal-50 dark:bg-teal-900/30 rounded-lg scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
+                            </Link>
+                            
+                            {/* Procurement Dropdown */}
+                            <div className="relative group" role="menuitem">
+                                <button
+                                    className="relative px-4 py-2 font-medium text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 hover:text-teal-600 dark:hover:text-teal-400 inline-flex items-center gap-1"
+                                    aria-expanded="false"
                                 >
-                                    <span className="relative z-10">Log in</span>
-                                    <div className="absolute inset-0 bg-teal-50 dark:bg-teal-900/30 rounded-lg scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
-                                </Link>
-                                <Link
-                                    href={route('register')}
-                                    className="relative inline-block px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-lg hover:from-teal-500 hover:to-teal-400 transition-colors duration-200"
-                                >
-                                    Get Started
-                                </Link>
-                            </>
-                        )}
+                                    <span>Procurement</span>
+                                    <svg className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24">
+                                        <path fill="currentColor" d="M7 10l5 5 5-5H7z"/>
+                                    </svg>
+                                </button>
+                                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-100 dark:border-gray-800 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200" role="menu">
+                                    <Link
+                                        href={route('bidding')}
+                                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400"
+                                        role="menuitem"
+                                    >
+                                        Bidding
+                                    </Link>
+                                    <Link
+                                        href={route('procurement')}
+                                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400"
+                                        role="menuitem"
+                                    >
+                                        Procurement List
+                                    </Link>
+                                    <Link
+                                        href={route('generate-pr.index')}
+                                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400"
+                                        role="menuitem"
+                                    >
+                                        PR Generator
+                                    </Link>
+                                </div>
+                            </div>
+
+                            {/* Auth Buttons/Dashboard */}
+                            {auth?.user ? (
+                                <>
+                                    {auth.user.role === 'hope' ? (
+                                        <Link
+                                            href={route('hope.dashboard')}
+                                            className="relative inline-block px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-lg hover:from-teal-500 hover:to-teal-400 transition-colors duration-200"
+                                            aria-label="HOPE Dashboard"
+                                        >
+                                            Dashboard
+                                        </Link>
+                                    ) : auth.user.role === 'bac_secretariat' ? (
+                                        <Link
+                                            href={route('bac-secretariat.dashboard')}
+                                            className="relative inline-block px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-lg hover:from-teal-500 hover:to-teal-400 transition-colors duration-200"
+                                            aria-label="BAC Secretariat Dashboard"
+                                        >
+                                            Dashboard
+                                        </Link>
+                                    ) : auth.user.role === 'bac_chairman' ? (
+                                        <Link
+                                            href={route('bac-chairman.dashboard')}
+                                            className="relative inline-block px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-lg hover:from-teal-500 hover:to-teal-400 transition-colors duration-200"
+                                            aria-label="BAC Chairman Dashboard"
+                                        >
+                                            Dashboard
+                                        </Link>
+                                    ) : null}
+                                </>
+                            ) : (
+                                <>
+                                    <Link
+                                        href={route('login')}
+                                        className="relative px-5 py-2.5 font-medium text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 hover:text-teal-600 dark:hover:text-teal-400 group"
+                                    >
+                                        <span className="relative z-10">Log in</span>
+                                        <div className="absolute inset-0 bg-teal-50 dark:bg-teal-900/30 rounded-lg scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
+                                    </Link>
+                                    <Link
+                                        href={route('register')}
+                                        className="relative inline-block px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-lg hover:from-teal-500 hover:to-teal-400 transition-colors duration-200"
+                                    >
+                                        Get Started
+                                    </Link>
+                                </>
+                            )}
+                        </div>
                     </nav>
 
-                    {/* Mobile menu button with Lucide React icons */}
+                    {/* Mobile menu button */}
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         className="md:hidden p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none transition-all duration-200"
-                        aria-label="Toggle menu"
+                        aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+                        aria-expanded={mobileMenuOpen}
+                        aria-controls="mobile-menu"
                     >
                         <div className="relative w-6 h-6 flex items-center justify-center">
                             {mobileMenuOpen ? (
@@ -150,8 +216,9 @@ export default function Header() {
                 </div>
             </header>
 
-            {/* Mobile Menu Backdrop */}
-            <div
+            {/* Mobile Menu */}
+            <div 
+                id="mobile-menu"
                 className={`fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 onClick={() => setMobileMenuOpen(false)}
                 aria-hidden="true"

@@ -41,41 +41,43 @@ export function ProcurementDetails({
 
   return (
     <Card className="border-sidebar-border/70 dark:border-sidebar-border">
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 p-2 rounded-lg">
+      <CardHeader className="pb-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-primary/10 p-2.5 rounded-lg">
             <FileText className="h-5 w-5 text-primary" />
           </div>
-          <div>
-            <CardTitle className="text-xl">Procurement Details</CardTitle>
-            <CardDescription>
+          <div className="space-y-1">
+            <CardTitle className="text-2xl tracking-tight font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Procurement Details
+            </CardTitle>
+            <CardDescription className="text-base text-muted-foreground/90">
               Enter the basic information about this procurement request
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="space-y-5">
+            <div className="space-y-3">
               <Label 
                 htmlFor="procurement_id" 
                 className="text-sm font-medium flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <span>Procurement ID</span>
-                  <Badge variant="destructive" className="text-[10px]">Required</Badge>
+                  <span className="text-foreground/90">Procurement ID</span>
+                  <Badge variant="destructive" className="text-[10px] px-2 py-0.5 rounded font-medium">Required</Badge>
                 </div>
                 {validFields.procurement_id && (
-                  <div className="flex items-center text-sm text-green-500 gap-1">
-                    <CheckCircle2 className="h-4 w-4" />
+                  <div className="flex items-center text-sm text-green-500 gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
                     <span>Valid</span>
                   </div>
                 )}
               </Label>
               <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <Tag className="h-4 w-4" />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/70">
+                  <Tag className="h-4 w-4 shrink-0" />
                 </div>
                 <Input
                   id="procurement_id"
@@ -86,48 +88,48 @@ export function ProcurementDetails({
                   }}
                   onBlur={() => handleBlur('procurement_id')}
                   className={cn(
-                    "pl-10 transition-all",
-                    hasError('procurement_id') && touched.procurement_id ? "border-destructive ring-destructive/10" : "",
-                    validFields.procurement_id ? "border-green-500 ring-green-100" : ""
+                    "pl-10 h-11 transition-all font-medium tracking-tight",
+                    hasError('procurement_id') && touched.procurement_id ? "border-destructive/70 ring-destructive/20" : "",
+                    validFields.procurement_id ? "border-green-500/70 ring-green-200/20 bg-green-50/50 dark:bg-green-900/10" : ""
                   )}
                   placeholder="e.g., PR-2023-001"
                   aria-describedby="procurement_id_desc"
                   onFocus={() => clearErrors('procurement_id')}
                 />
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground" id="procurement_id_desc">
-                <AlertTriangle className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground/90" id="procurement_id_desc">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
                 Must be a unique identifier for this procurement request
               </div>
               {hasError('procurement_id') && touched.procurement_id && (
-                <Alert variant="destructive" className="py-2 animate-in slide-in-from-top fade-in duration-200">
-                  <AlertCircle className="h-4 w-4" />
+                <Alert variant="destructive" className="py-2.5 animate-in slide-in-from-top fade-in duration-200">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
                   <AlertDescription>{errors.procurement_id}</AlertDescription>
                 </Alert>
               )}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
+          <div className="space-y-5">
+            <div className="space-y-3">
               <Label 
                 htmlFor="procurement_title" 
                 className="text-sm font-medium flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <span>Procurement Title</span>
-                  <Badge variant="destructive" className="text-[10px]">Required</Badge>
+                  <span className="text-foreground/90">Procurement Title</span>
+                  <Badge variant="destructive" className="text-[10px] px-2 py-0.5 rounded font-medium">Required</Badge>
                 </div>
                 {validFields.procurement_title && (
-                  <div className="flex items-center text-sm text-green-500 gap-1">
-                    <CheckCircle2 className="h-4 w-4" />
+                  <div className="flex items-center text-sm text-green-500 gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
                     <span>Valid</span>
                   </div>
                 )}
               </Label>
               <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <FileText className="h-4 w-4" />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/70">
+                  <FileText className="h-4 w-4 shrink-0" />
                 </div>
                 <Input
                   id="procurement_title"
@@ -138,22 +140,22 @@ export function ProcurementDetails({
                   }}
                   onBlur={() => handleBlur('procurement_title')}
                   className={cn(
-                    "pl-10 transition-all",
-                    hasError('procurement_title') && touched.procurement_title ? "border-destructive ring-destructive/10" : "",
-                    validFields.procurement_title ? "border-green-500 ring-green-100" : ""
+                    "pl-10 h-11 transition-all font-medium tracking-tight",
+                    hasError('procurement_title') && touched.procurement_title ? "border-destructive/70 ring-destructive/20" : "",
+                    validFields.procurement_title ? "border-green-500/70 ring-green-200/20 bg-green-50/50 dark:bg-green-900/10" : ""
                   )}
                   placeholder="e.g., Office Supplies Procurement"
                   aria-describedby="procurement_title_desc"
                   onFocus={() => clearErrors('procurement_title')}
                 />
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground" id="procurement_title_desc">
-                <AlertTriangle className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground/90" id="procurement_title_desc">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
                 Enter a descriptive title for what is being procured
               </div>
               {hasError('procurement_title') && touched.procurement_title && (
-                <Alert variant="destructive" className="py-2 animate-in slide-in-from-top fade-in duration-200">
-                  <AlertCircle className="h-4 w-4" />
+                <Alert variant="destructive" className="py-2.5 animate-in slide-in-from-top fade-in duration-200">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
                   <AlertDescription>{errors.procurement_title}</AlertDescription>
                 </Alert>
               )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format, addDays } from 'date-fns';
 import { toast } from "sonner";
@@ -20,6 +20,8 @@ interface BiddingDocumentsUploadProps {
   procurement: {
     id: string;
     title: string;
+    status?: string;
+    stage?: string;
   };
   errors?: Record<string, string>;
 }
@@ -27,9 +29,14 @@ interface BiddingDocumentsUploadProps {
 export default function BiddingDocumentsUpload({ procurement, errors = {} }: BiddingDocumentsUploadProps) {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
+  // Log procurement details for debugging
+  useEffect(() => {
+    console.log('Procurement data received:', procurement);
+  }, [procurement]);
+
   const { data, setData, post, processing, reset } = useForm({
-    procurement_id: procurement.id,
-    procurement_title: procurement.title,
+    procurement_id: procurement?.id || '',
+    procurement_title: procurement?.title || '',
     bidding_documents_file: null as File | null,
     issuance_date: new Date(),
     validity_period_start: format(new Date(), 'yyyy-MM-dd'),
@@ -43,14 +50,14 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
   const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Procurements', href: '/bac-secretariat/procurements-list' },
-    { title: `Upload Bidding Documents - ${procurement.id}`, href: '#' },
+    { title: `Upload Bidding Documents - ${procurement?.id || 'Unknown ID'}`, href: '#' },
   ];
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     post('/bac-secretariat/upload-bidding-documents', {
-      preserveScroll: true, 
+      preserveScroll: true,
       preserveState: true,
       forceFormData: true,
       onSuccess: () => {
@@ -110,17 +117,17 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
   // Handle date selection for validity period
   const handleValidityPeriodChange = (range: DateRange | undefined) => {
     setData('validity_period', range);
-    
+
     // Also update the formatted date strings for backend submission
     if (range?.from) {
       setData('validity_period_start', format(range.from, 'yyyy-MM-dd'));
     }
-    
+
     if (range?.to) {
       setData('validity_period_end', format(range.to, 'yyyy-MM-dd'));
     }
   };
-  
+
   // Handle issuance date selection
   const handleIssuanceDateChange = (date: Date | undefined) => {
     if (date) {
@@ -140,8 +147,13 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
           </div>
           <p className="text-muted-foreground max-w-3xl">
             Upload the bidding documents for procurement
-            <span className="font-medium text-foreground"> #{procurement.id}</span>:
-            <span className="font-medium text-foreground italic"> {procurement.title}</span>
+            <span className="font-medium text-foreground"> #{procurement?.id || 'Unknown'}</span>
+            {procurement?.title && (
+              <>
+                :
+                <span className="font-medium text-foreground italic"> {procurement.title}</span>
+              </>
+            )}
           </p>
         </div>
 
@@ -165,8 +177,7 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
                     Bidding Documents
                   </label>
                   <div
-                    className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${
-                      isDraggingFile
+                    className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDraggingFile
                         ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
                         : data.bidding_documents_file
                           ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'

@@ -21,15 +21,13 @@ use App\Handlers\ProcurementInitiation\ProcurementInitiationHandler;
 use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDecisionHandler;
 use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDocumentsHandler;
 use App\Services\BlockchainService;
+use App\Services\EventTypeLabelMapper;
 use App\Services\FileStorageService;
 use App\Services\NotificationService;
-use App\Services\StreamKeyService;
 use App\Services\MultichainService;
+use App\Services\ProcurementServices;
 use App\Services\ProcurementStageTransitionService;
-use App\Services\BacSecretariatServices;
-use App\Services\EventTypeLabelMapper;
-use App\Services\ProcurementDataTransformerService;
-use App\Handlers\ProcurementViewHandler;
+use App\Services\StreamKeyService;
 use Barryvdh\DomPDF\ServiceProvider as DomPDFServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -43,31 +41,22 @@ class AppServiceProvider extends ServiceProvider
         $this->registerHandlers();
     }
 
-    private function registerServices(): void 
+    private function registerServices(): void
     {
         $this->app->singleton(MultichainService::class);
         $this->app->singleton(BlockchainService::class);
         $this->app->singleton(StreamKeyService::class);
         $this->app->singleton(ProcurementStageTransitionService::class);
         $this->app->singleton(EventTypeLabelMapper::class);
-        $this->app->singleton(ProcurementDataTransformerService::class);
-        
-        $this->app->singleton(ProcurementViewHandler::class, function ($app) {
-            return new ProcurementViewHandler(
-                $app->make(BlockchainService::class),
-                $app->make(ProcurementDataTransformerService::class)
-            );
-        });
 
-        $this->app->singleton(BacSecretariatServices::class, function ($app) {
-            $services = new BacSecretariatServices(
+        $this->app->singleton(ProcurementServices::class, function ($app) {
+            $services = new ProcurementServices(
                 $app->make(MultichainService::class),
                 $app->make(StreamKeyService::class),
-                $app->make(ProcurementViewHandler::class)
             );
 
             $services->setStageTransitionService($app->make(ProcurementStageTransitionService::class))
-                    ->setEventTypeLabelMapper($app->make(EventTypeLabelMapper::class));
+                ->setEventTypeLabelMapper($app->make(EventTypeLabelMapper::class));
 
             return $services;
         });

@@ -14,9 +14,9 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
     const [loading, setLoading] = useState(false);
     const [viewType, setViewType] = useState<ViewType>('table');
     const [error, setError] = useState<string | undefined>(initialError);
-    const [modalOpen, setModalOpen] = useState(false);
-    const [markCompleteDialogOpen, setMarkCompleteDialogOpen] = useState(false);
-    const [preBidModalOpen, setPreBidModalOpen] = useState(false);
+    const [preProcurementModalOpen, setPreProcurementModalOpen] = useState(false);
+    const [preBidConferenceModalOpen, setPreBidConferenceModalOpen] = useState(false);
+    const [supplementalBidBulletinModalOpen, setSupplementalBidBulletinModalOpen] = useState(false);
     const [selectedProcurement, setSelectedProcurement] = useState<{
         id: string;
         title: string;
@@ -39,7 +39,7 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
             id: procurement.id,
             title: procurement.title,
         });
-        setModalOpen(true);
+        setPreProcurementModalOpen(true);
     };
 
     const handleOpenPreBidModal = (procurement: ProcurementListItem) => {
@@ -47,15 +47,15 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
             id: procurement.id,
             title: procurement.title,
         });
-        setPreBidModalOpen(true);
+        setPreBidConferenceModalOpen(true);
     };
 
-    const handleOpenMarkCompleteDialog = (procurement: ProcurementListItem) => {
+    const handleOpenSupplementalBidBulletinModal = (procurement: ProcurementListItem) => {
         setSelectedProcurement({
             id: procurement.id,
             title: procurement.title,
         });
-        setMarkCompleteDialogOpen(true);
+        setSupplementalBidBulletinModalOpen(true);
     };
 
     return {
@@ -64,18 +64,18 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
         loading,
         viewType,
         error,
-        modalOpen,
-        preBidModalOpen,
-        markCompleteDialogOpen,
+        preProcurementModalOpen,
+        preBidConferenceModalOpen,
+        supplementalBidBulletinModalOpen,
         selectedProcurement,
         setSelectedRows,
         setLoading,
         setViewType,
-        setModalOpen,
-        setPreBidModalOpen,
-        setMarkCompleteDialogOpen,
+        setPreProcurementModalOpen,
+        setPreBidConferenceModalOpen,
+        setSupplementalBidBulletinModalOpen,
         handleOpenPreProcurementModal,
         handleOpenPreBidModal,
-        handleOpenMarkCompleteDialog,
+        handleOpenSupplementalBidBulletinModal,
     };
 };

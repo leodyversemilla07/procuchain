@@ -14,12 +14,12 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 
-interface PreBidModalProps {
+interface SupplementalBidModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     procurementId: string;
     procurementTitle: string;
-    onComplete?: (skipToStage?: string, conferenceHeld?: boolean) => void;
+    onComplete?: (skipToStage?: string, supplementalBidNeeded?: boolean) => void;
 }
 
 interface PageProps {
@@ -28,32 +28,32 @@ interface PageProps {
     errors?: Record<string, string>;
 }
 
-export function PreBidConferenceModal({
+export function SupplementalBidBulletinModal({
     open,
     onOpenChange,
     procurementId,
     procurementTitle,
     onComplete
-}: PreBidModalProps) {
+}: SupplementalBidModalProps) {
     const form = useForm({
         procurement_id: procurementId,
         procurement_title: procurementTitle,
-        conference_held: undefined as boolean | undefined,
+        supplemental_bid_needed: undefined as boolean | undefined,
     });
 
     const handleSuccess = (response: { props: PageProps }) => {
         onOpenChange(false);
 
-        const message = form.data.conference_held
-            ? "You will now proceed to upload pre-bid conference documents."
-            : "The pre-bid conference stage has been skipped.";
+        const message = form.data.supplemental_bid_needed
+            ? "You will now proceed to upload supplemental bid bulletin documents."
+            : "The supplemental bid bulletin stage has been skipped.";
 
         toast.success("Decision submitted successfully!", { description: message });
 
         if (onComplete && response?.props?.success) {
             onComplete(
                 response.props.nextStage,
-                form.data.conference_held
+                form.data.supplemental_bid_needed
             );
         }
 
@@ -69,31 +69,14 @@ export function PreBidConferenceModal({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (form.data.conference_held === undefined) {
-            form.setError('conference_held', 'Please select whether a conference was held');
-            return;
-        }
-
-        if (!procurementId) {
-            form.setError('procurement_id', 'Procurement ID is required');
-            return;
-        }
-
-        if (!procurementTitle) {
-            form.setError('procurement_title', 'Procurement title is required');
+        if (form.data.supplemental_bid_needed === undefined) {
+            form.setError('supplemental_bid_needed', 'Please select whether supplemental bid bulletin is needed');
             return;
         }
 
         form.clearErrors();
 
-        // Set all form data at once to ensure consistency
-        form.setData({
-            procurement_id: procurementId,
-            procurement_title: procurementTitle,
-            conference_held: Boolean(form.data.conference_held)
-        });
-
-        form.post('/bac-secretariat/publish-pre-bid-conference-decision', {
+        form.post('/bac-secretariat/publish-supplemental-bid-bulletin-decision', {
             preserveScroll: true,
             preserveState: true,
             onSuccess: handleSuccess,
@@ -101,8 +84,8 @@ export function PreBidConferenceModal({
         });
     };
 
-    const handleConferenceSelection = (value: string) => {
-        form.setData('conference_held', value === 'true');
+    const handleSelectionChange = (value: string) => {
+        form.setData('supplemental_bid_needed', value === 'true');
     };
 
     return (
@@ -115,10 +98,10 @@ export function PreBidConferenceModal({
             <DialogContent className="sm:max-w-[500px] p-6">
                 <DialogHeader className="space-y-3">
                     <DialogTitle className="text-2xl font-semibold tracking-tight">
-                        Pre-Bid Conference Decision
+                        Supplemental Bid Bulletin Decision
                     </DialogTitle>
                     <DialogDescription className="text-base leading-relaxed">
-                        Please indicate whether a pre-bid conference was held for this procurement:
+                        Please indicate whether a supplemental bid bulletin is needed for this procurement:
                         <div className="mt-2">
                             <span className="block font-medium text-gray-700 dark:text-gray-300">
                                 Title: {procurementTitle}
@@ -134,43 +117,43 @@ export function PreBidConferenceModal({
                     <div className="space-y-6">
                         <div className="space-y-4">
                             <Label className="text-base font-medium">
-                                Was a pre-bid conference held?
+                                Is a supplemental bid bulletin needed?
                             </Label>
                             <RadioGroup
-                                value={form.data.conference_held === undefined ? undefined : form.data.conference_held.toString()}
-                                onValueChange={handleConferenceSelection}
+                                value={form.data.supplemental_bid_needed === undefined ? undefined : form.data.supplemental_bid_needed.toString()}
+                                onValueChange={handleSelectionChange}
                                 className="grid grid-cols-2 gap-4 pt-2"
-                                aria-label="Pre-bid conference status"
+                                aria-label="Supplemental bid bulletin status"
                             >
-                                <Label htmlFor="conference-yes" className="w-full m-0">
+                                <Label htmlFor="supplemental-yes" className="w-full m-0">
                                     <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
-                                        <RadioGroupItem value="true" id="conference-yes" />
+                                        <RadioGroupItem value="true" id="supplemental-yes" />
                                         <span className="cursor-pointer">Yes</span>
                                     </div>
                                 </Label>
-                                <Label htmlFor="conference-no" className="w-full m-0">
+                                <Label htmlFor="supplemental-no" className="w-full m-0">
                                     <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
-                                        <RadioGroupItem value="false" id="conference-no" />
+                                        <RadioGroupItem value="false" id="supplemental-no" />
                                         <span className="cursor-pointer">No</span>
                                     </div>
                                 </Label>
                             </RadioGroup>
-                            {form.errors.conference_held && (
-                                <p className="text-red-500 text-sm mt-2" id="conference-error" aria-live="polite">
-                                    {form.errors.conference_held}
+                            {form.errors.supplemental_bid_needed && (
+                                <p className="text-red-500 text-sm mt-2" id="supplemental-error" aria-live="polite">
+                                    {form.errors.supplemental_bid_needed}
                                 </p>
                             )}
                         </div>
 
-                        {form.data.conference_held !== undefined && (
-                            <div className={`p-4 rounded-lg ${form.data.conference_held
+                        {form.data.supplemental_bid_needed !== undefined && (
+                            <div className={`p-4 rounded-lg ${form.data.supplemental_bid_needed
                                 ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                                 : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
                                 }`}>
-                                {form.data.conference_held ? (
-                                    <p>You'll be directed to the procurement list to upload the pre-bid conference documents.</p>
+                                {form.data.supplemental_bid_needed ? (
+                                    <p>You'll be directed to upload supplemental bid bulletin documents.</p>
                                 ) : (
-                                    <p>This will skip the pre-bid conference stage and proceed to Supplemental Bid Bulletin.</p>
+                                    <p>This will skip the supplemental bid bulletin stage and proceed to Bid Opening.</p>
                                 )}
                             </div>
                         )}

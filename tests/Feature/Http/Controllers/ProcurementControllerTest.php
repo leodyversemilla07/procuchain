@@ -38,16 +38,27 @@ use App\Http\Requests\Procurement\ProcurementInitiationRequest;
 use App\Http\Requests\Procurement\SupplementalBidBulletinDecisionRequest;
 use App\Http\Requests\Procurement\SupplementalBidBulletinDocumentsRequest;
 use App\Models\User;
+use App\Services\BlockchainService;
+use App\Services\MultichainService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
+use Mockery\MockInterface;
+use Mockery\LegacyMockInterface;
 
 uses(RefreshDatabase::class, WithFaker::class);
 
 // Test setup
 beforeEach(function () {
     $this->user = User::factory()->create();
+    
+    // Create a mock for MultichainService
+    $this->multichainService = Mockery::mock(MultichainService::class);
+    
+    // Create a mock for BlockchainService
+    $this->blockchainService = Mockery::mock(BlockchainService::class);
+    $this->blockchainService->shouldReceive('getClient')->andReturn($this->multichainService);
 });
 
 afterEach(function () {
@@ -62,6 +73,19 @@ function getPrivateMethod($object, $methodName)
     $method->setAccessible(true);
 
     return $method;
+}
+
+// Helper function to create a controller instance with mocked dependencies
+function createControllerInstance()
+{
+    $multichainService = new class extends MultichainService {
+        public function __construct() {}
+    };
+    
+    $blockchainService = Mockery::mock(BlockchainService::class);
+    $blockchainService->shouldReceive('getClient')->andReturn($multichainService);
+    
+    return new ProcurementController($blockchainService);
 }
 
 // Update createMockHandler function to use correct namespaces
@@ -112,7 +136,7 @@ test('auth middleware allows authenticated users', function () {
 
 test('middleware adds resubmission prevention headers', function () {
     // Extract the middleware closure from the ProcurementController
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $reflector = new ReflectionClass($controller);
     $middlewareProperty = $reflector->getProperty('middleware');
     $middlewareProperty->setAccessible(true);
@@ -154,7 +178,7 @@ test('middleware adds resubmission prevention headers', function () {
 
 // Helper result processing tests
 test('process handler result returns proper response for success', function () {
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
 
     $result = [
         'success' => true,
@@ -171,7 +195,7 @@ test('process handler result returns proper response for success', function () {
 });
 
 test('process handler result returns proper response for failure', function () {
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
 
     $result = [
         'success' => false,
@@ -188,7 +212,7 @@ test('process handler result returns proper response for failure', function () {
 
 // Fixed handleProcurementAction tests using reflection
 test('handleProcurementAction calls handler and processes result', function () {
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $request = Mockery::mock('Illuminate\Http\Request');
     $handler = Mockery::mock('App\Handlers\BaseHandler');
 
@@ -206,7 +230,7 @@ test('handleProcurementAction calls handler and processes result', function () {
 });
 
 test('handleProcurementAction processes failure result correctly', function () {
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $request = Mockery::mock('Illuminate\Http\Request');
     $handler = Mockery::mock('App\Handlers\BaseHandler');
 
@@ -223,7 +247,7 @@ test('handleProcurementAction processes failure result correctly', function () {
 });
 
 test('handleProcurementAction handles exceptions from handler gracefully', function () {
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $request = Mockery::mock('Illuminate\Http\Request');
     $handler = Mockery::mock('App\Handlers\BaseHandler');
 
@@ -248,7 +272,7 @@ test('publishProcurementInitiation calls handler and redirects correctly', funct
     $handler = createMockHandler(ProcurementInitiationHandler::class);
     $request = new ProcurementInitiationRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->publishProcurementInitiation($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -260,7 +284,7 @@ test('publishPreProcurementConferenceDecision calls handler and redirects correc
     $handler = createMockHandler(PreProcurementConferenceDecisionHandler::class);
     $request = new PreProcurementConferenceDecisionRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->publishPreProcurementConferenceDecision($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -272,7 +296,7 @@ test('uploadPreProcurementConferenceDocuments calls handler and redirects correc
     $handler = createMockHandler(PreProcurementConferenceDocumentsHandler::class);
     $request = new PreProcurementConferenceDocumentsRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadPreProcurementConferenceDocuments($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -284,7 +308,7 @@ test('publishPreBidConferenceDecision calls handler and redirects correctly', fu
     $handler = createMockHandler(PreBidConferenceDecisionHandler::class);
     $request = new PreBidConferenceDecisionRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->publishPreBidConferenceDecision($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -296,7 +320,7 @@ test('uploadPreBidConferenceDocuments calls handler and redirects correctly', fu
     $handler = createMockHandler(PreBidConferenceDocumentsHandler::class);
     $request = new PreBidConferenceDocumentsRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadPreBidConferenceDocuments($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -308,7 +332,7 @@ test('publishSupplementalBidBulletinDecision calls handler and redirects correct
     $handler = createMockHandler(SupplementalBidBulletinDecisionHandler::class);
     $request = new SupplementalBidBulletinDecisionRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->publishSupplementalBidBulletinDecision($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -320,7 +344,7 @@ test('uploadSupplementalBidBulletinDocuments calls handler and redirects correct
     $handler = createMockHandler(SupplementalBidBulletinDocumentsHandler::class);
     $request = new SupplementalBidBulletinDocumentsRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadSupplementalBidBulletinDocuments($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -332,7 +356,7 @@ test('uploadBiddingDocuments calls handler and redirects correctly', function ()
     $handler = createMockHandler(BiddingDocumentsHandler::class);
     $request = new BiddingDocumentsRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadBiddingDocuments($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -344,7 +368,7 @@ test('uploadBidOpeningDocuments calls handler and redirects correctly', function
     $handler = createMockHandler(BidOpeningHandler::class);
     $request = new BidOpeningDocumentsRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadBidOpeningDocuments($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -356,7 +380,7 @@ test('uploadBidEvaluationDocuments calls handler and redirects correctly', funct
     $handler = createMockHandler(BidEvaluationHandler::class);
     $request = new BidEvaluationDocumentsRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadBidEvaluationDocuments($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -368,7 +392,7 @@ test('uploadPostQualificationDocuments calls handler and redirects correctly', f
     $handler = createMockHandler(PostQualificationHandler::class);
     $request = new PostQualificationDocumentsRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadPostQualificationDocuments($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -380,7 +404,7 @@ test('uploadBacResolutionDocument calls handler and redirects correctly', functi
     $handler = createMockHandler(BacResolutionHandler::class);
     $request = new BacResolutionDocumentRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadBacResolutionDocument($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -392,7 +416,7 @@ test('uploadNoaDocument calls handler and redirects correctly', function () {
     $handler = createMockHandler(NoticeOfAwardHandler::class);
     $request = new NoticeOfAwardDocumentRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadNoaDocument($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -404,7 +428,7 @@ test('uploadPerformanceBondContractAndPoDocuments calls handler and redirects co
     $handler = createMockHandler(PerformanceBondContractAndPoHandler::class);
     $request = new PerformanceBondContractAndPoDocumentsRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadPerformanceBondContractAndPoDocuments($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -416,7 +440,7 @@ test('uploadNTPDocument calls handler and redirects correctly', function () {
     $handler = createMockHandler(NoticeToProceedHandler::class);
     $request = new NoticeToProceedDocumentRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadNTPDocument($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -428,7 +452,7 @@ test('uploadMonitoringDocument calls handler and redirects correctly', function 
     $handler = createMockHandler(MonitoringHandler::class);
     $request = new MonitoringDocumentRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadMonitoringDocument($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -440,7 +464,7 @@ test('publishCompleteProcess calls handler and redirects correctly', function ()
     $handler = createMockHandler(CompletionProcessHandler::class);
     $request = new CompleteProcessRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->publishCompleteProcess($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
@@ -452,7 +476,7 @@ test('uploadCompletionDocuments calls handler and redirects correctly', function
     $handler = createMockHandler(CompletionDocumentsHandler::class);
     $request = new CompletionDocumentsRequest;
 
-    $controller = new ProcurementController;
+    $controller = createControllerInstance();
     $response = $controller->uploadCompletionDocuments($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);

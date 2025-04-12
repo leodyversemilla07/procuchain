@@ -162,6 +162,11 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
           </p>
         </div>
 
+        <Calendar
+          mode="single"
+          className="rounded-md border"
+        />
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
@@ -341,6 +346,8 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                 </div>
               </CardContent>
             </Card>
+
+
 
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
               <CardHeader className="pb-4 space-y-1">
