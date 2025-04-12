@@ -21,7 +21,7 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
         } catch (Exception $e) {
             Log::error('Error in UploadPreProcurementDocumentsHandler', ['error' => $e->getMessage()]);
 
-            return ['success' => false, 'message' => 'Failed to upload ' . StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName() . ' documents: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Failed to upload '.StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName().' documents: '.$e->getMessage()];
         }
     }
 
@@ -38,7 +38,7 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::PRE_PROCUREMENT_CONFERENCE,
             'nextStage' => StageEnums::BIDDING_DOCUMENTS,
-            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED
+            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
         ];
     }
 
@@ -90,7 +90,7 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['nextStage']->getDisplayName(),
             $data['userAddress'],
-            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after completing ' . $data['currentStage']->getDisplayName()
+            'Proceeding to '.$data['nextStage']->getDisplayName().' after completing '.$data['currentStage']->getDisplayName()
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -99,7 +99,6 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['status']->getDisplayName(),
             $data['timestamp'],
-            count($metadataArray),
             'completed',
             true,
             $data['nextStage']->getDisplayName()
@@ -107,7 +106,7 @@ class PreProcurementConferenceDocumentsHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+            'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
 }

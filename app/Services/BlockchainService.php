@@ -3,68 +3,26 @@
 namespace App\Services;
 
 use App\Enums\StreamEnums;
+use Exception;
+use Illuminate\Support\Facades\Log;
 
-/**
- * Handles blockchain interactions for the procurement system using MultiChain
- * 
- * This service manages document publishing, status updates, event logging,
- * and stage transitions for procurement processes on the blockchain.
- * All operations are recorded with appropriate metadata and timestamps.
- */
 class BlockchainService
 {
-    /**
-     * The MultiChain service instance for blockchain interactions
-     *
-     * @var MultichainService
-     */
     private $multiChain;
 
-    /**
-     * The service for generating stream keys for blockchain operations
-     *
-     * @var StreamKeyService
-     */
     protected $streamKeyService;
 
-    /**
-     * Creates a new BlockchainService instance
-     *
-     * @param MultichainService $multiChain The MultiChain service for blockchain operations
-     * @param StreamKeyService $streamKeyService The service for generating stream keys
-     */
     public function __construct(MultichainService $multiChain, StreamKeyService $streamKeyService)
     {
         $this->multiChain = $multiChain;
         $this->streamKeyService = $streamKeyService;
     }
 
-    /**
-     * Retrieves the MultiChain client instance
-     *
-     * @return MultichainService The MultiChain service instance
-     */
     public function getClient(): MultichainService
     {
         return $this->multiChain;
     }
 
-    /**
-     * Publishes procurement documents and their metadata to the blockchain
-     *
-     * Documents are published to the DOCUMENTS stream with associated metadata,
-     * updates the procurement status, and logs the upload event. Each document
-     * is assigned a unique index and includes file-specific metadata.
-     *
-     * @param string $procurementId Unique identifier for the procurement
-     * @param string $procurementTitle Title of the procurement
-     * @param string $state Current stage in the procurement workflow
-     * @param string $status Current status of the procurement process
-     * @param array $metadataArray Document metadata including hashes and file information
-     * @param string $userAddress Blockchain address of the publishing user
-     * @throws \Exception When blockchain publishing fails
-     * @return void
-     */
     public function publishDocuments(
         string $procurementId,
         string $procurementTitle,
@@ -73,62 +31,92 @@ class BlockchainService
         array $metadataArray,
         string $userAddress
     ): void {
-        $timestamp = now()->toIso8601String();
-        $streamKey = $this->streamKeyService->generate($procurementId, $procurementTitle);
+        try {
+            if (empty($procurementId) || empty($procurementTitle)) {
+                throw new Exception('Procurement ID and title are required');
+            }
 
-        $documentItems = [];
-        foreach ($metadataArray as $index => $metadata) {
-            $docData = [
+            if (empty($metadataArray)) {
+                throw new Exception('Document metadata array cannot be empty');
+            }
+
+            if (! $this->multiChain->validateAddress($userAddress)) {
+                throw new Exception("Invalid blockchain address: $userAddress");
+            }
+
+            $timestamp = now()->toIso8601String();
+            $streamKey = $this->streamKeyService->generate($procurementId, $procurementTitle);
+
+            Log::info('Generated stream key', [
                 'procurement_id' => $procurementId,
                 'procurement_title' => $procurementTitle,
-                'stage' => $state,
-                'timestamp' => $timestamp,
-                'document_index' => $index + 1,
-                'document_type' => $metadata['document_type'],
-                'hash' => $metadata['hash'],
-                'file_key' => $metadata['file_key'],
+                'stream_key' => $streamKey,
+            ]);
+
+            $documentItems = [];
+            foreach ($metadataArray as $index => $metadata) {
+                $requiredFields = ['document_type', 'hash', 'file_key', 'file_size'];
+                foreach ($requiredFields as $field) {
+                    if (! isset($metadata[$field])) {
+                        throw new Exception("Missing required metadata field: $field");
+                    }
+                }
+
+                $docData = [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'stage' => $state,
+                    'timestamp' => $timestamp,
+                    'document_index' => $index + 1,
+                    'document_type' => $metadata['document_type'],
+                    'hash' => $metadata['hash'],
+                    'file_key' => $metadata['file_key'],
+                    'user_address' => $userAddress,
+                    'file_size' => $metadata['file_size'],
+                    'stage_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
+                ];
+
+                $documentItems[] = [
+                    'key' => $streamKey,
+                    'data' => ['json' => $docData],
+                ];
+            }
+
+            Log::info('Publishing documents to blockchain', [
+                'procurement_id' => $procurementId,
+                'document_count' => count($metadataArray),
                 'user_address' => $userAddress,
-                'file_size' => $metadata['file_size'],
-                'stage_metadata' => array_diff_key($metadata, array_flip(['document_type', 'hash', 'file_key', 'file_size'])),
-            ];
-            $documentItems[] = [
-                'key' => $streamKey,
-                'data' => $docData,
-            ];
+                'stream_key' => $streamKey,
+                'first_document_item' => $documentItems[0] ?? null,
+            ]);
+
+            $this->multiChain->publishMultiFrom($userAddress, StreamEnums::DOCUMENTS->value, $documentItems);
+
+            $this->updateStatus($procurementId, $procurementTitle, $status, $state, $userAddress, $timestamp);
+
+            $this->logEvent(
+                $procurementId,
+                $procurementTitle,
+                $state,
+                'Uploaded '.count($metadataArray)." finalized $state documents",
+                count($metadataArray),
+                $userAddress,
+                'document_upload',
+                'workflow',
+                'info',
+                $timestamp
+            );
+
+        } catch (Exception $e) {
+            Log::error('Failed to publish documents to blockchain', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
         }
-        $this->multiChain->publishMultiFrom($userAddress, StreamEnums::DOCUMENTS->value, $documentItems);
-
-        $this->updateStatus($procurementId, $procurementTitle, $status, $state, $userAddress, $timestamp);
-
-        $this->logEvent(
-            $procurementId,
-            $procurementTitle,
-            $state,
-            'Uploaded '.count($metadataArray)." finalized $state documents",
-            count($metadataArray),
-            $userAddress,
-            'document_upload',
-            'workflow',
-            'info',
-            $timestamp
-        );
     }
 
-    /**
-     * Updates the procurement status on the blockchain
-     *
-     * Records status changes in the STATUS stream with timestamp and user information.
-     * Used to track the progress and current state of procurement processes.
-     *
-     * @param string $procurementId Unique identifier for the procurement
-     * @param string $procurementTitle Title of the procurement
-     * @param string $status New status to be recorded
-     * @param string $stage Current stage in the procurement workflow
-     * @param string $userAddress Blockchain address of the user making the change
-     * @param string $timestamp ISO 8601 formatted timestamp of the status update
-     * @throws \Exception When blockchain publishing fails
-     * @return void
-     */
     public function updateStatus(
         string $procurementId,
         string $procurementTitle,
@@ -137,37 +125,48 @@ class BlockchainService
         string $userAddress,
         string $timestamp
     ): void {
-        $streamKey = $this->streamKeyService->generate($procurementId, $procurementTitle);
-        $statusData = [
-            'procurement_id' => $procurementId,
-            'procurement_title' => $procurementTitle,
-            'current_status' => $status,
-            'stage' => $stage,
-            'timestamp' => $timestamp,
-            'user_address' => $userAddress,
-        ];
-        $this->multiChain->publishFrom($userAddress, StreamEnums::STATUS->value, $streamKey, $statusData);
+        try {
+            if (empty($procurementId) || empty($procurementTitle)) {
+                throw new Exception('Procurement ID and title are required');
+            }
+
+            if (empty($status) || empty($stage)) {
+                throw new Exception('Status and stage are required');
+            }
+
+            if (! $this->multiChain->validateAddress($userAddress)) {
+                throw new Exception("Invalid blockchain address: $userAddress");
+            }
+
+            $streamKey = $this->streamKeyService->generate($procurementId, $procurementTitle);
+            $statusData = [
+                'json' => [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'current_status' => $status,
+                    'stage' => $stage,
+                    'timestamp' => $timestamp,
+                    'user_address' => $userAddress,
+                ],
+            ];
+
+            Log::info('Updating procurement status on blockchain', [
+                'procurement_id' => $procurementId,
+                'status' => $status,
+                'stage' => $stage,
+            ]);
+
+            $this->multiChain->publishFrom($userAddress, StreamEnums::STATUS->value, $streamKey, $statusData);
+
+        } catch (Exception $e) {
+            Log::error('Failed to update status on blockchain', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 
-    /**
-     * Logs procurement-related events to the blockchain
-     *
-     * Records various events in the EVENTS stream for audit and tracking purposes.
-     * Events include document uploads, status changes, and workflow transitions.
-     *
-     * @param string $procurementId Unique identifier for the procurement
-     * @param string $procurementTitle Title of the procurement
-     * @param string $stage Current stage in the procurement workflow
-     * @param string $details Description of the event
-     * @param int $documentCount Number of documents involved
-     * @param string $userAddress Blockchain address of the user triggering the event
-     * @param string $eventType Type of event (e.g., document_upload, stage_transition)
-     * @param string $category Event category (e.g., workflow)
-     * @param string $severity Event severity level (info, warning)
-     * @param string $timestamp ISO 8601 formatted timestamp of the event
-     * @throws \Exception When blockchain publishing fails
-     * @return void
-     */
     public function logEvent(
         string $procurementId,
         string $procurementTitle,
@@ -180,40 +179,56 @@ class BlockchainService
         string $severity,
         string $timestamp
     ): void {
-        $streamKey = $this->streamKeyService->generate($procurementId, $procurementTitle);
-        $eventData = [
-            'procurement_id' => $procurementId,
-            'procurement_title' => $procurementTitle,
-            'event_type' => $eventType,
-            'stage' => $stage,
-            'timestamp' => $timestamp,
-            'user_address' => $userAddress,
-            'details' => $details,
-            'category' => $category,
-            'severity' => $severity,
-            'document_count' => $documentCount,
-        ];
-        $this->multiChain->publishFrom($userAddress, StreamEnums::EVENTS->value, $streamKey, $eventData);
+        try {
+            if (empty($procurementId) || empty($procurementTitle)) {
+                throw new Exception('Procurement ID and title are required');
+            }
+
+            if (empty($details) || empty($eventType)) {
+                throw new Exception('Event details and type are required');
+            }
+
+            if (! $this->multiChain->validateAddress($userAddress)) {
+                throw new Exception("Invalid blockchain address: $userAddress");
+            }
+
+            if (! in_array($severity, ['info', 'warning', 'error'])) {
+                throw new Exception('Invalid severity level. Must be info, warning, or error');
+            }
+
+            $streamKey = $this->streamKeyService->generate($procurementId, $procurementTitle);
+            $eventData = [
+                'json' => [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'event_type' => $eventType,
+                    'stage' => $stage,
+                    'timestamp' => $timestamp,
+                    'user_address' => $userAddress,
+                    'details' => $details,
+                    'category' => $category,
+                    'severity' => $severity,
+                    'document_count' => $documentCount,
+                ],
+            ];
+
+            Log::info('Logging procurement event to blockchain', [
+                'procurement_id' => $procurementId,
+                'event_type' => $eventType,
+                'severity' => $severity,
+            ]);
+
+            $this->multiChain->publishFrom($userAddress, StreamEnums::EVENTS->value, $streamKey, $eventData);
+
+        } catch (Exception $e) {
+            Log::error('Failed to log event to blockchain', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 
-    /**
-     * Manages procurement stage transitions on the blockchain
-     *
-     * Records both the status change and a transition event when a procurement
-     * moves from one stage to another. This creates an audit trail of workflow
-     * progression and maintains the current state.
-     *
-     * @param string $procurementId Unique identifier for the procurement
-     * @param string $procurementTitle Title of the procurement
-     * @param string $fromStatus Status before the transition
-     * @param string $toStatus Status after the transition
-     * @param string $fromStage Stage before the transition
-     * @param string $toStage Stage after the transition
-     * @param string $userAddress Blockchain address of the user initiating the transition
-     * @param string $details Additional context about the transition
-     * @throws \Exception When blockchain publishing fails
-     * @return void
-     */
     public function handleStageTransition(
         string $procurementId,
         string $procurementTitle,
@@ -224,32 +239,62 @@ class BlockchainService
         string $userAddress,
         string $details
     ): void {
-        $timestamp = now()->toIso8601String();
-        $streamKey = $this->streamKeyService->generate($procurementId, $procurementTitle);
+        try {
+            if (empty($procurementId) || empty($procurementTitle)) {
+                throw new Exception('Procurement ID and title are required');
+            }
 
-        $statusData = [
-            'procurement_id' => $procurementId,
-            'procurement_title' => $procurementTitle,
-            'previous_status' => $fromStatus,
-            'current_status' => $toStatus,
-            'previous_stage' => $fromStage,
-            'stage' => $toStage,
-            'timestamp' => $timestamp,
-            'user_address' => $userAddress,
-        ];
-        $this->multiChain->publishFrom($userAddress, StreamEnums::STATUS->value, $streamKey, $statusData);
+            if (empty($fromStage) || empty($toStage)) {
+                throw new Exception('From and to stages are required');
+            }
 
-        $this->logEvent(
-            $procurementId,
-            $procurementTitle,
-            $toStage,
-            "$details (from $fromStage:$fromStatus to $toStage:$toStatus)",
-            0,
-            $userAddress,
-            'stage_transition',
-            'workflow',
-            'info',
-            $timestamp
-        );
+            if (! $this->multiChain->validateAddress($userAddress)) {
+                throw new Exception("Invalid blockchain address: $userAddress");
+            }
+
+            $timestamp = now()->toIso8601String();
+            $streamKey = $this->streamKeyService->generate($procurementId, $procurementTitle);
+
+            Log::info('Processing stage transition', [
+                'procurement_id' => $procurementId,
+                'from_stage' => $fromStage,
+                'to_stage' => $toStage,
+            ]);
+
+            $statusData = [
+                'json' => [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'previous_status' => $fromStatus,
+                    'current_status' => $toStatus,
+                    'previous_stage' => $fromStage,
+                    'stage' => $toStage,
+                    'timestamp' => $timestamp,
+                    'user_address' => $userAddress,
+                ],
+            ];
+
+            $this->multiChain->publishFrom($userAddress, StreamEnums::STATUS->value, $streamKey, $statusData);
+
+            $this->logEvent(
+                $procurementId,
+                $procurementTitle,
+                $toStage,
+                "$details (from $fromStage:$fromStatus to $toStage:$toStatus)",
+                0,
+                $userAddress,
+                'stage_transition',
+                'workflow',
+                'info',
+                $timestamp
+            );
+
+        } catch (Exception $e) {
+            Log::error('Failed to handle stage transition', [
+                'procurement_id' => $procurementId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 }

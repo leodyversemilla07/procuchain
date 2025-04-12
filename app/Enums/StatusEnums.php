@@ -11,9 +11,9 @@ enum StatusEnums: string
     case BIDDING_DOCUMENTS_PUBLISHED = 'bidding_documents_published';
     case PRE_BID_CONFERENCE_HELD = 'pre_bid_conference_held';
     case PRE_BID_CONFERENCE_SKIPPED = 'pre_bid_conference_skipped';
+    case PRE_BID_CONFERENCE_COMPLETED = 'pre_bid_conference_completed';
     case SUPPLEMENTAL_BULLETINS_ONGOING = 'supplemental_bulletins_ongoing';
     case SUPPLEMENTAL_BULLETINS_COMPLETED = 'supplemental_bulletins_completed';
-    
     case BIDS_OPENED = 'bids_opened';
     case BIDS_EVALUATED = 'bids_evaluated';
     case POST_QUALIFICATION_VERIFIED = 'post_qualification_verified';
@@ -37,6 +37,7 @@ enum StatusEnums: string
             self::BIDDING_DOCUMENTS_PUBLISHED => 'Bidding Documents Published',
             self::PRE_BID_CONFERENCE_HELD => 'Pre-Bid Conference Held',
             self::PRE_BID_CONFERENCE_SKIPPED => 'Pre-Bid Conference Skipped',
+            self::PRE_BID_CONFERENCE_COMPLETED => 'Pre-Bid Conference Completed',
             self::SUPPLEMENTAL_BULLETINS_ONGOING => 'Supplemental Bulletins Ongoing',
             self::SUPPLEMENTAL_BULLETINS_COMPLETED => 'Supplemental Bulletins Completed',
             self::BIDS_OPENED => 'Bids Opened',
@@ -62,10 +63,11 @@ enum StatusEnums: string
             self::PRE_PROCUREMENT_CONFERENCE_SKIPPED => 'PreProcurementConferenceSkipped',
             self::PRE_PROCUREMENT_CONFERENCE_COMPLETED => 'PreProcurementConferenceCompleted',
             self::BIDDING_DOCUMENTS_PUBLISHED => 'BiddingDocumentsPublished',
-            self::SUPPLEMENTAL_BULLETINS_ONGOING => 'SupplementalBulletinsOngoing',
-            self::SUPPLEMENTAL_BULLETINS_COMPLETED => 'SupplementalBulletinsCompleted',
             self::PRE_BID_CONFERENCE_HELD => 'PreBidConferenceHeld',
             self::PRE_BID_CONFERENCE_SKIPPED => 'PreBidConferenceSkipped',
+            self::PRE_BID_CONFERENCE_COMPLETED => 'PreBidConferenceCompleted',
+            self::SUPPLEMENTAL_BULLETINS_ONGOING => 'SupplementalBulletinsOngoing',
+            self::SUPPLEMENTAL_BULLETINS_COMPLETED => 'SupplementalBulletinsCompleted',
             self::BIDS_OPENED => 'BidsOpened',
             self::BIDS_EVALUATED => 'BidsEvaluated',
             self::POST_QUALIFICATION_VERIFIED => 'PostQualificationVerified',

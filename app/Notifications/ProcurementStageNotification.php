@@ -32,15 +32,15 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     /**
      * Creates a new notification instance
      *
-     * @param array $data Procurement update data including:
-     *                    - procurement_id: Unique identifier
-     *                    - procurement_title: Title of the procurement
-     *                    - stage_identifier: Current workflow stage
-     *                    - current_status: Current status
-     *                    - timestamp: Update timestamp
-     *                    - action_type: Type of update (uploaded/submitted/etc.)
-     *                    - document_count: Number of documents (optional)
-     *                    - next_stage: Next workflow stage (for transitions)
+     * @param  array  $data  Procurement update data including:
+     *                       - procurement_id: Unique identifier
+     *                       - procurement_title: Title of the procurement
+     *                       - stage_identifier: Current workflow stage
+     *                       - current_status: Current status
+     *                       - timestamp: Update timestamp
+     *                       - action_type: Type of update (uploaded/submitted/etc.)
+     *                       - document_count: Number of documents (optional)
+     *                       - next_stage: Next workflow stage (for transitions)
      */
     public function __construct(array $data)
     {
@@ -53,7 +53,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
      * Currently configured for email notifications only.
      * Can be extended to include database notifications.
      *
-     * @param object $notifiable The user receiving the notification
+     * @param  object  $notifiable  The user receiving the notification
      * @return array<int, string> Active notification channels
      */
     public function via(object $notifiable): array
@@ -67,7 +67,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
      * Creates a URL to the procurement details page based on the user's role,
      * ensuring users are directed to their appropriate dashboard views.
      *
-     * @param object $notifiable The user receiving the notification
+     * @param  object  $notifiable  The user receiving the notification
      * @return string The role-specific procurement URL
      */
     protected function getRoleSpecificUrl(object $notifiable): string
@@ -93,7 +93,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
      * Maps action types to past-tense verbs for notification messages.
      * Examples: submitted -> "has been submitted"
      *
-     * @param string $actionType The type of action that occurred
+     * @param  string  $actionType  The type of action that occurred
      * @return string Formatted action description
      */
     protected function formatActionType(string $actionType): string
@@ -139,7 +139,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
      * - Procurement details and status
      * - Call-to-action button linking to details
      *
-     * @param object $notifiable The user receiving the notification
+     * @param  object  $notifiable  The user receiving the notification
      * @return MailMessage The formatted email message
      */
     public function toMail(object $notifiable): MailMessage
@@ -198,7 +198,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
      * Used for API responses and general data access.
      * Includes all relevant procurement update information.
      *
-     * @param object $notifiable The user receiving the notification
+     * @param  object  $notifiable  The user receiving the notification
      * @return array<string, mixed> Notification data array
      */
     public function toArray(object $notifiable): array
@@ -230,7 +230,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
      * - Procurement details and timestamps
      * - Stage transition information if applicable
      *
-     * @param object $notifiable The user receiving the notification
+     * @param  object  $notifiable  The user receiving the notification
      * @return DatabaseMessage The formatted database notification
      */
     public function toDatabase(object $notifiable): DatabaseMessage

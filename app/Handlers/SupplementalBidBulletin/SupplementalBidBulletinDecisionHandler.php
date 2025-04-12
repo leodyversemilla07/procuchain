@@ -19,17 +19,17 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
 
-            if ($data['hasMoreBulletins']) {
+            if ($data['supplementalBidNeeded']) {
                 return $this->handleMoreBulletins($data);
             } else {
                 return $this->handleBulletinsCompleted($data);
             }
         } catch (Exception $e) {
-            Log::error('Error completing supplemental bid bulletins', ['error' => $e->getMessage()]);
+            Log::error('Error in SupplementalBidBulletinDecisionHandler', ['error' => $e->getMessage()]);
 
             return [
                 'success' => false,
-                'message' => 'Failed to process supplemental bid bulletin decision: '.$e->getMessage(),
+                'message' => 'Failed to process '.StageEnums::SUPPLEMENTAL_BID_BULLETIN->getDisplayName().' decision: '.$e->getMessage(),
             ];
         }
     }
@@ -39,7 +39,7 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
         return [
             'procurementId' => $request->input('procurement_id'),
             'procurementTitle' => $request->input('procurement_title'),
-            'hasMoreBulletins' => $request->boolean('has_more_bulletins', false),
+            'supplementalBidNeeded' => $request->boolean('supplemental_bid_needed', false),
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
@@ -51,31 +51,31 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
     {
         $status = StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING;
 
-        $this->blockchainService->updateStatus(
+        $this->blockchainService->handleStageTransition(
             $data['procurementId'],
             $data['procurementTitle'],
             $status->getDisplayName(),
+            $status->getDisplayName(),
             $data['currentStage']->getDisplayName(),
+            $data['currentStage']->getDisplayName(), // Stay in supplemental bid bulletin stage
             $data['userAddress'],
-            $data['timestamp']
+            'Additional supplemental bid bulletins required'
         );
 
-        $this->blockchainService->logEvent(
+        $this->notificationService->notifyStageUpdate(
             $data['procurementId'],
             $data['procurementTitle'],
             $data['currentStage']->getDisplayName(),
-            'Additional supplemental bid bulletins to be issued',
-            0,
-            $data['userAddress'],
-            'decision',
-            'workflow',
-            'info',
-            $data['timestamp']
+            $status->getDisplayName(),
+            $data['timestamp'],
+            'more_bulletins_required', // Action type as string
+            false, // No stage transition
+            '' // No next stage
         );
 
         return [
             'success' => true,
-            'message' => 'Please upload additional supplemental bid bulletins.',
+            'message' => $status->getDisplayName().'. Additional supplemental bid bulletins are required.',
         ];
     }
 
@@ -89,9 +89,9 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
             $status->getDisplayName(),
             $status->getDisplayName(),
             $data['currentStage']->getDisplayName(),
-            $data['nextStage']->getDisplayName(),
+            $data['nextStage']->getDisplayName(), // Move to bid opening
             $data['userAddress'],
-            'All supplemental bid bulletins issued'
+            'No additional supplemental bid bulletins needed'
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -100,16 +100,14 @@ class SupplementalBidBulletinDecisionHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $status->getDisplayName(),
             $data['timestamp'],
-            0,
-            'completed',
-            true,
-            $data['nextStage']->getDisplayName()
+            'bulletins_completed', // Action type as string
+            true, // Stage transition occurring
+            $data['nextStage']->getDisplayName() // Next stage specified
         );
 
         return [
             'success' => true,
-            'message' => $status->getDisplayName().
-                '. Proceeding to '.$data['nextStage']->getDisplayName().'.',
+            'message' => $status->getDisplayName().'. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
 }

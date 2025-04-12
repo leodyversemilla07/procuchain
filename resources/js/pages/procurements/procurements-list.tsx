@@ -7,7 +7,7 @@ import { DataTableColumnHeader } from '@/components/ui/data-table';
 import { DataTableCheckbox } from '@/components/ui/data-table';
 import { PreProcurementModal } from '@/components/pre-procurement-conference/pre-procurement-conference-modal';
 import { PreBidConferenceModal } from '@/components/pre-bid-conference/pre-bid-conference-modal';
-import { MarkCompleteDialog } from '@/components/procurement/mark-complete-dialog';
+import { SupplementalBidBulletinModal } from '@/components/supplemental-bid-bulletin/supplemental-bid-bulletin-modal';
 import AppLayout from '@/layouts/app-layout';
 import { ActionButtons } from '@/components/procurements-list/action-buttons';
 import { ProcurementListHeader } from '@/components/procurements-list/procurement-list-header';
@@ -37,7 +37,7 @@ interface ShowProps {
 const useTableColumns = (
     onOpenPreProcurementModal: (procurement: ProcurementListItem) => void,
     onOpenPreBidModal: (procurement: ProcurementListItem) => void,
-    onOpenMarkCompleteDialog: (procurement: ProcurementListItem) => void
+    onOpenSupplementalBidBulletinModal: (procurement: ProcurementListItem) => void,
 ): ColumnDef<ProcurementListItem>[] => {
     const columns: ColumnDef<ProcurementListItem>[] = [
         {
@@ -100,7 +100,7 @@ const useTableColumns = (
                     variant="table"
                     onOpenPreProcurementModal={onOpenPreProcurementModal}
                     onOpenPreBidModal={onOpenPreBidModal}
-                    onOpenMarkCompleteDialog={onOpenMarkCompleteDialog}
+                    onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
                 />
             ),
         },
@@ -119,7 +119,6 @@ interface ProcurementsContentProps {
     userRole: string;
     onOpenPreProcurementModal: (procurement: ProcurementListItem) => void;
     onOpenPreBidModal: (procurement: ProcurementListItem) => void;
-    onOpenMarkCompleteDialog: (procurement: ProcurementListItem) => void;
 }
 
 const ProcurementsContent = ({
@@ -133,12 +132,11 @@ const ProcurementsContent = ({
     userRole,
     onOpenPreProcurementModal,
     onOpenPreBidModal,
-    onOpenMarkCompleteDialog,
 }: ProcurementsContentProps) => {
     if (loading) return <LoadingSkeleton />;
     if (error) return <ErrorState error={error} />;
     if (procurements.length === 0) return <EmptyState userRole={userRole} />;
-    
+
     return viewType === 'table' ? (
         <DataTable
             columns={columns}
@@ -165,7 +163,6 @@ const ProcurementsContent = ({
             procurements={procurements}
             onOpenPreProcurementModal={onOpenPreProcurementModal}
             onOpenPreBidModal={onOpenPreBidModal}
-            onOpenMarkCompleteDialog={onOpenMarkCompleteDialog}
         />
     );
 };
@@ -181,21 +178,21 @@ export default function ProcurementsList({ procurements: initialProcurements, er
         loading,
         viewType,
         error,
-        modalOpen,
-        preBidModalOpen,
-        markCompleteDialogOpen,
+        preProcurementModalOpen,
+        preBidConferenceModalOpen,
+        supplementalBidBulletinModalOpen,
         selectedProcurement,
         setSelectedRows,
         setViewType,
-        setModalOpen,
-        setPreBidModalOpen,
-        setMarkCompleteDialogOpen,
+        setPreProcurementModalOpen,
+        setPreBidConferenceModalOpen,
+        setSupplementalBidBulletinModalOpen,
         handleOpenPreProcurementModal,
         handleOpenPreBidModal,
-        handleOpenMarkCompleteDialog,
+        handleOpenSupplementalBidBulletinModal,
     } = useProcurementList({ initialProcurements, initialError });
 
-    const columns = useTableColumns(handleOpenPreProcurementModal, handleOpenPreBidModal, handleOpenMarkCompleteDialog);
+    const columns = useTableColumns(handleOpenPreProcurementModal, handleOpenPreBidModal, handleOpenSupplementalBidBulletinModal);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -222,33 +219,38 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                                 userRole={userRole}
                                 onOpenPreProcurementModal={handleOpenPreProcurementModal}
                                 onOpenPreBidModal={handleOpenPreBidModal}
-                                onOpenMarkCompleteDialog={handleOpenMarkCompleteDialog}
                             />
                         </div>
                     </CardContent>
                 </Card>
             </div>
-            <PreProcurementModal
-                open={modalOpen}
-                onOpenChange={setModalOpen}
-                procurementId={selectedProcurement.id}
-                procurementTitle={selectedProcurement.title}
-                onComplete={() => window.location.reload()}
-            />
-            <PreBidConferenceModal
-                open={preBidModalOpen}
-                onOpenChange={setPreBidModalOpen}
-                procurementId={selectedProcurement.id}
-                procurementTitle={selectedProcurement.title}
-                onComplete={() => window.location.reload()}
-            />
-            <MarkCompleteDialog
-                open={markCompleteDialogOpen}
-                onOpenChange={setMarkCompleteDialogOpen}
-                procurementId={selectedProcurement.id}
-                procurementTitle={selectedProcurement.title}
-                onComplete={() => window.location.reload()}
-            />
+            {preProcurementModalOpen && selectedProcurement && (
+                <PreProcurementModal
+                    open={preProcurementModalOpen}
+                    onOpenChange={setPreProcurementModalOpen}
+                    procurementId={selectedProcurement.id}
+                    procurementTitle={selectedProcurement.title}
+                    onComplete={() => window.location.reload()}
+                />
+            )}
+            {preBidConferenceModalOpen && selectedProcurement && (
+                <PreBidConferenceModal
+                    open={preBidConferenceModalOpen}
+                    onOpenChange={setPreBidConferenceModalOpen}
+                    procurementId={selectedProcurement.id}
+                    procurementTitle={selectedProcurement.title}
+                    onComplete={() => window.location.reload()}
+                />
+            )}
+            {supplementalBidBulletinModalOpen && selectedProcurement && (
+                <SupplementalBidBulletinModal
+                    open={supplementalBidBulletinModalOpen}
+                    onOpenChange={setSupplementalBidBulletinModalOpen}
+                    procurementId={selectedProcurement.id}
+                    procurementTitle={selectedProcurement.title}
+                    onComplete={() => window.location.reload()}
+                />
+            )}
         </AppLayout>
     );
 }

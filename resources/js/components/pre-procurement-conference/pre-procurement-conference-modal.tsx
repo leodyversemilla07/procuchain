@@ -109,9 +109,14 @@ export function PreProcurementModal({
                     </DialogTitle>
                     <DialogDescription className="text-base leading-relaxed">
                         Please indicate whether a pre-procurement conference was held for this procurement:
-                        <span className="block font-medium text-gray-700 dark:text-gray-300 mt-2">
-                            {procurementTitle}
-                        </span>
+                        <div className="mt-2">
+                            <span className="block font-medium text-gray-700 dark:text-gray-300">
+                                Title: {procurementTitle}
+                            </span>
+                            <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                ID: {procurementId}
+                            </span>
+                        </div>
                     </DialogDescription>
                 </DialogHeader>
 

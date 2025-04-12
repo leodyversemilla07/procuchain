@@ -32,16 +32,8 @@ class MultichainSetup extends Command
         $this->multichainService = $multichainService;
     }
 
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    protected function setupAddresses(): array
     {
-        $this->info('╔══════════════════════════════════════╗');
-        $this->info('║      MultiChain Setup Starting       ║');
-        $this->info('╚══════════════════════════════════════╝');
-        $this->newLine();
-
         $this->info('<fg=blue>📍 Step 1: Generating Blockchain Addresses...</>');
         $addresses = [
             'BAC_SECRETARIAT_ADDRESS' => $this->createNewAddress(),
@@ -49,18 +41,23 @@ class MultichainSetup extends Command
             'HOPE_ADDRESS' => $this->createNewAddress(),
         ];
 
+        $this->updateEnvFile($addresses);
+
+        return $addresses;
+    }
+
+    protected function updateEnvFile(array $addresses): void
+    {
         $envContent = file_get_contents(base_path('.env'));
         foreach ($addresses as $key => $address) {
             $envContent = preg_replace("/$key=.*/", "$key=$address", $envContent);
             $this->line("  └─ <fg=green>✓</> $key: <fg=yellow>$address</>");
         }
         file_put_contents(base_path('.env'), $envContent);
+    }
 
-        $this->newLine();
-        $this->info('<fg=blue>📍 Step 2: Syncing Addresses to Database...</>');
-        $this->syncAddressesToDatabase($addresses);
-
-        $this->newLine();
+    protected function setupStreams(): array
+    {
         $this->info('<fg=blue>📍 Step 3: Creating Blockchain Streams...</>');
         $streams = [
             'procurement.documents',
@@ -75,39 +72,170 @@ class MultichainSetup extends Command
 
         foreach ($streams as $stream) {
             $bar->setMessage("Creating $stream...");
-            $streamIds[$stream] = $this->createNewStream($stream);
-            $this->line("\n  └─ <fg=green>✓</> Stream <options=bold>$stream</> created with ID: <fg=yellow>{$streamIds[$stream]}</>");
-            $bar->advance();
-        }
-        $bar->finish();
 
-        $this->newLine(2);
-        $this->info('<fg=blue>📍 Step 4: Setting Up Permissions...</>');
-        $permissions = [
-            'BAC_SECRETARIAT_ADDRESS' => ['connect', 'receive', 'send', 'create', 'write', 'read', 'activate', 'admin'],
-            'BAC_CHAIRMAN_ADDRESS' => ['connect', 'receive', 'read'],
-            'HOPE_ADDRESS' => ['connect', 'receive', 'read'],
-        ];
+            try {
+                $streamIds[$stream] = $this->createNewStream($stream);
 
-        foreach ($permissions as $role => $perms) {
-            $this->line("\n<fg=yellow>➤ Configuring $role:</>");
-            $address = $addresses[$role];
-            $globalPerms = array_intersect($perms, ['send', 'connect', 'receive', 'create', 'issue', 'mine', 'activate', 'admin']);
-            $streamPerms = array_diff($perms, $globalPerms);
+                // Wait for blockchain to process
+                sleep(2);
 
-            if (! empty($globalPerms)) {
-                $this->grantPermissions($address, implode(',', $globalPerms));
-                $this->line('  └─ <fg=green>✓</> Global permissions granted');
-            }
+                // Verify stream exists and is ready
+                $maxRetries = 3;
+                $retryDelay = 2;
 
-            foreach ($streams as $stream) {
-                foreach ($streamPerms as $perm) {
-                    $this->grantPermissions($address, "$stream.$perm");
+                for ($i = 1; $i <= $maxRetries; $i++) {
+                    try {
+                        $streamInfo = $this->multichainService->getStreamInfo($stream);
+                        if (! empty($streamInfo)) {
+                            // Stream exists, attempt subscription
+                            $this->multichainService->subscribe($stream, true);
+                            $this->line("\n  └─ <fg=green>✓</> Stream <options=bold>$stream</> verified and subscribed");
+                            break;
+                        }
+                    } catch (Exception $e) {
+                        if ($i === $maxRetries) {
+                            $this->warn("\n  └─ Warning: Could not verify/subscribe to $stream: ".$e->getMessage());
+                        } else {
+                            sleep($retryDelay);
+                        }
+                    }
+                }
+
+                $this->line("\n  └─ <fg=green>✓</> Stream <options=bold>$stream</> created with ID: <fg=yellow>{$streamIds[$stream]}</>");
+                $bar->advance();
+
+            } catch (Exception $e) {
+                $this->error("\n  └─ Failed to create/subscribe to stream $stream: ".$e->getMessage());
+                if (! $this->confirm('Would you like to continue with the next stream?')) {
+                    throw $e;
                 }
             }
-            $this->line('  └─ <fg=green>✓</> Stream permissions granted');
         }
 
+        $bar->finish();
+
+        return $streamIds;
+    }
+
+    protected function setupPermissions(array $addresses, array $streams): void
+    {
+        $this->info('<fg=blue>📍 Step 4: Setting Up Permissions...</>');
+
+        // Wait for blockchain to stabilize after stream creation
+        $this->info('Waiting for blockchain confirmation...');
+        sleep(5);
+
+        // First grant admin permissions to BAC_SECRETARIAT_ADDRESS
+        $secretariatAddress = $addresses['BAC_SECRETARIAT_ADDRESS'];
+        $this->line("\n<fg=yellow>➤ Configuring BAC_SECRETARIAT_ADDRESS (Admin):</>");
+
+        try {
+            // Verify address is valid
+            $validation = $this->multichainService->validateAddress($secretariatAddress);
+            if (! $validation || ! isset($validation['isvalid']) || ! $validation['isvalid']) {
+                throw new Exception('Invalid address for BAC_SECRETARIAT_ADDRESS');
+            }
+
+            // First grant only admin permission
+            $this->multichainService->grant($secretariatAddress, 'admin');
+            $this->line('  └─ <fg=green>✓</> Admin permission granted');
+
+            sleep(2); // Wait for admin permission to be confirmed
+
+            // Then grant other global permissions
+            $globalPerms = 'send,receive,create,issue,mine,activate';
+            $this->multichainService->grant($secretariatAddress, $globalPerms);
+            $this->line('  └─ <fg=green>✓</> Global permissions granted');
+
+            // Grant stream permissions one at a time
+            foreach ($streams as $stream) {
+                try {
+                    $streamInfo = $this->multichainService->getStreamInfo($stream);
+                    if (! $streamInfo) {
+                        throw new Exception("Stream $stream does not exist");
+                    }
+
+                    // Grant stream-level permissions directly
+                    $this->multichainService->grant($secretariatAddress, "$stream.admin");
+                    $this->line("  └─ <fg=green>✓</> Granted $stream.admin permission");
+                    sleep(1);
+
+                    $this->multichainService->grant($secretariatAddress, "$stream.write");
+                    $this->line("  └─ <fg=green>✓</> Granted $stream.write permission");
+                    sleep(1);
+
+                    $this->multichainService->grant($secretariatAddress, "$stream.read");
+                    $this->line("  └─ <fg=green>✓</> Granted $stream.read permission");
+                    sleep(1);
+
+                } catch (Exception $e) {
+                    $this->error("  └─ Failed to grant permissions for stream $stream: ".$e->getMessage());
+                    if (! $this->confirm('Would you like to continue with the next stream?')) {
+                        throw $e;
+                    }
+                }
+            }
+
+            // Now grant permissions to other roles
+            $otherRoles = [
+                'BAC_CHAIRMAN_ADDRESS' => [
+                    'global' => ['send', 'receive'],
+                    'stream' => ['write', 'read'],
+                ],
+                'HOPE_ADDRESS' => [
+                    'global' => ['send', 'receive'],
+                    'stream' => ['write', 'read'],
+                ],
+            ];
+
+            foreach ($otherRoles as $role => $perms) {
+                $this->line("\n<fg=yellow>➤ Configuring $role:</>");
+                $address = $addresses[$role];
+
+                try {
+                    // Verify address is valid
+                    $validation = $this->multichainService->validateAddress($address);
+                    if (! $validation || ! isset($validation['isvalid']) || ! $validation['isvalid']) {
+                        throw new Exception("Invalid address for $role");
+                    }
+
+                    // Grant global permissions
+                    $globalPerms = implode(',', $perms['global']);
+                    $this->multichainService->grant($address, $globalPerms);
+                    $this->line('  └─ <fg=green>✓</> Global permissions granted');
+
+                    // Grant stream permissions one at a time
+                    foreach ($streams as $stream) {
+                        foreach ($perms['stream'] as $perm) {
+                            $streamPerm = "$stream.$perm";
+                            try {
+                                $this->multichainService->grant($address, $streamPerm);
+                                $this->line("  └─ <fg=green>✓</> Granted $streamPerm permission");
+                                sleep(1);
+                            } catch (Exception $e) {
+                                $this->error("  └─ Failed to grant $streamPerm permission: ".$e->getMessage());
+                                if (! $this->confirm('Would you like to continue?')) {
+                                    throw $e;
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception $e) {
+                    $this->error("  └─ Failed to configure $role: ".$e->getMessage());
+                    if (! $this->confirm('Would you like to continue with the next role?')) {
+                        throw $e;
+                    }
+                }
+            }
+
+        } catch (Exception $e) {
+            $this->error('  └─ Failed to configure admin permissions: '.$e->getMessage());
+            throw $e;
+        }
+    }
+
+    protected function displaySummary(): void
+    {
         $this->newLine(2);
         $this->info('╔══════════════════════════════════════╗');
         $this->info('║    🎉 MultiChain Setup Complete!     ║');
@@ -124,66 +252,134 @@ class MultichainSetup extends Command
         );
     }
 
+    public function handle()
+    {
+        $this->info('╔══════════════════════════════════════╗');
+        $this->info('║      MultiChain Setup Starting       ║');
+        $this->info('╚══════════════════════════════════════╝');
+        $this->newLine();
+
+        // Step 1: Generate and update addresses
+        $addresses = $this->setupAddresses();
+
+        // Step 2: Sync addresses to database
+        $this->newLine();
+        $this->info('<fg=blue>📍 Step 2: Syncing Addresses to Database...</>');
+        $this->syncAddressesToDatabase($addresses);
+
+        // Step 3: Setup streams
+        $this->newLine();
+        $streamIds = $this->setupStreams();
+
+        // Step 4: Setup permissions
+        $this->newLine(2);
+        $this->setupPermissions($addresses, array_keys($streamIds));
+
+        // Display final summary
+        $this->displaySummary();
+    }
+
     public function createNewStream(string $streamName): string
     {
         try {
-            $result = $this->multichainService->client->create('stream', $streamName, true);
+            $this->info("  └─ Creating stream: $streamName");
 
-            if (! $this->multichainService->client->success()) {
-                throw new Exception(
-                    sprintf(
-                        'Error %d: %s',
-                        $this->multichainService->client->errorcode(),
-                        $this->multichainService->client->errormessage()
-                    )
-                );
+            // Verify blockchain connection
+            try {
+                $this->multichainService->getBlockchainParams();
+                $this->info('  └─ Blockchain connection verified');
+            } catch (Exception $e) {
+                $this->warn('  └─ Blockchain verification failed: '.$e->getMessage());
+                throw $e;
             }
 
-            Log::info('New stream created', [
-                'stream' => $streamName,
-                'txid' => $result,
-            ]);
+            // Create stream with proper options
+            $options = true; // Simple open stream for Community Edition
+            $details = ['purpose' => 'procurement'];
+            $result = $this->multichainService->createStream($streamName, $options, $details);
 
-            $this->multichainService->client->subscribe($streamName);
+            // Handle array result from createStream
+            $txid = is_array($result) && isset($result['txid']) ? $txid = $result['txid'] :
+                   (is_array($result) && isset($result['status']) && $result['status'] === 'exists' ? 'exists' :
+                   (is_string($result) ? $result : 'unknown'));
 
-            return $result;
+            $this->info("  └─ Stream creation initiated with status: $txid");
+
+            // In Community Edition, streams are automatically subscribed
+            // Just verify the stream exists
+            try {
+                $this->multichainService->getStreamInfo($streamName);
+                $this->info('  └─ Stream verified');
+            } catch (Exception $e) {
+                $this->warn('  └─ Stream verification failed: '.$e->getMessage());
+            }
+
+            // Verify stream creation
+            $maxRetries = 30;
+            $this->info('  └─ Verifying stream availability...');
+            $progress = $this->output->createProgressBar($maxRetries);
+
+            for ($i = 0; $i < $maxRetries; $i++) {
+                try {
+                    $streamInfo = $this->multichainService->getStreamInfo($streamName);
+                    if (! empty($streamInfo)) {
+                        $progress->finish();
+                        $this->newLine();
+                        $this->info('  └─ Stream verified successfully');
+
+                        return $txid;
+                    }
+                } catch (Exception $e) {
+                    // Continue waiting
+                }
+                sleep(1);
+                $progress->advance();
+            }
+
+            $progress->finish();
+            $this->newLine();
+            $this->warn('  └─ Stream created but verification timed out');
+
+            return $txid;
 
         } catch (Exception $e) {
-            Log::error('Failed to create new stream', [
+            Log::error('Stream creation failed', [
                 'stream' => $streamName,
                 'error' => $e->getMessage(),
-                'error_code' => $this->multichainService->client->errorcode(),
-                'error_message' => $this->multichainService->client->errormessage(),
             ]);
-            throw new Exception('Failed to create new stream: '.$e->getMessage());
+            throw $e;
         }
     }
 
     public function createNewAddress(): string
     {
         try {
-            $address = $this->multichainService->client->getnewaddress();
+            $this->info('  └─ Attempting to connect to blockchain node...');
 
-            if (! $this->multichainService->client->success()) {
-                throw new Exception(
-                    sprintf(
-                        'Error %d: %s',
-                        $this->multichainService->client->errorcode(),
-                        $this->multichainService->client->errormessage()
-                    )
-                );
+            // Generate a new address using MultichainService
+            $address = $this->multichainService->getNewAddress();
+
+            if (empty($address)) {
+                throw new Exception('MultiChain returned an empty address');
             }
 
+            $this->info('  └─ <fg=green>✓</> Successfully connected to blockchain');
             Log::info('New blockchain address created', ['address' => $address]);
 
-            return $address;
+            return (string) $address;
 
         } catch (Exception $e) {
             Log::error('Failed to create new address', [
                 'error' => $e->getMessage(),
-                'error_code' => $this->multichainService->client->errorcode(),
-                'error_message' => $this->multichainService->client->errormessage(),
             ]);
+
+            $this->error('  └─ Connection failed: '.$e->getMessage());
+            $this->info("\nTroubleshooting steps:");
+            $this->line(' 1. Check if MultiChain daemon is running');
+            $this->line(' 2. Verify network connectivity to '.$this->multichainService->getHost());
+            $this->line(' 3. Check firewall settings');
+            $this->line(' 4. Verify RPC credentials in .env file');
+
             throw new Exception('Failed to create new blockchain address: '.$e->getMessage());
         }
     }
@@ -191,17 +387,7 @@ class MultichainSetup extends Command
     public function grantPermissions(string $address, string $permission): void
     {
         try {
-            $this->multichainService->client->grant($address, $permission);
-
-            if (! $this->multichainService->client->success()) {
-                throw new Exception(
-                    sprintf(
-                        'Error %d: %s',
-                        $this->multichainService->client->errorcode(),
-                        $this->multichainService->client->errormessage()
-                    )
-                );
-            }
+            $this->multichainService->grant($address, $permission);
 
             Log::info('Permissions granted', [
                 'address' => $address,
@@ -213,8 +399,6 @@ class MultichainSetup extends Command
                 'address' => $address,
                 'permission' => $permission,
                 'error' => $e->getMessage(),
-                'error_code' => $this->multichainService->client->errorcode(),
-                'error_message' => $this->multichainService->client->errormessage(),
             ]);
             throw new Exception('Failed to grant permissions: '.$e->getMessage());
         }

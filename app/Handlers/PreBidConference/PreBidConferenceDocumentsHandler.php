@@ -37,10 +37,9 @@ class PreBidConferenceDocumentsHandler extends BaseStageHandler
             'needsBulletins' => $request->boolean('needs_bulletins', false),
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
-            'currentStage' => StageEnums::BIDDING_DOCUMENTS,
-            'bulletinsStage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
-            'bidOpeningStage' => StageEnums::BID_OPENING,
-            'status' => StatusEnums::PRE_BID_CONFERENCE_HELD,
+            'currentStage' => StageEnums::PRE_BID_CONFERENCE,
+            'nextStage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
+            'status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED,
         ];
     }
 
@@ -82,21 +81,15 @@ class PreBidConferenceDocumentsHandler extends BaseStageHandler
             $data['userAddress']
         );
 
-        // Determine next stage based on whether bulletins are needed
-        $nextStage = $data['needsBulletins'] ? $data['bulletinsStage'] : $data['bidOpeningStage'];
-        $transitionMessage = $data['needsBulletins']
-            ? 'Pre-bid conference held - supplemental bulletins needed'
-            : 'Pre-bid conference held - proceeding to bid opening';
-
         $this->blockchainService->handleStageTransition(
             $data['procurementId'],
             $data['procurementTitle'],
-            $data['status']->getDisplayName(),
-            $data['status']->getDisplayName(),
-            $data['currentStage']->getDisplayName(),
-            $nextStage->getDisplayName(),
+            StatusEnums::PRE_BID_CONFERENCE_HELD->getDisplayName(), // From PRE_BID_CONFERENCE_HELD
+            $data['status']->getDisplayName(),                      // To PRE_BID_CONFERENCE_COMPLETED
+            $data['currentStage']->getDisplayName(),                // From PRE_BID_CONFERENCE
+            $data['nextStage']->getDisplayName(),                   // To SUPPLEMENTAL_BID_BULLETIN
             $data['userAddress'],
-            $transitionMessage
+            'Proceeding to '.$data['nextStage']->getDisplayName().' after completing '.$data['currentStage']->getDisplayName()
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -105,15 +98,14 @@ class PreBidConferenceDocumentsHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['status']->getDisplayName(),
             $data['timestamp'],
-            count($metadataArray),
             'completed',
             true,
-            $nextStage->getDisplayName()
+            $data['nextStage']->getDisplayName()
         );
 
         return [
             'success' => true,
-            'message' => 'Pre-bid conference documents uploaded successfully. Proceeding to '.$nextStage->getDisplayName().'.',
+            'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
 }

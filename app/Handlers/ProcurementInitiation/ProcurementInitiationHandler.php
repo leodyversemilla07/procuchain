@@ -44,7 +44,7 @@ class ProcurementInitiationHandler extends BaseStageHandler
         $metadataArray = [];
 
         if (! empty($data['files'])) {
-            $uploadedMetadataArray = $this->uploadAndPrepareMetadata(
+            $uploadedMetadataArray = parent::uploadAndPrepareMetadata(
                 $data['files'],
                 $data['metadata'],
                 $data['procurementId'],
@@ -70,7 +70,7 @@ class ProcurementInitiationHandler extends BaseStageHandler
             $data['status']->getDisplayName(),
             $data['timestamp'],
             count($metadataArray),
-            'submitted'
+            true  // Changed from 'submitted' to true
         );
 
         return [

@@ -30,7 +30,7 @@ class ProcurementInitiationRequest extends FormRequest
             'files.*' => 'required|file|mimes:pdf|max:10240',
             'metadata' => 'required|array|min:1',
             'metadata.*.document_type' => 'required|string|max:255',
-            'metadata.*.submission_date' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+            'metadata.*.submission_date' => 'nullable|before_or_equal:today',
             'metadata.*.municipal_offices' => 'nullable|string|max:255',
             'metadata.*.signatory_details' => 'nullable|string|max:500',
         ];

@@ -3,18 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
-use App\Services\BacSecretariatServices;
-use App\Services\Multichain\StreamQueryOptions;
+use App\Models\User;
+use App\Services\ProcurementServices;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class BacSecretariatController extends BaseController
 {
     private $services;
 
-    public function __construct(BacSecretariatServices $services)
+    public function __construct(ProcurementServices $services)
     {
         $this->services = $services;
         $this->setupMiddleware();
@@ -26,33 +27,54 @@ class BacSecretariatController extends BaseController
         $this->middleware('role:bac_secretariat');
     }
 
-    public function index()
+    private function getUserName(string $address): string
     {
         try {
-            $statusOptions = new StreamQueryOptions(
+            return User::where('blockchain_address', $address)->first()?->name ?? 'Unknown';
+        } catch (Exception $e) {
+            Log::warning("Failed to retrieve user name for address: $address", [
+                'error' => $e->getMessage(),
+            ]);
+
+            return 'Unknown';
+        }
+    }
+
+    public function dashboard()
+    {
+        try {
+            Log::info('Fetching BAC Secretariat dashboard data');
+
+            $states = $this->services->getMultiChain()->listStreamItems(
                 StreamEnums::STATUS->value,
                 true,
                 1000,
-                -1000
+                -10,
+                false
             );
 
-            $allStates = $this->services->getMultiChain()->listStreamItems($statusOptions);
-            if ($allStates === null) {
-                Log::warning('Multichain returned null for stream items');
-                $allStates = [];
+            if ($states === null) {
+                throw new Exception('Failed to retrieve stream items');
             }
 
-            $procurementsByKey = $this->getProcurementsByKey($allStates);
+            $procurementsByKey = $this->getProcurementsByKey($states);
 
-            return Inertia::render('bac-secretariat/dashboard', [
+            $dashboardData = [
                 'recentProcurements' => $this->getRecentProcurements($procurementsByKey),
                 'recentActivities' => $this->getRecentActivities(),
                 'priorityActions' => array_slice($this->getPriorityActions($procurementsByKey), 0, 3),
                 'stats' => $this->getDashboardStats($procurementsByKey),
+            ];
+
+            Log::info('Successfully retrieved dashboard data', [
+                'procurement_count' => count($procurementsByKey),
+                'activities_count' => count($dashboardData['recentActivities']),
             ]);
 
+            return Inertia::render('bac-secretariat/dashboard', $dashboardData);
+
         } catch (Exception $e) {
-            Log::error('Failed to retrieve dashboard data:', [
+            Log::error('Failed to retrieve dashboard data', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -62,19 +84,27 @@ class BacSecretariatController extends BaseController
                 'recentActivities' => [],
                 'priorityActions' => [],
                 'stats' => $this->getEmptyStats(),
-                'error' => 'Failed to retrieve dashboard data: ' . $e->getMessage(),
+                'error' => 'Failed to retrieve dashboard data. Please try again later.',
             ]);
         }
     }
 
     private function getDashboardStats($procurementsByKey): array
     {
-        return [
-            'ongoingProjects' => $this->countOngoingProjects($procurementsByKey),
-            'pendingActions' => count($this->getPriorityActions($procurementsByKey)),
-            'completedBiddings' => $this->countCompletedBiddings($procurementsByKey),
-            'totalDocuments' => $this->getTotalDocuments($procurementsByKey),
-        ];
+        try {
+            return [
+                'ongoingProjects' => $this->countOngoingProjects($procurementsByKey),
+                'pendingActions' => count($this->getPriorityActions($procurementsByKey)),
+                'completedBiddings' => $this->countCompletedBiddings($procurementsByKey),
+                'totalDocuments' => $this->getTotalDocuments($procurementsByKey),
+            ];
+        } catch (Exception $e) {
+            Log::error('Failed to calculate dashboard stats', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->getEmptyStats();
+        }
     }
 
     private function getEmptyStats(): array
@@ -97,24 +127,37 @@ class BacSecretariatController extends BaseController
 
     private function getProcurementsByKey($allStates)
     {
-        return collect($allStates)
-            ->map(function ($item) {
-                $data = $item['data'];
+        try {
+            return collect($allStates)
+                ->map(function ($item) {
+                    $data = $item['data']['json'] ?? [];
+                    if (!isset($data['procurement_id'], $data['procurement_title'])) {
+                        Log::warning('Invalid procurement data structure', ['data' => $data]);
 
-                return [
-                    'id' => $data['procurement_id'] ?? '',
-                    'title' => $data['procurement_title'] ?? '',
-                    'stage' => $data['stage'] ?? '',
-                    'status' => $data['current_status'] ?? '',
-                    'user_address' => $data['user_address'] ?? '',
-                    'user' => \App\Models\User::where('blockchain_address', $data['user_address'] ?? '')->first()?->name ?? 'Unknown',
-                    'timestamp' => $data['timestamp'] ?? '',
-                ];
-            })
-            ->groupBy('id')
-            ->map(function ($group) {
-                return $group->sortByDesc('timestamp')->first();
-            });
+                        return null;
+                    }
+
+                    return [
+                        'id' => $data['procurement_id'],
+                        'title' => $data['procurement_title'],
+                        'stage' => $data['stage'] ?? '',
+                        'status' => $data['current_status'] ?? $data['stage'] ?? '',
+                        'user_address' => $data['user_address'] ?? '',
+                        'user' => $this->getUserName($data['user_address'] ?? ''),
+                        'timestamp' => $data['timestamp'] ?? '',
+                    ];
+                })
+                ->filter()
+                ->groupBy('id')
+                ->map(function ($group) {
+                    return $group->sortByDesc('timestamp')->first();
+                });
+        } catch (Exception $e) {
+            Log::error('Error processing procurement data', [
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 
     private function getRecentProcurements($procurementsByKey)
@@ -127,7 +170,7 @@ class BacSecretariatController extends BaseController
                     'id' => $item['id'],
                     'title' => $item['title'],
                     'stage' => $item['stage'],
-                    'status' => $item['status']
+                    'status' => $item['status'],
                 ];
             })
             ->toArray();
@@ -135,78 +178,133 @@ class BacSecretariatController extends BaseController
 
     private function getRecentActivities()
     {
-        $eventsOptions = new StreamQueryOptions(
-            StreamEnums::EVENTS->value,
-            true,
-            300,
-            -300
-        );
+        try {
+            $allEvents = $this->services->getMultiChain()->listStreamItems(
+                StreamEnums::EVENTS->value,
+                true,  // verbose mode
+                20,    // increased count
+                -20,   // get last 20 items
+                true   // local ordering
+            );
 
-        $allEvents = $this->services->getMultiChain()->listStreamItems($eventsOptions);
+            if (!$allEvents) {
+                Log::warning('No events found in stream');
 
-        return collect($allEvents)
-            ->map(function ($item) {
-                $data = $item['data'];
-                $actionLabel = $this->services->getEventTypeLabelMapper()->getLabel(
-                    $data['event_type'] ?? '',
-                    $data['details'] ?? ''
-                );
+                return [];
+            }
 
-                return [
-                    'id' => $data['procurement_id'] ?? '',
-                    'title' => $data['procurement_title'] ?? '',
-                    'action' => $actionLabel,
-                    'details' => $data['details'] ?? '',
-                    'raw_event_type' => $data['event_type'] ?? '',
-                    'stage' => $data['stage_identifier'] ?? '',
-                    'date' => $data['timestamp'] ?? now()->toIso8601String(),
-                    'user' => \App\Models\User::where('blockchain_address', $data['user_address'] ?? '')->first()?->name ?? 'Unknown',
-                    'timestamp' => strtotime($data['timestamp'] ?? 'now'),
-                ];
-            })
-            ->filter(function ($item) {
-                return !empty($item['id']) && !empty($item['title']);
-            })
-            ->sortByDesc('timestamp')
-            ->take(8)
-            ->values()
-            ->toArray();
+            return collect($allEvents)
+                ->map(function ($item) {
+                    $data = $item['data']['json'] ?? [];
+                    if (!isset($data['procurement_id'], $data['procurement_title'])) {
+                        return null;
+                    }
+
+                    $actionLabel = $this->services->getEventTypeLabelMapper()->getLabel(
+                        $data['event_type'] ?? '',
+                        $data['details'] ?? ''
+                    );
+
+                    return [
+                        'id' => $data['procurement_id'],
+                        'title' => $data['procurement_title'],
+                        'action' => $actionLabel,
+                        'details' => $data['details'] ?? '',
+                        'raw_event_type' => $data['event_type'] ?? '',
+                        'stage' => $data['stage_identifier'] ?? '',
+                        'date' => $data['timestamp'] ?? now()->toIso8601String(),
+                        'user' => $this->getUserName($data['user_address'] ?? ''),
+                        'timestamp' => strtotime($data['timestamp'] ?? 'now'),
+                    ];
+                })
+                ->filter()
+                ->sortByDesc('timestamp')
+                ->take(8)
+                ->values()
+                ->toArray();
+
+        } catch (Exception $e) {
+            Log::error('Failed to retrieve recent activities', [
+                'error' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+            ]);
+
+            return [];
+        }
     }
 
     private function getPriorityActions($procurementsByKey)
     {
-        $priorityActions = [];
+        try {
+            $priorityActions = [];
 
-        foreach ($procurementsByKey as $procurement) {
-            $action = $this->services->getStageTransitionService()->getPriorityAction(
-                $procurement['stage'],
-                $procurement['status'],
-                $procurement['id'],
-                $procurement['title']
-            );
+            foreach ($procurementsByKey as $procurement) {
+                try {
+                    $action = $this->services->getStageTransitionService()->getPriorityAction(
+                        $procurement['stage'],
+                        $procurement['status'],
+                        $procurement['id'],
+                        $procurement['title']
+                    );
 
-            if ($action !== null) {
-                $priorityActions[] = $action;
+                    if ($action !== null) {
+                        $priorityActions[] = $action;
+                    }
+                } catch (Exception $e) {
+                    Log::warning("Failed to get priority action for procurement {$procurement['id']}", [
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    continue;
+                }
             }
-        }
 
-        return $priorityActions;
+            return $priorityActions;
+
+        } catch (Exception $e) {
+            Log::error('Failed to retrieve priority actions', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 
     private function getTotalDocuments($procurementsByKey)
     {
-        $totalDocuments = 0;
-        foreach ($procurementsByKey as $procurement) {
-            $streamKey = $this->services->getStreamKeyService()->generate($procurement['id'], $procurement['title']);
-            $documentsOptions = StreamQueryOptions::forKey(
-                StreamEnums::DOCUMENTS->value,
-                $streamKey
-            );
-            $documents = $this->services->getMultiChain()->listStreamKeyItems($documentsOptions);
-            $totalDocuments += count($documents);
-        }
+        try {
+            $totalDocuments = 0;
+            foreach ($procurementsByKey as $procurement) {
+                try {
+                    $streamKey = $this->services->getStreamKeyService()->generate(
+                        $procurement['id'],
+                        $procurement['title']
+                    );
 
-        return $totalDocuments;
+                    $documents = $this->services->getMultiChain()->listStreamKeyItems(
+                        StreamEnums::DOCUMENTS->value,
+                        $streamKey
+                    );
+                    $totalDocuments += count($documents);
+
+                } catch (Exception $e) {
+                    Log::warning("Failed to count documents for procurement {$procurement['id']}", [
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    continue;
+                }
+            }
+
+            return $totalDocuments;
+
+        } catch (Exception $e) {
+            Log::error('Failed to calculate total documents', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return 0;
+        }
     }
 
     private function countCompletedBiddings($procurementsByKey)
@@ -221,53 +319,5 @@ class BacSecretariatController extends BaseController
                 'Completed',
             ]);
         })->count();
-    }
-
-    public function indexProcurementsList()
-    {
-        try {
-            $procurements = $this->services->getProcurementHandler()->getProcurementsList();
-            
-            return Inertia::render('procurements/procurements-list', [
-                'procurements' => $procurements,
-            ]);
-        } catch (Exception $e) {
-            Log::error('Failed to retrieve procurements:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return Inertia::render('procurements/procurements-list', [
-                'procurements' => [],
-                'error' => 'Failed to retrieve procurements: ' . $e->getMessage(),
-            ]);
-        }
-    }
-
-    public function showProcurement($procurementId)
-    {
-        try {
-            $procurement = $this->services->getProcurementHandler()->getProcurementDetails($procurementId);
-
-            if (!$procurement) {
-                return Inertia::render('procurements/show', ['message' => 'Procurement not found']);
-            }
-
-            return Inertia::render('procurements/show', [
-                'procurement' => $procurement,
-                'now' => now()->toIso8601String(),
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('Failed to retrieve procurement:', [
-                'procurement_id' => $procurementId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return Inertia::render('procurements/show', [
-                'error' => 'Failed to retrieve procurement: ' . $e->getMessage(),
-            ]);
-        }
     }
 }
