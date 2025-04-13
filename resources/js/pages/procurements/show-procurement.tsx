@@ -699,7 +699,7 @@ const DocumentSection: FC<DocumentSectionProps> = ({ documentsBystage, sortedsta
 };
 
 
-export default function Show({ procurement, now, error }: ShowProps) {
+export default function ShowProcurement({ procurement, now, error }: ShowProps) {
     const [activeTab, setActiveTab] = useState('documents');
 
     const { auth } = usePage<SharedData>().props;

@@ -112,7 +112,13 @@ class ViewProcurementsController extends BaseController
 
         return $allProcurements
             ->groupBy('id')
-            ->map(fn($group) => $group->sortByDesc('timestamp')->first())
+            ->map(function ($group) {
+                // Ensure we're sorting by actual timestamp, not just date string
+                return $group->sortByDesc(function ($item) {
+                    // Convert timestamp to comparable value (unix timestamp)
+                    return strtotime($item['timestamp'] ?? '0');
+                })->first();
+            })
             ->values()
             ->all();
     }
@@ -134,7 +140,11 @@ class ViewProcurementsController extends BaseController
                     $data['procurement_title'] ?? ''
                 );
 
-                $timestamp = isset($data['timestamp'])
+                // Store original timestamp for accurate sorting
+                $originalTimestamp = $data['timestamp'] ?? null;
+                
+                // Format display timestamp
+                $displayTimestamp = isset($data['timestamp'])
                     ? date('Y-m-d', strtotime($data['timestamp']))
                     : date('Y-m-d');
 
@@ -143,8 +153,9 @@ class ViewProcurementsController extends BaseController
                     'title' => $data['procurement_title'] ?? null,
                     'stage' => $data['stage'] ?? '',
                     'current_status' => $data['current_status'] ?? '',
-                    'timestamp' => $timestamp,
-                    'last_updated' => $timestamp,
+                    'timestamp' => $originalTimestamp, // Use original timestamp for sorting
+                    'display_date' => $displayTimestamp, // Use formatted date for display
+                    'last_updated' => $displayTimestamp,
                     'user_address' => $data['user_address'] ?? '',
                     'user' => $this->getUserName($data['user_address'] ?? ''),
                     'document_count' => $documentCount,
