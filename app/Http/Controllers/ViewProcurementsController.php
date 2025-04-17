@@ -89,154 +89,96 @@ class ViewProcurementsController extends BaseController
     }
 
     /**
-     * Fetch and process procurements data
+     * Fetch and process procurements data (optimized: batch fetch, in-memory aggregation)
      * 
      * @return array
      * @throws Exception
      */
     private function fetchAndProcessProcurements(): array
     {
-        $streamItems = $this->services->getMultiChain()->listStreamItems(
+        // Fetch all status items (for all procurements)
+        $statusItems = $this->services->getMultiChain()->listStreamItems(
             StreamEnums::STATUS->value,
             true,
             1000,
             0,
             false
         );
-
-        if ($streamItems === null) {
-            throw new Exception('Failed to retrieve stream items');
+        if ($statusItems === null) {
+            throw new Exception('Failed to retrieve status stream items');
         }
 
-        $allProcurements = $this->mapProcurementStreamItems($streamItems);
+        // Fetch all document items (for all procurements)
+        $documentItems = $this->services->getMultiChain()->listStreamItems(
+            StreamEnums::DOCUMENTS->value,
+            true,
+            10000, // adjust as needed for your data size
+            0,
+            false
+        );
+        if ($documentItems === null) {
+            throw new Exception('Failed to retrieve document stream items');
+        }
 
-        return $allProcurements
-            ->groupBy('id')
-            ->map(function ($group) {
-                // Ensure we're sorting by actual timestamp, not just date string
-                return $group->sortByDesc(function ($item) {
-                    // Convert timestamp to comparable value (unix timestamp)
-                    return strtotime($item['timestamp'] ?? '0');
-                })->first();
-            })
-            ->values()
-            ->all();
-    }
+        // Build a map: procurement_id => [all titles]
+        $procurementTitlesMap = collect($statusItems)
+            ->filter(fn($item) => isset($item['data']['json']['procurement_id']))
+            ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+            ->map(function ($items) {
+                return collect($items)
+                    ->map(fn($item) => $item['data']['json']['procurement_title'] ?? '')
+                    ->unique()
+                    ->filter()
+                    ->values()
+                    ->toArray();
+            });
 
-    /**
-     * Map stream items to procurement data
-     * 
-     * @param array $streamItems
-     * @return Collection
-     */
-    private function mapProcurementStreamItems(array $streamItems): Collection
-    {
-        return collect($streamItems)
-            ->map(function ($item) {
+        // Build a map: procurement_id => document count (unique by hash)
+        $documentCountMap = collect($documentItems)
+            ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+            ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+            ->map(function ($items) {
+                return collect($items)
+                    ->map(fn($item) => $item['data']['json']['hash'])
+                    ->unique()
+                    ->count();
+            });
+
+        // Map procurements, using the precomputed document count
+        $allProcurements = collect($statusItems)
+            ->map(function ($item) use ($documentCountMap) {
                 $data = $item['data']['json'] ?? [];
+                $procurementId = $data['procurement_id'] ?? null;
+                $documentCount = $procurementId ? ($documentCountMap[$procurementId] ?? 0) : 0;
 
-                $documentCount = $this->getDocumentCount(
-                    $data['procurement_id'] ?? '',
-                    $data['procurement_title'] ?? ''
-                );
-
-                // Store original timestamp for accurate sorting
                 $originalTimestamp = $data['timestamp'] ?? null;
-                
-                // Format display timestamp
                 $displayTimestamp = isset($data['timestamp'])
                     ? date('Y-m-d', strtotime($data['timestamp']))
                     : date('Y-m-d');
 
                 return [
-                    'id' => $data['procurement_id'] ?? null,
+                    'id' => $procurementId,
                     'title' => $data['procurement_title'] ?? null,
                     'stage' => $data['stage'] ?? '',
                     'current_status' => $data['current_status'] ?? '',
-                    'timestamp' => $originalTimestamp, // Use original timestamp for sorting
-                    'display_date' => $displayTimestamp, // Use formatted date for display
+                    'timestamp' => $originalTimestamp,
+                    'display_date' => $displayTimestamp,
                     'last_updated' => $displayTimestamp,
                     'user_address' => $data['user_address'] ?? '',
                     'user' => $this->getUserName($data['user_address'] ?? ''),
                     'document_count' => $documentCount,
                 ];
             });
-    }
 
-    /**
-     * Get document count for a procurement
-     * 
-     * @param string $procurementId
-     * @param string $procurementTitle
-     * @return int
-     */
-    private function getDocumentCount(string $procurementId, string $procurementTitle): int
-    {
-        try {
-            // Fetch status items to get all possible titles
-            $statusItems = $this->services->getMultiChain()->listStreamItems(
-                StreamEnums::STATUS->value,
-                true
-            );
-
-            if (!$statusItems) {
-                return 0;
-            }
-
-            // Get all possible titles for this procurement
-            $allTitles = collect($statusItems)
-                ->filter(function ($item) use ($procurementId) {
-                    $data = $item['data']['json'] ?? [];
-                    return ($data['procurement_id'] ?? '') === $procurementId;
-                })
-                ->map(function ($item) {
-                    $data = $item['data']['json'] ?? [];
-                    return $data['procurement_title'] ?? '';
-                })
-                ->unique()
-                ->filter()
-                ->values()
-                ->toArray();
-
-            // If no titles found, use the provided title
-            if (empty($allTitles)) {
-                $allTitles = [$procurementTitle];
-            }
-
-            $totalDocuments = 0;
-
-            // Count documents for each possible title
-            foreach ($allTitles as $title) {
-                $streamKey = $this->services->getStreamKeyService()->generate(
-                    $procurementId,
-                    $title
-                );
-                
-                $documents = $this->services->getMultiChain()->listStreamKeyItems(
-                    StreamEnums::DOCUMENTS->value,
-                    $streamKey
-                );
-                
-                if ($documents) {
-                    // Remove duplicates by hash if any
-                    $uniqueDocuments = collect($documents)
-                        ->map(function ($item) {
-                            return $item['data']['json']['hash'] ?? '';
-                        })
-                        ->unique()
-                        ->filter()
-                        ->count();
-                    
-                    $totalDocuments += $uniqueDocuments;
-                }
-            }
-
-            return $totalDocuments;
-            
-        } catch (Exception $e) {
-            Log::warning('Failed to get document count', ['error' => $e->getMessage()]);
-            return 0;
-        }
+        return $allProcurements
+            ->groupBy('id')
+            ->map(function ($group) {
+                return $group->sortByDesc(function ($item) {
+                    return strtotime($item['timestamp'] ?? '0');
+                })->first();
+            })
+            ->values()
+            ->all();
     }
 
     /**

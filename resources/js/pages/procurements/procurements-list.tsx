@@ -119,6 +119,7 @@ interface ProcurementsContentProps {
     userRole: string;
     onOpenPreProcurementModal: (procurement: ProcurementListItem) => void;
     onOpenPreBidModal: (procurement: ProcurementListItem) => void;
+    onOpenSupplementalBidBulletinModal: (procurement: ProcurementListItem) => void;
 }
 
 const ProcurementsContent = ({
@@ -132,6 +133,7 @@ const ProcurementsContent = ({
     userRole,
     onOpenPreProcurementModal,
     onOpenPreBidModal,
+    onOpenSupplementalBidBulletinModal,
 }: ProcurementsContentProps) => {
     if (loading) return <LoadingSkeleton />;
     if (error) return <ErrorState error={error} />;
@@ -163,6 +165,7 @@ const ProcurementsContent = ({
             procurements={procurements}
             onOpenPreProcurementModal={onOpenPreProcurementModal}
             onOpenPreBidModal={onOpenPreBidModal}
+            onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
         />
     );
 };
@@ -219,6 +222,7 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                                 userRole={userRole}
                                 onOpenPreProcurementModal={handleOpenPreProcurementModal}
                                 onOpenPreBidModal={handleOpenPreBidModal}
+                                onOpenSupplementalBidBulletinModal={handleOpenSupplementalBidBulletinModal}
                             />
                         </div>
                     </CardContent>

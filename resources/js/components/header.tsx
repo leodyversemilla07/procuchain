@@ -150,20 +150,12 @@ export default function Header() {
                                 >
                                     <div className="py-1.5">
                                         <Link
-                                            href={route('bidding')}
-                                            className="block px-5 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400"
-                                            role="menuitem"
-                                            onClick={() => setDropdownOpen(false)}
-                                        >
-                                            Bidding
-                                        </Link>
-                                        <Link
                                             href={route('procurement')}
                                             className="block px-5 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400"
                                             role="menuitem"
                                             onClick={() => setDropdownOpen(false)}
                                         >
-                                            Procurement List
+                                            Procurement Stage
                                         </Link>
                                         <Link
                                             href={route('generate-pr.index')}
@@ -216,13 +208,6 @@ export default function Header() {
                                     >
                                         <span className="relative z-10">Log in</span>
                                         <div className="absolute inset-0 bg-teal-50 dark:bg-teal-900/30 rounded-lg scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
-                                    </Link>
-                                    <Link
-                                        href={route('register')}
-                                        className="relative inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-teal-500 rounded-lg hover:from-teal-500 hover:to-teal-400 transition-all duration-200 shadow-sm hover:shadow group"
-                                    >
-                                        <span className="relative z-10">Get Started</span>
-                                        <div className="absolute inset-0 -z-10 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300"></div>
                                     </Link>
                                 </>
                             )}
@@ -298,13 +283,6 @@ export default function Header() {
                             <span className="font-medium">Home</span>
                         </Link>
                         <Link
-                            href={route('bidding')}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className={`px-4 py-3.5 mx-2 mb-1 rounded-lg flex items-center text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400 transition-colors duration-200 ${route().current('bidding') ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 font-medium' : ''}`}
-                        >
-                            <span className="font-medium">Bidding</span>
-                        </Link>
-                        <Link
                             href={route('procurement')}
                             onClick={() => setMobileMenuOpen(false)}
                             className={`px-4 py-3.5 mx-2 mb-1 rounded-lg flex items-center text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400 transition-colors duration-200 ${route().current('procurement') ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 font-medium' : ''}`}
@@ -354,13 +332,6 @@ export default function Header() {
                                         className="block w-full py-3 px-4 text-center rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200"
                                     >
                                         Log in
-                                    </Link>
-                                    <Link
-                                        href={route('register')}
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className="block w-full py-3 px-4 text-center rounded-lg bg-gradient-to-r from-teal-600 to-teal-500 text-white mt-3 hover:from-teal-500 hover:to-teal-400 transition-colors duration-200 shadow-sm"
-                                    >
-                                        Get Started
                                     </Link>
                                 </>
                             )}

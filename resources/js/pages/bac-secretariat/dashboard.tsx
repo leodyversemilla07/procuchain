@@ -45,7 +45,7 @@ export default function Dashboard() {
                             </p>
                         </div>
                         <Button asChild size="default">
-                            <Link href="/bac-secretariat/procurement/pr-initiation">
+                            <Link href="/bac-secretariat/procurement/procurement-initiation">
                                 <PlusIcon className="h-4 w-4 mr-2" />
                                 New Procurement
                             </Link>

@@ -15,6 +15,9 @@ class BacSecretariatController extends BaseController
 {
     private $services;
 
+    // cache for user names to avoid repeated DB queries
+    private array $userNameCache = [];
+
     public function __construct(ProcurementServices $services)
     {
         $this->services = $services;
@@ -29,15 +32,18 @@ class BacSecretariatController extends BaseController
 
     private function getUserName(string $address): string
     {
-        try {
-            return User::where('blockchain_address', $address)->first()?->name ?? 'Unknown';
-        } catch (Exception $e) {
-            Log::warning("Failed to retrieve user name for address: $address", [
-                'error' => $e->getMessage(),
-            ]);
-
-            return 'Unknown';
+        if (isset($this->userNameCache[$address])) {
+            return $this->userNameCache[$address];
         }
+
+        try {
+            $name = User::where('blockchain_address', $address)->first()?->name ?? 'Unknown';
+        } catch (Exception $e) {
+            Log::warning("Failed to retrieve user name for address: $address", ['error' => $e->getMessage()]);
+            $name = 'Unknown';
+        }
+
+        return $this->userNameCache[$address] = $name;
     }
 
     public function dashboard()
@@ -59,11 +65,15 @@ class BacSecretariatController extends BaseController
 
             $procurementsByKey = $this->getProcurementsByKey($states);
 
+            // compute priority actions once
+            $allPriorityActions = $this->getPriorityActions($procurementsByKey);
+            $priorityActions = array_slice($allPriorityActions, 0, 3);
+
             $dashboardData = [
                 'recentProcurements' => $this->getRecentProcurements($procurementsByKey),
                 'recentActivities' => $this->getRecentActivities(),
-                'priorityActions' => array_slice($this->getPriorityActions($procurementsByKey), 0, 3),
-                'stats' => $this->getDashboardStats($procurementsByKey),
+                'priorityActions' => $priorityActions,
+                'stats' => $this->getDashboardStats($procurementsByKey, count($allPriorityActions)),
             ];
 
             Log::info('Successfully retrieved dashboard data', [
@@ -89,12 +99,12 @@ class BacSecretariatController extends BaseController
         }
     }
 
-    private function getDashboardStats($procurementsByKey): array
+    private function getDashboardStats($procurementsByKey, int $pendingActions): array
     {
         try {
             return [
                 'ongoingProjects' => $this->countOngoingProjects($procurementsByKey),
-                'pendingActions' => count($this->getPriorityActions($procurementsByKey)),
+                'pendingActions' => $pendingActions,
                 'completedBiddings' => $this->countCompletedBiddings($procurementsByKey),
                 'totalDocuments' => $this->getTotalDocuments($procurementsByKey),
             ];
@@ -274,27 +284,52 @@ class BacSecretariatController extends BaseController
     {
         try {
             $totalDocuments = 0;
+            $documentCounts = [];
+            $client = $this->services->getMultiChain();
+
             foreach ($procurementsByKey as $procurement) {
                 try {
+                    // use only current title for stream key generation
                     $streamKey = $this->services->getStreamKeyService()->generate(
                         $procurement['id'],
                         $procurement['title']
                     );
 
-                    $documents = $this->services->getMultiChain()->listStreamKeyItems(
+                    $documents = $client->listStreamKeyItems(
                         StreamEnums::DOCUMENTS->value,
                         $streamKey
                     );
-                    $totalDocuments += count($documents);
+
+                    // count unique document hashes
+                    $uniqueDocCount = collect($documents ?? [])
+                        ->map(fn($doc) => $doc['data']['json']['hash'] ?? '')
+                        ->unique()
+                        ->filter()
+                        ->count();
+
+                    $totalDocuments += $uniqueDocCount;
+
+                    $documentCounts[] = [
+                        'procurement_id' => $procurement['id'],
+                        'procurement_title' => $procurement['title'],
+                        'document_count' => $uniqueDocCount,
+                    ];
 
                 } catch (Exception $e) {
                     Log::warning("Failed to count documents for procurement {$procurement['id']}", [
                         'error' => $e->getMessage(),
+                        'procurement_title' => $procurement['title'],
                     ]);
-
                     continue;
                 }
             }
+
+            // log summary of document counts
+            Log::info('Document count breakdown', [
+                'total_documents' => $totalDocuments,
+                'procurement_count' => count($procurementsByKey),
+                'document_counts_by_procurement' => $documentCounts
+            ]);
 
             return $totalDocuments;
 
@@ -302,7 +337,6 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to calculate total documents', [
                 'error' => $e->getMessage(),
             ]);
-
             return 0;
         }
     }
