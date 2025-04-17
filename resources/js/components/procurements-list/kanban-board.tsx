@@ -8,14 +8,14 @@ interface KanbanBoardProps {
     procurements: ProcurementListItem[];
     onOpenPreProcurementModal?: (procurement: ProcurementListItem) => void;
     onOpenPreBidModal?: (procurement: ProcurementListItem) => void;
-    onOpenMarkCompleteDialog?: (procurement: ProcurementListItem) => void;
+    onOpenSupplementalBidBulletinModal?: (procurement: ProcurementListItem) => void;
 }
 
 export const KanbanBoard = ({
     procurements,
     onOpenPreProcurementModal,
     onOpenPreBidModal,
-    onOpenMarkCompleteDialog,
+    onOpenSupplementalBidBulletinModal,
 }: KanbanBoardProps) => {
     const stages = [...new Set(procurements.map(proc => proc.stage))] as Stage[];
     const procurementsByStage: Record<string, ProcurementListItem[]> = {};
@@ -44,7 +44,7 @@ export const KanbanBoard = ({
                                 procurement={procurement}
                                 onOpenPreProcurementModal={onOpenPreProcurementModal}
                                 onOpenPreBidModal={onOpenPreBidModal}
-                                onOpenMarkCompleteDialog={onOpenMarkCompleteDialog}
+                                onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
                             />
                         ))}
                     </div>

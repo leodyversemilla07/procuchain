@@ -11,6 +11,7 @@ interface KanbanCardProps {
     procurement: ProcurementListItem;
     onOpenPreProcurementModal?: (procurement: ProcurementListItem) => void;
     onOpenPreBidModal?: (procurement: ProcurementListItem) => void;
+    onOpenSupplementalBidBulletinModal?: (procurement: ProcurementListItem) => void;
     onOpenMarkCompleteDialog?: (procurement: ProcurementListItem) => void;
 }
 
@@ -18,7 +19,7 @@ export const KanbanCard = ({
     procurement,
     onOpenPreProcurementModal,
     onOpenPreBidModal,
-    onOpenMarkCompleteDialog,
+    onOpenSupplementalBidBulletinModal,
 }: KanbanCardProps) => {
     return (
         <Card className="mb-2 cursor-pointer hover:border-blue-600 dark:hover:border-blue-500 transition-all duration-200 shadow-sm border-sidebar-border/70 dark:border-sidebar-border">
@@ -68,7 +69,7 @@ export const KanbanCard = ({
                         variant="kanban"
                         onOpenPreProcurementModal={onOpenPreProcurementModal}
                         onOpenPreBidModal={onOpenPreBidModal}
-                        onOpenMarkCompleteDialog={onOpenMarkCompleteDialog}
+                        onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
                     />
                 </div>
             </CardContent>

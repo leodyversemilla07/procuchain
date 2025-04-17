@@ -14,6 +14,9 @@ Route::get('/', function () {
     return Inertia::render('home');
 })->name('home');
 
+Route::inertia('/about', 'about')
+    ->name('about');
+
 Route::inertia('/bidding', 'bidding')
     ->name('bidding');
 
