@@ -88,6 +88,11 @@ interface StageMetadata {
     municipal_offices?: string;
     signatory_details?: string;
     issuance_date?: string;
+    document_type?: string;
+    validity_period?: {
+        start_date: string;
+        end_date: string;
+    };
     evaluator_names?: string;
     evaluation_date?: string;
     bond_amount?: string;
@@ -106,6 +111,9 @@ interface StageMetadata {
     funding_source?: string;
     meeting_date?: string;
     participants?: string;
+    bulletin_number?: string;
+    bulletin_title?: string;
+    issue_date?: string;
 }
 
 interface Event {
@@ -469,7 +477,61 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
         { key: 'report_date', label: 'Report Date', icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, format: formatDateOnly },
         { key: 'report_notes', label: 'Report Notes', icon: <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> },
         { key: 'municipal_offices', label: 'Municipal Offices', icon: <Building className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> },
+        { key: 'bulletin_number', label: 'Bulletin Number', icon: <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> },
+        { key: 'bulletin_title', label: 'Bulletin Title', icon: <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> },
+        { key: 'issue_date', label: 'Issue Date', icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, format: formatDateOnly },
     ];
+
+    const renderMetadataItem = (key: keyof StageMetadata, item: { label: string; icon: JSX.Element; format?: (val: string | number | undefined) => string }) => {
+        // Handle validity period
+        if (key === 'validity_period' && metadata.validity_period) {
+            return (
+                <div key={key} className="col-span-2">
+                    <div className="flex items-start group p-2 rounded-md transition-colors duration-200 ease-in-out hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                        <div className="mr-2 sm:mr-2.5 mt-0.5 flex-shrink-0 p-1.5 rounded-md text-primary bg-primary/10">
+                            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <span className="font-medium text-neutral-700 dark:text-neutral-300 text-xs uppercase tracking-wide">Validity Period</span>
+                            <div className="mt-1 text-neutral-800 dark:text-neutral-200 break-words leading-relaxed font-medium">
+                                <div className="line-clamp-2 group-hover:line-clamp-none transition-all duration-200 ease-in-out">
+                                    {`${formatDateOnly(metadata.validity_period.start_date)} - ${formatDateOnly(metadata.validity_period.end_date)}`}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Handle bid opening documents with bidder information
+        if ((key === 'bidder_name' || key === 'bid_value') && metadata.document_type === 'Bid Document') {
+            return (
+                <MetadataItem
+                    key={`${key}-${metadata[key]}`}
+                    icon={item.icon}
+                    label={item.label}
+                    value={item.format ? item.format(metadata[key] as string) : metadata[key] as string}
+                    highlight={true}
+                />
+            );
+        }
+
+        // Handle regular metadata fields
+        if (metadata[key]) {
+            const value = item.format ? item.format(metadata[key] as string) : metadata[key];
+            return (
+                <MetadataItem
+                    key={key}
+                    icon={item.icon}
+                    label={item.label}
+                    value={value as string}
+                />
+            );
+        }
+
+        return null;
+    };
 
     return (
         <div className="mt-3.5 ml-0 sm:ml-[58px] max-w-full overflow-hidden">
@@ -478,18 +540,31 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
                     <CardTitle className="flex items-center text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                         <FileCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 text-primary" />
                         Document Metadata
+                        {metadata.document_type === 'Bid Document' && (
+                            <Badge variant="outline" className="ml-2">
+                                Bid Document
+                            </Badge>
+                        )}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3 sm:p-4 pt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
-                        {metadataMap.map(({ key, label, icon, format }) => (
+                        {/* Show opening date first for bid documents */}
+                        {metadata.document_type === 'Bid Document' && metadata.opening_date && (
                             <MetadataItem
-                                key={key}
-                                icon={icon}
-                                label={label}
-                                value={metadata[key] ? (format ? format(metadata[key]) : String(metadata[key])) : undefined}
+                                icon={<Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                                label="Opening Date"
+                                value={formatDateOnly(metadata.opening_date)}
+                                highlight={true}
                             />
-                        ))}
+                        )}
+                        {/* Render all other metadata items */}
+                        {metadataMap.map(item => renderMetadataItem(item.key, item))}
+                        {/* Handle validity period specially */}
+                        {metadata.validity_period && renderMetadataItem('validity_period', { 
+                            label: 'Validity Period', 
+                            icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+                        })}
                     </div>
                 </CardContent>
             </Card>
@@ -643,20 +718,6 @@ const DocumentSection: FC<DocumentSectionProps> = ({ documentsBystage, sortedsta
         );
     }
 
-    if (sortedstageKeys.length === 0) {
-        return (
-            <CardContent className="p-6">
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Categorization Issue</AlertTitle>
-                    <AlertDescription>
-                        Documents exist but could not be categorized by stage. Please check the data.
-                    </AlertDescription>
-                </Alert>
-            </CardContent>
-        )
-    }
-
     return (
         <>
             <CardHeader className="border-b p-4 sm:p-6">
@@ -676,23 +737,21 @@ const DocumentSection: FC<DocumentSectionProps> = ({ documentsBystage, sortedsta
                 </div>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="overflow-hidden">
-                    {sortedstageKeys.map(stage => (
-                        <div key={stage} className="border-b border-neutral-200 dark:border-neutral-700 last:border-b-0">
-                            <div className="p-3 sm:p-4 bg-neutral-50 dark:bg-neutral-800/50 sticky top-0 z-10 backdrop-blur-sm">
-                                <h3 className="font-semibold text-sm sm:text-base flex items-center text-neutral-700 dark:text-neutral-200">
-                                    <FileCheck className="mr-2 h-4 w-4 text-primary flex-shrink-0" />
-                                    {stage} ({documentsBystage[stage].length})
-                                </h3>
-                            </div>
-                            <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                                {documentsBystage[stage].map((doc) => (
-                                    <DocumentItem key={doc.file_key || doc.hash || doc.document_type} doc={doc} />
-                                ))}
-                            </ul>
+                {sortedstageKeys.map(stage => (
+                    <div key={stage} className="border-b border-neutral-200 dark:border-neutral-700 last:border-b-0">
+                        <div className="p-3 sm:p-4 bg-neutral-50 dark:bg-neutral-800/50 sticky top-0 z-10 backdrop-blur-sm">
+                            <h3 className="font-semibold text-sm sm:text-base flex items-center text-neutral-700 dark:text-neutral-200">
+                                <FileCheck className="mr-2 h-4 w-4 text-primary flex-shrink-0" />
+                                {stage} ({documentsBystage[stage].length})
+                            </h3>
                         </div>
-                    ))}
-                </div>
+                        <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
+                            {documentsBystage[stage].map((doc) => (
+                                <DocumentItem key={doc.file_key || doc.hash || doc.document_type} doc={doc} />
+                            ))}
+                        </ul>
+                    </div>
+                ))}
             </CardContent>
         </>
     );

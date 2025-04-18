@@ -1,7 +1,8 @@
 import { Head, useForm } from '@inertiajs/react';
-import { FileUp, FileText, X, ClipboardList, CalendarIcon, Upload } from 'lucide-react';
+import { FileUp, FileText, X, ClipboardList, CalendarIcon as LucideCalendarIcon, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 interface SupplementalBidBulletinUploadProps {
     procurement: {
@@ -25,6 +29,7 @@ interface SupplementalBidBulletinUploadProps {
 
 export default function SupplementalBidBulletinUpload({ procurement, errors = {} }: SupplementalBidBulletinUploadProps) {
     const [isDraggingFile, setIsDraggingFile] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
     const { data, setData, post, processing, reset } = useForm({
         procurement_id: procurement.id,
@@ -37,8 +42,8 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Procurements', href: '/bac-secretariat/procurements-list' },
-        { title: `Upload Supplemental Bid Bulletin - ${procurement.id}`, href: '#' },
+        { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+        { title: `Upload Supplemental Bid Bulletin - ${procurement.id}: ${procurement.title}`, href: '#' },
     ];
 
     const onSubmit = (e: React.FormEvent) => {
@@ -99,6 +104,15 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
         }
     };
 
+    const handleDateSelect = (date: Date | undefined) => {
+        setSelectedDate(date);
+        if (date) {
+            setData('issue_date', format(date, 'yyyy-MM-dd'));
+        } else {
+            setData('issue_date', '');
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Upload Supplemental Bid Bulletin" />
@@ -137,12 +151,12 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
                                     </label>
                                     <div
                                         className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDraggingFile
-                                                ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                                                : data.bulletin_file
-                                                    ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                                                    : errors.bulletin_file
-                                                        ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                                                        : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                                            ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
+                                            : data.bulletin_file
+                                                ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
+                                                : errors.bulletin_file
+                                                    ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
+                                                    : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
                                             } cursor-pointer group`}
                                         onDragEnter={handleFileDragEnter}
                                         onDragLeave={handleFileDragLeave}
@@ -219,7 +233,7 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
                         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
                             <CardHeader className="pb-4 space-y-1">
                                 <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                                    <CalendarIcon className="h-5 w-5 text-primary" />
+                                    <LucideCalendarIcon className="h-5 w-5 text-primary" />
                                     Bulletin Details
                                 </CardTitle>
                                 <CardDescription>
@@ -259,18 +273,36 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="issue_date" className="text-sm font-medium">
+                                    <label htmlFor="issue_date" className="text-sm font-medium block mb-1">
                                         Issue Date
                                     </label>
-                                    <Input
-                                        id="issue_date"
-                                        type="date"
-                                        value={data.issue_date}
-                                        onChange={(e) => setData('issue_date', e.target.value)}
-                                        max={new Date().toISOString().split('T')[0]}
-                                    />
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant={'outline'}
+                                                className={cn(
+                                                    'w-full justify-start text-left font-normal',
+                                                    !selectedDate && 'text-muted-foreground'
+                                                )}
+                                            >
+                                                <LucideCalendarIcon className="mr-2 h-4 w-4" />
+                                                {selectedDate ? format(selectedDate, 'PPP') : <span>Pick a date</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                            <Calendar
+                                                mode="single"
+                                                selected={selectedDate}
+                                                onSelect={handleDateSelect}
+                                                initialFocus
+                                                disabled={(date) =>
+                                                    date > new Date() || date < new Date("1900-01-01")
+                                                }
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
                                     {errors.issue_date && (
-                                        <InputError message={errors.issue_date} />
+                                        <InputError message={errors.issue_date} className="mt-1" />
                                     )}
                                 </div>
                             </CardContent>

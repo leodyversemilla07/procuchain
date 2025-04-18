@@ -128,6 +128,17 @@ export default function Header() {
                                 <div className={`absolute inset-0 bg-teal-50 dark:bg-teal-900/30 rounded-lg scale-90 transition-all duration-300 
                                     ${route().current('home') ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-100 group-hover:scale-100'}`}></div>
                             </Link>
+                            
+                            <Link
+                                href={route('about')}
+                                role="menuitem"
+                                className="relative px-4 py-2.5 font-medium text-sm text-gray-700 dark:text-gray-300 transition-all duration-300 hover:text-teal-600 dark:hover:text-teal-400 group"
+                                aria-current={route().current('about') ? 'page' : undefined}
+                            >
+                                <span className="relative z-10">About</span>
+                                <div className={`absolute inset-0 bg-teal-50 dark:bg-teal-900/30 rounded-lg scale-90 transition-all duration-300 
+                                    ${route().current('about') ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-100 group-hover:scale-100'}`}></div>
+                            </Link>
 
                             <div className="relative" role="menuitem" ref={dropdownRef}>
                                 <button
@@ -281,6 +292,13 @@ export default function Header() {
                             className={`px-4 py-3.5 mx-2 mb-1 rounded-lg flex items-center text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400 transition-colors duration-200 ${route().current('home') ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 font-medium' : ''}`}
                         >
                             <span className="font-medium">Home</span>
+                        </Link>
+                        <Link
+                            href={route('about')}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`px-4 py-3.5 mx-2 mb-1 rounded-lg flex items-center text-gray-700 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400 transition-colors duration-200 ${route().current('about') ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 font-medium' : ''}`}
+                        >
+                            <span className="font-medium">About</span>
                         </Link>
                         <Link
                             href={route('procurement')}

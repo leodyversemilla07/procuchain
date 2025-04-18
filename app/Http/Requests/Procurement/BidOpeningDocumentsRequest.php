@@ -30,8 +30,23 @@ class BidOpeningDocumentsRequest extends FormRequest
             'bid_documents.*' => 'required|file|mimes:pdf|max:10240',
             'bidders_data' => 'required|array|min:1',
             'bidders_data.*.bidder_name' => 'required|string|min:1|max:255',
-            'bidders_data.*.bid_value' => 'required|string|min:1|max:100',
+            'bidders_data.*.bid_value' => 'required|numeric|min:0',
             'opening_date_time' => 'required|date_format:Y-m-d H:i:s',
+        ];
+    }
+
+    /**
+     * Get the custom error messages for validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'bid_documents.*.max' => 'Each bid document must not exceed 10MB in size.',
+            'bid_documents.*.mimes' => 'Only PDF files are allowed.',
+            'bidders_data.*.bid_value.numeric' => 'The bid value must be a valid number.',
+            'bidders_data.*.bid_value.min' => 'The bid value cannot be negative.',
         ];
     }
 }

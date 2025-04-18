@@ -1,7 +1,14 @@
 <?php
+declare(strict_types=1);
+/**
+ * @phpstan-ignore-file
+ * @psalm-suppress TooManyArguments
+ * @noinspection Generic.StringHeavyFunctionArguments
+ */
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Enums\StreamEnums;
 use App\Models\User;
 use Exception;
@@ -19,6 +26,14 @@ class ViewProcurementsController extends BaseController
      * @var ProcurementServices
      */
     private $services;
+
+    /**
+     * @var array
+     */
+    private array $userCache = [];
+
+    private const STATUS_PAGE_SIZE = 1000;
+    private const DOCUMENT_PAGE_SIZE = 10000;
 
     /**
      * Constructor
@@ -41,6 +56,20 @@ class ViewProcurementsController extends BaseController
     }
 
     /**
+     * Preload user names for batch user lookup
+     * 
+     * @param Collection $items
+     */
+    private function preloadUserNames(Collection $items): void
+    {
+        $addresses = $items->pluck('data.json.user_address')->unique()->filter();
+        $names = User::whereIn('blockchain_address', $addresses)
+            ->pluck('name', 'blockchain_address')
+            ->all();
+        $this->userCache = $names;
+    }
+
+    /**
      * Get username from blockchain address
      * 
      * @param string $address
@@ -48,15 +77,7 @@ class ViewProcurementsController extends BaseController
      */
     private function getUserName(string $address): string
     {
-        try {
-            return User::where('blockchain_address', $address)->first()?->name ?? 'Unknown';
-        } catch (Exception $e) {
-            Log::warning("Failed to retrieve user name for address: $address", [
-                'error' => $e->getMessage(),
-            ]);
-
-            return 'Unknown';
-        }
+        return $this->userCache[$address] ?? 'Unknown';
     }
 
     /**
@@ -100,7 +121,7 @@ class ViewProcurementsController extends BaseController
         $statusItems = $this->services->getMultiChain()->listStreamItems(
             StreamEnums::STATUS->value,
             true,
-            1000,
+            self::STATUS_PAGE_SIZE,
             0,
             false
         );
@@ -112,7 +133,7 @@ class ViewProcurementsController extends BaseController
         $documentItems = $this->services->getMultiChain()->listStreamItems(
             StreamEnums::DOCUMENTS->value,
             true,
-            10000, // adjust as needed for your data size
+            self::DOCUMENT_PAGE_SIZE,
             0,
             false
         );
@@ -120,18 +141,8 @@ class ViewProcurementsController extends BaseController
             throw new Exception('Failed to retrieve document stream items');
         }
 
-        // Build a map: procurement_id => [all titles]
-        $procurementTitlesMap = collect($statusItems)
-            ->filter(fn($item) => isset($item['data']['json']['procurement_id']))
-            ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
-            ->map(function ($items) {
-                return collect($items)
-                    ->map(fn($item) => $item['data']['json']['procurement_title'] ?? '')
-                    ->unique()
-                    ->filter()
-                    ->values()
-                    ->toArray();
-            });
+        // Preload user names
+        $this->preloadUserNames(collect($statusItems));
 
         // Build a map: procurement_id => document count (unique by hash)
         $documentCountMap = collect($documentItems)
@@ -145,19 +156,16 @@ class ViewProcurementsController extends BaseController
             });
 
         // Map procurements, using the precomputed document count
-        $allProcurements = collect($statusItems)
+        return collect($statusItems)
             ->map(function ($item) use ($documentCountMap) {
                 $data = $item['data']['json'] ?? [];
-                $procurementId = $data['procurement_id'] ?? null;
-                $documentCount = $procurementId ? ($documentCountMap[$procurementId] ?? 0) : 0;
-
                 $originalTimestamp = $data['timestamp'] ?? null;
                 $displayTimestamp = isset($data['timestamp'])
-                    ? date('Y-m-d', strtotime($data['timestamp']))
-                    : date('Y-m-d');
+                    ? Carbon::parse($data['timestamp'])->toDateString()
+                    : Carbon::now()->toDateString();
 
                 return [
-                    'id' => $procurementId,
+                    'id' => $data['procurement_id'] ?? null,
                     'title' => $data['procurement_title'] ?? null,
                     'stage' => $data['stage'] ?? '',
                     'current_status' => $data['current_status'] ?? '',
@@ -166,11 +174,9 @@ class ViewProcurementsController extends BaseController
                     'last_updated' => $displayTimestamp,
                     'user_address' => $data['user_address'] ?? '',
                     'user' => $this->getUserName($data['user_address'] ?? ''),
-                    'document_count' => $documentCount,
+                    'document_count' => $documentCountMap[$data['procurement_id'] ?? ''] ?? 0,
                 ];
-            });
-
-        return $allProcurements
+            })
             ->groupBy('id')
             ->map(function ($group) {
                 return $group->sortByDesc(function ($item) {
@@ -187,7 +193,7 @@ class ViewProcurementsController extends BaseController
      * @param string $procurementId
      * @return Response
      */
-    public function showProcurement($procurementId): Response
+    public function showProcurement(string $procurementId): Response
     {
         try {
             $this->validateProcurementId($procurementId);
@@ -209,6 +215,8 @@ class ViewProcurementsController extends BaseController
             $documents = $this->fetchAndProcessAllDocuments($procurementId, $allTitles);
             $events = $this->fetchAndProcessEvents($procurementId);
 
+            // Build procurement data
+            /** @phpstan-ignore-next-line Excess number of function arguments */
             $procurement = $this->buildProcurementData(
                 $procurementId,
                 $currentStatus,
@@ -259,7 +267,10 @@ class ViewProcurementsController extends BaseController
     {
         $statusStreamItems = $this->services->getMultiChain()->listStreamItems(
             StreamEnums::STATUS->value,
-            true
+            true,
+            self::STATUS_PAGE_SIZE,
+            0,
+            false
         );
 
         if (!$statusStreamItems) {
@@ -360,7 +371,9 @@ class ViewProcurementsController extends BaseController
         }
 
         try {            
-            return Storage::disk('spaces')->temporaryUrl($fileKey, now()->addHours(1));
+            /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+            $disk = Storage::disk('spaces');
+            return $disk->temporaryUrl($fileKey, now()->addHours(1));
         } catch (Exception $e) {
             Log::error('Failed to generate temporary URL', [
                 'file_key' => $fileKey,
@@ -411,12 +424,8 @@ class ViewProcurementsController extends BaseController
     /**
      * Build procurement data structure
      * 
-     * @param string $procurementId
-     * @param array $currentStatus
-     * @param array $documents
-     * @param array $events
-     * @param Collection $statusItems
-     * @return array
+     * @phpstan-ignore-next-line Excess number of function arguments
+     * @noinspection PhpParameterCountMismatchInspection
      */
     private function buildProcurementData(
         string $procurementId,

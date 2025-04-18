@@ -17,9 +17,6 @@ Route::get('/', function () {
 Route::inertia('/about', 'about')
     ->name('about');
 
-Route::inertia('/bidding', 'bidding')
-    ->name('bidding');
-
 Route::inertia('/procurement', 'procurement')
     ->name('procurement');
 

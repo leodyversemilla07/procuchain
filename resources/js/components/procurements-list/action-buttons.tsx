@@ -1,7 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FileTextIcon, FileUpIcon, BarChart4Icon } from 'lucide-react';
+import { Edit2Icon, UploadCloudIcon, BarChart4Icon, EyeIcon } from 'lucide-react';
 import { ProcurementListItem, Stage, Status } from '@/types/blockchain';
 import { SharedData } from '@/types';
 
@@ -66,7 +66,7 @@ const getButtonConfigs = (
 
     if (stage === Stage.PROCUREMENT_INITIATION && status === Status.PROCUREMENT_SUBMITTED) {
         configs.push({
-            icon: <FileUpIcon className={iconSize} />,
+            icon: <Edit2Icon className={iconSize} />,
             tooltipText: "Record Pre-Procurement Conference Decision",
             className: "text-amber-600 dark:text-amber-400",
             onClick: () => handlers.onOpenPreProcurementModal?.(procurement)
@@ -75,7 +75,7 @@ const getButtonConfigs = (
 
     if (stage === Stage.PRE_PROCUREMENT_CONFERENCE && status === Status.PRE_PROCUREMENT_CONFERENCE_HELD) {
         configs.push({
-            icon: <FileUpIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={iconSize} />,
             tooltipText: "Upload Pre-Procurement Conference Documents",
             className: "text-green-600 dark:text-green-400",
             href: `/bac-secretariat/pre-procurement-conference-upload/${id}`
@@ -87,7 +87,7 @@ const getButtonConfigs = (
 
     if (stage === Stage.BIDDING_DOCUMENTS && canUploadBiddingDocuments) {
         configs.push({
-            icon: <FileUpIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={iconSize} />,
             tooltipText: "Upload Bidding Documents",
             className: "text-amber-600 dark:text-amber-400",
             href: `/bac-secretariat/bidding-documents-upload/${id}`
@@ -97,14 +97,14 @@ const getButtonConfigs = (
     if (stage === Stage.PRE_BID_CONFERENCE) {
         if (status === Status.BIDDING_DOCUMENTS_PUBLISHED) {
             configs.push({
-                icon: <FileUpIcon className={iconSize} />,
+                icon: <Edit2Icon className={iconSize} />,
                 tooltipText: "Record Pre-Bid Conference Decision",
                 className: "text-indigo-600 dark:text-indigo-400",
                 onClick: () => handlers.onOpenPreBidModal?.(procurement)
             });
         } else if (status === Status.PRE_BID_CONFERENCE_HELD) {
             configs.push({
-                icon: <FileUpIcon className={iconSize} />,
+                icon: <UploadCloudIcon className={iconSize} />,
                 tooltipText: "Upload Pre-Bid Conference Documents",
                 className: "text-indigo-600 dark:text-indigo-400",
                 href: `/bac-secretariat/pre-bid-conference-upload/${id}`
@@ -112,12 +112,12 @@ const getButtonConfigs = (
         }
     }
 
-    if (stage === Stage.BID_OPENING && status === Status.BIDDING_DOCUMENTS_PUBLISHED) {
+    if (stage === Stage.BID_OPENING && status === Status.SUPPLEMENTAL_BID_BULLETINS_COMPLETED) {
         configs.push({
-            icon: <FileUpIcon className={iconSize} />,
-            tooltipText: "Upload Bid Submission Documents",
+            icon: <UploadCloudIcon className={iconSize} />,
+            tooltipText: "Upload Bid Opening Documents",
             className: "text-blue-600 dark:text-blue-400",
-            href: `/bac-secretariat/bid-submission-upload/${id}`
+            href: `/bac-secretariat/bid-opening-upload/${id}`
         });
     }
 
@@ -130,17 +130,26 @@ const getButtonConfigs = (
         });
     }
 
+    if (stage === Stage.POST_QUALIFICATION && status === Status.BIDS_EVALUATED) {
+        configs.push({
+            icon: <UploadCloudIcon className={iconSize} />,
+            tooltipText: "Upload Post-Qualification Report",
+            className: "text-green-700 dark:text-green-400",
+            href: `/bac-secretariat/post-qualification-upload/${id}`
+        });
+    }
+
     if (stage === Stage.SUPPLEMENTAL_BID_BULLETIN) {
         if (status === Status.PRE_BID_CONFERENCE_COMPLETED) {
             configs.push({
-                icon: <FileUpIcon className={iconSize} />,
+                icon: <Edit2Icon className={iconSize} />,
                 tooltipText: "Record Supplemental Bid Bulletin Decision",
                 className: "text-indigo-600 dark:text-indigo-400",
                 onClick: () => handlers.onOpenSupplementalBidBulletinModal?.(procurement)
             });
         } else if (status === Status.SUPPLEMENTAL_BID_BULLETINS_ONGOING) {
             configs.push({
-                icon: <FileUpIcon className={iconSize} />,
+                icon: <UploadCloudIcon className={iconSize} />,
                 tooltipText: "Upload Supplemental Bid Bulletin Documents",
                 className: "text-blue-600 dark:text-blue-400",
                 href: `/bac-secretariat/supplemental-bid-bulletin-upload/${id}`
@@ -172,7 +181,7 @@ export const ActionButtons = ({
     return (
         <div className="flex justify-end space-x-1">
             <ActionButtonItem
-                icon={<FileTextIcon className={iconSize} />}
+                icon={<EyeIcon className={iconSize} />}
                 tooltipText="View Details"
                 href={`procurements-list/${id}`}
                 className="text-blue-600 dark:text-blue-400"

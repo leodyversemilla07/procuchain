@@ -5,7 +5,6 @@ use App\Enums\StatusEnums;
 use App\Enums\StreamEnums;
 use App\Enums\UserRoleEnums;
 use App\Handlers\ProcurementInitiation\ProcurementInitiationHandler;
-use App\Libraries\MultichainClient;
 use App\Models\User;
 use App\Services\BlockchainService;
 use App\Services\FileStorageService;
@@ -15,14 +14,14 @@ use App\Services\StreamKeyService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Mockery;
+use Mockery\MockInterface;
 
 beforeEach(function () {
     Storage::fake('spaces');
 
     // Mock stream key service
-    $streamKeyService = mock(StreamKeyService::class);
-    $streamKeyService->shouldReceive('generate')
+    $streamKeyService = Mockery::mock(StreamKeyService::class);
+    $streamKeyService->allows('generate')
         ->andReturn('test-stream-key');
 
     // Create a proper MultichainService mock
@@ -34,7 +33,7 @@ beforeEach(function () {
     );
 
     $this->fileStorageService = new FileStorageService();
-    $this->notificationService = mock(NotificationService::class)->makePartial();
+    $this->notificationService = Mockery::mock(NotificationService::class);
     
     $this->handler = new ProcurementInitiationHandler(
         $this->blockchainService,
@@ -50,11 +49,11 @@ beforeEach(function () {
     Auth::login($this->user);
 
     // Setup blockchain service expectations
-    $multichainService->shouldReceive('validateAddress')
+    $multichainService->allows('validateAddress')
         ->with('test-blockchain-address')
         ->andReturn(true);
 
-    $multichainService->shouldReceive('publishMultiFrom')
+    $multichainService->allows('publishMultiFrom')
         ->withArgs(function ($address, $stream, $items) {
             return $address === 'test-blockchain-address' 
                 && $stream === StreamEnums::DOCUMENTS->value 
@@ -62,7 +61,7 @@ beforeEach(function () {
         })
         ->andReturnNull();
 
-    $multichainService->shouldReceive('publishFrom')
+    $multichainService->allows('publishFrom')
         ->withAnyArgs()
         ->andReturnNull();
 });
@@ -79,11 +78,12 @@ test('successfully handles procurement initiation with valid data', function () 
 
     // Expected file path construction matching BaseStageHandler implementation
     $sanitizedTitle = preg_replace('/[^a-zA-Z0-9]/', '_', $procurementTitle);
-    $expectedFilePath = trim("$procurementId-{$sanitizedTitle}/".StageEnums::PROCUREMENT_INITIATION->getStoragePathSegment()."/$documentType.pdf", '/');
+    $sanitizedDocType = preg_replace('/[^a-zA-Z0-9_-]/', '_', $documentType);
+    $expectedFilePath = trim("$procurementId-{$sanitizedTitle}/".StageEnums::PROCUREMENT_INITIATION->getStoragePathSegment()."/$sanitizedDocType.pdf", '/');
 
     // Mock notification service
     $this->notificationService
-        ->shouldReceive('notifyStageUpdate')
+        ->expects('notifyStageUpdate')
         ->once()
         ->withArgs(function ($id, $title, $stage, $status, $timestamp, $count, $submitted) 
             use ($procurementId, $procurementTitle) {
@@ -104,8 +104,8 @@ test('successfully handles procurement initiation with valid data', function () 
 
     $result = $this->handler->handle($request);
 
-    // Verify file was uploaded
-    Storage::disk('spaces')->assertExists($expectedFilePath);
+    // Verify file was uploaded - using Storage::disk() with has() instead of assertExists()
+    expect(Storage::disk('spaces')->exists($expectedFilePath))->toBeTrue();
 
     expect($result)
         ->toBeArray()
@@ -115,13 +115,13 @@ test('successfully handles procurement initiation with valid data', function () 
 });
 
 test('fails gracefully when file upload fails', function () {
-    // Mock Storage facade directly
+    // Mock Storage facade directly using Mockery
+    $filesystemMock = Mockery::mock('Illuminate\Contracts\Filesystem\Filesystem');
+    $filesystemMock->allows('put')->andThrow(new Exception('Storage error'));
+
     Storage::shouldReceive('disk')
         ->with('spaces')
-        ->andReturn(mock(\Illuminate\Contracts\Filesystem\Filesystem::class));
-
-    Storage::disk('spaces')->shouldReceive('put')
-        ->andThrow(new Exception('Storage error'));
+        ->andReturn($filesystemMock);
 
     $procurementId = 'PROC-2025-001';
     $procurementTitle = 'Test Procurement';

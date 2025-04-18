@@ -7,9 +7,10 @@ import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import InputError from '@/components/input-error';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar as UICalendar } from '@/components/ui/calendar';
 
 interface PreBidConferenceUploadProps {
   procurement: {
@@ -45,9 +46,9 @@ export default function PreBidConferenceUpload({ procurement, errors = {} }: Pre
   });
 
   const breadcrumbs = [
-    { title: 'Procurements', href: '/bac-secretariat/procurements' },
-    { title: `Procurement ${procurement.id}`, href: `/bac-secretariat/procurements/${procurement.id}` },
-    { title: `Upload Pre-Bid Conference Documents - ${procurement.id}`, href: '#' },
+    { title: 'Dashboard', href: '/bac-secretariat/procurements' },
+    { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+    { title: `Upload Pre-Bid Conference Documents - ${procurement.id}: ${procurement.title}`, href: '#' },
   ];
 
   const onSubmit = (e: React.FormEvent) => {
@@ -133,12 +134,12 @@ export default function PreBidConferenceUpload({ procurement, errors = {} }: Pre
                   </label>
                   <div
                     className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDraggingMinutes
-                        ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                        : data.minutes_file
-                          ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : errors.minutes_file
-                            ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                      ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
+                      : data.minutes_file
+                        ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
+                        : errors.minutes_file
+                          ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
+                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
                       } cursor-pointer group`}
                     onDragEnter={(e) => { e.preventDefault(); setIsDraggingMinutes(true); }}
                     onDragLeave={(e) => { e.preventDefault(); setIsDraggingMinutes(false); }}
@@ -218,12 +219,12 @@ export default function PreBidConferenceUpload({ procurement, errors = {} }: Pre
                   </label>
                   <div
                     className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDraggingAttendance
-                        ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                        : data.attendance_file
-                          ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : errors.attendance_file
-                            ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                      ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
+                      : data.attendance_file
+                        ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
+                        : errors.attendance_file
+                          ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
+                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
                       } cursor-pointer group`}
                     onDragEnter={(e) => { e.preventDefault(); setIsDraggingAttendance(true); }}
                     onDragLeave={(e) => { e.preventDefault(); setIsDraggingAttendance(false); }}
@@ -310,19 +311,30 @@ export default function PreBidConferenceUpload({ procurement, errors = {} }: Pre
 
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <label htmlFor="meeting_date" className="text-sm font-medium">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4" />
                     Meeting Date
                   </label>
-                  <Input
-                    id="meeting_date"
-                    type="date"
-                    value={data.meeting_date}
-                    onChange={(e) => setData('meeting_date', e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                  {errors.meeting_date && (
-                    <InputError message={errors.meeting_date} />
-                  )}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left">
+                        {data.meeting_date
+                          ? format(new Date(data.meeting_date), 'PPP')
+                          : 'Pick a date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <UICalendar
+                        mode="single"
+                        selected={data.meeting_date ? new Date(data.meeting_date) : undefined}
+                        onSelect={(date) => {
+                          if (date) setData('meeting_date', format(date, 'yyyy-MM-dd'));
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {errors.meeting_date && <InputError message={errors.meeting_date} />}
                 </div>
 
                 <div className="space-y-2">

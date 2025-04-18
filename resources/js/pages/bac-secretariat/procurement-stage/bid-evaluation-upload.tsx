@@ -29,9 +29,11 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
   const [isDraggingAbstract, setIsDraggingAbstract] = useState(false);
 
   const { data, setData, post, processing } = useForm({
+    procurement_id: procurement.id,
+    procurement_title: procurement.title,
     summary_file: null as File | null,
     abstract_file: null as File | null,
-    evaluation_date: new Date(),
+    evaluation_date: format(new Date(), 'yyyy-MM-dd'), // always a string
     evaluator_names: '',
   });
 
@@ -43,27 +45,20 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const formData = new FormData();
-    formData.append('procurement_id', procurement.id);
-    formData.append('procurement_title', procurement.title);
-    if (data.summary_file) {
-      formData.append('summary_file', data.summary_file);
-    }
-    if (data.abstract_file) {
-      formData.append('abstract_file', data.abstract_file);
-    }
-    formData.append('evaluation_date', format(data.evaluation_date, 'yyyy-MM-dd'));
-    formData.append('evaluator_names', data.evaluator_names);
+    setData('procurement_id', procurement.id);
+    setData('procurement_title', procurement.title);
 
-    post('/bac-secretariat/upload-bid-evaluation', {
-      forceFormData: true,
-      onSuccess: () => {
-        toast.success("Bid evaluation report uploaded successfully!", {
-          description: "Bid evaluation report has been submitted."
-        });
+    post(
+      '/bac-secretariat/bid-evaluation-upload',
+      {
+        forceFormData: true,
+        onSuccess: () => {
+          toast.success("Bid evaluation report uploaded successfully!", {
+            description: "Bid evaluation report has been submitted."
+          });
+        },
       }
-    });
+    );
   };
 
   const handleDragEvents = (e: React.DragEvent, isDragging = true, fileType: 'summary' | 'abstract') => {
@@ -139,14 +134,13 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
                     Evaluation Summary
                   </label>
                   <div
-                    className={`border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${
-                      isDraggingFile
-                        ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                        : data.summary_file
-                          ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : errors.summary_file
-                            ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                    className={`border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDraggingFile
+                      ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
+                      : data.summary_file
+                        ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
+                        : errors.summary_file
+                          ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
+                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
                       } cursor-pointer group`}
                     onDragEnter={(e) => handleDragEvents(e, true, 'summary')}
                     onDragLeave={(e) => handleDragEvents(e, false, 'summary')}
@@ -224,14 +218,13 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
                     Bid Abstract
                   </label>
                   <div
-                    className={`border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${
-                      isDraggingAbstract
-                        ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                        : data.abstract_file
-                          ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : errors.abstract_file
-                            ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                    className={`border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDraggingAbstract
+                      ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
+                      : data.abstract_file
+                        ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
+                        : errors.abstract_file
+                          ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
+                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
                       } cursor-pointer group`}
                     onDragEnter={(e) => handleDragEvents(e, true, 'abstract')}
                     onDragLeave={(e) => handleDragEvents(e, false, 'abstract')}
@@ -328,14 +321,14 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
                         className="w-full justify-start text-left font-normal"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {data.evaluation_date ? format(data.evaluation_date, 'PPP') : <span>Pick a date</span>}
+                        {data.evaluation_date ? format(new Date(data.evaluation_date), 'PPP') : <span>Pick a date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={data.evaluation_date}
-                        onSelect={(date) => date && setData('evaluation_date', date)}
+                        selected={data.evaluation_date ? new Date(data.evaluation_date) : undefined}
+                        onSelect={(date) => date && setData('evaluation_date', format(date, 'yyyy-MM-dd'))}
                         initialFocus
                         className="rounded-md border shadow-md"
                       />
@@ -368,7 +361,7 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
                 <Button
                   type="submit"
                   disabled={processing}
-                  className="w-full flex items-center gap-2 h-11 bg-blue-600 hover:bg-blue-700"
+                  className="w-full flex items-center gap-2 h-11"
                 >
                   {processing ? (
                     <div className="flex items-center gap-2">

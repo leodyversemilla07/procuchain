@@ -16,20 +16,21 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
         try {
             $data = $this->prepareHandlingData($request);
 
-            if (! $data['bulletinFile']) {
+            // Prepare metadata for bulletin file
+            $metadataArray = $this->prepareDocumentsMetadata($data);
+            if (empty($metadataArray)) {
                 return [
                     'success' => false,
                     'message' => 'No bulletin file uploaded',
                 ];
             }
-
-            return $this->processUpload($data);
+            return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error uploading supplemental bid bulletin', ['error' => $e->getMessage()]);
 
             return [
                 'success' => false,
-                'message' => 'Failed to upload supplemental bid bulletin: '.$e->getMessage(),
+                'message' => 'Failed to upload supplemental bid bulletin: ' . $e->getMessage(),
             ];
         }
     }
@@ -46,25 +47,38 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
+            'nextStage' => StageEnums::BID_OPENING,
+            'completedStatus' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
             'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
         ];
     }
 
-    private function processUpload(array $data): array
+    // Prepare metadata array for the bulletin file
+    private function prepareDocumentsMetadata(array $data): array
     {
-        $metadataArray = $this->uploadAndPrepareMetadata(
-            [$data['bulletinFile']],
-            [[
-                'document_type' => 'Supplemental Bid Bulletin',
-                'bulletin_number' => $data['bulletinNumber'],
-                'bulletin_title' => $data['bulletinTitle'],
-                'issue_date' => $data['issueDate'],
-            ]],
-            $data['procurementId'],
-            $data['procurementTitle'],
-            $data['currentStage']->getStoragePathSegment()
-        );
+        $metadataArray = [];
+        if ($data['bulletinFile']) {
+            $metadataArray = $this->uploadAndPrepareMetadata(
+                [$data['bulletinFile']],
+                [
+                    [
+                        'document_type' => 'Supplemental Bid Bulletin',
+                        'bulletin_number' => $data['bulletinNumber'],
+                        'bulletin_title' => $data['bulletinTitle'],
+                        'issue_date' => $data['issueDate'],
+                    ]
+                ],
+                $data['procurementId'],
+                $data['procurementTitle'],
+                $data['currentStage']->getStoragePathSegment()
+            );
+        }
+        return $metadataArray;
+    }
 
+    private function processDocuments(array $data, array $metadataArray): array
+    {
+        // Publish bulletin document
         $this->blockchainService->publishDocuments(
             $data['procurementId'],
             $data['procurementTitle'],
@@ -74,28 +88,33 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
             $data['userAddress']
         );
 
-        $this->blockchainService->updateStatus(
+        // Transition stage from ongoing to completed and proceed to Bid Opening
+        $this->blockchainService->handleStageTransition(
             $data['procurementId'],
             $data['procurementTitle'],
             $data['status']->getDisplayName(),
+            $data['completedStatus']->getDisplayName(),
             $data['currentStage']->getDisplayName(),
+            $data['nextStage']->getDisplayName(),
             $data['userAddress'],
-            $data['timestamp']
+            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after ' . $data['currentStage']->getDisplayName()
         );
 
+        // Notify users of completion and next stage
         $this->notificationService->notifyStageUpdate(
             $data['procurementId'],
             $data['procurementTitle'],
             $data['currentStage']->getDisplayName(),
-            $data['status']->getDisplayName(),
+            $data['completedStatus']->getDisplayName(),
             $data['timestamp'],
-            count($metadataArray),
-            'document_uploaded'
+            'completed',
+            true,
+            $data['nextStage']->getDisplayName()
         );
 
         return [
             'success' => true,
-            'message' => 'Supplemental Bid Bulletin #'.$data['bulletinNumber'].' uploaded successfully',
+            'message' => $data['currentStage']->getDisplayName() . ' uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
             'metadata' => $metadataArray[0],
         ];
     }

@@ -287,34 +287,55 @@ class BacSecretariatController extends BaseController
             $documentCounts = [];
             $client = $this->services->getMultiChain();
 
+            // Fetch all status items for title retrieval
+            $allStatusItems = $client->listStreamItems(
+                StreamEnums::STATUS->value,
+                true,
+                10000,
+                0,
+                false
+            ) ?? [];
+
             foreach ($procurementsByKey as $procurement) {
                 try {
-                    // use only current title for stream key generation
-                    $streamKey = $this->services->getStreamKeyService()->generate(
-                        $procurement['id'],
-                        $procurement['title']
-                    );
+                    // Gather all titles used by this procurement
+                    $titles = collect($allStatusItems)
+                        ->map(fn($item) => $item['data']['json'] ?? [])
+                        ->filter(fn($data) => ($data['procurement_id'] ?? '') === $procurement['id'])
+                        ->pluck('procurement_title')
+                        ->unique()
+                        ->filter()
+                        ->values()
+                        ->toArray();
 
-                    $documents = $client->listStreamKeyItems(
-                        StreamEnums::DOCUMENTS->value,
-                        $streamKey
-                    );
+                    // Collect documents across all titles
+                    $docsCollection = collect();
+                    foreach ($titles as $title) {
+                        $streamKey = $this->services->getStreamKeyService()->generate(
+                            $procurement['id'],
+                            $title
+                        );
+                        $documents = $client->listStreamKeyItems(
+                            StreamEnums::DOCUMENTS->value,
+                            $streamKey,
+                            true
+                        );
+                        $docsCollection = $docsCollection->concat($documents ?? []);
+                    }
 
-                    // count unique document hashes
-                    $uniqueDocCount = collect($documents ?? [])
+                    // Count unique document hashes
+                    $uniqueDocCount = $docsCollection
                         ->map(fn($doc) => $doc['data']['json']['hash'] ?? '')
                         ->unique()
                         ->filter()
                         ->count();
 
                     $totalDocuments += $uniqueDocCount;
-
                     $documentCounts[] = [
                         'procurement_id' => $procurement['id'],
                         'procurement_title' => $procurement['title'],
                         'document_count' => $uniqueDocCount,
                     ];
-
                 } catch (Exception $e) {
                     Log::warning("Failed to count documents for procurement {$procurement['id']}", [
                         'error' => $e->getMessage(),

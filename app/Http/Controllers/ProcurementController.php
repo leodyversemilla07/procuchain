@@ -4,42 +4,42 @@ namespace App\Http\Controllers;
 
 use App\Enums\StageEnums;
 use App\Enums\StreamEnums;
-use App\Handlers\BacResolution\BacResolutionHandler;
-use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
-use App\Handlers\BidEvaluation\BidEvaluationHandler;
-use App\Handlers\BidOpening\BidOpeningHandler;
-use App\Handlers\Completion\CompletionDocumentsHandler;
-use App\Handlers\Completion\CompletionProcessHandler;
-use App\Handlers\Monitoring\MonitoringHandler;
-use App\Handlers\NoticeOfAward\NoticeOfAwardHandler;
-use App\Handlers\NoticeToProceed\NoticeToProceedHandler;
-use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
-use App\Handlers\PostQualification\PostQualificationHandler;
-use App\Handlers\PreBidConference\PreBidConferenceDecisionHandler;
-use App\Handlers\PreBidConference\PreBidConferenceDocumentsHandler;
+use App\Handlers\ProcurementInitiation\ProcurementInitiationHandler;
 use App\Handlers\PreProcurementConference\PreProcurementConferenceDecisionHandler;
 use App\Handlers\PreProcurementConference\PreProcurementConferenceDocumentsHandler;
-use App\Handlers\ProcurementInitiation\ProcurementInitiationHandler;
+use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
+use App\Handlers\PreBidConference\PreBidConferenceDecisionHandler;
+use App\Handlers\PreBidConference\PreBidConferenceDocumentsHandler;
 use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDecisionHandler;
 use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDocumentsHandler;
-use App\Http\Requests\Procurement\BacResolutionDocumentRequest;
-use App\Http\Requests\Procurement\BiddingDocumentsRequest;
-use App\Http\Requests\Procurement\BidEvaluationDocumentsRequest;
-use App\Http\Requests\Procurement\BidOpeningDocumentsRequest;
-use App\Http\Requests\Procurement\CompleteProcessRequest;
-use App\Http\Requests\Procurement\CompletionDocumentsRequest;
-use App\Http\Requests\Procurement\MonitoringDocumentRequest;
-use App\Http\Requests\Procurement\NoticeOfAwardDocumentRequest;
-use App\Http\Requests\Procurement\NoticeToProceedDocumentRequest;
-use App\Http\Requests\Procurement\PerformanceBondContractAndPoDocumentsRequest;
-use App\Http\Requests\Procurement\PostQualificationDocumentsRequest;
-use App\Http\Requests\Procurement\PreBidConferenceDecisionRequest;
-use App\Http\Requests\Procurement\PreBidConferenceDocumentsRequest;
+use App\Handlers\BidOpening\BidOpeningDocumentsHandler;
+use App\Handlers\BidEvaluation\BidEvaluationDocumentsHandler;
+use App\Handlers\PostQualification\PostQualificationDocumentsHandler;
+use App\Handlers\BacResolution\BacResolutionHandler;
+use App\Handlers\NoticeOfAward\NoticeOfAwardHandler;
+use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
+use App\Handlers\NoticeToProceed\NoticeToProceedHandler;
+use App\Handlers\Monitoring\MonitoringHandler;
+use App\Handlers\Completion\CompletionProcessHandler;
+use App\Handlers\Completion\CompletionDocumentsHandler;
+use App\Http\Requests\Procurement\ProcurementInitiationRequest;
 use App\Http\Requests\Procurement\PreProcurementConferenceDecisionRequest;
 use App\Http\Requests\Procurement\PreProcurementConferenceDocumentsRequest;
-use App\Http\Requests\Procurement\ProcurementInitiationRequest;
+use App\Http\Requests\Procurement\BiddingDocumentsRequest;
+use App\Http\Requests\Procurement\PreBidConferenceDecisionRequest;
+use App\Http\Requests\Procurement\PreBidConferenceDocumentsRequest;
 use App\Http\Requests\Procurement\SupplementalBidBulletinDecisionRequest;
 use App\Http\Requests\Procurement\SupplementalBidBulletinDocumentsRequest;
+use App\Http\Requests\Procurement\BidOpeningDocumentsRequest;
+use App\Http\Requests\Procurement\BidEvaluationDocumentsRequest;
+use App\Http\Requests\Procurement\PostQualificationDocumentsRequest;
+use App\Http\Requests\Procurement\BacResolutionDocumentRequest;
+use App\Http\Requests\Procurement\NoticeOfAwardDocumentRequest;
+use App\Http\Requests\Procurement\PerformanceBondContractAndPoDocumentsRequest;
+use App\Http\Requests\Procurement\NoticeToProceedDocumentRequest;
+use App\Http\Requests\Procurement\MonitoringDocumentRequest;
+use App\Http\Requests\Procurement\CompleteProcessRequest;
+use App\Http\Requests\Procurement\CompletionDocumentsRequest;
 use App\Services\ProcurementServices;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -293,17 +293,17 @@ class ProcurementController extends BaseController
         return $this->handleProcurementAction($request, $handler);
     }
 
-    public function uploadBidOpeningDocuments(BidOpeningDocumentsRequest $request, BidOpeningHandler $handler): RedirectResponse
+    public function uploadBidOpeningDocuments(BidOpeningDocumentsRequest $request, BidOpeningDocumentsHandler $handler): RedirectResponse
     {
         return $this->handleProcurementAction($request, $handler);
     }
 
-    public function uploadBidEvaluationDocuments(BidEvaluationDocumentsRequest $request, BidEvaluationHandler $handler): RedirectResponse
+    public function uploadBidEvaluationDocuments(BidEvaluationDocumentsRequest $request, BidEvaluationDocumentsHandler $handler): RedirectResponse
     {
         return $this->handleProcurementAction($request, $handler);
     }
 
-    public function uploadPostQualificationDocuments(PostQualificationDocumentsRequest $request, PostQualificationHandler $handler): RedirectResponse
+    public function uploadPostQualificationDocuments(PostQualificationDocumentsRequest $request, PostQualificationDocumentsHandler $handler): RedirectResponse
     {
         return $this->handleProcurementAction($request, $handler);
     }
