@@ -26,11 +26,15 @@ class PostQualificationDocumentsRequest extends FormRequest
         return [
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'tax_return_file' => 'sometimes|file|mimes:pdf|max:10240',
-            'financial_statement_file' => 'sometimes|file|mimes:pdf|max:10240',
-            'verification_report_file' => 'sometimes|file|mimes:pdf|max:10240',
+            'post_qualification_report' => 'required|file|mimes:pdf|max:10240',
+            'twg_certification' => 'nullable|file|mimes:pdf|max:10240',
+            'notice_of_post_qualification' => 'required|file|mimes:pdf|max:10240',
             'submission_date' => 'required|date_format:Y-m-d|before_or_equal:today',
-            'outcome' => 'required|string|min:5|max:500',
+            'outcome' => 'required|boolean',
+            'remarks' => 'nullable|string|max:5000',
+            'metadata' => 'required|array',
+            'metadata.*.document_type' => 'required|string',
+            'metadata.*.submission_date' => 'required|date_format:Y-m-d',
         ];
     }
 }

@@ -27,7 +27,6 @@ class PreBidConferenceDecisionRequest extends FormRequest
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
             'conference_held' => 'required|boolean',
-            'needs_bulletins' => 'sometimes|boolean',
         ];
     }
 }

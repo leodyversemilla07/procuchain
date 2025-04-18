@@ -9,7 +9,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class BidOpeningHandler extends BaseStageHandler
+class BidOpeningDocumentsHandler extends BaseStageHandler
 {
     /**
      * Handle the bid submission document upload process
@@ -61,16 +61,15 @@ class BidOpeningHandler extends BaseStageHandler
         foreach ($data['bidDocuments'] as $index => $file) {
             if ($file && isset($data['biddersData'][$index])) {
                 $bidderName = $data['biddersData'][$index]['bidder_name'] ?? 'Unknown Bidder';
-                $bidValue = $data['biddersData'][$index]['bid_value'] ?? '0';
+                $bidValue = floatval($data['biddersData'][$index]['bid_value'] ?? '0');
 
                 $metadataInfo = [
                     'document_type' => 'Bid Document',
                     'bidder_name' => $bidderName,
-                    'bid_value' => $bidValue,
+                    'bid_value' => number_format($bidValue, 2, '.', ''), // Ensure consistent decimal format
                     'opening_date_time' => $data['openingDateTime'],
                 ];
 
-                // Add bid document to metadata array
                 $fileMetadata = $this->uploadAndPrepareMetadata(
                     [$file],
                     [$metadataInfo],
@@ -88,41 +87,58 @@ class BidOpeningHandler extends BaseStageHandler
 
     private function processBidDocuments(array $data, array $metadataArray): array
     {
-        $this->blockchainService->publishDocuments(
-            $data['procurementId'],
-            $data['procurementTitle'],
-            $data['currentStage']->getDisplayName(),
-            $data['status']->getDisplayName(),
-            $metadataArray,
-            $data['userAddress']
-        );
+        try {
+            $this->blockchainService->publishDocuments(
+                $data['procurementId'],
+                $data['procurementTitle'],
+                $data['currentStage']->getDisplayName(),
+                $data['status']->getDisplayName(),
+                $metadataArray,
+                $data['userAddress']
+            );
 
-        $this->blockchainService->handleStageTransition(
-            $data['procurementId'],
-            $data['procurementTitle'],
-            $data['status']->getDisplayName(),
-            $data['status']->getDisplayName(),
-            $data['currentStage']->getDisplayName(),
-            $data['nextStage']->getDisplayName(),
-            $data['userAddress'],
-            'Proceeding to '.$data['nextStage']->getDisplayName().' stage after opening bids'
-        );
+            $this->blockchainService->handleStageTransition(
+                $data['procurementId'],
+                $data['procurementTitle'],
+                $data['status']->getDisplayName(),
+                $data['status']->getDisplayName(),
+                $data['currentStage']->getDisplayName(),
+                $data['nextStage']->getDisplayName(),
+                $data['userAddress'],
+                'Proceeding to '.$data['nextStage']->getDisplayName().' stage after opening bids'
+            );
 
-        $this->notificationService->notifyStageUpdate(
-            $data['procurementId'],
-            $data['procurementTitle'],
-            $data['currentStage']->getDisplayName(),
-            $data['status']->getDisplayName(),
-            $data['timestamp'],
-            count($metadataArray),
-            'opened',
-            true,
-            $data['nextStage']->getDisplayName()
-        );
+            $this->notificationService->notifyStageUpdate(
+                $data['procurementId'],
+                $data['procurementTitle'],
+                $data['currentStage']->getDisplayName(),
+                $data['status']->getDisplayName(),
+                $data['timestamp'],
+                count($metadataArray),
+                'opened',
+                true,
+                $data['nextStage']->getDisplayName()
+            );
 
-        return [
-            'success' => true,
-            'message' => count($metadataArray).' bid documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().' stage.',
-        ];
+            return [
+                'success' => true,
+                'message' => count($metadataArray).' bid documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().' stage.',
+            ];
+
+        } catch (Exception $e) {
+            Log::error('Error in processBidDocuments', [
+                'error' => $e->getMessage(),
+                'procurement_id' => $data['procurementId'],
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Failed to process bid documents. Please try again.',
+                'errors' => [
+                    'bid_documents' => 'Failed to upload bid documents: '.$e->getMessage()
+                ]
+            ];
+        }
     }
 }

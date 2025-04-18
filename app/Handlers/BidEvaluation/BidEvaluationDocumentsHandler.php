@@ -9,7 +9,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class BidEvaluationHandler extends BaseStageHandler
+class BidEvaluationDocumentsHandler extends BaseStageHandler
 {
     /**
      * Handle the bid evaluation document upload process.

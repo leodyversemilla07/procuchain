@@ -4,8 +4,8 @@ namespace App\Providers;
 
 use App\Handlers\BacResolution\BacResolutionHandler;
 use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
-use App\Handlers\BidEvaluation\BidEvaluationHandler;
-use App\Handlers\BidOpening\BidOpeningHandler;
+use App\Handlers\BidEvaluation\BidEvaluationDocumentsHandler;
+use App\Handlers\BidOpening\BidOpeningDocumentsHandler;
 use App\Handlers\Completion\CompletionDocumentsHandler;
 use App\Handlers\Completion\CompletionProcessHandler;
 use App\Handlers\Monitoring\MonitoringHandler;
@@ -73,8 +73,8 @@ class AppServiceProvider extends ServiceProvider
             PreBidConferenceDocumentsHandler::class,
             SupplementalBidBulletinDecisionHandler::class,
             SupplementalBidBulletinDocumentsHandler::class,
-            BidOpeningHandler::class,
-            BidEvaluationHandler::class,
+            BidOpeningDocumentsHandler::class,
+            BidEvaluationDocumentsHandler::class,
             PostQualificationHandler::class,
             BacResolutionHandler::class,
             NoticeOfAwardHandler::class,
