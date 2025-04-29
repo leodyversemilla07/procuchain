@@ -13,6 +13,7 @@ use App\Enums\StreamEnums;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -28,16 +29,19 @@ class ViewProcurementsController extends BaseController
     private $services;
 
     /**
-     * @var array
+     * @var array<string, string>
      */
-    private array $userCache = [];
+    private array $userCache = []; // Corrected type hint
 
     private const STATUS_PAGE_SIZE = 1000;
     private const DOCUMENT_PAGE_SIZE = 10000;
+    private const CACHE_DURATION_MINUTES = 5;
+    private const CACHE_KEY_PROCUREMENTS_LIST = 'procurements_list_data';
+    private const CACHE_KEY_PROCUREMENT_DETAILS_PREFIX = 'procurement_details_'; // Cache key prefix for details
 
     /**
      * Constructor
-     * 
+     *
      * @param ProcurementServices $services
      */
     public function __construct(ProcurementServices $services)
@@ -57,12 +61,15 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Preload user names for batch user lookup
-     * 
+     *
      * @param Collection $items
      */
     private function preloadUserNames(Collection $items): void
     {
-        $addresses = $items->pluck('data.json.user_address')->unique()->filter();
+        $addresses = $items->pluck('data.json.user_address')->unique()->filter()->all(); // Added ->all()
+        if (empty($addresses)) {
+            return; // Avoid query if no addresses
+        }
         $names = User::whereIn('blockchain_address', $addresses)
             ->pluck('name', 'blockchain_address')
             ->all();
@@ -71,7 +78,7 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Get username from blockchain address
-     * 
+     *
      * @param string $address
      * @return string
      */
@@ -82,7 +89,7 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Display a listing of procurements
-     * 
+     *
      * @return Response
      */
     public function indexProcurementsList(): Response
@@ -90,17 +97,28 @@ class ViewProcurementsController extends BaseController
         try {
             Log::info('Fetching procurements list');
 
-            $procurements = $this->fetchAndProcessProcurements();
+            $procurements = Cache::remember(self::CACHE_KEY_PROCUREMENTS_LIST, now()->addMinutes(self::CACHE_DURATION_MINUTES), function () {
+                Log::info('Cache miss: Recalculating procurements list data');
+                return $this->fetchAndProcessProcurements();
+            });
+
+            Log::info('Successfully retrieved procurements list', [
+                'count' => count($procurements),
+                'from_cache' => Cache::has(self::CACHE_KEY_PROCUREMENTS_LIST)
+            ]);
 
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => $procurements,
             ]);
 
-        } catch (Exception $e) {
+        } catch (Exception $e) { // Corrected catch block placement
             Log::error('Failed to retrieve procurements list', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
+            // Clear cache on error to avoid storing potentially bad data
+            Cache::forget(self::CACHE_KEY_PROCUREMENTS_LIST);
 
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => [],
@@ -111,7 +129,7 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Fetch and process procurements data (optimized: batch fetch, in-memory aggregation)
-     * 
+     *
      * @return array
      * @throws Exception
      */
@@ -189,44 +207,67 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Display the specified procurement
-     * 
+     *
      * @param string $procurementId
      * @return Response
      */
     public function showProcurement(string $procurementId): Response
     {
+        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX . $procurementId;
+
         try {
             $this->validateProcurementId($procurementId);
 
             Log::info('Fetching procurement details', ['procurement_id' => $procurementId]);
 
-            $statusItems = $this->fetchStatusItems($procurementId);
-            $currentStatus = $statusItems->first();
+            // Cache the entire procurement data structure
+            $procurementData = Cache::remember($cacheKey, now()->addMinutes(self::CACHE_DURATION_MINUTES), function () use ($procurementId) {
+                Log::info('Cache miss: Recalculating procurement details', ['procurement_id' => $procurementId]);
 
-            if (!$currentStatus) {
-                Log::warning('Procurement details not found', ['procurement_id' => $procurementId]);
+                $statusItems = $this->fetchStatusItems($procurementId);
+                $currentStatus = $statusItems->first();
+
+                if (!$currentStatus) {
+                    // Return null or throw an exception that can be caught outside the cache closure
+                    // Returning null might be simpler if the outer code handles it.
+                    return null;
+                }
+
+                // Get all possible titles from the timeline to ensure we capture all documents
+                $allTitles = $statusItems->pluck('procurement_title')->unique()->values()->toArray();
+
+                // Fetch all documents using all known titles for this procurement
+                $documents = $this->fetchAndProcessAllDocuments($procurementId, $allTitles);
+                $events = $this->fetchAndProcessEvents($procurementId);
+
+                // Preload user names for events (if not already done broadly)
+                // Consider if getUserName calls within event processing need optimization
+                $this->preloadUserNames(collect($events)); // Assuming events have user_address
+
+                // Build procurement data
+                /** @phpstan-ignore-next-line Excess number of function arguments */
+                return $this->buildProcurementData(
+                    $procurementId,
+                    $currentStatus,
+                    $documents,
+                    $events,
+                    $statusItems
+                );
+            });
+
+            // Handle case where procurement was not found inside the cache closure
+            if ($procurementData === null) {
+                Log::warning('Procurement details not found after cache check', ['procurement_id' => $procurementId]);
                 return $this->renderNotFound();
             }
 
-            // Get all possible titles from the timeline to ensure we capture all documents
-            $allTitles = $statusItems->pluck('procurement_title')->unique()->values()->toArray();
-            
-            // Fetch all documents using all known titles for this procurement
-            $documents = $this->fetchAndProcessAllDocuments($procurementId, $allTitles);
-            $events = $this->fetchAndProcessEvents($procurementId);
-
-            // Build procurement data
-            /** @phpstan-ignore-next-line Excess number of function arguments */
-            $procurement = $this->buildProcurementData(
-                $procurementId,
-                $currentStatus,
-                $documents,
-                $events,
-                $statusItems
-            );
+            Log::info('Successfully retrieved procurement details', [
+                'procurement_id' => $procurementId,
+                'from_cache' => Cache::has($cacheKey)
+            ]);
 
             return Inertia::render('procurements/show-procurement', [
-                'procurement' => $procurement,
+                'procurement' => $procurementData,
                 'now' => now()->toIso8601String(),
             ]);
 
@@ -237,6 +278,9 @@ class ViewProcurementsController extends BaseController
                 'trace' => $e->getTraceAsString(),
             ]);
 
+            // Clear cache for this specific procurement on error
+            Cache::forget($cacheKey);
+
             return Inertia::render('procurements/show-procurement', [
                 'error' => 'Failed to retrieve procurement details. Please try again later.',
             ]);
@@ -245,7 +289,7 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Validate the procurement ID
-     * 
+     *
      * @param string|null $procurementId
      * @throws Exception
      */
@@ -258,7 +302,7 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Fetch and process status items
-     * 
+     *
      * @param string $procurementId
      * @return Collection
      * @throws Exception
@@ -300,7 +344,7 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Fetch and process documents
-     * 
+     *
      * @param string $streamKey
      * @return array
      */
@@ -334,9 +378,9 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Fetch and process documents using all known procurement titles
-     * 
+     *
      * @param string $procurementId
-     * @param array $procurementTitles
+     * @param array<string> $procurementTitles // Added type hint
      * @return array
      */
     private function fetchAndProcessAllDocuments(string $procurementId, array $procurementTitles): array
@@ -349,7 +393,7 @@ class ViewProcurementsController extends BaseController
                 $procurementId,
                 $title
             );
-            
+
             $documents = $this->fetchAndProcessDocuments($streamKey);
             $allDocuments = $allDocuments->concat($documents);
         }
@@ -360,7 +404,7 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Generate temporary URL for file
-     * 
+     *
      * @param string $fileKey
      * @return string
      */
@@ -370,7 +414,7 @@ class ViewProcurementsController extends BaseController
             return '';
         }
 
-        try {            
+        try {
             /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
             $disk = Storage::disk('spaces');
             return $disk->temporaryUrl($fileKey, now()->addHours(1));
@@ -385,7 +429,7 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Fetch and process events
-     * 
+     *
      * @param string $procurementId
      * @return array
      */
@@ -423,8 +467,14 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Build procurement data structure
-     * 
-     * @phpstan-ignore-next-line Excess number of function arguments
+     *
+     * @param string $procurementId
+     * @param array $currentStatus
+     * @param array $documents
+     * @param array $events
+     * @param Collection $statusItems
+     * @return array
+     * @phpstan-ignore-next-line Excess number of function arguments (This comment might be causing issues, but let's keep it for now)
      * @noinspection PhpParameterCountMismatchInspection
      */
     private function buildProcurementData(
@@ -436,7 +486,7 @@ class ViewProcurementsController extends BaseController
     ): array {
         return [
             'id' => $procurementId,
-            'title' => $currentStatus['procurement_title'],
+            'title' => $currentStatus['procurement_title'] ?? 'N/A', // Added null check
             'status' => $currentStatus,
             'documents' => $documents,
             'events' => $events,
@@ -446,7 +496,7 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Render not found response
-     * 
+     *
      * @return Response
      */
     private function renderNotFound(): Response

@@ -1,6 +1,6 @@
 <?php
 
-use App\Handlers\BacResolution\BacResolutionHandler;
+use App\Handlers\BacResolution\BacResolutionDocumentHandler;
 use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
 use App\Handlers\BidEvaluation\BidEvaluationHandler;
 use App\Handlers\BidOpening\BidOpeningHandler;
@@ -454,18 +454,6 @@ test('uploadMonitoringDocument calls handler and redirects correctly', function 
 
     $controller = createControllerInstance();
     $response = $controller->uploadMonitoringDocument($request, $handler);
-
-    expect($response)->toBeInstanceOf(RedirectResponse::class);
-    expect($response->headers->get('Location'))->toEqual(route('bac-secretariat.procurements-list.index'));
-});
-
-test('publishCompleteProcess calls handler and redirects correctly', function () {
-    /** @var \App\Handlers\Completion\CompletionProcessHandler|\Mockery\MockInterface $handler */
-    $handler = createMockHandler(CompletionProcessHandler::class);
-    $request = new CompleteProcessRequest;
-
-    $controller = createControllerInstance();
-    $response = $controller->publishCompleteProcess($request, $handler);
 
     expect($response)->toBeInstanceOf(RedirectResponse::class);
     expect($response->headers->get('Location'))->toEqual(route('bac-secretariat.procurements-list.index'));

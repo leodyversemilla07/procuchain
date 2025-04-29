@@ -6,7 +6,7 @@ use App\Enums\UserRoleEnums;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
-class NoticeofAwardDocumentRequest extends FormRequest
+class NoticeOfAwardDocumentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

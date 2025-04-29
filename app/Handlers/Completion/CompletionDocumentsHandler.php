@@ -21,7 +21,7 @@ class CompletionDocumentsHandler extends BaseStageHandler
         } catch (Exception $e) {
             Log::error('Error in CompletionDocumentsHandler', ['error' => $e->getMessage()]);
 
-            return ['success' => false, 'message' => 'Failed to upload completion documents: '.$e->getMessage()];
+            return ['success' => false, 'message' => 'Failed to upload completion documents: ' . $e->getMessage()];
         }
     }
 
@@ -36,7 +36,8 @@ class CompletionDocumentsHandler extends BaseStageHandler
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::COMPLETION,
-            'status' => StatusEnums::COMPLETION_DOCUMENTS_UPLOADED,
+            'nextStage' => StageEnums::COMPLETED, // Add next stage
+            'status' => StatusEnums::COMPLETED, // Update status to Completed
         ];
     }
 
@@ -63,26 +64,38 @@ class CompletionDocumentsHandler extends BaseStageHandler
             $data['procurementId'],
             $data['procurementTitle'],
             $data['currentStage']->getDisplayName(),
-            $data['status']->getDisplayName(),
+            $data['status']->getDisplayName(), // Use updated status
             $metadataArray,
             $data['userAddress']
+        );
+
+        // Add stage transition logic similar to NoticeOfAward
+        $this->blockchainService->handleStageTransition(
+            $data['procurementId'],
+            $data['procurementTitle'],
+            $data['status']->getDisplayName(), // Use updated status
+            $data['status']->getDisplayName(), // Use updated status
+            $data['currentStage']->getDisplayName(),
+            $data['nextStage']->getDisplayName(), // Use next stage
+            $data['userAddress'],
+            'Marking procurement as ' . $data['nextStage']->getDisplayName() . ' after uploading ' . $data['currentStage']->getDisplayName() . ' documents.'
         );
 
         $this->notificationService->notifyStageUpdate(
             $data['procurementId'],
             $data['procurementTitle'],
             $data['currentStage']->getDisplayName(),
-            $data['status']->getDisplayName(),
+            $data['status']->getDisplayName(), // Use updated status
             $data['timestamp'],
             count($metadataArray),
-            'in progress',
-            false,
-            $data['currentStage']->getDisplayName()
+            'completed', // Update notification status string
+            true, // Indicate transition
+            $data['nextStage']->getDisplayName() // Pass next stage
         );
 
         return [
             'success' => true,
-            'message' => 'Completion documents uploaded successfully. Procurement process is now complete.',
+            'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Procurement process is now ' . $data['status']->getDisplayName() . '.', // Update message
         ];
     }
 }

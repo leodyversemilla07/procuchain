@@ -2,24 +2,24 @@
 
 namespace App\Providers;
 
-use App\Handlers\BacResolution\BacResolutionHandler;
-use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
-use App\Handlers\BidEvaluation\BidEvaluationDocumentsHandler;
-use App\Handlers\BidOpening\BidOpeningDocumentsHandler;
-use App\Handlers\Completion\CompletionDocumentsHandler;
-use App\Handlers\Completion\CompletionProcessHandler;
-use App\Handlers\Monitoring\MonitoringHandler;
-use App\Handlers\NoticeOfAward\NoticeOfAwardHandler;
-use App\Handlers\NoticeToProceed\NoticeToProceedHandler;
-use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
-use App\Handlers\PostQualification\PostQualificationHandler;
-use App\Handlers\PreBidConference\PreBidConferenceDecisionHandler;
-use App\Handlers\PreBidConference\PreBidConferenceDocumentsHandler;
+use App\Handlers\ProcurementInitiation\ProcurementInitiationHandler;
 use App\Handlers\PreProcurementConference\PreProcurementConferenceDecisionHandler;
 use App\Handlers\PreProcurementConference\PreProcurementConferenceDocumentsHandler;
-use App\Handlers\ProcurementInitiation\ProcurementInitiationHandler;
+use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
+use App\Handlers\PreBidConference\PreBidConferenceDecisionHandler;
+use App\Handlers\PreBidConference\PreBidConferenceDocumentsHandler;
 use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDecisionHandler;
 use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDocumentsHandler;
+use App\Handlers\BidOpening\BidOpeningDocumentsHandler;
+use App\Handlers\BidEvaluation\BidEvaluationDocumentsHandler;
+use App\Handlers\PostQualification\PostQualificationDocumentsHandler;
+use App\Handlers\BacResolution\BacResolutionDocumentHandler;
+use App\Handlers\NoticeOfAward\NoticeOfAwardDocumentHandler;
+use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
+use App\Handlers\NoticeToProceed\NoticeToProceedDocumentHandler;
+use App\Handlers\Monitoring\MonitoringDocumentHandler;
+use App\Handlers\Completion\CompletionProcessHandler;
+use App\Handlers\Completion\CompletionDocumentsHandler;
 use App\Services\BlockchainService;
 use App\Services\EventTypeLabelMapper;
 use App\Services\FileStorageService;
@@ -75,12 +75,12 @@ class AppServiceProvider extends ServiceProvider
             SupplementalBidBulletinDocumentsHandler::class,
             BidOpeningDocumentsHandler::class,
             BidEvaluationDocumentsHandler::class,
-            PostQualificationHandler::class,
-            BacResolutionHandler::class,
-            NoticeOfAwardHandler::class,
+            PostQualificationDocumentsHandler::class,
+            BacResolutionDocumentHandler::class,
+            NoticeOfAwardDocumentHandler::class,
             PerformanceBondContractAndPoHandler::class,
-            NoticeToProceedHandler::class,
-            MonitoringHandler::class,
+            NoticeToProceedDocumentHandler::class,
+            MonitoringDocumentHandler::class,
             CompletionProcessHandler::class,
             CompletionDocumentsHandler::class,
         ];

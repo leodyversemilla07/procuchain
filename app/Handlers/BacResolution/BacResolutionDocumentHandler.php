@@ -9,7 +9,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class BacResolutionHandler extends BaseStageHandler
+class BacResolutionDocumentHandler extends BaseStageHandler
 {
     /**
      * Handle the BAC resolution document upload process.

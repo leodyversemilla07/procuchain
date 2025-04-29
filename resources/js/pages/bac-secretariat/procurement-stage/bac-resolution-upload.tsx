@@ -15,7 +15,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
-import { Input } from '@/components/ui/input';
 
 interface BacResolutionUploadProps {
   procurement: {
@@ -28,12 +27,17 @@ interface BacResolutionUploadProps {
 export default function BacResolutionUpload({ procurement, errors = {} }: BacResolutionUploadProps) {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
+  // Format current date for initial form data
+  const currentDate = new Date();
+  const formattedDate = format(currentDate, 'yyyy-MM-dd');
+
   const { data, setData, post, processing } = useForm({
-    resolution_file: null as File | null,
-    resolution_number: '',
-    resolution_date: new Date(),
-    resolution_title: '',
-    remarks: '',
+    procurement_id: procurement.id || '',
+    procurement_title: procurement.title || '',
+    bac_resolution_file: null as File | null,
+    issuance_date: formattedDate,
+    resolution_date_object: currentDate, // For UI display only
+    signatory_details: '',
   });
 
   const breadcrumbs: BreadcrumbItem[] = [
@@ -44,23 +48,19 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const formData = new FormData();
-    formData.append('procurement_id', procurement.id);
-    formData.append('procurement_title', procurement.title);
-    if (data.resolution_file) {
-      formData.append('resolution_file', data.resolution_file);
-    }
-    formData.append('resolution_number', data.resolution_number);
-    formData.append('resolution_date', format(data.resolution_date, 'yyyy-MM-dd'));
-    formData.append('resolution_title', data.resolution_title);
-    formData.append('remarks', data.remarks);
 
-    post('/bac-secretariat/upload-bac-resolution', {
+    post('/bac-secretariat/upload-bac-resolution-document', {
+      preserveScroll: true,
+      preserveState: true,
       forceFormData: true,
       onSuccess: () => {
         toast.success("BAC Resolution uploaded successfully!", {
           description: "BAC Resolution has been submitted."
+        });
+      },
+      onError: (errors) => {
+        toast.error("Failed to upload BAC Resolution", {
+          description: Object.values(errors)[0] as string
         });
       }
     });
@@ -80,7 +80,7 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
       if (file.type === 'application/pdf') {
-        setData('resolution_file', file);
+        setData('bac_resolution_file', file);
       }
     }
   };
@@ -89,7 +89,7 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       if (file.type === 'application/pdf') {
-        setData('resolution_file', file);
+        setData('bac_resolution_file', file);
       }
     }
   };
@@ -113,6 +113,7 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
 
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* File Upload Card */}
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
               <CardHeader className="pb-4 space-y-1">
                 <CardTitle className="text-xl font-semibold flex items-center gap-2">
@@ -131,22 +132,21 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
                     BAC Resolution Document
                   </label>
                   <div
-                    className={`border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${
-                      isDraggingFile
+                    className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDraggingFile
                         ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                        : data.resolution_file
+                        : data.bac_resolution_file
                           ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : errors.resolution_file
+                          : errors.bac_resolution_file
                             ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
                             : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                    } cursor-pointer group`}
+                      } cursor-pointer group`}
                     onDragEnter={(e) => handleDragEvents(e)}
                     onDragLeave={(e) => handleDragEvents(e, false)}
                     onDragOver={(e) => handleDragEvents(e)}
                     onDrop={handleFileDrop}
                     onClick={() => document.getElementById('file-input')?.click()}
                   >
-                    {!data.resolution_file ? (
+                    {!data.bac_resolution_file ? (
                       <div className="flex flex-col items-center justify-center text-center">
                         <div className="rounded-full bg-muted p-3 mb-3 group-hover:bg-primary/10 transition-colors">
                           <FileUp className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -184,9 +184,9 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
                             <FileText className="h-6 w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium">{data.resolution_file.name}</p>
+                            <p className="font-medium">{data.bac_resolution_file.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              {(data.resolution_file.size / 1024).toFixed(2)} KB • PDF
+                              {(data.bac_resolution_file.size / 1024).toFixed(2)} KB • PDF
                             </p>
                           </div>
                         </div>
@@ -197,7 +197,7 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
                           className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setData('resolution_file', null);
+                            setData('bac_resolution_file', null);
                           }}
                         >
                           <X className="h-4 w-4" />
@@ -205,23 +205,23 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
                       </div>
                     )}
                   </div>
-                  {errors.resolution_file && <InputError message={errors.resolution_file} />}
+                  {errors.bac_resolution_file && <InputError message={errors.bac_resolution_file} />}
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Resolution Number
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Enter resolution number"
-                    value={data.resolution_number}
-                    onChange={(e) => setData('resolution_number', e.target.value)}
-                  />
-                  {errors.resolution_number && <InputError message={errors.resolution_number} />}
-                </div>
-
+            {/* Resolution Details Card */}
+            <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
+              <CardHeader className="pb-4 space-y-1">
+                <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5 text-primary" />
+                  Resolution Details
+                </CardTitle>
+                <CardDescription>
+                  Provide information about the BAC Resolution
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <label className="flex items-center text-base font-medium">
                     <CalendarIcon className="h-4 w-4 mr-2" />
@@ -234,34 +234,25 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
                         className="w-full justify-start text-left font-normal"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {data.resolution_date ? format(data.resolution_date, 'PPP') : <span>Pick a date</span>}
+                        {data.resolution_date_object ? format(data.resolution_date_object, 'PPP') : <span>Pick a date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={data.resolution_date}
-                        onSelect={(date) => date && setData('resolution_date', date)}
+                        selected={data.resolution_date_object}
+                        onSelect={(date) => {
+                          if (date) {
+                            setData('resolution_date_object', date);
+                            setData('issuance_date', format(date, 'yyyy-MM-dd'));
+                          }
+                        }}
                         initialFocus
                         className="rounded-md border shadow-md"
                       />
                     </PopoverContent>
                   </Popover>
-                  {errors.resolution_date && <InputError message={errors.resolution_date} />}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Resolution Title
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Enter resolution title"
-                    value={data.resolution_title}
-                    onChange={(e) => setData('resolution_title', e.target.value)}
-                  />
-                  {errors.resolution_title && <InputError message={errors.resolution_title} />}
+                  {errors.issuance_date && <InputError message={errors.issuance_date} />}
                 </div>
 
                 <div className="space-y-2">
@@ -273,10 +264,10 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
                     placeholder="Enter any additional remarks about the resolution"
                     rows={3}
                     className="min-h-[120px] resize-none"
-                    value={data.remarks}
-                    onChange={(e) => setData('remarks', e.target.value)}
+                    value={data.signatory_details}
+                    onChange={(e) => setData('signatory_details', e.target.value)}
                   />
-                  {errors.remarks && <InputError message={errors.remarks} />}
+                  {errors.signatory_details && <InputError message={errors.signatory_details} />}
                 </div>
               </CardContent>
 
@@ -284,7 +275,7 @@ export default function BacResolutionUpload({ procurement, errors = {} }: BacRes
                 <Button
                   type="submit"
                   disabled={processing}
-                  className="w-full flex items-center gap-2 h-11 bg-blue-600 hover:bg-blue-700"
+                  className="w-full flex items-center gap-2 h-11"
                 >
                   {processing ? (
                     <div className="flex items-center gap-2">

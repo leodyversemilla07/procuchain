@@ -43,7 +43,7 @@ export enum Status {
     AWARDED = 'Awarded',
     PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED = 'Performance Bond, Contract and PO Recorded',
     NTP_RECORDED = 'NTP Recorded',
-    MONITORING = 'Monitoring',
+    MONITORING_COMPLETED = 'Monitoring Completed',
     COMPLETION_DOCUMENTS_UPLOADED = 'Completion Documents Uploaded',
     COMPLETED = 'Completed'
 }

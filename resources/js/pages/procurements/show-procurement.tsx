@@ -244,7 +244,7 @@ const getStatusInfo = (statusText?: string): StatusInfo => {
         [StatusInfor.AWARDED]: { variant: "secondary", icon: <CheckCircle className="w-4 h-4" /> },
         [StatusInfor.PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED]: { variant: "outline", icon: <FileText className="w-4 h-4" /> },
         [StatusInfor.NTP_RECORDED]: { variant: "default", icon: <Clock className="w-4 h-4" /> },
-        [StatusInfor.MONITORING]: { variant: "secondary", icon: <FileCheck className="w-4 h-4" /> },
+        [StatusInfor.MONITORING_COMPLETED]: { variant: "secondary", icon: <FileCheck className="w-4 h-4" /> },
         [StatusInfor.COMPLETION_DOCUMENTS_UPLOADED]: { variant: "outline", icon: <FileText className="w-4 h-4" /> },
         [StatusInfor.COMPLETED]: { variant: "default", icon: <CheckCircle className="w-4 h-4" /> },
     };
@@ -561,9 +561,9 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
                         {/* Render all other metadata items */}
                         {metadataMap.map(item => renderMetadataItem(item.key, item))}
                         {/* Handle validity period specially */}
-                        {metadata.validity_period && renderMetadataItem('validity_period', { 
-                            label: 'Validity Period', 
-                            icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+                        {metadata.validity_period && renderMetadataItem('validity_period', {
+                            label: 'Validity Period',
+                            icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         })}
                     </div>
                 </CardContent>
@@ -777,18 +777,34 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
             return acc;
         }, {});
 
+        // This block filters documents within each stage
         Object.keys(grouped).forEach(stage => {
-            const uniqueDocs = new Map<string, Document>();
-            grouped[stage]
-                .sort((a, b) => (b.timestamp ? new Date(b.timestamp).getTime() : 0) - (a.timestamp ? new Date(a.timestamp).getTime() : 0))
-                .forEach(doc => {
-                    const key = doc.document_type || doc.file_key;
-                    if (!uniqueDocs.has(key)) {
-                        uniqueDocs.set(key, doc);
-                    }
-                });
-            grouped[stage] = Array.from(uniqueDocs.values())
-                .sort((a, b) => (a.timestamp ? new Date(a.timestamp).getTime() : 0) - (b.timestamp ? new Date(b.timestamp).getTime() : 0));
+            // --- START CHANGE ---
+            // Check if the current stage is 'Bid Opening' or 'Performance Bond Contract And PO'
+            if (stage === 'Bid Opening' || stage === 'Performance Bond Contract And PO') {
+                // For these stages, just sort by timestamp ascending, don't filter for uniqueness
+                grouped[stage] = grouped[stage]
+                    .sort((a, b) => (a.timestamp ? new Date(a.timestamp).getTime() : 0) - (b.timestamp ? new Date(b.timestamp).getTime() : 0));
+            } else {
+                // For all other stages, apply the uniqueness filtering
+                const uniqueDocs = new Map<string, Document>();
+                // Sorts documents by timestamp descending (latest first)
+                grouped[stage]
+                    .sort((a, b) => (b.timestamp ? new Date(b.timestamp).getTime() : 0) - (a.timestamp ? new Date(a.timestamp).getTime() : 0))
+                    .forEach(doc => {
+                        // Uses document_type or file_key as the uniqueness key
+                        const key = doc.document_type || doc.file_key;
+                        // Only adds the document to the map if a document with the same key hasn't been added yet
+                        // Since it's sorted latest first, this keeps only the *latest* document for each key within the stage
+                        if (!uniqueDocs.has(key)) {
+                            uniqueDocs.set(key, doc);
+                        }
+                    });
+                // Replaces the original list with the filtered list of unique (latest) documents, sorted ascending
+                grouped[stage] = Array.from(uniqueDocs.values())
+                    .sort((a, b) => (a.timestamp ? new Date(a.timestamp).getTime() : 0) - (b.timestamp ? new Date(b.timestamp).getTime() : 0));
+            }
+            // --- END CHANGE ---
         });
 
 

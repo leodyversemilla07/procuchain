@@ -26,11 +26,14 @@ class PerformanceBondContractAndPoDocumentsRequest extends FormRequest
         return [
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'performance_bond_file' => 'required|file|mimes:pdf|max:10240',
+            // Allow files to be nullable to match frontend behavior
+            'performance_bond_file' => 'nullable|file|mimes:pdf|max:10240',
             'submission_date' => 'required|date_format:Y-m-d|before_or_equal:today',
-            'bond_amount' => 'required|string|min:1|max:100',
-            'contract_file' => 'required|file|mimes:pdf|max:10240',
-            'po_file' => 'required|file|mimes:pdf|max:10240',
+            'bond_amount' => 'required|numeric|min:0|max:9999999999.99', // Changed to numeric validation
+            // Allow files to be nullable to match frontend behavior
+            'contract_file' => 'nullable|file|mimes:pdf|max:10240',
+            // Allow files to be nullable to match frontend behavior
+            'po_file' => 'nullable|file|mimes:pdf|max:10240',
             'signing_date' => 'required|date_format:Y-m-d|before_or_equal:today',
         ];
     }

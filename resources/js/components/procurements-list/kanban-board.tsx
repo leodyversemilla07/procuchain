@@ -17,15 +17,26 @@ export const KanbanBoard = ({
     onOpenPreBidModal,
     onOpenSupplementalBidBulletinModal,
 }: KanbanBoardProps) => {
-    const stages = [...new Set(procurements.map(proc => proc.stage))] as Stage[];
-    const procurementsByStage: Record<string, ProcurementListItem[]> = {};
-    stages.forEach(stage => {
-        procurementsByStage[stage] = procurements.filter(proc => proc.stage === stage);
-    });
+    // Define the canonical order of stages based on the enum
+    const orderedStages = Object.values(Stage);
+
+    // Group procurements by stage
+    const procurementsByStage = procurements.reduce((acc, proc) => {
+        const stage = proc.stage as Stage;
+        if (!acc[stage]) {
+            acc[stage] = [];
+        }
+        acc[stage].push(proc);
+        return acc;
+    }, {} as Record<Stage, ProcurementListItem[]>);
+
+    // Filter the ordered stages to only include those with procurements
+    const stagesToDisplay = orderedStages.filter(stage => procurementsByStage[stage]?.length > 0);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto">
-            {stages.map(stage => (
+            {/* Map over the ordered and filtered stages */}
+            {stagesToDisplay.map(stage => (
                 <Card key={stage} className="border-sidebar-border/70 dark:border-sidebar-border rounded-lg p-3 min-w-[240px]">
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="font-medium text-sm flex items-center gap-2 dark:text-gray-200">
@@ -38,6 +49,7 @@ export const KanbanBoard = ({
                         </h3>
                     </div>
                     <div className="space-y-2">
+                        {/* Render procurements for the current stage */}
                         {procurementsByStage[stage].map(procurement => (
                             <KanbanCard
                                 key={procurement.id}
