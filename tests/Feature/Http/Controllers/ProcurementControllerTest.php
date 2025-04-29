@@ -1,16 +1,16 @@
 <?php
 
+// Update these imports to match the actual handler class names
 use App\Handlers\BacResolution\BacResolutionDocumentHandler;
 use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
-use App\Handlers\BidEvaluation\BidEvaluationHandler;
-use App\Handlers\BidOpening\BidOpeningHandler;
+use App\Handlers\BidEvaluation\BidEvaluationDocumentsHandler; // Fixed from BidEvaluationHandler
+use App\Handlers\BidOpening\BidOpeningDocumentsHandler; // Fixed from BidOpeningHandler
 use App\Handlers\Completion\CompletionDocumentsHandler;
-use App\Handlers\Completion\CompletionProcessHandler;
-use App\Handlers\Monitoring\MonitoringHandler;
-use App\Handlers\NoticeOfAward\NoticeOfAwardHandler;
-use App\Handlers\NoticeToProceed\NoticeToProceedHandler;
+use App\Handlers\Monitoring\MonitoringDocumentHandler; // Fixed from MonitoringHandler
+use App\Handlers\NoticeOfAward\NoticeOfAwardDocumentHandler; // Fixed from NoticeOfAwardHandler
+use App\Handlers\NoticeToProceed\NoticeToProceedDocumentHandler; // Fixed from NoticeToProceedHandler
 use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
-use App\Handlers\PostQualification\PostQualificationHandler;
+use App\Handlers\PostQualification\PostQualificationDocumentsHandler; // Fixed from PostQualificationHandler
 use App\Handlers\PreBidConference\PreBidConferenceDecisionHandler;
 use App\Handlers\PreBidConference\PreBidConferenceDocumentsHandler;
 use App\Handlers\PreProcurementConference\PreProcurementConferenceDecisionHandler;
@@ -23,7 +23,6 @@ use App\Http\Requests\Procurement\BacResolutionDocumentRequest;
 use App\Http\Requests\Procurement\BiddingDocumentsRequest;
 use App\Http\Requests\Procurement\BidEvaluationDocumentsRequest;
 use App\Http\Requests\Procurement\BidOpeningDocumentsRequest;
-use App\Http\Requests\Procurement\CompleteProcessRequest;
 use App\Http\Requests\Procurement\CompletionDocumentsRequest;
 use App\Http\Requests\Procurement\MonitoringDocumentRequest;
 use App\Http\Requests\Procurement\NoticeOfAwardDocumentRequest;
@@ -78,14 +77,13 @@ function getPrivateMethod($object, $methodName)
 // Helper function to create a controller instance with mocked dependencies
 function createControllerInstance()
 {
-    $multichainService = new class extends MultichainService {
-        public function __construct() {}
-    };
-    
-    $blockchainService = Mockery::mock(BlockchainService::class);
-    $blockchainService->shouldReceive('getClient')->andReturn($multichainService);
-    
-    return new ProcurementController($blockchainService);
+    // Mock ProcurementServices as it's the expected dependency
+    $procurementService = Mockery::mock(\App\Services\ProcurementServices::class);
+    // You might need to add specific expectations to the mock if methods are called
+    // e.g., $procurementService->shouldReceive('someMethod')->andReturn(true);
+
+    // Return the controller with the mocked service
+    return new ProcurementController($procurementService);
 }
 
 // Update createMockHandler function to use correct namespaces
@@ -142,7 +140,7 @@ test('middleware adds resubmission prevention headers', function () {
     $middlewareProperty->setAccessible(true);
     $middlewares = $middlewareProperty->getValue($controller);
 
-    // Get the anti-resubmission middleware (the third middleware in the controller)
+    // Get the anti-resubmit middleware (the third middleware in the controller)
     $antiResubmitMiddleware = $middlewares[2]['middleware'];
 
     // Create a mock request and a real redirect response
@@ -246,6 +244,7 @@ test('handleProcurementAction processes failure result correctly', function () {
     expect($response->getSession()->has('errors'))->toBeTrue();
 });
 
+// Fix exception handling test to be more robust
 test('handleProcurementAction handles exceptions from handler gracefully', function () {
     $controller = createControllerInstance();
     $request = Mockery::mock('Illuminate\Http\Request');
@@ -254,14 +253,14 @@ test('handleProcurementAction handles exceptions from handler gracefully', funct
     $handler->shouldReceive('handle')
         ->once()
         ->with($request)
-        ->andThrow(new Exception('Handler exception'));
+        ->andThrow(new \Exception('Handler exception'));
 
     $method = getPrivateMethod($controller, 'handleProcurementAction');
 
     try {
-        $method->invokeArgs($controller, [$request, $handler]);
+        $response = $method->invokeArgs($controller, [$request, $handler]);
         $this->fail('Exception should have been thrown');
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         expect($e->getMessage())->toEqual('Handler exception');
     }
 });
@@ -364,8 +363,8 @@ test('uploadBiddingDocuments calls handler and redirects correctly', function ()
 });
 
 test('uploadBidOpeningDocuments calls handler and redirects correctly', function () {
-    /** @var \App\Handlers\BidOpening\BidOpeningHandler|\Mockery\MockInterface $handler */
-    $handler = createMockHandler(BidOpeningHandler::class);
+    /** @var \App\Handlers\BidOpening\BidOpeningDocumentsHandler|\Mockery\MockInterface $handler */
+    $handler = createMockHandler(BidOpeningDocumentsHandler::class);
     $request = new BidOpeningDocumentsRequest;
 
     $controller = createControllerInstance();
@@ -376,8 +375,8 @@ test('uploadBidOpeningDocuments calls handler and redirects correctly', function
 });
 
 test('uploadBidEvaluationDocuments calls handler and redirects correctly', function () {
-    /** @var \App\Handlers\BidEvaluation\BidEvaluationHandler|\Mockery\MockInterface $handler */
-    $handler = createMockHandler(BidEvaluationHandler::class);
+    /** @var \App\Handlers\BidEvaluation\BidEvaluationDocumentsHandler|\Mockery\MockInterface $handler */
+    $handler = createMockHandler(BidEvaluationDocumentsHandler::class);
     $request = new BidEvaluationDocumentsRequest;
 
     $controller = createControllerInstance();
@@ -388,8 +387,8 @@ test('uploadBidEvaluationDocuments calls handler and redirects correctly', funct
 });
 
 test('uploadPostQualificationDocuments calls handler and redirects correctly', function () {
-    /** @var \App\Handlers\PostQualification\PostQualificationHandler|\Mockery\MockInterface $handler */
-    $handler = createMockHandler(PostQualificationHandler::class);
+    /** @var \App\Handlers\PostQualification\PostQualificationDocumentsHandler|\Mockery\MockInterface $handler */
+    $handler = createMockHandler(PostQualificationDocumentsHandler::class);
     $request = new PostQualificationDocumentsRequest;
 
     $controller = createControllerInstance();
@@ -400,8 +399,8 @@ test('uploadPostQualificationDocuments calls handler and redirects correctly', f
 });
 
 test('uploadBacResolutionDocument calls handler and redirects correctly', function () {
-    /** @var \App\Handlers\BacResolution\BacResolutionHandler|\Mockery\MockInterface $handler */
-    $handler = createMockHandler(BacResolutionHandler::class);
+    /** @var \App\Handlers\BacResolution\BacResolutionDocumentHandler|\Mockery\MockInterface $handler */
+    $handler = createMockHandler(BacResolutionDocumentHandler::class);
     $request = new BacResolutionDocumentRequest;
 
     $controller = createControllerInstance();
@@ -412,8 +411,8 @@ test('uploadBacResolutionDocument calls handler and redirects correctly', functi
 });
 
 test('uploadNoaDocument calls handler and redirects correctly', function () {
-    /** @var \App\Handlers\NoticeOfAward\NoticeOfAwardHandler|\Mockery\MockInterface $handler */
-    $handler = createMockHandler(NoticeOfAwardHandler::class);
+    /** @var \App\Handlers\NoticeOfAward\NoticeOfAwardDocumentHandler|\Mockery\MockInterface $handler */
+    $handler = createMockHandler(NoticeOfAwardDocumentHandler::class);
     $request = new NoticeOfAwardDocumentRequest;
 
     $controller = createControllerInstance();
@@ -436,8 +435,8 @@ test('uploadPerformanceBondContractAndPoDocuments calls handler and redirects co
 });
 
 test('uploadNTPDocument calls handler and redirects correctly', function () {
-    /** @var \App\Handlers\NoticeToProceed\NoticeToProceedHandler|\Mockery\MockInterface $handler */
-    $handler = createMockHandler(NoticeToProceedHandler::class);
+    /** @var \App\Handlers\NoticeToProceed\NoticeToProceedDocumentHandler|\Mockery\MockInterface $handler */
+    $handler = createMockHandler(NoticeToProceedDocumentHandler::class);
     $request = new NoticeToProceedDocumentRequest;
 
     $controller = createControllerInstance();
@@ -448,8 +447,8 @@ test('uploadNTPDocument calls handler and redirects correctly', function () {
 });
 
 test('uploadMonitoringDocument calls handler and redirects correctly', function () {
-    /** @var \App\Handlers\Monitoring\MonitoringHandler|\Mockery\MockInterface $handler */
-    $handler = createMockHandler(MonitoringHandler::class);
+    /** @var \App\Handlers\Monitoring\MonitoringDocumentHandler|\Mockery\MockInterface $handler */
+    $handler = createMockHandler(MonitoringDocumentHandler::class);
     $request = new MonitoringDocumentRequest;
 
     $controller = createControllerInstance();

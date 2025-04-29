@@ -92,7 +92,7 @@ const statusIcons: Record<Status, React.ReactNode> = {
     [Status.AWARDED]: <Award className="h-3 w-3" />,
     [Status.PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED]: <FileCheck className="h-3 w-3" />, // Changed from CONTRACT_SIGNED/PO_ISSUED
     [Status.NTP_RECORDED]: <PlayCircle className="h-3 w-3" />, // Changed from NTP_ISSUED
-    [Status.MONITORING]: <Monitor className="h-3 w-3" />, // Changed from ONGOING
+    [Status.MONITORING_COMPLETED]: <Monitor className="h-3 w-3" />, // Changed from ONGOING
     [Status.COMPLETION_DOCUMENTS_UPLOADED]: <FileCheck className="h-3 w-3" />, // Changed from DOCUMENTS_UPLOADED
     [Status.COMPLETED]: <CheckCircle className="h-3 w-3" />,
     // Removed unused/incorrect statuses like PENDING, APPROVED, REJECTED, FOR_REVIEW, etc.

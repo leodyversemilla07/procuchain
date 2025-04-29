@@ -18,7 +18,6 @@ use App\Handlers\NoticeOfAward\NoticeOfAwardDocumentHandler;
 use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
 use App\Handlers\NoticeToProceed\NoticeToProceedDocumentHandler;
 use App\Handlers\Monitoring\MonitoringDocumentHandler;
-use App\Handlers\Completion\CompletionProcessHandler;
 use App\Handlers\Completion\CompletionDocumentsHandler;
 use App\Services\BlockchainService;
 use App\Services\EventTypeLabelMapper;
@@ -81,7 +80,6 @@ class AppServiceProvider extends ServiceProvider
             PerformanceBondContractAndPoHandler::class,
             NoticeToProceedDocumentHandler::class,
             MonitoringDocumentHandler::class,
-            CompletionProcessHandler::class,
             CompletionDocumentsHandler::class,
         ];
 
