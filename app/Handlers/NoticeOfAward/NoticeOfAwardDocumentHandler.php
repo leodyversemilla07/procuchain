@@ -9,7 +9,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class NoticeOfAwardHandler extends BaseStageHandler
+class NoticeOfAwardDocumentHandler extends BaseStageHandler
 {
     /**
      * Handle the Notice of Award document upload process.

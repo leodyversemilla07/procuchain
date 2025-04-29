@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\ProcurementServices;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -15,7 +16,6 @@ class BacSecretariatController extends BaseController
 {
     private $services;
 
-    // cache for user names to avoid repeated DB queries
     private array $userNameCache = [];
 
     public function __construct(ProcurementServices $services)
@@ -51,34 +51,66 @@ class BacSecretariatController extends BaseController
         try {
             Log::info('Fetching BAC Secretariat dashboard data');
 
-            $states = $this->services->getMultiChain()->listStreamItems(
-                StreamEnums::STATUS->value,
-                true,
-                1000,
-                -10,
-                false
-            );
+            // Cache procurementsByKey for 5 minutes
+            $procurementsByKey = Cache::remember('dashboard_procurements_by_key', now()->addMinutes(5), function () {
+                Log::info('Cache miss: Recalculating procurementsByKey for dashboard');
+                $states = $this->services->getMultiChain()->listStreamItems(
+                    StreamEnums::STATUS->value,
+                    true,
+                    10000, // Consider if this limit needs adjustment or pagination
+                    0,
+                    false
+                );
 
-            if ($states === null) {
-                throw new Exception('Failed to retrieve stream items');
+                if ($states === null) {
+                    // Throw exception or return empty collection based on desired handling
+                    throw new Exception('Failed to retrieve status stream items for procurementsByKey cache');
+                }
+                // Note: getUserName might be called inside getProcurementsByKey,
+                // ensure user cache logic within getUserName is sufficient or preload if needed.
+                return $this->getProcurementsByKey($states);
+            });
+
+
+            if ($procurementsByKey === null || $procurementsByKey->isEmpty()) {
+                 // Handle case where cache returns null or empty after failed fetch inside closure
+                 Log::warning('ProcurementsByKey is null or empty after cache check.');
+                 // Decide recovery strategy: maybe return empty dashboard or throw error
+                 // For now, let's proceed cautiously, stats calculation might handle empty data.
+                 // Ensure $procurementsByKey is at least an empty collection to avoid errors later
+                 $procurementsByKey = collect();
             }
 
-            $procurementsByKey = $this->getProcurementsByKey($states);
 
-            // compute priority actions once
+            // Fetch recent activities (usually faster, less critical to cache unless proven slow)
+            $recentActivities = $this->getRecentActivities();
+
+            // Calculate priority actions (depends on procurementsByKey)
+            // If getPriorityActions itself is slow, it might need its own caching/optimization
             $allPriorityActions = $this->getPriorityActions($procurementsByKey);
             $priorityActions = array_slice($allPriorityActions, 0, 3);
 
+            // Cache dashboard stats for 5 minutes
+            $stats = Cache::remember('dashboard_stats', now()->addMinutes(5), function () use ($procurementsByKey, $allPriorityActions) {
+                 Log::info('Cache miss: Recalculating dashboard stats');
+                 // Pass the already fetched/cached $procurementsByKey
+                 return $this->getDashboardStats($procurementsByKey, count($allPriorityActions));
+            });
+
+
             $dashboardData = [
+                // Use the potentially cached procurementsByKey for recent procurements
                 'recentProcurements' => $this->getRecentProcurements($procurementsByKey),
-                'recentActivities' => $this->getRecentActivities(),
-                'priorityActions' => $priorityActions,
-                'stats' => $this->getDashboardStats($procurementsByKey, count($allPriorityActions)),
+                'recentActivities' => $recentActivities, // Use directly fetched activities
+                'priorityActions' => $priorityActions, // Use calculated actions
+                'stats' => $stats, // Use cached stats
             ];
 
             Log::info('Successfully retrieved dashboard data', [
-                'procurement_count' => count($procurementsByKey),
+                'procurement_count' => $procurementsByKey ? $procurementsByKey->count() : 0,
                 'activities_count' => count($dashboardData['recentActivities']),
+                'stats_from_cache' => Cache::has('dashboard_stats'), // Log if stats came from cache
+                'procurements_from_cache' => Cache::has('dashboard_procurements_by_key'), // Log if procurements came from cache
             ]);
 
             return Inertia::render('bac-secretariat/dashboard', $dashboardData);
@@ -88,6 +120,12 @@ class BacSecretariatController extends BaseController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
+            // Clear potentially bad cache entries on error
+            Cache::forget('dashboard_procurements_by_key');
+            Cache::forget('dashboard_stats');
+            Cache::forget('dashboard_total_documents'); // Also clear the specific document count cache
+
 
             return Inertia::render('bac-secretariat/dashboard', [
                 'recentProcurements' => [],
@@ -101,18 +139,28 @@ class BacSecretariatController extends BaseController
 
     private function getDashboardStats($procurementsByKey, int $pendingActions): array
     {
+        // This function now receives $procurementsByKey, no need to fetch status again
         try {
+            // Cache the total documents calculation within this stats block if needed,
+            // or rely on the outer caching of the entire stats array.
+            // Caching getTotalDocuments separately might offer finer control if it's the slowest part.
+            $totalDocuments = Cache::remember('dashboard_total_documents', now()->addMinutes(5), function () use ($procurementsByKey) {
+                 Log::info('Cache miss: Recalculating total documents for dashboard stats');
+                 // Pass $procurementsByKey if needed by the optimized getTotalDocuments
+                 return $this->getTotalDocuments($procurementsByKey);
+            });
+
             return [
                 'ongoingProjects' => $this->countOngoingProjects($procurementsByKey),
                 'pendingActions' => $pendingActions,
                 'completedBiddings' => $this->countCompletedBiddings($procurementsByKey),
-                'totalDocuments' => $this->getTotalDocuments($procurementsByKey),
+                'totalDocuments' => $totalDocuments, // Use cached/recalculated total
             ];
         } catch (Exception $e) {
             Log::error('Failed to calculate dashboard stats', [
                 'error' => $e->getMessage(),
             ]);
-
+             Cache::forget('dashboard_total_documents'); // Clear specific cache on error
             return $this->getEmptyStats();
         }
     }
@@ -173,7 +221,6 @@ class BacSecretariatController extends BaseController
     private function getRecentProcurements($procurementsByKey)
     {
         return $procurementsByKey->sortByDesc('timestamp')
-            ->take(10)
             ->values()
             ->map(function ($item) {
                 return [
@@ -191,10 +238,10 @@ class BacSecretariatController extends BaseController
         try {
             $allEvents = $this->services->getMultiChain()->listStreamItems(
                 StreamEnums::EVENTS->value,
-                true,  // verbose mode
-                20,    // increased count
-                -20,   // get last 20 items
-                true   // local ordering
+                true,
+                20,
+                -20,
+                true
             );
 
             if (!$allEvents) {
@@ -283,80 +330,66 @@ class BacSecretariatController extends BaseController
     private function getTotalDocuments($procurementsByKey)
     {
         try {
-            $totalDocuments = 0;
-            $documentCounts = [];
             $client = $this->services->getMultiChain();
 
-            // Fetch all status items for title retrieval
-            $allStatusItems = $client->listStreamItems(
-                StreamEnums::STATUS->value,
+            // Fetch all document items (for all procurements)
+            $documentItems = $client->listStreamItems(
+                StreamEnums::DOCUMENTS->value,
                 true,
-                10000,
+                10000, // Adjust size as needed, consider pagination for very large streams
                 0,
                 false
-            ) ?? [];
+            );
 
-            foreach ($procurementsByKey as $procurement) {
-                try {
-                    // Gather all titles used by this procurement
-                    $titles = collect($allStatusItems)
-                        ->map(fn($item) => $item['data']['json'] ?? [])
-                        ->filter(fn($data) => ($data['procurement_id'] ?? '') === $procurement['id'])
-                        ->pluck('procurement_title')
-                        ->unique()
-                        ->filter()
-                        ->values()
-                        ->toArray();
-
-                    // Collect documents across all titles
-                    $docsCollection = collect();
-                    foreach ($titles as $title) {
-                        $streamKey = $this->services->getStreamKeyService()->generate(
-                            $procurement['id'],
-                            $title
-                        );
-                        $documents = $client->listStreamKeyItems(
-                            StreamEnums::DOCUMENTS->value,
-                            $streamKey,
-                            true
-                        );
-                        $docsCollection = $docsCollection->concat($documents ?? []);
-                    }
-
-                    // Count unique document hashes
-                    $uniqueDocCount = $docsCollection
-                        ->map(fn($doc) => $doc['data']['json']['hash'] ?? '')
-                        ->unique()
-                        ->filter()
-                        ->count();
-
-                    $totalDocuments += $uniqueDocCount;
-                    $documentCounts[] = [
-                        'procurement_id' => $procurement['id'],
-                        'procurement_title' => $procurement['title'],
-                        'document_count' => $uniqueDocCount,
-                    ];
-                } catch (Exception $e) {
-                    Log::warning("Failed to count documents for procurement {$procurement['id']}", [
-                        'error' => $e->getMessage(),
-                        'procurement_title' => $procurement['title'],
-                    ]);
-                    continue;
-                }
+            if ($documentItems === null) {
+                Log::warning('Failed to retrieve document stream items for dashboard stats.');
+                return 0;
             }
 
-            // log summary of document counts
-            Log::info('Document count breakdown', [
+            // Build a map: procurement_id => document count (unique by hash)
+            $documentCountMap = collect($documentItems)
+                ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+                ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+                ->map(function ($items) {
+                    return collect($items)
+                        ->map(fn($item) => $item['data']['json']['hash'])
+                        ->unique()
+                        ->count();
+                });
+
+            // Get the IDs of procurements relevant to the dashboard
+            $dashboardProcurementIds = $procurementsByKey->keys();
+
+            // Sum the counts only for the procurements relevant to the dashboard
+            $totalDocuments = $documentCountMap
+                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->sum();
+
+            // Optional: Log the breakdown for debugging
+            $documentCounts = $documentCountMap
+                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->map(function ($count, $procurementId) use ($procurementsByKey) {
+                    return [
+                        'procurement_id' => $procurementId,
+                        'procurement_title' => $procurementsByKey->get($procurementId)['title'] ?? 'N/A',
+                        'document_count' => $count,
+                    ];
+                })
+                ->values()
+                ->toArray();
+
+            Log::info('Dashboard document count breakdown', [
                 'total_documents' => $totalDocuments,
-                'procurement_count' => count($procurementsByKey),
+                'procurement_count_on_dashboard' => $procurementsByKey->count(),
                 'document_counts_by_procurement' => $documentCounts
             ]);
 
             return $totalDocuments;
 
         } catch (Exception $e) {
-            Log::error('Failed to calculate total documents', [
+            Log::error('Failed to calculate total documents for dashboard', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(), // Include trace for better debugging
             ]);
             return 0;
         }

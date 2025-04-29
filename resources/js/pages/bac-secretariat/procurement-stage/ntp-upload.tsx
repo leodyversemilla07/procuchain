@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
@@ -20,16 +20,35 @@ interface NoticeToProceedUploadProps {
     id: string;
     title: string;
   };
-  errors?: Record<string, string>;
+  errors?: Record<string, string>; // Renamed from errors to initialErrors for clarity
 }
 
-export default function NoticeToProceedUpload({ procurement, errors = {} }: NoticeToProceedUploadProps) {
+export default function NoticeToProceedUpload({ procurement, errors: initialErrors = {} }: NoticeToProceedUploadProps) {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
-  const { data, setData, post, processing } = useForm({
+  // Adapt pattern from noa-upload
+  const currentDate = new Date();
+  const formattedDate = format(currentDate, 'yyyy-MM-dd');
+
+  const { data, setData, post, processing, errors } = useForm({
+    procurement_id: procurement.id || '',
+    procurement_title: procurement.title || '',
     ntp_file: null as File | null,
-    issuance_date: new Date(),
+    issuance_date: formattedDate, // String for submission
+    issuance_date_object: currentDate, // Date object for Calendar UI
   });
+
+  // Combine initial errors and form submission errors
+  const displayErrors = { ...initialErrors, ...errors };
+
+  // Keep form data in sync if props change (optional but good practice)
+  useEffect(() => {
+    setData({
+      ...data,
+      procurement_id: procurement.id || '',
+      procurement_title: procurement.title || '',
+    });
+  }, [procurement.id, procurement.title]);
 
   const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -39,22 +58,24 @@ export default function NoticeToProceedUpload({ procurement, errors = {} }: Noti
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const formData = new FormData();
-    formData.append('procurement_id', procurement.id);
-    formData.append('procurement_title', procurement.title);
-    if (data.ntp_file) {
-      formData.append('ntp_file', data.ntp_file);
-    }
-    formData.append('issuance_date', format(data.issuance_date, 'yyyy-MM-dd'));
 
-    post('/bac-secretariat/upload-notice-to-proceed', {
-      forceFormData: true,
+    // Use post(url, options) signature, data is implicit from useForm state
+    // issuance_date is already the correct string format in the state
+    post('/bac-secretariat/upload-ntp-document', {
+      forceFormData: true, // Necessary because we are uploading a file
+      preserveScroll: true, // Keep scroll position on error
       onSuccess: () => {
         toast.success("Notice to Proceed uploaded successfully!", {
           description: "Notice to Proceed has been submitted."
         });
-      }
+      },
+      onError: (errorResponse) => {
+        // Errors are automatically populated by useForm
+        console.error("Submission Error:", errorResponse);
+        toast.error("Submission failed.", {
+          description: "Please check the form for errors."
+        });
+      },
     });
   };
 
@@ -91,6 +112,7 @@ export default function NoticeToProceedUpload({ procurement, errors = {} }: Noti
       <Head title="Upload Notice to Proceed" />
 
       <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 bg-gradient-to-b from-background to-muted/20">
+        {/* ... existing header ... */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-primary">
             <PlayCircle className="h-6 w-6" />
@@ -106,6 +128,7 @@ export default function NoticeToProceedUpload({ procurement, errors = {} }: Noti
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
+              {/* ... existing CardHeader ... */}
               <CardHeader className="pb-4 space-y-1">
                 <CardTitle className="text-xl font-semibold flex items-center gap-2">
                   <PlayCircle className="h-5 w-5 text-primary" />
@@ -123,21 +146,21 @@ export default function NoticeToProceedUpload({ procurement, errors = {} }: Noti
                     Notice to Proceed Document
                   </label>
                   <div
-                    className={`border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${
-                      isDraggingFile
-                        ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                        : data.ntp_file
-                          ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : errors.ntp_file
-                            ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                    } cursor-pointer group`}
+                    className={`border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDraggingFile
+                      ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
+                      : data.ntp_file
+                        ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
+                        : displayErrors.ntp_file // Use displayErrors
+                          ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
+                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                      } cursor-pointer group`}
                     onDragEnter={(e) => handleDragEvents(e)}
                     onDragLeave={(e) => handleDragEvents(e, false)}
                     onDragOver={(e) => handleDragEvents(e)}
                     onDrop={handleFileDrop}
                     onClick={() => document.getElementById('file-input')?.click()}
                   >
+                    {/* ... existing file upload UI ... */}
                     {!data.ntp_file ? (
                       <div className="flex flex-col items-center justify-center text-center">
                         <div className="rounded-full bg-muted p-3 mb-3 group-hover:bg-primary/10 transition-colors">
@@ -197,12 +220,14 @@ export default function NoticeToProceedUpload({ procurement, errors = {} }: Noti
                       </div>
                     )}
                   </div>
-                  {errors.ntp_file && <InputError message={errors.ntp_file} />}
+                  {/* Use displayErrors for displaying errors */}
+                  {displayErrors.ntp_file && <InputError message={displayErrors.ntp_file} />}
                 </div>
               </CardContent>
             </Card>
 
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
+              {/* ... existing CardHeader ... */}
               <CardHeader className="pb-4 space-y-1">
                 <CardTitle className="text-xl font-semibold flex items-center gap-2">
                   <CalendarIcon className="h-5 w-5 text-primary" />
@@ -222,31 +247,40 @@ export default function NoticeToProceedUpload({ procurement, errors = {} }: Noti
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-left font-normal"
+                        className={`w-full justify-start text-left font-normal ${displayErrors.issuance_date ? 'border-destructive' : ''}`}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {data.issuance_date ? format(data.issuance_date, 'PPP') : <span>Pick a date</span>}
+                        {/* Display date from the Date object state */}
+                        {data.issuance_date_object ? format(data.issuance_date_object, 'PPP') : <span>Pick a date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={data.issuance_date}
-                        onSelect={(date) => date && setData('issuance_date', date)}
+                        selected={data.issuance_date_object} // Bind to the Date object state
+                        // Update both Date object and formatted string state on select
+                        onSelect={(date) => {
+                          if (date) {
+                            setData('issuance_date_object', date);
+                            setData('issuance_date', format(date, 'yyyy-MM-dd'));
+                          }
+                        }}
                         initialFocus
                         className="rounded-md border shadow-md"
                       />
                     </PopoverContent>
                   </Popover>
-                  {errors.issuance_date && <InputError message={errors.issuance_date} />}
+                  {/* Use displayErrors for displaying errors */}
+                  {displayErrors.issuance_date && <InputError message={displayErrors.issuance_date} />}
                 </div>
               </CardContent>
 
               <CardFooter className="pt-4 border-t flex flex-col gap-3">
+                {/* ... existing buttons ... */}
                 <Button
                   type="submit"
                   disabled={processing}
-                  className="w-full flex items-center gap-2 h-11 bg-blue-600 hover:bg-blue-700"
+                  className="w-full flex items-center gap-2 h-11"
                 >
                   {processing ? (
                     <div className="flex items-center gap-2">
@@ -275,7 +309,8 @@ export default function NoticeToProceedUpload({ procurement, errors = {} }: Noti
           </div>
         </form>
 
-        {Object.keys(errors).length > 0 && (
+        {/* Error Summary Box - Use displayErrors */}
+        {Object.keys(displayErrors).length > 0 && (
           <Card className="border-destructive/50 bg-destructive/5 dark:bg-destructive/10 shadow-md">
             <CardContent className="p-4">
               <div className="flex items-start">
@@ -285,7 +320,7 @@ export default function NoticeToProceedUpload({ procurement, errors = {} }: Noti
                     Please fix the following errors:
                   </h4>
                   <ul className="list-disc list-inside mt-2 text-sm text-destructive/90 space-y-1">
-                    {Object.entries(errors).map(([field, message]) => (
+                    {Object.entries(displayErrors).map(([field, message]) => (
                       <li key={field}>{message}</li>
                     ))}
                   </ul>

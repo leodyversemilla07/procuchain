@@ -156,7 +156,7 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [draggingOverField, setDraggingOverField] = useState<string | null>(null);
 
-  const { data, setData, post, processing, progress } = useForm({
+  const { data, setData, post, processing } = useForm({
     procurement_id: procurement.id || '',
     procurement_title: procurement.title || '',
     post_qualification_report: null as File | null,
@@ -180,55 +180,29 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
       toast.error("Please select an outcome (Verified or Failed)");
       return;
     }
-    
+
     const formData = new FormData();
     formData.append('procurement_id', procurement.id);
     formData.append('procurement_title', procurement.title);
-    
+
     // Add document files
     if (data.post_qualification_report) {
       formData.append('post_qualification_report', data.post_qualification_report);
     }
-    
+
     if (data.twg_certification) {
       formData.append('twg_certification', data.twg_certification);
     }
-    
+
     if (data.notice_of_post_qualification) {
       formData.append('notice_of_post_qualification', data.notice_of_post_qualification);
     }
-    
+
     formData.append('submission_date', data.submission_date);
     formData.append('outcome', String(data.outcome));
     if (data.remarks) {
       formData.append('remarks', data.remarks);
     }
-
-    // Add metadata for each document
-    const metadata = [];
-    
-    if (data.post_qualification_report) {
-      metadata.push({
-        document_type: 'Post Qualification Report',
-        submission_date: data.submission_date
-      });
-    }
-    
-    if (data.twg_certification) {
-      metadata.push({
-        document_type: 'TWG Certification',
-        submission_date: data.submission_date
-      });
-    }
-    
-    if (data.notice_of_post_qualification) {
-      metadata.push({
-        document_type: 'Notice of Post Qualification',
-        submission_date: data.submission_date
-      });
-    }
-    
-    formData.append('metadata', JSON.stringify(metadata));
 
     post('/bac-secretariat/upload-post-qualification-documents', {
       forceFormData: true,
@@ -238,8 +212,11 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
         });
       },
       onError: (errors) => {
+        // Log the actual errors received from the backend for better debugging
+        console.error("Submission Error:", errors);
+        const firstErrorMessage = Object.values(errors)[0] as string || "An unknown error occurred.";
         toast.error("Failed to upload documents", {
-          description: Object.values(errors)[0] as string
+          description: firstErrorMessage
         });
       }
     });
@@ -334,16 +311,6 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
                   onDragOver={(e) => handleDragEvents(e, true, 'notice_of_post_qualification')}
                   onDrop={handleFileDrop}
                 />
-
-                {progress && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium mb-1">Upload Progress:</p>
-                    <progress value={progress.percentage} max="100" className="w-full h-2 [&::-webkit-progress-bar]:rounded-lg [&::-webkit-progress-value]:rounded-lg   [&::-webkit-progress-bar]:bg-slate-300 [&::-webkit-progress-value]:bg-primary [&::-moz-progress-bar]:bg-primary">
-                      {progress.percentage}%
-                    </progress>
-                    <p className="text-xs text-muted-foreground text-right">{progress.percentage}%</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 

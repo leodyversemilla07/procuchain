@@ -139,6 +139,15 @@ const getButtonConfigs = (
         });
     }
 
+    if (stage === Stage.NOTICE_OF_AWARD && status === Status.RESOLUTION_RECORDED) {
+        configs.push({
+            icon: <UploadCloudIcon className={iconSize} />,
+            tooltipText: "Upload Notice of Award",
+            className: "text-amber-600 dark:text-amber-400",
+            href: `/bac-secretariat/noa-upload/${id}`
+        });
+    }
+
     if (stage === Stage.SUPPLEMENTAL_BID_BULLETIN) {
         if (status === Status.PRE_BID_CONFERENCE_COMPLETED) {
             configs.push({
@@ -156,6 +165,62 @@ const getButtonConfigs = (
             });
         }
     }
+
+    if (stage === Stage.PERFORMANCE_BOND_CONTRACT_AND_PO && status === Status.AWARDED) {
+        configs.push({
+            icon: <UploadCloudIcon className={iconSize} />,
+            tooltipText: "Upload Performance Bond, Contract, and PO",
+            className: "text-cyan-600 dark:text-cyan-400",
+            href: `/bac-secretariat/performance-bond-contract-po-upload/${id}`
+        });
+    }
+
+    if (stage === Stage.BAC_RESOLUTION && status === Status.POST_QUALIFICATION_VERIFIED) {
+        configs.push({
+            icon: <UploadCloudIcon className={iconSize} />,
+            tooltipText: "Upload BAC Resolution Documents",
+            className: "text-purple-700 dark:text-purple-400",
+            href: `/bac-secretariat/bac-resolution-upload/${id}`
+        });
+    }
+
+    if (stage === Stage.NOTICE_TO_PROCEED && status === Status.PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED) {
+        configs.push({
+            icon: <UploadCloudIcon className={iconSize} />,
+            tooltipText: "Upload Notice to Proceed",
+            className: "text-green-600 dark:text-green-400", // Example color, adjust if needed
+            href: `/bac-secretariat/ntp-upload/${id}`
+        });
+    }
+
+    if (stage === Stage.MONITORING && status === Status.NTP_RECORDED) {
+        configs.push({
+            icon: <UploadCloudIcon className={iconSize} />,
+            tooltipText: "Upload Monitoring Documents",
+            className: "text-teal-600 dark:text-teal-400", // Example color, adjust if needed
+            href: `/bac-secretariat/monitoring-upload/${id}`
+        });
+    }
+
+    // if (stage === Stage.MONITORING && status === Status.MONITORING) {
+    //     configs.push({
+    //         icon: <UploadCloudIcon className={iconSize} />,
+    //         tooltipText: "Upload Monitoring Documents",
+    //         className: "text-teal-600 dark:text-teal-400", // Example color, adjust if needed
+    //         href: `/bac-secretariat/complete-upload/${id}`
+    //     });
+    // }
+
+    // Add Completion stage button
+    if (stage === Stage.COMPLETION && status === Status.MONITORING_COMPLETED) {
+        configs.push({
+            icon: <UploadCloudIcon className={iconSize} />,
+            tooltipText: "Upload Certificate of Completion", // Updated tooltip text
+            className: "text-emerald-600 dark:text-emerald-400", // Example color
+            href: `/bac-secretariat/completion-upload/${id}`
+        });
+    }
+
 
     return configs;
 };

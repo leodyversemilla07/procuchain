@@ -22,7 +22,7 @@ enum StatusEnums: string
     case AWARDED = 'awarded';
     case PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED = 'performance_bond_contract_and_po_recorded';
     case NTP_RECORDED = 'ntp_recorded';
-    case MONITORING = 'monitoring';
+    case MONITORING_COMPLETED = 'monitoring_completed';
     case COMPLETION_DOCUMENTS_UPLOADED = 'completion_documents_uploaded';
     case COMPLETED = 'completed';
 
@@ -48,7 +48,7 @@ enum StatusEnums: string
             self::AWARDED => 'Awarded',
             self::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED => 'Performance Bond, Contract and PO Recorded',
             self::NTP_RECORDED => 'NTP Recorded',
-            self::MONITORING => 'Monitoring',
+            self::MONITORING_COMPLETED => 'Monitoring Completed',
             self::COMPLETION_DOCUMENTS_UPLOADED => 'Completion Documents Uploaded',
             self::COMPLETED => 'Completed',
         };
@@ -76,7 +76,7 @@ enum StatusEnums: string
             self::AWARDED => 'Awarded',
             self::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED => 'PerformanceBondContractAndPORecorded',
             self::NTP_RECORDED => 'NTPRecorded',
-            self::MONITORING => 'Monitoring',
+            self::MONITORING_COMPLETED => 'MonitoringCompleted',
             self::COMPLETION_DOCUMENTS_UPLOADED => 'CompletionDocumentsUploaded',
             self::COMPLETED => 'Completed',
         };

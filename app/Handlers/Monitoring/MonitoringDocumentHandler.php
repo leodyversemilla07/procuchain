@@ -9,7 +9,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class MonitoringHandler extends BaseStageHandler
+class MonitoringDocumentHandler extends BaseStageHandler
 {
     /**
      * Handle the monitoring document upload process.
@@ -39,7 +39,8 @@ class MonitoringHandler extends BaseStageHandler
             'timestamp' => now()->toIso8601String(),
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::MONITORING,
-            'status' => StatusEnums::MONITORING,
+            'status' => StatusEnums::MONITORING_COMPLETED, // Status for the monitoring document upload itself
+            'nextStage' => StageEnums::COMPLETION, // Define the next stage
         ];
     }
 
@@ -62,31 +63,48 @@ class MonitoringHandler extends BaseStageHandler
 
     private function processDocuments(array $data, array $metadataArray): array
     {
+        // Publish the monitoring documents
         $this->blockchainService->publishDocuments(
             $data['procurementId'],
             $data['procurementTitle'],
             $data['currentStage']->getDisplayName(),
-            $data['status']->getDisplayName(),
+            $data['status']->getDisplayName(), // MONITORING_COMPLETED
             $metadataArray,
             $data['userAddress']
         );
 
-        // Unlike other handlers, this one doesn't transition to a next stage
+        // --- Handle Transition to Completion Stage ---
+        $transitionTimestamp = now()->toIso8601String();
+        $transitionStatus = StatusEnums::COMPLETED; // Status for the completion stage
+
+        // Handle the stage transition on the blockchain
+        $this->blockchainService->handleStageTransition(
+            $data['procurementId'],
+            $data['procurementTitle'],
+            $data['status']->getDisplayName(), // Status before transition (MONITORING_COMPLETED)
+            $transitionStatus->getDisplayName(), // Status after transition (COMPLETED)
+            $data['currentStage']->getDisplayName(),
+            $data['nextStage']->getDisplayName(),
+            $data['userAddress'],
+            'Transitioning to '.$data['nextStage']->getDisplayName().' after recording '.$data['currentStage']->getDisplayName().' documents.'
+        );
+
+        // Notify about the transition to the Completion stage
         $this->notificationService->notifyStageUpdate(
             $data['procurementId'],
             $data['procurementTitle'],
-            $data['currentStage']->getDisplayName(),
-            $data['status']->getDisplayName(),
-            $data['timestamp'],
-            count($metadataArray),
-            'uploaded',
-            false,
-            ''
+            $data['currentStage']->getDisplayName(), // Stage transitioned FROM
+            $transitionStatus->getDisplayName(), // Status transitioned TO (COMPLETED)
+            $transitionTimestamp,
+            count($metadataArray), // Number of docs from the *previous* step
+            'transitioned',
+            true, // This IS a transition notification
+            $data['nextStage']->getDisplayName() // Specify the next stage name
         );
 
         return [
             'success' => true,
-            'message' => 'Compliance report uploaded successfully. Notifications sent to BAC Chairman and HOPE.',
+            'message' => $data['currentStage']->getDisplayName().' documents uploaded and process transitioned to '.$data['nextStage']->getDisplayName().' stage successfully.',
         ];
     }
 }

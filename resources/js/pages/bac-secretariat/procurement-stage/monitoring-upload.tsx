@@ -21,17 +21,27 @@ interface MonitoringUploadProps {
     id: string;
     title: string;
   };
-  errors?: Record<string, string>;
+  errors?: Record<string, string>; // Receive initial errors from backend
 }
 
-export default function MonitoringUpload({ procurement, errors = {} }: MonitoringUploadProps) {
+export default function MonitoringUpload({ procurement, errors: initialErrors = {} }: MonitoringUploadProps) {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
-  const { data, setData, post, processing } = useForm({
+  // Follow noa-upload pattern for state management
+  const currentDate = new Date();
+  const formattedDate = format(currentDate, 'yyyy-MM-dd');
+
+  const { data, setData, post, processing, errors } = useForm({
+    procurement_id: procurement.id, // Include procurement_id in form data
+    procurement_title: procurement.title, // Include procurement_title in form data
     compliance_file: null as File | null,
-    report_date: new Date(),
+    report_date: formattedDate, // String for submission (matches backend expectation)
+    report_date_object: currentDate, // Date object for Calendar UI
     report_notes: '',
   });
+
+  // Combine initial errors with form processing errors
+  const displayErrors = { ...initialErrors, ...errors };
 
   const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -41,23 +51,25 @@ export default function MonitoringUpload({ procurement, errors = {} }: Monitorin
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const formData = new FormData();
-    formData.append('procurement_id', procurement.id);
-    formData.append('procurement_title', procurement.title);
-    if (data.compliance_file) {
-      formData.append('compliance_file', data.compliance_file);
-    }
-    formData.append('report_date', format(data.report_date, 'yyyy-MM-dd'));
-    formData.append('report_notes', data.report_notes);
 
-    post('/bac-secretariat/upload-monitoring-report', {
-      forceFormData: true,
+    // Use post(url, options) signature, like noa-upload
+    // Data is implicitly taken from useForm state
+    // report_date is already formatted string in state
+    post('/bac-secretariat/upload-monitoring-document', {
+      forceFormData: true, // Still needed for file upload
+      preserveScroll: true, // Keep scroll position on error
       onSuccess: () => {
         toast.success("Compliance report uploaded successfully!", {
           description: "Compliance report has been submitted."
         });
-      }
+      },
+      onError: (errorResponse) => {
+        // Errors are automatically populated by useForm
+        console.error("Submission Error:", errorResponse);
+        toast.error("Submission failed.", {
+          description: "Please check the form for errors."
+        });
+      },
     });
   };
 
@@ -88,6 +100,7 @@ export default function MonitoringUpload({ procurement, errors = {} }: Monitorin
       }
     }
   };
+
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -131,7 +144,7 @@ export default function MonitoringUpload({ procurement, errors = {} }: Monitorin
                         ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
                         : data.compliance_file
                           ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : errors.compliance_file
+                          : displayErrors.compliance_file
                             ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
                             : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
                     } cursor-pointer group`}
@@ -200,7 +213,7 @@ export default function MonitoringUpload({ procurement, errors = {} }: Monitorin
                       </div>
                     )}
                   </div>
-                  {errors.compliance_file && <InputError message={errors.compliance_file} />}
+                  {displayErrors.compliance_file && <InputError message={displayErrors.compliance_file} />}
                 </div>
               </CardContent>
             </Card>
@@ -225,23 +238,28 @@ export default function MonitoringUpload({ procurement, errors = {} }: Monitorin
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-left font-normal"
+                        className={`w-full justify-start text-left font-normal ${displayErrors.report_date ? 'border-destructive' : ''}`}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {data.report_date ? format(data.report_date, 'PPP') : <span>Pick a date</span>}
+                        {data.report_date_object ? format(data.report_date_object, 'PPP') : <span>Pick a date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={data.report_date}
-                        onSelect={(date) => date && setData('report_date', date)}
+                        selected={data.report_date_object}
+                        onSelect={(date) => {
+                          if (date) {
+                            setData('report_date_object', date);
+                            setData('report_date', format(date, 'yyyy-MM-dd')); // Update formatted string
+                          }
+                        }}
                         initialFocus
                         className="rounded-md border shadow-md"
                       />
                     </PopoverContent>
                   </Popover>
-                  {errors.report_date && <InputError message={errors.report_date} />}
+                  {displayErrors.report_date && <InputError message={displayErrors.report_date} />}
                 </div>
 
                 <div className="space-y-2">
@@ -252,11 +270,11 @@ export default function MonitoringUpload({ procurement, errors = {} }: Monitorin
                   <Textarea
                     placeholder="Enter any additional notes or comments about the compliance report"
                     rows={5}
-                    className="min-h-[150px] resize-none"
+                    className={`min-h-[150px] resize-none ${displayErrors.report_notes ? 'border-destructive' : ''}`}
                     value={data.report_notes}
                     onChange={(e) => setData('report_notes', e.target.value)}
                   />
-                  {errors.report_notes && <InputError message={errors.report_notes} />}
+                  {displayErrors.report_notes && <InputError message={displayErrors.report_notes} />}
                 </div>
               </CardContent>
 
@@ -264,7 +282,7 @@ export default function MonitoringUpload({ procurement, errors = {} }: Monitorin
                 <Button
                   type="submit"
                   disabled={processing}
-                  className="w-full flex items-center gap-2 h-11 bg-blue-600 hover:bg-blue-700"
+                  className="w-full flex items-center gap-2 h-11"
                 >
                   {processing ? (
                     <div className="flex items-center gap-2">
@@ -293,7 +311,7 @@ export default function MonitoringUpload({ procurement, errors = {} }: Monitorin
           </div>
         </form>
 
-        {Object.keys(errors).length > 0 && (
+        {Object.keys(displayErrors).length > 0 && (
           <Card className="border-destructive/50 bg-destructive/5 dark:bg-destructive/10 shadow-md">
             <CardContent className="p-4">
               <div className="flex items-start">
@@ -303,7 +321,7 @@ export default function MonitoringUpload({ procurement, errors = {} }: Monitorin
                     Please fix the following errors:
                   </h4>
                   <ul className="list-disc list-inside mt-2 text-sm text-destructive/90 space-y-1">
-                    {Object.entries(errors).map(([field, message]) => (
+                    {Object.entries(displayErrors).map(([field, message]) => (
                       <li key={field}>{message}</li>
                     ))}
                   </ul>

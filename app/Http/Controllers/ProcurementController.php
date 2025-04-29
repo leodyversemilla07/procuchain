@@ -15,11 +15,11 @@ use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDocumentsHandler
 use App\Handlers\BidOpening\BidOpeningDocumentsHandler;
 use App\Handlers\BidEvaluation\BidEvaluationDocumentsHandler;
 use App\Handlers\PostQualification\PostQualificationDocumentsHandler;
-use App\Handlers\BacResolution\BacResolutionHandler;
-use App\Handlers\NoticeOfAward\NoticeOfAwardHandler;
+use App\Handlers\BacResolution\BacResolutionDocumentHandler;
+use App\Handlers\NoticeOfAward\NoticeOfAwardDocumentHandler;
 use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
-use App\Handlers\NoticeToProceed\NoticeToProceedHandler;
-use App\Handlers\Monitoring\MonitoringHandler;
+use App\Handlers\NoticeToProceed\NoticeToProceedDocumentHandler;
+use App\Handlers\Monitoring\MonitoringDocumentHandler;
 use App\Handlers\Completion\CompletionProcessHandler;
 use App\Handlers\Completion\CompletionDocumentsHandler;
 use App\Http\Requests\Procurement\ProcurementInitiationRequest;
@@ -210,7 +210,8 @@ class ProcurementController extends BaseController
         return $this->handleProcurementStageUpload(
             $id,
             StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName(),
-            'bac-secretariat/procurement-stage/contract-po-upload'
+            // Update the view path to the combined component
+            'bac-secretariat/procurement-stage/performance-bond-contract-po-upload'
         );
     }
 
@@ -232,9 +233,13 @@ class ProcurementController extends BaseController
         );
     }
 
-    public function showCompleteStatus($id, $handler)
+    public function showCompletionUpload($id)
     {
-        return $handler->handle($id);
+        return $this->handleProcurementStageUpload(
+            $id,
+            StageEnums::COMPLETED->getDisplayName(),
+            'bac-secretariat/procurement-stage/completion-upload'
+        );
     }
 
     private function processHandlerResult(array $result): RedirectResponse
@@ -308,12 +313,12 @@ class ProcurementController extends BaseController
         return $this->handleProcurementAction($request, $handler);
     }
 
-    public function uploadBacResolutionDocument(BacResolutionDocumentRequest $request, BacResolutionHandler $handler): RedirectResponse
+    public function uploadBacResolutionDocument(BacResolutionDocumentRequest $request, BacResolutionDocumentHandler $handler): RedirectResponse
     {
         return $this->handleProcurementAction($request, $handler);
     }
 
-    public function uploadNoaDocument(NoticeofAwardDocumentRequest $request, NoticeOfAwardHandler $handler): RedirectResponse
+    public function uploadNoaDocument(NoticeOfAwardDocumentRequest $request, NoticeOfAwardDocumentHandler $handler): RedirectResponse
     {
         return $this->handleProcurementAction($request, $handler);
     }
@@ -323,17 +328,12 @@ class ProcurementController extends BaseController
         return $this->handleProcurementAction($request, $handler);
     }
 
-    public function uploadNTPDocument(NoticeToProceedDocumentRequest $request, NoticeToProceedHandler $handler): RedirectResponse
+    public function uploadNTPDocument(NoticeToProceedDocumentRequest $request, NoticeToProceedDocumentHandler $handler): RedirectResponse
     {
         return $this->handleProcurementAction($request, $handler);
     }
 
-    public function uploadMonitoringDocument(MonitoringDocumentRequest $request, MonitoringHandler $handler): RedirectResponse
-    {
-        return $this->handleProcurementAction($request, $handler);
-    }
-
-    public function publishCompleteProcess(CompleteProcessRequest $request, CompletionProcessHandler $handler): RedirectResponse
+    public function uploadMonitoringDocument(MonitoringDocumentRequest $request, MonitoringDocumentHandler $handler): RedirectResponse
     {
         return $this->handleProcurementAction($request, $handler);
     }

@@ -18,8 +18,8 @@ enum StageEnums: string
     case PERFORMANCE_BOND_CONTRACT_AND_PO = 'performance_bond_contract_and_po';
     case NOTICE_TO_PROCEED = 'notice_to_proceed';
     case MONITORING = 'monitoring';
-    case COMPLETED = 'completed';
     case COMPLETION = 'completion';
+    case COMPLETED = 'completed';
 
     // Helper method to get display name
     public function getDisplayName(): string
@@ -38,8 +38,8 @@ enum StageEnums: string
             self::PERFORMANCE_BOND_CONTRACT_AND_PO => 'Performance Bond, Contract and PO',
             self::NOTICE_TO_PROCEED => 'Notice to Proceed',
             self::MONITORING => 'Monitoring',
-            self::COMPLETED => 'Completed',
             self::COMPLETION => 'Completion',
+            self::COMPLETED => 'Completed',
         };
     }
 
@@ -60,8 +60,8 @@ enum StageEnums: string
             self::PERFORMANCE_BOND_CONTRACT_AND_PO => 'PerformanceBondContractAndPO',
             self::NOTICE_TO_PROCEED => 'NTP',
             self::MONITORING => 'Monitoring',
-            self::COMPLETED => 'Completed',
             self::COMPLETION => 'Completion',
+            self::COMPLETED => 'Completed',
         };
     }
 }

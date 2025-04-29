@@ -92,8 +92,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/bac-secretariat/monitoring-upload/{id}', [ProcurementController::class, 'showMonitoringUpload'])
             ->name('bac-secretariat.monitoring-upload');
 
-        Route::get('/bac-secretariat/complete-status/{id}', [ProcurementController::class, 'showCompleteStatus'])
-            ->name('bac-secretariat.complete-status');
+        Route::get('/bac-secretariat/completion-upload/{id}', [ProcurementController::class, 'showCompletionUpload']) // Updated route path
+            ->name('bac-secretariat.completion-upload'); // Updated route name
 
         Route::post('/bac-secretariat/publish-procurement-initiation', [ProcurementController::class, 'publishProcurementInitiation'])
             ->name('publish-procurement-initiation');
@@ -145,9 +145,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('/bac-secretariat/upload-monitoring-document', [ProcurementController::class, 'uploadMonitoringDocument'])
             ->name('bac-secretariat.upload-monitoring-document');
-
-        Route::post('/bac-secretariat/complete-process', [ProcurementController::class, 'publishCompleteProcess'])
-            ->name('bac-secretariat.complete-process');
 
         Route::post('/bac-secretariat/upload-completion-documents', [ProcurementController::class, 'uploadCompletionDocuments'])
             ->name('bac-secretariat.upload-completion-documents');
