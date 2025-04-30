@@ -202,15 +202,6 @@ const getButtonConfigs = (
         });
     }
 
-    // if (stage === Stage.MONITORING && status === Status.MONITORING) {
-    //     configs.push({
-    //         icon: <UploadCloudIcon className={iconSize} />,
-    //         tooltipText: "Upload Monitoring Documents",
-    //         className: "text-teal-600 dark:text-teal-400", // Example color, adjust if needed
-    //         href: `/bac-secretariat/complete-upload/${id}`
-    //     });
-    // }
-
     // Add Completion stage button
     if (stage === Stage.COMPLETION && status === Status.MONITORING_COMPLETED) {
         configs.push({

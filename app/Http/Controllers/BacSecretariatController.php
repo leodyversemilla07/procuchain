@@ -9,7 +9,6 @@ use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class BacSecretariatController extends BaseController
@@ -63,54 +62,48 @@ class BacSecretariatController extends BaseController
                 );
 
                 if ($states === null) {
-                    // Throw exception or return empty collection based on desired handling
                     throw new Exception('Failed to retrieve status stream items for procurementsByKey cache');
                 }
-                // Note: getUserName might be called inside getProcurementsByKey,
-                // ensure user cache logic within getUserName is sufficient or preload if needed.
                 return $this->getProcurementsByKey($states);
             });
 
-
             if ($procurementsByKey === null || $procurementsByKey->isEmpty()) {
-                 // Handle case where cache returns null or empty after failed fetch inside closure
-                 Log::warning('ProcurementsByKey is null or empty after cache check.');
-                 // Decide recovery strategy: maybe return empty dashboard or throw error
-                 // For now, let's proceed cautiously, stats calculation might handle empty data.
-                 // Ensure $procurementsByKey is at least an empty collection to avoid errors later
-                 $procurementsByKey = collect();
+                Log::warning('ProcurementsByKey is null or empty after cache check.');
+                $procurementsByKey = collect();
             }
 
-
-            // Fetch recent activities (usually faster, less critical to cache unless proven slow)
-            $recentActivities = $this->getRecentActivities();
-
-            // Calculate priority actions (depends on procurementsByKey)
-            // If getPriorityActions itself is slow, it might need its own caching/optimization
-            $allPriorityActions = $this->getPriorityActions($procurementsByKey);
-            $priorityActions = array_slice($allPriorityActions, 0, 3);
-
-            // Cache dashboard stats for 5 minutes
-            $stats = Cache::remember('dashboard_stats', now()->addMinutes(5), function () use ($procurementsByKey, $allPriorityActions) {
-                 Log::info('Cache miss: Recalculating dashboard stats');
-                 // Pass the already fetched/cached $procurementsByKey
-                 return $this->getDashboardStats($procurementsByKey, count($allPriorityActions));
+            // Cache recent activities for 2 minutes
+            $recentActivities = Cache::remember('dashboard_recent_activities', now()->addMinutes(2), function () {
+                return $this->getRecentActivities();
             });
 
+            // Cache priority actions for 2 minutes
+            $priorityActions = Cache::remember('dashboard_priority_actions', now()->addMinutes(2), function () use ($procurementsByKey) {
+                $allPriorityActions = $this->getPriorityActions($procurementsByKey);
+                return array_slice($allPriorityActions, 0, 3);
+            });
+
+            // Cache dashboard stats for 5 minutes
+            $allPriorityActionsCount = Cache::remember('dashboard_priority_actions_count', now()->addMinutes(2), function () use ($procurementsByKey) {
+                return count($this->getPriorityActions($procurementsByKey));
+            });
+            $stats = Cache::remember('dashboard_stats', now()->addMinutes(5), function () use ($procurementsByKey, $allPriorityActionsCount) {
+                Log::info('Cache miss: Recalculating dashboard stats');
+                return $this->getDashboardStats($procurementsByKey, $allPriorityActionsCount);
+            });
 
             $dashboardData = [
-                // Use the potentially cached procurementsByKey for recent procurements
                 'recentProcurements' => $this->getRecentProcurements($procurementsByKey),
-                'recentActivities' => $recentActivities, // Use directly fetched activities
-                'priorityActions' => $priorityActions, // Use calculated actions
-                'stats' => $stats, // Use cached stats
+                'recentActivities' => $recentActivities,
+                'priorityActions' => $priorityActions,
+                'stats' => $stats,
             ];
 
             Log::info('Successfully retrieved dashboard data', [
                 'procurement_count' => $procurementsByKey ? $procurementsByKey->count() : 0,
                 'activities_count' => count($dashboardData['recentActivities']),
-                'stats_from_cache' => Cache::has('dashboard_stats'), // Log if stats came from cache
-                'procurements_from_cache' => Cache::has('dashboard_procurements_by_key'), // Log if procurements came from cache
+                'stats_from_cache' => Cache::has('dashboard_stats'),
+                'procurements_from_cache' => Cache::has('dashboard_procurements_by_key'),
             ]);
 
             return Inertia::render('bac-secretariat/dashboard', $dashboardData);
@@ -121,11 +114,12 @@ class BacSecretariatController extends BaseController
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Clear potentially bad cache entries on error
             Cache::forget('dashboard_procurements_by_key');
             Cache::forget('dashboard_stats');
-            Cache::forget('dashboard_total_documents'); // Also clear the specific document count cache
-
+            Cache::forget('dashboard_total_documents');
+            Cache::forget('dashboard_recent_activities');
+            Cache::forget('dashboard_priority_actions');
+            Cache::forget('dashboard_priority_actions_count');
 
             return Inertia::render('bac-secretariat/dashboard', [
                 'recentProcurements' => [],
@@ -336,7 +330,7 @@ class BacSecretariatController extends BaseController
             $documentItems = $client->listStreamItems(
                 StreamEnums::DOCUMENTS->value,
                 true,
-                10000, // Adjust size as needed, consider pagination for very large streams
+                2000, // Reduced from 10000 to 2000 for performance
                 0,
                 false
             );
