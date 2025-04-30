@@ -62,7 +62,7 @@ export default function Procurement() {
             id: 3,
             stage: Stage.BIDDING_DOCUMENTS,
             description: "Record and publish finalized bidding documents.",
-            documents: ["Bid Documents", "Technical Specifications"],
+            documents: ["Bidding Documents"],
             icon: <FileText className="w-6 h-6" />
         },
         {
@@ -90,14 +90,14 @@ export default function Procurement() {
             id: 7,
             stage: Stage.BID_EVALUATION,
             description: "Record bid evaluation results and recommendations.",
-            documents: ["Evaluation Report", "Abstract of Bids"],
+            documents: ["BER or Bid Evaluation Report", "Abstract of Bids"],
             icon: <CheckCircle className="w-6 h-6" />
         },
         {
             id: 8,
             stage: Stage.POST_QUALIFICATION,
             description: "Record post-qualification verification results.",
-            documents: ["Verification Report", "Supporting Documents"],
+            documents: ["Post Qualification Report", "TWG certification for infra projects", "Notice of Post Qualification"],
             icon: <Activity className="w-6 h-6" />
         },
         {

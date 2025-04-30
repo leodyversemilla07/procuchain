@@ -59,9 +59,9 @@ const STAGE_ORDER = [
     'Bid Evaluation',
     'Post-Qualification',
     'BAC Resolution',
-    'Notice Of Award',
-    'Performance Bond Contract And PO',
-    'Notice To Proceed',
+    'Notice of Award', // Corrected capitalization
+    'Performance Bond, Contract and PO', // Added comma to match backend data
+    'Notice to Proceed', // Corrected capitalization
     'Monitoring',
     'Completed'
 ];
@@ -781,7 +781,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
         Object.keys(grouped).forEach(stage => {
             // --- START CHANGE ---
             // Check if the current stage is 'Bid Opening' or 'Performance Bond Contract And PO'
-            if (stage === 'Bid Opening' || stage === 'Performance Bond Contract And PO') {
+            if (stage === 'Bid Opening' || stage === 'Performance Bond, Contract and PO') {
                 // For these stages, just sort by timestamp ascending, don't filter for uniqueness
                 grouped[stage] = grouped[stage]
                     .sort((a, b) => (a.timestamp ? new Date(a.timestamp).getTime() : 0) - (b.timestamp ? new Date(b.timestamp).getTime() : 0));

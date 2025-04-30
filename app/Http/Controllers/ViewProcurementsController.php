@@ -233,11 +233,8 @@ class ViewProcurementsController extends BaseController
                     return null;
                 }
 
-                // Get all possible titles from the timeline to ensure we capture all documents
-                $allTitles = $statusItems->pluck('procurement_title')->unique()->values()->toArray();
-
-                // Fetch all documents using all known titles for this procurement
-                $documents = $this->fetchAndProcessAllDocuments($procurementId, $allTitles);
+                // Fetch all documents using the updated method (no titles needed here)
+                $documents = $this->fetchAndProcessAllDocuments($procurementId); // Pass only ID
                 $events = $this->fetchAndProcessEvents($procurementId);
 
                 // Preload user names for events (if not already done broadly)
@@ -265,6 +262,8 @@ class ViewProcurementsController extends BaseController
                 'procurement_id' => $procurementId,
                 'from_cache' => Cache::has($cacheKey)
             ]);
+
+            // dd($procurementData); // Debugging line, remove in production
 
             return Inertia::render('procurements/show-procurement', [
                 'procurement' => $procurementData,
@@ -343,63 +342,73 @@ class ViewProcurementsController extends BaseController
     }
 
     /**
-     * Fetch and process documents
-     *
-     * @param string $streamKey
-     * @return array
-     */
-    private function fetchAndProcessDocuments(string $streamKey): array
-    {
-        $documents = $this->services->getMultiChain()->listStreamKeyItems(
-            StreamEnums::DOCUMENTS->value,
-            $streamKey
-        );
-
-        return collect($documents)->map(function ($item) {
-            $data = $item['data']['json'] ?? [];
-            $fileKey = $data['file_key'] ?? '';
-            $temporaryUrl = $this->generateTemporaryUrl($fileKey);
-
-            return [
-                'file_key' => $fileKey,
-                'document_type' => $data['document_type'] ?? '',
-                'spaces_url' => $temporaryUrl,
-                'hash' => $data['hash'] ?? '',
-                'file_size' => $data['file_size'] ?? null,
-                'stage' => $data['stage'] ?? '',
-                'stage_metadata' => $data['stage_metadata'] ?? null,
-                'procurement_id' => $data['procurement_id'] ?? '',
-                'procurement_title' => $data['procurement_title'] ?? '',
-                'user_address' => $data['user_address'] ?? '',
-                'timestamp' => $data['timestamp'] ?? '',
-            ];
-        })->toArray();
-    }
-
-    /**
-     * Fetch and process documents using all known procurement titles
+     * Fetch and process documents using procurement ID (more robust)
      *
      * @param string $procurementId
-     * @param array<string> $procurementTitles // Added type hint
      * @return array
+     * @throws Exception // Added exception type hint
      */
-    private function fetchAndProcessAllDocuments(string $procurementId, array $procurementTitles): array
+    private function fetchAndProcessAllDocuments(string $procurementId): array // Removed $procurementTitles parameter
     {
-        $allDocuments = collect();
+        // Fetch all document items first
+        $allDocumentItems = $this->services->getMultiChain()->listStreamItems(
+            StreamEnums::DOCUMENTS->value,
+            true, // Verbose
+            self::DOCUMENT_PAGE_SIZE, // Use the defined page size
+            0, // Start from the beginning
+            false // Don't fetch local order
+        );
 
-        // Use each title to generate a different stream key and fetch documents
-        foreach ($procurementTitles as $title) {
-            $streamKey = $this->services->getStreamKeyService()->generate(
-                $procurementId,
-                $title
-            );
-
-            $documents = $this->fetchAndProcessDocuments($streamKey);
-            $allDocuments = $allDocuments->concat($documents);
+        if ($allDocumentItems === null) {
+            // Consider throwing an exception or returning an empty array based on desired error handling
+            Log::warning('Failed to retrieve any document stream items.', ['procurement_id' => $procurementId]);
+            // throw new Exception('Failed to retrieve document stream items'); // Option 1: Throw
+             return []; // Option 2: Return empty
         }
 
-        // Remove any potential duplicates (by file hash)
-        return $allDocuments->unique('hash')->sortByDesc('timestamp')->values()->toArray();
+        $totalFetched = count($allDocumentItems); // Log total fetched
+
+        // Filter documents by procurement_id in PHP
+        $filteredItems = collect($allDocumentItems)
+            ->filter(function ($item) use ($procurementId) {
+                // Check if the necessary keys exist before accessing them
+                return isset($item['data']['json']['procurement_id']) &&
+                       $item['data']['json']['procurement_id'] === $procurementId;
+            });
+
+        $totalAfterFilter = $filteredItems->count(); // Log count after filtering
+
+        Log::debug('Document Fetching Stats', [
+            'procurement_id' => $procurementId,
+            'total_fetched_from_stream' => $totalFetched,
+            'total_after_filtering_by_id' => $totalAfterFilter,
+        ]);
+
+        // Continue mapping and sorting
+        return $filteredItems
+            ->map(function ($item) {
+                $data = $item['data']['json'] ?? []; // Ensure data exists
+                $fileKey = $data['file_key'] ?? '';
+                $temporaryUrl = $this->generateTemporaryUrl($fileKey); // Reuse existing URL generation
+
+                // Construct the document array structure
+                return [
+                    'file_key' => $fileKey,
+                    'document_type' => $data['document_type'] ?? '',
+                    'spaces_url' => $temporaryUrl,
+                    'hash' => $data['hash'] ?? '',
+                    'file_size' => $data['file_size'] ?? null,
+                    'stage' => $data['stage'] ?? '',
+                    'stage_metadata' => $data['stage_metadata'] ?? null,
+                    'procurement_id' => $data['procurement_id'] ?? '', // Keep procurement_id
+                    'procurement_title' => $data['procurement_title'] ?? '', // Keep procurement_title
+                    'user_address' => $data['user_address'] ?? '',
+                    'timestamp' => $data['timestamp'] ?? '',
+                ];
+            })
+            ->sortByDesc('timestamp') // Sort by timestamp descending
+            ->values() // Reset keys
+            ->toArray(); // Convert to array
     }
 
     /**
@@ -474,8 +483,6 @@ class ViewProcurementsController extends BaseController
      * @param array $events
      * @param Collection $statusItems
      * @return array
-     * @phpstan-ignore-next-line Excess number of function arguments (This comment might be causing issues, but let's keep it for now)
-     * @noinspection PhpParameterCountMismatchInspection
      */
     private function buildProcurementData(
         string $procurementId,

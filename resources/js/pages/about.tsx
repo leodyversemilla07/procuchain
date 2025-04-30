@@ -1,4 +1,3 @@
-import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
@@ -8,7 +7,7 @@ import { Button } from '@/components/ui/button';
 export default function About() {
   return (
     <>
-      <Head title="About ProcuChain">
+      <Head title="About ProcuChain - Blockchain-powered Procurement System">
         <link rel="preconnect" href="https://fonts.bunny.net" />
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
         <meta name="description" content="About ProcuChain - Learn about our mission, technology, and approach to blockchain-powered procurement." />
