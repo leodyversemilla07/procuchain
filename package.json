@@ -2,14 +2,17 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
+        "build": "vite build && vite build --ssr",
         "build:ssr": "vite build && vite build --ssr",
         "dev": "vite",
         "format": "prettier --write resources/",
         "format:check": "prettier --check resources/",
         "lint": "eslint . --fix",
-        "types": "tsc --noEmit"
+        "types": "tsc --noEmit",
+        "ssr": "node resources/js/ssr.tsx",
+        "heroku-postbuild": "npm install && npm run build:ssr"
     },
+    
     "devDependencies": {
         "@eslint/js": "^9.19.0",
         "@types/node": "^22.13.5",
