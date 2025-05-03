@@ -26,18 +26,18 @@ export const KanbanCard = ({
         <Card className="mb-2 cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md 
                          shadow-sm border-sidebar-border/70 
                          dark:border-sidebar-border overflow-hidden">
-            <CardContent className="p-3">
-                <div className="space-y-2.5">
+            <CardContent className="p-2 sm:p-3">
+                <div className="space-y-2 sm:space-y-2.5">
                     {/* Top - ID Badge and Status */}
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-1.5 sm:gap-2">
                         {/* ID Badge */}
-                        <div className="w-1/2 flex-shrink-0">
+                        <div className="w-full xs:w-1/2 flex-shrink-0 min-w-0">
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Badge variant="outline" className="bg-blue-50/80 text-blue-700 border border-blue-200/80 
                                                                          dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/80 
-                                                                         text-xs w-full font-medium">
+                                                                         text-xs w-full font-medium py-1">
                                             <span className="truncate inline-block max-w-full">{procurement.id}</span>
                                         </Badge>
                                     </TooltipTrigger>
@@ -46,14 +46,14 @@ export const KanbanCard = ({
                             </TooltipProvider>
                         </div>
                         {/* Status Badge */}
-                        <div className="w-1/2 min-w-0">
+                        <div className="w-full xs:w-1/2 min-w-0 mt-1 xs:mt-0">
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Badge variant="outline" 
                                               className={cn(
                                                 getStatusBadgeStyle(procurement.current_status), 
-                                                "text-xs w-full inline-flex items-center font-medium"
+                                                "text-xs w-full inline-flex items-center font-medium py-1"
                                               )}>
                                             <div className="truncate max-w-full">{procurement.current_status}</div>
                                         </Badge>
@@ -66,16 +66,16 @@ export const KanbanCard = ({
                     
                     {/* Title with Link */}
                     <Link href={`/procurement/${procurement.id}`} className="block group">
-                        <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600 
+                        <h3 className="font-medium text-xs sm:text-sm line-clamp-2 group-hover:text-blue-600 
                                      dark:text-gray-100 dark:group-hover:text-blue-400 transition-colors">
                             {procurement.title}
                         </h3>
                     </Link>
                     
                     {/* Info Row */}
-                    <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-0.5 gap-y-2">
+                    <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-0.5 gap-y-2">
                         <div className="flex items-center gap-1.5">
-                            <div className="flex items-center rounded-full bg-blue-50 dark:bg-blue-900/20 p-0.5 pr-2">
+                            <div className="flex items-center rounded-full bg-blue-50 dark:bg-blue-900/20 p-1 pr-2">
                                 <FileIcon className="h-3 w-3 text-blue-500 dark:text-blue-400 mr-0.5" />
                                 <span className="font-medium">{procurement.document_count}</span>
                             </div>

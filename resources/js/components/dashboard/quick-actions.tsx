@@ -5,7 +5,7 @@ import { PlusIcon, FileUpIcon } from "lucide-react";
 export function QuickActions() {
     const actions = [
         {
-            href: "/bac-secretariat/procurement/pr-initiation",
+            href: "/bac-secretariat/procurement/procurement-initiation",
             icon: PlusIcon,
             label: "Procurement Initiation"
         },

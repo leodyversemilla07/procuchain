@@ -30,7 +30,7 @@ const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonS
             size="sm"
             className={cn(
                 buttonSize,
-                "p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800",
+                "p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:ring-2 focus:ring-blue-500/40",
                 className
             )}
             onClick={onClick}
@@ -43,7 +43,12 @@ const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonS
         <TooltipProvider delayDuration={300}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    {href ? <Link href={href} className="block">{button}</Link> : button}
+                    {href ? 
+                        <Link href={href} className="block touch-manipulation">
+                            {button}
+                        </Link> 
+                        : button
+                    }
                 </TooltipTrigger>
                 <TooltipContent 
                     side="bottom" 
@@ -57,8 +62,8 @@ const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonS
 };
 
 const useButtonSizes = (variant: 'table' | 'kanban') => ({
-    iconSize: variant === 'table' ? 'h-4 w-4' : 'h-3.5 w-3.5',
-    buttonSize: variant === 'table' ? 'h-8 w-8' : 'h-7 w-7',
+    iconSize: variant === 'table' ? 'h-4 w-4' : 'h-3.5 w-3.5 xs:h-4 xs:w-4',
+    buttonSize: variant === 'table' ? 'h-8 w-8' : 'h-7 w-7 xs:h-8 xs:w-8',
 });
 
 const getButtonConfigs = (
@@ -244,7 +249,7 @@ export const ActionButtons = ({
 
     return (
         <div className={cn(
-            "flex flex-wrap justify-end gap-1.5", // Added flex-wrap to allow buttons to wrap on very small screens
+            "flex flex-wrap items-center justify-end gap-1.5 sm:gap-2", 
             variant === "table" ? "mr-2" : ""
         )}>
             <ActionButtonItem
