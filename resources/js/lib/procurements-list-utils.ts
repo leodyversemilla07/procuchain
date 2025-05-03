@@ -20,7 +20,7 @@ const STATUS_BADGE_STYLES: Record<Status, string> = {
     [Status.AWARDED]: 'bg-[#2F8F89] text-white border border-[#2F8F89] hover:bg-[#225E63]',
     [Status.PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED]: 'bg-[#015C5D] text-white border border-[#015C5D] hover:bg-[#B2DFDB]',
     [Status.NTP_RECORDED]: 'bg-[#014D4E] text-white border border-[#014D4E] hover:bg-[#C6F1E7]',
-    [Status.MONITORING]: 'bg-[#016D6E] text-white border border-[#016D6E] hover:bg-[#93CCC6]',
+    [Status.MONITORING_COMPLETED]: 'bg-[#016D6E] text-white border border-[#016D6E] hover:bg-[#93CCC6]',
     [Status.COMPLETION_DOCUMENTS_UPLOADED]: 'bg-[#729B90] text-white border border-[#729B90] hover:bg-[#6D8C84]',
     [Status.COMPLETED]: 'bg-[#3AA9A3] text-white border border-[#3AA9A3] hover:bg-[#357C78]'
 };
@@ -55,17 +55,17 @@ export const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
     switch (role) {
         case 'bac_secretariat':
             return [
-                { title: 'Dashboard', href: '/bac-secretariat/dashboard' },
+                { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
                 { title: 'Procurement List', href: '#' },
             ];
         case 'bac_chairman':
             return [
-                { title: 'Dashboard', href: '/bac-chairman/dashboard' },
+                { title: 'BAC Chairman Dashboard', href: '/bac-chairman/dashboard' },
                 { title: 'Procurement List', href: '#' },
             ];
         case 'hope':
             return [
-                { title: 'Dashboard', href: '/hope/dashboard' },
+                { title: 'HOPE Dashboard', href: '/hope/dashboard' },
                 { title: 'Procurement List', href: '#' },
             ];
         default:

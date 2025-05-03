@@ -4,15 +4,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckIcon, FileIcon, CheckCircle, EyeIcon } from "lucide-react";
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 import { getStatusBadgeStyle, getStageBadgeStyle } from "@/lib/procurements-list-utils";
 import type { RecentProcurement } from "@/types/dashboard";
+import type { User } from "@/types";
 
 interface RecentProcurementsTableProps {
     procurements: RecentProcurement[];
 }
 
 export function RecentProcurementsTable({ procurements }: RecentProcurementsTableProps) {
+    const { auth } = usePage().props as unknown as { auth: { user: User } };
+    const userRole = auth.user?.role;
+
+    const getProcurementShowRoute = (procurementId: string) => {
+        switch (userRole) {
+            case 'bac_secretariat':
+                return route('bac-secretariat.procurements.show', { id: procurementId });
+            case 'bac_chairman':
+                return route('bac-chairman.procurements.show', { id: procurementId });
+            case 'hope':
+                return route('hope.procurements.show', { id: procurementId });
+            default:
+                console.warn('Unknown user role for procurement link:', userRole);
+                return '#';
+        }
+    };
+
     if (procurements.length === 0) {
         return (
             <Card className="shadow-sm">
@@ -89,7 +107,7 @@ export function RecentProcurementsTable({ procurements }: RecentProcurementsTabl
                                                 asChild
                                                 className="h-8 px-2"
                                             >
-                                                <Link href={`/bac-secretariat/procurements-list/${procurement.id}`}>
+                                                <Link href={getProcurementShowRoute(procurement.id)}>
                                                     <EyeIcon className="h-4 w-4" />
                                                 </Link>
                                             </Button>

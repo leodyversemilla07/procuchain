@@ -76,7 +76,7 @@ interface ProcurementDetailsStepProps {
 type ComponentFormData = FormSummaryProps['data'];
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurement Initiation', href: '#' },
 ];
 
@@ -92,19 +92,19 @@ const formSteps: FormStep[] = [
         id: 1,
         title: "Details",
         description: "Basic procurement information",
-        icon: <FileText className="h-5 w-5" />,
+        icon: <FileText className="h-6 w-6" />,
     },
     {
         id: 2,
         title: "Documents",
         description: "Upload required files",
-        icon: <Upload className="h-5 w-5" />,
+        icon: <Upload className="h-6 w-6" />,
     },
     {
         id: 3,
         title: "Review",
         description: "Verify and submit",
-        icon: <ClipboardList className="h-5 w-5" />,
+        icon: <ClipboardList className="h-6 w-6" />,
     }
 ];
 
@@ -533,8 +533,8 @@ export default function ProcurementInitiationForm() {
         handleFileDrop: (e: React.DragEvent, index?: number) => handleFileDragEvent(e, 'drop', index),
         dates,
         validateFile,
-        setData: (key: string, value: UseFormData[keyof UseFormData]) =>
-            updateFormData(key as keyof UseFormData, value),
+        setData: (key: string, value: unknown) =>
+            updateFormData(key as keyof UseFormData, value as FormDataConvertible),
         errors,
     };
 
@@ -549,147 +549,194 @@ export default function ProcurementInitiationForm() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Procurement" />
 
-            <div className="flex h-full flex-1 flex-col gap-5 p-3 sm:p-5">
-                <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-4 sm:p-6 shadow-sm">
-                    <FormHeader />
+            <div className="flex h-full flex-1 flex-col gap-4 sm:gap-6 p-3 sm:p-6">
+                <FormHeader
+                    formState={{
+                        isDraft: false,
+                        lastUpdated: format(new Date(), 'MMMM dd, yyyy')
+                    }}
+                />
 
-                    <div className="mt-6 sm:mt-8">
-                        <Progress value={progressValue} className="h-2" />
-
-                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                            {formSteps.map((step) => {
-                                const isDisabled = step.id > currentStep &&
-                                    ((step.id === 2 && !formCompletion.details) ||
-                                        (step.id === 3 && !formCompletion.documents));
-                                return (
-                                    <button
-                                        key={step.id}
-                                        onClick={() => handleStepClick(step.id)}
-                                        disabled={isDisabled}
-                                        className={`flex items-start p-3 sm:p-4 rounded-lg transition-all ${currentStep === step.id
-                                            ? 'bg-primary/10 border border-primary'
-                                            : 'hover:bg-muted/50'
-                                            } ${isDisabled ? 'cursor-not-allowed opacity-50' : ''}`}
-                                    >
-                                        <div className={`rounded-full p-1.5 sm:p-2 mr-2 sm:mr-3 ${currentStep === step.id
-                                            ? 'bg-primary text-white'
-                                            : 'bg-muted'
-                                            }`}>
-                                            {step.icon}
+                <div className="mt-2 sm:mt-0">
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border bg-white/80 dark:bg-black/90 p-4 sm:p-6 md:p-8 shadow-md rounded-xl transition-all duration-200">
+                        <div className="space-y-4 sm:space-y-6">
+                            <div>
+                                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Progress</h2>
+                                <div className="relative pt-1">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2 sm:gap-0">
+                                        <div>
+                                            <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-primary bg-primary/10">
+                                                Step {currentStep} of {formSteps.length}
+                                            </span>
                                         </div>
-                                        <div className="text-left">
-                                            <h3 className="font-medium flex items-center gap-2 text-sm sm:text-base">
-                                                {step.title}
-                                                {(
-                                                    (step.id === 1 && formCompletion.details) ||
-                                                    (step.id === 2 && formCompletion.document) ||
-                                                    (step.id === 3 && formCompletion.documents)
-                                                ) && (
-                                                        <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
-                                                    )}
-                                            </h3>
-                                            <p className="text-xs sm:text-sm text-muted-foreground">{step.description}</p>
+                                        <div className="text-left sm:text-right">
+                                            <span className="text-xs font-semibold inline-block text-primary">
+                                                {progressValue}%
+                                            </span>
                                         </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </Card>
-
-                <div className="flex-1 space-y-5">
-                    {currentStep === 1 && (
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-4 sm:p-6 shadow-sm">
-                            <ProcurementDetails {...procurementDetailsProps} />
-                        </Card>
-                    )}
-
-                    {currentStep === 2 && (
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-4 sm:p-6 shadow-sm">
-                            <ProcurementDocuments {...procurementDocumentsProps} />
-                        </Card>
-                    )}
-
-                    {currentStep === 3 && (
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-4 sm:p-6 shadow-sm">
-                            <FormSummary {...formSummaryProps} />
-                        </Card>
-                    )}
-
-                    <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-4 sm:p-5 shadow-sm">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
-                            <div className="flex items-center gap-4 order-2 sm:order-1">
-                                {currentStep > 1 && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setCurrentStep(currentStep - 1)}
-                                        className="gap-2 w-full sm:w-auto"
-                                    >
-                                        <ChevronLeft className="h-4 w-4" />
-                                        Back to {formSteps[currentStep - 2].title}
-                                    </Button>
-                                )}
+                                    </div>
+                                    <Progress
+                                        value={progressValue}
+                                        className="h-2 sm:h-2.5 rounded-full transition-all duration-500 ease-in-out"
+                                    />
+                                </div>
                             </div>
 
-                            <div className="text-sm text-muted-foreground text-center order-1 sm:order-2">
-                                Step {currentStep} of {formSteps.length}
-                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                                {formSteps.map((step) => {
+                                    const isComplete = (
+                                        (step.id === 1 && formCompletion.details) ||
+                                        (step.id === 2 && formCompletion.document) ||
+                                        (step.id === 3 && formCompletion.documents)
+                                    );
 
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 order-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={handleSaveDraft}
-                                    className="gap-2"
-                                >
-                                    <Save className="h-4 w-4" />
-                                    Save Draft
-                                </Button>
+                                    const isActive = currentStep === step.id;
 
-                                {currentStep < 3 ? (
-                                    <Button
-                                        type="button"
-                                        onClick={() => {
-                                            if (currentStep === 1 && !formCompletion.details) {
-                                                toast.error("Please complete all details before continuing");
-                                                return;
-                                            }
-                                            if (currentStep === 2 && !formCompletion.documents) {
-                                                toast.error("Please complete all document information before continuing");
-                                                return;
-                                            }
-                                            setCurrentStep(currentStep + 1);
-                                        }}
-                                        className="gap-2 w-full sm:w-auto"
-                                    >
-                                        Continue to {formSteps[currentStep].title}
-                                        <ChevronRight className="h-4 w-4" />
-                                    </Button>
-                                ) : (
-                                    <form onSubmit={handleSubmit} className="w-full sm:w-auto">
-                                        <Button
-                                            type="submit"
-                                            disabled={processing || !formCompletion.details || !formCompletion.document || !formCompletion.documents}
-                                            className="bg-primary hover:bg-primary/90 text-white gap-2 w-full"
+                                    const isDisabled = step.id > currentStep &&
+                                        ((step.id === 2 && !formCompletion.details) ||
+                                            (step.id === 3 && !formCompletion.documents));
+
+                                    return (
+                                        <button
+                                            key={step.id}
+                                            onClick={() => handleStepClick(step.id)}
+                                            disabled={isDisabled}
+                                            className={`flex items-center relative overflow-hidden border rounded-xl p-3 sm:p-4 md:p-5 transition-all duration-300 ${isActive
+                                                ? 'bg-primary/10 border-primary shadow-sm ring-1 ring-primary/30'
+                                                : isComplete
+                                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/50 hover:border-green-300 dark:hover:border-green-800'
+                                                    : 'bg-white dark:bg-gray-800/50 border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                                } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}`}
                                         >
-                                            {processing ? (
-                                                <>
-                                                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                                    <span>Submitting Procurement...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Upload className="h-4 w-4" />
-                                                    Submit Procurement
-                                                </>
+                                            {isComplete && (
+                                                <div className="absolute top-2 right-2">
+                                                    <CheckCircle2 className="h-4 sm:h-5 w-4 sm:w-5 text-green-500" />
+                                                </div>
                                             )}
-                                        </Button>
-                                    </form>
-                                )}
+
+                                            <div className={`flex-shrink-0 rounded-lg p-2 sm:p-3 mr-3 sm:mr-4 ${isActive
+                                                ? 'bg-primary text-white'
+                                                : isComplete
+                                                    ? 'bg-green-100 dark:bg-green-800/30 text-green-700 dark:text-green-400'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                                                }`}>
+                                                {step.icon}
+                                            </div>
+
+                                            <div className="text-left flex-1">
+                                                <h3 className={`font-medium mb-0 sm:mb-1 text-sm sm:text-base ${isActive
+                                                    ? 'text-primary font-semibold'
+                                                    : isComplete
+                                                        ? 'text-green-700 dark:text-green-400'
+                                                        : 'text-gray-700 dark:text-gray-300'
+                                                    }`}>
+                                                    {step.title}
+                                                </h3>
+                                                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
+                                                    {step.description}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     </Card>
+
+                    <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
+                        {currentStep === 1 && (
+                            <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-4 sm:p-6 shadow-sm">
+                                <ProcurementDetails {...procurementDetailsProps} />
+                            </Card>
+                        )}
+
+                        {currentStep === 2 && (
+                            <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-4 sm:p-6 shadow-sm">
+                                <ProcurementDocuments {...procurementDocumentsProps} />
+                            </Card>
+                        )}
+
+                        {currentStep === 3 && (
+                            <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-4 sm:p-6 shadow-sm">
+                                <FormSummary {...formSummaryProps} />
+                            </Card>
+                        )}
+
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden bg-white dark:bg-black/80 p-3 sm:p-4 md:p-5 shadow-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-3 sm:gap-4">
+                                <div className="flex items-center gap-2 sm:gap-4 order-2 sm:order-1">
+                                    {currentStep > 1 && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setCurrentStep(currentStep - 1)}
+                                            className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
+                                        >
+                                            <ChevronLeft className="h-3 sm:h-4 w-3 sm:w-4" />
+                                            Back to {formSteps[currentStep - 2].title}
+                                        </Button>
+                                    )}
+                                </div>
+
+                                <div className="text-sm text-muted-foreground text-center order-1 sm:order-2">
+                                    Step {currentStep} of {formSteps.length}
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 order-3">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleSaveDraft}
+                                        className="gap-2 text-xs sm:text-sm"
+                                    >
+                                        <Save className="h-3 sm:h-4 w-3 sm:w-4" />
+                                        Save Draft
+                                    </Button>
+
+                                    {currentStep < 3 ? (
+                                        <Button
+                                            type="button"
+                                            onClick={() => {
+                                                if (currentStep === 1 && !formCompletion.details) {
+                                                    toast.error("Please complete all details before continuing");
+                                                    return;
+                                                }
+                                                if (currentStep === 2 && !formCompletion.documents) {
+                                                    toast.error("Please complete all document information before continuing");
+                                                    return;
+                                                }
+                                                setCurrentStep(currentStep + 1);
+                                            }}
+                                            className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
+                                        >
+                                            Continue to {formSteps[currentStep].title}
+                                            <ChevronRight className="h-3 sm:h-4 w-3 sm:w-4" />
+                                        </Button>
+                                    ) : (
+                                        <form onSubmit={handleSubmit} className="w-full sm:w-auto">
+                                            <Button
+                                                type="submit"
+                                                disabled={processing || !formCompletion.details || !formCompletion.document || !formCompletion.documents}
+                                                className="bg-primary hover:bg-primary/90 text-white gap-2 w-full text-xs sm:text-sm py-2 sm:py-2.5 h-auto"
+                                            >
+                                                {processing ? (
+                                                    <>
+                                                        <div className="h-3 sm:h-4 w-3 sm:w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                                        <span>Submitting Procurement...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Upload className="h-3 sm:h-4 w-3 sm:w-4" />
+                                                        Submit Procurement
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </form>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
                 </div>
             </div>
         </AppLayout>

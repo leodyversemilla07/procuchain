@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, LayoutGrid, Settings, Table2, Upload } from 'lucide-react';
+import { BookOpen, LayoutGrid, Table2, Upload } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getNavItemsByRole = (role: string): NavItem[] => {
@@ -59,11 +59,6 @@ const getNavItemsByRole = (role: string): NavItem[] => {
 };
 
 const footerNavItems: NavItem[] = [
-    {
-        title: 'Settings',
-        url: '/settings',
-        icon: Settings,
-    },
     {
         title: 'Help',
         url: '/help',

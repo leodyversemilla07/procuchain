@@ -1,4 +1,4 @@
-import { useState, useMemo, JSX, FC } from 'react';
+import { useState, useMemo, JSX, FC, useEffect } from 'react';
 import {
     FileText, Hash, Clock, RefreshCw, Lock, Download, FileCheck,
     CheckCircle, XCircle, Upload, AlertCircle, Calendar, Building, UserRound,
@@ -24,19 +24,19 @@ const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
     switch (role) {
         case 'bac_secretariat':
             return [
-                { title: 'Dashboard', href: '/bac-secretariat/dashboard' },
+                { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
                 { title: 'Procurement List', href: '/bac-secretariat/procurements-list' },
                 { title: 'Procurement Details', href: '#' },
             ];
         case 'bac_chairman':
             return [
-                { title: 'Dashboard', href: '/bac-chairman/dashboard' },
+                { title: 'BAC Chairman Dashboard', href: '/bac-chairman/dashboard' },
                 { title: 'Procurement List', href: '/bac-chairman/procurements-list' },
                 { title: 'Procurement Details', href: '#' },
             ];
         case 'hope':
             return [
-                { title: 'Dashboard', href: '/hope/dashboard' },
+                { title: 'HOPE Dashboard', href: '/hope/dashboard' },
                 { title: 'Procurement List', href: '/hope/procurements-list' },
                 { title: 'Procurement Details', href: '#' },
             ];
@@ -59,13 +59,30 @@ const STAGE_ORDER = [
     'Bid Evaluation',
     'Post-Qualification',
     'BAC Resolution',
-    'Notice of Award', // Corrected capitalization
-    'Performance Bond, Contract and PO', // Added comma to match backend data
-    'Notice to Proceed', // Corrected capitalization
+    'Notice of Award',
+    'Performance Bond, Contract and PO',
+    'Notice to Proceed',
     'Monitoring',
     'Completed'
 ];
 
+// Stage descriptions for better user understanding
+const STAGE_DESCRIPTIONS: Record<string, string> = {
+    'Procurement Initiation': 'Initial request and approval of procurement',
+    'Pre-Procurement Conference': 'Planning and preparation before bidding',
+    'Bidding Documents': 'Publication and release of bidding requirements',
+    'Pre-Bid Conference': 'Meeting with prospective bidders to clarify requirements',
+    'Supplemental Bid Bulletin': 'Additional information or clarification for bidders',
+    'Bid Opening': 'Public opening and recording of submitted bids',
+    'Bid Evaluation': 'Technical and financial assessment of bids',
+    'Post-Qualification': 'Verification of winning bidder\'s qualifications',
+    'BAC Resolution': 'BAC recommendation of award to winning bidder',
+    'Notice of Award': 'Official notification to winning bidder',
+    'Performance Bond, Contract and PO': 'Finalization of contract documents',
+    'Notice to Proceed': 'Authorization to begin project implementation',
+    'Monitoring': 'Oversight of project implementation',
+    'Completed': 'All procurement activities have been completed'
+};
 
 interface Document {
     file_key: string;
@@ -114,6 +131,8 @@ interface StageMetadata {
     bulletin_number?: string;
     bulletin_title?: string;
     issue_date?: string;
+    completion_date?: string;
+    completion_notes?: string;
 }
 
 interface Event {
@@ -312,21 +331,79 @@ interface ProcurementHeaderProps {
     id: string;
     status?: Status;
 }
+
+const LastUpdatedTimestamp: FC<{ timestamp?: string }> = ({ timestamp }) => {
+    if (!timestamp) return null;
+
+    return (
+        <div className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[12px] sm:text-[14px] max-w-full overflow-hidden">
+            <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1.5 sm:mr-2 text-primary shrink-0" />
+            <span className="font-medium mr-1 sm:mr-2 whitespace-nowrap">Last Updated:</span>
+            <time dateTime={timestamp} className="text-neutral-600 dark:text-neutral-400 truncate">
+                {formatDate(timestamp)}
+            </time>
+        </div>
+    );
+};
+
+const StageDisplay: FC<{ stage: string; stageIndex: number; totalStages: number }> = ({ stage, stageIndex, totalStages }) => {
+    return (
+        <div className="flex flex-col gap-1 sm:gap-1.5 w-full sm:w-auto">
+            <div className="text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                Current Stage
+            </div>
+            <Badge
+                variant="default"
+                className="flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 text-sm sm:text-base bg-primary/10 text-primary border border-primary/20 font-semibold max-w-[230px] sm:max-w-none"
+            >
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="truncate">{stage}</span>
+            </Badge>
+            <div className="text-[10px] sm:text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 sm:mt-1">
+                Stage {stageIndex} of {totalStages}
+            </div>
+            {STAGE_DESCRIPTIONS[stage] && (
+                <div className="text-[10px] sm:text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 sm:mt-1 max-w-[230px] sm:max-w-xs">
+                    {STAGE_DESCRIPTIONS[stage]}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const StatusBadge: FC<{ status: string }> = ({ status }) => {
+    const statusInfo = getStatusInfo(status);
+
+    return (
+        <div className="flex flex-col gap-1 sm:gap-1.5 w-full sm:w-auto">
+            <div className="text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                Status
+            </div>
+            <Badge
+                variant={statusInfo.variant}
+                className="flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 text-sm sm:text-base max-w-[230px] sm:max-w-none"
+            >
+                <span className="shrink-0">{statusInfo.icon}</span>
+                <span className="font-medium truncate">{statusInfo.label}</span>
+            </Badge>
+        </div>
+    );
+};
+
 const ProcurementHeader: FC<ProcurementHeaderProps> = ({ title, id, status }) => {
-    const statusInfo = getStatusInfo(status?.current_status);
     const stageIndex = status?.stage ? STAGE_ORDER.indexOf(status.stage) + 1 : 0;
     const totalStages = STAGE_ORDER.length;
     const progress = stageIndex > 0 ? (stageIndex / totalStages) * 100 : 0;
 
     return (
         <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border mb-4">
-            {/* Background accent */}
+
             <div
                 className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent dark:from-primary/10 dark:to-transparent"
                 aria-hidden="true"
             />
 
-            {/* Stage progress indicator */}
+
             {status?.stage && (
                 <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-neutral-100 dark:bg-neutral-800">
                     <div
@@ -339,7 +416,7 @@ const ProcurementHeader: FC<ProcurementHeaderProps> = ({ title, id, status }) =>
             <CardHeader className="relative z-10 p-5 sm:p-7">
                 <div className="space-y-4">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        {/* Left side - Title and ID */}
+
                         <div className="space-y-3">
                             <div>
                                 <CardTitle className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-tight">
@@ -356,51 +433,12 @@ const ProcurementHeader: FC<ProcurementHeaderProps> = ({ title, id, status }) =>
                                 </div>
                             </div>
 
-                            {status?.timestamp && (
-                                <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[14px]">
-                                    <Calendar className="w-3.5 h-3.5 mr-2 text-primary shrink-0" />
-                                    <span className="font-medium mr-2">Last Updated:</span>
-                                    <time dateTime={status.timestamp} className="text-neutral-600 dark:text-neutral-400">
-                                        {formatDate(status.timestamp)}
-                                    </time>
-                                </div>
-                            )}
+                            <LastUpdatedTimestamp timestamp={status?.timestamp} />
                         </div>
 
-                        {/* Right side - Status badges with improved visual design */}
-                        <div className="flex flex-col items-start lg:items-end gap-3">
-                            {status?.stage && (
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                                        Current Stage
-                                    </div>
-                                    <Badge
-                                        variant="default"
-                                        className="flex items-center gap-2 px-3 py-1.5 text-base bg-primary/10 text-primary border border-primary/20 font-semibold"
-                                    >
-                                        <Clock className="w-4 h-4" />
-                                        {status.stage}
-                                    </Badge>
-                                    <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                                        Stage {stageIndex} of {totalStages}
-                                    </div>
-                                </div>
-                            )}
-
-                            {status?.current_status && (
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                                        Status
-                                    </div>
-                                    <Badge
-                                        variant={statusInfo.variant}
-                                        className="flex items-center gap-2 px-3 py-1.5 text-base"
-                                    >
-                                        {statusInfo.icon}
-                                        <span className="font-medium">{statusInfo.label}</span>
-                                    </Badge>
-                                </div>
-                            )}
+                        <div className="flex flex-col items-start lg:items-end gap-2 sm:gap-3">
+                            {status?.stage && <StageDisplay stage={status.stage} stageIndex={stageIndex} totalStages={totalStages} />}
+                            {status?.current_status && <StatusBadge status={status.current_status} />}
                         </div>
                     </div>
                 </div>
@@ -480,10 +518,12 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
         { key: 'bulletin_number', label: 'Bulletin Number', icon: <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> },
         { key: 'bulletin_title', label: 'Bulletin Title', icon: <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> },
         { key: 'issue_date', label: 'Issue Date', icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, format: formatDateOnly },
+        { key: 'completion_date', label: 'Completion Date', icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, format: formatDateOnly },
+        { key: 'completion_notes', label: 'Completion Notes', icon: <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> },
     ];
 
     const renderMetadataItem = (key: keyof StageMetadata, item: { label: string; icon: JSX.Element; format?: (val: string | number | undefined) => string }) => {
-        // Handle validity period
+
         if (key === 'validity_period' && metadata.validity_period) {
             return (
                 <div key={key} className="col-span-2">
@@ -504,7 +544,7 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
             );
         }
 
-        // Handle bid opening documents with bidder information
+
         if ((key === 'bidder_name' || key === 'bid_value') && metadata.document_type === 'Bid Document') {
             return (
                 <MetadataItem
@@ -517,7 +557,7 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
             );
         }
 
-        // Handle regular metadata fields
+
         if (metadata[key]) {
             const value = item.format ? item.format(metadata[key] as string) : metadata[key];
             return (
@@ -549,7 +589,7 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
                 </CardHeader>
                 <CardContent className="p-3 sm:p-4 pt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
-                        {/* Show opening date first for bid documents */}
+
                         {metadata.document_type === 'Bid Document' && metadata.opening_date && (
                             <MetadataItem
                                 icon={<Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
@@ -558,9 +598,9 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
                                 highlight={true}
                             />
                         )}
-                        {/* Render all other metadata items */}
+
                         {metadataMap.map(item => renderMetadataItem(item.key, item))}
-                        {/* Handle validity period specially */}
+
                         {metadata.validity_period && renderMetadataItem('validity_period', {
                             label: 'Validity Period',
                             icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -661,7 +701,7 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 <div className="flex-1 min-w-0">
                                     <p className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-medium mb-0.5">Document Hash</p>
                                     <code className="font-mono text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 truncate block">
-                                        {doc.hash}
+                                        {doc.hash && (doc.hash.length > 16 ? `${doc.hash.slice(0, 8)}...${doc.hash.slice(-8)}` : doc.hash)}
                                     </code>
                                 </div>
                             </div>
@@ -746,8 +786,11 @@ const DocumentSection: FC<DocumentSectionProps> = ({ documentsBystage, sortedsta
                             </h3>
                         </div>
                         <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                            {documentsBystage[stage].map((doc) => (
-                                <DocumentItem key={doc.file_key || doc.hash || doc.document_type} doc={doc} />
+                            {documentsBystage[stage].map((doc, idx) => (
+                                <DocumentItem
+                                    key={`${stage}-${doc.file_key}-${doc.timestamp ?? ''}-${idx}`}
+                                    doc={doc}
+                                />
                             ))}
                         </ul>
                     </div>
@@ -760,6 +803,17 @@ const DocumentSection: FC<DocumentSectionProps> = ({ documentsBystage, sortedsta
 
 export default function ShowProcurement({ procurement, now, error }: ShowProps) {
     const [activeTab, setActiveTab] = useState('documents');
+    const [currentTime, setCurrentTime] = useState<string>(now || new Date().toISOString());
+
+    // Update current time every second
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date().toISOString());
+        }, 1000);
+
+        // Clean up interval on component unmount
+        return () => clearInterval(timer);
+    }, []);
 
     const { auth } = usePage<SharedData>().props;
     const userRole = auth?.user?.role || "guest";
@@ -777,34 +831,33 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
             return acc;
         }, {});
 
-        // This block filters documents within each stage
+
         Object.keys(grouped).forEach(stage => {
-            // --- START CHANGE ---
-            // Check if the current stage is 'Bid Opening' or 'Performance Bond Contract And PO'
+
             if (stage === 'Bid Opening' || stage === 'Performance Bond, Contract and PO') {
-                // For these stages, just sort by timestamp ascending, don't filter for uniqueness
+
                 grouped[stage] = grouped[stage]
                     .sort((a, b) => (a.timestamp ? new Date(a.timestamp).getTime() : 0) - (b.timestamp ? new Date(b.timestamp).getTime() : 0));
             } else {
-                // For all other stages, apply the uniqueness filtering
+
                 const uniqueDocs = new Map<string, Document>();
-                // Sorts documents by timestamp descending (latest first)
+
                 grouped[stage]
                     .sort((a, b) => (b.timestamp ? new Date(b.timestamp).getTime() : 0) - (a.timestamp ? new Date(a.timestamp).getTime() : 0))
                     .forEach(doc => {
-                        // Uses document_type or file_key as the uniqueness key
+
                         const key = doc.document_type || doc.file_key;
-                        // Only adds the document to the map if a document with the same key hasn't been added yet
-                        // Since it's sorted latest first, this keeps only the *latest* document for each key within the stage
+
+
                         if (!uniqueDocs.has(key)) {
                             uniqueDocs.set(key, doc);
                         }
                     });
-                // Replaces the original list with the filtered list of unique (latest) documents, sorted ascending
+
                 grouped[stage] = Array.from(uniqueDocs.values())
                     .sort((a, b) => (a.timestamp ? new Date(a.timestamp).getTime() : 0) - (b.timestamp ? new Date(b.timestamp).getTime() : 0));
             }
-            // --- END CHANGE ---
+
         });
 
 
@@ -1008,7 +1061,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                 <ProcurementHeader
                     title={procurement.title}
                     id={procurement.id}
-                    status={procurement.status} // This is now safely optional
+                    status={procurement.status}
                 />
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -1046,11 +1099,11 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="relative">
-                                    {/* Timeline content - by date */}
+
                                     <div className="space-y-4 py-6 px-4 sm:px-6">
                                         {Object.keys(timelineItemsByDate).map((date) => (
                                             <div key={date} className="mb-12 last:mb-6 relative">
-                                                {/* Date header */}
+
                                                 <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm py-3 -mx-4 sm:-mx-6 px-4 sm:px-6 mb-6">
                                                     <div className="flex items-center">
                                                         <div className="h-0.5 w-6 bg-primary/40 mr-3"></div>
@@ -1062,7 +1115,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                                                     </div>
                                                 </div>
 
-                                                {/* Timeline items for this date */}
+
                                                 <div className="space-y-8">
                                                     {timelineItemsByDate[date].map((item, itemIndex) => (
                                                         <div key={`${item.timestamp}-${itemIndex}`} className="relative group animate-fadeIn">
@@ -1073,7 +1126,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                                             </div>
                                         ))}
 
-                                        {/* Timeline end marker */}
+
                                         <div className="relative py-6 text-center">
                                             <div className="absolute inset-0 flex items-center" aria-hidden="true">
                                                 <div className="w-full border-t border-dashed border-neutral-200 dark:border-neutral-700"></div>
@@ -1085,15 +1138,15 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                                             </div>
                                         </div>
 
-                                        {/* Current time indicator */}
-                                        {now && (
+
+                                        {currentTime && (
                                             <div className="relative mt-2 pt-3 pb-4 px-4 bg-primary/5 dark:bg-primary/10 rounded-lg border border-primary/20 dark:border-primary/30">
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-5 w-5 rounded-full bg-primary animate-pulse"></div>
                                                     <div>
                                                         <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Current Time</p>
                                                         <p className="text-sm font-semibold text-primary">
-                                                            {formatDate(now)}
+                                                            {formatDate(currentTime)}
                                                         </p>
                                                     </div>
                                                 </div>
