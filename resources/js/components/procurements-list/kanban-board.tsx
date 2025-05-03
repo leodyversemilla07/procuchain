@@ -1,8 +1,9 @@
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProcurementListItem, Stage } from '@/types/blockchain';
 import { KanbanCard } from '@/components/procurements-list/kanban-card';
 import { getStageBadgeStyle } from '@/lib/procurements-list-utils';
+import { cn } from '@/lib/utils';
+import { Layers } from 'lucide-react';
 
 interface KanbanBoardProps {
     procurements: ProcurementListItem[];
@@ -11,6 +12,7 @@ interface KanbanBoardProps {
     onOpenSupplementalBidBulletinModal?: (procurement: ProcurementListItem) => void;
 }
 
+// eslint-disable-next-line complexity, max-lines
 export const KanbanBoard = ({
     procurements,
     onOpenPreProcurementModal,
@@ -34,34 +36,120 @@ export const KanbanBoard = ({
     const stagesToDisplay = orderedStages.filter(stage => procurementsByStage[stage]?.length > 0);
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto">
-            {/* Map over the ordered and filtered stages */}
-            {stagesToDisplay.map(stage => (
-                <Card key={stage} className="border-sidebar-border/70 dark:border-sidebar-border rounded-lg p-3 min-w-[240px]">
-                    <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium text-sm flex items-center gap-2 dark:text-gray-200">
-                            <Badge variant="outline" className={`${getStageBadgeStyle(stage)} whitespace-nowrap`}>
-                                {stage}
-                            </Badge>
-                            <span className="ml-1 bg-gray-200 text-gray-700 rounded-full px-2 py-0.5 text-xs dark:bg-gray-700 dark:text-gray-300">
-                                {procurementsByStage[stage].length}
-                            </span>
-                        </h3>
+        <div className="pb-6">
+            {/* Mobile view with vertical stack */}
+            <div className="lg:hidden flex flex-col space-y-4 px-1 sm:px-4">
+                {stagesToDisplay.map(stage => (
+                    <div 
+                        key={stage} 
+                        className={cn(
+                            "w-full sm:w-[280px] flex flex-col",
+                            "bg-gray-50/80 dark:bg-gray-800/30 backdrop-blur-sm",
+                            "rounded-lg border border-gray-200/90 dark:border-gray-700/60",
+                            "shadow-sm hover:shadow transition-all duration-200"
+                        )}
+                    >
+                        {/* Column Header */}
+                        <div className="sticky top-0 z-10 bg-gray-50/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200/90 dark:border-gray-700/80 p-3 rounded-t-lg">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center">
+                                        <Layers className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 mr-2" />
+                                        <Badge 
+                                            variant="outline" 
+                                            className={cn(
+                                                getStageBadgeStyle(stage), 
+                                                "whitespace-nowrap text-xs font-medium"
+                                            )}
+                                        >
+                                            {stage}
+                                        </Badge>
+                                    </div>
+                                    <div className="bg-gray-200/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 
+                                                 rounded-full px-2 py-0.5 text-xs font-medium min-w-[1.75rem] text-center">
+                                        {procurementsByStage[stage].length}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Column Body - Cards Container */}
+                        <div className="p-2 overflow-y-auto flex-grow max-h-[calc(100vh-220px)] custom-scrollbar">
+                            <div className="space-y-3 py-1">
+                                {procurementsByStage[stage].map(procurement => (
+                                    <KanbanCard
+                                        key={procurement.id}
+                                        procurement={procurement}
+                                        onOpenPreProcurementModal={onOpenPreProcurementModal}
+                                        onOpenPreBidModal={onOpenPreBidModal}
+                                        onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        {/* Render procurements for the current stage */}
-                        {procurementsByStage[stage].map(procurement => (
-                            <KanbanCard
-                                key={procurement.id}
-                                procurement={procurement}
-                                onOpenPreProcurementModal={onOpenPreProcurementModal}
-                                onOpenPreBidModal={onOpenPreBidModal}
-                                onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
-                            />
-                        ))}
-                    </div>
-                </Card>
-            ))}
+                ))}
+            </div>
+
+            {/* Desktop view with auto-fit grid layout and fixed card width */}
+            <div className="hidden lg:block overflow-x-hidden px-1 sm:px-4">
+                <div className="grid auto-rows-fr gap-4" 
+                     style={{ 
+                         gridTemplateColumns: 'repeat(auto-fit, 280px)',
+                         justifyContent: 'start'
+                     }}>
+                    {stagesToDisplay.map(stage => (
+                        <div 
+                            key={stage} 
+                            className={cn(
+                                "flex flex-col h-full",
+                                "bg-gray-50/80 dark:bg-gray-800/30 backdrop-blur-sm",
+                                "rounded-lg border border-gray-200/90 dark:border-gray-700/60",
+                                "shadow-sm hover:shadow transition-all duration-200"
+                            )}
+                        >
+                            {/* Column Header */}
+                            <div className="sticky top-0 z-10 bg-gray-50/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200/90 dark:border-gray-700/80 p-3 rounded-t-lg">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center">
+                                            <Layers className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 mr-2" />
+                                            <Badge 
+                                                variant="outline" 
+                                                className={cn(
+                                                    getStageBadgeStyle(stage), 
+                                                    "whitespace-nowrap text-xs font-medium"
+                                                )}
+                                            >
+                                                {stage}
+                                            </Badge>
+                                        </div>
+                                        <div className="bg-gray-200/80 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 
+                                                     rounded-full px-2 py-0.5 text-xs font-medium min-w-[1.75rem] text-center">
+                                            {procurementsByStage[stage].length}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Column Body - Cards Container */}
+                            <div className="p-2 overflow-y-auto flex-grow max-h-[calc(100vh-220px)] custom-scrollbar">
+                                <div className="space-y-3 py-1">
+                                    {procurementsByStage[stage].map(procurement => (
+                                        <KanbanCard
+                                            key={procurement.id}
+                                            procurement={procurement}
+                                            onOpenPreProcurementModal={onOpenPreProcurementModal}
+                                            onOpenPreBidModal={onOpenPreBidModal}
+                                            onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };

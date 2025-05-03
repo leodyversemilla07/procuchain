@@ -14,8 +14,8 @@ import { KanbanBoard } from '@/components/procurements-list/kanban-board';
 import { LoadingSkeleton } from '@/components/procurements-list/loading-skeleton';
 import { PreBidConferenceModal } from '@/components/pre-bid-conference/pre-bid-conference-modal';
 import { PreProcurementModal } from '@/components/pre-procurement-conference/pre-procurement-conference-modal';
-import { ProcurementListHeader } from '@/components/procurements-list/procurement-list-header';
 import { SupplementalBidBulletinModal } from '@/components/supplemental-bid-bulletin/supplemental-bid-bulletin-modal';
+import { ProcurementListHeader } from '@/components/procurements-list/procurement-list-header';
 import { ActionButtons } from '@/components/procurements-list/action-buttons';
 import {
     DocumentCountCell,
@@ -28,6 +28,8 @@ import {
 import { useProcurementList } from '@/hooks/use-procurement-list';
 import { getBreadcrumbs } from '@/lib/procurements-list-utils';
 import { exportProcurementsToCSV } from '@/lib/procurement-utils';
+import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 interface ShowProps {
     procurements: ProcurementListItem[];
@@ -117,6 +119,7 @@ interface ProcurementsContentProps {
     onSelectedRowsChange: (rows: ProcurementListItem[]) => void;
     columns: ColumnDef<ProcurementListItem>[];
     userRole: string;
+    searchValue: string;
     onOpenPreProcurementModal: (procurement: ProcurementListItem) => void;
     onOpenPreBidModal: (procurement: ProcurementListItem) => void;
     onOpenSupplementalBidBulletinModal: (procurement: ProcurementListItem) => void;
@@ -131,6 +134,7 @@ const ProcurementsContent = ({
     onSelectedRowsChange,
     columns,
     userRole,
+    searchValue,
     onOpenPreProcurementModal,
     onOpenPreBidModal,
     onOpenSupplementalBidBulletinModal,
@@ -139,34 +143,47 @@ const ProcurementsContent = ({
     if (error) return <ErrorState error={error} />;
     if (procurements.length === 0) return <EmptyState userRole={userRole} />;
 
-    return viewType === 'table' ? (
-        <DataTable
-            columns={columns}
-            data={procurements}
-            searchColumn="title"
-            searchPlaceholder="Search procurements..."
-            onRowSelectionChange={onSelectedRowsChange}
-            bulkActions={[
-                {
-                    label: 'Export to CSV',
-                    action: () => {
-                        if (selectedRows.length === 0) {
-                            alert('Please select at least one procurement to export.');
-                            return;
-                        }
-                        exportProcurementsToCSV(selectedRows);
-                    },
-                    icon: <Download className="h-4 w-4" />,
-                },
-            ]}
-        />
-    ) : (
-        <KanbanBoard
-            procurements={procurements}
-            onOpenPreProcurementModal={onOpenPreProcurementModal}
-            onOpenPreBidModal={onOpenPreBidModal}
-            onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
-        />
+    return (
+        <div key={viewType} className="w-full">
+            <div className="hidden lg:block">
+                {viewType === 'table' ? (
+                    <DataTable
+                        columns={columns}
+                        data={procurements}
+                        searchValue={searchValue}
+                        onRowSelectionChange={onSelectedRowsChange}
+                        bulkActions={[
+                            {
+                                label: 'Export to CSV',
+                                action: () => {
+                                    if (selectedRows.length === 0) {
+                                        alert('Please select at least one procurement to export.');
+                                        return;
+                                    }
+                                    exportProcurementsToCSV(selectedRows);
+                                },
+                                icon: <Download className="h-4 w-4" />,
+                            },
+                        ]}
+                    />
+                ) : (
+                    <KanbanBoard
+                        procurements={procurements}
+                        onOpenPreProcurementModal={onOpenPreProcurementModal}
+                        onOpenPreBidModal={onOpenPreBidModal}
+                        onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
+                    />
+                )}
+            </div>
+            <div className="block lg:hidden">
+                <KanbanBoard
+                    procurements={procurements}
+                    onOpenPreProcurementModal={onOpenPreProcurementModal}
+                    onOpenPreBidModal={onOpenPreBidModal}
+                    onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
+                />
+            </div>
+        </div>
     );
 };
 
@@ -174,6 +191,15 @@ export default function ProcurementsList({ procurements: initialProcurements, er
     const { auth } = usePage<SharedData>().props;
     const userRole = auth?.user?.role || "guest";
     const breadcrumbs = getBreadcrumbs(userRole);
+    const [searchValue, setSearchValue] = useState('');
+    const [isPageLoaded, setIsPageLoaded] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsPageLoaded(true);
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
 
     const {
         procurements,
@@ -195,31 +221,61 @@ export default function ProcurementsList({ procurements: initialProcurements, er
         handleOpenSupplementalBidBulletinModal,
     } = useProcurementList({ initialProcurements, initialError });
 
+    useEffect(() => {
+        const mq: MediaQueryList = window.matchMedia('(max-width:1024px)');
+        setViewType(mq.matches ? 'kanban' : 'table');
+        const listener = (e: MediaQueryListEvent) => {
+            setViewType(e.matches ? 'kanban' : 'table');
+        };
+        mq.addEventListener('change', listener);
+        return () => mq.removeEventListener('change', listener);
+    }, [setViewType]);
+
     const columns = useTableColumns(handleOpenPreProcurementModal, handleOpenPreBidModal, handleOpenSupplementalBidBulletinModal);
+
+    const filteredProcurements = procurements.filter(proc => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+            proc.id.toLowerCase().includes(searchLower) ||
+            proc.title.toLowerCase().includes(searchLower) ||
+            proc.stage.toLowerCase().includes(searchLower) ||
+            proc.current_status.toLowerCase().includes(searchLower)
+        );
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Procurement List" />
-            <div className="flex h-full flex-1 flex-col gap-4 p-2 sm:p-4">
-                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-sm overflow-hidden">
+            <div
+                className={cn(
+                    "flex h-full flex-1 flex-col gap-4 p-2 sm:p-4 transition-opacity duration-300",
+                    isPageLoaded ? "opacity-100" : "opacity-0"
+                )}
+            >
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-sm overflow-hidden
+                               rounded-xl transition-all duration-200 hover:shadow-md">
                     <ProcurementListHeader
                         userRole={userRole}
                         viewType={viewType}
                         setViewType={setViewType}
-                        procurementsCount={procurements.length}
+                        procurementsCount={filteredProcurements.length}
                         loading={loading}
+                        searchValue={searchValue}
+                        onSearchChange={setSearchValue}
                     />
-                    <CardContent className="dark:border-t dark:border-sidebar-border p-0 sm:p-4">
-                        <div className="overflow-x-auto">
+                    <CardContent className="dark:border-t dark:border-sidebar-border p-4">
+                        <div className={`overflow-x-auto ${viewType === 'kanban' ? 'py-2' : ''}`}>
                             <ProcurementsContent
                                 loading={loading}
                                 error={error}
-                                procurements={procurements}
+                                procurements={filteredProcurements}
                                 viewType={viewType}
                                 selectedRows={selectedRows}
                                 onSelectedRowsChange={setSelectedRows}
                                 columns={columns}
                                 userRole={userRole}
+                                searchValue={searchValue}
                                 onOpenPreProcurementModal={handleOpenPreProcurementModal}
                                 onOpenPreBidModal={handleOpenPreBidModal}
                                 onOpenSupplementalBidBulletinModal={handleOpenSupplementalBidBulletinModal}
@@ -228,6 +284,7 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                     </CardContent>
                 </Card>
             </div>
+
             {preProcurementModalOpen && selectedProcurement && (
                 <PreProcurementModal
                     open={preProcurementModalOpen}

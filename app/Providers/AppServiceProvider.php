@@ -27,7 +27,6 @@ use App\Services\MultichainService;
 use App\Services\ProcurementServices;
 use App\Services\ProcurementStageTransitionService;
 use App\Services\StreamKeyService;
-use Barryvdh\DomPDF\ServiceProvider as DomPDFServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -35,7 +34,6 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->register(DomPDFServiceProvider::class);
         $this->registerServices();
         $this->registerHandlers();
     }

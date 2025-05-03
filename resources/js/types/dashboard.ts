@@ -3,7 +3,7 @@ import { PageProps } from '@inertiajs/core';
 
 export interface DashboardStats {
     ongoingProjects: number;
-    pendingActions: number;
+    pendingActions: number; // Add the missing property
     completedBiddings: number;
     totalDocuments: number;
 }
@@ -34,7 +34,6 @@ export interface RecentProcurement {
 export interface DashboardProps extends PageProps {
     recentProcurements: RecentProcurement[];
     recentActivities: RecentActivity[];
-    priorityActions: PriorityAction[];
     stats: DashboardStats;
     error?: string;
 }

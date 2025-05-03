@@ -20,18 +20,15 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/ui/data-table/data-table-pagination";
-import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ChevronDownIcon, CircleXIcon, SearchIcon, XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { CircleXIcon } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: readonly TData[];
-    searchColumn?: string;
-    searchPlaceholder?: string;
+    searchValue?: string;
     onRowSelectionChange?: (selectedRows: TData[]) => void;
     bulkActions?: { label: string; action: (selectedRows: TData[]) => void; icon?: React.ReactNode }[];
 }
@@ -39,15 +36,13 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
     columns,
     data,
-    searchColumn,
-    searchPlaceholder = "Filter...",
+    searchValue = "",
     onRowSelectionChange,
     bulkActions = []
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-    const [searchValue, setSearchValue] = useState<string>("");
 
     const table = useReactTable({
         data: data as TData[],
@@ -81,20 +76,10 @@ export function DataTable<TData, TValue>({
         }
     }, [rowSelection, onRowSelectionChange, table]);
 
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setSearchValue(value);
-        if (searchColumn) {
-            table.getColumn(searchColumn)?.setFilterValue(value);
-        }
-    };
-
-    const clearSearch = () => {
-        setSearchValue("");
-        if (searchColumn) {
-            table.getColumn(searchColumn)?.setFilterValue("");
-        }
-    };
+    useEffect(() => {
+        const searchColumnId = 'title';
+        table.getColumn(searchColumnId)?.setFilterValue(searchValue);
+    }, [searchValue, table]);
 
     const selectedRows = table
         .getSelectedRowModel()
@@ -104,33 +89,7 @@ export function DataTable<TData, TValue>({
 
     return (
         <div className="space-y-4 w-full max-w-[100vw]">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                {searchColumn && (
-                    <div className="relative w-full sm:w-auto sm:min-w-[300px] max-w-full">
-                        <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        <Input
-                            placeholder={searchPlaceholder}
-                            value={searchValue}
-                            onChange={handleSearchChange}
-                            className="pl-10 pr-10 w-full border-sidebar-border/70 dark:border-sidebar-border rounded-lg shadow-sm 
-                                dark:placeholder-gray-400 focus:border-primary dark:focus:border-primary 
-                                focus:ring-primary dark:focus:ring-primary"
-                        />
-                        {searchValue && (
-                            <button
-                                onClick={clearSearch}
-                                type="button"
-                                aria-label="Clear search"
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 
-                                    text-gray-400 hover:text-gray-600 dark:text-gray-500 
-                                    dark:hover:text-gray-300"
-                            >
-                                <XIcon className="h-4 w-4" />
-                            </button>
-                        )}
-                    </div>
-                )}
-
+            <div className="flex justify-end items-center gap-4">
                 {bulkActions.length > 0 && (
                     <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                         {selectedRowCount > 0 && (
@@ -139,56 +98,34 @@ export function DataTable<TData, TValue>({
                                 {selectedRowCount} selected
                             </Badge>
                         )}
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={selectedRows.length === 0}
-                                    className={`ml-auto text-gray-700 dark:text-gray-200 
-                                        hover:text-gray-700 dark:hover:text-gray-200 whitespace-nowrap
-                                        ${selectedRows.length === 0
-                                            ? 'opacity-50 cursor-not-allowed'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-800 border-sidebar-border/70 dark:border-sidebar-border'
-                                        }`}
-                                >
-                                    Actions <ChevronDownIcon className="ml-2 h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="min-w-[160px] border-sidebar-border/70 dark:border-sidebar-border">
-                                {bulkActions.map((action, index) => (
-                                    <DropdownMenuItem
-                                        key={index}
-                                        onClick={() => action.action(selectedRows)}
-                                        className="cursor-pointer flex items-center gap-2 text-gray-700 
-                                            dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    >
-                                        {action.icon && <span className="text-gray-500 dark:text-gray-400">{action.icon}</span>}
-                                        {action.label}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button
+                            variant="default"
+                            size="sm"
+                            disabled={selectedRows.length === 0}
+                            className="ml-auto whitespace-nowrap"
+                            onClick={() => bulkActions[0]?.action(selectedRows)}
+                        >
+                            {bulkActions[0]?.icon}
+                            Export Selected to CSV
+                        </Button>
                     </div>
                 )}
             </div>
 
-            <div className="rounded-lg overflow-hidden border border-sidebar-border/70 
-                dark:border-sidebar-border shadow-sm">
+            <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700/80 shadow-sm">
                 <div className="overflow-x-auto">
                     <Table className="w-full min-w-[640px]">
-                        <TableHeader className="border-b border-sidebar-border/70 dark:border-sidebar-border">
+                        <TableHeader className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700/80">
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow
                                     key={headerGroup.id}
-                                    className="hover:bg-transparent"
+                                    className="hover:bg-transparent border-b-0"
                                 >
                                     {headerGroup.headers.map((header) => (
                                         <TableHead
                                             key={header.id}
-                                            className="font-semibold text-xs text-gray-700 dark:text-gray-200 
-                                                uppercase tracking-wider py-3 px-4 whitespace-nowrap"
+                                            className="font-semibold text-xs text-gray-600 dark:text-gray-300 
+                                                uppercase tracking-wider py-3.5 px-4 whitespace-nowrap first:pl-6 last:pr-6"
                                         >
                                             {header.isPlaceholder
                                                 ? null
@@ -207,16 +144,16 @@ export function DataTable<TData, TValue>({
                                     <TableRow
                                         key={row.id}
                                         data-state={row.getIsSelected() ? "selected" : undefined}
-                                        className={`border-b border-sidebar-border/30 dark:border-sidebar-border/70 
+                                        className={`border-b border-gray-100 dark:border-gray-700/50 
                                             ${row.getIsSelected()
                                                 ? "bg-primary/5 dark:bg-primary/10 text-gray-900 dark:text-gray-100"
-                                                : "hover:bg-muted/30 dark:hover:bg-muted/10"
+                                                : "hover:bg-gray-50/80 dark:hover:bg-gray-800/30"
                                             }`}
                                     >
                                         {row.getVisibleCells().map((cell) => (
                                             <TableCell
                                                 key={cell.id}
-                                                className="py-3 px-4"
+                                                className="py-3.5 px-4 text-sm text-gray-700 dark:text-gray-300 first:pl-6 last:pr-6"
                                             >
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                             </TableCell>

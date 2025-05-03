@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Edit2Icon, UploadCloudIcon, BarChart4Icon, EyeIcon } from 'lucide-react';
 import { ProcurementListItem, Stage, Status } from '@/types/blockchain';
 import { SharedData } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
@@ -27,7 +28,11 @@ const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonS
         <Button
             variant="ghost"
             size="sm"
-            className={`${buttonSize} p-0 ${className}`}
+            className={cn(
+                buttonSize,
+                "p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800",
+                className
+            )}
             onClick={onClick}
         >
             {icon}
@@ -35,12 +40,17 @@ const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonS
     );
 
     return (
-        <TooltipProvider>
+        <TooltipProvider delayDuration={300}>
             <Tooltip>
                 <TooltipTrigger asChild>
                     {href ? <Link href={href} className="block">{button}</Link> : button}
                 </TooltipTrigger>
-                <TooltipContent>{tooltipText}</TooltipContent>
+                <TooltipContent 
+                    side="bottom" 
+                    className="bg-gray-900/95 text-white dark:bg-gray-800 text-xs font-medium py-1 px-2"
+                >
+                    {tooltipText}
+                </TooltipContent>
             </Tooltip>
         </TooltipProvider>
     );
@@ -66,18 +76,18 @@ const getButtonConfigs = (
 
     if (stage === Stage.PROCUREMENT_INITIATION && status === Status.PROCUREMENT_SUBMITTED) {
         configs.push({
-            icon: <Edit2Icon className={iconSize} />,
+            icon: <Edit2Icon className={cn(iconSize, "text-amber-600 dark:text-amber-400")} />,
             tooltipText: "Record Pre-Procurement Conference Decision",
-            className: "text-amber-600 dark:text-amber-400",
+            className: "bg-amber-50 dark:bg-amber-900/20",
             onClick: () => handlers.onOpenPreProcurementModal?.(procurement)
         });
     }
 
     if (stage === Stage.PRE_PROCUREMENT_CONFERENCE && status === Status.PRE_PROCUREMENT_CONFERENCE_HELD) {
         configs.push({
-            icon: <UploadCloudIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={cn(iconSize, "text-green-600 dark:text-green-400")} />,
             tooltipText: "Upload Pre-Procurement Conference Documents",
-            className: "text-green-600 dark:text-green-400",
+            className: "bg-green-50 dark:bg-green-900/20",
             href: `/bac-secretariat/pre-procurement-conference-upload/${id}`
         });
     }
@@ -87,9 +97,9 @@ const getButtonConfigs = (
 
     if (stage === Stage.BIDDING_DOCUMENTS && canUploadBiddingDocuments) {
         configs.push({
-            icon: <UploadCloudIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={cn(iconSize, "text-amber-600 dark:text-amber-400")} />,
             tooltipText: "Upload Bidding Documents",
-            className: "text-amber-600 dark:text-amber-400",
+            className: "bg-amber-50 dark:bg-amber-900/20",
             href: `/bac-secretariat/bidding-documents-upload/${id}`
         });
     }
@@ -97,16 +107,16 @@ const getButtonConfigs = (
     if (stage === Stage.PRE_BID_CONFERENCE) {
         if (status === Status.BIDDING_DOCUMENTS_PUBLISHED) {
             configs.push({
-                icon: <Edit2Icon className={iconSize} />,
+                icon: <Edit2Icon className={cn(iconSize, "text-indigo-600 dark:text-indigo-400")} />,
                 tooltipText: "Record Pre-Bid Conference Decision",
-                className: "text-indigo-600 dark:text-indigo-400",
+                className: "bg-indigo-50 dark:bg-indigo-900/20",
                 onClick: () => handlers.onOpenPreBidModal?.(procurement)
             });
         } else if (status === Status.PRE_BID_CONFERENCE_HELD) {
             configs.push({
-                icon: <UploadCloudIcon className={iconSize} />,
+                icon: <UploadCloudIcon className={cn(iconSize, "text-indigo-600 dark:text-indigo-400")} />,
                 tooltipText: "Upload Pre-Bid Conference Documents",
-                className: "text-indigo-600 dark:text-indigo-400",
+                className: "bg-indigo-50 dark:bg-indigo-900/20",
                 href: `/bac-secretariat/pre-bid-conference-upload/${id}`
             });
         }
@@ -114,36 +124,36 @@ const getButtonConfigs = (
 
     if (stage === Stage.BID_OPENING && status === Status.SUPPLEMENTAL_BID_BULLETINS_COMPLETED) {
         configs.push({
-            icon: <UploadCloudIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={cn(iconSize, "text-blue-600 dark:text-blue-400")} />,
             tooltipText: "Upload Bid Opening Documents",
-            className: "text-blue-600 dark:text-blue-400",
+            className: "bg-blue-50 dark:bg-blue-900/20",
             href: `/bac-secretariat/bid-opening-upload/${id}`
         });
     }
 
     if (stage === Stage.BID_EVALUATION && status === Status.BIDS_OPENED) {
         configs.push({
-            icon: <BarChart4Icon className={iconSize} />,
+            icon: <BarChart4Icon className={cn(iconSize, "text-indigo-600 dark:text-indigo-400")} />,
             tooltipText: "Upload Bid Evaluation Documents",
-            className: "text-indigo-600 dark:text-indigo-400",
+            className: "bg-indigo-50 dark:bg-indigo-900/20",
             href: `/bac-secretariat/bid-evaluation-upload/${id}`
         });
     }
 
     if (stage === Stage.POST_QUALIFICATION && status === Status.BIDS_EVALUATED) {
         configs.push({
-            icon: <UploadCloudIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={cn(iconSize, "text-green-700 dark:text-green-400")} />,
             tooltipText: "Upload Post-Qualification Report",
-            className: "text-green-700 dark:text-green-400",
+            className: "bg-green-50 dark:bg-green-900/20",
             href: `/bac-secretariat/post-qualification-upload/${id}`
         });
     }
 
     if (stage === Stage.NOTICE_OF_AWARD && status === Status.RESOLUTION_RECORDED) {
         configs.push({
-            icon: <UploadCloudIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={cn(iconSize, "text-amber-600 dark:text-amber-400")} />,
             tooltipText: "Upload Notice of Award",
-            className: "text-amber-600 dark:text-amber-400",
+            className: "bg-amber-50 dark:bg-amber-900/20",
             href: `/bac-secretariat/noa-upload/${id}`
         });
     }
@@ -151,16 +161,16 @@ const getButtonConfigs = (
     if (stage === Stage.SUPPLEMENTAL_BID_BULLETIN) {
         if (status === Status.PRE_BID_CONFERENCE_COMPLETED) {
             configs.push({
-                icon: <Edit2Icon className={iconSize} />,
+                icon: <Edit2Icon className={cn(iconSize, "text-indigo-600 dark:text-indigo-400")} />,
                 tooltipText: "Record Supplemental Bid Bulletin Decision",
-                className: "text-indigo-600 dark:text-indigo-400",
+                className: "bg-indigo-50 dark:bg-indigo-900/20",
                 onClick: () => handlers.onOpenSupplementalBidBulletinModal?.(procurement)
             });
         } else if (status === Status.SUPPLEMENTAL_BID_BULLETINS_ONGOING) {
             configs.push({
-                icon: <UploadCloudIcon className={iconSize} />,
+                icon: <UploadCloudIcon className={cn(iconSize, "text-blue-600 dark:text-blue-400")} />,
                 tooltipText: "Upload Supplemental Bid Bulletin Documents",
-                className: "text-blue-600 dark:text-blue-400",
+                className: "bg-blue-50 dark:bg-blue-900/20",
                 href: `/bac-secretariat/supplemental-bid-bulletin-upload/${id}`
             });
         }
@@ -168,50 +178,48 @@ const getButtonConfigs = (
 
     if (stage === Stage.PERFORMANCE_BOND_CONTRACT_AND_PO && status === Status.AWARDED) {
         configs.push({
-            icon: <UploadCloudIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={cn(iconSize, "text-cyan-600 dark:text-cyan-400")} />,
             tooltipText: "Upload Performance Bond, Contract, and PO",
-            className: "text-cyan-600 dark:text-cyan-400",
+            className: "bg-cyan-50 dark:bg-cyan-900/20",
             href: `/bac-secretariat/performance-bond-contract-po-upload/${id}`
         });
     }
 
     if (stage === Stage.BAC_RESOLUTION && status === Status.POST_QUALIFICATION_VERIFIED) {
         configs.push({
-            icon: <UploadCloudIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={cn(iconSize, "text-purple-700 dark:text-purple-400")} />,
             tooltipText: "Upload BAC Resolution Documents",
-            className: "text-purple-700 dark:text-purple-400",
+            className: "bg-purple-50 dark:bg-purple-900/20",
             href: `/bac-secretariat/bac-resolution-upload/${id}`
         });
     }
 
     if (stage === Stage.NOTICE_TO_PROCEED && status === Status.PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED) {
         configs.push({
-            icon: <UploadCloudIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={cn(iconSize, "text-green-600 dark:text-green-400")} />,
             tooltipText: "Upload Notice to Proceed",
-            className: "text-green-600 dark:text-green-400", // Example color, adjust if needed
+            className: "bg-green-50 dark:bg-green-900/20", 
             href: `/bac-secretariat/ntp-upload/${id}`
         });
     }
 
     if (stage === Stage.MONITORING && status === Status.NTP_RECORDED) {
         configs.push({
-            icon: <UploadCloudIcon className={iconSize} />,
+            icon: <UploadCloudIcon className={cn(iconSize, "text-teal-600 dark:text-teal-400")} />,
             tooltipText: "Upload Monitoring Documents",
-            className: "text-teal-600 dark:text-teal-400", // Example color, adjust if needed
+            className: "bg-teal-50 dark:bg-teal-900/20", 
             href: `/bac-secretariat/monitoring-upload/${id}`
         });
     }
 
-    // Add Completion stage button
     if (stage === Stage.COMPLETION && status === Status.MONITORING_COMPLETED) {
         configs.push({
-            icon: <UploadCloudIcon className={iconSize} />,
-            tooltipText: "Upload Certificate of Completion", // Updated tooltip text
-            className: "text-emerald-600 dark:text-emerald-400", // Example color
+            icon: <UploadCloudIcon className={cn(iconSize, "text-emerald-600 dark:text-emerald-400")} />,
+            tooltipText: "Upload Certificate of Completion",
+            className: "bg-emerald-50 dark:bg-emerald-900/20",
             href: `/bac-secretariat/completion-upload/${id}`
         });
     }
-
 
     return configs;
 };
@@ -235,12 +243,15 @@ export const ActionButtons = ({
     });
 
     return (
-        <div className="flex justify-end space-x-1">
+        <div className={cn(
+            "flex justify-end gap-1.5",
+            variant === "table" ? "mr-2" : ""
+        )}>
             <ActionButtonItem
-                icon={<EyeIcon className={iconSize} />}
+                icon={<EyeIcon className={cn(iconSize, "text-blue-600 dark:text-blue-400")} />}
                 tooltipText="View Details"
                 href={`procurements-list/${id}`}
-                className="text-blue-600 dark:text-blue-400"
+                className="bg-blue-50 dark:bg-blue-900/20"
                 buttonSize={buttonSize}
             />
             {isBacSecretariat && buttonConfigs.map((config, index) => (

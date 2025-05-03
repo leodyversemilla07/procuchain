@@ -3,10 +3,9 @@
 use App\Http\Controllers\BacChairmanController;
 use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\HopeController;
-use App\Http\Controllers\PrGeneratorController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ViewProcurementsController;
-use App\Services\MultichainService;
+use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -20,25 +19,23 @@ Route::inertia('/about', 'about')
 Route::inertia('/procurement', 'procurement')
     ->name('procurement');
 
-Route::inertia('/generate-pr-show', 'generate-pr')
-    ->name('generate-pr.index');
+Route::inertia('/development', 'development')
+    ->name('development');
 
-Route::post('generate-pr-store', [PrGeneratorController::class, 'store'])
-    ->name('generate-pr.store');
+Route::inertia('/team', 'team')
+    ->name('team');
 
-Route::get('/test-multichain', function (): \Illuminate\Http\JsonResponse {
-    $multichainService = new MultichainService;
-    $connectionInfo = $multichainService->listStreams();
+Route::inertia('/documentation', 'documentation')
+    ->name('documentation');
 
-    return response()->json($connectionInfo);
-});
+Route::inertia('/contact', 'contact')
+    ->name('contact');
 
-Route::get('/list-stream-items/{streamName}', function (string $streamName): \Illuminate\Http\JsonResponse {
-    $multichainService = new MultichainService;
-    $items = $multichainService->listStreamItems($streamName);
+Route::inertia('/features', 'features')
+    ->name('features');
 
-    return response()->json($items);
-});
+Route::get('/search', [SearchController::class, 'index'])->name('search');
+Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -167,7 +164,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('hope.dashboard');
 
         Route::get('hope/procurements-list', [ViewProcurementsController::class, 'indexProcurementsList'])
-            ->name('bac-chairman.procurements-list.index');
+            ->name('hope.procurements-list.index');
 
         Route::get('hope/procurements-list/{id}', [ViewProcurementsController::class, 'showProcurement'])
             ->name('hope.procurements.show');
@@ -175,5 +172,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

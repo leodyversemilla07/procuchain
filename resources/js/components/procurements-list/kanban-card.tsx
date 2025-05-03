@@ -6,6 +6,7 @@ import { FileIcon, CalendarIcon } from 'lucide-react';
 import { ProcurementListItem } from '@/types/blockchain';
 import { ActionButtons } from '@/components/procurements-list/action-buttons';
 import { getStatusBadgeStyle } from '@/lib/procurements-list-utils';
+import { cn } from '@/lib/utils';
 
 interface KanbanCardProps {
     procurement: ProcurementListItem;
@@ -22,20 +23,25 @@ export const KanbanCard = ({
     onOpenSupplementalBidBulletinModal,
 }: KanbanCardProps) => {
     return (
-        <Card className="mb-2 cursor-pointer hover:border-blue-600 dark:hover:border-blue-500 transition-all duration-200 shadow-sm border-sidebar-border/70 dark:border-sidebar-border">
+        <Card className="mb-2 cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md 
+                         shadow-sm border-sidebar-border/70 
+                         dark:border-sidebar-border overflow-hidden">
             <CardContent className="p-3">
-                <div className="space-y-2">
+                <div className="space-y-2.5">
+                    {/* Top - ID Badge and Status */}
                     <div className="flex items-center justify-between gap-2">
                         {/* ID Badge */}
                         <div className="w-[70px] flex-shrink-0">
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800 text-xs w-full">
+                                        <Badge variant="outline" className="bg-blue-50/80 text-blue-700 border border-blue-200/80 
+                                                                         dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/80 
+                                                                         text-xs w-full font-medium">
                                             <span className="truncate inline-block max-w-full">{procurement.id}</span>
                                         </Badge>
                                     </TooltipTrigger>
-                                    <TooltipContent side="top">{procurement.id}</TooltipContent>
+                                    <TooltipContent side="top" className="font-mono">{procurement.id}</TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                         </div>
@@ -44,8 +50,12 @@ export const KanbanCard = ({
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Badge variant="outline" className={`${getStatusBadgeStyle(procurement.current_status)} text-xs w-full inline-flex items-center`}>
-                                            <div className="truncate max-w-[100px]">{procurement.current_status}</div>
+                                        <Badge variant="outline" 
+                                              className={cn(
+                                                getStatusBadgeStyle(procurement.current_status), 
+                                                "text-xs w-full inline-flex items-center font-medium"
+                                              )}>
+                                            <div className="truncate max-w-[110px]">{procurement.current_status}</div>
                                         </Badge>
                                     </TooltipTrigger>
                                     <TooltipContent side="top">{procurement.current_status}</TooltipContent>
@@ -53,19 +63,33 @@ export const KanbanCard = ({
                             </TooltipProvider>
                         </div>
                     </div>
-                    <Link href={`/procurement/${procurement.id}`} className="block">
-                        <h3 className="font-medium text-sm truncate hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400">{procurement.title}</h3>
+                    
+                    {/* Title with Link */}
+                    <Link href={`/procurement/${procurement.id}`} className="block group">
+                        <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600 
+                                     dark:text-gray-100 dark:group-hover:text-blue-400 transition-colors">
+                            {procurement.title}
+                        </h3>
                     </Link>
-                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                        <div className="flex items-center gap-1">
-                            <FileIcon className="h-3 w-3 text-blue-500 dark:text-blue-400" />
-                            <span>{procurement.document_count} docs</span>
+                    
+                    {/* Info Row */}
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-0.5">
+                        <div className="flex items-center gap-1.5">
+                            <div className="flex items-center rounded-full bg-blue-50 dark:bg-blue-900/20 p-0.5 pr-2">
+                                <FileIcon className="h-3 w-3 text-blue-500 dark:text-blue-400 mr-0.5" />
+                                <span className="font-medium">{procurement.document_count}</span>
+                            </div>
                         </div>
                         <div className="flex items-center gap-1">
                             <CalendarIcon className="h-3 w-3 text-gray-500 dark:text-gray-400" />
-                            <span>{procurement.last_updated}</span>
+                            <span className="font-medium">{procurement.last_updated}</span>
                         </div>
                     </div>
+                    
+                    {/* Divider before actions */}
+                    <div className="border-t border-gray-100 dark:border-gray-800 pt-1"></div>
+                    
+                    {/* Action Buttons */}
                     <ActionButtons
                         procurement={procurement}
                         variant="kanban"

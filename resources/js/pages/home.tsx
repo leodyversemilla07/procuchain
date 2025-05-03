@@ -1,249 +1,357 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import { FileText, ArrowRight, Shield, Users, Zap, Rocket } from 'lucide-react';
+import { FileText, CheckCircle, Lock, ArrowRight, Shield, Database, ChevronRight, ChevronLeft, ExternalLink, BookOpen, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
+    const [isVisible, setIsVisible] = useState(false);
+    const [activeTestimonial, setActiveTestimonial] = useState(0);
+
+    useEffect(() => {
+        // Adding animation effect on load
+        setIsVisible(true);
+    }, []);
+
+    const featuresList = [
+        {
+            title: "Blockchain Document Verification",
+            description: "Every document is hashed and stored on the blockchain, creating an immutable record that ensures transparency and prevents tampering.",
+            icon: <Shield className="w-10 h-10 text-teal-500" />
+        },
+        {
+            title: "End-to-End Procurement Tracking",
+            description: "Monitor the entire procurement process from initiation to completion with real-time status updates and automatic notifications.",
+            icon: <FileText className="w-10 h-10 text-teal-500" />
+        },
+        {
+            title: "Secure Role-Based Access",
+            description: "Different stakeholders have specific permissions ensuring proper segregation of duties and appropriate access control.",
+            icon: <Lock className="w-10 h-10 text-teal-500" />
+        },
+        {
+            title: "Comprehensive Audit Trail",
+            description: "Every action is recorded on the blockchain, providing a complete and unalterable history of all procurement activities.",
+            icon: <Database className="w-10 h-10 text-teal-500" />
+        },
+    ];
+
+    const testimonials = [
+        {
+            quote: "ProcuChain represents a significant innovation in procurement systems. The blockchain integration ensures transparency while maintaining security and compliance with government regulations.",
+            author: "Dr. Sheryl Mae D. Lainez",
+            title: "Department Chair, BS in Information Technology",
+            organization: "Mindoro State University"
+        },
+        {
+            quote: "As someone involved in procurement processes, I'm impressed by how ProcuChain maintains document integrity while streamlining workflows. The interface is intuitive and the blockchain component adds real value.",
+            author: "Manulito S. Rodriguez",
+            title: "BAC Chairperson",
+            organization: "Local Government of Gloria"
+        }
+    ];
+
+    const nextTestimonial = () => {
+        setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
+    };
+
+    const prevTestimonial = () => {
+        setActiveTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+    };
+
     return (
         <>
-            <Head title="ProcuChain - Blockchain-powered Procurement System">
-                <link rel="preconnect" href="https://fonts.bunny.net" crossOrigin="anonymous" />
-                <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600&display=swap" rel="stylesheet" />
-                <meta name="description" content="ProcuChain - Blockchain-powered procurement system for transparent, efficient, and secure government document management." />
-                <link rel="preload" as="image" href="/logo.png" />
+            <Head title="ProcuChain: A Blockchain-powered Document Management System for Bids and Awards Committee Office">
+                <link rel="preconnect" href="https://fonts.bunny.net" />
+                <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+                <meta name="description" content="ProcuChain is a blockchain-based procurement management system providing transparency, security, and efficiency in government procurement processes." />
             </Head>
-            <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-teal-50 text-gray-900 dark:from-gray-950 dark:to-gray-900 dark:text-white relative overflow-x-hidden">
+
+            <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950 text-gray-900 dark:text-white overflow-hidden">
                 <Header />
 
-                <main className="flex-grow">
-                    <section 
-                        className="relative min-h-[calc(100vh-76px)] flex items-center pt-[76px]" 
-                        aria-labelledby="hero-title"
-                    >
-                        {/* Background Patterns */}
-                        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-                            <div className="absolute -top-1/2 -right-1/2 w-[100rem] h-[100rem] rounded-full bg-gradient-to-br from-teal-50/40 to-blue-50/40 dark:from-teal-900/20 dark:to-blue-900/20 blur-3xl transform rotate-45 will-change-transform"></div>
-                        </div>
+                {/* Hero Section */}
+                <div
+                    className={`relative bg-gradient-to-br from-teal-50 to-blue-50 dark:from-teal-950 dark:to-blue-950 py-12 lg:py-16 transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0'} min-h-[85vh] lg:min-h-[70vh] flex items-center`}
+                >
+                    {/* Background Abstract Elements */}
+                    <div className="absolute inset-0 overflow-hidden">
+                        <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-teal-400/15 dark:bg-teal-400/10 backdrop-blur-3xl"></div>
+                        <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-1/4 w-96 h-96 rounded-full bg-blue-400/15 dark:bg-blue-400/10 backdrop-blur-3xl"></div>
+                    </div>
 
-                        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center py-12 lg:py-16">
-                                {/* Content Column */}
-                                <div className="lg:col-span-7 space-y-6 lg:space-y-8 text-center lg:text-left">
-                                    {/* Project Context */}
-                                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800">
-                                        <Rocket className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                                        <span className="text-sm font-semibold text-teal-700 dark:text-teal-300">Capstone Project 2025</span>
-                                    </div>
-
-                                    {/* Enhanced Value Proposition */}
-                                    <div className="space-y-4">
-                                        <h1 id="hero-title" className="text-4xl sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-[1.1]">
-                                            <span className="block mb-2">Transform Government</span>
-                                            <span className="bg-gradient-to-r from-teal-600 to-teal-400 bg-clip-text text-transparent">
-                                                Procurement Today
-                                            </span>
-                                        </h1>
-
-                                        <p className="text-lg sm:text-xl lg:text-lg xl:text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                                            Secure, transparent, and efficient public procurement management powered by blockchain technology.
-                                        </p>
-                                    </div>
-
-                                    {/* Feature Highlights */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-8">
-                                        <div className="flex gap-3 p-4 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-                                            <Shield className="w-5 h-5 text-teal-500 flex-shrink-0" />
-                                            <div>
-                                                <h3 className="font-medium mb-1">Secure & Immutable</h3>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">Blockchain-backed data integrity</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-3 p-4 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-                                            <Zap className="w-5 h-5 text-teal-500 flex-shrink-0" />
-                                            <div>
-                                                <h3 className="font-medium mb-1">Fast & Efficient</h3>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">Streamlined workflows</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-3 p-4 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-                                            <Users className="w-5 h-5 text-teal-500 flex-shrink-0" />
-                                            <div>
-                                                <h3 className="font-medium mb-1">Transparent</h3>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">Full process visibility</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* CTAs */}
-                                    <div className="flex flex-col sm:flex-row gap-4 mt-8 sm:mt-12">
-                                        <Button
-                                            asChild
-                                            size="lg"
-                                            className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
-                                        >
-                                            <Link href="/demo" className="relative z-10 flex items-center gap-2">
-                                                Try Demo
-                                                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                                <div className="absolute inset-0 -z-10 bg-white/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300"></div>
-                                            </Link>
-                                        </Button>
-                                        <Button
-                                            asChild
-                                            variant="outline"
-                                            size="lg"
-                                            className="border-2 hover:bg-gray-50 dark:hover:bg-gray-800 group"
-                                        >
-                                            <Link href="/documentation" className="flex items-center gap-2">
-                                                <FileText className="w-5 h-5" />
-                                                Documentation
-                                            </Link>
-                                        </Button>
-                                    </div>
+                    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
+                            {/* Hero Content */}
+                            <div className="max-w-2xl lg:max-w-xl text-center lg:text-left">
+                                {/* Badge for Credibility - Improved Styling */}
+                                <div className={`mb-4 inline-flex items-center py-1 px-4 rounded-full text-xs sm:text-sm bg-teal-100/80 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 shadow-sm transition-all duration-700 delay-50 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                                    <Badge variant="outline" className="px-2 py-0 mr-2 text-xs sm:text-sm bg-white dark:bg-gray-800 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800 flex-shrink-0">Capstone Project</Badge>
+                                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">Mindoro State University - Bongabong Campus</span>
                                 </div>
 
-                                {/* Visual Column */}
-                                <div className="lg:col-span-5 relative">
-                                    <div className="relative">
-                                        {/* Decorative Elements */}
-                                        <div className="absolute -top-8 -right-8 w-48 h-48 bg-teal-100/50 dark:bg-teal-900/30 rounded-full blur-2xl"></div>
-                                        <div className="absolute -bottom-8 -left-8 w-48 h-48 bg-blue-100/50 dark:bg-blue-900/30 rounded-full blur-2xl"></div>
+                                <h1 className={`text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-4 transition-all duration-700 delay-100 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                                    <span className="bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">ProcuChain:</span>
+                                    <span className="text-gray-900 dark:text-white block mt-1">
+                                        Blockchain for Transparent Procurement
+                                    </span>
+                                </h1>
 
-                                        {/* Main Visual */}
-                                        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
-                                            <div className="flex flex-col items-center text-center space-y-6">
-                                                <div className="relative">
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-teal-400/20 to-blue-400/20 rounded-full blur-2xl"></div>
-                                                    <FileText className="w-32 h-32 text-teal-500 relative z-10" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">ProcuChain</h3>
-                                                    <p className="text-gray-600 dark:text-gray-300">Streamlined Document Management</p>
-                                                </div>
-
-                                                {/* Document Flow Visual */}
-                                                <div className="grid grid-cols-3 gap-4 w-full mt-4">
-                                                    {[1, 2, 3].map((i) => (
-                                                        <div
-                                                            key={i}
-                                                            className="aspect-[3/4] rounded-lg bg-gradient-to-br from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20 p-3 flex items-center justify-center"
-                                                        >
-                                                            <FileText className="w-6 h-6 text-teal-500/70" />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Research Objectives Section */}
-                    <section className="py-24 bg-gray-50 dark:bg-gray-900">
-                        <div className="container mx-auto px-4">
-                            <div className="text-center mb-16">
-                                <h2 className="text-3xl md:text-4xl font-bold mb-4">Research Objectives</h2>
-                                <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                                    Exploring the intersection of blockchain technology and government procurement
+                                <p className={`text-base md:text-lg text-gray-700 dark:text-gray-300 mb-8 max-w-2xl transition-all duration-700 delay-200 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                                    A capstone project demonstrating secure, verifiable document management for government bids and awards using blockchain technology.
                                 </p>
-                            </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {[
-                                    {
-                                        icon: <Shield className="w-10 h-10 text-teal-500" />,
-                                        title: "Enhance Transparency",
-                                        description: "Investigate how blockchain can improve transparency in government procurement processes"
-                                    },
-                                    {
-                                        icon: <Users className="w-10 h-10 text-teal-500" />,
-                                        title: "Streamline Workflows",
-                                        description: "Develop efficient digital solutions for procurement document management"
-                                    },
-                                    {
-                                        icon: <Zap className="w-10 h-10 text-teal-500" />,
-                                        title: "Reduce Corruption",
-                                        description: "Implement immutable audit trails to prevent tampering and ensure accountability"
-                                    },
-                                ].map((objective, index) => (
-                                    <div key={index} className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-                                        <div className="mb-4">{objective.icon}</div>
-                                        <h3 className="text-xl font-bold mb-2">{objective.title}</h3>
-                                        <p className="text-gray-600 dark:text-gray-300">{objective.description}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Methodology Section */}
-                    <section className="py-24">
-                        <div className="container mx-auto px-4">
-                            <div className="text-center mb-16">
-                                <h2 className="text-3xl md:text-4xl font-bold mb-4">Research Methodology</h2>
-                                <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                                    Our systematic approach to solving procurement challenges
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                {[
-                                    {
-                                        step: "1",
-                                        title: "Problem Analysis",
-                                        description: "In-depth study of current procurement processes and challenges"
-                                    },
-                                    {
-                                        step: "2",
-                                        title: "Solution Design",
-                                        description: "Development of blockchain-based system architecture"
-                                    },
-                                    {
-                                        step: "3",
-                                        title: "Implementation",
-                                        description: "Building and testing the procurement management system"
-                                    }
-                                ].map((step, index) => (
-                                    <div key={index} className="relative">
-                                        <div className="bg-teal-50 dark:bg-teal-900/20 p-8 rounded-xl">
-                                            <div className="text-4xl font-bold text-teal-500 mb-4">Phase {step.step}</div>
-                                            <h3 className="text-xl font-bold mb-2">{step.title}</h3>
-                                            <p className="text-gray-600 dark:text-gray-300">{step.description}</p>
-                                        </div>
-                                        {index < 2 && (
-                                            <ArrowRight className="hidden md:block absolute top-1/2 -right-6 w-12 h-12 text-teal-500 transform -translate-y-1/2" />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Team Section */}
-                    <section className="py-24 bg-gradient-to-br from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20">
-                        <div className="container mx-auto px-4">
-                            <div className="max-w-4xl mx-auto text-center">
-                                <h2 className="text-3xl md:text-4xl font-bold mb-4">Research Team</h2>
-                                <p className="text-gray-600 dark:text-gray-300 mb-8">
-                                    Meet the innovative minds behind ProcuChain
-                                </p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
-                                    {/* Add team member cards here */}
-                                </div>
-                                <div className="mt-16">
-                                    <Button
-                                        asChild
-                                        size="lg"
-                                        className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white"
-                                    >
-                                        <Link href="/about">
-                                            <Users className="w-5 h-5 mr-2" />
-                                            About the Team
-                                        </Link>
+                                <div className={`flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4 transition-all duration-700 delay-300 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                                    <Button asChild size="lg" className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 text-base shadow-md hover:shadow-lg transition-all">
+                                        <a href={route('features')}>
+                                            Explore Project Demo
+                                            <ArrowRight className="ml-2 w-5 h-5" />
+                                        </a>
+                                    </Button>
+                                    <Button asChild size="lg" variant="outline" className="border-teal-600 text-teal-600 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-400 dark:hover:bg-teal-900/20 px-6 py-3 text-base">
+                                        <a href={route('documentation')}>
+                                            View Documentation
+                                            <BookOpen className="ml-2 w-5 h-5" />
+                                        </a>
                                     </Button>
                                 </div>
+                            </div>
+
+                            <div className={`w-full max-w-md lg:w-2/5 transition-all duration-1000 delay-500 transform ${isVisible ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
+                                <div className="relative p-2 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
+                                    <div className="aspect-w-16 aspect-h-10 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                        <img
+                                            src="/images/blockchain-procurement-system.png"
+                                            alt="ProcuChain System Interface"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.currentTarget.src = "https://via.placeholder.com/800x500?text=ProcuChain+System";
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="absolute -bottom-3 -left-3 p-2 bg-teal-500 text-white rounded-lg shadow-md flex items-center text-xs">
+                                        <Lock className="w-3 h-3 mr-1" />
+                                        Blockchain Secured
+                                    </div>
+                                    <div className="absolute -top-3 -right-3 p-1.5 bg-white dark:bg-gray-800 rounded-full shadow-md border border-gray-200 dark:border-gray-700">
+                                        <CheckCircle className="w-4 h-4 text-green-500" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={`absolute bottom-5 left-0 right-0 flex justify-center transition-opacity duration-1000 delay-500 ${isVisible ? 'opacity-70' : 'opacity-0'} animate-bounce`}>
+                        <div className="p-1 rounded-full border-2 border-teal-500 dark:border-teal-400">
+                            <ChevronRight className="w-5 h-5 text-teal-500 dark:text-teal-400 transform rotate-90" />
+                        </div>
+                        <span className="sr-only">Scroll down</span>
+                    </div>
+                </div>
+
+                <main className="flex-grow">
+                    {/* Features Section */}
+                    <section className="py-12 sm:py-16 bg-white dark:bg-gray-900">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="text-center mb-12">
+                                <h2 className="text-3xl font-bold mb-4">
+                                    Key Features &amp; Benefits
+                                </h2>
+                                <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+                                    ProcuChain transforms procurement processes with powerful blockchain technology
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {featuresList.map((feature, index) => (
+                                    <Card key={index} className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
+                                        <CardContent className="p-6">
+                                            <div className="mb-4 bg-teal-50 dark:bg-teal-900/30 p-3 inline-block rounded-lg">
+                                                {feature.icon}
+                                            </div>
+                                            <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                                            <p className="text-gray-600 dark:text-gray-300">{feature.description}</p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+
+                            <div className="text-center mt-10">
+                                <Button asChild className="bg-teal-600 hover:bg-teal-700 text-white">
+                                    <a href={route('features')}>
+                                        View All Features
+                                        <ArrowRight className="ml-2 w-4 h-4" />
+                                    </a>
+                                </Button>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Blockchain Section */}
+                    <section className="py-12 sm:py-16 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+                                <div className="lg:w-1/2 order-2 lg:order-1">
+                                    <h2 className="text-3xl font-bold mb-6">
+                                        <span className="bg-gradient-to-r from-teal-600 to-teal-400 bg-clip-text text-transparent">Blockchain Technology</span><br />
+                                        for Procurement Integrity
+                                    </h2>
+                                    <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                                        ProcuChain leverages blockchain technology to create an immutable record of all
+                                        procurement documents and activities, ensuring transparency and preventing manipulation.
+                                    </p>
+
+                                    <ul className="space-y-4 mb-8">
+                                        {[
+                                            "Tamper-proof document verification",
+                                            "Permanent audit trail of all activities",
+                                            "Decentralized storage for enhanced security",
+                                            "Real-time verification of document authenticity"
+                                        ].map((item, index) => (
+                                            <li key={index} className="flex items-start">
+                                                <CheckCircle className="w-6 h-6 text-teal-500 mr-3 flex-shrink-0 mt-0.5" />
+                                                <span className="text-gray-600 dark:text-gray-300">{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <Button asChild variant="outline" className="border-teal-600 text-teal-600 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-400 dark:hover:bg-teal-900/20">
+                                        <a href={route('documentation')}>
+                                            Learn About Our Technology
+                                            <ArrowRight className="ml-2 w-4 h-4" />
+                                        </a>
+                                    </Button>
+                                </div>
+
+                                <div className="lg:w-1/2 order-1 lg:order-2 mb-8 lg:mb-0 w-full">
+                                    <div className="relative">
+                                        <div className="rounded-xl overflow-hidden shadow-xl">
+                                            <div className="aspect-w-4 aspect-h-3">
+                                                <img
+                                                    src="/images/blockchain-diagram.png"
+                                                    alt="Blockchain Integration"
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = "https://via.placeholder.com/800x600?text=Blockchain+Diagram";
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Floating elements */}
+                                        <div className="absolute -bottom-4 -left-4 sm:-bottom-5 sm:-left-5 bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-lg transform scale-90 sm:scale-100">
+                                            <div className="flex items-center space-x-2 sm:space-x-3">
+                                                <div className="bg-teal-100 dark:bg-teal-900/30 p-1.5 sm:p-2 rounded-full">
+                                                    <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 dark:text-teal-400" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs sm:text-sm font-semibold">Document Security</div>
+                                                    <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">SHA-256 Hashing</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="absolute -top-4 -right-4 sm:-top-5 sm:-right-5 bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 transform scale-90 sm:scale-100">
+                                            <div className="text-sm font-medium text-center">
+                                                <div className="text-teal-600 dark:text-teal-400 font-bold text-xl sm:text-2xl">100%</div>
+                                                <div className="text-xs sm:text-sm">Tamper-Proof</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Testimonials Section */}
+                    <section className="py-12 sm:py-16 bg-teal-50 dark:bg-teal-900/20">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="text-center mb-12">
+                                <h2 className="text-3xl font-bold mb-4">
+                                    Expert Feedback
+                                </h2>
+                                <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+                                    What industry experts and stakeholders are saying about ProcuChain
+                                </p>
+                            </div>
+
+                            <div className="relative max-w-4xl mx-auto">
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8 md:p-12">
+                                    <div className="text-teal-500 text-5xl sm:text-6xl font-serif mb-4 sm:mb-6">"</div>
+                                    <blockquote className="text-lg sm:text-xl md:text-2xl text-gray-700 dark:text-gray-300 mb-6 sm:mb-8">
+                                        {testimonials[activeTestimonial].quote}
+                                    </blockquote>
+
+                                    <div className="flex items-center">
+                                        <div className="w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-600 dark:text-teal-400 mr-4">
+                                            <Users className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-lg">{testimonials[activeTestimonial].author}</div>
+                                            <div className="text-gray-600 dark:text-gray-400">{testimonials[activeTestimonial].title}</div>
+                                            <div className="text-sm text-teal-600 dark:text-teal-400">{testimonials[activeTestimonial].organization}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between mt-6">
+                                    <Button
+                                        onClick={prevTestimonial}
+                                        variant="outline"
+                                        size="icon"
+                                        className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                                    >
+                                        <ChevronLeft className="w-5 h-5" />
+                                    </Button>
+
+                                    <div className="flex space-x-2">
+                                        {testimonials.map((_, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setActiveTestimonial(idx)}
+                                                className={`w-3 h-3 rounded-full ${activeTestimonial === idx ? 'bg-teal-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                                aria-label={`Go to testimonial ${idx + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <Button
+                                        onClick={nextTestimonial}
+                                        variant="outline"
+                                        size="icon"
+                                        className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                                    >
+                                        <ChevronRight className="w-5 h-5" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* CTA Section */}
+                    <section className="py-12 sm:py-16 bg-gradient-to-br from-teal-600 to-teal-500 text-white">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Explore ProcuChain?</h2>
+                            <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
+                                Discover how our blockchain-powered system can transform your procurement processes with enhanced
+                                transparency, security, and efficiency.
+                            </p>
+                            <div className="flex flex-wrap justify-center gap-4">
+                                <Button asChild size="lg" className="bg-white text-teal-600 hover:bg-gray-100">
+                                    <a href={route('documentation')}>
+                                        <BookOpen className="mr-2 h-5 w-5" />
+                                        Read Documentation
+                                    </a>
+                                </Button>
+                                <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-teal-700">
+                                    <a href={route('contact')}>
+                                        Contact Us
+                                        <ExternalLink className="ml-2 h-5 w-5" />
+                                    </a>
+                                </Button>
                             </div>
                         </div>
                     </section>
