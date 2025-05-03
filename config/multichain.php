@@ -17,7 +17,7 @@ return [
         'host' => env('MULTICHAIN_HOST', '127.0.0.1'),
         'port' => env('MULTICHAIN_PORT', 4786),
         'username' => env('MULTICHAIN_USERNAME', 'multichainrpc'),
-        'password' => env('MULTICHAIN_PASSWORD'),
+        'password' => env('MULTICHAIN_PASSWORD', 'default_password_change_me'),
     ],
 
     /*
