@@ -45,6 +45,7 @@ export const ProcurementListHeader = ({
 }: ProcurementListHeaderProps) => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const [isMobileViewToggleOpen, setIsMobileViewToggleOpen] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -63,29 +64,40 @@ export const ProcurementListHeader = ({
         onSearchChange("");
     };
 
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 640) {
+                setIsMobileViewToggleOpen(false);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
         <CardHeader
             className={cn(
-                "pb-5 border-b dark:border-sidebar-border transition-all duration-200",
+                "pb-4 md:pb-5 border-b dark:border-sidebar-border transition-all duration-200",
+                "px-4 sm:px-6 md:px-8",
                 isScrolled && "sticky top-0 z-10 backdrop-blur-lg bg-white/95 dark:bg-gray-950/95 shadow-md"
             )}
         >
-            {/* Top Row: Title, Description, Blockchain Info */}
-            <div className="flex flex-col md:flex-row justify-between items-start gap-3 mb-5">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-2 sm:gap-3 mb-4 md:mb-5">
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center flex-wrap gap-2 mb-1.5">
+                    <div className="flex items-center flex-wrap gap-2 mb-1">
                         <div
-                            className="hidden sm:flex items-center justify-center h-9 w-9 rounded-lg bg-primary/10 text-primary mr-1.5"
+                            className="hidden sm:flex items-center justify-center h-8 w-8 md:h-9 md:w-9 rounded-lg bg-primary/10 text-primary mr-1.5"
                         >
-                            <FileTextIcon className="h-5 w-5" />
+                            <FileTextIcon className="h-4 w-4 md:h-5 md:w-5" />
                         </div>
-                        <CardTitle className="text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-50 flex items-center flex-wrap gap-2">
+                        <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-50 flex items-center flex-wrap gap-1 sm:gap-2">
                             <span>Procurement List</span>
                             <Badge
                                 variant="outline"
                                 className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 
-                                dark:text-blue-300 dark:border-blue-800 ml-2 transition-all duration-300 
-                                hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                                dark:text-blue-300 dark:border-blue-800 ml-1 sm:ml-2 transition-all duration-300 
+                                hover:bg-blue-100 dark:hover:bg-blue-900/40 text-xs py-0.5"
                             >
                                 {loading ? (
                                     <span className="flex items-center">
@@ -97,24 +109,24 @@ export const ProcurementListHeader = ({
                             </Badge>
                         </CardTitle>
                     </div>
-                    <CardDescription className="mt-1.5 text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
+                    <CardDescription className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
                         Track and manage all procurement activities with blockchain verification.
                     </CardDescription>
                 </div>
                 <div
                     className="flex items-center text-xs bg-gray-50 dark:bg-gray-800/60 
-                    rounded-full py-1.5 px-3 text-gray-500 dark:text-gray-400 mt-1 md:mt-0 
-                    flex-shrink-0 border border-gray-100 dark:border-gray-700/80
+                    rounded-full py-1 sm:py-1.5 px-2 sm:px-3 text-gray-500 dark:text-gray-400 mt-2 md:mt-0 
+                    flex-shrink-0 border border-gray-100 dark:border-gray-700/80 w-full md:w-auto justify-center md:justify-start
                     shadow-sm transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
-                    <ExternalLinkIcon className="h-3.5 w-3.5 mr-2 flex-shrink-0 text-blue-500 dark:text-blue-400" />
+                    <ExternalLinkIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5 sm:mr-2 flex-shrink-0 text-blue-500 dark:text-blue-400" />
                     <span className="flex-1">Blockchain verified</span>
                     <TooltipProvider delayDuration={300}>
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-5 w-5 ml-1.5 text-gray-400 
                                     hover:bg-gray-200/80 dark:hover:bg-gray-700/80 rounded-full">
-                                    <HelpCircleIcon className="h-3.5 w-3.5" />
+                                    <HelpCircleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="max-w-xs bg-gray-900 text-gray-100 dark:bg-gray-800">
@@ -125,20 +137,17 @@ export const ProcurementListHeader = ({
                 </div>
             </div>
 
-            {/* Bottom Row: Search, View Toggle, New Button */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                {/* Search and Filter Group */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
                 <div className="flex items-center gap-2 w-full sm:max-w-md">
-                    {/* Search Input */}
                     <div className={cn(
                         "relative w-full flex-grow transition-all duration-200",
                         isSearchFocused && "sm:flex-grow"
                     )}>
                         <div className={cn(
-                            "absolute left-3 top-1/2 transform -translate-y-1/2 transition-all duration-200",
+                            "absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 transition-all duration-200",
                             isSearchFocused ? "text-primary" : "text-gray-500 dark:text-gray-400"
                         )}>
-                            <SearchIcon className="h-4 w-4" />
+                            <SearchIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </div>
                         <Input
                             placeholder={searchPlaceholder}
@@ -147,10 +156,11 @@ export const ProcurementListHeader = ({
                             onFocus={() => setIsSearchFocused(true)}
                             onBlur={() => setIsSearchFocused(false)}
                             className={cn(
-                                "pl-10 pr-10 w-full rounded-full shadow-sm transition-all duration-200",
+                                "pl-8 sm:pl-10 pr-8 sm:pr-10 w-full rounded-full shadow-sm transition-all duration-200",
                                 "border-sidebar-border/70 dark:border-sidebar-border",
                                 "dark:placeholder-gray-400 hover:border-gray-400 dark:hover:border-gray-600",
                                 "focus:ring-1 focus:ring-offset-0",
+                                "text-sm h-9 sm:h-10",
                                 isSearchFocused
                                     ? "border-primary dark:border-primary focus:border-primary dark:focus:border-primary focus:ring-primary/20 dark:focus:ring-primary/30"
                                     : "focus:border-gray-400 dark:focus:border-gray-600"
@@ -161,15 +171,15 @@ export const ProcurementListHeader = ({
                                 onClick={clearSearch}
                                 type="button"
                                 aria-label="Clear search"
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2
+                                className="absolute right-2.5 sm:right-3 top-1/2 transform -translate-y-1/2
                                     text-gray-400 hover:text-gray-600 dark:text-gray-500
-                                    dark:hover:text-gray-300 transition-colors duration-150"
+                                    dark:hover:text-gray-300 transition-colors duration-150
+                                    h-6 w-6 flex items-center justify-center"
                             >
-                                <XIcon className="h-4 w-4" />
+                                <XIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </button>
                         )}
                     </div>
-                    {/* Filter Button */}
                     {onOpenFilters && (
                         <TooltipProvider delayDuration={300}>
                             <Tooltip>
@@ -178,10 +188,10 @@ export const ProcurementListHeader = ({
                                         variant="outline"
                                         size="icon"
                                         onClick={onOpenFilters}
-                                        className="h-10 w-10 rounded-full border-sidebar-border/70 dark:border-sidebar-border
+                                        className="h-9 sm:h-10 w-9 sm:w-10 rounded-full border-sidebar-border/70 dark:border-sidebar-border
                                                 hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
                                     >
-                                        <SlidersHorizontalIcon className="h-4 w-4" />
+                                        <SlidersHorizontalIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom" className="bg-gray-900 text-gray-100 dark:bg-gray-800">
@@ -192,8 +202,69 @@ export const ProcurementListHeader = ({
                     )}
                 </div>
 
-                {/* View Toggle and New Button */}
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end mt-1 sm:mt-0">
+                    <div className="sm:hidden relative">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsMobileViewToggleOpen(!isMobileViewToggleOpen)}
+                            className="text-xs px-3 h-9 rounded-md border-sidebar-border/70 dark:border-sidebar-border
+                                      hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+                        >
+                            {viewType === 'table' ? (
+                                <>
+                                    <Table2Icon className="h-3.5 w-3.5 mr-1.5" />
+                                    Table
+                                </>
+                            ) : (
+                                <>
+                                    <LayersIcon className="h-3.5 w-3.5 mr-1.5" />
+                                    Kanban
+                                </>
+                            )}
+                        </Button>
+
+                        {isMobileViewToggleOpen && (
+                            <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 
+                                           dark:border-gray-700 z-20 min-w-[120px] overflow-hidden">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setViewType('table');
+                                        setIsMobileViewToggleOpen(false);
+                                    }}
+                                    className={cn(
+                                        "text-xs px-3 py-2 rounded-none w-full justify-start",
+                                        viewType === 'table'
+                                            ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                            : "text-gray-600 dark:text-gray-400"
+                                    )}
+                                >
+                                    <Table2Icon className="h-3.5 w-3.5 mr-1.5" />
+                                    Table
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setViewType('kanban');
+                                        setIsMobileViewToggleOpen(false);
+                                    }}
+                                    className={cn(
+                                        "text-xs px-3 py-2 rounded-none w-full justify-start",
+                                        viewType === 'kanban'
+                                            ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                            : "text-gray-600 dark:text-gray-400"
+                                    )}
+                                >
+                                    <LayersIcon className="h-3.5 w-3.5 mr-1.5" />
+                                    Kanban
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
                     <div
                         className="hidden sm:flex items-center bg-gray-100 dark:bg-gray-800/60 p-1 rounded-lg flex-shrink-0 
                                 border border-gray-200 dark:border-gray-700/80 shadow-sm"
@@ -203,13 +274,13 @@ export const ProcurementListHeader = ({
                             size="sm"
                             onClick={() => setViewType('table')}
                             className={cn(
-                                "text-xs px-3 rounded-md transition-all duration-200",
+                                "text-xs px-2.5 sm:px-3 rounded-md transition-all duration-200",
                                 viewType === 'table'
                                     ? "bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 shadow-sm"
                                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                             )}
                         >
-                            <Table2Icon className="h-3.5 w-3.5 mr-1.5" />
+                            <Table2Icon className="h-3.5 w-3.5 mr-1 sm:mr-1.5" />
                             Table
                         </Button>
                         <Button
@@ -217,25 +288,26 @@ export const ProcurementListHeader = ({
                             size="sm"
                             onClick={() => setViewType('kanban')}
                             className={cn(
-                                "text-xs px-3 rounded-md transition-all duration-200",
+                                "text-xs px-2.5 sm:px-3 rounded-md transition-all duration-200",
                                 viewType === 'kanban'
                                     ? "bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 shadow-sm"
                                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                             )}
                         >
-                            <LayersIcon className="h-3.5 w-3.5 mr-1.5" />
+                            <LayersIcon className="h-3.5 w-3.5 mr-1 sm:mr-1.5" />
                             Kanban
                         </Button>
                     </div>
+
                     {userRole === 'bac_secretariat' && (
                         <Button
                             className="bg-primary hover:bg-primary/90 text-xs py-1.5 px-3 font-medium shadow 
                                 transition-all duration-200 dark:bg-primary/90 dark:hover:bg-primary/80 
-                                dark:text-white/95 h-auto min-w-0 flex-shrink-0"
+                                dark:text-white/95 h-9 sm:h-auto min-w-0 flex-shrink-0"
                             asChild
                         >
                             <Link href="/bac-secretariat/procurement/procurement-initiation" className="flex items-center justify-center">
-                                <PlusIcon className="h-3.5 w-3.5 mr-1.5" />
+                                <PlusIcon className="h-3.5 w-3.5 mr-1 sm:mr-1.5" />
                                 <span className="hidden xs:inline">New</span> Procurement
                             </Link>
                         </Button>

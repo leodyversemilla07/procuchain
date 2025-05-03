@@ -249,12 +249,12 @@ export default function ProcurementsList({ procurements: initialProcurements, er
             <Head title="Procurement List" />
             <div
                 className={cn(
-                    "flex h-full flex-1 flex-col gap-4 p-2 sm:p-4 transition-opacity duration-300",
+                    "flex h-full flex-1 flex-col gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 transition-opacity duration-300",
                     isPageLoaded ? "opacity-100" : "opacity-0"
                 )}
             >
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-sm overflow-hidden
-                               rounded-xl transition-all duration-200 hover:shadow-md">
+                               rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md">
                     <ProcurementListHeader
                         userRole={userRole}
                         viewType={viewType}
@@ -264,8 +264,8 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                         searchValue={searchValue}
                         onSearchChange={setSearchValue}
                     />
-                    <CardContent className="dark:border-t dark:border-sidebar-border p-4">
-                        <div className={viewType === 'table' ? 'overflow-x-auto' : ''}>
+                    <CardContent className="dark:border-t dark:border-sidebar-border p-2 sm:p-3 md:p-4 overflow-hidden">
+                        <div className={viewType === 'table' ? 'overflow-x-auto w-full' : ''}>
                             <ProcurementsContent
                                 loading={loading}
                                 error={error}
