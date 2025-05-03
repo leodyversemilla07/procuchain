@@ -12,7 +12,7 @@ interface KanbanBoardProps {
     onOpenSupplementalBidBulletinModal?: (procurement: ProcurementListItem) => void;
 }
 
-// eslint-disable-next-line complexity, max-lines
+ 
 export const KanbanBoard = ({
     procurements,
     onOpenPreProcurementModal,
@@ -43,7 +43,7 @@ export const KanbanBoard = ({
                     <div 
                         key={stage} 
                         className={cn(
-                            "w-full sm:w-[280px] flex flex-col",
+                            "w-full flex flex-col", // Removed sm:w-[280px] to ensure full width on all mobile screens
                             "bg-gray-50/80 dark:bg-gray-800/30 backdrop-blur-sm",
                             "rounded-lg border border-gray-200/90 dark:border-gray-700/60",
                             "shadow-sm hover:shadow transition-all duration-200"

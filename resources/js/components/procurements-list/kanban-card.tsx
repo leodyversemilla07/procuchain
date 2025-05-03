@@ -31,7 +31,7 @@ export const KanbanCard = ({
                     {/* Top - ID Badge and Status */}
                     <div className="flex items-center justify-between gap-2">
                         {/* ID Badge */}
-                        <div className="w-[70px] flex-shrink-0">
+                        <div className="w-1/2 flex-shrink-0">
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -46,7 +46,7 @@ export const KanbanCard = ({
                             </TooltipProvider>
                         </div>
                         {/* Status Badge */}
-                        <div className="flex-1 min-w-0">
+                        <div className="w-1/2 min-w-0">
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -55,7 +55,7 @@ export const KanbanCard = ({
                                                 getStatusBadgeStyle(procurement.current_status), 
                                                 "text-xs w-full inline-flex items-center font-medium"
                                               )}>
-                                            <div className="truncate max-w-[110px]">{procurement.current_status}</div>
+                                            <div className="truncate max-w-full">{procurement.current_status}</div>
                                         </Badge>
                                     </TooltipTrigger>
                                     <TooltipContent side="top">{procurement.current_status}</TooltipContent>
@@ -73,7 +73,7 @@ export const KanbanCard = ({
                     </Link>
                     
                     {/* Info Row */}
-                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-0.5">
+                    <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-0.5 gap-y-2">
                         <div className="flex items-center gap-1.5">
                             <div className="flex items-center rounded-full bg-blue-50 dark:bg-blue-900/20 p-0.5 pr-2">
                                 <FileIcon className="h-3 w-3 text-blue-500 dark:text-blue-400 mr-0.5" />
@@ -82,7 +82,7 @@ export const KanbanCard = ({
                         </div>
                         <div className="flex items-center gap-1">
                             <CalendarIcon className="h-3 w-3 text-gray-500 dark:text-gray-400" />
-                            <span className="font-medium">{procurement.last_updated}</span>
+                            <span className="font-medium text-right">{procurement.last_updated}</span>
                         </div>
                     </div>
                     

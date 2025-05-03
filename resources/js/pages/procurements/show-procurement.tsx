@@ -325,6 +325,12 @@ const createDocumentCountElement = (count?: number): JSX.Element | null => {
     );
 };
 
+// Helper function to shorten hash strings
+const shortenHash = (hash?: string, startLength = 5, endLength = 5): string => {
+    if (!hash) return 'N/A';
+    if (hash.length <= startLength + endLength) return hash;
+    return `${hash.substring(0, startLength)}...${hash.substring(hash.length - endLength)}`;
+};
 
 interface ProcurementHeaderProps {
     title: string;
@@ -647,7 +653,7 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                     <TooltipTrigger asChild>
                                         <span className="inline-flex items-center font-mono text-xs bg-neutral-100 dark:bg-neutral-700/50 px-1.5 py-0.5 rounded cursor-help max-w-[180px] sm:max-w-[250px] truncate">
                                             <Hash className="w-3 h-3 mr-1 text-neutral-500 dark:text-neutral-400" />
-                                            {doc.file_key}
+                                            {shortenHash(doc.file_key, 6, 4)}
                                         </span>
                                     </TooltipTrigger>
                                     <TooltipContent side="top" className="max-w-xs">
@@ -701,7 +707,7 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 <div className="flex-1 min-w-0">
                                     <p className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-medium mb-0.5">Document Hash</p>
                                     <code className="font-mono text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 truncate block">
-                                        {doc.hash && (doc.hash.length > 16 ? `${doc.hash.slice(0, 8)}...${doc.hash.slice(-8)}` : doc.hash)}
+                                        {shortenHash(doc.hash)}
                                     </code>
                                 </div>
                             </div>
