@@ -244,7 +244,7 @@ export const ActionButtons = ({
 
     return (
         <div className={cn(
-            "flex justify-end gap-1.5",
+            "flex flex-wrap justify-end gap-1.5", // Added flex-wrap to allow buttons to wrap on very small screens
             variant === "table" ? "mr-2" : ""
         )}>
             <ActionButtonItem

@@ -265,7 +265,7 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                         onSearchChange={setSearchValue}
                     />
                     <CardContent className="dark:border-t dark:border-sidebar-border p-4">
-                        <div className={`overflow-x-auto ${viewType === 'kanban' ? 'py-2' : ''}`}>
+                        <div className={viewType === 'table' ? 'overflow-x-auto' : ''}>
                             <ProcurementsContent
                                 loading={loading}
                                 error={error}

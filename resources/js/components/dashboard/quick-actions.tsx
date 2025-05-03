@@ -1,28 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "@inertiajs/react";
-import { PlusIcon, FileUpIcon, FileText, BarChart3 } from "lucide-react";
+import { PlusIcon, FileUpIcon } from "lucide-react";
 
 export function QuickActions() {
     const actions = [
         {
             href: "/bac-secretariat/procurement/pr-initiation",
             icon: PlusIcon,
-            label: "New Purchase Request"
+            label: "Procurement Initiation"
         },
         {
             href: "/bac-secretariat/procurements-list",
             icon: FileUpIcon,
             label: "Procurements List"
-        },
-        {
-            href: "/bac-secretariat/bid-invitation",
-            icon: FileText,
-            label: "Bid Invitation"
-        },
-        {
-            href: "/bac-secretariat/reports",
-            icon: BarChart3,
-            label: "Reports"
         }
     ];
 

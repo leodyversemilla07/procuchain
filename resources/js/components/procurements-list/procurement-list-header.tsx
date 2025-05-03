@@ -195,7 +195,7 @@ export const ProcurementListHeader = ({
                 {/* View Toggle and New Button */}
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                     <div
-                        className="flex items-center bg-gray-100 dark:bg-gray-800/60 p-1 rounded-lg flex-shrink-0 
+                        className="hidden sm:flex items-center bg-gray-100 dark:bg-gray-800/60 p-1 rounded-lg flex-shrink-0 
                                 border border-gray-200 dark:border-gray-700/80 shadow-sm"
                     >
                         <Button
