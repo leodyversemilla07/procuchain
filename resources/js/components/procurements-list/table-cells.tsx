@@ -17,16 +17,40 @@ export const IdCell = ({ id }: { id: string }) => (
     </div>
 );
 
-export const TitleCell = ({ procurement }: { procurement: ProcurementListItem }) => (
-    <div className="max-w-[280px] truncate font-medium">
-        <Link
-            href={`procurements-list/${procurement.id}`}
-            className="hover:text-blue-600 hover:underline transition-colors duration-150 text-gray-900 dark:text-gray-100"
-        >
-            {procurement.title}
-        </Link>
-    </div>
-);
+export const TitleCell = ({ procurement }: { procurement: ProcurementListItem }) => {
+    const textRef = useRef<HTMLDivElement>(null);
+    const [isTruncated, setIsTruncated] = useState(false);
+
+    useEffect(() => {
+        const checkTruncation = () => {
+            const el = textRef.current;
+            if (el) {
+                setIsTruncated(el.scrollWidth > el.clientWidth);
+            }
+        };
+        checkTruncation();
+        window.addEventListener('resize', checkTruncation);
+        return () => window.removeEventListener('resize', checkTruncation);
+    }, [procurement.title]);
+
+    const titleContent = (
+        <div ref={textRef} className="max-w-[280px] truncate font-medium">
+            <Link
+                href={`procurements-list/${procurement.id}`}
+                className="hover:text-blue-600 hover:underline transition-colors duration-150 text-gray-900 dark:text-gray-100"
+            >
+                {procurement.title}
+            </Link>
+        </div>
+    );
+
+    return isTruncated ? (
+        <Tooltip>
+            <TooltipTrigger asChild>{titleContent}</TooltipTrigger>
+            <TooltipContent className="font-medium">{procurement.title}</TooltipContent>
+        </Tooltip>
+    ) : titleContent;
+};
 
 export const BadgeCell = <T extends string>({
     value,
@@ -57,8 +81,9 @@ export const BadgeCell = <T extends string>({
             variant="outline"
             className={cn(
                 getStyle(value),
-                "inline-flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap max-w-full px-2 py-0.5",
-                "shadow-sm border transition-all duration-150 font-medium"
+                "inline-flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-0.5",
+                "shadow-sm border transition-all duration-150 font-medium",
+                "max-w-[180px]" // Added fixed max-width to ensure truncation
             )}
         >
             {icon && <span className="flex-shrink-0">{icon}</span>}
@@ -133,9 +158,23 @@ export const DocumentCountCell = ({ count }: { count: number }) => (
     </div>
 );
 
-export const LastUpdatedCell = ({ date }: { date: string }) => (
-    <div className="flex items-center gap-1.5">
-        <CalendarIcon className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
-        <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">{date}</span>
-    </div>
-);
+export const LastUpdatedCell = ({ date }: { date: string }) => {
+    // Parse the date string
+    const formattedDate = new Date(date);
+    
+    // Format date as "MMM DD, YYYY" (e.g., "May 4, 2025") if valid, otherwise show original string
+    const displayDate = !isNaN(formattedDate.getTime()) 
+        ? formattedDate.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+        }) 
+        : date;
+
+    return (
+        <div className="flex items-center gap-1.5">
+            <CalendarIcon className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">{displayDate}</span>
+        </div>
+    );
+};

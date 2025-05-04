@@ -152,6 +152,12 @@ const ProcurementsContent = ({
                         data={procurements}
                         searchValue={searchValue}
                         onRowSelectionChange={onSelectedRowsChange}
+                        initialSorting={[
+                            {
+                                id: 'last_updated',
+                                desc: true
+                            }
+                        ]}
                         bulkActions={[
                             {
                                 label: 'Export to CSV',

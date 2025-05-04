@@ -43,18 +43,8 @@ export const ProcurementListHeader = ({
     searchPlaceholder = "Search procurements...",
     onOpenFilters,
 }: ProcurementListHeaderProps) => {
-    const [isScrolled, setIsScrolled] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [isMobileViewToggleOpen, setIsMobileViewToggleOpen] = useState(false);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 10);
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         onSearchChange(e.target.value);
@@ -78,9 +68,8 @@ export const ProcurementListHeader = ({
     return (
         <CardHeader
             className={cn(
-                "pb-4 md:pb-5 border-b dark:border-sidebar-border transition-all duration-200",
-                "px-4 sm:px-6 md:px-8",
-                isScrolled && "sticky top-0 z-10 backdrop-blur-lg bg-white/95 dark:bg-gray-950/95 shadow-md"
+                "pb-4 md:pb-5 border-b dark:border-sidebar-border",
+                "px-4 sm:px-6 md:px-8"
             )}
         >
             <div className="flex flex-col md:flex-row justify-between items-start gap-2 sm:gap-3 mb-4 md:mb-5">
