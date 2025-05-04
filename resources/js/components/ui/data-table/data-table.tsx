@@ -31,6 +31,7 @@ interface DataTableProps<TData, TValue> {
     searchValue?: string;
     onRowSelectionChange?: (selectedRows: TData[]) => void;
     bulkActions?: { label: string; action: (selectedRows: TData[]) => void; icon?: React.ReactNode }[];
+    initialSorting?: SortingState;
 }
 
 export function DataTable<TData, TValue>({
@@ -38,9 +39,10 @@ export function DataTable<TData, TValue>({
     data,
     searchValue = "",
     onRowSelectionChange,
-    bulkActions = []
+    bulkActions = [],
+    initialSorting = []
 }: DataTableProps<TData, TValue>) {
-    const [sorting, setSorting] = useState<SortingState>([]);
+    const [sorting, setSorting] = useState<SortingState>(initialSorting);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
