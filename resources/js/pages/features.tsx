@@ -1,18 +1,18 @@
 import { Head } from '@inertiajs/react';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import { 
-    Shield, 
-    Activity, 
-    FileText, 
-    CheckCircle, 
-    User, 
+import {
+    Shield,
+    Activity,
+    FileText,
+    CheckCircle,
+    User,
     Files,
     BarChart2,
     Lock,
     Database,
     Zap,
-    ExternalLink 
+    ExternalLink
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -45,22 +45,27 @@ import {
     TabsTrigger,
 } from "@/components/ui/tabs";
 
+// Updated Stage enum based on PHP StageEnums
 enum Stage {
-    PROCUREMENT_INITIATION = "Purchase Request & Initiation",
-    PRE_PROCUREMENT_CONFERENCE = "Pre-Procurement Conference",
-    BIDDING_DOCUMENTS = "Bid Invitation & Documents",
-    PRE_BID_CONFERENCE = "Pre-Bid Conference",
-    SUPPLEMENTAL_BID_BULLETIN = "Supplemental Bid Bulletin",
-    BID_OPENING = "Bid Submission & Opening",
-    BID_EVALUATION = "Bid Evaluation",
-    POST_QUALIFICATION = "Post-Qualification",
-    BAC_RESOLUTION = "BAC Resolution",
-    NOTICE_OF_AWARD = "Notice of Award",
-    PERFORMANCE_BOND_CONTRACT_AND_PO = "Performance Bond & Contract",
-    NOTICE_TO_PROCEED = "Notice to Proceed",
-    MONITORING = "Implementation & Monitoring",
-    COMPLETED = "Project Completion"
+    PROCUREMENT_INITIATION = 'Procurement Initiation',
+    PRE_PROCUREMENT_CONFERENCE = 'Pre-Procurement Conference',
+    BIDDING_DOCUMENTS = 'Bidding Documents',
+    PRE_BID_CONFERENCE = 'Pre-Bid Conference',
+    SUPPLEMENTAL_BID_BULLETIN = 'Supplemental Bid Bulletin',
+    BID_OPENING = 'Bid Opening',
+    BID_EVALUATION = 'Bid Evaluation',
+    POST_QUALIFICATION = 'Post-Qualification',
+    BAC_RESOLUTION = 'BAC Resolution',
+    NOTICE_OF_AWARD = 'Notice of Award',
+    PERFORMANCE_BOND_CONTRACT_AND_PO = 'Performance Bond, Contract and PO',
+    NOTICE_TO_PROCEED = 'Notice to Proceed',
+    MONITORING = 'Monitoring',
+    COMPLETION = 'Completion', // Added Completion based on PHP enum
+    // Note: The PHP enum has both COMPLETION and COMPLETED.
+    // Assuming 'COMPLETED' in the original TS maps to 'Completion' or 'Completed' in PHP.
+    // Adjust if 'Completed' needs a separate entry.
 }
+
 
 interface ProcurementStage {
     id: number;
@@ -74,24 +79,35 @@ export default function Features() {
     const [activeStage, setActiveStage] = useState<number | null>(1);
     const [activeFeature, setActiveFeature] = useState<string>("blockchain");
 
-    const getStageShortName = (stageName: string): string => {
-        if (stageName.includes("Purchase Request")) return "PR";
-        if (stageName.includes("Pre-Procurement")) return "Pre-Proc";
-        if (stageName.includes("Bid Invitation")) return "Invitation";
-        if (stageName.includes("Bid Submission")) return "Submission";
-        if (stageName.includes("Bid Evaluation")) return "Evaluation";
-        if (stageName.includes("Post-Qualification")) return "Post-Qual";
-        if (stageName.includes("BAC Resolution")) return "BAC";
-        if (stageName.includes("Notice of Award")) return "NOA";
-        if (stageName.includes("Performance Bond")) return "Bond";
-        if (stageName.includes("Contract")) return "Contract/PO";
-        if (stageName.includes("Notice to Proceed")) return "NTP";
-        if (stageName.includes("Monitoring")) return "Monitoring";
-        if (stageName.includes("Completion")) return "Completion";
-        return stageName.split(" ")[0];
+    const getStageShortName = (stageName: Stage): string => {
+        switch (stageName) {
+            case Stage.PROCUREMENT_INITIATION: return "PR";
+            case Stage.PRE_PROCUREMENT_CONFERENCE: return "Pre-Proc";
+            case Stage.BIDDING_DOCUMENTS: return "Bidding"; // Changed from Invitation
+            case Stage.PRE_BID_CONFERENCE: return "Pre-Bid";
+            case Stage.SUPPLEMENTAL_BID_BULLETIN: return "Bulletin";
+            case Stage.BID_OPENING: return "Opening";
+            case Stage.BID_EVALUATION: return "Evaluation";
+            case Stage.POST_QUALIFICATION: return "Post-Qual";
+            case Stage.BAC_RESOLUTION: return "BAC";
+            case Stage.NOTICE_OF_AWARD: return "NOA";
+            case Stage.PERFORMANCE_BOND_CONTRACT_AND_PO: return "Bond/PO";
+            case Stage.NOTICE_TO_PROCEED: return "NTP";
+            case Stage.MONITORING: return "Monitor"; // Changed from Monitoring
+            case Stage.COMPLETION: return "Complete"; // Changed from Completion
+            default: {
+                // Fallback logic for unexpected stage values
+                // This should ideally not be reached if all enum cases are handled.
+                // We cast to string to handle the 'never' type, but log a warning.
+                console.warn(`Unexpected stage value encountered in getStageShortName: ${stageName}`);
+                const stageStr = stageName as string; // Cast to string to use split
+                const words = stageStr.split(" ");
+                return words.length > 1 ? words.map(w => w[0]).join("") : words[0]?.substring(0, 3) ?? "N/A";
+            }
+        }
     };
 
-    // Procurement stages array
+    // Updated procurement stages array using the new Stage enum
     const procurementStages: ProcurementStage[] = [
         {
             id: 1,
@@ -186,14 +202,14 @@ export default function Features() {
         },
         {
             id: 14,
-            stage: Stage.COMPLETED,
+            stage: Stage.COMPLETION, // Updated to use Stage.COMPLETION
             description: "Record completion documents and close the procurement process.",
             documents: ["Completion Certificate", "Final Payment", "Inspection Report"],
             icon: <CheckCircle className="w-6 h-6" />
         }
     ];
 
-    // System features
+    // System features (unchanged)
     const systemFeatures = [
         {
             id: "blockchain",
@@ -281,7 +297,7 @@ export default function Features() {
         }
     ];
 
-    // Comparison features
+    // Comparison features (unchanged)
     const comparisonFeatures = [
         {
             feature: "Document Integrity",
@@ -344,7 +360,7 @@ export default function Features() {
                                 </span>
                             </h1>
                             <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 max-w-3xl mx-auto">
-                                ProcuChain revolutionizes government procurement with blockchain technology, 
+                                ProcuChain revolutionizes government procurement with blockchain technology,
                                 providing enhanced transparency, security, and efficiency throughout the entire process.
                             </p>
                             <div className="flex flex-wrap justify-center gap-4">
@@ -423,14 +439,13 @@ export default function Features() {
                         {/* Key Features Section */}
                         <div className="mb-16" id="key-features">
                             <h2 className="text-3xl font-bold mb-8 text-center">Key System Features</h2>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
                                 {systemFeatures.map((feature) => (
-                                    <Card 
-                                        key={feature.id} 
-                                        className={`hover:shadow-lg transition-shadow cursor-pointer ${
-                                            activeFeature === feature.id ? 'ring-2 ring-teal-500 dark:ring-teal-400' : ''
-                                        }`}
+                                    <Card
+                                        key={feature.id}
+                                        className={`hover:shadow-lg transition-shadow cursor-pointer ${activeFeature === feature.id ? 'ring-2 ring-teal-500 dark:ring-teal-400' : ''
+                                            }`}
                                         onClick={() => setActiveFeature(feature.id)}
                                     >
                                         <CardContent className="pt-6">
@@ -468,8 +483,8 @@ export default function Features() {
                                             </ul>
                                         </div>
                                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden">
-                                            <img 
-                                                src={systemFeatures.find(f => f.id === activeFeature)?.imageUrl} 
+                                            <img
+                                                src={systemFeatures.find(f => f.id === activeFeature)?.imageUrl}
                                                 alt={systemFeatures.find(f => f.id === activeFeature)?.title}
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
@@ -487,7 +502,7 @@ export default function Features() {
                             <CardHeader>
                                 <CardTitle className="text-2xl md:text-3xl font-bold text-center">Procurement Process Flow</CardTitle>
                                 <CardDescription className="text-center max-w-3xl mx-auto">
-                                    ProcuChain manages the entire procurement lifecycle from initiation to completion, 
+                                    ProcuChain manages the entire procurement lifecycle from initiation to completion,
                                     ensuring transparency and compliance at every stage.
                                 </CardDescription>
                             </CardHeader>
@@ -503,8 +518,8 @@ export default function Features() {
                                                     <Button
                                                         variant={activeStage === stage.id ? "default" : "outline"}
                                                         size="icon"
-                                                        className={`rounded-full z-10 transition-all duration-300 ${activeStage === stage.id 
-                                                            ? 'bg-teal-600 hover:bg-teal-700 text-white scale-110' 
+                                                        className={`rounded-full z-10 transition-all duration-300 ${activeStage === stage.id
+                                                            ? 'bg-teal-600 hover:bg-teal-700 text-white scale-110'
                                                             : 'bg-white dark:bg-gray-800 hover:border-teal-400 dark:hover:border-teal-400'}`}
                                                         onClick={() => setActiveStage(stage.id)}
                                                     >
@@ -560,14 +575,14 @@ export default function Features() {
                                             <AccordionItem key={stage.id} value={`stage-${stage.id}`}>
                                                 <AccordionTrigger className="hover:no-underline">
                                                     <div className="flex items-center">
-                                                        <div className={`w-8 h-8 rounded-full mr-3 flex items-center justify-center 
-                                                            ${stage.id === activeStage 
-                                                                ? 'bg-teal-600 text-white' 
+                                                        <div className={`w-8 h-8 rounded-full mr-3 flex items-center justify-center
+                                                            ${stage.id === activeStage
+                                                                ? 'bg-teal-600 text-white'
                                                                 : 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400'}`}
                                                         >
                                                             {stage.id}
                                                         </div>
-                                                        <span className="font-medium">{stage.stage}</span>
+                                                        <span className="font-medium text-left">{stage.stage}</span> {/* Added text-left */}
                                                     </div>
                                                 </AccordionTrigger>
                                                 <AccordionContent>
@@ -637,7 +652,7 @@ export default function Features() {
                                     <TabsTrigger value="security">Security Features</TabsTrigger>
                                     <TabsTrigger value="scalability">Scalability & Performance</TabsTrigger>
                                 </TabsList>
-                                
+
                                 <TabsContent value="blockchain">
                                     <Card>
                                         <CardHeader>
@@ -705,7 +720,7 @@ export default function Features() {
                                         </CardContent>
                                     </Card>
                                 </TabsContent>
-                                
+
                                 <TabsContent value="security">
                                     <Card>
                                         <CardHeader>
@@ -786,7 +801,7 @@ export default function Features() {
                                         </CardContent>
                                     </Card>
                                 </TabsContent>
-                                
+
                                 <TabsContent value="scalability">
                                     <Card>
                                         <CardHeader>

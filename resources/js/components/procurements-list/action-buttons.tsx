@@ -164,19 +164,19 @@ const getButtonConfigs = (
     }
 
     if (stage === Stage.SUPPLEMENTAL_BID_BULLETIN) {
-        if (status === Status.PRE_BID_CONFERENCE_COMPLETED) {
+        if (status === Status.PRE_BID_CONFERENCE_COMPLETED || status === Status.PRE_BID_CONFERENCE_SKIPPED) {
             configs.push({
-                icon: <Edit2Icon className={cn(iconSize, "text-indigo-600 dark:text-indigo-400")} />,
-                tooltipText: "Record Supplemental Bid Bulletin Decision",
-                className: "bg-indigo-50 dark:bg-indigo-900/20",
-                onClick: () => handlers.onOpenSupplementalBidBulletinModal?.(procurement)
+            icon: <Edit2Icon className={cn(iconSize, "text-indigo-600 dark:text-indigo-400")} />,
+            tooltipText: "Record Supplemental Bid Bulletin Decision",
+            className: "bg-indigo-50 dark:bg-indigo-900/20",
+            onClick: () => handlers.onOpenSupplementalBidBulletinModal?.(procurement)
             });
         } else if (status === Status.SUPPLEMENTAL_BID_BULLETINS_ONGOING) {
             configs.push({
-                icon: <UploadCloudIcon className={cn(iconSize, "text-blue-600 dark:text-blue-400")} />,
-                tooltipText: "Upload Supplemental Bid Bulletin Documents",
-                className: "bg-blue-50 dark:bg-blue-900/20",
-                href: `/bac-secretariat/supplemental-bid-bulletin-upload/${id}`
+            icon: <UploadCloudIcon className={cn(iconSize, "text-blue-600 dark:text-blue-400")} />,
+            tooltipText: "Upload Supplemental Bid Bulletin Documents",
+            className: "bg-blue-50 dark:bg-blue-900/20",
+            href: `/bac-secretariat/supplemental-bid-bulletin-upload/${id}`
             });
         }
     }
