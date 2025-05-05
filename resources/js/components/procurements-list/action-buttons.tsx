@@ -39,20 +39,26 @@ const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonS
         </Button>
     );
 
+    const content = href ? 
+        <Link href={href} className="block touch-manipulation">
+            {button}
+        </Link> 
+        : button;
+
     return (
         <TooltipProvider delayDuration={300}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    {href ? 
-                        <Link href={href} className="block touch-manipulation">
-                            {button}
-                        </Link> 
-                        : button
-                    }
+                    <div className="flex items-center gap-1.5">
+                        {content}
+                        <span className="lg:hidden text-xs font-medium text-gray-700 dark:text-gray-300">
+                            {tooltipText}
+                        </span>
+                    </div>
                 </TooltipTrigger>
                 <TooltipContent 
                     side="bottom" 
-                    className="bg-gray-900/95 text-white dark:bg-gray-800 text-xs font-medium py-1 px-2"
+                    className="bg-gray-900/95 text-white dark:bg-gray-800 text-xs font-medium py-1 px-2 hidden lg:block"
                 >
                     {tooltipText}
                 </TooltipContent>

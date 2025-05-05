@@ -4,22 +4,33 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { CalendarIcon, FileIcon, CheckCircle, Clock, AlertCircle, Milestone, FileText, Award, PlayCircle, Monitor, Check, ListChecks, FileCheck, FileQuestion, HelpCircle } from 'lucide-react';
 import { getStatusBadgeStyle, getStageBadgeStyle } from '@/lib/procurements-list-utils';
 import { ProcurementListItem, Stage, Status } from '@/types/blockchain';
+import { SharedData } from '@/types';
 import { cn } from '@/lib/utils';
 import { useRef, useEffect, useState } from 'react';
+import { usePage } from '@inertiajs/react';
 
-export const IdCell = ({ id }: { id: string }) => (
-    <div className="font-medium text-blue-600 dark:text-blue-400">
-        <Link href={`procurements-list/${id}`} className="hover:underline transition-all duration-150 flex items-center">
-            <span className="font-mono text-xs bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800/60">
-                {id}
-            </span>
-        </Link>
-    </div>
-);
+export const IdCell = ({ id }: { id: string }) => {
+    const { auth } = usePage<SharedData>().props;
+    const userRole = (auth?.user?.role || 'guest').replace('_', '-'); // Convert underscore to hyphen
+    const baseRoute = `/${userRole}/procurements-list/${id}`;
+
+    return (
+        <div className="font-medium text-blue-600 dark:text-blue-400">
+            <Link href={baseRoute} className="hover:underline transition-all duration-150 flex items-center">
+                <span className="font-mono text-xs bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800/60">
+                    {id}
+                </span>
+            </Link>
+        </div>
+    );
+};
 
 export const TitleCell = ({ procurement }: { procurement: ProcurementListItem }) => {
     const textRef = useRef<HTMLDivElement>(null);
     const [isTruncated, setIsTruncated] = useState(false);
+    const { auth } = usePage<SharedData>().props;
+    const userRole = (auth?.user?.role || 'guest').replace('_', '-'); // Convert underscore to hyphen
+    const baseRoute = `/${userRole}/procurements-list/${procurement.id}`;
 
     useEffect(() => {
         const checkTruncation = () => {
@@ -36,7 +47,7 @@ export const TitleCell = ({ procurement }: { procurement: ProcurementListItem })
     const titleContent = (
         <div ref={textRef} className="max-w-[280px] truncate font-medium">
             <Link
-                href={`procurements-list/${procurement.id}`}
+                href={baseRoute}
                 className="hover:text-blue-600 hover:underline transition-colors duration-150 text-gray-900 dark:text-gray-100"
             >
                 {procurement.title}
@@ -161,14 +172,14 @@ export const DocumentCountCell = ({ count }: { count: number }) => (
 export const LastUpdatedCell = ({ date }: { date: string }) => {
     // Parse the date string
     const formattedDate = new Date(date);
-    
+
     // Format date as "MMM DD, YYYY" (e.g., "May 4, 2025") if valid, otherwise show original string
-    const displayDate = !isNaN(formattedDate.getTime()) 
-        ? formattedDate.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
-        }) 
+    const displayDate = !isNaN(formattedDate.getTime())
+        ? formattedDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        })
         : date;
 
     return (

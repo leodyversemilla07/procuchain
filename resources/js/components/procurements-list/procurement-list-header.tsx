@@ -8,14 +8,13 @@ import {
     PlusIcon,
     Table2Icon,
     LayersIcon,
-    ExternalLinkIcon,
     HelpCircleIcon,
     SearchIcon,
     XIcon,
     FileTextIcon,
     SlidersHorizontalIcon
 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 type ViewType = 'table' | 'kanban';
@@ -37,14 +36,12 @@ export const ProcurementListHeader = ({
     viewType,
     setViewType,
     procurementsCount,
-    loading,
     searchValue,
     onSearchChange,
     searchPlaceholder = "Search procurements...",
     onOpenFilters,
 }: ProcurementListHeaderProps) => {
     const [isSearchFocused, setIsSearchFocused] = useState(false);
-    const [isMobileViewToggleOpen, setIsMobileViewToggleOpen] = useState(false);
 
     const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         onSearchChange(e.target.value);
@@ -53,17 +50,6 @@ export const ProcurementListHeader = ({
     const clearSearch = () => {
         onSearchChange("");
     };
-
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth >= 640) {
-                setIsMobileViewToggleOpen(false);
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     return (
         <CardHeader
@@ -75,46 +61,25 @@ export const ProcurementListHeader = ({
             <div className="flex flex-col md:flex-row justify-between items-start gap-2 sm:gap-3 mb-4 md:mb-5">
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center flex-wrap gap-2 mb-1">
-                        <div
-                            className="hidden sm:flex items-center justify-center h-8 w-8 md:h-9 md:w-9 rounded-lg bg-primary/10 text-primary mr-1.5"
-                        >
+                        <div className="hidden sm:flex items-center justify-center h-8 w-8 md:h-9 md:w-9 rounded-lg bg-primary/10 text-primary mr-1.5">
                             <FileTextIcon className="h-4 w-4 md:h-5 md:w-5" />
                         </div>
                         <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-50 flex items-center flex-wrap gap-1 sm:gap-2">
                             <span>Procurement List</span>
-                            <Badge
-                                variant="outline"
-                                className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 
-                                dark:text-blue-300 dark:border-blue-800 ml-1 sm:ml-2 transition-all duration-300 
-                                hover:bg-blue-100 dark:hover:bg-blue-900/40 text-xs py-0.5"
-                            >
-                                {loading ? (
-                                    <span className="flex items-center">
-                                        <span className="h-1.5 w-1.5 bg-current rounded-full mr-1"></span>
-                                        <span className="h-1.5 w-1.5 bg-current rounded-full mr-1"></span>
-                                        <span className="h-1.5 w-1.5 bg-current rounded-full"></span>
-                                    </span>
-                                ) : procurementsCount}
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/60">
+                                {procurementsCount} {procurementsCount === 1 ? 'item' : 'items'}
                             </Badge>
                         </CardTitle>
                     </div>
-                    <CardDescription className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
-                        Track and manage all procurement activities with blockchain verification.
+                    <CardDescription className="text-sm text-gray-500 dark:text-gray-400">
+                        View and manage procurement items
                     </CardDescription>
                 </div>
-                <div
-                    className="flex items-center text-xs bg-gray-50 dark:bg-gray-800/60 
-                    rounded-full py-1 sm:py-1.5 px-2 sm:px-3 text-gray-500 dark:text-gray-400 mt-2 md:mt-0 
-                    flex-shrink-0 border border-gray-100 dark:border-gray-700/80 w-full md:w-auto justify-center md:justify-start
-                    shadow-sm transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                    <ExternalLinkIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5 sm:mr-2 flex-shrink-0 text-blue-500 dark:text-blue-400" />
-                    <span className="flex-1">Blockchain verified</span>
+                <div className="flex items-center gap-2">
                     <TooltipProvider delayDuration={300}>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-5 w-5 ml-1.5 text-gray-400 
-                                    hover:bg-gray-200/80 dark:hover:bg-gray-700/80 rounded-full">
+                                <Button variant="ghost" size="icon" className="h-5 w-5 ml-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                                     <HelpCircleIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                 </Button>
                             </TooltipTrigger>
@@ -191,73 +156,10 @@ export const ProcurementListHeader = ({
                     )}
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end mt-1 sm:mt-0">
-                    <div className="sm:hidden relative">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setIsMobileViewToggleOpen(!isMobileViewToggleOpen)}
-                            className="text-xs px-3 h-9 rounded-md border-sidebar-border/70 dark:border-sidebar-border
-                                      hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
-                        >
-                            {viewType === 'table' ? (
-                                <>
-                                    <Table2Icon className="h-3.5 w-3.5 mr-1.5" />
-                                    Table
-                                </>
-                            ) : (
-                                <>
-                                    <LayersIcon className="h-3.5 w-3.5 mr-1.5" />
-                                    Kanban
-                                </>
-                            )}
-                        </Button>
-
-                        {isMobileViewToggleOpen && (
-                            <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 
-                                           dark:border-gray-700 z-20 min-w-[120px] overflow-hidden">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        setViewType('table');
-                                        setIsMobileViewToggleOpen(false);
-                                    }}
-                                    className={cn(
-                                        "text-xs px-3 py-2 rounded-none w-full justify-start",
-                                        viewType === 'table'
-                                            ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                            : "text-gray-600 dark:text-gray-400"
-                                    )}
-                                >
-                                    <Table2Icon className="h-3.5 w-3.5 mr-1.5" />
-                                    Table
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        setViewType('kanban');
-                                        setIsMobileViewToggleOpen(false);
-                                    }}
-                                    className={cn(
-                                        "text-xs px-3 py-2 rounded-none w-full justify-start",
-                                        viewType === 'kanban'
-                                            ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                            : "text-gray-600 dark:text-gray-400"
-                                    )}
-                                >
-                                    <LayersIcon className="h-3.5 w-3.5 mr-1.5" />
-                                    Kanban
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-
-                    <div
-                        className="hidden sm:flex items-center bg-gray-100 dark:bg-gray-800/60 p-1 rounded-lg flex-shrink-0 
-                                border border-gray-200 dark:border-gray-700/80 shadow-sm"
-                    >
+                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                    {/* View toggle buttons - Only shown on desktop */}
+                    <div className="hidden lg:flex items-center bg-gray-100 dark:bg-gray-800/60 p-1 rounded-lg flex-shrink-0 
+                                border border-gray-200 dark:border-gray-700/80 shadow-sm">
                         <Button
                             variant="ghost"
                             size="sm"
