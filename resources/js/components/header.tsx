@@ -290,8 +290,8 @@ export default function Header() {
                             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
                             aria-expanded={mobileMenuOpen}
                         >
-                            <div className="w-5 h-5">
-                                {mobileMenuOpen ? <X /> : <Menu />}
+                            <div className="w-5 h-5 flex items-center justify-center">
+                                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
                             </div>
                         </button>
                     </div>
