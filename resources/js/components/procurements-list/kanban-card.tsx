@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -6,6 +6,7 @@ import { FileIcon, CalendarIcon } from 'lucide-react';
 import { ProcurementListItem } from '@/types/blockchain';
 import { ActionButtons } from '@/components/procurements-list/action-buttons';
 import { getStatusBadgeStyle } from '@/lib/procurements-list-utils';
+import { SharedData } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface KanbanCardProps {
@@ -22,6 +23,10 @@ export const KanbanCard = ({
     onOpenPreBidModal,
     onOpenSupplementalBidBulletinModal,
 }: KanbanCardProps) => {
+    const { auth } = usePage<SharedData>().props;
+    const userRole = (auth?.user?.role || 'guest').replace('_', '-');
+    const baseRoute = `/${userRole}/procurements-list/${procurement.id}`;
+
     return (
         <Card className="mb-2 cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md 
                          shadow-sm border-sidebar-border/70 
@@ -50,11 +55,11 @@ export const KanbanCard = ({
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Badge variant="outline" 
-                                              className={cn(
-                                                getStatusBadgeStyle(procurement.current_status), 
+                                        <Badge variant="outline"
+                                            className={cn(
+                                                getStatusBadgeStyle(procurement.current_status),
                                                 "text-xs w-full inline-flex items-center font-medium py-1"
-                                              )}>
+                                            )}>
                                             <div className="truncate max-w-full">{procurement.current_status}</div>
                                         </Badge>
                                     </TooltipTrigger>
@@ -63,15 +68,15 @@ export const KanbanCard = ({
                             </TooltipProvider>
                         </div>
                     </div>
-                    
+
                     {/* Title with Link */}
-                    <Link href={`/procurement/${procurement.id}`} className="block group">
+                    <Link href={baseRoute} className="block group">
                         <h3 className="font-medium text-xs sm:text-sm line-clamp-2 group-hover:text-blue-600 
                                      dark:text-gray-100 dark:group-hover:text-blue-400 transition-colors">
                             {procurement.title}
                         </h3>
                     </Link>
-                    
+
                     {/* Info Row */}
                     <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-0.5 gap-y-2">
                         <div className="flex items-center gap-1.5">
@@ -85,18 +90,20 @@ export const KanbanCard = ({
                             <span className="font-medium text-right">{procurement.last_updated}</span>
                         </div>
                     </div>
-                    
+
                     {/* Divider before actions */}
-                    <div className="border-t border-gray-100 dark:border-gray-800 pt-1"></div>
-                    
+                    <div className="border-t border-gray-100 dark:border-gray-800 mt-2 pt-2"></div>
+
                     {/* Action Buttons */}
-                    <ActionButtons
-                        procurement={procurement}
-                        variant="kanban"
-                        onOpenPreProcurementModal={onOpenPreProcurementModal}
-                        onOpenPreBidModal={onOpenPreBidModal}
-                        onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
-                    />
+                    <div className="flex flex-wrap gap-2">
+                        <ActionButtons
+                            procurement={procurement}
+                            variant="kanban"
+                            onOpenPreProcurementModal={onOpenPreProcurementModal}
+                            onOpenPreBidModal={onOpenPreBidModal}
+                            onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
+                        />
+                    </div>
                 </div>
             </CardContent>
         </Card>

@@ -144,44 +144,50 @@ const ProcurementsContent = ({
     if (procurements.length === 0) return <EmptyState userRole={userRole} />;
 
     return (
-        <div key={viewType} className="w-full">
-            <div className="hidden lg:block">
+        <div className="w-full h-full flex flex-col">
+            {/* Desktop view - Shows table or kanban based on viewType */}
+            <div className="hidden lg:block h-full">
                 {viewType === 'table' ? (
-                    <DataTable
-                        columns={columns}
-                        data={procurements}
-                        searchValue={searchValue}
-                        onRowSelectionChange={onSelectedRowsChange}
-                        initialSorting={[
-                            {
-                                id: 'last_updated',
-                                desc: true
-                            }
-                        ]}
-                        bulkActions={[
-                            {
-                                label: 'Export to CSV',
-                                action: () => {
-                                    if (selectedRows.length === 0) {
-                                        alert('Please select at least one procurement to export.');
-                                        return;
-                                    }
-                                    exportProcurementsToCSV(selectedRows);
+                    <div className="overflow-x-auto">
+                        <DataTable
+                            columns={columns}
+                            data={procurements}
+                            searchValue={searchValue}
+                            onRowSelectionChange={onSelectedRowsChange}
+                            initialSorting={[
+                                {
+                                    id: 'last_updated',
+                                    desc: true
+                                }
+                            ]}
+                            bulkActions={[
+                                {
+                                    label: 'Export to CSV',
+                                    action: () => {
+                                        if (selectedRows.length === 0) {
+                                            alert('Please select at least one procurement to export.');
+                                            return;
+                                        }
+                                        exportProcurementsToCSV(selectedRows);
+                                    },
+                                    icon: <Download className="h-4 w-4" />,
                                 },
-                                icon: <Download className="h-4 w-4" />,
-                            },
-                        ]}
-                    />
+                            ]}
+                        />
+                    </div>
                 ) : (
-                    <KanbanBoard
-                        procurements={procurements}
-                        onOpenPreProcurementModal={onOpenPreProcurementModal}
-                        onOpenPreBidModal={onOpenPreBidModal}
-                        onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
-                    />
+                    <div className="h-full overflow-hidden">
+                        <KanbanBoard
+                            procurements={procurements}
+                            onOpenPreProcurementModal={onOpenPreProcurementModal}
+                            onOpenPreBidModal={onOpenPreBidModal}
+                            onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
+                        />
+                    </div>
                 )}
             </div>
-            <div className="block lg:hidden">
+            {/* Mobile view - Always shows Kanban */}
+            <div className="block lg:hidden h-full overflow-hidden">
                 <KanbanBoard
                     procurements={procurements}
                     onOpenPreProcurementModal={onOpenPreProcurementModal}
