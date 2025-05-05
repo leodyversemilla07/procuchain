@@ -97,7 +97,7 @@ export default function Footer() {
                         </div>
                         <div className="flex space-x-4 mt-4">
                             <a
-                                href="https://github.com/procuchain/procuchain"
+                                href="https://github.com/leodyversemilla07/procuchain"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 transition-colors"

@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import { GraduationCap, Users, BookOpen, Mail, ExternalLink, Github, Linkedin } from 'lucide-react';
+import { GraduationCap, Users, BookOpen, Mail, ExternalLink, Github, Facebook } from 'lucide-react'; // Added Facebook
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,19 +14,19 @@ export default function Team() {
             bio: "Led the team and completed the full development of ProcuChain, implementing blockchain integration, system architecture, frontend, and backend development.",
             responsibilities: ["Team Leadership", "Full System Development", "Blockchain Integration", "System Architecture"],
             image: "/images/team/leodyver.jpg",
-            github: "https://github.com/leodyver",
-            linkedin: "https://linkedin.com/in/leodyver-semilla",
-            email: "leodyver.semilla@minsu.edu.ph",
+            github: "https://github.com/leodyversemilla07",
+            email: "semilla.leodyver@minsu.edu.ph",
+            facebook: "https://www.facebook.com/ldyvrsmll07", // Added facebook
         },
         {
             name: "Bryle F. Maamo",
             role: "Lead Researcher / Documentation",
             bio: "Led the research efforts and authored the research paper, focusing on procurement processes and blockchain implementation theory.",
             responsibilities: ["Research Paper Writing", "Literature Review", "Methodology Development", "Documentation"],
-            image: "/images/team/bryle.jpg",
-            github: "https://github.com/brylemaamo",
-            linkedin: "https://linkedin.com/in/bryle-maamo",
-            email: "bryle.maamo@minsu.edu.ph",
+            image: "/images/team/bryle.png",
+            github: "https://github.com/Maamo16",
+            email: "maamo.bryle@minsu.edu.ph",
+            facebook: "https://www.facebook.com/bryle.famorcanmaamo", // Added facebook
         },
         {
             name: "Adrian P. Gupit",
@@ -34,9 +34,9 @@ export default function Team() {
             bio: "Provided support to the research efforts, assisting in data gathering and documentation for the research paper.",
             responsibilities: ["Research Assistance", "Data Collection", "Documentation Support", "Reference Management"],
             image: "/images/team/adrian.jpg",
-            github: "https://github.com/adriangupit",
-            linkedin: "https://linkedin.com/in/adrian-gupit",
+            // github: "https://github.com/adriangupit",
             email: "adrian.gupit@minsu.edu.ph",
+            facebook: "https://www.facebook.com/adrian.gupit.71", // Added facebook
         },
     ];
 
@@ -45,9 +45,9 @@ export default function Team() {
             name: "Mr. Uriel M. Melendres",
             role: "Project Adviser",
             bio: "Guided the team throughout the development process, providing expertise in blockchain technology and research methodology.",
-            image: "/images/team/adviser.png",
+            image: "/images/team/adviser.jpg",
             email: "uriel.melendres@minsu.edu.ph",
-            specialization: "Blockchain Technology & Information Systems"
+            facebook: "https://www.facebook.com/um1994", // Added facebook
         }
     ];
 
@@ -75,7 +75,7 @@ export default function Team() {
                                 </span>
                             </h1>
                             <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 max-w-3xl mx-auto">
-                                The innovative minds behind ProcuChain - dedicated to revolutionizing government procurement 
+                                The innovative minds behind ProcuChain - dedicated to revolutionizing government procurement
                                 processes through blockchain technology
                             </p>
                             <div className="flex flex-wrap justify-center gap-4">
@@ -97,7 +97,7 @@ export default function Team() {
                         {/* Adviser Section */}
                         <div className="mb-16">
                             <h2 className="text-2xl font-bold mb-8 text-center">Project Adviser</h2>
-                            
+
                             <div className="max-w-3xl mx-auto">
                                 {advisers.map((adviser, index) => (
                                     <div
@@ -106,8 +106,8 @@ export default function Team() {
                                     >
                                         <div className="md:w-1/3 flex-shrink-0">
                                             <div className="w-48 h-48 mx-auto rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 shadow-md border-4 border-teal-100 dark:border-teal-900">
-                                                <img 
-                                                    src={adviser.image} 
+                                                <img
+                                                    src={adviser.image}
                                                     alt={adviser.name}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => {
@@ -120,19 +120,30 @@ export default function Team() {
                                             <h3 className="text-2xl font-bold mb-1">{adviser.name}</h3>
                                             <p className="text-teal-600 dark:text-teal-400 font-medium mb-4">{adviser.role}</p>
                                             <p className="text-gray-600 dark:text-gray-300 mb-4">{adviser.bio}</p>
-                                            <p className="text-gray-600 dark:text-gray-400 text-sm italic mb-4">Specialization: {adviser.specialization}</p>
-                                            <div className="flex justify-center md:justify-start">
-                                                <Button 
-                                                    variant="outline" 
+                                            <div className="flex justify-center md:justify-start gap-3">
+                                                <Button
+                                                    variant="outline"
                                                     size="sm"
                                                     asChild
                                                     className="flex items-center gap-2"
                                                 >
                                                     <a href={`mailto:${adviser.email}`}>
                                                         <Mail className="w-4 h-4" />
-                                                        Contact Adviser
+                                                        Contact
                                                     </a>
                                                 </Button>
+                                                {adviser.facebook && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        asChild
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <a href={adviser.facebook} target="_blank" rel="noopener noreferrer">
+                                                            <Facebook className="w-4 h-4" />
+                                                        </a>
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -144,10 +155,10 @@ export default function Team() {
                         <div className="mb-16">
                             <h2 className="text-2xl font-bold mb-2 text-center">Development Team</h2>
                             <p className="text-center text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-                                Our three-person development team combines expertise in blockchain, full-stack development, 
+                                Our three-person development team combines expertise in blockchain, full-stack development,
                                 and UI/UX design to create ProcuChain's innovative procurement system
                             </p>
-                            
+
                             <div className="flex justify-center">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl">
                                     {teamMembers.map((member, index) => (
@@ -159,8 +170,8 @@ export default function Team() {
                                                 <div className="flex flex-col h-full">
                                                     <div className="bg-gradient-to-br from-teal-400/10 to-blue-400/10 dark:from-teal-900/20 dark:to-blue-900/20 p-6 flex items-center justify-center">
                                                         <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 shadow-md border-2 border-teal-100 dark:border-teal-900">
-                                                            <img 
-                                                                src={member.image} 
+                                                            <img
+                                                                src={member.image}
                                                                 alt={member.name}
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
@@ -178,7 +189,7 @@ export default function Team() {
                                                                 </Badge>
                                                             </div>
                                                             <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{member.bio}</p>
-                                                            
+
                                                             <div className="mb-6">
                                                                 <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Key Responsibilities</h4>
                                                                 <div className="flex flex-wrap gap-2">
@@ -190,30 +201,39 @@ export default function Team() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        
+
                                                         <div className="flex justify-center gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                                            <a 
-                                                                href={member.github}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-teal-100 hover:text-teal-600 dark:hover:bg-teal-900/30 dark:hover:text-teal-400 transition-all hover:scale-110"
-                                                            >
-                                                                <Github className="w-4 h-4" />
-                                                            </a>
-                                                            <a 
-                                                                href={member.linkedin}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-teal-100 hover:text-teal-600 dark:hover:bg-teal-900/30 dark:hover:text-teal-400 transition-all hover:scale-110"
-                                                            >
-                                                                <Linkedin className="w-4 h-4" />
-                                                            </a>
-                                                            <a 
-                                                                href={`mailto:${member.email}`}
-                                                                className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-teal-100 hover:text-teal-600 dark:hover:bg-teal-900/30 dark:hover:text-teal-400 transition-all hover:scale-110"
-                                                            >
-                                                                <Mail className="w-4 h-4" />
-                                                            </a>
+                                                            {member.github && (
+                                                                <a
+                                                                    href={member.github}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-teal-100 hover:text-teal-600 dark:hover:bg-teal-900/30 dark:hover:text-teal-400 transition-all hover:scale-110"
+                                                                    aria-label={`${member.name}'s Github Profile`}
+                                                                >
+                                                                    <Github className="w-4 h-4" />
+                                                                </a>
+                                                            )}
+                                                            {member.email && (
+                                                                <a
+                                                                    href={`mailto:${member.email}`}
+                                                                    className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-teal-100 hover:text-teal-600 dark:hover:bg-teal-900/30 dark:hover:text-teal-400 transition-all hover:scale-110"
+                                                                    aria-label={`Email ${member.name}`}
+                                                                >
+                                                                    <Mail className="w-4 h-4" />
+                                                                </a>
+                                                            )}
+                                                            {member.facebook && (
+                                                                <a
+                                                                    href={member.facebook}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-teal-100 hover:text-teal-600 dark:hover:bg-teal-900/30 dark:hover:text-teal-400 transition-all hover:scale-110"
+                                                                    aria-label={`${member.name}'s Facebook Profile`}
+                                                                >
+                                                                    <Facebook className="w-4 h-4" />
+                                                                </a>
+                                                            )}
                                                         </div>
                                                     </CardContent>
                                                 </div>
@@ -227,7 +247,7 @@ export default function Team() {
                         {/* Acknowledgments Section */}
                         <div className="mb-16">
                             <h2 className="text-2xl font-bold mb-8 text-center">Acknowledgments</h2>
-                            
+
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-8">
                                 <p className="text-gray-600 dark:text-gray-300 mb-6 text-center">
                                     We extend our sincere gratitude to the following individuals and institutions
@@ -246,7 +266,7 @@ export default function Team() {
                                             <li>Prof. John Marquez - Technical Adviser</li>
                                         </ul>
                                     </div>
-                                    
+
                                     <div className="text-center p-5 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mb-4">
                                             <BookOpen className="w-6 h-6" />
@@ -258,7 +278,7 @@ export default function Team() {
                                             <li>Information Technology Department</li>
                                         </ul>
                                     </div>
-                                    
+
                                     <div className="text-center p-5 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 mb-4">
                                             <Users className="w-6 h-6" />
@@ -274,7 +294,7 @@ export default function Team() {
 
                         {/* Call to Action */}
                         <div className="text-center">
-                            <Button 
+                            <Button
                                 asChild
                                 className="bg-teal-600 hover:bg-teal-700 text-white group"
                             >

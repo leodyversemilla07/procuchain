@@ -31,7 +31,7 @@ export default function About() {
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-6 max-w-3xl mx-auto">
-                A blockchain-powered solution to enhance transparency, security, 
+                A blockchain-powered solution to enhance transparency, security,
                 and efficiency in government procurement processes
               </p>
               <div className="flex flex-wrap justify-center gap-4">
@@ -57,12 +57,12 @@ export default function About() {
                   <div className="md:w-1/2 p-8">
                     <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-teal-600 to-teal-400 bg-clip-text text-transparent">Project Overview</h2>
                     <p className="text-gray-600 dark:text-gray-300 mb-4">
-                      ProcuChain is a capstone project developed by Information Technology students at Mindoro State University. 
+                      ProcuChain is a capstone project developed by Information Technology students at Mindoro State University.
                       It leverages blockchain technology to address challenges in government procurement processes.
                     </p>
                     <p className="text-gray-600 dark:text-gray-300 mb-4">
-                      Our system creates an immutable record of procurement documents and activities, 
-                      ensuring transparency, preventing fraud, and establishing a verifiable audit trail 
+                      Our system creates an immutable record of procurement documents and activities,
+                      ensuring transparency, preventing fraud, and establishing a verifiable audit trail
                       that can be trusted by all stakeholders.
                     </p>
                     <div className="mt-6 flex flex-wrap gap-3">
@@ -83,8 +83,8 @@ export default function About() {
                   <div className="md:w-1/2 bg-gradient-to-br from-teal-400/10 to-blue-400/10 dark:from-teal-900/20 dark:to-blue-900/20 p-6 flex items-center justify-center">
                     <div className="relative w-full max-w-md rounded-lg overflow-hidden shadow-xl">
                       <div className="aspect-w-16 aspect-h-9">
-                        <img 
-                          src="/images/blockchain-procurement.png" 
+                        <img
+                          src="/images/blockchain-procurement.png"
                           alt="Blockchain-based procurement process visualization"
                           className="w-full h-full object-cover rounded-lg"
                           onError={(e) => {
@@ -171,7 +171,7 @@ export default function About() {
                     color: "amber"
                   }
                 ].map((objective, index) => (
-                  <ObjectiveCard 
+                  <ObjectiveCard
                     key={index}
                     title={objective.title}
                     description={objective.description}
@@ -185,14 +185,14 @@ export default function About() {
             {/* Technologies Used */}
             <div className="mb-16">
               <h2 className="text-3xl font-bold mb-8 text-center">Technologies Used</h2>
-              
+
               <Tabs defaultValue="blockchain" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 mb-8">
                   <TabsTrigger value="blockchain">Blockchain</TabsTrigger>
                   <TabsTrigger value="frontend">Frontend</TabsTrigger>
                   <TabsTrigger value="backend">Backend & Database</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="blockchain" className="animate-fadeIn">
                   <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
                     <div className="flex flex-col md:flex-row">
@@ -228,7 +228,7 @@ export default function About() {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="frontend" className="animate-fadeIn">
                   <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
                     <div className="flex flex-col md:flex-row">
@@ -264,7 +264,7 @@ export default function About() {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="backend" className="animate-fadeIn">
                   <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
                     <div className="flex flex-col md:flex-row">
@@ -346,7 +346,7 @@ function ObjectiveCard({ title, description, icon: Icon, color }: ObjectiveCardP
     blue: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
     amber: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
   };
-  
+
   return (
     <Card className="bg-white dark:bg-gray-800 hover:shadow-lg transition-shadow">
       <CardContent className="p-6">
