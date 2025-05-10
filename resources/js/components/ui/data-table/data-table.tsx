@@ -23,7 +23,6 @@ import { DataTablePagination } from "@/components/ui/data-table/data-table-pagin
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CircleXIcon } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -96,7 +95,7 @@ export function DataTable<TData, TValue>({
                     <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                         {selectedRowCount > 0 && (
                             <Badge variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-200 
-                                dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                                dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800 px-2.5 py-1">
                                 {selectedRowCount} selected
                             </Badge>
                         )}
@@ -104,7 +103,7 @@ export function DataTable<TData, TValue>({
                             variant="default"
                             size="sm"
                             disabled={selectedRows.length === 0}
-                            className="ml-auto whitespace-nowrap"
+                            className="ml-auto whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white"
                             onClick={() => bulkActions[0]?.action(selectedRows)}
                         >
                             {bulkActions[0]?.icon}
@@ -127,7 +126,8 @@ export function DataTable<TData, TValue>({
                                         <TableHead
                                             key={header.id}
                                             className="font-semibold text-xs text-gray-600 dark:text-gray-300 
-                                                uppercase tracking-wider py-3.5 px-4 whitespace-nowrap first:pl-6 last:pr-6"
+                                                uppercase tracking-wider py-4 px-4 whitespace-nowrap first:pl-6 last:pr-6
+                                                bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm"
                                         >
                                             {header.isPlaceholder
                                                 ? null
@@ -148,14 +148,14 @@ export function DataTable<TData, TValue>({
                                         data-state={row.getIsSelected() ? "selected" : undefined}
                                         className={`border-b border-gray-100 dark:border-gray-700/50 
                                             ${row.getIsSelected()
-                                                ? "bg-primary/5 dark:bg-primary/10 text-gray-900 dark:text-gray-100"
+                                                ? "bg-blue-50/50 dark:bg-blue-900/20 text-gray-900 dark:text-gray-100"
                                                 : "hover:bg-gray-50/80 dark:hover:bg-gray-800/30"
-                                            }`}
+                                            } transition-colors duration-200`}
                                     >
                                         {row.getVisibleCells().map((cell) => (
                                             <TableCell
                                                 key={cell.id}
-                                                className="py-3.5 px-4 text-sm text-gray-700 dark:text-gray-300 first:pl-6 last:pr-6"
+                                                className="py-4 px-4 text-sm text-gray-700 dark:text-gray-300 first:pl-6 last:pr-6"
                                             >
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                             </TableCell>
@@ -164,13 +164,8 @@ export function DataTable<TData, TValue>({
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={columns.length} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center text-gray-500 
-                                            dark:text-gray-400 py-8">
-                                            <CircleXIcon className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-2" />
-                                            <p className="text-base">No records found</p>
-                                            <p className="text-sm mt-1">Try adjusting your search or filter to find what you're looking for.</p>
-                                        </div>
+                                    <TableCell colSpan={columns.length} className="h-24 text-center text-gray-500 dark:text-gray-400">
+                                        No results found.
                                     </TableCell>
                                 </TableRow>
                             )}

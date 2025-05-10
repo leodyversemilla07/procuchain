@@ -18,26 +18,26 @@ class DatabaseSeeder extends Seeder
 
         User::factory()->create([
             'name' => 'BAC Secretariat',
-            'email' => 'bac.secretariat@procuchain.com',
+            'email' => 'leodyversemillla07@gmail.com',
             'role' => 'bac_secretariat',
             'blockchain_address' => env('MULTICHAIN_BAC_SECRETARIAT_ADDRESS'),
-            'password' => Hash::make('secretariat123'),
+            'password' => Hash::make('Leodyver07'),
         ]);
 
         User::factory()->create([
             'name' => 'BAC Chairman',
-            'email' => 'bac.chairman@procuchain.com',
+            'email' => 'lunarspectre00@gmail.com',
             'role' => 'bac_chairman',
             'blockchain_address' => env('MULTICHAIN_BAC_CHAIRMAN_ADDRESS'),
-            'password' => Hash::make('chairman123'),
+            'password' => Hash::make('LunarSpectre00'),
         ]);
 
         User::factory()->create([
             'name' => 'HOPE',
-            'email' => 'hope@procuchain.com',
+            'email' => 'leifsagesemilla@gmail.com',
             'role' => 'hope',
             'blockchain_address' => env('MULTICHAIN_HOPE_ADDRESS'),
-            'password' => Hash::make('hope123'),
+            'password' => Hash::make('LeifSage07'),
         ]);
     }
 }
