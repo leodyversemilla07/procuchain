@@ -14,6 +14,7 @@ use Inertia\Inertia;
 class BacChairmanController extends BaseController
 {
     private $services;
+
     private array $userNameCache = [];
 
     public function __construct(ProcurementServices $services)
@@ -52,6 +53,7 @@ class BacChairmanController extends BaseController
                 if ($states === null) {
                     throw new Exception('Failed to retrieve status stream items for BAC Chairman procurementsByKey cache');
                 }
+
                 return $this->getProcurementsByKey($states);
             });
 
@@ -68,6 +70,7 @@ class BacChairmanController extends BaseController
                 Log::info('Cache miss: Recalculating BAC Chairman dashboard stats');
                 // TODO: Implement logic for calculating actual pending actions if needed
                 $pendingActions = 0; // Placeholder value
+
                 return $this->getDashboardStats($procurementsByKey, $pendingActions);
             });
 
@@ -107,6 +110,7 @@ class BacChairmanController extends BaseController
         try {
             $totalDocuments = Cache::remember('bac_chairman_dashboard_total_documents', now()->addMinutes(5), function () use ($procurementsByKey) {
                 Log::info('Cache miss: Recalculating total documents for BAC Chairman dashboard stats');
+
                 return $this->getTotalDocuments($procurementsByKey);
             });
 
@@ -118,6 +122,7 @@ class BacChairmanController extends BaseController
         } catch (Exception $e) {
             Log::error('Failed to calculate BAC Chairman dashboard stats', ['error' => $e->getMessage()]);
             Cache::forget('bac_chairman_dashboard_total_documents');
+
             return $this->getEmptyStats();
         }
     }
@@ -145,10 +150,12 @@ class BacChairmanController extends BaseController
             return collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data']['json'] ?? [];
-                    if (!isset($data['procurement_id'], $data['procurement_title'])) {
+                    if (! isset($data['procurement_id'], $data['procurement_title'])) {
                         Log::warning('Invalid procurement data structure in BAC Chairman context', ['data' => $data]);
+
                         return null;
                     }
+
                     return [
                         'id' => $data['procurement_id'],
                         'title' => $data['procurement_title'],
@@ -193,20 +200,22 @@ class BacChairmanController extends BaseController
                 StreamEnums::EVENTS->value, true, 20, -20, true
             );
 
-            if (!$allEvents) {
+            if (! $allEvents) {
                 Log::warning('No events found in stream for BAC Chairman dashboard');
+
                 return [];
             }
 
             return collect($allEvents)
                 ->map(function ($item) {
                     $data = $item['data']['json'] ?? [];
-                    if (!isset($data['procurement_id'], $data['procurement_title'])) {
+                    if (! isset($data['procurement_id'], $data['procurement_title'])) {
                         return null;
                     }
                     $actionLabel = $this->services->getEventTypeLabelMapper()->getLabel(
                         $data['event_type'] ?? '', $data['details'] ?? ''
                     );
+
                     return [
                         'id' => $data['procurement_id'],
                         'title' => $data['procurement_title'],
@@ -230,6 +239,7 @@ class BacChairmanController extends BaseController
                 'error' => $e->getMessage(),
                 'stack_trace' => $e->getTraceAsString(),
             ]);
+
             return [];
         }
     }
@@ -244,19 +254,20 @@ class BacChairmanController extends BaseController
 
             if ($documentItems === null) {
                 Log::warning('Failed to retrieve document stream items for BAC Chairman dashboard stats.');
+
                 return 0;
             }
 
             $documentCountMap = collect($documentItems)
-                ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-                ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+                ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+                ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
                 ->map(function ($items) {
-                    return collect($items)->map(fn($item) => $item['data']['json']['hash'])->unique()->count();
+                    return collect($items)->map(fn ($item) => $item['data']['json']['hash'])->unique()->count();
                 });
 
             $dashboardProcurementIds = $procurementsByKey->keys();
             $totalDocuments = $documentCountMap
-                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->sum();
 
             Log::info('BAC Chairman dashboard document count calculated', ['total_documents' => $totalDocuments]);
@@ -268,6 +279,7 @@ class BacChairmanController extends BaseController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return 0;
         }
     }

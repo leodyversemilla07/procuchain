@@ -64,6 +64,7 @@ class BacSecretariatController extends BaseController
                 if ($states === null) {
                     throw new Exception('Failed to retrieve status stream items for procurementsByKey cache');
                 }
+
                 return $this->getProcurementsByKey($states);
             });
 
@@ -80,6 +81,7 @@ class BacSecretariatController extends BaseController
             // Cache priority actions for 2 minutes
             $priorityActions = Cache::remember('dashboard_priority_actions', now()->addMinutes(2), function () use ($procurementsByKey) {
                 $allPriorityActions = $this->getPriorityActions($procurementsByKey);
+
                 return array_slice($allPriorityActions, 0, 3);
             });
 
@@ -89,6 +91,7 @@ class BacSecretariatController extends BaseController
             });
             $stats = Cache::remember('dashboard_stats', now()->addMinutes(5), function () use ($procurementsByKey, $allPriorityActionsCount) {
                 Log::info('Cache miss: Recalculating dashboard stats');
+
                 return $this->getDashboardStats($procurementsByKey, $allPriorityActionsCount);
             });
 
@@ -139,9 +142,10 @@ class BacSecretariatController extends BaseController
             // or rely on the outer caching of the entire stats array.
             // Caching getTotalDocuments separately might offer finer control if it's the slowest part.
             $totalDocuments = Cache::remember('dashboard_total_documents', now()->addMinutes(5), function () use ($procurementsByKey) {
-                 Log::info('Cache miss: Recalculating total documents for dashboard stats');
-                 // Pass $procurementsByKey if needed by the optimized getTotalDocuments
-                 return $this->getTotalDocuments($procurementsByKey);
+                Log::info('Cache miss: Recalculating total documents for dashboard stats');
+
+                // Pass $procurementsByKey if needed by the optimized getTotalDocuments
+                return $this->getTotalDocuments($procurementsByKey);
             });
 
             return [
@@ -154,7 +158,8 @@ class BacSecretariatController extends BaseController
             Log::error('Failed to calculate dashboard stats', [
                 'error' => $e->getMessage(),
             ]);
-             Cache::forget('dashboard_total_documents'); // Clear specific cache on error
+            Cache::forget('dashboard_total_documents'); // Clear specific cache on error
+
             return $this->getEmptyStats();
         }
     }
@@ -183,7 +188,7 @@ class BacSecretariatController extends BaseController
             return collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data']['json'] ?? [];
-                    if (!isset($data['procurement_id'], $data['procurement_title'])) {
+                    if (! isset($data['procurement_id'], $data['procurement_title'])) {
                         Log::warning('Invalid procurement data structure', ['data' => $data]);
 
                         return null;
@@ -238,7 +243,7 @@ class BacSecretariatController extends BaseController
                 true
             );
 
-            if (!$allEvents) {
+            if (! $allEvents) {
                 Log::warning('No events found in stream');
 
                 return [];
@@ -247,7 +252,7 @@ class BacSecretariatController extends BaseController
             return collect($allEvents)
                 ->map(function ($item) {
                     $data = $item['data']['json'] ?? [];
-                    if (!isset($data['procurement_id'], $data['procurement_title'])) {
+                    if (! isset($data['procurement_id'], $data['procurement_title'])) {
                         return null;
                     }
 
@@ -337,16 +342,17 @@ class BacSecretariatController extends BaseController
 
             if ($documentItems === null) {
                 Log::warning('Failed to retrieve document stream items for dashboard stats.');
+
                 return 0;
             }
 
             // Build a map: procurement_id => document count (unique by hash)
             $documentCountMap = collect($documentItems)
-                ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-                ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+                ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+                ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
                 ->map(function ($items) {
                     return collect($items)
-                        ->map(fn($item) => $item['data']['json']['hash'])
+                        ->map(fn ($item) => $item['data']['json']['hash'])
                         ->unique()
                         ->count();
                 });
@@ -356,12 +362,12 @@ class BacSecretariatController extends BaseController
 
             // Sum the counts only for the procurements relevant to the dashboard
             $totalDocuments = $documentCountMap
-                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->sum();
 
             // Optional: Log the breakdown for debugging
             $documentCounts = $documentCountMap
-                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->map(function ($count, $procurementId) use ($procurementsByKey) {
                     return [
                         'procurement_id' => $procurementId,
@@ -375,7 +381,7 @@ class BacSecretariatController extends BaseController
             Log::info('Dashboard document count breakdown', [
                 'total_documents' => $totalDocuments,
                 'procurement_count_on_dashboard' => $procurementsByKey->count(),
-                'document_counts_by_procurement' => $documentCounts
+                'document_counts_by_procurement' => $documentCounts,
             ]);
 
             return $totalDocuments;
@@ -385,6 +391,7 @@ class BacSecretariatController extends BaseController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(), // Include trace for better debugging
             ]);
+
             return 0;
         }
     }

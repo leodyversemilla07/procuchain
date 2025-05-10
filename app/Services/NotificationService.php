@@ -39,7 +39,7 @@ class NotificationService
             'document_count' => $documentCount, // Pass document_count
         ];
 
-        if ($stageTransition && !empty($nextStage)) {
+        if ($stageTransition && ! empty($nextStage)) {
             $notificationData['next_stage'] = $nextStage;
             $notificationData['transition_message'] = "This procurement will now proceed to the {$nextStage} stage.";
         }

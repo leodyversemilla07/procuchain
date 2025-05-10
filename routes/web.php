@@ -3,10 +3,10 @@
 use App\Http\Controllers\BacChairmanController;
 use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\HopeController;
-use App\Http\Controllers\ProcurementController;
-use App\Http\Controllers\ViewProcurementsController;
-use App\Http\Controllers\SearchController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProcurementController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\ViewProcurementsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -17,20 +17,11 @@ Route::get('/', function () {
 Route::inertia('/about', 'about')
     ->name('about');
 
-Route::inertia('/development', 'development')
-    ->name('development');
-
 Route::inertia('/team', 'team')
     ->name('team');
 
-Route::inertia('/documentation', 'documentation')
-    ->name('documentation');
-
 Route::inertia('/contact', 'contact')
     ->name('contact');
-
-Route::inertia('/features', 'features')
-    ->name('features');
 
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
@@ -178,5 +169,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+Route::get('/privacy.pdf', function () {
+    return response()->file(public_path('docs/privacy.pdf'));
+})->name('privacy.pdf');
+
+Route::get('/terms.pdf', function () {
+    return response()->file(public_path('docs/terms.pdf'));
+})->name('terms.pdf');
+
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

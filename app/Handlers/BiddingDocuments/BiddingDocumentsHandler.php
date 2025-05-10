@@ -21,7 +21,7 @@ class BiddingDocumentsHandler extends BaseStageHandler
         } catch (Exception $e) {
             Log::error('Error in BiddingDocumentsHandler', ['error' => $e->getMessage()]);
 
-            return ['success' => false, 'message' => 'Failed to publish ' . StageEnums::BIDDING_DOCUMENTS->getDisplayName() . ': ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Failed to publish '.StageEnums::BIDDING_DOCUMENTS->getDisplayName().': '.$e->getMessage()];
         }
     }
 
@@ -90,7 +90,7 @@ class BiddingDocumentsHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),                              // From BIDDING_DOCUMENTS
             $data['nextStage']->getDisplayName(),                                 // To PRE_BID_CONFERENCE
             $data['userAddress'],
-            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after publishing bidding documents'
+            'Proceeding to '.$data['nextStage']->getDisplayName().' after publishing bidding documents'
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -106,7 +106,7 @@ class BiddingDocumentsHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' published successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+            'message' => $data['currentStage']->getDisplayName().' published successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
         ];
     }
 }

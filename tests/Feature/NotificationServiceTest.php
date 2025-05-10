@@ -55,15 +55,15 @@ test('sends notifications to bac chairman and hope users on stage update', funct
     );
 
     // Assert: Notification content for one of the users (e.g., BAC Chairman)
-    Notification::assertSentTo($bacChairman, function (ProcurementStageNotification $notification, $channels) use ($procurementId, $procurementTitle, $stageIdentifier, $currentStatus, $timestamp, $actionType, $documentCount, $nextStage, $bacChairman, $stageTransition) {
+    Notification::assertSentTo($bacChairman, function (ProcurementStageNotification $notification, $channels) use ($procurementId, $procurementTitle, $stageIdentifier, $currentStatus, $actionType, $documentCount, $nextStage, $bacChairman, $stageTransition) {
         expect($channels)->toContain('mail', 'database');
 
         $mailData = $notification->toMail($bacChairman);
         expect($mailData->subject)->toBe("Procurement Update: {$stageIdentifier} - {$procurementTitle}")
             ->and($mailData->greeting)->toContain('Dear BAC Chairman User,');
-        
+
         // 'scheduled' actionType defaults to 'has been updated' in formatActionType
-        $formattedActionText = 'has been updated'; 
+        $formattedActionText = 'has been updated';
         $expectedLineMainAction = "The {$stageIdentifier} stage {$formattedActionText}.";
         $expectedLineWithDocs = "The {$stageIdentifier} stage {$formattedActionText} with **{$documentCount} document(s)**.";
         $expectedLineDocsUploaded = "**{$documentCount} document(s)** have been uploaded for the {$stageIdentifier} stage.";
@@ -75,7 +75,7 @@ test('sends notifications to bac chairman and hope users on stage update', funct
                 expect(collect($mailData->introLines))->toContain($expectedLineWithDocs);
             }
         } else {
-             expect(collect($mailData->introLines))->toContain($expectedLineMainAction);
+            expect(collect($mailData->introLines))->toContain($expectedLineMainAction);
         }
 
         if ($stageTransition) {
@@ -85,16 +85,16 @@ test('sends notifications to bac chairman and hope users on stage update', funct
 
         $databaseData = $notification->toDatabase($bacChairman)->data;
         if ($stageTransition) {
-             expect($databaseData['title'])->toBe("Stage Transition: {$stageIdentifier} to {$nextStage}")
+            expect($databaseData['title'])->toBe("Stage Transition: {$stageIdentifier} to {$nextStage}")
                 ->and($databaseData['message'])->toContain("The procurement is now moving to the {$nextStage} stage.");
         } else {
-             expect($databaseData['title'])->toBe("{$stageIdentifier} Update")
+            expect($databaseData['title'])->toBe("{$stageIdentifier} Update")
                 ->and($databaseData['message'])->not->toContain("The procurement is now moving to the {$nextStage} stage.");
         }
-        
+
         $expectedMessageStart = "The {$stageIdentifier} stage {$formattedActionText} for \"{$procurementTitle}\". Current status: {$currentStatus}";
         if ($stageTransition) {
-            $expectedMessageStart .= ".";
+            $expectedMessageStart .= '.';
         }
         expect($databaseData['message'])->toStartWith($expectedMessageStart);
         expect($databaseData['procurement_id'])->toBe($procurementId)
@@ -133,19 +133,23 @@ test('sends notification without stage transition and documents', function () {
         $nextStage
     );
 
-    Notification::assertSentTo($bacChairman, function (ProcurementStageNotification $notification, $channels) use ($stageIdentifier, $procurementTitle, $bacChairman, $actionType, $currentStatus, $stageTransition) {
+    Notification::assertSentTo($bacChairman, function (ProcurementStageNotification $notification, $channels) use ($stageIdentifier, $procurementTitle, $bacChairman, $actionType, $currentStatus) {
         $mailData = $notification->toMail($bacChairman);
         // 'updated' actionType defaults to 'has been updated' in formatActionType
-        $formattedActionText = 'has been updated'; 
+        $formattedActionText = 'has been updated';
         expect($mailData->subject)->toBe("Procurement Update: {$stageIdentifier} - {$procurementTitle}")
             ->and(collect($mailData->introLines))->toContain("The {$stageIdentifier} stage {$formattedActionText}.");
-        
-        $mailContent = "";
-        foreach($mailData->introLines as $line) {
-            if (is_string($line)) $mailContent .= $line."\n";
+
+        $mailContent = '';
+        foreach ($mailData->introLines as $line) {
+            if (is_string($line)) {
+                $mailContent .= $line."\n";
+            }
         }
-        foreach($mailData->outroLines as $line) {
-            if (is_string($line)) $mailContent .= $line."\n";
+        foreach ($mailData->outroLines as $line) {
+            if (is_string($line)) {
+                $mailContent .= $line."\n";
+            }
         }
 
         expect($mailContent)->not->toContain('Stage Transition:')
@@ -155,7 +159,7 @@ test('sends notification without stage transition and documents', function () {
         $expectedMessage = "The {$stageIdentifier} stage {$formattedActionText} for \"{$procurementTitle}\". Current status: {$currentStatus}";
 
         expect($databaseData['title'])->toBe("{$stageIdentifier} Update")
-            ->and($databaseData['message'])->not->toContain("The procurement is now moving to the")
+            ->and($databaseData['message'])->not->toContain('The procurement is now moving to the')
             ->and($databaseData['message'])->toBe($expectedMessage)
             ->and($databaseData['document_count'])->toBe(0)
             ->and($databaseData['action_type'])->toBe($actionType);

@@ -14,6 +14,7 @@ use Inertia\Inertia;
 class HopeController extends BaseController
 {
     private $services;
+
     private array $userNameCache = [];
 
     public function __construct(ProcurementServices $services)
@@ -52,6 +53,7 @@ class HopeController extends BaseController
                 if ($states === null) {
                     throw new Exception('Failed to retrieve status stream items for HOPE procurementsByKey cache');
                 }
+
                 return $this->getProcurementsByKey($states);
             });
 
@@ -66,6 +68,7 @@ class HopeController extends BaseController
 
             $stats = Cache::remember('hope_dashboard_stats', now()->addMinutes(5), function () use ($procurementsByKey) {
                 Log::info('Cache miss: Recalculating HOPE dashboard stats');
+
                 return $this->getDashboardStats($procurementsByKey, 0);
             });
 
@@ -104,6 +107,7 @@ class HopeController extends BaseController
         try {
             $totalDocuments = Cache::remember('hope_dashboard_total_documents', now()->addMinutes(5), function () use ($procurementsByKey) {
                 Log::info('Cache miss: Recalculating total documents for HOPE dashboard stats');
+
                 return $this->getTotalDocuments($procurementsByKey);
             });
 
@@ -115,6 +119,7 @@ class HopeController extends BaseController
         } catch (Exception $e) {
             Log::error('Failed to calculate HOPE dashboard stats', ['error' => $e->getMessage()]);
             Cache::forget('hope_dashboard_total_documents');
+
             return $this->getEmptyStats();
         }
     }
@@ -142,10 +147,12 @@ class HopeController extends BaseController
             return collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data']['json'] ?? [];
-                    if (!isset($data['procurement_id'], $data['procurement_title'])) {
+                    if (! isset($data['procurement_id'], $data['procurement_title'])) {
                         Log::warning('Invalid procurement data structure in HOPE context', ['data' => $data]);
+
                         return null;
                     }
+
                     return [
                         'id' => $data['procurement_id'],
                         'title' => $data['procurement_title'],
@@ -190,20 +197,22 @@ class HopeController extends BaseController
                 StreamEnums::EVENTS->value, true, 20, -20, true
             );
 
-            if (!$allEvents) {
+            if (! $allEvents) {
                 Log::warning('No events found in stream for HOPE dashboard');
+
                 return [];
             }
 
             return collect($allEvents)
                 ->map(function ($item) {
                     $data = $item['data']['json'] ?? [];
-                    if (!isset($data['procurement_id'], $data['procurement_title'])) {
+                    if (! isset($data['procurement_id'], $data['procurement_title'])) {
                         return null;
                     }
                     $actionLabel = $this->services->getEventTypeLabelMapper()->getLabel(
                         $data['event_type'] ?? '', $data['details'] ?? ''
                     );
+
                     return [
                         'id' => $data['procurement_id'],
                         'title' => $data['procurement_title'],
@@ -227,6 +236,7 @@ class HopeController extends BaseController
                 'error' => $e->getMessage(),
                 'stack_trace' => $e->getTraceAsString(),
             ]);
+
             return [];
         }
     }
@@ -241,19 +251,20 @@ class HopeController extends BaseController
 
             if ($documentItems === null) {
                 Log::warning('Failed to retrieve document stream items for HOPE dashboard stats.');
+
                 return 0;
             }
 
             $documentCountMap = collect($documentItems)
-                ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-                ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+                ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+                ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
                 ->map(function ($items) {
-                    return collect($items)->map(fn($item) => $item['data']['json']['hash'])->unique()->count();
+                    return collect($items)->map(fn ($item) => $item['data']['json']['hash'])->unique()->count();
                 });
 
             $dashboardProcurementIds = $procurementsByKey->keys();
             $totalDocuments = $documentCountMap
-                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->sum();
 
             Log::info('HOPE dashboard document count calculated', ['total_documents' => $totalDocuments]);
@@ -265,6 +276,7 @@ class HopeController extends BaseController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return 0;
         }
     }

@@ -35,7 +35,7 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
                     $this->publishSingleDocument($bondMetadata, $data);
                     $processedDocumentsCount++;
                 } catch (Exception $e) {
-                    $errors[] = 'Failed to process Performance Bond: ' . $e->getMessage();
+                    $errors[] = 'Failed to process Performance Bond: '.$e->getMessage();
                     Log::error('Error processing Performance Bond', ['error' => $e->getMessage(), 'data' => $data]);
                 }
             }
@@ -52,7 +52,7 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
                     $this->publishSingleDocument($contractMetadata, $data);
                     $processedDocumentsCount++;
                 } catch (Exception $e) {
-                    $errors[] = 'Failed to process Contract: ' . $e->getMessage();
+                    $errors[] = 'Failed to process Contract: '.$e->getMessage();
                     Log::error('Error processing Contract', ['error' => $e->getMessage(), 'data' => $data]);
                 }
             }
@@ -69,13 +69,13 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
                     $this->publishSingleDocument($poMetadata, $data);
                     $processedDocumentsCount++;
                 } catch (Exception $e) {
-                    $errors[] = 'Failed to process Purchase Order: ' . $e->getMessage();
+                    $errors[] = 'Failed to process Purchase Order: '.$e->getMessage();
                     Log::error('Error processing Purchase Order', ['error' => $e->getMessage(), 'data' => $data]);
                 }
             }
 
             // Check if at least one document was processed successfully
-            if ($processedDocumentsCount === 0 && !empty($errors)) {
+            if ($processedDocumentsCount === 0 && ! empty($errors)) {
                 // If no documents were processed and there were errors, throw the first error
                 throw new Exception(implode('; ', $errors));
             } elseif ($processedDocumentsCount === 0) {
@@ -83,15 +83,13 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
                 throw new Exception('No document files were provided for upload.');
             }
 
-
             // Proceed with stage transition and notification only if at least one doc was processed
             $this->finalizeStageProcessing($data, $processedDocumentsCount);
 
-            $successMessage = $data['currentStage']->getDisplayName() . ' documents processed successfully (' . $processedDocumentsCount . ' files). Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage.';
-            if (!empty($errors)) {
-                $successMessage .= ' Some files failed: ' . implode('; ', $errors);
+            $successMessage = $data['currentStage']->getDisplayName().' documents processed successfully ('.$processedDocumentsCount.' files). Proceeding to '.$data['nextStage']->getDisplayName().' stage.';
+            if (! empty($errors)) {
+                $successMessage .= ' Some files failed: '.implode('; ', $errors);
             }
-
 
             return [
                 'success' => true,
@@ -100,10 +98,11 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
 
         } catch (Exception $e) {
             Log::error('Error in PerformanceBondContractAndPoHandler handle method', ['error' => $e->getMessage()]);
-            $errorMessage = 'Failed to upload ' . StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName() . ' documents: ' . $e->getMessage();
-            if (!empty($errors)) {
-                $errorMessage .= ' Individual errors: ' . implode('; ', $errors);
+            $errorMessage = 'Failed to upload '.StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName().' documents: '.$e->getMessage();
+            if (! empty($errors)) {
+                $errorMessage .= ' Individual errors: '.implode('; ', $errors);
             }
+
             return ['success' => false, 'message' => $errorMessage];
         }
     }
@@ -130,11 +129,12 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
     /**
      * Prepares metadata for a single document file.
      *
-     * @param UploadedFile $file The uploaded file object.
-     * @param string $documentType The specific type of the document (e.g., 'Performance Bond').
-     * @param array $specificMetadata Additional metadata specific to this document type.
-     * @param array $commonData Common data like procurement ID, title, etc.
+     * @param  UploadedFile  $file  The uploaded file object.
+     * @param  string  $documentType  The specific type of the document (e.g., 'Performance Bond').
+     * @param  array  $specificMetadata  Additional metadata specific to this document type.
+     * @param  array  $commonData  Common data like procurement ID, title, etc.
      * @return array The prepared metadata array for the single document.
+     *
      * @throws Exception
      */
     private function prepareSingleDocumentMetadata(UploadedFile $file, string $documentType, array $specificMetadata, array $commonData): array
@@ -150,7 +150,7 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
         );
 
         // uploadAndPrepareMetadata returns an array of metadata arrays, we need the first one.
-        if (empty($metadataResult) || !isset($metadataResult[0])) {
+        if (empty($metadataResult) || ! isset($metadataResult[0])) {
             throw new Exception("Failed to prepare metadata for document type: {$documentType}");
         }
 
@@ -160,8 +160,9 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
     /**
      * Publishes a single document's metadata to the blockchain.
      *
-     * @param array $documentMetadata The metadata array for the single document.
-     * @param array $commonData Common data like procurement ID, title, stage, status, user address.
+     * @param  array  $documentMetadata  The metadata array for the single document.
+     * @param  array  $commonData  Common data like procurement ID, title, stage, status, user address.
+     *
      * @throws Exception
      */
     private function publishSingleDocument(array $documentMetadata, array $commonData): void
@@ -179,16 +180,15 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
         Log::info('Successfully published document', [
             'procurement_id' => $commonData['procurementId'], // Corrected variable access
             'document_type' => $documentMetadata['document_type'] ?? 'Unknown',
-            'hash' => $documentMetadata['hash'] ?? 'N/A'
+            'hash' => $documentMetadata['hash'] ?? 'N/A',
         ]);
     }
-
 
     /**
      * Finalizes the stage processing by handling stage transition and notification.
      *
-     * @param array $data Common handling data.
-     * @param int $processedDocumentsCount The number of documents successfully processed.
+     * @param  array  $data  Common handling data.
+     * @param  int  $processedDocumentsCount  The number of documents successfully processed.
      */
     private function finalizeStageProcessing(array $data, int $processedDocumentsCount): void
     {
@@ -202,7 +202,7 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
                 $data['currentStage']->getDisplayName(),
                 $data['nextStage']->getDisplayName(),
                 $data['userAddress'],
-                'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after recording ' . $processedDocumentsCount . ' document(s)'
+                'Proceeding to '.$data['nextStage']->getDisplayName().' stage after recording '.$processedDocumentsCount.' document(s)'
             );
 
             $this->notificationService->notifyStageUpdate(

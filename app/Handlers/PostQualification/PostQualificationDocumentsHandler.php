@@ -21,7 +21,7 @@ class PostQualificationDocumentsHandler extends BaseStageHandler
         } catch (Exception $e) {
             Log::error('Error in PostQualificationHandler', ['error' => $e->getMessage()]);
 
-            return ['success' => false, 'message' => 'Failed to upload ' . StageEnums::POST_QUALIFICATION->getDisplayName() . ' documents: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Failed to upload '.StageEnums::POST_QUALIFICATION->getDisplayName().' documents: '.$e->getMessage()];
         }
     }
 
@@ -40,38 +40,38 @@ class PostQualificationDocumentsHandler extends BaseStageHandler
             'userAddress' => $this->getUserBlockchainAddress(),
             'currentStage' => StageEnums::POST_QUALIFICATION,
             'nextStage' => StageEnums::BAC_RESOLUTION,
-            'status' => $request->boolean('outcome') ? 
-                StatusEnums::POST_QUALIFICATION_VERIFIED : 
-                StatusEnums::POST_QUALIFICATION_FAILED
+            'status' => $request->boolean('outcome') ?
+                StatusEnums::POST_QUALIFICATION_VERIFIED :
+                StatusEnums::POST_QUALIFICATION_FAILED,
         ];
     }
 
     private function prepareDocumentsMetadata(array $data): array
     {
         $metadataArray = [];
-        
+
         $baseMetadata = [
             'submission_date' => $data['submissionDate'],
             'outcome' => $data['outcome'] ? 'Verified' : 'Failed',
-            'remarks' => $data['remarks']
+            'remarks' => $data['remarks'],
         ];
 
         $files = [
             [
                 'file' => $data['postQualificationReport'],
                 'documentType' => 'Post Qualification Report',
-                'required' => true
+                'required' => true,
             ],
             [
                 'file' => $data['twgCertification'],
                 'documentType' => 'TWG Certification',
-                'required' => false
+                'required' => false,
             ],
             [
                 'file' => $data['noticeOfPostQualification'],
                 'documentType' => 'Notice of Post Qualification',
-                'required' => true
-            ]
+                'required' => true,
+            ],
         ];
 
         foreach ($files as $fileInfo) {
@@ -121,7 +121,7 @@ class PostQualificationDocumentsHandler extends BaseStageHandler
                 $data['currentStage']->getDisplayName(),
                 $data['nextStage']->getDisplayName(),
                 $data['userAddress'],
-                'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after successful post-qualification'
+                'Proceeding to '.$data['nextStage']->getDisplayName().' after successful post-qualification'
             );
         } else {
             // If verification failed, log the failure event
@@ -150,16 +150,16 @@ class PostQualificationDocumentsHandler extends BaseStageHandler
             $data['outcome']
         );
 
-        $message = $data['currentStage']->getDisplayName() . ' documents uploaded successfully';
+        $message = $data['currentStage']->getDisplayName().' documents uploaded successfully';
         if ($data['outcome']) {
-            $message .= '. Proceeding to ' . $data['nextStage']->getDisplayName() . '.';
+            $message .= '. Proceeding to '.$data['nextStage']->getDisplayName().'.';
         } else {
             $message .= '. Post-qualification failed - procurement process halted.';
         }
 
         return [
             'success' => true,
-            'message' => $message
+            'message' => $message,
         ];
     }
 }
