@@ -16,6 +16,7 @@ class NotificationService
         string $currentStatus,
         string $timestamp,
         string $actionType,
+        int $documentCount = 0, // Add documentCount parameter with a default value
         bool $stageTransition = false,
         string $nextStage = ''
     ): void {
@@ -35,6 +36,7 @@ class NotificationService
             'current_status' => $currentStatus,
             'timestamp' => $timestamp,
             'action_type' => $actionType,
+            'document_count' => $documentCount, // Pass document_count
         ];
 
         if ($stageTransition && !empty($nextStage)) {

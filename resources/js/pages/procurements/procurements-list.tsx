@@ -145,7 +145,6 @@ const ProcurementsContent = ({
 
     return (
         <div className="w-full h-full flex flex-col">
-            {/* Desktop view - Shows table or kanban based on viewType */}
             <div className="hidden lg:block h-full">
                 {viewType === 'table' ? (
                     <div className="overflow-x-auto">
@@ -186,7 +185,6 @@ const ProcurementsContent = ({
                     </div>
                 )}
             </div>
-            {/* Mobile view - Always shows Kanban */}
             <div className="block lg:hidden h-full overflow-hidden">
                 <KanbanBoard
                     procurements={procurements}

@@ -50,15 +50,14 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     /**
      * Get the notification's delivery channels
      *
-     * Currently configured for email notifications only.
-     * Can be extended to include database notifications.
+     * Currently configured for email and database notifications.
      *
      * @param  object  $notifiable  The user receiving the notification
      * @return array<int, string> Active notification channels
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     /**
@@ -146,6 +145,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     {
         $url = $this->getRoleSpecificUrl($notifiable);
         $formattedAction = $this->formatActionType($this->data['action_type'] ?? 'updated');
+        $documentCount = $this->data['document_count'] ?? 0; // Use null coalescing operator for document_count
 
         $subject = "Procurement Update: {$this->data['stage_identifier']} - {$this->data['procurement_title']}";
 
@@ -155,11 +155,11 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
             ->line('This is to inform you that there has been an update to the procurement process:');
 
         // Main update message
-        if ($this->data['document_count'] > 0) {
+        if ($documentCount > 0) { // Use the new $documentCount variable
             if (in_array($this->data['action_type'], ['uploaded', 'submitted'])) {
-                $emailMessage->line("**{$this->data['document_count']} document(s)** have been uploaded for the {$this->data['stage_identifier']} stage.");
+                $emailMessage->line("**{$documentCount} document(s)** have been uploaded for the {$this->data['stage_identifier']} stage.");
             } else {
-                $emailMessage->line("The {$this->data['stage_identifier']} stage {$formattedAction} with **{$this->data['document_count']} document(s)**.");
+                $emailMessage->line("The {$this->data['stage_identifier']} stage {$formattedAction} with **{$documentCount} document(s)**.");
             }
         } else {
             $emailMessage->line("The {$this->data['stage_identifier']} stage {$formattedAction}.");

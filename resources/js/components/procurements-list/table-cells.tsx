@@ -11,7 +11,7 @@ import { usePage } from '@inertiajs/react';
 
 export const IdCell = ({ id }: { id: string }) => {
     const { auth } = usePage<SharedData>().props;
-    const userRole = (auth?.user?.role || 'guest').replace('_', '-'); // Convert underscore to hyphen
+    const userRole = (auth?.user?.role || 'guest').replace('_', '-');
     const baseRoute = `/${userRole}/procurements-list/${id}`;
 
     return (
@@ -29,7 +29,7 @@ export const TitleCell = ({ procurement }: { procurement: ProcurementListItem })
     const textRef = useRef<HTMLDivElement>(null);
     const [isTruncated, setIsTruncated] = useState(false);
     const { auth } = usePage<SharedData>().props;
-    const userRole = (auth?.user?.role || 'guest').replace('_', '-'); // Convert underscore to hyphen
+    const userRole = (auth?.user?.role || 'guest').replace('_', '-');
     const baseRoute = `/${userRole}/procurements-list/${procurement.id}`;
 
     useEffect(() => {
@@ -94,7 +94,7 @@ export const BadgeCell = <T extends string>({
                 getStyle(value),
                 "inline-flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap px-2 py-0.5",
                 "shadow-sm border transition-all duration-150 font-medium",
-                "max-w-[180px]" // Added fixed max-width to ensure truncation
+                "max-w-[180px]"
             )}
         >
             {icon && <span className="flex-shrink-0">{icon}</span>}
@@ -170,10 +170,8 @@ export const DocumentCountCell = ({ count }: { count: number }) => (
 );
 
 export const LastUpdatedCell = ({ date }: { date: string }) => {
-    // Parse the date string
     const formattedDate = new Date(date);
 
-    // Format date as "MMM DD, YYYY" (e.g., "May 4, 2025") if valid, otherwise show original string
     const displayDate = !isNaN(formattedDate.getTime())
         ? formattedDate.toLocaleDateString('en-US', {
             month: 'short',

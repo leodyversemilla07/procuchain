@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, LayoutGrid, Table2, Upload } from 'lucide-react';
+import { LayoutGrid, Table2, Upload, Bell } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getNavItemsByRole = (role: string): NavItem[] => {
@@ -58,13 +58,18 @@ const getNavItemsByRole = (role: string): NavItem[] => {
     }
 };
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Help',
-        url: '/help',
-        icon: BookOpen,
+const getFooterNavItemsByRole = (role: string): NavItem[] => {
+    if (role === 'bac_chairman' || role === 'hope') {
+        return [
+            {
+                title: 'Notifications',
+                url: '/notifications',
+                icon: Bell,
+            }
+        ];
     }
-];
+    return [];
+};
 
 const getRoleUrl = (role: string): string => {
     switch (role) {
@@ -83,6 +88,7 @@ export function AppSidebar() {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const mainNavItems = getNavItemsByRole(auth.user.role);
+    const footerNavItems = getFooterNavItemsByRole(auth.user.role);
 
     return (
         <Sidebar collapsible="icon" variant="sidebar">
