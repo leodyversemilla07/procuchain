@@ -264,7 +264,8 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                 )}
             >
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-sm overflow-hidden
-                               rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md">
+                               rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md
+                               w-full max-w-full">
                     <ProcurementListHeader
                         userRole={userRole}
                         viewType={viewType}
@@ -274,8 +275,8 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                         searchValue={searchValue}
                         onSearchChange={setSearchValue}
                     />
-                    <CardContent className="dark:border-t dark:border-sidebar-border p-2 sm:p-3 md:p-4 overflow-hidden">
-                        <div className={viewType === 'table' ? 'overflow-x-auto w-full' : ''}>
+                    <CardContent className="p-3 sm:p-4 md:p-5 overflow-hidden w-full">
+                        <div className={viewType === 'table' ? 'overflow-x-auto w-full max-w-full' : 'w-full'}>
                             <ProcurementsContent
                                 loading={loading}
                                 error={error}
