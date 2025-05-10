@@ -26,7 +26,6 @@ enum StatusEnums: string
     case COMPLETION_DOCUMENTS_UPLOADED = 'completion_documents_uploaded';
     case COMPLETED = 'completed';
 
-    // Helper method to get display name
     public function getDisplayName(): string
     {
         return match ($this) {
@@ -54,7 +53,6 @@ enum StatusEnums: string
         };
     }
 
-    // Storage path helper
     public function getStoragePathSegment(): string
     {
         return match ($this) {

@@ -151,7 +151,7 @@ export default function ProcurementInitiationForm() {
         files: [null],
         metadata: [{
             document_type: '',
-            submission_date: '',
+            submission_date: format(new Date(), 'yyyy-MM-dd'),
             municipal_offices: '',
             signatory_details: ''
         }]
@@ -169,11 +169,25 @@ export default function ProcurementInitiationForm() {
             toast.error("File too large", { description: "Maximum file size is 10MB" });
             return false;
         }
-        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-        if (!isPdf) {
-            toast.error("Invalid file type", { description: "Please upload PDF files only" });
+
+        // Stricter validation:
+        // 1. If a MIME type is reported by the browser, and it's not 'application/pdf', reject.
+        //    This catches files like PNGs renamed to PDF.
+        if (file.type && file.type !== 'application/pdf') {
+            toast.error("Invalid file type", { description: `File "${file.name}" does not appear to be a PDF. Detected type: ${file.type}.` });
             return false;
         }
+
+        // 2. If no MIME type is reported (file.type is empty or null), then rely on the file extension.
+        //    It must end with .pdf.
+        if (!file.type && !file.name.toLowerCase().endsWith('.pdf')) {
+            toast.error("Invalid file type", { description: `File "${file.name}" is not recognized as a PDF and has no .pdf extension.` });
+            return false;
+        }
+        
+        // Passes if:
+        // - file.type is 'application/pdf' (name doesn't strictly matter in this case for client-side)
+        // - file.type is empty/null AND file.name.toLowerCase().endsWith('.pdf')
         return true;
     }, []);
 
@@ -182,7 +196,7 @@ export default function ProcurementInitiationForm() {
             form.clearErrors();
             const updated = Array.isArray(data.metadata) ? [...data.metadata] : [];
             if (!updated[index]) {
-                updated[index] = { document_type: '', submission_date: '', municipal_offices: '', signatory_details: '' };
+                updated[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatory_details: '' };
             }
             updated[index] = { ...updated[index], [field]: value };
             updateFormData('metadata', updated);
@@ -206,18 +220,29 @@ export default function ProcurementInitiationForm() {
     const handleFileChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
             form.clearErrors();
-            const file = e.target.files?.[0] || null;
-            if (file && validateFile(file)) {
-                const files = Array.isArray(data.files) ? [...data.files] : [];
-                files[index] = file;
-                updateFormData('files', files);
+            const newSelectedFile = e.target.files?.[0] || null;
+            const updatedFiles = Array.isArray(data.files) ? [...data.files] : [];
+
+            if (newSelectedFile && validateFile(newSelectedFile)) {
+                updatedFiles[index] = newSelectedFile;
+                updateFormData('files', updatedFiles);
+
                 const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
                 if (!meta[index]) {
                     meta[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatory_details: '' };
                     updateFormData('metadata', meta);
                 }
             } else {
-                e.target.value = '';
+                // newSelectedFile is either null (input cleared) or invalid.
+                if (newSelectedFile) { // It was an invalid file selection
+                    // validateFile would have shown a toast.
+                    e.target.value = ''; // Clear the file input UI.
+                }
+                // Set the file at this index to null in the form's state.
+                if (updatedFiles[index] !== null) { // Avoid redundant update if already null
+                    updatedFiles[index] = null;
+                    updateFormData('files', updatedFiles);
+                }
             }
         },
         [form, data.files, data.metadata, validateFile, updateFormData]
@@ -256,23 +281,37 @@ export default function ProcurementInitiationForm() {
     const validateDocuments = useCallback(() => {
         const files = Array.isArray(data.files) ? data.files : [];
         const meta = Array.isArray(data.metadata) ? data.metadata : [];
-        return files.some(f => !!f) && files.every((f, i) => {
-            if (!f) return true;
-            const m = meta[i] || {};
-            return m.document_type && m.submission_date && m.municipal_offices && m.signatory_details;
+
+        // Corresponds to backend 'files' => 'required|array|min:1'
+        // and 'files.*' => 'required|file|...'
+        // This means the files array cannot be empty and all its elements must be actual files.
+        if (files.length === 0 || files.some(f => f === null)) {
+            return false;
+        }
+
+        // If all files are present, their *required* metadata must also be complete.
+        // Based on PHP validation: 'metadata.*.document_type' => 'required|string|max:255'
+        // Other metadata fields like submission_date, municipal_offices, signatory_details are nullable
+        // so we only strictly check for document_type here for each file.
+        const allRequiredMetadataPresent = files.every((file, index) => {
+            // file is guaranteed non-null here due to the check above.
+            const metadataEntry = meta[index];
+            return metadataEntry && metadataEntry.document_type && String(metadataEntry.document_type).trim() !== '';
         });
+
+        return allRequiredMetadataPresent;
     }, [data.files, data.metadata]);
 
     const addFile = useCallback(() => {
         const files = Array.isArray(data.files) ? [...data.files, null] : [];
         const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
         const last = meta.length - 1;
-        const copy = last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: '', municipal_offices: '', signatory_details: '' };
-        // copy all previous metadata but reset document_type
-        meta.push({ ...copy, document_type: '' });
+        const copy = last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatory_details: '' };
+
+        meta.push({ ...copy, document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd') });
         updateFormData('files', files);
         updateFormData('metadata', meta);
-        setDates(d => last >= 0 ? { ...d, [last + 1]: d[last] } : d);
+        setDates(d => last >= 0 ? { ...d, [last + 1]: parseDate(format(new Date(), 'yyyy-MM-dd')) } : { 0: parseDate(format(new Date(), 'yyyy-MM-dd')) });
         setFormCompletion(c => ({ ...c, documents: false }));
     }, [data.files, data.metadata, updateFormData]);
 
@@ -322,51 +361,24 @@ export default function ProcurementInitiationForm() {
     };
 
     const validateForm = () => {
-        let isValid = true;
+        let isBasicValid = true;
+        if (!data.procurement_id || String(data.procurement_id).trim() === '') {
+            isBasicValid = false;
+        }
 
-        const validateBasicFields = () => {
-            if (!data.procurement_id) {
-                isValid = false;
-            }
+        if (!data.procurement_title || String(data.procurement_title).trim() === '') {
+            isBasicValid = false;
+        }
 
-            if (!data.procurement_title) {
-                isValid = false;
-            }
-        };
-
-        const validateDocumentMetadata = () => {
-            const files = Array.isArray(data.files) ? data.files : [];
-            const metadata = Array.isArray(data.metadata) ? data.metadata : [];
-
-            files.forEach((file: File | null, index: number) => {
-                if (file) {
-                    const meta = metadata[index];
-                    const metadataFields: Array<keyof FileMetadata> = [
-                        'document_type',
-                        'submission_date',
-                        'municipal_offices',
-                        'signatory_details'
-                    ];
-
-                    metadataFields.forEach(field => {
-                        if (!meta?.[field]) {
-                            isValid = false;
-                        }
-                    });
-                }
-            });
-        };
-
-        validateBasicFields();
-        validateDocumentMetadata();
+        const areDocumentsValid = validateDocuments();
 
         setFormCompletion({
-            details: !!data.procurement_id && !!data.procurement_title,
-            document: validateDocuments(),
-            documents: validateDocuments()
+            details: isBasicValid,
+            document: areDocumentsValid, // Use the result of validateDocuments
+            documents: areDocumentsValid  // Use the result of validateDocuments
         });
 
-        return isValid;
+        return isBasicValid && areDocumentsValid;
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -396,10 +408,22 @@ export default function ProcurementInitiationForm() {
                     description: Object.values(formErrors)[0]
                 });
 
-                if (formErrors.files || formErrors.metadata) {
+                const hasFileErrors = Object.keys(formErrors).some(key => key.startsWith('files') || key.startsWith('metadata'));
+                const hasDetailErrors = Object.keys(formErrors).some(key => key.startsWith('procurement_id') || key.startsWith('procurement_title'));
+
+                if (hasFileErrors) {
                     setCurrentStep(2);
-                } else if (formErrors.procurement_id || formErrors.procurement_title) {
+                    setFormCompletion(prev => ({
+                        ...prev,
+                        document: false,
+                        documents: false,
+                    }));
+                } else if (hasDetailErrors) {
                     setCurrentStep(1);
+                    setFormCompletion(prev => ({
+                        ...prev,
+                        details: false,
+                    }));
                 }
             },
             forceFormData: true,
@@ -547,7 +571,7 @@ export default function ProcurementInitiationForm() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Create Procurement" />
+            <Head title="Initiate Procurement" />
 
             <div className="flex h-full flex-1 flex-col gap-4 sm:gap-6 p-3 sm:p-6">
                 <FormHeader

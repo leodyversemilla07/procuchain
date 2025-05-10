@@ -27,7 +27,7 @@ class ProcurementInitiationRequest extends FormRequest
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
             'files' => 'required|array|min:1',
-            'files.*' => 'required|file|mimes:pdf|max:10240',
+            'files.*' => 'required|file|mimes:pdf|max:10240', // Changed 'nullable' back to 'required'
             'metadata' => 'required|array|min:1',
             'metadata.*.document_type' => 'required|string|max:255',
             'metadata.*.submission_date' => 'nullable|before_or_equal:today',

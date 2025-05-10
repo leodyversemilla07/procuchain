@@ -4,7 +4,6 @@ namespace App\Enums;
 
 enum StageEnums: string
 {
-    // Procurement stages
     case PROCUREMENT_INITIATION = 'procurement_initiation';
     case PRE_PROCUREMENT_CONFERENCE = 'pre_procurement_conference';
     case BIDDING_DOCUMENTS = 'bidding_documents';
@@ -21,7 +20,6 @@ enum StageEnums: string
     case COMPLETION = 'completion';
     case COMPLETED = 'completed';
 
-    // Helper method to get display name
     public function getDisplayName(): string
     {
         return match ($this) {
@@ -43,7 +41,6 @@ enum StageEnums: string
         };
     }
 
-    // Storage path helper similar to your example
     public function getStoragePathSegment(): string
     {
         return match ($this) {

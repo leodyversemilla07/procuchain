@@ -69,6 +69,7 @@ class ProcurementStageTransitionService
             $this->getPreProcurementAction(),
             $this->getBiddingDocumentsAction(),
             $this->getPreBidConferenceAction(),
+            $this->getSupplementalBidBulletinAction(),
             $this->getBidOpeningAction(),
             $this->getBidEvaluationAction(),
             $this->getPostQualificationAction(),
@@ -77,6 +78,7 @@ class ProcurementStageTransitionService
             $this->getPerformanceBondAction(),
             $this->getNoticeToProceedAction(),
             $this->getMonitoringAction(),
+            $this->getCompletionAction(),
         ];
     }
 
@@ -109,7 +111,7 @@ class ProcurementStageTransitionService
                 StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED->getDisplayName(),
             ],
             'action' => 'Upload Bidding Documents',
-            'routeTemplate' => '/bac-secretariat/bid-invitation-upload/%s',
+            'routeTemplate' => '/bac-secretariat/bidding-documents-upload/%s',
         ];
     }
 
@@ -123,13 +125,23 @@ class ProcurementStageTransitionService
         ];
     }
 
+    private function getSupplementalBidBulletinAction(): array
+    {
+        return [
+            'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->getDisplayName(),
+            'status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED->getDisplayName(),
+            'action' => 'Upload Supplemental Bid Bulletin Documents',
+            'routeTemplate' => '/bac-secretariat/supplemental-bid-bulletin-upload/%s',
+        ];
+    }
+
     private function getBidOpeningAction(): array
     {
         return [
             'stage' => StageEnums::BID_OPENING->getDisplayName(),
-            'status' => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED->getDisplayName(),
+            'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->getDisplayName(), // Fixed enum value
             'action' => 'Upload Bid Opening Documents',
-            'routeTemplate' => '/bac-secretariat/bid-submission-upload/%s',
+            'routeTemplate' => '/bac-secretariat/bid-opening-upload/%s',
         ];
     }
 
@@ -179,7 +191,7 @@ class ProcurementStageTransitionService
             'stage' => StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName(),
             'status' => StatusEnums::AWARDED->getDisplayName(),
             'action' => 'Upload Performance Bond, Contract, and PO Documents',
-            'routeTemplate' => '/bac-secretariat/performance-bond-upload/%s',
+            'routeTemplate' => '/bac-secretariat/performance-bond-contract-po-upload/%s',
         ];
     }
 
@@ -201,6 +213,16 @@ class ProcurementStageTransitionService
             'action' => 'Mark Procurement as Complete',
             'routeTemplate' => '/bac-secretariat/procurements-list',
             'statusCheck' => fn ($status) => $status !== StatusEnums::COMPLETED->getDisplayName(),
+        ];
+    }
+
+    private function getCompletionAction(): array
+    {
+        return [
+            'stage' => StageEnums::COMPLETION->getDisplayName(),
+            'status' => StatusEnums::MONITORING_COMPLETED->getDisplayName(),
+            'action' => 'Upload Completion Documents',
+            'routeTemplate' => '/bac-secretariat/completion-upload/%s',
         ];
     }
 }

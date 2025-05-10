@@ -23,11 +23,6 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Dashboard',
                     url: '/bac-secretariat/dashboard',
                     icon: LayoutGrid,
-                },
-                {
-                    title: 'Generate Purchase Request',
-                    url: '/dashboard',
-                    icon: LayoutGrid,
                 }
             ];
         case 'bac_chairman':

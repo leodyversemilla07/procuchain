@@ -6,6 +6,7 @@ use App\Http\Controllers\HopeController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ViewProcurementsController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -167,6 +168,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('hope.procurements.show');
     });
 
+    // Notification routes
+    Route::get('/notifications', [NotificationController::class, 'page'])
+        ->name('notifications');
+
+    // Notification API routes
+    Route::get('/notifications/list', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
 });
 
 require __DIR__ . '/settings.php';
