@@ -11,12 +11,13 @@ class StreamKeyService
         $cleanTitle = preg_replace('/[^a-zA-Z0-9\-]+/', '_', $cleanTitle);
         $cleanTitle = preg_replace('/[_-]+/', '_', $cleanTitle);
         $cleanTitle = trim($cleanTitle, '_-');
-        $streamKey = $cleanId . '_' . $cleanTitle;
+        $streamKey = $cleanId.'_'.$cleanTitle;
         $maxLength = 64;
         if (strlen($streamKey) > $maxLength) {
             $streamKey = substr($streamKey, 0, $maxLength);
             $streamKey = rtrim($streamKey, '_-');
         }
+
         return $streamKey;
     }
 }

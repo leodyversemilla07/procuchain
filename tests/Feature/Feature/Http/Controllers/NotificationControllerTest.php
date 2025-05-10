@@ -43,7 +43,7 @@ test('user can fetch their notifications with pagination', function () {
                 'current_page',
                 'last_page',
             ],
-            'unread_count'
+            'unread_count',
         ])
         ->assertJsonCount(10, 'notifications') // Default per_page is 10
         ->assertJson([

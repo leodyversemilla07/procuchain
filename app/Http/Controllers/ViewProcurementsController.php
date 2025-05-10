@@ -1,25 +1,28 @@
 <?php
+
 declare(strict_types=1);
 /**
  * @phpstan-ignore-file
+ *
  * @psalm-suppress TooManyArguments
+ *
  * @noinspection Generic.StringHeavyFunctionArguments
  */
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
 use App\Enums\StreamEnums;
 use App\Models\User;
+use App\Services\ProcurementServices;
+use Carbon\Carbon;
 use Exception;
+use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Services\ProcurementServices;
-use Illuminate\Routing\Controller as BaseController;
 
 class ViewProcurementsController extends BaseController
 {
@@ -34,15 +37,17 @@ class ViewProcurementsController extends BaseController
     private array $userCache = []; // Corrected type hint
 
     private const STATUS_PAGE_SIZE = 1000;
+
     private const DOCUMENT_PAGE_SIZE = 10000;
+
     private const CACHE_DURATION_MINUTES = 5;
+
     private const CACHE_KEY_PROCUREMENTS_LIST = 'procurements_list_data';
+
     private const CACHE_KEY_PROCUREMENT_DETAILS_PREFIX = 'procurement_details_'; // Cache key prefix for details
 
     /**
      * Constructor
-     *
-     * @param ProcurementServices $services
      */
     public function __construct(ProcurementServices $services)
     {
@@ -61,8 +66,6 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Preload user names for batch user lookup
-     *
-     * @param Collection $items
      */
     private function preloadUserNames(Collection $items): void
     {
@@ -78,9 +81,6 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Get username from blockchain address
-     *
-     * @param string $address
-     * @return string
      */
     private function getUserName(string $address): string
     {
@@ -89,8 +89,6 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Display a listing of procurements
-     *
-     * @return Response
      */
     public function indexProcurementsList(): Response
     {
@@ -99,12 +97,13 @@ class ViewProcurementsController extends BaseController
 
             $procurements = Cache::remember(self::CACHE_KEY_PROCUREMENTS_LIST, now()->addMinutes(self::CACHE_DURATION_MINUTES), function () {
                 Log::info('Cache miss: Recalculating procurements list data');
+
                 return $this->fetchAndProcessProcurements();
             });
 
             Log::info('Successfully retrieved procurements list', [
                 'count' => count($procurements),
-                'from_cache' => Cache::has(self::CACHE_KEY_PROCUREMENTS_LIST)
+                'from_cache' => Cache::has(self::CACHE_KEY_PROCUREMENTS_LIST),
             ]);
 
             return Inertia::render('procurements/procurements-list', [
@@ -130,7 +129,6 @@ class ViewProcurementsController extends BaseController
     /**
      * Fetch and process procurements data (optimized: batch fetch, in-memory aggregation)
      *
-     * @return array
      * @throws Exception
      */
     private function fetchAndProcessProcurements(): array
@@ -164,11 +162,11 @@ class ViewProcurementsController extends BaseController
 
         // Build a map: procurement_id => document count (unique by hash)
         $documentCountMap = collect($documentItems)
-            ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-            ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+            ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+            ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
             ->map(function ($items) {
                 return collect($items)
-                    ->map(fn($item) => $item['data']['json']['hash'])
+                    ->map(fn ($item) => $item['data']['json']['hash'])
                     ->unique()
                     ->count();
             });
@@ -207,13 +205,10 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Display the specified procurement
-     *
-     * @param string $procurementId
-     * @return Response
      */
     public function showProcurement(string $procurementId): Response
     {
-        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX . $procurementId;
+        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX.$procurementId;
 
         try {
             $this->validateProcurementId($procurementId);
@@ -227,7 +222,7 @@ class ViewProcurementsController extends BaseController
                 $statusItems = $this->fetchStatusItems($procurementId);
                 $currentStatus = $statusItems->first();
 
-                if (!$currentStatus) {
+                if (! $currentStatus) {
                     // Return null or throw an exception that can be caught outside the cache closure
                     // Returning null might be simpler if the outer code handles it.
                     return null;
@@ -255,12 +250,13 @@ class ViewProcurementsController extends BaseController
             // Handle case where procurement was not found inside the cache closure
             if ($procurementData === null) {
                 Log::warning('Procurement details not found after cache check', ['procurement_id' => $procurementId]);
+
                 return $this->renderNotFound();
             }
 
             Log::info('Successfully retrieved procurement details', [
                 'procurement_id' => $procurementId,
-                'from_cache' => Cache::has($cacheKey)
+                'from_cache' => Cache::has($cacheKey),
             ]);
 
             // dd($procurementData); // Debugging line, remove in production
@@ -289,7 +285,6 @@ class ViewProcurementsController extends BaseController
     /**
      * Validate the procurement ID
      *
-     * @param string|null $procurementId
      * @throws Exception
      */
     private function validateProcurementId(?string $procurementId): void
@@ -302,8 +297,6 @@ class ViewProcurementsController extends BaseController
     /**
      * Fetch and process status items
      *
-     * @param string $procurementId
-     * @return Collection
      * @throws Exception
      */
     private function fetchStatusItems(string $procurementId): Collection
@@ -316,13 +309,14 @@ class ViewProcurementsController extends BaseController
             false
         );
 
-        if (!$statusStreamItems) {
+        if (! $statusStreamItems) {
             throw new Exception('Status stream items not found');
         }
 
         return collect($statusStreamItems)
             ->filter(function ($item) use ($procurementId) {
                 $data = $item['data']['json'] ?? [];
+
                 return ($data['procurement_id'] ?? '') === $procurementId;
             })
             ->map(function ($item) {
@@ -344,8 +338,6 @@ class ViewProcurementsController extends BaseController
     /**
      * Fetch and process documents using procurement ID (more robust)
      *
-     * @param string $procurementId
-     * @return array
      * @throws Exception // Added exception type hint
      */
     private function fetchAndProcessAllDocuments(string $procurementId): array // Removed $procurementTitles parameter
@@ -362,8 +354,9 @@ class ViewProcurementsController extends BaseController
         if ($allDocumentItems === null) {
             // Consider throwing an exception or returning an empty array based on desired error handling
             Log::warning('Failed to retrieve any document stream items.', ['procurement_id' => $procurementId]);
+
             // throw new Exception('Failed to retrieve document stream items'); // Option 1: Throw
-             return []; // Option 2: Return empty
+            return []; // Option 2: Return empty
         }
 
         $totalFetched = count($allDocumentItems); // Log total fetched
@@ -413,9 +406,6 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Generate temporary URL for file
-     *
-     * @param string $fileKey
-     * @return string
      */
     private function generateTemporaryUrl(string $fileKey): string
     {
@@ -426,21 +416,20 @@ class ViewProcurementsController extends BaseController
         try {
             /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
             $disk = Storage::disk('spaces');
+
             return $disk->temporaryUrl($fileKey, now()->addHours(1));
         } catch (Exception $e) {
             Log::error('Failed to generate temporary URL', [
                 'file_key' => $fileKey,
                 'error' => $e->getMessage(),
             ]);
+
             return '';
         }
     }
 
     /**
      * Fetch and process events
-     *
-     * @param string $procurementId
-     * @return array
      */
     private function fetchAndProcessEvents(string $procurementId): array
     {
@@ -451,6 +440,7 @@ class ViewProcurementsController extends BaseController
         return collect($events)
             ->filter(function ($item) use ($procurementId) {
                 $data = $item['data']['json'] ?? [];
+
                 return ($data['procurement_id'] ?? '') === $procurementId;
             })
             ->map(function ($item) {
@@ -476,13 +466,6 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Build procurement data structure
-     *
-     * @param string $procurementId
-     * @param array $currentStatus
-     * @param array $documents
-     * @param array $events
-     * @param Collection $statusItems
-     * @return array
      */
     private function buildProcurementData(
         string $procurementId,
@@ -503,8 +486,6 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Render not found response
-     *
-     * @return Response
      */
     private function renderNotFound(): Response
     {

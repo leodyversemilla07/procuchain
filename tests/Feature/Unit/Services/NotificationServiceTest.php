@@ -15,19 +15,21 @@ class NotificationServiceTest extends TestCase
     use RefreshDatabase;
 
     private NotificationService $notificationService;
+
     private User $bacChairman;
+
     private User $hope;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
-        $this->notificationService = new NotificationService();
-        
+
+        $this->notificationService = new NotificationService;
+
         // Create test users with specific roles
         $this->bacChairman = User::factory()->create(['role' => 'bac_chairman']);
         $this->hope = User::factory()->create(['role' => 'hope']);
-        
+
         // Fake notifications
         Notification::fake();
     }
@@ -57,6 +59,7 @@ class NotificationServiceTest extends TestCase
             ProcurementStageNotification::class,
             function ($notification) {
                 $data = $notification->toArray($this->bacChairman);
+
                 return $data['procurement_id'] === 'PROC-001' &&
                     $data['procurement_title'] === 'Test Procurement' &&
                     $data['stage_identifier'] === 'Bidding' &&
@@ -86,6 +89,7 @@ class NotificationServiceTest extends TestCase
             ProcurementStageNotification::class,
             function ($notification) {
                 $data = $notification->toArray($this->bacChairman);
+
                 return $data['procurement_id'] === 'PROC-001' &&
                     $data['next_stage'] === 'Post-Qualification';
             }
@@ -119,7 +123,7 @@ class NotificationServiceTest extends TestCase
     public function test_notification_is_not_sent_to_other_roles()
     {
         Log::shouldReceive('info')->once();
-        
+
         // Create a user with a different role
         $otherUser = User::factory()->create(['role' => 'bac_secretariat']);
 

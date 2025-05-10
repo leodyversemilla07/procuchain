@@ -17,7 +17,7 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return $this->_handleUnauthenticatedUser($request);
         }
 
@@ -31,6 +31,7 @@ class NotificationController extends Controller
     private function _handleUnauthenticatedUser(Request $request)
     {
         Log::warning('No authenticated user found when fetching notifications.');
+
         return response()->json([
             'notifications' => [],
             'pagination' => [
@@ -40,13 +41,14 @@ class NotificationController extends Controller
                 'last_page' => 1,
             ],
             'unread_count' => 0,
-            'message' => 'User not authenticated'
+            'message' => 'User not authenticated',
         ], 401);
     }
 
     private function _handleBacSecretariat(Request $request, $user)
     {
-        Log::info('User is BAC Secretariat (ID: ' . $user->id . '), returning empty notifications.');
+        Log::info('User is BAC Secretariat (ID: '.$user->id.'), returning empty notifications.');
+
         return response()->json([
             'notifications' => [],
             'pagination' => [
@@ -91,8 +93,9 @@ class NotificationController extends Controller
                 'unread_count' => $unreadCount,
             ]);
         } catch (\Throwable $e) {
-            Log::error('Error fetching notifications for user ID ' . ($user ? $user->id : 'N/A') . ': ' . $e->getMessage());
+            Log::error('Error fetching notifications for user ID '.($user ? $user->id : 'N/A').': '.$e->getMessage());
             Log::error($e->getTraceAsString());
+
             return response()->json([
                 'notifications' => [],
                 'pagination' => [
@@ -144,7 +147,8 @@ class NotificationController extends Controller
         $user = Auth::user();
 
         if ($user && $user->role === UserRoleEnums::BAC_SECRETARIAT->value) {
-            Log::info('User is BAC Secretariat (ID: ' . $user->id . '), redirecting from notifications page to dashboard.');
+            Log::info('User is BAC Secretariat (ID: '.$user->id.'), redirecting from notifications page to dashboard.');
+
             return Redirect::route('bac-secretariat.dashboard');
         }
 

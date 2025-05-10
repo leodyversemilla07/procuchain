@@ -21,7 +21,7 @@ class CompletionDocumentsHandler extends BaseStageHandler
         } catch (Exception $e) {
             Log::error('Error in CompletionDocumentsHandler', ['error' => $e->getMessage()]);
 
-            return ['success' => false, 'message' => 'Failed to upload completion documents: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Failed to upload completion documents: '.$e->getMessage()];
         }
     }
 
@@ -78,7 +78,7 @@ class CompletionDocumentsHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['nextStage']->getDisplayName(), // Use next stage
             $data['userAddress'],
-            'Marking procurement as ' . $data['nextStage']->getDisplayName() . ' after uploading ' . $data['currentStage']->getDisplayName() . ' documents.'
+            'Marking procurement as '.$data['nextStage']->getDisplayName().' after uploading '.$data['currentStage']->getDisplayName().' documents.'
         );
 
         $this->notificationService->notifyStageUpdate(
@@ -95,7 +95,7 @@ class CompletionDocumentsHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Procurement process is now ' . $data['status']->getDisplayName() . '.', // Update message
+            'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Procurement process is now '.$data['status']->getDisplayName().'.', // Update message
         ];
     }
 }

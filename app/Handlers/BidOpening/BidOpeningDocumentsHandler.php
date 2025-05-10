@@ -129,15 +129,15 @@ class BidOpeningDocumentsHandler extends BaseStageHandler
             Log::error('Error in processBidDocuments', [
                 'error' => $e->getMessage(),
                 'procurement_id' => $data['procurementId'],
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
                 'success' => false,
                 'message' => 'Failed to process bid documents. Please try again.',
                 'errors' => [
-                    'bid_documents' => 'Failed to upload bid documents: '.$e->getMessage()
-                ]
+                    'bid_documents' => 'Failed to upload bid documents: '.$e->getMessage(),
+                ],
             ];
         }
     }

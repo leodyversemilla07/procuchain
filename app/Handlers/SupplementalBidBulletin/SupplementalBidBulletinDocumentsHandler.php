@@ -24,13 +24,14 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
                     'message' => 'No bulletin file uploaded',
                 ];
             }
+
             return $this->processDocuments($data, $metadataArray);
         } catch (Exception $e) {
             Log::error('Error uploading supplemental bid bulletin', ['error' => $e->getMessage()]);
 
             return [
                 'success' => false,
-                'message' => 'Failed to upload supplemental bid bulletin: ' . $e->getMessage(),
+                'message' => 'Failed to upload supplemental bid bulletin: '.$e->getMessage(),
             ];
         }
     }
@@ -66,13 +67,14 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
                         'bulletin_number' => $data['bulletinNumber'],
                         'bulletin_title' => $data['bulletinTitle'],
                         'issue_date' => $data['issueDate'],
-                    ]
+                    ],
                 ],
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getStoragePathSegment()
             );
         }
+
         return $metadataArray;
     }
 
@@ -97,7 +99,7 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['nextStage']->getDisplayName(),
             $data['userAddress'],
-            'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after ' . $data['currentStage']->getDisplayName()
+            'Proceeding to '.$data['nextStage']->getDisplayName().' after '.$data['currentStage']->getDisplayName()
         );
 
         // Notify users of completion and next stage
@@ -114,7 +116,7 @@ class SupplementalBidBulletinDocumentsHandler extends BaseStageHandler
 
         return [
             'success' => true,
-            'message' => $data['currentStage']->getDisplayName() . ' uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+            'message' => $data['currentStage']->getDisplayName().' uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
             'metadata' => $metadataArray[0],
         ];
     }

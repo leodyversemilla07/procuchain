@@ -43,18 +43,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
-use Mockery\MockInterface;
-use Mockery\LegacyMockInterface;
 
 uses(RefreshDatabase::class, WithFaker::class);
 
 // Test setup
 beforeEach(function () {
     $this->user = User::factory()->create();
-    
+
     // Create a mock for MultichainService
     $this->multichainService = Mockery::mock(MultichainService::class);
-    
+
     // Create a mock for BlockchainService
     $this->blockchainService = Mockery::mock(BlockchainService::class);
     $this->blockchainService->shouldReceive('getClient')->andReturn($this->multichainService);

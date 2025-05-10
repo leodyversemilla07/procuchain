@@ -82,7 +82,7 @@ class SearchController extends Controller
                 Log::info('SearchController: Starting search', ['query' => $query]);
 
                 foreach ($this->publicContentIndex as $item) {
-                    $searchableText = Str::lower($item['title'] . ' ' . $item['description'] . ' ' . $item['keywords']);
+                    $searchableText = Str::lower($item['title'].' '.$item['description'].' '.$item['keywords']);
                     if (Str::contains($searchableText, $searchQueryLower)) {
                         $link = $item['link'];
                         if (substr($link, 0, 1) === '/') {
@@ -98,7 +98,7 @@ class SearchController extends Controller
                         }
 
                         $publicResults[] = [
-                            'id' => 'page_' . $item['id'],
+                            'id' => 'page_'.$item['id'],
                             'title' => $item['title'],
                             'description' => Str::limit($item['description'], 150),
                             'link' => $url,
@@ -120,11 +120,11 @@ class SearchController extends Controller
                         $statusItems = $multichainService->listStreamItems(StreamEnums::STATUS->value, true, 10000, 0, false);
                         Log::info('SearchController: listStreamItems call completed.', ['response_type' => gettype($statusItems)]);
 
-                        if (!is_array($statusItems)) {
+                        if (! is_array($statusItems)) {
                             Log::warning('SearchController: listStreamItems did not return an array.', [
                                 'query' => $query,
                                 'return_type' => gettype($statusItems),
-                                'return_value' => $statusItems
+                                'return_value' => $statusItems,
                             ]);
                             throw new \RuntimeException('Blockchain service returned unexpected data type: '.gettype($statusItems));
                         }
@@ -144,19 +144,22 @@ class SearchController extends Controller
                         try {
                             $latestStatuses = collect($statusItems)
                                 ->map(function ($item) {
-                                    if (!isset($item['data']['json'])) {
+                                    if (! isset($item['data']['json'])) {
                                         Log::debug('SearchController: Skipping item due to missing data.json', ['item_keys' => array_keys($item)]);
+
                                         return null;
                                     }
+
                                     return $item['data']['json'];
                                 })
                                 ->filter()
                                 ->filter(function ($status) {
                                     $hasId = isset($status['procurement_id']);
                                     $hasTitle = isset($status['procurement_title']);
-                                    if (!$hasId || !$hasTitle) {
+                                    if (! $hasId || ! $hasTitle) {
                                         Log::debug('SearchController: Skipping status due to missing fields', ['status_keys' => array_keys($status)]);
                                     }
+
                                     return $hasId && $hasTitle;
                                 })
                                 ->keyBy('procurement_id')
@@ -183,7 +186,7 @@ class SearchController extends Controller
                                         if (app('router')->has($routeName)) {
                                             $procurementResults[] = [
                                                 'id' => 'proc_'.$procurementId,
-                                                'title' => $status['procurement_title'] . " ({$procurementId})",
+                                                'title' => $status['procurement_title']." ({$procurementId})",
                                                 'description' => "Current Stage: {$stage} | Status: {$currentStatus}",
                                                 'link' => route($routeName, ['id' => $procurementId]),
                                                 'type' => 'Procurement',
@@ -221,7 +224,7 @@ class SearchController extends Controller
                     'error_message' => $e->getMessage(),
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
-                    'trace' => $e->getTraceAsString()
+                    'trace' => $e->getTraceAsString(),
                 ]);
 
                 $searchError = 'Failed to perform search due to a server error. Please try again later.';
@@ -231,7 +234,7 @@ class SearchController extends Controller
         }
 
         $results = array_slice(array_merge($procurementResults, $publicResults), 0, 15);
-        Log::info('SearchController: Returning search results.', ['total_count' => count($results), 'has_error' => !is_null($searchError)]);
+        Log::info('SearchController: Returning search results.', ['total_count' => count($results), 'has_error' => ! is_null($searchError)]);
 
         return Inertia::render('search/index', [
             'query' => $query,
@@ -254,15 +257,17 @@ class SearchController extends Controller
             $searchQueryLower = Str::lower($query);
 
             foreach ($this->publicContentIndex as $item) {
-                if (count($suggestions) >= $limit) break;
+                if (count($suggestions) >= $limit) {
+                    break;
+                }
 
-                $searchableText = Str::lower($item['title'] . ' ' . $item['keywords']);
+                $searchableText = Str::lower($item['title'].' '.$item['keywords']);
                 if (Str::contains($searchableText, $searchQueryLower)) {
                     $link = $item['link'];
                     $url = (substr($link, 0, 1) === '/') ? $link : (app('router')->has($item['id']) ? route($item['id']) : $link);
 
                     $suggestions[] = [
-                        'id' => 'page_' . $item['id'],
+                        'id' => 'page_'.$item['id'],
                         'title' => $item['title'],
                         'link' => $url,
                         'type' => 'Page',
@@ -289,7 +294,9 @@ class SearchController extends Controller
                             ->all();
 
                         foreach ($latestStatuses as $procurementId => $status) {
-                            if (count($suggestions) >= $limit) break;
+                            if (count($suggestions) >= $limit) {
+                                break;
+                            }
 
                             $procTitleLower = Str::lower($status['procurement_title']);
                             $procIdLower = Str::lower((string) $procurementId);
@@ -304,8 +311,8 @@ class SearchController extends Controller
 
                                 if ($routeName && app('router')->has($routeName)) {
                                     $suggestions[] = [
-                                        'id' => 'proc_' . $procurementId,
-                                        'title' => Str::limit($status['procurement_title'], 40) . " ({$procurementId})",
+                                        'id' => 'proc_'.$procurementId,
+                                        'title' => Str::limit($status['procurement_title'], 40)." ({$procurementId})",
                                         'link' => route($routeName, ['id' => $procurementId]),
                                         'type' => 'Procurement',
                                     ];
@@ -327,6 +334,7 @@ class SearchController extends Controller
                 'error_message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['suggestions' => []], 500);
         }
 
