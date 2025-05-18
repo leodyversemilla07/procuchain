@@ -85,8 +85,8 @@ class ProcurementController extends BaseController
         $statusItems = $this->services->getMultiChain()->listStreamItems(
             StreamEnums::STATUS->value,
             true,
-            50,  // Reasonable number to search through
-            -50  // Get recent items first
+            1000,  // Reasonable number to search through
+            0  // Get recent items first
         );
 
         $procurement = null;

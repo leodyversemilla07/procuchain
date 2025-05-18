@@ -100,8 +100,8 @@ class BidEvaluationDocumentsHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['status']->getDisplayName(),
             $data['timestamp'],
-            count($metadataArray),
             'evaluated',
+            count($metadataArray),
             true,
             $data['nextStage']->getDisplayName()
         );

@@ -96,8 +96,8 @@ class MonitoringDocumentHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(), // Stage transitioned FROM
             $transitionStatus->getDisplayName(), // Status transitioned TO (COMPLETED)
             $transitionTimestamp,
-            count($metadataArray), // Number of docs from the *previous* step
             'transitioned',
+            count($metadataArray), // Number of docs from the *previous* step
             true, // This IS a transition notification
             $data['nextStage']->getDisplayName() // Specify the next stage name
         );
