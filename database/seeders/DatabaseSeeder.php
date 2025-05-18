@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         User::create([
             'name' => 'BAC Secretariat',
-            'email' => 'leodyversemillla07@gmail.com',
+            'email' => 'admin@example.com',
             'role' => 'bac_secretariat',
             'blockchain_address' => env('MULTICHAIN_BAC_SECRETARIAT_ADDRESS'),
             'password' => Hash::make('Leodyver07'),

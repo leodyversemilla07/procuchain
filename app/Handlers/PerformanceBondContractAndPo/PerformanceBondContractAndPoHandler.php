@@ -211,8 +211,8 @@ class PerformanceBondContractAndPoHandler extends BaseStageHandler
                 $data['currentStage']->getDisplayName(),
                 $data['status']->getDisplayName(),
                 $data['timestamp'], // Use the timestamp from prepared data
-                $processedDocumentsCount,
                 'recorded', // Action verb
+                $processedDocumentsCount, // Document count
                 true, // Indicate completion of this specific action
                 $data['nextStage']->getDisplayName() // Next stage hint
             );

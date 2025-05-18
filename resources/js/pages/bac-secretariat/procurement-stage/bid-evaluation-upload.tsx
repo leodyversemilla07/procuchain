@@ -114,7 +114,7 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
     setData('procurement_title', procurement.title);
 
     post(
-      '/bac-secretariat/bid-evaluation-upload',
+      '/bac-secretariat/upload-bid-evaluation-documents',
       {
         forceFormData: true,
         onSuccess: () => {

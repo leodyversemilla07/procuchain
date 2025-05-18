@@ -118,7 +118,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!data.minutes_file || !data.attendance_file) {
       toast.error("Missing files", {
         description: "Please upload both minutes and attendance files."
@@ -278,15 +278,14 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                     )}
                   </div>
                   <div
-                    className={`border-2 border-dashed rounded-lg p-4 sm:p-6 transition-all duration-200 min-h-[180px] sm:min-h-[220px] flex flex-col justify-center ${
-                      isDraggingMinutes
-                        ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                        : data.minutes_file
-                          ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : errors.minutes_file
-                            ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                    } cursor-pointer group`}
+                    className={`border-2 border-dashed rounded-lg p-4 sm:p-6 transition-all duration-200 min-h-[180px] sm:min-h-[220px] flex flex-col justify-center ${isDraggingMinutes
+                      ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
+                      : data.minutes_file
+                        ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
+                        : errors.minutes_file
+                          ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
+                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                      } cursor-pointer group`}
                     onDragEnter={handleMinutesDragEnter}
                     onDragLeave={handleMinutesDragLeave}
                     onDragOver={handleMinutesDragOver}
@@ -375,15 +374,14 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                     )}
                   </div>
                   <div
-                    className={`border-2 border-dashed rounded-lg p-4 sm:p-6 transition-all duration-200 min-h-[180px] sm:min-h-[220px] flex flex-col justify-center ${
-                      isDraggingAttendance
-                        ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                        : data.attendance_file
-                          ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : errors.attendance_file
-                            ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                    } cursor-pointer group`}
+                    className={`border-2 border-dashed rounded-lg p-4 sm:p-6 transition-all duration-200 min-h-[180px] sm:min-h-[220px] flex flex-col justify-center ${isDraggingAttendance
+                      ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
+                      : data.attendance_file
+                        ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
+                        : errors.attendance_file
+                          ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
+                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                      } cursor-pointer group`}
                     onDragEnter={handleAttendanceDragEnter}
                     onDragLeave={handleAttendanceDragLeave}
                     onDragOver={handleAttendanceDragOver}
@@ -391,7 +389,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                     onClick={() => document.getElementById('attendance-file-input')?.click()}
                   >
                     {!data.attendance_file ? (
-                      <div className="flex flex-col items-center justify-center text-center">
+                      <div className="flex flex-col items-center justify-center text-center px-2 sm:px-4">
                         <div className="rounded-full bg-muted p-2 sm:p-3 mb-2 sm:mb-3 group-hover:bg-primary/10 transition-colors">
                           <FileUp className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
@@ -423,13 +421,15 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                       </div>
                     ) : (
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center">
-                          <div className="rounded-full bg-primary/10 p-2 sm:p-3 mr-3 sm:mr-4">
+                        <div className="flex items-center min-w-0">
+                          <div className="rounded-full bg-primary/10 p-2 sm:p-3 mr-3 sm:mr-4 flex-shrink-0">
                             <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                           </div>
-                          <div>
-                            <p className="font-medium text-sm sm:text-base break-all">{data.attendance_file.name}</p>
-                            <p className="text-xs sm:text-sm text-muted-foreground">
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm sm:text-base truncate">
+                              {data.attendance_file.name}
+                            </p>
+                            <p className="text-xs sm:text-sm text-muted-foreground truncate">
                               {(data.attendance_file.size / 1024).toFixed(2)} KB • PDF
                             </p>
                           </div>
@@ -438,7 +438,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors self-end sm:self-auto"
+                          className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors self-end sm:self-auto flex-shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             setData("attendance_file", null);
@@ -455,10 +455,10 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                 {uploadProgress > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs sm:text-sm">
-                      <span>Uploading...</span>
-                      <span>{uploadProgress}%</span>
+                      <span className="text-muted-foreground">Uploading documents...</span>
+                      <span className="font-medium">{uploadProgress}%</span>
                     </div>
-                    <Progress value={uploadProgress} className="h-2" />
+                    <Progress value={uploadProgress} className="h-1.5 sm:h-2" />
                   </div>
                 )}
               </CardContent>
@@ -515,14 +515,15 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                         <Badge
                           key={index}
                           variant="secondary"
-                          className="flex items-center gap-1 text-xs sm:text-sm"
+                          className="flex items-center gap-1 py-1 px-2 text-xs sm:text-sm"
                         >
+                          <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                           {participant}
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-4 w-4 p-0 hover:bg-destructive/10 hover:text-destructive"
+                            className="h-4 w-4 sm:h-5 sm:w-5 hover:bg-destructive/10 hover:text-destructive ml-1 -mr-1"
                             onClick={() => removeParticipant(index)}
                           >
                             <X className="h-3 w-3" />
@@ -579,7 +580,10 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                   </h4>
                   <ul className="list-disc list-inside mt-1 sm:mt-2 text-xs sm:text-sm text-destructive/90 space-y-1">
                     {Object.entries(errors).map(([field, message]) => (
-                      <li key={field}>{message}</li>
+                      <li key={field} className="text-destructive/90">
+                        <span className="font-medium text-xs sm:text-sm">{field.replace('_', ' ').toUpperCase()}</span>
+                        <span className="text-xs sm:text-sm">: {message}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -591,9 +595,9 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
 
       {/* PDF Preview Modal */}
       {previewUrl && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-background rounded-lg p-3 sm:p-4 w-full h-full sm:w-[90vw] sm:h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center mb-3 sm:mb-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-background rounded-lg p-3 sm:p-4 w-full h-[90vh] sm:w-[90vw] sm:h-[90vh] flex flex-col max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-2 sm:mb-4">
               <h3 className="text-base sm:text-lg font-semibold">Document Preview</h3>
               <Button
                 variant="ghost"
@@ -602,15 +606,18 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                   URL.revokeObjectURL(previewUrl);
                   setPreviewUrl(null);
                 }}
+                className="hover:bg-destructive/10 hover:text-destructive transition-colors"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </div>
-            <iframe
-              src={previewUrl}
-              className="flex-1 w-full rounded-md"
-              title="PDF Preview"
-            />
+            <div className="flex-1 bg-muted rounded-md overflow-hidden">
+              <iframe
+                src={previewUrl}
+                className="w-full h-full"
+                title="PDF Preview"
+              />
+            </div>
           </div>
         </div>
       )}

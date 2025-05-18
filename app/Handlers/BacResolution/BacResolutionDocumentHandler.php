@@ -89,8 +89,8 @@ class BacResolutionDocumentHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['status']->getDisplayName(),
             $data['timestamp'],
-            count($metadataArray),
             'recorded',
+            count($metadataArray),
             true,
             $data['nextStage']->getDisplayName()
         );

@@ -139,13 +139,13 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Upload Bidding Documents" />
 
-      <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 bg-gradient-to-b from-background to-muted/20">
+      <div className="flex h-full flex-1 flex-col gap-4 sm:gap-6 rounded-xl p-4 sm:p-6 bg-gradient-to-b from-background to-muted/20">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-primary">
-            <ClipboardList className="h-6 w-6" />
-            <h1 className="text-2xl font-bold">Bidding Documents</h1>
+            <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6" />
+            <h1 className="text-xl sm:text-2xl font-bold">Bidding Documents</h1>
           </div>
-          <p className="text-muted-foreground max-w-3xl">
+          <p className="text-sm sm:text-base text-muted-foreground max-w-3xl">
             Upload the bidding documents for procurement
             <span className="font-medium text-foreground"> #{procurement?.id || 'Unknown'}</span>
             {procurement?.title && (
@@ -157,27 +157,27 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
           </p>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
-              <CardHeader className="pb-4 space-y-1">
-                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-primary" />
+              <CardHeader className="pb-2 sm:pb-4 space-y-1">
+                <CardTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                   Required Document
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   Please upload the bidding documents in PDF format
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-8">
+              <CardContent className="space-y-6 sm:space-y-8">
                 <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
+                  <label className="flex items-center text-sm sm:text-base font-medium">
                     <ClipboardList className="h-4 w-4 mr-2" />
                     Bidding Documents
                   </label>
                   <div
-                    className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDraggingFile
+                    className={`relative border-2 border-dashed rounded-lg p-4 sm:p-6 transition-all duration-200 min-h-[200px] sm:min-h-[220px] flex flex-col justify-center ${isDraggingFile
                         ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
                         : data.bidding_documents_file
                           ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
@@ -193,20 +193,20 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
                   >
                     {!data.bidding_documents_file ? (
                       <div className="flex flex-col items-center justify-center text-center">
-                        <div className="rounded-full bg-muted p-3 mb-3 group-hover:bg-primary/10 transition-colors">
-                          <FileUp className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <div className="rounded-full bg-muted p-2 sm:p-3 mb-2 sm:mb-3 group-hover:bg-primary/10 transition-colors">
+                          <FileUp className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
-                        <p className="font-medium text-muted-foreground mb-2 group-hover:text-foreground transition-colors">
+                        <p className="font-medium text-sm sm:text-base text-muted-foreground mb-1 sm:mb-2 group-hover:text-foreground transition-colors">
                           Drag and drop your bidding documents here
                         </p>
-                        <p className="text-sm text-muted-foreground/70 mb-5">
+                        <p className="text-xs sm:text-sm text-muted-foreground/70 mb-4 sm:mb-5">
                           Only PDF files are supported
                         </p>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="group-hover:bg-primary/5 transition-colors"
+                          className="group-hover:bg-primary/5 transition-colors text-xs sm:text-sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             document.getElementById('file-input')?.click();
@@ -225,12 +225,12 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
                     ) : (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          <div className="rounded-full bg-primary/10 p-3 mr-4">
-                            <FileText className="h-6 w-6 text-primary" />
+                          <div className="rounded-full bg-primary/10 p-2 sm:p-3 mr-3 sm:mr-4">
+                            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium">{data.bidding_documents_file.name}</p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="font-medium text-sm sm:text-base">{data.bidding_documents_file.name}</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               {(data.bidding_documents_file.size / 1024).toFixed(2)} KB • PDF
                             </p>
                           </div>
@@ -258,18 +258,18 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
             </Card>
 
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
-              <CardHeader className="pb-4 space-y-1">
-                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5 text-primary" />
+              <CardHeader className="pb-2 sm:pb-4 space-y-1">
+                <CardTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                   Document Details
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   Provide information about the bidding documents
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6">
                 <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
+                  <label className="flex items-center text-sm sm:text-base font-medium">
                     <CalendarIcon className="h-4 w-4 mr-2" />
                     Issuance Date
                   </label>
@@ -277,7 +277,7 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-left font-normal"
+                        className="w-full justify-start text-left font-normal text-sm sm:text-base"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                         {data.issuance_date ? format(data.issuance_date, 'PPP') : <span>Pick a date</span>}
@@ -299,7 +299,7 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
                 </div>
 
                 <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
+                  <label className="flex items-center text-sm sm:text-base font-medium">
                     <FileText className="h-4 w-4 mr-2" />
                     Validity Period
                   </label>
@@ -307,7 +307,7 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-left font-normal"
+                        className="w-full justify-start text-left font-normal text-sm sm:text-base"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                         {data.validity_period?.from ? (
@@ -348,7 +348,7 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
                 <Button
                   type="submit"
                   disabled={processing}
-                  className="w-full flex items-center gap-2 h-11"
+                  className="w-full flex items-center gap-2 h-10 sm:h-11 text-sm sm:text-base"
                 >
                   {processing ? (
                     <div className="flex items-center gap-2">
@@ -368,7 +368,7 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
                   variant="outline"
                   onClick={() => window.history.back()}
                   disabled={processing}
-                  className="w-full h-10"
+                  className="w-full h-10 text-sm sm:text-base"
                 >
                   Cancel
                 </Button>
@@ -386,7 +386,7 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
                   <h4 className="text-sm font-medium text-destructive">
                     Please fix the following errors:
                   </h4>
-                  <ul className="list-disc list-inside mt-2 text-sm text-destructive/90 space-y-1">
+                  <ul className="list-disc list-inside mt-2 text-xs sm:text-sm text-destructive/90 space-y-1">
                     {Object.entries(errors).map(([field, message]) => (
                       <li key={field}>{message}</li>
                     ))}

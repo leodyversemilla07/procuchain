@@ -104,8 +104,8 @@ class NoticeOfAwardDocumentHandler extends BaseStageHandler
             $data['currentStage']->getDisplayName(),
             $data['status']->getDisplayName(),
             $data['timestamp'],
-            count($metadataArray),
             'awarded',
+            count($metadataArray),
             true,
             $data['nextStage']->getDisplayName()
         );
