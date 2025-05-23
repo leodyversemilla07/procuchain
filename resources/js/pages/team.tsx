@@ -42,7 +42,7 @@ export default function Team() {
             role: "Research Support / Assistant",
             bio: "Provided support to the research efforts, assisting in data gathering and documentation for the research paper.",
             responsibilities: ["Research Assistance", "Data Collection", "Documentation Support", "Reference Management"],
-            image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8bWFsZSUyMHByb2ZpbGV8ZW58MHx8MHx8fDA%3D",
+            image: "/images/team/adrian.jpg",
             github: "https://github.com/adriangupit",
             email: "adrian.gupit@minsu.edu.ph",
             facebook: "https://www.facebook.com/adrian.gupit.71",

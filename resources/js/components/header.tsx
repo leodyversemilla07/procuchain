@@ -71,6 +71,8 @@ export default function Header() {
         };
     }, [isSuggestionsVisible]);
 
+    
+    
     useEffect(() => {
         if (mobileMenuOpen) {
             document.body.style.overflow = 'hidden';
@@ -133,6 +135,7 @@ export default function Header() {
         resetSearchState();
     };
 
+    
     const resetSearchState = () => {
         setSearchQuery('');
         setSuggestions([]);
@@ -172,11 +175,10 @@ export default function Header() {
 
     if (isLoading) {
         return (
-            <div className="fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-950 h-[52px]">
-                <div className="max-w-7xl mx-auto h-full flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8">
-                    <div className="flex items-center space-x-2">
-                        <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-900 animate-pulse"></div>
-                        <div className="h-5 w-24 bg-gray-100 dark:bg-gray-900 rounded-md animate-pulse"></div>
+            <div className="fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-950 h-[52px]">                <div className="max-w-7xl mx-auto h-full flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8">
+                    <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-gray-100 dark:bg-gray-900 animate-pulse"></div>
+                        <div className="h-6 w-28 bg-gray-100 dark:bg-gray-900 rounded-md animate-pulse"></div>
                     </div>
                     <div className="hidden lg:flex items-center justify-center flex-grow">
                         <div className="flex items-center space-x-1">
@@ -195,29 +197,25 @@ export default function Header() {
     }
 
     return (
-        <>
-            <header
+        <>            <header
                 className={`fixed top-0 left-0 right-0 z-40 w-full transition-all duration-200
                     ${scrolled
-                        ? "bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm shadow-sm"
+                        ? "bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm shadow-md"
                         : "bg-white dark:bg-gray-950"}`}
-            >
-                <div className="max-w-7xl mx-auto flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 h-[52px]">
+            ><div className="max-w-7xl mx-auto flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 h-[52px]">
                     <Link
                         href={route('home')}
-                        className="flex items-center space-x-2 group flex-shrink-0"
+                        className="flex items-center space-x-3 group flex-shrink-0"
                         aria-label="ProcuChain Home"
                     >
-                        <div className="h-8 w-8 rounded-lg overflow-hidden transform transition-transform duration-200 group-hover:scale-105">
+                        <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl overflow-hidden transform transition-transform duration-200 group-hover:scale-105">
                             <AppLogoIcon className="w-full h-full object-cover" />
                         </div>
-                        <span className="font-medium text-base text-gray-900 dark:text-white">
+                        <span className="font-medium text-lg sm:text-xl text-gray-900 dark:text-white">
                             ProcuChain
                         </span>
-                    </Link>
-
-                    <nav className="hidden lg:flex items-center justify-center flex-grow" role="navigation" aria-label="Main navigation">
-                        <div className="flex items-center space-x-1">
+                    </Link>                    <nav className="hidden lg:flex items-center justify-center flex-grow" role="navigation" aria-label="Main navigation">
+                        <div className="flex items-center space-x-6 md:space-x-8">
                             <NavLink href={route('home')} active={route().current('home')}>Home</NavLink>
                             <NavLink href={route('about')} active={route().current('about')}>About</NavLink>
                             <NavLink href={route('team')} active={route().current('team')}>Team</NavLink>
@@ -292,12 +290,10 @@ export default function Header() {
                                     </ul>
                                 </div>
                             )}
-                        </div>
-
-                        {/* Theme Toggle */}
+                        </div>                        {/* Theme Toggle */}
                         <button
                             onClick={toggleDarkMode}
-                            className="hidden md:flex p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900
+                            className="hidden md:flex p-1.5 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900
                                 focus:outline-none focus:ring-1 focus:ring-gray-400 transition-colors duration-200"
                             aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                         >
@@ -305,47 +301,41 @@ export default function Header() {
                         </button>
 
                         {/* Auth Buttons */}
-                        <div className="hidden lg:flex items-center space-x-2">
-                            {auth.user ? (
+                        <div className="hidden lg:flex items-center space-x-2">                            {auth.user ? (
                                 <Link
                                     href={getDashboardRouteByRole(auth.user.role)}
                                     className="px-3 py-1.5 rounded-md text-sm font-medium text-white
-                                        bg-gray-900 hover:bg-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800
+                                        bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700
                                         focus:outline-none focus:ring-1 focus:ring-gray-400
                                         transition-colors duration-200"
                                 >
                                     Dashboard
-                                </Link>
-                            ) : (
+                                </Link>) : (
                                 <Link
                                     href={route('login')}
                                     className="px-3 py-1.5 rounded-md text-sm font-medium text-white
-                                        bg-gray-900 hover:bg-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800
+                                        bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700
                                         focus:outline-none focus:ring-1 focus:ring-gray-400
                                         transition-colors duration-200"
                                 >
                                     Sign In
                                 </Link>
                             )}
-                        </div>
-
-                        {/* Mobile Search Button */}
+                        </div>                        {/* Mobile Search Button */}
                         <button
                             onClick={() => {
                                 setIsMobileSearchExpanded(true);
                                 setTimeout(() => mobileSearchInputRef.current?.focus(), 100);
                             }}
-                            className="lg:hidden p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900
+                            className="lg:hidden p-1.5 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900
                                 focus:outline-none focus:ring-1 focus:ring-gray-400"
                             aria-label="Open search"
                         >
                             <Search className="w-4 h-4" />
-                        </button>
-
-                        {/* Mobile Menu Button */}
+                        </button>{/* Mobile Menu Button */}
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="lg:hidden p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900
+                            className="lg:hidden p-1.5 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900
                                 focus:outline-none focus:ring-1 focus:ring-gray-400"
                             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
                             aria-expanded={mobileMenuOpen}
@@ -436,38 +426,33 @@ export default function Header() {
                         ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
                     style={{ backgroundColor: 'var(--background, #ffffff)' }}
                 >
-                    <div className="flex items-center justify-between p-3 sm:p-4 md:p-6 lg:p-8 border-b border-gray-100 dark:border-gray-900">
-                        <Link
+                    <div className="flex items-center justify-between p-3 sm:p-4 md:p-6 lg:p-8 border-b border-gray-100 dark:border-gray-900">                        <Link
                             href={route('home')}
-                            className="flex items-center space-x-2"
+                            className="flex items-center space-x-3"
                             onClick={resetSearchState}
                         >
-                            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg overflow-hidden">
+                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl overflow-hidden">
                                 <AppLogoIcon className="w-full h-full object-cover" />
                             </div>
-                            <span className="font-medium text-base sm:text-lg text-gray-900 dark:text-white">
+                            <span className="font-medium text-lg sm:text-xl text-gray-900 dark:text-white">
                                 ProcuChain
                             </span>
                         </Link>
-                        <div className="flex items-center space-x-2">
-                            <button
+                        <div className="flex items-center space-x-2">                            <button
                                 onClick={toggleDarkMode}
-                                className="p-1.5 sm:p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900"
+                                className="p-1.5 sm:p-2 rounded-lg text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900"
                                 aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                             >
                                 {isDarkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
-                            </button>
-                            <button
+                            </button>                            <button
                                 onClick={() => setMobileMenuOpen(false)}
-                                className="p-1.5 sm:p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900"
+                                className="p-1.5 sm:p-2 rounded-lg text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900"
                                 aria-label="Close menu"
                             >
                                 <X size={18} />
                             </button>
                         </div>
-                    </div>
-
-                    <nav className="space-y-1 mt-4 px-3 sm:px-4 md:px-6 lg:px-8" role="navigation" aria-label="Mobile navigation">
+                    </div>                    <nav className="space-y-4 mt-6 px-3 sm:px-4 md:px-6 lg:px-8" role="navigation" aria-label="Mobile navigation">
                         <MobileNavLink href={route('home')} active={route().current('home')} onClick={resetSearchState}>Home</MobileNavLink>
                         <MobileNavLink href={route('about')} active={route().current('about')} onClick={resetSearchState}>About</MobileNavLink>
                         <MobileNavLink href={route('team')} active={route().current('team')} onClick={resetSearchState}>Team</MobileNavLink>
@@ -475,23 +460,21 @@ export default function Header() {
                     </nav>
 
                     <div className="mt-6 sm:mt-8 px-3 sm:px-4 md:px-6 lg:px-8">
-                        {auth.user ? (
-                            <Link
+                        {auth.user ? (                            <Link
                                 href={getDashboardRouteByRole(auth.user.role)}
                                 onClick={resetSearchState}
                                 className="block w-full py-2.5 sm:py-3 text-center font-medium text-white
-                                    bg-gray-900 hover:bg-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800 rounded-md
+                                    bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-md
                                     focus:outline-none focus:ring-1 focus:ring-gray-400
                                     transition-colors duration-200"
                             >
                                 Dashboard
                             </Link>
-                        ) : (
-                            <Link
+                        ) : (                            <Link
                                 href={route('login')}
                                 onClick={resetSearchState}
-                                className="block w-full py-2.5 sm:py-3 text-center font-medium
-                                    text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-md
+                                className="block w-full py-2.5 sm:py-3 text-center font-medium 
+                                    text-white bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-md
                                     focus:outline-none focus:ring-1 focus:ring-gray-400
                                     transition-colors duration-200"
                             >
@@ -514,14 +497,14 @@ interface NavLinkProps {
     children: React.ReactNode;
 }
 
-function NavLink({ href, active, children }: NavLinkProps) {
+function NavLink({ href, active, children }: NavLinkProps) {    
     return (
         <Link
             href={href}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200
+            className={`text-sm font-medium transition-colors duration-200
                 ${active
-                    ? 'text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900/50'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-900/50'}`}
+                    ? 'text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
             aria-current={active ? 'page' : undefined}
         >
             {children}
@@ -541,10 +524,10 @@ function MobileNavLink({ href, active, children, onClick }: MobileNavLinkProps) 
         <Link
             href={href}
             onClick={onClick}
-            className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200
+            className={`block px-3 py-3 text-base font-medium transition-colors duration-200
                 ${active
-                    ? 'text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-900'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-900/50'}`}
+                    ? 'text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
             aria-current={active ? 'page' : undefined}
         >
             {children}
