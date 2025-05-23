@@ -32,7 +32,7 @@ test('user can fetch their notifications with pagination', function () {
         ]);
     }
 
-    $response = $this->getJson('/notifications');
+    $response = $this->getJson('/notifications/list');
 
     $response->assertStatus(200)
         ->assertJsonStructure([
@@ -69,7 +69,9 @@ test('user can mark a notification as read', function () {
         'created_at' => now(),
     ]);
 
-    $response = $this->postJson("/notifications/{$notification->id}/mark-as-read");
+    $response = $this->withHeader('X-CSRF-TOKEN', 'test-token')
+                     ->withSession(['_token' => 'test-token'])
+                     ->postJson("/notifications/{$notification->id}/mark-as-read", ['_token' => 'test-token']);
 
     $response->assertStatus(200)
         ->assertJson(['message' => 'Notification marked as read']);
@@ -90,7 +92,9 @@ test('user cannot mark another users notification as read', function () {
         'created_at' => now(),
     ]);
 
-    $response = $this->postJson("/notifications/{$notification->id}/mark-as-read");
+    $response = $this->withHeader('X-CSRF-TOKEN', 'test-token')
+                     ->withSession(['_token' => 'test-token'])
+                     ->postJson("/notifications/{$notification->id}/mark-as-read", ['_token' => 'test-token']);
 
     $response->assertStatus(404);
     $this->assertNull($notification->fresh()->read_at);
@@ -111,7 +115,9 @@ test('user can mark all notifications as read', function () {
         ]);
     }
 
-    $response = $this->postJson('/notifications/mark-all-as-read');
+    $response = $this->withHeader('X-CSRF-TOKEN', 'test-token')
+                     ->withSession(['_token' => 'test-token'])
+                     ->postJson('/notifications/mark-all-as-read', ['_token' => 'test-token']);
 
     $response->assertStatus(200)
         ->assertJson(['message' => 'All notifications marked as read']);

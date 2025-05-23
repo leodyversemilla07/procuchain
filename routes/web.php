@@ -7,10 +7,25 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ViewProcurementsController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
+    // If user is authenticated, redirect based on role
+    if (Auth::check()) {
+        $user = Auth::user();
+        
+        switch ($user->role) {
+            case 'bac_secretariat':
+                return redirect()->intended(route('bac-secretariat.dashboard'));
+            case 'bac_chairman':
+                return redirect()->intended(route('bac-chairman.dashboard'));
+            case 'hope':
+                return redirect()->intended(route('hope.dashboard'));
+        }
+    }
+    
     return Inertia::render('home');
 })->name('home');
 
