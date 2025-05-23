@@ -80,7 +80,8 @@ class NotificationServiceTest extends TestCase
             'completed',
             now()->toDateTimeString(),
             'completed',
-            true,
+            0, // document count
+            true, // stage transition
             'Post-Qualification'
         );
 

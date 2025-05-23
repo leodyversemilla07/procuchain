@@ -22,21 +22,27 @@ test('password can be confirmed', function () {
         'role' => 'bac_secretariat',
     ]);
 
-    $response = $this->actingAs($user)->post('/confirm-password', [
-        'password' => 'password',
-    ]);
+    $response = $this->actingAs($user)
+                     ->withSession(['_token' => 'test-token'])
+                     ->post('/confirm-password', [
+                         'password' => 'password',
+                         '_token' => 'test-token',
+                     ]);
 
     // Now we can test the redirect works
-    $response->assertStatus(302);
+    $response->assertRedirect(route('bac-secretariat.dashboard'));
     $response->assertSessionHasNoErrors();
 });
 
 test('password is not confirmed with invalid password', function () {
     $user = User::factory()->create();
 
-    $response = $this->actingAs($user)->post('/confirm-password', [
-        'password' => 'wrong-password',
-    ]);
+    $response = $this->actingAs($user)
+                     ->withSession(['_token' => 'test-token'])
+                     ->post('/confirm-password', [
+                         'password' => 'wrong-password',
+                         '_token' => 'test-token',
+                     ]);
 
-    $response->assertSessionHasErrors();
+    $response->assertSessionHasErrors('password');
 });
