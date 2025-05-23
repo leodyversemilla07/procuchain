@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -12,29 +13,25 @@ test('login screen can be rendered', function () {
     $response->assertStatus(200);
 });
 
-test('users can authenticate using the login screen and are redirected to correct dashboard', function () {
-    // Test for BAC-Secretariat role
-    $secretariatUser = User::factory()->create(['role' => 'bac_secretariat']);
-    
-    // Test if role-based redirection works correctly
-    $this->actingAs($secretariatUser);
-    $response = $this->get(route('home'));
-    $response->assertRedirect(route('bac-secretariat.dashboard'));
-    Auth::logout();
+test('users can authenticate using the login screen and are redirected to correct dashboard', function (string $role, string $expectedRedirectRoute) {
+    $user = User::factory()->create([
+        'role' => $role,
+        // 'password' => Hash::make('password'), // Already handled by factory
+    ]);
 
-    // Test for BAC-Chairman role
-    $chairmanUser = User::factory()->create(['role' => 'bac_chairman']);
-    $this->actingAs($chairmanUser);
-    $response = $this->get(route('home'));
-    $response->assertRedirect(route('bac-chairman.dashboard'));
-    Auth::logout();
+    $response = $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password', // Default password from factory
+    ]);
 
-    // Test for Hope role
-    $hopeUser = User::factory()->create(['role' => 'hope']);
-    $this->actingAs($hopeUser);
-    $response = $this->get(route('home'));
-    $response->assertRedirect(route('hope.dashboard'));
-});
+    $this->assertAuthenticatedAs($user);
+    $response->assertRedirect(route($expectedRedirectRoute));
+
+})->with([
+    ['bac_secretariat', 'bac-secretariat.dashboard'],
+    ['bac_chairman', 'bac-chairman.dashboard'],
+    ['hope', 'hope.dashboard'],
+]);
 
 test('users can not authenticate with invalid password', function () {
     $user = User::factory()->create([
