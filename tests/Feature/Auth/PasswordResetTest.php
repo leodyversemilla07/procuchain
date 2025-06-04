@@ -18,10 +18,10 @@ test('reset password link can be requested', function () {
     $user = User::factory()->create();
 
     $this->withSession(['_token' => 'test-token'])
-         ->post('/forgot-password', [
-             'email' => $user->email,
-             '_token' => 'test-token',
-         ]);
+        ->post('/forgot-password', [
+            'email' => $user->email,
+            '_token' => 'test-token',
+        ]);
 
     Notification::assertSentTo($user, ResetPassword::class);
 });
@@ -32,10 +32,10 @@ test('reset password screen can be rendered', function () {
     $user = User::factory()->create();
 
     $this->withSession(['_token' => 'test-token'])
-         ->post('/forgot-password', [
-             'email' => $user->email,
-             '_token' => 'test-token',
-         ]);
+        ->post('/forgot-password', [
+            'email' => $user->email,
+            '_token' => 'test-token',
+        ]);
 
     Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
         $response = $this->get('/reset-password/'.$notification->token);
@@ -52,20 +52,20 @@ test('password can be reset with valid token', function () {
     $user = User::factory()->create();
 
     $this->withSession(['_token' => 'test-token'])
-         ->post('/forgot-password', [
-             'email' => $user->email,
-             '_token' => 'test-token',
-         ]);
+        ->post('/forgot-password', [
+            'email' => $user->email,
+            '_token' => 'test-token',
+        ]);
 
     Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
         $response = $this->withSession(['_token' => 'test-token'])
-                         ->post('/reset-password', [
-                             'token' => $notification->token,
-                             'email' => $user->email,
-                             'password' => 'password',
-                             'password_confirmation' => 'password',
-                             '_token' => 'test-token',
-                         ]);
+            ->post('/reset-password', [
+                'token' => $notification->token,
+                'email' => $user->email,
+                'password' => 'password',
+                'password_confirmation' => 'password',
+                '_token' => 'test-token',
+            ]);
 
         $response
             ->assertSessionHasNoErrors()

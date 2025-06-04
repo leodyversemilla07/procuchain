@@ -19,7 +19,7 @@ class RedirectBasedOnRole
         // If the user is authenticated, redirect based on role
         if (Auth::check()) {
             $user = Auth::user();
-            
+
             switch ($user->role) {
                 case 'bac_secretariat':
                     return redirect()->intended(route('bac-secretariat.dashboard'));

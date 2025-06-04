@@ -11,7 +11,7 @@ use App\Http\Controllers\ViewProcurementsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {    
+Route::get('/', function () {
     return Inertia::render('home');
 })->name('home');
 
@@ -26,85 +26,6 @@ Route::inertia('/contact', 'contact')
 
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
-
-// Email template preview route (for development/testing only)
-// Route::get('/preview-email', function () {
-//     $mockUser = (object) [
-//         'name' => 'John Doe',
-//         'role' => 'bac_chairman'
-//     ];
-    
-//     return view('emails.procurement-notification', [
-//         'notifiable' => $mockUser,
-//         'subject' => 'Procurement Update: Bid Evaluation - Construction of New Office Building',
-//         'procurementId' => 'PROC-2025-001',
-//         'procurementTitle' => 'Construction of New Office Building - Phase 1',
-//         'stageIdentifier' => 'Bid Evaluation',
-//         'currentStatus' => 'Bids Evaluated',
-//         'timestamp' => now()->toISOString(),
-//         'actionType' => 'evaluated',
-//         'formattedAction' => 'have been evaluated',
-//         'documentCount' => 5,
-//         'nextStage' => 'Post Qualification',
-//         'actionUrl' => url('/bac-chairman/procurements-list/PROC-2025-001'),
-//     ]);
-// })->name('preview.email');
-
-// Test email sending route (for development/testing only)
-// Route::get('/test-email/{email}', function ($email) {
-//     // Find the user by email from seeded data
-//     $user = \App\Models\User::where('email', $email)->first();
-    
-//     if (!$user) {
-//         $availableEmails = \App\Models\User::pluck('email')->toArray();
-//         return response()->json([
-//             'success' => false,
-//             'message' => "User with email {$email} not found in database",
-//             'available_emails' => $availableEmails,
-//             'suggestion' => 'Use one of the available emails: ' . implode(', ', $availableEmails)
-//         ], 404);
-//     }
-    
-//     $notification = new \App\Notifications\ProcurementStageNotification([
-//         'procurement_id' => 'PROC-2025-001',
-//         'procurement_title' => 'Construction of New Office Building - Phase 1',
-//         'stage_identifier' => 'Bid Evaluation',
-//         'current_status' => 'Bids Evaluated',
-//         'timestamp' => now()->toISOString(),
-//         'action_type' => 'evaluated',
-//         'document_count' => 5,
-//         'next_stage' => 'Post Qualification',
-//     ]);
-    
-//     try {
-//         $user->notify($notification);
-        
-//         return response()->json([
-//             'success' => true,
-//             'message' => "Test email sent successfully to {$user->name} ({$user->email})",
-//             'data' => [
-//                 'recipient' => [
-//                     'name' => $user->name,
-//                     'email' => $user->email,
-//                     'role' => $user->role
-//                 ],
-//                 'subject' => 'Procurement Update: Bid Evaluation - Construction of New Office Building - Phase 1',
-//                 'timestamp' => now()->toISOString()
-//             ]
-//         ]);
-//     } catch (\Exception $e) {
-//         return response()->json([
-//             'success' => false,
-//             'message' => 'Failed to send email',
-//             'error' => $e->getMessage(),
-//             'user_info' => [
-//                 'name' => $user->name,
-//                 'email' => $user->email,
-//                 'role' => $user->role
-//             ]
-//         ], 500);
-//     }
-// })->name('test.email');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -225,7 +146,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('bac-chairman/procurements-list/{id}', [ViewProcurementsController::class, 'showProcurement'])
             ->name('bac-chairman.procurements.show');
-
     });
 
     Route::middleware(['role:hope'])->group(function () {
@@ -257,5 +177,5 @@ Route::get('/terms.pdf', function () {
     return response()->file(public_path('docs/terms.pdf'));
 })->name('terms.pdf');
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

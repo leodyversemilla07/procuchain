@@ -20,15 +20,15 @@ test('can connect to multichain', function () {
         'blocks' => 100,
         'connections' => 5,
     ];
-    
+
     // Configure the mock
     $this->mock->shouldReceive('getInfo')
-               ->once()
-               ->andReturn($mockInfo);
-    
+        ->once()
+        ->andReturn($mockInfo);
+
     // Test the getInfo method
     $info = $this->mock->getInfo();
-    
+
     expect($info)->not->toBeNull()
         ->and($info)->toBeArray()
         ->and($info)->toHaveKey('chainname')
@@ -38,11 +38,11 @@ test('can connect to multichain', function () {
 test('handles connection errors gracefully', function () {
     // Configure the mock to throw an exception
     $this->mock->shouldReceive('getInfo')
-               ->once()
-               ->andThrow(new Exception('Connection refused'));
-    
+        ->once()
+        ->andThrow(new Exception('Connection refused'));
+
     // Test the error handling
-    expect(fn() => $this->mock->getInfo())
+    expect(fn () => $this->mock->getInfo())
         ->toThrow(Exception::class, 'Connection refused');
 });
 

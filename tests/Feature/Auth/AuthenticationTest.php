@@ -1,9 +1,8 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -53,10 +52,10 @@ test('users can logout', function () {
     // First authenticate the user
     $this->actingAs($user);
     $this->assertAuthenticated();
-    
+
     // Directly test the Auth::logout functionality
     Auth::logout();
-    
+
     // Assert the user is now a guest
     $this->assertGuest();
 });
