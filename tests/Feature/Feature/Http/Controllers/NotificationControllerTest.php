@@ -14,7 +14,6 @@ beforeEach(function () {
 test('user can fetch their notifications with pagination', function () {
     $this->actingAs($this->user);
 
-    // Create some notifications
     foreach (range(1, 15) as $i) {
         DatabaseNotification::create([
             'id' => Str::uuid(),
@@ -45,7 +44,7 @@ test('user can fetch their notifications with pagination', function () {
             ],
             'unread_count',
         ])
-        ->assertJsonCount(10, 'notifications') // Default per_page is 10
+        ->assertJsonCount(10, 'notifications')
         ->assertJson([
             'pagination' => [
                 'total' => 15,
@@ -70,8 +69,8 @@ test('user can mark a notification as read', function () {
     ]);
 
     $response = $this->withHeader('X-CSRF-TOKEN', 'test-token')
-                     ->withSession(['_token' => 'test-token'])
-                     ->postJson("/notifications/{$notification->id}/mark-as-read", ['_token' => 'test-token']);
+        ->withSession(['_token' => 'test-token'])
+        ->postJson("/notifications/{$notification->id}/mark-as-read", ['_token' => 'test-token']);
 
     $response->assertStatus(200)
         ->assertJson(['message' => 'Notification marked as read']);
@@ -93,8 +92,8 @@ test('user cannot mark another users notification as read', function () {
     ]);
 
     $response = $this->withHeader('X-CSRF-TOKEN', 'test-token')
-                     ->withSession(['_token' => 'test-token'])
-                     ->postJson("/notifications/{$notification->id}/mark-as-read", ['_token' => 'test-token']);
+        ->withSession(['_token' => 'test-token'])
+        ->postJson("/notifications/{$notification->id}/mark-as-read", ['_token' => 'test-token']);
 
     $response->assertStatus(404);
     $this->assertNull($notification->fresh()->read_at);
@@ -103,7 +102,6 @@ test('user cannot mark another users notification as read', function () {
 test('user can mark all notifications as read', function () {
     $this->actingAs($this->user);
 
-    // Create 5 unread notifications
     foreach (range(1, 5) as $i) {
         DatabaseNotification::create([
             'id' => Str::uuid(),
@@ -116,8 +114,8 @@ test('user can mark all notifications as read', function () {
     }
 
     $response = $this->withHeader('X-CSRF-TOKEN', 'test-token')
-                     ->withSession(['_token' => 'test-token'])
-                     ->postJson('/notifications/mark-all-as-read', ['_token' => 'test-token']);
+        ->withSession(['_token' => 'test-token'])
+        ->postJson('/notifications/mark-all-as-read', ['_token' => 'test-token']);
 
     $response->assertStatus(200)
         ->assertJson(['message' => 'All notifications marked as read']);

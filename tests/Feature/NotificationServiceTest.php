@@ -15,22 +15,20 @@ beforeEach(function () {
 test('sends notifications to bac chairman and hope users on stage update', function () {
     Notification::fake();
 
-    // Arrange: Create users with specific roles
     $bacChairman = User::factory()->create(['role' => 'bac_chairman', 'email' => 'bac_chairman@example.com', 'name' => 'BAC Chairman User']);
     $hopeUser = User::factory()->create(['role' => 'hope', 'email' => 'hope@example.com', 'name' => 'HOPE User']);
-    $otherUser = User::factory()->create(['role' => 'bac_secretariat', 'email' => 'other@example.com', 'name' => 'Other User']); // Should not receive notification
+    $otherUser = User::factory()->create(['role' => 'bac_secretariat', 'email' => 'other@example.com', 'name' => 'Other User']);
 
     $procurementId = 'PROC-2025-001';
     $procurementTitle = 'Test Procurement Project';
     $stageIdentifier = 'Pre-Bid Conference';
     $currentStatus = 'Scheduled';
     $timestamp = now()->toDateTimeString();
-    $actionType = 'scheduled'; // This will be formatted as 'has been updated' by default
+    $actionType = 'scheduled';
     $documentCount = 3;
     $stageTransition = true;
     $nextStage = 'Bid Submission';
 
-    // Act: Call the notification service
     $this->notificationService->notifyStageUpdate(
         $procurementId,
         $procurementTitle,
@@ -43,7 +41,6 @@ test('sends notifications to bac chairman and hope users on stage update', funct
         $nextStage
     );
 
-    // Assert: Notifications were sent to the correct users
     Notification::assertSentTo(
         [$bacChairman, $hopeUser],
         ProcurementStageNotification::class
@@ -54,21 +51,17 @@ test('sends notifications to bac chairman and hope users on stage update', funct
         ProcurementStageNotification::class
     );
 
-    // Assert: Notification content for one of the users (e.g., BAC Chairman)
     Notification::assertSentTo($bacChairman, function (ProcurementStageNotification $notification, $channels) use ($procurementId, $procurementTitle, $stageIdentifier, $currentStatus, $actionType, $documentCount, $nextStage, $bacChairman, $stageTransition) {
         expect($channels)->toContain('mail', 'database');
 
         $mailData = $notification->toMail($bacChairman);
         expect($mailData->subject)->toBe("Procurement Update: {$stageIdentifier} - {$procurementTitle}");
 
-        // Since we use a custom view, check the view data instead of standard properties
         expect($mailData->viewData)->toHaveKey('notifiable')
             ->and($mailData->viewData['notifiable']->name)->toBe('BAC Chairman User');
 
-        // 'scheduled' actionType defaults to 'has been updated' in formatActionType
         $formattedActionText = 'has been updated';
-        
-        // Check view data for the expected content
+
         expect($mailData->viewData['stageIdentifier'])->toBe($stageIdentifier)
             ->and($mailData->viewData['formattedAction'])->toBe($formattedActionText)
             ->and($mailData->viewData['documentCount'])->toBe($documentCount)
@@ -115,9 +108,9 @@ test('sends notification without stage transition and documents', function () {
     $stageIdentifier = 'Monitoring';
     $currentStatus = 'Ongoing';
     $timestamp = now()->toDateTimeString();
-    $actionType = 'updated'; // This will be formatted as 'has been updated' by default
-    $documentCount = 0; // No documents
-    $stageTransition = false; // No stage transition
+    $actionType = 'updated';
+    $documentCount = 0;
+    $stageTransition = false;
     $nextStage = '';
 
     $this->notificationService->notifyStageUpdate(
@@ -134,11 +127,9 @@ test('sends notification without stage transition and documents', function () {
 
     Notification::assertSentTo($bacChairman, function (ProcurementStageNotification $notification, $channels) use ($stageIdentifier, $procurementTitle, $bacChairman, $actionType, $currentStatus, $procurementId, $documentCount) {
         $mailData = $notification->toMail($bacChairman);
-        // 'updated' actionType defaults to 'has been updated' in formatActionType
         $formattedActionText = 'has been updated';
         expect($mailData->subject)->toBe("Procurement Update: {$stageIdentifier} - {$procurementTitle}");
 
-        // Check view data for the expected content
         expect($mailData->viewData['stageIdentifier'])->toBe($stageIdentifier)
             ->and($mailData->viewData['formattedAction'])->toBe($formattedActionText)
             ->and($mailData->viewData['documentCount'])->toBe($documentCount)
@@ -147,7 +138,6 @@ test('sends notification without stage transition and documents', function () {
             ->and($mailData->viewData['currentStatus'])->toBe($currentStatus)
             ->and($mailData->viewData['actionType'])->toBe($actionType);
 
-        // Ensure no stage transition data is present
         expect($mailData->viewData['nextStage'])->toBeNull();
 
         $databaseData = $notification->toDatabase($bacChairman)->data;
@@ -166,10 +156,18 @@ test('sends notification without stage transition and documents', function () {
 test('does not send notification if no relevant users exist', function () {
     Notification::fake();
 
-    User::factory()->create(['role' => 'bac_secretariat']); // A user that should not be notified
+    User::factory()->create(['role' => 'bac_secretariat']);
 
     $this->notificationService->notifyStageUpdate(
-        'PROC-TEST-003', 'No User Project', 'Initial Stage', 'Pending', now()->toDateTimeString(), 'created', 0, false, ''
+        'PROC-TEST-003',
+        'No User Project',
+        'Initial Stage',
+        'Pending',
+        now()->toDateTimeString(),
+        'created',
+        0,
+        false,
+        ''
     );
 
     Notification::assertNothingSent();
