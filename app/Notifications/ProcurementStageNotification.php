@@ -132,7 +132,8 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     /**
      * Generate the email representation of the notification
      *
-     * Creates a detailed email notification with:
+     * Creates a detailed email notification using a custom Blade template with:
+     * - Custom styling and layout
      * - Action description and document count
      * - Stage transition information if applicable
      * - Procurement details and status
@@ -145,51 +146,26 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     {
         $url = $this->getRoleSpecificUrl($notifiable);
         $formattedAction = $this->formatActionType($this->data['action_type'] ?? 'updated');
-        $documentCount = $this->data['document_count'] ?? 0; // Use null coalescing operator for document_count
+        $documentCount = $this->data['document_count'] ?? 0;
 
         $subject = "Procurement Update: {$this->data['stage_identifier']} - {$this->data['procurement_title']}";
 
-        $emailMessage = (new MailMessage)
+        return (new MailMessage)
             ->subject($subject)
-            ->greeting('Dear '.$notifiable->name.',')
-            ->line('This is to inform you that there has been an update to the procurement process:');
-
-        // Main update message
-        if ($documentCount > 0) { // Use the new $documentCount variable
-            if (in_array($this->data['action_type'], ['uploaded', 'submitted'])) {
-                $emailMessage->line("**{$documentCount} document(s)** have been uploaded for the {$this->data['stage_identifier']} stage.");
-            } else {
-                $emailMessage->line("The {$this->data['stage_identifier']} stage {$formattedAction} with **{$documentCount} document(s)**.");
-            }
-        } else {
-            $emailMessage->line("The {$this->data['stage_identifier']} stage {$formattedAction}.");
-        }
-
-        // Add stage transition information if applicable
-        if (! empty($this->data['next_stage'])) {
-            $emailMessage->line('')
-                ->line('**Stage Transition:**')
-                ->line("The procurement process is now moving to the **{$this->data['next_stage']}** stage.");
-        }
-
-        // Add procurement details
-        $emailMessage->line('')
-            ->line('**Procurement Details:**')
-            ->line("- **Title:** {$this->data['procurement_title']}")
-            ->line("- **ID:** {$this->data['procurement_id']}")
-            ->line("- **Current Status:** {$this->data['current_status']}")
-            ->line('- **Last Updated:** '.date('F j, Y \a\t g:i a', strtotime($this->data['timestamp'])));
-
-        // Add call to action
-        $emailMessage->action('View Procurement Details', $url)
-            ->line('Please review the updated procurement information at your earliest convenience.');
-
-        // Add footer
-        $emailMessage->line('')
-            ->line('Thank you for your attention to this matter.')
-            ->salutation('Regards, ProcuChain System');
-
-        return $emailMessage;
+            ->view('emails.procurement-notification', [
+                'notifiable' => $notifiable,
+                'subject' => $subject,
+                'procurementId' => $this->data['procurement_id'],
+                'procurementTitle' => $this->data['procurement_title'],
+                'stageIdentifier' => $this->data['stage_identifier'],
+                'currentStatus' => $this->data['current_status'],
+                'timestamp' => $this->data['timestamp'],
+                'actionType' => $this->data['action_type'] ?? 'updated',
+                'formattedAction' => $formattedAction,
+                'documentCount' => $documentCount,
+                'nextStage' => $this->data['next_stage'] ?? null,
+                'actionUrl' => $url,
+            ]);
     }
 
     /**
