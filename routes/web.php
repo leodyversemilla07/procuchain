@@ -7,6 +7,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ViewProcurementsController;
+use App\Http\Controllers\SecureFileController;
 // use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -167,6 +168,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/notifications/list', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+
+    // Secure file download route (requires authentication)
+    Route::get('/secure-file/{fileKey}', [SecureFileController::class, 'downloadFile'])
+        ->name('secure.file.download')
+        ->where('fileKey', '.*'); // Allow forward slashes in file keys
 });
 
 Route::get('/privacy.pdf', function () {

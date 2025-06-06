@@ -109,7 +109,6 @@ class ViewProcurementsController extends BaseController
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => $procurements,
             ]);
-
         } catch (Exception $e) { // Corrected catch block placement
             Log::error('Failed to retrieve procurements list', [
                 'error' => $e->getMessage(),
@@ -162,11 +161,11 @@ class ViewProcurementsController extends BaseController
 
         // Build a map: procurement_id => document count (unique by hash)
         $documentCountMap = collect($documentItems)
-            ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-            ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
+            ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+            ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
             ->map(function ($items) {
                 return collect($items)
-                    ->map(fn ($item) => $item['data']['json']['hash'])
+                    ->map(fn($item) => $item['data']['json']['hash'])
                     ->unique()
                     ->count();
             });
@@ -208,7 +207,7 @@ class ViewProcurementsController extends BaseController
      */
     public function showProcurement(string $procurementId): Response
     {
-        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX.$procurementId;
+        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX . $procurementId;
 
         try {
             $this->validateProcurementId($procurementId);
@@ -265,7 +264,6 @@ class ViewProcurementsController extends BaseController
                 'procurement' => $procurementData,
                 'now' => now()->toIso8601String(),
             ]);
-
         } catch (Exception $e) {
             Log::error('Failed to retrieve procurement details', [
                 'procurement_id' => $procurementId,
@@ -366,7 +364,7 @@ class ViewProcurementsController extends BaseController
             ->filter(function ($item) use ($procurementId) {
                 // Check if the necessary keys exist before accessing them
                 return isset($item['data']['json']['procurement_id']) &&
-                       $item['data']['json']['procurement_id'] === $procurementId;
+                    $item['data']['json']['procurement_id'] === $procurementId;
             });
 
         $totalAfterFilter = $filteredItems->count(); // Log count after filtering
@@ -382,13 +380,15 @@ class ViewProcurementsController extends BaseController
             ->map(function ($item) {
                 $data = $item['data']['json'] ?? []; // Ensure data exists
                 $fileKey = $data['file_key'] ?? '';
-                $temporaryUrl = $this->generateTemporaryUrl($fileKey); // Reuse existing URL generation
+
+                // Generate secure download URL instead of temporary URL
+                $secureUrl = !empty($fileKey) ? route('secure.file.download', ['fileKey' => $fileKey]) : '';
 
                 // Construct the document array structure
                 return [
                     'file_key' => $fileKey,
                     'document_type' => $data['document_type'] ?? '',
-                    'spaces_url' => $temporaryUrl,
+                    'spaces_url' => $secureUrl, // Use secure URL instead of temporary URL
                     'hash' => $data['hash'] ?? '',
                     'file_size' => $data['file_size'] ?? null,
                     'stage' => $data['stage'] ?? '',
@@ -402,30 +402,6 @@ class ViewProcurementsController extends BaseController
             ->sortByDesc('timestamp') // Sort by timestamp descending
             ->values() // Reset keys
             ->toArray(); // Convert to array
-    }
-
-    /**
-     * Generate temporary URL for file
-     */
-    private function generateTemporaryUrl(string $fileKey): string
-    {
-        if (empty($fileKey)) {
-            return '';
-        }
-
-        try {
-            /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-            $disk = Storage::disk('spaces');
-
-            return $disk->temporaryUrl($fileKey, now()->addHours(1));
-        } catch (Exception $e) {
-            Log::error('Failed to generate temporary URL', [
-                'file_key' => $fileKey,
-                'error' => $e->getMessage(),
-            ]);
-
-            return '';
-        }
     }
 
     /**
