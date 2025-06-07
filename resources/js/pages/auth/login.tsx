@@ -9,11 +9,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
+import { getDeviceInfo } from '@/utils/device-detection';
 
 type LoginForm = {
     email: string;
     password: string;
     remember: boolean;
+    device_info?: string;
 };
 
 interface LoginProps {
@@ -26,11 +28,17 @@ export default function Login({ status, canResetPassword }: LoginProps) {
         email: '',
         password: '',
         remember: false,
+        device_info: '',
     });
     const [showPassword, setShowPassword] = useState(false);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
+        
+        // Include enhanced device detection information
+        const deviceInfo = getDeviceInfo();
+        setData('device_info', JSON.stringify(deviceInfo));
+        
         post(route('login'), {
             onFinish: () => reset('password'),
         });

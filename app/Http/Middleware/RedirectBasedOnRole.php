@@ -27,6 +27,8 @@ class RedirectBasedOnRole
                     return redirect()->intended(route('bac-chairman.dashboard'));
                 case 'hope':
                     return redirect()->intended(route('hope.dashboard'));
+                case 'admin':
+                    return redirect()->intended(route('admin.dashboard'));
             }
         }
 

@@ -113,4 +113,17 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Support Email Address
+    |--------------------------------------------------------------------------
+    |
+    | This is the email address displayed in email notifications for users
+    | to contact support. This is used in security-related emails like
+    | account lock notifications.
+    |
+    */
+
+    'support_email' => env('MAIL_SUPPORT_EMAIL', 'support@procuchain.local'),
+
 ];

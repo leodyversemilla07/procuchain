@@ -65,6 +65,11 @@ const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
                 { title: 'HOPE Dashboard', href: '/hope/dashboard' },
                 { title: 'Notifications', href: '/notifications' },
             ];
+        case 'admin':
+            return [
+                { title: 'Admin Dashboard', href: '/admin/dashboard' },
+                { title: 'Notifications', href: '/notifications' },
+            ];
         default:
             return [
                 { title: 'Dashboard', href: '/dashboard' },

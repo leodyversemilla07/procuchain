@@ -76,7 +76,7 @@ export default function Home() {
                                 <div className="relative bg-gray-50 dark:bg-gray-900/50 rounded-lg p-1.5 sm:p-2 md:p-3">
                                     <div className="aspect-w-16 aspect-h-10 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
                                         <img
-                                            src="/images/blockchain-procurement-system.png"
+                                            src="/logo.png"
                                             alt="ProcuChain System Interface"
                                             className="w-full h-full object-cover"
                                             loading="eager"

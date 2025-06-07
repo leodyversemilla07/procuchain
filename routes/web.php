@@ -1,16 +1,18 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BacChairmanController;
 use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\HopeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\ViewProcurementsController;
 use App\Http\Controllers\SecureFileController;
+use App\Http\Controllers\ViewProcurementsController;
 // use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Models\User;
 
 Route::get('/', function () {
     return Inertia::render('home');
@@ -160,6 +162,49 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('hope.procurements.show');
     });
 
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('admin/dashboard', [AdminController::class, 'index'])
+            ->name('admin.dashboard');
+
+        Route::get('admin/procurements-list', [ViewProcurementsController::class, 'indexProcurementsList'])
+            ->name('admin.procurements-list.index');
+
+        Route::get('admin/procurements-list/{id}', [ViewProcurementsController::class, 'showProcurement'])
+            ->name('admin.procurements.show');
+
+        // User Management Routes
+        Route::get('admin/users', [AdminController::class, 'users'])
+            ->name('admin.users');
+        Route::post('admin/users', [AdminController::class, 'storeUser'])
+            ->name('admin.users.store');
+        Route::put('admin/users/{user}', [AdminController::class, 'updateUser'])
+            ->name('admin.users.update');
+        Route::delete('admin/users/{user}', [AdminController::class, 'destroyUser'])
+            ->name('admin.users.destroy');
+        Route::delete('admin/users', [AdminController::class, 'bulkDeleteUsers'])
+            ->name('admin.users.bulk-delete');
+
+        // Login Tracking Routes
+        Route::get('admin/login-logs', [AdminController::class, 'loginLogs'])
+            ->name('admin.login-logs');
+        Route::get('admin/login-logs/recent', [AdminController::class, 'recentLogins'])
+            ->name('admin.login-logs.recent');
+        Route::get('admin/login-logs/statistics', [AdminController::class, 'loginStatistics'])
+            ->name('admin.login-logs.statistics');
+        Route::get('admin/login-logs/suspicious', [AdminController::class, 'suspiciousActivities'])
+            ->name('admin.login-logs.suspicious');
+
+        // Account Locking Routes
+        Route::get('admin/accounts/locked', [AdminController::class, 'lockedAccounts'])
+            ->name('admin.accounts.locked');
+        Route::post('admin/accounts/{user}/unlock', [AdminController::class, 'unlockAccount'])
+            ->name('admin.accounts.unlock');
+        Route::post('admin/accounts/{user}/lock', [AdminController::class, 'lockAccount'])
+            ->name('admin.accounts.lock');
+        Route::post('admin/accounts/{user}/reset-attempts', [AdminController::class, 'resetFailedAttempts'])
+            ->name('admin.accounts.reset-attempts');
+    });
+
     // Notification routes
     Route::get('/notifications', [NotificationController::class, 'page'])
         ->name('notifications');
@@ -183,5 +228,5 @@ Route::get('/terms.pdf', function () {
     return response()->file(public_path('docs/terms.pdf'));
 })->name('terms.pdf');
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

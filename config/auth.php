@@ -112,4 +112,18 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Account Lockout Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the account lockout settings. When a user fails
+    | to login multiple times, their account will be locked for a specified
+    | duration to prevent brute force attacks.
+    |
+    */
+
+    'max_failed_attempts' => env('AUTH_MAX_FAILED_ATTEMPTS', 3),
+    'account_lockout_duration' => env('AUTH_LOCKOUT_DURATION_MINUTES', 30),
+
 ];

@@ -30,6 +30,7 @@ test('users can authenticate using the login screen and are redirected to correc
     ['bac_secretariat', 'bac-secretariat.dashboard'],
     ['bac_chairman', 'bac-chairman.dashboard'],
     ['hope', 'hope.dashboard'],
+    ['admin', 'admin.dashboard'],
 ]);
 
 test('users can not authenticate with invalid password', function () {

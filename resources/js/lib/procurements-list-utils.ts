@@ -68,6 +68,11 @@ export const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
                 { title: 'HOPE Dashboard', href: '/hope/dashboard' },
                 { title: 'Procurement List', href: '#' },
             ];
+        case 'admin':
+            return [
+                { title: 'Admin Dashboard', href: '/admin/dashboard' },
+                { title: 'Procurement List', href: '#' },
+            ];
         default:
             return [
                 { title: 'Dashboard', href: '/dashboard' },

@@ -1,13 +1,13 @@
+import { useState, useEffect } from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Download } from 'lucide-react';
+
 import { ProcurementListItem } from '@/types/blockchain';
 import { SharedData } from '@/types';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent } from '@/components/ui/card';
-import { DataTable } from '@/components/ui/data-table';
-import { DataTableCheckbox } from '@/components/ui/data-table';
-import { DataTableColumnHeader } from '@/components/ui/data-table';
+import { DataTable, DataTableCheckbox, DataTableColumnHeader } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/procurements-list/empty-state';
 import { ErrorState } from '@/components/procurements-list/error-state';
 import { KanbanBoard } from '@/components/procurements-list/kanban-board';
@@ -28,7 +28,6 @@ import {
 import { useProcurementList } from '@/hooks/use-procurement-list';
 import { getBreadcrumbs } from '@/lib/procurements-list-utils';
 import { exportProcurementsToCSV } from '@/lib/procurement-utils';
-import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface ShowProps {
@@ -36,11 +35,56 @@ interface ShowProps {
     error?: string;
 }
 
-const useTableColumns = (
-    onOpenPreProcurementModal: (procurement: ProcurementListItem) => void,
-    onOpenPreBidModal: (procurement: ProcurementListItem) => void,
-    onOpenSupplementalBidBulletinModal: (procurement: ProcurementListItem) => void,
-): ColumnDef<ProcurementListItem>[] => {
+export default function ProcurementsList({ procurements: initialProcurements, error: initialError }: ShowProps) {
+    const { auth } = usePage<SharedData>().props;
+    const userRole = auth?.user?.role || "guest";
+    const breadcrumbs = getBreadcrumbs(userRole);
+
+    // State management
+    const [searchValue, setSearchValue] = useState('');
+    const [isPageLoaded, setIsPageLoaded] = useState(false);
+
+    // Custom hook for procurement list logic
+    const {
+        procurements,
+        selectedRows,
+        loading,
+        viewType,
+        error,
+        preProcurementModalOpen,
+        preBidConferenceModalOpen,
+        supplementalBidBulletinModalOpen,
+        selectedProcurement,
+        setSelectedRows,
+        setViewType,
+        setPreProcurementModalOpen,
+        setPreBidConferenceModalOpen,
+        setSupplementalBidBulletinModalOpen,
+        handleOpenPreProcurementModal,
+        handleOpenPreBidModal,
+        handleOpenSupplementalBidBulletinModal,
+    } = useProcurementList({ initialProcurements, initialError });
+
+    // Page load effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsPageLoaded(true);
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Responsive view type effect
+    useEffect(() => {
+        const mq: MediaQueryList = window.matchMedia('(max-width:1024px)');
+        setViewType(mq.matches ? 'kanban' : 'table');
+        const listener = (e: MediaQueryListEvent) => {
+            setViewType(e.matches ? 'kanban' : 'table');
+        };
+        mq.addEventListener('change', listener);
+        return () => mq.removeEventListener('change', listener);
+    }, [setViewType]);
+
+    // Table columns definition
     const columns: ColumnDef<ProcurementListItem>[] = [
         {
             id: 'select',
@@ -100,149 +144,15 @@ const useTableColumns = (
                 <ActionButtons
                     procurement={row.original}
                     variant="table"
-                    onOpenPreProcurementModal={onOpenPreProcurementModal}
-                    onOpenPreBidModal={onOpenPreBidModal}
-                    onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
+                    onOpenPreProcurementModal={handleOpenPreProcurementModal}
+                    onOpenPreBidModal={handleOpenPreBidModal}
+                    onOpenSupplementalBidBulletinModal={handleOpenSupplementalBidBulletinModal}
                 />
             ),
         },
     ];
-    return columns;
-};
 
-interface ProcurementsContentProps {
-    loading: boolean;
-    error?: string;
-    procurements: ProcurementListItem[];
-    viewType: 'table' | 'kanban';
-    selectedRows: ProcurementListItem[];
-    onSelectedRowsChange: (rows: ProcurementListItem[]) => void;
-    columns: ColumnDef<ProcurementListItem>[];
-    userRole: string;
-    searchValue: string;
-    onOpenPreProcurementModal: (procurement: ProcurementListItem) => void;
-    onOpenPreBidModal: (procurement: ProcurementListItem) => void;
-    onOpenSupplementalBidBulletinModal: (procurement: ProcurementListItem) => void;
-}
-
-const ProcurementsContent = ({
-    loading,
-    error,
-    procurements,
-    viewType,
-    selectedRows,
-    onSelectedRowsChange,
-    columns,
-    userRole,
-    searchValue,
-    onOpenPreProcurementModal,
-    onOpenPreBidModal,
-    onOpenSupplementalBidBulletinModal,
-}: ProcurementsContentProps) => {
-    if (loading) return <LoadingSkeleton />;
-    if (error) return <ErrorState error={error} />;
-    if (procurements.length === 0) return <EmptyState userRole={userRole} />;
-
-    return (
-        <div className="w-full h-full flex flex-col">
-            <div className="hidden lg:block h-full">
-                {viewType === 'table' ? (
-                    <div className="overflow-x-auto">
-                        <DataTable
-                            columns={columns}
-                            data={procurements}
-                            searchValue={searchValue}
-                            onRowSelectionChange={onSelectedRowsChange}
-                            initialSorting={[
-                                {
-                                    id: 'last_updated',
-                                    desc: true
-                                }
-                            ]}
-                            bulkActions={[
-                                {
-                                    label: 'Export to CSV',
-                                    action: () => {
-                                        if (selectedRows.length === 0) {
-                                            alert('Please select at least one procurement to export.');
-                                            return;
-                                        }
-                                        exportProcurementsToCSV(selectedRows);
-                                    },
-                                    icon: <Download className="h-4 w-4" />,
-                                },
-                            ]}
-                        />
-                    </div>
-                ) : (
-                    <div className="h-full overflow-hidden">
-                        <KanbanBoard
-                            procurements={procurements}
-                            onOpenPreProcurementModal={onOpenPreProcurementModal}
-                            onOpenPreBidModal={onOpenPreBidModal}
-                            onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
-                        />
-                    </div>
-                )}
-            </div>
-            <div className="block lg:hidden h-full overflow-hidden">
-                <KanbanBoard
-                    procurements={procurements}
-                    onOpenPreProcurementModal={onOpenPreProcurementModal}
-                    onOpenPreBidModal={onOpenPreBidModal}
-                    onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
-                />
-            </div>
-        </div>
-    );
-};
-
-export default function ProcurementsList({ procurements: initialProcurements, error: initialError }: ShowProps) {
-    const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.user?.role || "guest";
-    const breadcrumbs = getBreadcrumbs(userRole);
-    const [searchValue, setSearchValue] = useState('');
-    const [isPageLoaded, setIsPageLoaded] = useState(false);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsPageLoaded(true);
-        }, 100);
-        return () => clearTimeout(timer);
-    }, []);
-
-    const {
-        procurements,
-        selectedRows,
-        loading,
-        viewType,
-        error,
-        preProcurementModalOpen,
-        preBidConferenceModalOpen,
-        supplementalBidBulletinModalOpen,
-        selectedProcurement,
-        setSelectedRows,
-        setViewType,
-        setPreProcurementModalOpen,
-        setPreBidConferenceModalOpen,
-        setSupplementalBidBulletinModalOpen,
-        handleOpenPreProcurementModal,
-        handleOpenPreBidModal,
-        handleOpenSupplementalBidBulletinModal,
-    } = useProcurementList({ initialProcurements, initialError });
-
-    useEffect(() => {
-        const mq: MediaQueryList = window.matchMedia('(max-width:1024px)');
-        setViewType(mq.matches ? 'kanban' : 'table');
-        const listener = (e: MediaQueryListEvent) => {
-            setViewType(e.matches ? 'kanban' : 'table');
-        };
-        mq.addEventListener('change', listener);
-        return () => mq.removeEventListener('change', listener);
-    }, [setViewType]);
-
-    const columns = useTableColumns(handleOpenPreProcurementModal, handleOpenPreBidModal, handleOpenSupplementalBidBulletinModal);
-
+    // Filter procurements based on search
     const filteredProcurements = procurements.filter(proc => {
         if (!searchValue.trim()) return true;
         const searchLower = searchValue.toLowerCase();
@@ -254,12 +164,67 @@ export default function ProcurementsList({ procurements: initialProcurements, er
         );
     });
 
+    // Render content based on state
+    const renderContent = () => {
+        if (loading) return <LoadingSkeleton />;
+        if (error) return <ErrorState error={error} />;
+        if (procurements.length === 0) return <EmptyState userRole={userRole} />;
+
+        return (
+            <div className="w-full h-full flex flex-col">
+                <div className="hidden lg:block h-full">
+                    {viewType === 'table' ? (
+                        <div className="overflow-x-auto">
+                            <DataTable
+                                columns={columns}
+                                data={filteredProcurements}
+                                searchValue={searchValue}
+                                onRowSelectionChange={setSelectedRows}
+                                initialSorting={[{ id: 'last_updated', desc: true }]}
+                                bulkActions={[
+                                    {
+                                        label: 'Export to CSV',
+                                        action: () => {
+                                            if (selectedRows.length === 0) {
+                                                alert('Please select at least one procurement to export.');
+                                                return;
+                                            }
+                                            exportProcurementsToCSV(selectedRows);
+                                        },
+                                        icon: <Download className="h-4 w-4" />,
+                                    },
+                                ]}
+                            />
+                        </div>
+                    ) : (
+                        <div className="h-full overflow-hidden">
+                            <KanbanBoard
+                                procurements={filteredProcurements}
+                                onOpenPreProcurementModal={handleOpenPreProcurementModal}
+                                onOpenPreBidModal={handleOpenPreBidModal}
+                                onOpenSupplementalBidBulletinModal={handleOpenSupplementalBidBulletinModal}
+                            />
+                        </div>
+                    )}
+                </div>
+                <div className="block lg:hidden h-full overflow-hidden">
+                    <KanbanBoard
+                        procurements={filteredProcurements}
+                        onOpenPreProcurementModal={handleOpenPreProcurementModal}
+                        onOpenPreBidModal={handleOpenPreBidModal}
+                        onOpenSupplementalBidBulletinModal={handleOpenSupplementalBidBulletinModal}
+                    />
+                </div>
+            </div>
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Procurement List" />
             <div
                 className={cn(
-                    "flex h-full flex-1 flex-col gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 transition-opacity duration-300",
+                    "flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8 transition-opacity duration-300",
                     isPageLoaded ? "opacity-100" : "opacity-0"
                 )}
             >
@@ -277,25 +242,13 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                     />
                     <CardContent className="p-3 sm:p-4 md:p-5 overflow-hidden w-full">
                         <div className={viewType === 'table' ? 'overflow-x-auto w-full max-w-full' : 'w-full'}>
-                            <ProcurementsContent
-                                loading={loading}
-                                error={error}
-                                procurements={filteredProcurements}
-                                viewType={viewType}
-                                selectedRows={selectedRows}
-                                onSelectedRowsChange={setSelectedRows}
-                                columns={columns}
-                                userRole={userRole}
-                                searchValue={searchValue}
-                                onOpenPreProcurementModal={handleOpenPreProcurementModal}
-                                onOpenPreBidModal={handleOpenPreBidModal}
-                                onOpenSupplementalBidBulletinModal={handleOpenSupplementalBidBulletinModal}
-                            />
+                            {renderContent()}
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
+            {/* Modals */}
             {preProcurementModalOpen && selectedProcurement && (
                 <PreProcurementModal
                     open={preProcurementModalOpen}

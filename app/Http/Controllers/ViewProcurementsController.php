@@ -20,7 +20,6 @@ use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -61,7 +60,7 @@ class ViewProcurementsController extends BaseController
     private function setupMiddleware(): void
     {
         $this->middleware('auth');
-        $this->middleware('role:bac_chairman,bac_secretariat,hope');
+        $this->middleware('role:bac_chairman,bac_secretariat,hope,admin');
     }
 
     /**
@@ -161,11 +160,11 @@ class ViewProcurementsController extends BaseController
 
         // Build a map: procurement_id => document count (unique by hash)
         $documentCountMap = collect($documentItems)
-            ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-            ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+            ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+            ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
             ->map(function ($items) {
                 return collect($items)
-                    ->map(fn($item) => $item['data']['json']['hash'])
+                    ->map(fn ($item) => $item['data']['json']['hash'])
                     ->unique()
                     ->count();
             });
@@ -207,7 +206,7 @@ class ViewProcurementsController extends BaseController
      */
     public function showProcurement(string $procurementId): Response
     {
-        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX . $procurementId;
+        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX.$procurementId;
 
         try {
             $this->validateProcurementId($procurementId);
@@ -382,7 +381,7 @@ class ViewProcurementsController extends BaseController
                 $fileKey = $data['file_key'] ?? '';
 
                 // Generate secure download URL instead of temporary URL
-                $secureUrl = !empty($fileKey) ? route('secure.file.download', ['fileKey' => $fileKey]) : '';
+                $secureUrl = ! empty($fileKey) ? route('secure.file.download', ['fileKey' => $fileKey]) : '';
 
                 // Construct the document array structure
                 return [

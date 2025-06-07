@@ -41,5 +41,14 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    // Account locking fields
+    account_locked?: boolean;
+    locked_at?: string | null;
+    lock_expires_at?: string | null;
+    failed_login_attempts?: number;
+    last_failed_login_at?: string | null;
+    locked_reason?: string | null;
+    is_currently_locked?: boolean;
+    lock_time_remaining?: string | null;
     [key: string]: unknown; // This allows for additional properties...
 }

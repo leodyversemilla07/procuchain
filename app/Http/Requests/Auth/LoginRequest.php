@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Services\LoginTrackingService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -40,9 +41,19 @@ class LoginRequest extends FormRequest
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+        $this->ensureAccountNotLocked();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $credentials = [
+            'email' => $this['email'],
+            'password' => $this['password'],
+        ];
+        $remember = (bool) ($this['remember'] ?? false);
+
+        if (! Auth::attempt($credentials, $remember)) {
             RateLimiter::hit($this->throttleKey());
+
+            // Log failed login attempt
+            app(LoginTrackingService::class)->logFailedLogin($this['email'], $this);
 
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
@@ -50,6 +61,31 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+    }
+
+    /**
+     * Ensure the account is not locked.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    protected function ensureAccountNotLocked(): void
+    {
+        $loginTracker = app(LoginTrackingService::class);
+
+        if ($loginTracker->isAccountLocked($this['email'])) {
+            // Get user to check lock details
+            $user = \App\Models\User::where('email', $this['email'])->first();
+
+            if ($user && $user->isAccountLocked()) {
+                $timeRemaining = $user->getLockTimeRemaining();
+
+                throw ValidationException::withMessages([
+                    'email' => $timeRemaining
+                        ? __('auth.account_locked_with_time', ['time' => $timeRemaining])
+                        : __('auth.account_locked'),
+                ]);
+            }
+        }
     }
 
     /**
@@ -80,6 +116,8 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+        return Str::transliterate(Str::lower($this['email']).'|'.$ip);
     }
 }
