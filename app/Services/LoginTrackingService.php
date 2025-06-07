@@ -450,7 +450,7 @@ class LoginTrackingService
                 return false; // Account wasn't locked
             }
 
-            $user->unlockAccount();
+            $user->unlockAccount($adminReason, false);
             Log::info('User account manually unlocked', [
                 'user_id' => $user->id,
                 'user_email' => $user->email,
@@ -477,7 +477,9 @@ class LoginTrackingService
         try {
             if (! $user->isAccountLocked()) {
                 return false; // Account wasn't locked
-            }            $user->unlockAccount(false); // manually unlocked
+            }
+
+            $user->unlockAccount($reason, false); // manually unlocked with reason
 
             Log::info('User account unlocked', [
                 'user_id' => $user->id,
@@ -513,6 +515,27 @@ class LoginTrackingService
                 'duration_hours' => $durationHours,
                 'locked_by' => Auth::check() ? Auth::id() : null,
             ]);
+
+            // Send account locked notification email
+            try {
+                Mail::to($user->email)->send(new AccountLockedMail(
+                    $user,
+                    $reason,
+                    "{$durationHours} hours"
+                ));
+
+                Log::info('Account locked notification email sent for manual lock', [
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'reason' => $reason,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send account locked notification email for manual lock', [
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return true;
         } catch (\Exception $e) {

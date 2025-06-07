@@ -693,8 +693,24 @@ class AdminController extends BaseController
                     'reason' => $validated['reason'] ?? 'Manually unlocked by admin',
                 ]);
 
+                // Return JSON response for API calls
+                if ($request->expectsJson() || $request->is('admin/accounts/*/unlock')) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Account unlocked successfully',
+                    ]);
+                }
+
                 return back()->with('success', "Account unlocked successfully for {$user->name}");
             } else {
+                // Return JSON response for API calls
+                if ($request->expectsJson() || $request->is('admin/accounts/*/unlock')) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Account was not locked or unlock failed',
+                    ], 400);
+                }
+
                 return back()->with('error', 'Account was not locked or unlock failed');
             }
         } catch (Exception $e) {
@@ -703,6 +719,14 @@ class AdminController extends BaseController
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
+            // Return JSON response for API calls
+            if ($request->expectsJson() || $request->is('admin/accounts/*/unlock')) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to unlock account',
+                ], 500);
+            }
 
             return back()->with('error', 'Failed to unlock account');
         }
@@ -778,8 +802,24 @@ class AdminController extends BaseController
                     'user_email' => $user->email,
                 ]);
 
+                // Return JSON response for API calls
+                if (request()->expectsJson() || request()->is('admin/accounts/*/reset-attempts')) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Failed login attempts reset successfully',
+                    ]);
+                }
+
                 return back()->with('success', "Failed login attempts reset successfully for {$user->name}");
             } else {
+                // Return JSON response for API calls
+                if (request()->expectsJson() || request()->is('admin/accounts/*/reset-attempts')) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'No failed attempts to reset',
+                    ], 400);
+                }
+
                 return back()->with('error', 'No failed attempts to reset');
             }
         } catch (Exception $e) {
@@ -788,6 +828,14 @@ class AdminController extends BaseController
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
+            // Return JSON response for API calls
+            if (request()->expectsJson() || request()->is('admin/accounts/*/reset-attempts')) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to reset failed attempts',
+                ], 500);
+            }
 
             return back()->with('error', 'Failed to reset failed attempts');
         }

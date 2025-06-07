@@ -19,14 +19,17 @@ class AccountUnlockedMail extends Mailable
 
     public bool $wasAutoUnlocked;
 
+    public string $unlockedBy;
+
     /**
      * Create a new message instance.
      */
-    public function __construct(User $user, string $unlockReason = 'Account unlocked', bool $wasAutoUnlocked = false)
+    public function __construct(User $user, string $unlockReason = 'Account unlocked', bool $wasAutoUnlocked = false, string $unlockedBy = 'system')
     {
         $this->user = $user;
         $this->unlockReason = $unlockReason;
         $this->wasAutoUnlocked = $wasAutoUnlocked;
+        $this->unlockedBy = $unlockedBy;
     }
 
     /**
@@ -50,6 +53,7 @@ class AccountUnlockedMail extends Mailable
                 'user' => $this->user,
                 'unlockReason' => $this->unlockReason,
                 'wasAutoUnlocked' => $this->wasAutoUnlocked,
+                'unlockedBy' => $this->unlockedBy,
                 'loginUrl' => route('login'),
                 'supportEmail' => config('mail.support_email', 'support@procuchain.local'),
             ]

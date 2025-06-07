@@ -43,12 +43,12 @@ export default function NoticeToProceedUpload({ procurement, errors: initialErro
 
   // Keep form data in sync if props change (optional but good practice)
   useEffect(() => {
-    setData({
-      ...data,
+    setData(prevData => ({
+      ...prevData,
       procurement_id: procurement.id || '',
       procurement_title: procurement.title || '',
-    });
-  }, [procurement.id, procurement.title]);
+    }));
+  }, [procurement.id, procurement.title, setData]);
 
   const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
