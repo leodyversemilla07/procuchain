@@ -121,7 +121,7 @@ class User extends Authenticatable implements CanResetPasswordContract
         $wasLocked = $this->account_locked;
 
         // Don't process if account is already unlocked
-        if (!$wasLocked) {
+        if (! $wasLocked) {
             return;
         }
 
@@ -136,8 +136,8 @@ class User extends Authenticatable implements CanResetPasswordContract
 
         // Send unlock notification email only if account was actually locked
         try {
-            $reason = $isAutoUnlock 
-                ? 'Account automatically unlocked after lock period expired' 
+            $reason = $isAutoUnlock
+                ? 'Account automatically unlocked after lock period expired'
                 : $unlockedBy;
 
             Mail::to($this->email)->send(new AccountUnlockedMail(
@@ -209,7 +209,7 @@ class User extends Authenticatable implements CanResetPasswordContract
         }
 
         $now = now();
-        
+
         // If lock has expired, return 0
         if ($this->lock_expires_at->isPast()) {
             return 0;
