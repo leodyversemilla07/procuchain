@@ -21,6 +21,8 @@ function getDashboardRouteByRole(role: string): string {
             return route('bac-secretariat.dashboard');
         case 'bac_chairman':
             return route('bac-chairman.dashboard');
+        case 'admin':
+            return route('admin.dashboard');
         default:
             return route('home');
     }

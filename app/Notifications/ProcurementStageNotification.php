@@ -81,6 +81,8 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
                 return url("/hope/procurements-list/{$id}");
             case 'bac_secretariat':
                 return url("/bac-secretariat/procurements-list/{$id}");
+            case 'admin':
+                return url("/admin/procurements-list/{$id}");
             default:
                 return url("/procurements/{$id}");
         }

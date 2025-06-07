@@ -41,6 +41,14 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     icon: LayoutGrid,
                 }
             ];
+        case 'admin':
+            return [
+                {
+                    title: 'Dashboard',
+                    url: '/admin/dashboard',
+                    icon: LayoutGrid,
+                }
+            ];
         default:
             return [];
     }

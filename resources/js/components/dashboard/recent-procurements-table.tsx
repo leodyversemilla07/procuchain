@@ -15,9 +15,7 @@ interface RecentProcurementsTableProps {
 
 export function RecentProcurementsTable({ procurements }: RecentProcurementsTableProps) {
     const { auth } = usePage().props as unknown as { auth: { user: User } };
-    const userRole = auth.user?.role;
-
-    const getProcurementShowRoute = (procurementId: string) => {
+    const userRole = auth.user?.role;    const getProcurementShowRoute = (procurementId: string) => {
         switch (userRole) {
             case 'bac_secretariat':
                 return route('bac-secretariat.procurements.show', { id: procurementId });
@@ -25,6 +23,8 @@ export function RecentProcurementsTable({ procurements }: RecentProcurementsTabl
                 return route('bac-chairman.procurements.show', { id: procurementId });
             case 'hope':
                 return route('hope.procurements.show', { id: procurementId });
+            case 'admin':
+                return route('admin.procurements.show', { id: procurementId });
             default:
                 console.warn('Unknown user role for procurement link:', userRole);
                 return '#';

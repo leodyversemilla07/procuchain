@@ -13,6 +13,9 @@ test('guests are redirected to login for all dashboards', function () {
 
     // Test Hope dashboard
     $this->get(route('hope.dashboard'))->assertRedirect('/login');
+
+    // Test Admin dashboard
+    $this->get(route('admin.dashboard'))->assertRedirect('/login');
 });
 
 test('users can access their role-specific dashboard', function () {
@@ -32,6 +35,12 @@ test('users can access their role-specific dashboard', function () {
     $hopeUser = User::factory()->create(['role' => 'hope']);
     $this->actingAs($hopeUser);
     $this->get(route('hope.dashboard'))->assertOk();
+    $this->post('/logout');
+
+    // Test Admin user
+    $adminUser = User::factory()->create(['role' => 'admin']);
+    $this->actingAs($adminUser);
+    $this->get(route('admin.dashboard'))->assertOk();
 });
 
 test('users cannot access dashboards for other roles', function () {
@@ -54,4 +63,13 @@ test('users cannot access dashboards for other roles', function () {
     $this->actingAs($hopeUser);
     $this->get(route('bac-secretariat.dashboard'))->assertForbidden();
     $this->get(route('bac-chairman.dashboard'))->assertForbidden();
+    $this->get(route('admin.dashboard'))->assertForbidden();
+    $this->post('/logout');
+
+    // Admin user cannot access other dashboards
+    $adminUser = User::factory()->create(['role' => 'admin']);
+    $this->actingAs($adminUser);
+    $this->get(route('bac-secretariat.dashboard'))->assertForbidden();
+    $this->get(route('bac-chairman.dashboard'))->assertForbidden();
+    $this->get(route('hope.dashboard'))->assertForbidden();
 });

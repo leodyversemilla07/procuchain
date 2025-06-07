@@ -20,9 +20,9 @@ class NotificationService
         bool $stageTransition = false,
         string $nextStage = ''
     ): void {
-        $usersToNotify = User::whereIn('role', ['bac_chairman', 'hope'])->get();
+        $usersToNotify = User::whereIn('role', ['bac_chairman', 'hope', 'admin'])->get();
         if ($usersToNotify->isEmpty()) {
-            Log::warning('No BAC Chairman or HOPE users found to notify for procurement update', [
+            Log::warning('No BAC Chairman, HOPE, or Admin users found to notify for procurement update', [
                 'procurement_id' => $procurementId,
             ]);
 

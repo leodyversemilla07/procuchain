@@ -21,7 +21,7 @@ class SecureFileController extends BaseController
     {
         $this->services = $services;
         $this->middleware('auth');
-        $this->middleware('role:bac_chairman,bac_secretariat,hope');
+        $this->middleware('role:bac_chairman,bac_secretariat,hope,admin'); // Ensure only authorized roles can access this controller
     }
 
     /**
@@ -36,14 +36,14 @@ class SecureFileController extends BaseController
             }
 
             // Verify the file exists in our document stream (security check)
-            if (!$this->validateFileAccess($fileKey)) {
+            if (! $this->validateFileAccess($fileKey)) {
                 abort(404, 'File not found or access denied');
             }
 
             // Get the file from DigitalOcean Spaces
             $disk = Storage::disk('spaces');
-            
-            if (!$disk->exists($fileKey)) {
+
+            if (! $disk->exists($fileKey)) {
                 abort(404, 'File not found');
             }
 
@@ -63,7 +63,7 @@ class SecureFileController extends BaseController
             // Return the file with appropriate headers
             return response($fileContent)
                 ->header('Content-Type', $mimeType)
-                ->header('Content-Disposition', 'inline; filename="' . $fileName . '"')
+                ->header('Content-Disposition', 'inline; filename="'.$fileName.'"')
                 ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
                 ->header('Pragma', 'no-cache')
                 ->header('Expires', '0')

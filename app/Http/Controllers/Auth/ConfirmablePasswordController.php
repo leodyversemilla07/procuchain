@@ -44,6 +44,8 @@ class ConfirmablePasswordController extends Controller
                 return redirect()->intended(route('bac-chairman.dashboard'));
             case 'hope':
                 return redirect()->intended(route('hope.dashboard'));
+            case 'admin':
+                return redirect()->intended(route('admin.dashboard'));
             default:
                 return redirect()->intended('/'); // Fallback to home page
         }

@@ -20,6 +20,8 @@ class NotificationServiceTest extends TestCase
 
     private User $hope;
 
+    private User $admin;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,12 +31,13 @@ class NotificationServiceTest extends TestCase
         // Create test users with specific roles
         $this->bacChairman = User::factory()->create(['role' => 'bac_chairman']);
         $this->hope = User::factory()->create(['role' => 'hope']);
+        $this->admin = User::factory()->create(['role' => 'admin']);
 
         // Fake notifications
         Notification::fake();
     }
 
-    public function test_notification_is_sent_to_bac_chairman_and_hope()
+    public function test_notification_is_sent_to_bac_chairman_hope_and_admin()
     {
         Log::shouldReceive('info')
             ->once()
@@ -42,7 +45,7 @@ class NotificationServiceTest extends TestCase
                 return str_contains($message, 'Procurement stage update notification sent') &&
                     $context['procurement_id'] === 'PROC-001' &&
                     $context['stage'] === 'Bidding' &&
-                    $context['recipients_count'] === 2;
+                    $context['recipients_count'] === 3;
             });
 
         $this->notificationService->notifyStageUpdate(
@@ -55,7 +58,7 @@ class NotificationServiceTest extends TestCase
         );
 
         Notification::assertSentTo(
-            [$this->bacChairman, $this->hope],
+            [$this->bacChairman, $this->hope, $this->admin],
             ProcurementStageNotification::class,
             function ($notification) {
                 $data = $notification->toArray($this->bacChairman);
@@ -86,7 +89,7 @@ class NotificationServiceTest extends TestCase
         );
 
         Notification::assertSentTo(
-            [$this->bacChairman, $this->hope],
+            [$this->bacChairman, $this->hope, $this->admin],
             ProcurementStageNotification::class,
             function ($notification) {
                 $data = $notification->toArray($this->bacChairman);
@@ -105,7 +108,7 @@ class NotificationServiceTest extends TestCase
         Log::shouldReceive('warning')
             ->once()
             ->withArgs(function ($message, $context) {
-                return str_contains($message, 'No BAC Chairman or HOPE users found to notify for procurement update') &&
+                return str_contains($message, 'No BAC Chairman, HOPE, or Admin users found to notify for procurement update') &&
                     $context['procurement_id'] === 'PROC-001';
             });
 

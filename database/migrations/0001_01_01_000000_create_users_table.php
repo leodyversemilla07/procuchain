@@ -15,10 +15,16 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->enum('role', ['bac_secretariat', 'bac_chairman', 'hope'])->default('bac_secretariat');
+            $table->enum('role', ['bac_secretariat', 'bac_chairman', 'hope', 'admin'])->default('bac_secretariat');
             $table->string('blockchain_address')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->boolean('account_locked')->default(false);
+            $table->timestamp('locked_at')->nullable();
+            $table->timestamp('lock_expires_at')->nullable();
+            $table->integer('failed_login_attempts')->default(0);
+            $table->timestamp('last_failed_login_at')->nullable();
+            $table->string('locked_reason')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

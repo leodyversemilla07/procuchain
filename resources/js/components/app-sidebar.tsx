@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Table2, Upload, Bell } from 'lucide-react';
+import { LayoutGrid, Table2, Upload, Bell, Users, Shield, ShieldOff } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getNavItemsByRole = (role: string): NavItem[] => {
@@ -53,13 +53,41 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     icon: Table2,
                 }
             ];
+        case 'admin':
+            return [
+                {
+                    title: 'Dashboard',
+                    url: '/admin/dashboard',
+                    icon: LayoutGrid,
+                },
+                {
+                    title: 'Procurement List',
+                    url: '/admin/procurements-list',
+                    icon: Table2,
+                },
+                {
+                    title: 'User Management',
+                    url: '/admin/users',
+                    icon: Users,
+                },
+                {
+                    title: 'Locked Accounts',
+                    url: '/admin/accounts/locked',
+                    icon: ShieldOff,
+                },
+                {
+                    title: 'Login Logs',
+                    url: '/admin/login-logs',
+                    icon: Shield,
+                }
+            ];
         default:
             return [];
     }
 };
 
 const getFooterNavItemsByRole = (role: string): NavItem[] => {
-    if (role === 'bac_chairman' || role === 'hope') {
+    if (role === 'bac_chairman' || role === 'hope' || role === 'admin') {
         return [
             {
                 title: 'Notifications',
@@ -79,6 +107,8 @@ const getRoleUrl = (role: string): string => {
             return '/bac-chairman/dashboard';
         case 'hope':
             return '/hope/dashboard';
+        case 'admin':
+            return '/admin/dashboard';
         default:
             return '/';
     }
