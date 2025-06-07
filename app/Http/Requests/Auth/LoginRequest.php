@@ -55,9 +55,11 @@ class LoginRequest extends FormRequest
             // Log failed login attempt
             app(LoginTrackingService::class)->logFailedLogin($this['email'], $this);
 
-            throw ValidationException::withMessages([
+            $exception = ValidationException::withMessages([
                 'email' => __('auth.failed'),
             ]);
+            $exception->redirectTo = route('login');
+            throw $exception;
         }
 
         RateLimiter::clear($this->throttleKey());
@@ -79,11 +81,13 @@ class LoginRequest extends FormRequest
             if ($user && $user->isAccountLocked()) {
                 $timeRemaining = $user->getLockTimeRemaining();
 
-                throw ValidationException::withMessages([
+                $exception = ValidationException::withMessages([
                     'email' => $timeRemaining
                         ? __('auth.account_locked_with_time', ['time' => $timeRemaining])
                         : __('auth.account_locked'),
                 ]);
+                $exception->redirectTo = route('login');
+                throw $exception;
             }
         }
     }
@@ -103,12 +107,14 @@ class LoginRequest extends FormRequest
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
-        throw ValidationException::withMessages([
+        $exception = ValidationException::withMessages([
             'email' => __('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
         ]);
+        $exception->redirectTo = route('login');
+        throw $exception;
     }
 
     /**

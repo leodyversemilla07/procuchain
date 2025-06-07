@@ -92,7 +92,7 @@ class User extends Authenticatable implements CanResetPasswordContract
 
         // Check if lock has expired
         if ($this->lock_expires_at && $this->lock_expires_at->isPast()) {
-            $this->unlockAccount(true); // auto-unlock due to expiration
+            $this->unlockAccount('system', true); // auto-unlock due to expiration
 
             return false;
         }
@@ -116,9 +116,14 @@ class User extends Authenticatable implements CanResetPasswordContract
     /**
      * Unlock the user account
      */
-    public function unlockAccount(bool $isAutoUnlock = false): void
+    public function unlockAccount(string $unlockedBy = 'system', bool $isAutoUnlock = false): void
     {
         $wasLocked = $this->account_locked;
+
+        // Don't process if account is already unlocked
+        if (!$wasLocked) {
+            return;
+        }
 
         $this->update([
             'account_locked' => false,
@@ -130,26 +135,31 @@ class User extends Authenticatable implements CanResetPasswordContract
         ]);
 
         // Send unlock notification email only if account was actually locked
-        if ($wasLocked) {
-            try {
-                Mail::to($this->email)->send(new AccountUnlockedMail(
-                    $this,
-                    $isAutoUnlock ? 'Account automatically unlocked after lock period expired' : 'Account unlocked',
-                    $isAutoUnlock
-                ));
+        try {
+            $reason = $isAutoUnlock 
+                ? 'Account automatically unlocked after lock period expired' 
+                : $unlockedBy;
 
-                Log::info('Account unlocked notification email sent', [
-                    'user_id' => $this->id,
-                    'user_email' => $this->email,
-                    'auto_unlock' => $isAutoUnlock,
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to send account unlocked notification email', [
-                    'user_id' => $this->id,
-                    'user_email' => $this->email,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            Mail::to($this->email)->send(new AccountUnlockedMail(
+                $this,
+                $reason,
+                $isAutoUnlock,
+                $unlockedBy
+            ));
+
+            Log::info('Account unlocked notification email sent', [
+                'user_id' => $this->id,
+                'user_email' => $this->email,
+                'auto_unlock' => $isAutoUnlock,
+                'unlocked_by' => $unlockedBy,
+                'reason' => $reason,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send account unlocked notification email', [
+                'user_id' => $this->id,
+                'user_email' => $this->email,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -187,5 +197,25 @@ class User extends Authenticatable implements CanResetPasswordContract
         $remaining = $this->lock_expires_at->diffForHumans();
 
         return $remaining;
+    }
+
+    /**
+     * Get the remaining lock time in minutes (for API/testing purposes)
+     */
+    public function getRemainingLockTimeAttribute(): int
+    {
+        if (! $this->account_locked || ! $this->lock_expires_at) {
+            return 0;
+        }
+
+        $now = now();
+        
+        // If lock has expired, return 0
+        if ($this->lock_expires_at->isPast()) {
+            return 0;
+        }
+
+        // Return remaining minutes (round up to ensure we don't get 0 for partial minutes)
+        return (int) ceil($now->diffInMinutes($this->lock_expires_at, false));
     }
 }

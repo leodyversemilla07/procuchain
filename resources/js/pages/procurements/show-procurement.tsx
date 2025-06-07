@@ -2,7 +2,7 @@ import { useState, useMemo, JSX, FC, useEffect } from 'react';
 import {
     FileText, Hash, Clock, RefreshCw, Lock, Download, FileCheck,
     CheckCircle, XCircle, Upload, AlertCircle, Calendar, Building, UserRound,
-    HardDrive, PhilippinePeso, Users
+    HardDrive, PhilippinePeso, Users, ArrowDown, ArrowUp, TrendingUp
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
@@ -38,6 +38,12 @@ const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
             return [
                 { title: 'HOPE Dashboard', href: '/hope/dashboard' },
                 { title: 'Procurement List', href: '/hope/procurements-list' },
+                { title: 'Procurement Details', href: '#' },
+            ];
+        case 'admin':
+            return [
+                { title: 'Admin Dashboard', href: '/admin/dashboard' },
+                { title: 'Procurement List', href: '/admin/procurements-list' },
                 { title: 'Procurement Details', href: '#' },
             ];
         default:
@@ -402,7 +408,9 @@ const ProcurementHeader: FC<ProcurementHeaderProps> = ({ title, id, status }) =>
     const progress = stageIndex > 0 ? (stageIndex / totalStages) * 100 : 0;
 
     return (
-        <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border mb-4">
+        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-sm overflow-hidden
+                       rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md
+                       w-full max-w-full relative border mb-4">
 
             <div
                 className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent dark:from-primary/10 dark:to-transparent"
@@ -593,7 +601,7 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
                         )}
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="p-3 sm:p-4 pt-0">
+                <CardContent className="p-3 sm:p-4 md:p-5 pt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
 
                         {metadata.document_type === 'Bid Document' && metadata.opening_date && (
@@ -699,7 +707,7 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
             {doc.hash && (
                 <div className="mt-3.5 ml-0 sm:ml-[58px] max-w-full overflow-hidden">
                     <Card className="bg-gradient-to-r from-blue-50/80 to-neutral-50/80 dark:from-blue-900/20 dark:to-neutral-800/60 border border-blue-100/80 dark:border-blue-800/30 shadow-sm hover:shadow transition-all duration-200">
-                        <CardContent className="p-3 sm:p-4 flex items-center justify-between">
+                        <CardContent className="p-3 sm:p-4 md:p-5 flex items-center justify-between">
                             <div className="flex items-center gap-2.5 flex-1 min-w-0">
                                 <div className="p-1.5 bg-blue-100/80 dark:bg-blue-900/40 rounded-md border border-blue-200 dark:border-blue-800/50 shadow-sm">
                                     <Lock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -774,7 +782,10 @@ const DocumentSection: FC<DocumentSectionProps> = ({ documentsBystage, sortedsta
                         </div>
                         <div>
                             <CardTitle className="text-base sm:text-lg">Procurement Documents</CardTitle>
-                            <CardDescription className="text-xs sm:text-sm">Documents organized by stage</CardDescription>
+                            <CardDescription className="text-xs sm:text-sm flex items-center gap-1">
+                                <ArrowDown className="w-3 h-3 text-primary" />
+                                Latest stages first • Documents organized by stage
+                            </CardDescription>
                         </div>
                     </div>
                     <Badge variant="outline" className="text-xs sm:text-sm self-start sm:self-center">
@@ -783,24 +794,63 @@ const DocumentSection: FC<DocumentSectionProps> = ({ documentsBystage, sortedsta
                 </div>
             </CardHeader>
             <CardContent className="p-0">
-                {sortedstageKeys.map(stage => (
-                    <div key={stage} className="border-b border-neutral-200 dark:border-neutral-700 last:border-b-0">
-                        <div className="p-3 sm:p-4 bg-neutral-50 dark:bg-neutral-800/50 sticky top-0 z-10 backdrop-blur-sm">
-                            <h3 className="font-semibold text-sm sm:text-base flex items-center text-neutral-700 dark:text-neutral-200">
-                                <FileCheck className="mr-2 h-4 w-4 text-primary flex-shrink-0" />
-                                {stage} ({documentsBystage[stage].length})
-                            </h3>
+                {sortedstageKeys.map((stage, stageIndex) => {
+                    const isLatestStage = stageIndex === 0;
+                    const isEarliestStage = stageIndex === sortedstageKeys.length - 1;
+
+                    return (
+                        <div key={stage} className="border-b border-neutral-200 dark:border-neutral-700 last:border-b-0">
+                            <div className={cn(
+                                "p-3 sm:p-4 sticky top-0 z-10 backdrop-blur-sm",
+                                isLatestStage
+                                    ? "bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/30 border-l-4 border-green-500"
+                                    : isEarliestStage
+                                        ? "bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 border-l-4 border-blue-500"
+                                        : "bg-neutral-50 dark:bg-neutral-800/50"
+                            )}>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-semibold text-sm sm:text-base flex items-center text-neutral-700 dark:text-neutral-200">
+                                        <FileCheck className="mr-2 h-4 w-4 text-primary flex-shrink-0" />
+                                        {stage} ({documentsBystage[stage].length})
+                                        {isLatestStage && (
+                                            <Badge variant="default" className="ml-2 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                                Latest
+                                            </Badge>
+                                        )}
+                                        {isEarliestStage && (
+                                            <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                                Origin
+                                            </Badge>
+                                        )}
+                                    </h3>
+                                    {isLatestStage && (
+                                        <div className="flex items-center text-xs text-green-600 dark:text-green-400">
+                                            <TrendingUp className="w-3 h-3 mr-1" />
+                                            Most Recent
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
+                                {documentsBystage[stage].map((doc, idx) => (
+                                    <DocumentItem
+                                        key={`${stage}-${doc.file_key}-${doc.timestamp ?? ''}-${idx}`}
+                                        doc={doc}
+                                    />
+                                ))}
+                            </ul>
                         </div>
-                        <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                            {documentsBystage[stage].map((doc, idx) => (
-                                <DocumentItem
-                                    key={`${stage}-${doc.file_key}-${doc.timestamp ?? ''}-${idx}`}
-                                    doc={doc}
-                                />
-                            ))}
-                        </ul>
+                    );
+                })}
+
+                {/* Visual flow indicator at bottom */}
+                <div className="p-4 sm:p-6 bg-gradient-to-r from-neutral-50 to-white dark:from-neutral-800 dark:to-neutral-900 border-t border-neutral-200 dark:border-neutral-700">
+                    <div className="flex items-center justify-center text-xs text-neutral-500 dark:text-neutral-400">
+                        <ArrowUp className="w-4 h-4 mr-2" />
+                        Scroll up to see latest stages • Timeline flows from newest to oldest
+                        <ArrowUp className="w-4 h-4 ml-2" />
                     </div>
-                ))}
+                </div>
             </CardContent>
         </>
     );
@@ -843,7 +893,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
             if (stage === 'Bid Opening' || stage === 'Performance Bond, Contract and PO') {
 
                 grouped[stage] = grouped[stage]
-                    .sort((a, b) => (a.timestamp ? new Date(a.timestamp).getTime() : 0) - (b.timestamp ? new Date(b.timestamp).getTime() : 0));
+                    .sort((a, b) => (b.timestamp ? new Date(b.timestamp).getTime() : 0) - (a.timestamp ? new Date(a.timestamp).getTime() : 0));
             } else {
 
                 const uniqueDocs = new Map<string, Document>();
@@ -861,7 +911,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                     });
 
                 grouped[stage] = Array.from(uniqueDocs.values())
-                    .sort((a, b) => (a.timestamp ? new Date(a.timestamp).getTime() : 0) - (b.timestamp ? new Date(b.timestamp).getTime() : 0));
+                    .sort((a, b) => (b.timestamp ? new Date(b.timestamp).getTime() : 0) - (a.timestamp ? new Date(a.timestamp).getTime() : 0));
             }
 
         });
@@ -879,7 +929,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
             if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
             if (aIndex === -1) return 1;
             if (bIndex === -1) return -1;
-            return aIndex - bIndex;
+            return bIndex - aIndex; // Reversed to show latest stages first
         });
     }, [documentsBystage]);
 
@@ -908,7 +958,8 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
             });
         });
 
-        combinedItems.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        // Sort timeline items with latest first (descending order)
+        combinedItems.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
         const itemsByDate: Record<string, ProcessedTimelineItem[]> = {};
 
@@ -957,7 +1008,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                                                 {statusInfo.icon}
                                             </Badge>
                                         </CardHeader>
-                                        <CardContent className="p-3 sm:p-4 pt-2">
+                                        <CardContent className="p-3 sm:p-4 md:p-5 pt-2">
                                             <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
                                                 Procurement moved to <strong className="text-blue-700 dark:text-blue-400">{stageItem.stage}</strong> stage
                                             </p>
@@ -1009,7 +1060,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                                         )}
                                     </div>
                                     <Card className="bg-gradient-to-r from-neutral-50/70 to-white dark:from-neutral-800/30 dark:to-gray-800 shadow-sm border border-neutral-200 dark:border-neutral-700/80 transition-all duration-300 group-hover:shadow-md">
-                                        <CardContent className="p-3 sm:p-4 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
+                                        <CardContent className="p-3 sm:p-4 md:p-5 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
                                             {eventDetails}
                                         </CardContent>
                                     </Card>
@@ -1062,7 +1113,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Procurement: ${procurement.title}`} />
-            <div className="flex h-full flex-1 flex-col gap-4 p-3 sm:p-4">
+            <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
 
                 <ProcurementHeader
                     title={procurement.title}
@@ -1071,7 +1122,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                 />
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="mb-4 grid grid-cols-2 w-full max-w-[320px]">
+                    <TabsList className="mb-4 grid grid-cols-2 w-full max-w-[320px] border border-sidebar-border/70 dark:border-sidebar-border">
                         <TabsTrigger value="documents" className="flex items-center gap-1.5 sm:gap-2">
                             <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             Documents
@@ -1082,7 +1133,9 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                         </TabsTrigger>
                     </TabsList>
 
-                    <Card className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border">
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-sm overflow-hidden
+                                   rounded-lg sm:rounded-xl transition-all duration-200 hover:shadow-md
+                                   w-full max-w-full relative border">
                         <TabsContent value="documents" className="p-0 m-0">
                             <DocumentSection
                                 documentsBystage={documentsBystage}
@@ -1093,57 +1146,112 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
 
                         <TabsContent value="timeline" className="p-0 m-0">
                             <CardHeader className="border-b p-4 sm:p-6 bg-gradient-to-r from-primary/5 to-transparent dark:from-primary/10 dark:to-transparent">
-                                <div className="flex items-center space-x-2 sm:space-x-3">
-                                    <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg">
-                                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                                    <div className="flex items-center space-x-2 sm:space-x-3">
+                                        <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg">
+                                            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-base sm:text-lg">Event Timeline</CardTitle>
+                                            <CardDescription className="text-xs sm:text-sm flex items-center gap-1">
+                                                <ArrowDown className="w-3 h-3 text-primary" />
+                                                Latest events first • Reverse chronological order
+                                            </CardDescription>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <CardTitle className="text-base sm:text-lg">Event Timeline</CardTitle>
-                                        <CardDescription className="text-xs sm:text-sm">Chronological record of procurement events and stage changes</CardDescription>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                            <Clock className="w-3 h-3 mr-1" />
+                                            Recent First
+                                        </Badge>
                                     </div>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="relative">
+                                    {/* Timeline flow indicator */}
+                                    <div className="absolute left-4 sm:left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-green-400 via-primary to-blue-400 dark:from-green-500 dark:via-primary dark:to-blue-500 opacity-20"></div>
 
                                     <div className="space-y-4 py-6 px-4 sm:px-6">
-                                        {Object.keys(timelineItemsByDate).map((date) => (
-                                            <div key={date} className="mb-12 last:mb-6 relative">
+                                        {Object.keys(timelineItemsByDate)
+                                            .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+                                            .map((date, dateIndex) => {
+                                                const isFirstDate = dateIndex === 0;
+                                                const isLastDate = dateIndex === Object.keys(timelineItemsByDate).length - 1;
 
-                                                <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm py-3 -mx-4 sm:-mx-6 px-4 sm:px-6 mb-6">
-                                                    <div className="flex items-center">
-                                                        <div className="h-0.5 w-6 bg-primary/40 mr-3"></div>
-                                                        <Badge variant="outline" className="text-sm font-medium bg-white dark:bg-gray-800 shadow-sm border-primary/20 text-primary dark:text-primary-light px-3 py-1.5">
-                                                            <Calendar className="mr-2 h-4 w-4" />
-                                                            {date}
-                                                        </Badge>
-                                                        <div className="h-0.5 flex-1 bg-gradient-to-r from-primary/40 to-transparent ml-3"></div>
-                                                    </div>
-                                                </div>
-
-
-                                                <div className="space-y-8">
-                                                    {timelineItemsByDate[date].map((item, itemIndex) => (
-                                                        <div key={`${item.timestamp}-${itemIndex}`} className="relative group animate-fadeIn">
-                                                            {item.content}
+                                                return (
+                                                    <div key={date} className="mb-12 last:mb-6 relative">
+                                                        {/* Enhanced date header with visual indicators */}
+                                                        <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm py-3 -mx-4 sm:-mx-6 px-4 sm:px-6 mb-6">
+                                                            <div className="flex items-center">
+                                                                <div className={cn(
+                                                                    "h-0.5 w-6 mr-3",
+                                                                    isFirstDate ? "bg-green-400" : isLastDate ? "bg-blue-400" : "bg-primary/40"
+                                                                )}></div>
+                                                                <Badge variant="outline" className={cn(
+                                                                    "text-sm font-medium bg-white dark:bg-gray-800 shadow-sm px-3 py-1.5",
+                                                                    isFirstDate
+                                                                        ? "border-green-300 text-green-700 dark:border-green-700 dark:text-green-400"
+                                                                        : isLastDate
+                                                                            ? "border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400"
+                                                                            : "border-primary/20 text-primary dark:text-primary-light"
+                                                                )}>
+                                                                    <Calendar className="mr-2 h-4 w-4" />
+                                                                    {date}
+                                                                    {isFirstDate && (
+                                                                        <Badge variant="default" className="ml-2 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                                                            Latest
+                                                                        </Badge>
+                                                                    )}
+                                                                    {isLastDate && (
+                                                                        <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                                                            Earliest
+                                                                        </Badge>
+                                                                    )}
+                                                                </Badge>
+                                                                <div className={cn(
+                                                                    "h-0.5 flex-1 ml-3 bg-gradient-to-r to-transparent",
+                                                                    isFirstDate ? "from-green-400" : isLastDate ? "from-blue-400" : "from-primary/40"
+                                                                )}></div>
+                                                            </div>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
 
+                                                        {/* Timeline content */}
+                                                        <div className="space-y-8">
+                                                            {timelineItemsByDate[date]
+                                                                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                                                                .map((item, itemIndex) => (
+                                                                    <div key={`${item.timestamp}-${itemIndex}`} className="relative group animate-fadeIn">
+                                                                        {item.content}
+                                                                    </div>
+                                                                ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
 
+                                        {/* Timeline end indicator */}
                                         <div className="relative py-6 text-center">
                                             <div className="absolute inset-0 flex items-center" aria-hidden="true">
                                                 <div className="w-full border-t border-dashed border-neutral-200 dark:border-neutral-700"></div>
                                             </div>
                                             <div className="relative flex justify-center">
-                                                <div className="bg-white dark:bg-gray-900 px-4 text-sm font-semibold text-neutral-500 dark:text-neutral-400">
-                                                    End of Timeline
+                                                <div className="bg-white dark:bg-gray-900 px-4 text-sm font-semibold text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
+                                                    <ArrowUp className="w-4 h-4" />
+                                                    Beginning of Timeline • Scroll up to see latest events
+                                                    <ArrowUp className="w-4 h-4" />
                                                 </div>
                                             </div>
                                         </div>
 
+                                        {/* Visual flow summary */}
+                                        <div className="relative p-4 bg-gradient-to-r from-blue-50 to-neutral-50 dark:from-blue-900/20 dark:to-neutral-800 rounded-lg border border-blue-200 dark:border-blue-800/50 mb-4">
+                                            <div className="flex items-center justify-center text-xs text-blue-600 dark:text-blue-400">
+                                                <Calendar className="w-4 h-4 mr-2" />
+                                                Timeline displays events in reverse chronological order (newest → oldest)
+                                                <Calendar className="w-4 h-4 ml-2" />
+                                            </div>
+                                        </div>
 
                                         {currentTime && (
                                             <div className="relative mt-2 pt-3 pb-4 px-4 bg-primary/5 dark:bg-primary/10 rounded-lg border border-primary/20 dark:border-primary/30">

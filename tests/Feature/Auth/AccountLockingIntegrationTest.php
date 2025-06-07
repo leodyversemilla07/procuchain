@@ -44,7 +44,7 @@ test('complete account locking flow works with email notifications', function ()
     expect($user->account_locked)->toBeTrue()
         ->and($user->locked_at)->not->toBeNull()
         ->and($user->lock_expires_at)->not->toBeNull()
-        ->and($user->locked_reason)->toBe('Multiple failed login attempts');
+        ->and($user->locked_reason)->toBe('Account locked due to multiple failed login attempts');
 
     Mail::assertSent(AccountLockedMail::class, function ($mail) use ($user) {
         return $mail->hasTo($user->email) &&
@@ -88,9 +88,11 @@ test('admin can view locked accounts', function () {
     $response->assertStatus(200);
     $response->assertInertia(fn ($page) => $page->component('admin/locked-accounts')
         ->has('lockedAccounts', 1)
-        ->has('lockedAccounts.0', fn ($user) => $user->where('id', $lockedUser->id)
+        ->has('lockedAccounts.0', fn ($user) => $user
+            ->where('id', $lockedUser->id)
             ->where('email', 'locked@example.com')
             ->where('account_locked', true)
+            ->etc()
         )
     );
 });

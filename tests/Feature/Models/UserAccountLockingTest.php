@@ -34,7 +34,7 @@ test('user can be unlocked manually by admin', function () {
     Mail::assertSent(AccountUnlockedMail::class, function ($mail) use ($user) {
         return $mail->hasTo($user->email) &&
                $mail->user->id === $user->id &&
-               $mail->unlockedBy === 'admin' &&
+               $mail->unlockReason === 'admin' &&
                $mail->wasAutoUnlocked === false;
     });
 });
