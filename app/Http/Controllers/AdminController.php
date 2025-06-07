@@ -278,15 +278,15 @@ class AdminController extends BaseController
             }
 
             $documentCountMap = collect($documentItems)
-                ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-                ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+                ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+                ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
                 ->map(function ($items) {
-                    return collect($items)->map(fn($item) => $item['data']['json']['hash'])->unique()->count();
+                    return collect($items)->map(fn ($item) => $item['data']['json']['hash'])->unique()->count();
                 });
 
             $dashboardProcurementIds = $procurementsByKey->keys();
             $totalDocuments = $documentCountMap
-                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->sum();
 
             Log::info('Admin dashboard document count calculated', ['total_documents' => $totalDocuments]);
@@ -489,7 +489,7 @@ class AdminController extends BaseController
 
             // Get user details for logging before deletion
             $usersToDelete = User::whereIn('id', $userIds)->get(['id', 'email', 'name', 'role']);
-            
+
             if ($usersToDelete->isEmpty()) {
                 return redirect()->back()->withErrors(['error' => 'No valid users found for deletion.']);
             }
@@ -497,7 +497,7 @@ class AdminController extends BaseController
             // Perform bulk deletion within a transaction
             DB::transaction(function () use ($userIds, $usersToDelete, $currentUserId) {
                 User::whereIn('id', $userIds)->delete();
-                
+
                 // Log the bulk deletion
                 Log::info('Admin performed bulk user deletion', [
                     'admin_id' => $currentUserId,
@@ -515,9 +515,9 @@ class AdminController extends BaseController
 
             $deletedCount = count($userIds);
             $message = $deletedCount === 1 ? 'User deleted successfully.' : "{$deletedCount} users deleted successfully.";
-            
+
             return redirect()->back()->with('success', $message);
-            
+
         } catch (Exception $e) {
             Log::error('Failed to bulk delete users', [
                 'admin_id' => Auth::id(),
