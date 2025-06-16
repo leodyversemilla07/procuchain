@@ -3,20 +3,6 @@ import { Head, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -27,41 +13,49 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
-    DropdownMenuTrigger
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Edit, Trash2, Users, MoreHorizontal, ArrowUpDown, Download, Shield, Mail, Key, Calendar, Clock } from 'lucide-react';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-    PaginationEllipsis,
-} from '@/components/ui/pagination';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import {
-    ColumnDef,
-    ColumnFiltersState,
-    SortingState,
-    VisibilityState,
-    RowSelectionState,
-    flexRender,
+    useReactTable,
     getCoreRowModel,
-    getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
-    useReactTable,
+    getFilteredRowModel,
+    flexRender,
+    type ColumnDef,
+    type SortingState,
+    type ColumnFiltersState,
+    type VisibilityState,
+    type RowSelectionState,
 } from '@tanstack/react-table';
-import { type BreadcrumbItem, type SharedData } from '@/types';
+import {
+    ArrowUpDown,
+    Calendar,
+    Clock,
+    Download,
+    Edit,
+    Key,
+    Mail,
+    MoreHorizontal,
+    Plus,
+    Shield,
+    Trash2,
+    Users,
+} from 'lucide-react';
+
+// Dialog Components
+import CreateUserDialog from '@/components/admin/create-user-dialog';
+import EditUserDialog from '@/components/admin/edit-user-dialog';
+import DeleteUserDialog from '@/components/admin/delete-user-dialog';
+import BulkDeleteDialog from '@/components/admin/bulk-delete-dialog';
 
 interface User {
     id: number;
@@ -75,8 +69,15 @@ interface User {
     updated_at?: string;
 }
 
-interface PageProps extends InertiaPageProps {
-    users: User[]; roles: string[];
+interface BreadcrumbItem {
+    title: string;
+    href: string;
+}
+
+interface PageProps {
+    users: User[];
+    roles: string[];
+    [key: string]: unknown;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -91,8 +92,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function AdminUsers() {
-    const page = usePage<PageProps & SharedData>();
-    const { users, roles } = page.props; const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const page = usePage<PageProps>();
+    const { users, roles } = page.props;
+
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
@@ -105,7 +108,9 @@ export default function AdminUsers() {
         password: '',
         password_confirmation: '',
         blockchain_address: '',
-    });    // Table state
+    });
+
+    // Table state
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -197,7 +202,6 @@ export default function AdminUsers() {
                 const message = count === 1 ? 'User deleted successfully' : `${count} users deleted successfully`;
                 toast.success(message);
                 setIsBulkDeleteDialogOpen(false);
-                // Clear selection after successful deletion
                 table.toggleAllPageRowsSelected(false);
             },
             onError: (errors) => {
@@ -206,7 +210,9 @@ export default function AdminUsers() {
                 toast.error(errorMessage, { duration: 5000 });
             },
         });
-    }; const openEditModal = (user: User) => {
+    };
+
+    const openEditModal = (user: User) => {
         setSelectedUser(user);
         setFormData({
             name: user.name,
@@ -222,17 +228,19 @@ export default function AdminUsers() {
     const getRoleBadgeColor = (role: string) => {
         switch (role) {
             case 'admin':
-                return 'bg-red-100 text-red-800 hover:bg-red-200';
+                return 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800/30';
             case 'bac_chairman':
-                return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+                return 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800/30';
             case 'hope':
-                return 'bg-green-100 text-green-800 hover:bg-green-200';
+                return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/30 border border-green-200 dark:border-green-800/30';
             case 'bac_secretariat':
-                return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+                return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800/30';
             default:
-                return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+                return 'bg-gray-100 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700/50 border border-gray-200 dark:border-gray-700/50';
         }
-    }; const getRoleDisplayName = (role: string) => {
+    };
+
+    const getRoleDisplayName = (role: string) => {
         switch (role) {
             case 'bac_secretariat':
                 return 'BAC Secretariat';
@@ -253,10 +261,11 @@ export default function AdminUsers() {
         if (selectedRows.length === 0) {
             toast.error('Please select users to export');
             return;
-        } const csvData = selectedRows.map(row => {
+        }
+
+        const csvData = selectedRows.map(row => {
             const user = row.original;
 
-            // Helper function for date formatting in CSV
             const formatDateForCSV = (dateValue: string | undefined) => {
                 if (dateValue === null || dateValue === undefined || dateValue === '' ||
                     dateValue === 'null' || dateValue === 'undefined') {
@@ -367,7 +376,8 @@ export default function AdminUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
-            }, cell: ({ row }) => {
+            },
+            cell: ({ row }) => {
                 return (
                     <div className="text-muted-foreground">{row.getValue("email")}</div>
                 );
@@ -436,12 +446,12 @@ export default function AdminUsers() {
                     <div className="text-muted-foreground text-sm">
                         {verifiedAt ? (
                             <div className="flex items-center">
-                                <Badge className="bg-green-100 text-green-800 px-2 py-1 text-xs">
+                                <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-2 py-1 text-xs border border-green-200 dark:border-green-800/30">
                                     Verified
                                 </Badge>
                             </div>
                         ) : (
-                            <Badge className="bg-yellow-100 text-yellow-800 px-2 py-1 text-xs">
+                            <Badge className="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 px-2 py-1 text-xs border border-yellow-200 dark:border-yellow-800/30">
                                 Pending
                             </Badge>
                         )}
@@ -493,10 +503,10 @@ export default function AdminUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
-            }, cell: ({ row }) => {
+            },
+            cell: ({ row }) => {
                 const dateValue = row.getValue("created_at") as string;
 
-                // Handle null, undefined, or empty string
                 if (!dateValue || dateValue === '' || dateValue === 'null' || dateValue === 'undefined') {
                     return (
                         <div className="text-muted-foreground text-sm">
@@ -539,10 +549,10 @@ export default function AdminUsers() {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 );
-            }, cell: ({ row }) => {
+            },
+            cell: ({ row }) => {
                 const dateValue = row.getValue("updated_at") as string;
 
-                // Handle null, undefined, or empty string more carefully
                 if (dateValue === null || dateValue === undefined || dateValue === '' ||
                     dateValue === 'null' || dateValue === 'undefined') {
                     return (
@@ -619,7 +629,8 @@ export default function AdminUsers() {
                     </DropdownMenu>
                 );
             },
-        },];
+        },
+    ];
 
     const table = useReactTable({
         data: users,
@@ -638,7 +649,9 @@ export default function AdminUsers() {
             columnVisibility,
             rowSelection,
         },
-    }); return (
+    });
+
+    return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="User Management" />
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
@@ -655,196 +668,13 @@ export default function AdminUsers() {
                             </p>
                         </div>
 
-                        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="flex items-center space-x-2 shadow-md">
-                                    <Plus className="h-4 w-4" />
-                                    <span>Add User</span>
-                                </Button>
-                            </DialogTrigger>                            <DialogContent className="sm:max-w-[600px] p-0 gap-0">
-                                <DialogHeader className="px-6 py-6 pb-4 bg-gradient-to-r from-primary/5 to-background border-b">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                            <Plus className="h-5 w-5 text-primary" />
-                                        </div>
-                                        <div>
-                                            <DialogTitle className="text-xl font-semibold text-foreground">Create New User</DialogTitle>
-                                            <DialogDescription className="text-sm text-muted-foreground mt-1">
-                                                Add a new user to the system with their basic information and access credentials
-                                            </DialogDescription>
-                                        </div>
-                                    </div>
-                                </DialogHeader>
-
-                                <ScrollArea className="h-[calc(90vh-200px)] px-6">
-                                    <form onSubmit={handleCreateUser} className="space-y-6 pb-6 pt-6">
-                                        {/* Personal Information Section */}
-                                        <Card className="border-border">
-                                            <CardHeader className="pb-3">
-                                                <div className="flex items-center space-x-2">
-                                                    <Users className="h-4 w-4 text-muted-foreground" />
-                                                    <CardTitle className="text-base">Personal Information</CardTitle>
-                                                </div>
-                                                <CardDescription className="text-xs text-muted-foreground">
-                                                    Enter the user's basic details and contact information
-                                                </CardDescription>
-                                            </CardHeader>
-                                            <CardContent className="space-y-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="name" className="text-sm font-medium flex items-center">
-                                                            <Users className="h-3 w-3 mr-1" />
-                                                            Full Name
-                                                            <span className="text-destructive ml-1">*</span>
-                                                        </Label>
-                                                        <Input
-                                                            id="name"
-                                                            className="h-11 focus:ring-2 focus:ring-primary/20"
-                                                            placeholder="Enter full name"
-                                                            value={formData.name}
-                                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="email" className="text-sm font-medium flex items-center">
-                                                            <Mail className="h-3 w-3 mr-1" />
-                                                            Email Address
-                                                            <span className="text-destructive ml-1">*</span>
-                                                        </Label>
-                                                        <Input
-                                                            id="email"
-                                                            type="email"
-                                                            className="h-11 focus:ring-2 focus:ring-primary/20"
-                                                            placeholder="Enter email address"
-                                                            value={formData.email}
-                                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="role" className="text-sm font-medium flex items-center">
-                                                        <Shield className="h-3 w-3 mr-1" />
-                                                        Role & Permissions
-                                                        <span className="text-destructive ml-1">*</span>
-                                                    </Label>
-                                                    <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                                                        <SelectTrigger className="h-11 focus:ring-2 focus:ring-primary/20">
-                                                            <SelectValue placeholder="Select a role" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {roles.map((role) => (
-                                                                <SelectItem key={role} value={role}>
-                                                                    {getRoleDisplayName(role)}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                        {/* Security Information Section */}
-                                        <Card className="border-border">
-                                            <CardHeader className="pb-3">
-                                                <div className="flex items-center space-x-2">
-                                                    <Key className="h-4 w-4 text-muted-foreground" />
-                                                    <CardTitle className="text-base">Security & Access</CardTitle>
-                                                </div>
-                                                <CardDescription className="text-xs text-muted-foreground">
-                                                    Set up login credentials for this user
-                                                </CardDescription>
-                                            </CardHeader>
-                                            <CardContent className="space-y-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="password" className="text-sm font-medium flex items-center">
-                                                            <Key className="h-3 w-3 mr-1" />
-                                                            Password
-                                                            <span className="text-destructive ml-1">*</span>
-                                                        </Label>
-                                                        <Input
-                                                            id="password"
-                                                            type="password"
-                                                            className="h-11 focus:ring-2 focus:ring-primary/20"
-                                                            placeholder="Enter secure password"
-                                                            value={formData.password}
-                                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="password_confirmation" className="text-sm font-medium flex items-center">
-                                                            <Key className="h-3 w-3 mr-1" />
-                                                            Confirm Password
-                                                            <span className="text-destructive ml-1">*</span>
-                                                        </Label>
-                                                        <Input
-                                                            id="password_confirmation"
-                                                            type="password"
-                                                            className="h-11 focus:ring-2 focus:ring-primary/20"
-                                                            placeholder="Confirm password"
-                                                            value={formData.password_confirmation}
-                                                            onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                        {/* Blockchain Information Section */}
-                                        <Card className="border-border border-dashed">
-                                            <CardHeader className="pb-3">
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="h-4 w-4 rounded border-2 border-muted-foreground flex items-center justify-center">
-                                                        <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                                                    </div>
-                                                    <CardTitle className="text-base text-muted-foreground">Blockchain Integration</CardTitle>
-                                                    <Badge variant="secondary" className="text-xs">Optional</Badge>
-                                                </div>
-                                                <CardDescription className="text-xs text-muted-foreground">
-                                                    Associate a blockchain address for enhanced security features
-                                                </CardDescription>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="blockchain_address" className="text-sm font-medium text-muted-foreground">
-                                                        Blockchain Address
-                                                    </Label>
-                                                    <Input
-                                                        id="blockchain_address"
-                                                        className="h-11 focus:ring-2 focus:ring-primary/20 font-mono text-sm"
-                                                        placeholder="0x... (optional blockchain address)"
-                                                        value={formData.blockchain_address}
-                                                        onChange={(e) => setFormData({ ...formData, blockchain_address: e.target.value })}
-                                                    />
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    </form>
-                                </ScrollArea>
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-6 border-t bg-muted/30 px-6 py-4">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="h-11 px-6 order-2 sm:order-1"
-                                        onClick={() => setIsCreateModalOpen(false)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        className="h-11 px-6 shadow-md order-1 sm:order-2"
-                                        onClick={handleCreateUser}
-                                    >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Create User
-                                    </Button>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                        <Button
+                            className="flex items-center space-x-2 shadow-md"
+                            onClick={() => setIsCreateModalOpen(true)}
+                        >
+                            <Plus className="h-4 w-4" />
+                            <span>Add User</span>
+                        </Button>
                     </div>
                 </div>
 
@@ -877,9 +707,9 @@ export default function AdminUsers() {
 
                             {/* Bulk Actions Bar */}
                             {table.getFilteredSelectedRowModel().rows.length > 0 && (
-                                <div className="flex items-center justify-between p-4 mt-4 bg-accent/50 border border-accent rounded-lg">
+                                <div className="flex items-center justify-between p-4 mt-4 bg-accent/50 dark:bg-accent/20 border border-accent dark:border-accent/40 rounded-lg">
                                     <div className="flex items-center space-x-2">
-                                        <span className="text-sm font-medium text-accent-foreground">
+                                        <span className="text-sm font-medium text-accent-foreground dark:text-accent-foreground">
                                             {table.getFilteredSelectedRowModel().rows.length} user(s) selected
                                         </span>
                                     </div>
@@ -888,7 +718,7 @@ export default function AdminUsers() {
                                             variant="outline"
                                             size="sm"
                                             onClick={exportSelectedToCSV}
-                                            className="h-8 border-primary/20 text-primary hover:bg-primary/10"
+                                            className="h-8 border-primary/20 dark:border-primary/30 text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/20"
                                         >
                                             <Download className="h-4 w-4 mr-2" />
                                             Export to CSV
@@ -916,13 +746,14 @@ export default function AdminUsers() {
                         </CardHeader>
 
                         <CardContent className="px-6 pb-6">
-                            {users.length === 0 ? (<div className="text-center py-16">
-                                <Users className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-                                <p className="text-muted-foreground text-lg font-medium">No users found</p>
-                                <p className="text-muted-foreground/70 text-sm mt-2">
-                                    Click "Add User" to create your first user
-                                </p>
-                            </div>
+                            {users.length === 0 ? (
+                                <div className="text-center py-16">
+                                    <Users className="h-16 w-16 text-muted-foreground/30 dark:text-muted-foreground/20 mx-auto mb-4" />
+                                    <p className="text-muted-foreground text-lg font-medium">No users found</p>
+                                    <p className="text-muted-foreground/70 dark:text-muted-foreground/60 text-sm mt-2">
+                                        Click "Add User" to create your first user
+                                    </p>
+                                </div>
                             ) : (
                                 <div className="space-y-6">
                                     {/* Data Table */}
@@ -933,7 +764,7 @@ export default function AdminUsers() {
                                                     <TableRow key={headerGroup.id}>
                                                         {headerGroup.headers.map((header) => {
                                                             return (
-                                                                <TableHead key={header.id} className="font-semibold">
+                                                                <TableHead key={header.id}>
                                                                     {header.isPlaceholder
                                                                         ? null
                                                                         : flexRender(
@@ -950,8 +781,8 @@ export default function AdminUsers() {
                                                 {table.getRowModel().rows?.length ? (
                                                     table.getRowModel().rows.map((row) => (
                                                         <TableRow
-                                                            key={row.id} data-state={row.getIsSelected() && "selected"}
-                                                            className="hover:bg-muted/50"
+                                                            key={row.id}
+                                                            data-state={row.getIsSelected() && "selected"}
                                                         >
                                                             {row.getVisibleCells().map((cell) => (
                                                                 <TableCell key={cell.id}>
@@ -977,11 +808,11 @@ export default function AdminUsers() {
                                         </Table>
                                     </div>
                                     {/* Pagination */}
-                                    <div className="flex flex-col lg:flex-row items-center justify-between space-y-6 lg:space-y-0 py-6 px-2 border-t bg-gradient-to-r from-background via-muted/30 to-background backdrop-blur-sm">
+                                    <div className="flex flex-col lg:flex-row items-center justify-between space-y-6 lg:space-y-0 py-6 px-2 border-t bg-gradient-to-r from-background via-muted/30 dark:via-muted/20 to-background backdrop-blur-sm">
                                         {/* Left side - Selected rows info */}
                                         <div className="flex items-center justify-center lg:justify-start">
-                                            <div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20">
-                                                <span className="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse"></span>
+                                            <div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary border border-primary/20 dark:border-primary/30">
+                                                <span className="w-2 h-2 bg-primary dark:bg-primary rounded-full mr-2 animate-pulse"></span>
                                                 {table.getFilteredSelectedRowModel().rows.length} of{" "}
                                                 {table.getFilteredRowModel().rows.length} row(s) selected
                                             </div>
@@ -989,506 +820,66 @@ export default function AdminUsers() {
 
                                         {/* Right side - Pagination controls and info */}
                                         <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                                            {/* Page Size Selector */}
+                                            {/* Pagination buttons */}
                                             <div className="flex items-center space-x-3">
-                                                <span className="text-sm font-medium text-muted-foreground">Rows per page:</span>
-                                                <Select
-                                                    value={table.getState().pagination.pageSize.toString()}
-                                                    onValueChange={(value) => table.setPageSize(Number(value))}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => table.previousPage()}
+                                                    disabled={!table.getCanPreviousPage()}
+                                                    className="h-9 px-3"
                                                 >
-                                                    <SelectTrigger className="h-9 w-20 border-primary/20 focus:border-primary focus:ring-primary/20 rounded-lg shadow-sm">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent side="top" align="center" className="border-primary/20">
-                                                        {[10, 25, 50, 100].map((pageSize) => (
-                                                            <SelectItem
-                                                                key={pageSize}
-                                                                value={pageSize.toString()}
-                                                                className="cursor-pointer hover:bg-primary/10 focus:bg-primary/10"
-                                                            >
-                                                                {pageSize}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                                    Previous
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => table.nextPage()}
+                                                    disabled={!table.getCanNextPage()}
+                                                    className="h-9 px-3"
+                                                >
+                                                    Next
+                                                </Button>
                                             </div>
-
-                                            {/* Page Info */}
-                                            {table.getPageCount() > 1 && (
-                                                <div className="flex items-center space-x-2 text-sm text-muted-foreground font-medium">
-                                                    <span>Page</span>
-                                                    <span className="px-2 py-1 bg-primary/10 text-primary rounded-md border border-primary/20">
-                                                        {table.getState().pagination.pageIndex + 1}
-                                                    </span>
-                                                    <span>of</span>
-                                                    <span className="px-2 py-1 bg-muted rounded-md border">
-                                                        {table.getPageCount()}
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {/* Pagination Controls */}
-                                            {table.getPageCount() > 1 && (
-                                                <div className="flex items-center">
-                                                    <Pagination className="w-auto">
-                                                        <PaginationContent className="gap-1">
-                                                            <PaginationItem>
-                                                                <PaginationPrevious
-                                                                    href="#"
-                                                                    onClick={(e) => {
-                                                                        e.preventDefault();
-                                                                        table.previousPage();
-                                                                    }}
-                                                                    className={`rounded-lg transition-all duration-200 hover:bg-primary/10 hover:border-primary/30 ${!table.getCanPreviousPage() ? 'pointer-events-none opacity-50' : 'shadow-sm hover:shadow-md'}`}
-                                                                />
-                                                            </PaginationItem>
-
-                                                            {/* Page Numbers */}
-                                                            {(() => {
-                                                                const currentPage = table.getState().pagination.pageIndex + 1;
-                                                                const totalPages = table.getPageCount();
-                                                                const pages = [];
-
-                                                                // Show first page
-                                                                pages.push(1);
-
-                                                                // Show ellipsis if needed
-                                                                if (currentPage > 3) {
-                                                                    pages.push('ellipsis1');
-                                                                }
-
-                                                                // Show pages around current
-                                                                const start = Math.max(2, currentPage - 1);
-                                                                const end = Math.min(totalPages - 1, currentPage + 1);
-
-                                                                for (let i = start; i <= end; i++) {
-                                                                    if (i !== 1 && i !== totalPages) {
-                                                                        pages.push(i);
-                                                                    }
-                                                                }
-
-                                                                // Show ellipsis if needed
-                                                                if (currentPage < totalPages - 2) {
-                                                                    pages.push('ellipsis2');
-                                                                }
-
-                                                                // Show last page
-                                                                if (totalPages > 1) {
-                                                                    pages.push(totalPages);
-                                                                }
-
-                                                                return pages.map((page) => {
-                                                                    if (typeof page === 'string') {
-                                                                        return (
-                                                                            <PaginationItem key={page}>
-                                                                                <PaginationEllipsis className="text-muted-foreground" />
-                                                                            </PaginationItem>
-                                                                        );
-                                                                    }
-
-                                                                    return (
-                                                                        <PaginationItem key={page}>
-                                                                            <PaginationLink
-                                                                                href="#"
-                                                                                onClick={(e) => {
-                                                                                    e.preventDefault();
-                                                                                    table.setPageIndex(page - 1);
-                                                                                }}
-                                                                                isActive={currentPage === page}
-                                                                                className={`rounded-lg transition-all duration-200 ${currentPage === page
-                                                                                    ? 'bg-primary !text-white shadow-md border-primary'
-                                                                                    : 'hover:bg-primary/10 hover:border-primary/30 shadow-sm hover:shadow-md'
-                                                                                    }`}
-                                                                            >
-                                                                                {page}
-                                                                            </PaginationLink>
-                                                                        </PaginationItem>
-                                                                    );
-                                                                });
-                                                            })()}
-
-                                                            <PaginationItem>
-                                                                <PaginationNext
-                                                                    href="#"
-                                                                    onClick={(e) => {
-                                                                        e.preventDefault();
-                                                                        table.nextPage();
-                                                                    }}
-                                                                    className={`rounded-lg transition-all duration-200 hover:bg-primary/10 hover:border-primary/30 ${!table.getCanNextPage() ? 'pointer-events-none opacity-50' : 'shadow-sm hover:shadow-md'}`}
-                                                                />
-                                                            </PaginationItem>
-                                                        </PaginationContent>
-                                                    </Pagination>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </CardContent>
                     </Card>
-                </div>                {/* Edit User Modal */}
-                <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                    <DialogContent className="sm:max-w-[600px] p-0 gap-0">
-                        <DialogHeader className="px-6 py-6 pb-4 bg-gradient-to-r from-primary/5 to-background border-b">
-                            <div className="flex items-center space-x-3">
-                                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                    <Edit className="h-5 w-5 text-primary" />
-                                </div>
-                                <div>
-                                    <DialogTitle className="text-xl font-semibold text-foreground">Edit User</DialogTitle>
-                                    <DialogDescription className="text-sm text-muted-foreground mt-1">
-                                        Update user information and access permissions
-                                    </DialogDescription>
-                                </div>
-                            </div>
-                        </DialogHeader>
-                        <ScrollArea className="h-[calc(90vh-180px)] px-6">
-                            <form onSubmit={handleEditUser} className="space-y-6 pb-6 pt-6">
-                                {/* Personal Information Section */}
-                                <Card className="border-border">
-                                    <CardHeader className="pb-3">
-                                        <div className="flex items-center space-x-2">
-                                            <Users className="h-4 w-4 text-muted-foreground" />
-                                            <CardTitle className="text-base">Personal Information</CardTitle>
-                                        </div>
-                                        <CardDescription className="text-xs text-muted-foreground">
-                                            Update user's basic details and contact information
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="edit_name" className="text-sm font-medium flex items-center">
-                                                    <Users className="h-3 w-3 mr-1" />
-                                                    Full Name
-                                                    <span className="text-destructive ml-1">*</span>
-                                                </Label>
-                                                <Input
-                                                    id="edit_name"
-                                                    className="h-11 focus:ring-2 focus:ring-primary/20"
-                                                    placeholder="Enter full name"
-                                                    value={formData.name}
-                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="edit_email" className="text-sm font-medium flex items-center">
-                                                    <Mail className="h-3 w-3 mr-1" />
-                                                    Email Address
-                                                    <span className="text-destructive ml-1">*</span>
-                                                </Label>
-                                                <Input
-                                                    id="edit_email"
-                                                    type="email"
-                                                    className="h-11 focus:ring-2 focus:ring-primary/20"
-                                                    placeholder="Enter email address"
-                                                    value={formData.email}
-                                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="edit_role" className="text-sm font-medium flex items-center">
-                                                <Shield className="h-3 w-3 mr-1" />
-                                                Role & Permissions
-                                                <span className="text-destructive ml-1">*</span>
-                                            </Label>
-                                            <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                                                <SelectTrigger className="h-11 focus:ring-2 focus:ring-primary/20">
-                                                    <SelectValue placeholder="Select a role" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {roles.map((role) => (
-                                                        <SelectItem key={role} value={role}>
-                                                            {getRoleDisplayName(role)}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                </div>
 
-                                {/* Security Information Section */}
-                                <Card className="border-border border-dashed">
-                                    <CardHeader className="pb-3">
-                                        <div className="flex items-center space-x-2">
-                                            <Key className="h-4 w-4 text-muted-foreground" />
-                                            <CardTitle className="text-base text-muted-foreground">Security & Access</CardTitle>
-                                            <Badge variant="secondary" className="text-xs">Optional</Badge>
-                                        </div>
-                                        <CardDescription className="text-xs text-muted-foreground">
-                                            Update login credentials (leave blank to keep current password)
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="edit_password" className="text-sm font-medium flex items-center text-muted-foreground">
-                                                    <Key className="h-3 w-3 mr-1" />
-                                                    New Password
-                                                </Label>
-                                                <Input
-                                                    id="edit_password"
-                                                    type="password"
-                                                    className="h-11 focus:ring-2 focus:ring-primary/20"
-                                                    placeholder="Leave blank to keep current"
-                                                    value={formData.password}
-                                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="edit_password_confirmation" className="text-sm font-medium flex items-center text-muted-foreground">
-                                                    <Key className="h-3 w-3 mr-1" />
-                                                    Confirm New Password
-                                                </Label>
-                                                <Input
-                                                    id="edit_password_confirmation"
-                                                    type="password"
-                                                    className="h-11 focus:ring-2 focus:ring-primary/20"
-                                                    placeholder="Confirm new password"
-                                                    value={formData.password_confirmation}
-                                                    onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                {/* Dialog Components */}
+                <CreateUserDialog
+                    open={isCreateModalOpen}
+                    onOpenChange={setIsCreateModalOpen}
+                    formData={formData}
+                    setFormData={setFormData}
+                    roles={roles}
+                    onSubmit={handleCreateUser}
+                    getRoleDisplayName={getRoleDisplayName}
+                />                <EditUserDialog
+                    open={isEditModalOpen}
+                    onOpenChange={setIsEditModalOpen}
+                    formData={formData}
+                    setFormData={setFormData}
+                    roles={roles}
+                    onSubmit={handleEditUser}
+                    getRoleDisplayName={getRoleDisplayName}
+                />                <DeleteUserDialog
+                    open={isDeleteDialogOpen}
+                    onOpenChange={setIsDeleteDialogOpen}
+                    user={userToDelete}
+                    onConfirm={confirmDeleteUser}
+                />
 
-                                {/* Blockchain Information Section */}
-                                <Card className="border-border border-dashed">
-                                    <CardHeader className="pb-3">
-                                        <div className="flex items-center space-x-2">
-                                            <div className="h-4 w-4 rounded border-2 border-muted-foreground flex items-center justify-center">
-                                                <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                                            </div>
-                                            <CardTitle className="text-base text-muted-foreground">Blockchain Integration</CardTitle>
-                                            <Badge variant="secondary" className="text-xs">Optional</Badge>
-                                        </div>
-                                        <CardDescription className="text-xs text-muted-foreground">
-                                            Update blockchain address for enhanced security features
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="edit_blockchain_address" className="text-sm font-medium text-muted-foreground">
-                                                Blockchain Address
-                                            </Label>
-                                            <Input
-                                                id="edit_blockchain_address"
-                                                className="h-11 focus:ring-2 focus:ring-primary/20 font-mono text-sm"
-                                                placeholder="0x... (optional blockchain address)"
-                                                value={formData.blockchain_address}
-                                                onChange={(e) => setFormData({ ...formData, blockchain_address: e.target.value })}
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </form>
-                        </ScrollArea>
-
-                        {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-6 border-t bg-muted/30 px-6 py-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-11 px-6 order-2 sm:order-1"
-                                onClick={() => setIsEditModalOpen(false)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                className="h-11 px-6 shadow-md order-1 sm:order-2"
-                                onClick={handleEditUser}
-                            >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Update User
-                            </Button>
-                        </div>
-                    </DialogContent>
-                </Dialog>                {/* Delete User Alert Dialog */}
-                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    <AlertDialogContent className="sm:max-w-[500px] p-0 gap-0">
-                        <AlertDialogHeader className="px-6 py-6 pb-4 bg-gradient-to-r from-destructive/5 to-background border-b">
-                            <div className="flex items-center space-x-3">
-                                <div className="h-12 w-12 rounded-lg bg-destructive/10 flex items-center justify-center">
-                                    <Trash2 className="h-6 w-6 text-destructive" />
-                                </div>
-                                <div>
-                                    <AlertDialogTitle className="text-xl font-semibold text-foreground">
-                                        Delete User Account
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription className="text-sm text-muted-foreground mt-1">
-                                        This action cannot be undone and will permanently remove the user
-                                    </AlertDialogDescription>
-                                </div>
-                            </div>
-                        </AlertDialogHeader>
-
-                        <div className="px-6 py-6">
-                            <div className="space-y-4">
-                                <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
-                                    <div className="flex items-start space-x-3">
-                                        <div className="h-5 w-5 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <div className="h-2 w-2 bg-destructive rounded-full"></div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <p className="text-sm font-medium text-destructive">
-                                                Warning: Permanent Data Loss
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                You are about to permanently delete the user account for{' '}
-                                                <span className="font-semibold text-foreground">{userToDelete?.name}</span>
-                                                {userToDelete?.email && (
-                                                    <>
-                                                        {' '}(<span className="font-mono text-xs">{userToDelete.email}</span>)
-                                                    </>
-                                                )}. This will:
-                                            </p>
-                                            <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                                                <li className="flex items-center space-x-2">
-                                                    <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                                                    <span>Remove all user data from the system</span>
-                                                </li>
-                                                <li className="flex items-center space-x-2">
-                                                    <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                                                    <span>Revoke all access permissions and roles</span>
-                                                </li>
-                                                <li className="flex items-center space-x-2">
-                                                    <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                                                    <span>Invalidate any active sessions</span>
-                                                </li>
-                                                {userToDelete?.blockchain_address && (
-                                                    <li className="flex items-center space-x-2">
-                                                        <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                                                        <span>Disconnect blockchain address association</span>
-                                                    </li>
-                                                )}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-3 bg-muted/30 border border-border rounded-lg">
-                                    <p className="text-xs text-muted-foreground text-center">
-                                        <strong>Note:</strong> This action is irreversible. Please ensure you have any necessary backups before proceeding.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3 px-6 py-4 border-t bg-muted/30">
-                            <AlertDialogCancel className="h-11 px-6 order-2 sm:order-1">
-                                Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={confirmDeleteUser}
-                                className="h-11 px-6 bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md order-1 sm:order-2"
-                            >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete User Permanently
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-                {/* Bulk Delete Alert Dialog */}
-                <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-                    <AlertDialogContent className="sm:max-w-[500px] p-0 gap-0">
-                        <AlertDialogHeader className="px-6 py-6 pb-4 bg-gradient-to-r from-destructive/5 to-background border-b">
-                            <div className="flex items-center space-x-3">
-                                <div className="h-12 w-12 rounded-lg bg-destructive/10 flex items-center justify-center">
-                                    <Trash2 className="h-6 w-6 text-destructive" />
-                                </div>
-                                <div>
-                                    <AlertDialogTitle className="text-xl font-semibold text-foreground">
-                                        Delete Multiple Users
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription className="text-sm text-muted-foreground mt-1">
-                                        This action cannot be undone and will permanently remove all selected users
-                                    </AlertDialogDescription>
-                                </div>
-                            </div>
-                        </AlertDialogHeader>
-
-                        <div className="px-6 py-6">
-                            <div className="space-y-4">
-                                <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
-                                    <div className="flex items-start space-x-3">
-                                        <div className="h-5 w-5 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <div className="h-2 w-2 bg-destructive rounded-full"></div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <p className="text-sm font-medium text-destructive">
-                                                Warning: Bulk Data Deletion
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                You are about to permanently delete{' '}
-                                                <span className="font-semibold text-foreground">
-                                                    {table.getFilteredSelectedRowModel().rows.length} user account(s)
-                                                </span>
-                                                . This will:
-                                            </p>
-                                            <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                                                <li className="flex items-center space-x-2">
-                                                    <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                                                    <span>Remove all selected user data from the system</span>
-                                                </li>
-                                                <li className="flex items-center space-x-2">
-                                                    <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                                                    <span>Revoke all access permissions and roles</span>
-                                                </li>
-                                                <li className="flex items-center space-x-2">
-                                                    <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                                                    <span>Invalidate any active sessions</span>
-                                                </li>
-                                                <li className="flex items-center space-x-2">
-                                                    <div className="h-1 w-1 bg-muted-foreground rounded-full"></div>
-                                                    <span>Disconnect any blockchain address associations</span>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* List of users to be deleted */}
-                                <div className="p-4 bg-muted/30 border border-border rounded-lg max-h-32 overflow-y-auto">
-                                    <p className="text-xs font-medium text-muted-foreground mb-2">Users to be deleted:</p>
-                                    <div className="space-y-1">
-                                        {table.getFilteredSelectedRowModel().rows.map((row) => (
-                                            <div key={row.original.id} className="text-sm text-foreground font-mono">
-                                                {row.original.name} ({row.original.email})
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="p-3 bg-muted/30 border border-border rounded-lg">
-                                    <p className="text-xs text-muted-foreground text-center">
-                                        <strong>Note:</strong> This action is irreversible. Please ensure you have any necessary backups before proceeding.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3 px-6 py-4 border-t bg-muted/30">
-                            <AlertDialogCancel className="h-11 px-6 order-2 sm:order-1">
-                                Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={confirmBulkDelete}
-                                className="h-11 px-6 bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md order-1 sm:order-2"
-                            >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete {table.getFilteredSelectedRowModel().rows.length} User(s) Permanently
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                <BulkDeleteDialog
+                    open={isBulkDeleteDialogOpen}
+                    onOpenChange={setIsBulkDeleteDialogOpen}
+                    selectedUsers={table.getFilteredSelectedRowModel().rows.map(row => row.original)}
+                    onConfirm={confirmBulkDelete}
+                />
             </div>
         </AppLayout>
     );
-};
+}
