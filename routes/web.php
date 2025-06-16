@@ -222,11 +222,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::get('/privacy.pdf', function () {
     return response()->file(public_path('docs/privacy.pdf'));
-})->name('privacy.pdf');
+})->name('privacy.policy');
 
 Route::get('/terms.pdf', function () {
     return response()->file(public_path('docs/terms.pdf'));
-})->name('terms.pdf');
+})->name('terms.service');
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

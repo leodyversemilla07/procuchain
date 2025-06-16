@@ -55,9 +55,7 @@ export default function Team() {
                 <link rel="preconnect" href="https://fonts.bunny.net" />
                 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
                 <meta name="description" content="Meet the talented professionals behind ProcuChain - revolutionizing government procurement through blockchain technology and innovative solutions." />
-            </Head>
-
-            <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+            </Head>            <div className="min-h-screen flex flex-col bg-background text-foreground">
                 <Header />
 
                 <main className="flex-grow pt-16 sm:pt-20 md:pt-24 lg:pt-32 pb-8 sm:pb-12 md:pb-16 lg:pb-20">
@@ -67,18 +65,17 @@ export default function Team() {
                             <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium mb-3 sm:mb-4 md:mb-6 text-center">
                                 Our Team
                             </h1>
-                            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 text-center max-w-xl mx-auto px-2 sm:px-4 md:px-0">
+                            <p className="text-sm sm:text-base text-muted-foreground text-center max-w-xl mx-auto px-2 sm:px-4 md:px-0">
                                 Meet the dedicated individuals behind ProcuChain, working together to revolutionize government procurement.
                             </p>
                         </div>
 
-                        {/* Team Members Section */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
+                        {/* Team Members Section */}                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                             {teamMembers.map((member, index) => (
-                                <Card key={index} className="bg-gray-50 dark:bg-gray-900/50 border-0">
+                                <Card key={index} className="bg-muted border-0">
                                     <CardContent className="p-4 sm:p-6 md:p-8">
                                         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 md:gap-8">
-                                            <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden bg-white dark:bg-gray-800 shadow-sm flex-shrink-0">
+                                            <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden bg-card shadow-sm flex-shrink-0">
                                                 <img
                                                     src={member.image}
                                                     alt={member.name}
@@ -89,31 +86,29 @@ export default function Team() {
                                                 />
                                             </div>
                                             <div className="flex-1 text-center sm:text-left">
-                                                <h3 className="text-base sm:text-lg md:text-xl font-medium mb-1 sm:mb-2">{member.name}</h3>
-                                                <Badge className="text-xs bg-teal-100 dark:bg-teal-900/50 text-teal-800 dark:text-teal-200 border-none mb-2 sm:mb-3">
+                                                <h3 className="text-base sm:text-lg md:text-xl font-medium mb-1 sm:mb-2">{member.name}</h3>                                                <Badge className="text-xs bg-primary/10 text-primary border-none mb-2 sm:mb-3">
                                                     {member.role}
                                                 </Badge>
-                                                <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">{member.bio}</p>
+                                                <p className="text-xs sm:text-sm md:text-base text-muted-foreground mb-3 sm:mb-4">{member.bio}</p>
                                                 
                                                 <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                                                     {member.responsibilities.map((resp, idx) => (
                                                         <Badge
                                                             key={idx}
                                                             variant="secondary"
-                                                            className="text-xs bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                                                            className="text-xs bg-card text-muted-foreground"
                                                         >
                                                             {resp}
                                                         </Badge>
                                                     ))}
                                                 </div>
 
-                                                <div className="flex justify-center sm:justify-start gap-3 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-800">
-                                                    {member.github && (
+                                                <div className="flex justify-center sm:justify-start gap-3 pt-3 sm:pt-4 border-t border-border">                                                    {member.github && (
                                                         <a
                                                             href={member.github}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                                                            className="text-muted-foreground hover:text-primary transition-colors"
                                                             aria-label={`${member.name}'s Github Profile`}
                                                         >
                                                             <Github className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -122,7 +117,7 @@ export default function Team() {
                                                     {member.email && (
                                                         <a
                                                             href={`mailto:${member.email}`}
-                                                            className="text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                                                            className="text-muted-foreground hover:text-primary transition-colors"
                                                             aria-label={`Email ${member.name}`}
                                                         >
                                                             <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -133,7 +128,7 @@ export default function Team() {
                                                             href={member.facebook}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                                                            className="text-muted-foreground hover:text-primary transition-colors"
                                                             aria-label={`${member.name}'s Facebook Profile`}
                                                         >
                                                             <Facebook className="w-4 h-4 sm:w-5 sm:h-5" />

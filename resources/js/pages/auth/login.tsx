@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
-import { getDeviceInfo } from '@/utils/device-detection';
+import { getDeviceInfo } from '@/lib/device-detection';
 
 type LoginForm = {
     email: string;
@@ -34,11 +34,11 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        
+
         // Include enhanced device detection information
         const deviceInfo = getDeviceInfo();
         setData('device_info', JSON.stringify(deviceInfo));
-        
+
         post(route('login'), {
             onFinish: () => reset('password'),
         });
@@ -86,15 +86,15 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                 onChange={(e) => setData('password', e.target.value)}
                                 placeholder="Password"
                             />
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={() => setShowPassword(!showPassword)}
                                 className="absolute right-3 top-1/2 -translate-y-1/2"
                                 tabIndex={3}
                                 aria-label={showPassword ? "Hide password" : "Show password"}
                             >
-                                {showPassword ? 
-                                    <EyeOff className="h-4 w-4 text-muted-foreground" /> : 
+                                {showPassword ?
+                                    <EyeOff className="h-4 w-4 text-muted-foreground" /> :
                                     <Eye className="h-4 w-4 text-muted-foreground" />
                                 }
                             </button>
