@@ -199,13 +199,45 @@ class User extends Authenticatable implements CanResetPasswordContract
      */
     public function getLockTimeRemaining(): ?string
     {
-        if (! $this->isAccountLocked() || ! $this->lock_expires_at) {
+        $remainingMinutes = $this->getRemainingLockTimeAttribute();
+        
+        if ($remainingMinutes === 0) {
             return null;
         }
 
-        $remaining = $this->lock_expires_at->diffForHumans();
+        // Convert minutes to human-readable format
+        if ($remainingMinutes < 60) {
+            return $remainingMinutes . ' minute' . ($remainingMinutes !== 1 ? 's' : '');
+        }
+        
+        $hours = floor($remainingMinutes / 60);
+        $minutes = $remainingMinutes % 60;
+        
+        $result = $hours . ' hour' . ($hours !== 1 ? 's' : '');
+        if ($minutes > 0) {
+            $result .= ' ' . $minutes . ' minute' . ($minutes !== 1 ? 's' : '');
+        }
+        
+        return $result;
+    }
 
-        return str_replace(' before', '', $remaining);
+    /**
+     * Get remaining lock time in minutes (accessor attribute)
+     */
+    public function getRemainingLockTimeAttribute(): int
+    {
+        // Return 0 if account is not locked or no expiration time is set
+        if (!$this->account_locked || !$this->lock_expires_at) {
+            return 0;
+        }
+
+        // Return 0 if lock has already expired
+        if ($this->lock_expires_at->isPast()) {
+            return 0;
+        }
+
+        // Calculate remaining minutes (from now to lock expiration)
+        return (int) ceil(now()->diffInMinutes($this->lock_expires_at, false));
     }
 
     /**

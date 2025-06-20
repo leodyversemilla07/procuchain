@@ -46,6 +46,7 @@ import {
     Mail,
     MoreHorizontal,
     Plus,
+    QrCode,
     Shield,
     Trash2,
     Users,
@@ -65,6 +66,10 @@ interface User {
     blockchain_address?: string;
     email_verified_at?: string;
     remember_token?: string;
+    mfa_enabled?: boolean;
+    mfa_enabled_at?: string;
+    backup_codes?: string[];
+    backup_codes_generated_at?: string;
     created_at: string;
     updated_at?: string;
 }
@@ -281,15 +286,17 @@ export default function AdminUsers() {
                         month: 'long',
                         day: 'numeric'
                     }) : 'Invalid date';
-            };
-
-            return {
+            };            return {
                 Name: user.name,
                 Email: user.email,
                 Role: getRoleDisplayName(user.role),
                 'Blockchain Address': user.blockchain_address || 'Not set',
                 'Email Verified': user.email_verified_at ? 'Yes' : 'No',
                 'Email Verified Date': user.email_verified_at ? formatDateForCSV(user.email_verified_at) : 'Not verified',
+                'MFA Status': user.mfa_enabled ? 'Enabled' : 'Disabled',
+                'MFA Enabled Date': user.mfa_enabled_at ? formatDateForCSV(user.mfa_enabled_at) : 'Not enabled',
+                'Backup Codes Count': user.backup_codes ? user.backup_codes.length.toString() : '0',
+                'Backup Codes Generated': user.backup_codes_generated_at ? formatDateForCSV(user.backup_codes_generated_at) : 'Not generated',
                 'Remember Token': user.remember_token ? 'Set' : 'None',
                 'Created Date': formatDateForCSV(user.created_at),
                 'Updated Date': formatDateForCSV(user.updated_at)
@@ -441,8 +448,7 @@ export default function AdminUsers() {
                 );
             },
             cell: ({ row }) => {
-                const verifiedAt = row.getValue("email_verified_at") as string;
-                return (
+                const verifiedAt = row.getValue("email_verified_at") as string;                return (
                     <div className="text-muted-foreground text-sm">
                         {verifiedAt ? (
                             <div className="flex items-center">
@@ -453,6 +459,49 @@ export default function AdminUsers() {
                         ) : (
                             <Badge className="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 px-2 py-1 text-xs border border-yellow-200 dark:border-yellow-800/30">
                                 Pending
+                            </Badge>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: "mfa_enabled",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                        className="h-8 p-0 hover:bg-transparent"
+                    >
+                        <QrCode className="mr-2 h-4 w-4" />
+                        MFA Status
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                );
+            },
+            cell: ({ row }) => {
+                const user = row.original;
+                const mfaEnabled = user.mfa_enabled;
+                const backupCodesCount = user.backup_codes ? user.backup_codes.length : 0;
+                
+                return (
+                    <div className="flex items-center space-x-2">
+                        {mfaEnabled ? (
+                            <div className="flex items-center space-x-2">
+                                <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-2 py-1 text-xs border border-green-200 dark:border-green-800/30">
+                                    <QrCode className="mr-1 h-3 w-3" />
+                                    Enabled
+                                </Badge>
+                                {backupCodesCount > 0 && (
+                                    <span className="text-xs text-muted-foreground" title={`${backupCodesCount} backup codes remaining`}>
+                                        ({backupCodesCount} codes)
+                                    </span>
+                                )}
+                            </div>
+                        ) : (
+                            <Badge className="bg-gray-100 dark:bg-gray-800/50 text-gray-800 dark:text-gray-300 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700/50">
+                                Disabled
                             </Badge>
                         )}
                     </div>

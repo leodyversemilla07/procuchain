@@ -30,7 +30,9 @@ const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonS
             size="sm"
             className={cn(
                 buttonSize,
-                "p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:ring-2 focus:ring-blue-500/40",
+                "p-0 rounded-full transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500/40 active:scale-95",
+                "hover:scale-105 hover:shadow-md",
+                "touch-manipulation select-none",
                 className
             )}
             onClick={onClick}
@@ -49,16 +51,17 @@ const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonS
         <TooltipProvider delayDuration={300}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-1.5 min-w-0">
                         {content}
-                        <span className="lg:hidden text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {/* Show text label on mobile for better accessibility */}
+                        <span className="sm:hidden text-xs font-medium text-foreground/70 leading-tight text-center px-1 truncate">
                             {tooltipText}
                         </span>
                     </div>
                 </TooltipTrigger>
                 <TooltipContent 
                     side="bottom" 
-                    className="bg-gray-900/95 text-white dark:bg-gray-800 text-xs font-medium py-1 px-2 hidden lg:block"
+                    className="bg-gray-900/95 text-white dark:bg-gray-800 text-xs font-medium py-1 px-2 hidden sm:block"
                 >
                     {tooltipText}
                 </TooltipContent>
@@ -68,8 +71,8 @@ const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonS
 };
 
 const useButtonSizes = (variant: 'table' | 'kanban') => ({
-    iconSize: variant === 'table' ? 'h-4 w-4' : 'h-3.5 w-3.5 xs:h-4 xs:w-4',
-    buttonSize: variant === 'table' ? 'h-8 w-8' : 'h-7 w-7 xs:h-8 xs:w-8',
+    iconSize: variant === 'table' ? 'h-4 w-4' : 'h-4 w-4',
+    buttonSize: variant === 'table' ? 'h-8 w-8' : 'h-9 w-9',
 });
 
 const getButtonConfigs = (
@@ -255,14 +258,14 @@ export const ActionButtons = ({
 
     return (
         <div className={cn(
-            "flex flex-wrap items-center justify-end gap-1.5 sm:gap-2", 
-            variant === "table" ? "mr-2" : ""
+            "flex items-center justify-center gap-2 sm:gap-1.5 flex-wrap sm:flex-nowrap max-w-full", 
+            variant === "table" ? "sm:justify-end" : "justify-center"
         )}>
             <ActionButtonItem
                 icon={<EyeIcon className={cn(iconSize, "text-blue-600 dark:text-blue-400")} />}
                 tooltipText="View Details"
                 href={`procurements-list/${id}`}
-                className="bg-blue-50 dark:bg-blue-900/20"
+                className="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                 buttonSize={buttonSize}
             />
             {isBacSecretariat && buttonConfigs.map((config, index) => (

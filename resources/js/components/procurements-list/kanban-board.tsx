@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { ProcurementListItem, Stage } from '@/types/blockchain';
 import { KanbanCard } from '@/components/procurements-list/kanban-card';
 import { getStageBadgeStyle } from '@/lib/procurements-list-utils';
@@ -59,76 +60,82 @@ export const KanbanBoard = ({
     };
 
     return (
-        <div className="pb-4 w-full box-border h-full overflow-y-auto">
-            {/* Mobile view for small screens (vertical stack) */}
-            <div className="md:hidden flex flex-col space-y-3 px-2 sm:px-3">
-                {stagesToDisplay.map(stage => (
-                    <div
-                        key={stage}
-                        className={cn(
-                            "w-full flex flex-col",
-                            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm",
-                            "rounded-lg border border-gray-200/90 dark:border-gray-700/60",
-                            "shadow-sm hover:shadow-md transition-all duration-200"
-                        )}
-                    >
-                        <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm 
-                                      border-b border-gray-200/90 dark:border-gray-700/80 p-2.5 sm:p-3 rounded-t-lg">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 flex-1">
-                                    <div className="flex items-center flex-1">
-                                        <Layers className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-2 flex-shrink-0" />
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div className="max-w-[100px] sm:max-w-[120px]">
-                                                        <Badge
-                                                            variant="outline"
-                                                            className={cn(
-                                                                getStageBadgeStyle(stage),
-                                                                "whitespace-nowrap text-xs font-medium px-2 py-1 w-full"
-                                                            )}
-                                                        >
-                                                            <span className="truncate block">{stage}</span>
-                                                        </Badge>
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="top">{stage}</TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </div>
-                                    <div className="bg-gray-100 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 
-                                                  rounded-full px-2 py-0.5 text-xs font-medium min-w-[2rem] text-center flex-shrink-0">
-                                        {procurementsByStage[stage].length}
+        <div className="pb-4 w-full box-border h-full overflow-hidden">
+            {/* Mobile and Tablet view - Responsive grid */}
+            <div className="lg:hidden">
+                <ScrollArea className="h-[calc(100vh-12rem)] w-full">
+                    <div className="grid gap-3 p-3 auto-rows-min grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                        {stagesToDisplay.map(stage => (
+                            <div
+                                key={stage}
+                                className={cn(
+                                    "flex flex-col",
+                                    "bg-card/80 backdrop-blur-sm",
+                                    "rounded-lg border shadow-sm hover:shadow-md transition-all duration-200",
+                                    "min-h-0" // Important for proper flexbox behavior
+                                )}
+                            >
+                                {/* Column Header */}
+                                <div className="bg-card/95 backdrop-blur-sm border-b p-3 rounded-t-lg flex-shrink-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <Layers className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="flex-1 min-w-0">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    getStageBadgeStyle(stage),
+                                                                    "text-xs font-medium px-2 py-1 w-full max-w-full"
+                                                                )}
+                                                            >
+                                                                <span className="truncate block">{stage}</span>
+                                                            </Badge>
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="max-w-xs">
+                                                        <div className="text-center">{stage}</div>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                        <div className="bg-muted text-muted-foreground rounded-full px-2 py-1 
+                                                      text-xs font-medium min-w-[2rem] text-center flex-shrink-0">
+                                            {procurementsByStage[stage].length}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Column Body */}
-                        <div className="p-2.5 sm:p-3 flex-grow">
-                            <div className="space-y-2">
-                                {procurementsByStage[stage].map(procurement => (
-                                    <KanbanCard
-                                        key={procurement.id}
-                                        procurement={procurement}
-                                        onOpenPreProcurementModal={onOpenPreProcurementModal}
-                                        onOpenPreBidModal={onOpenPreBidModal}
-                                        onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
-                                    />
-                                ))}
+                                {/* Column Body - Scrollable */}
+                                <div className="p-3 flex-1 min-h-0 max-h-[300px] sm:max-h-[400px]">
+                                    <ScrollArea className="h-full w-full">
+                                        <div className="space-y-2 pr-1">
+                                            {procurementsByStage[stage].map(procurement => (
+                                                <KanbanCard
+                                                    key={procurement.id}
+                                                    procurement={procurement}
+                                                    onOpenPreProcurementModal={onOpenPreProcurementModal}
+                                                    onOpenPreBidModal={onOpenPreBidModal}
+                                                    onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
+                                                />
+                                            ))}
+                                        </div>
+                                    </ScrollArea>
+                                </div>
                             </div>
-                        </div>
+                        ))}
                     </div>
-                ))}
+                </ScrollArea>
             </div>
 
-            {/* Desktop view with wrapping columns */}
-            <div className="hidden md:block h-full">
+            {/* Desktop view - Full height columns */}
+            <div className="hidden lg:block h-full overflow-hidden">
                 <div className={cn(
-                    "grid gap-3 lg:gap-4 auto-rows-fr",
-                    "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5",
-                    "px-3 lg:px-4"
+                    "grid gap-4 h-full auto-rows-fr",
+                    "grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5",
+                    "px-4 overflow-hidden"
                 )}>
                     {stagesToDisplay.map(stage => (
                         <div
@@ -136,57 +143,59 @@ export const KanbanBoard = ({
                             style={{ maxHeight: getMaxColumnHeight() }}
                             className={cn(
                                 "flex flex-col h-full",
-                                "bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm",
-                                "rounded-lg border border-gray-200/90 dark:border-gray-700/60",
-                                "shadow-sm hover:shadow-md transition-all duration-200"
+                                "bg-card/80 backdrop-blur-sm",
+                                "rounded-lg border shadow-sm hover:shadow-md transition-all duration-200",
+                                "min-h-0 overflow-hidden"
                             )}
                         >
-                            <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm 
-                                          border-b border-gray-200/90 dark:border-gray-700/80 p-2.5 lg:p-3 rounded-t-lg">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 flex-1">
-                                        <div className="flex items-center flex-1">
-                                            <Layers className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-2 flex-shrink-0" />
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <div className="max-w-[120px] lg:max-w-[140px]">
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={cn(
-                                                                    getStageBadgeStyle(stage),
-                                                                    "whitespace-nowrap text-xs font-medium px-2 py-1 w-full"
-                                                                )}
-                                                            >
-                                                                <span className="truncate block">{stage}</span>
-                                                            </Badge>
-                                                        </div>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="top">{stage}</TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        </div>
-                                        <div className="bg-gray-100 text-gray-700 dark:bg-gray-700/80 dark:text-gray-300 
-                                                      rounded-full px-2 py-0.5 text-xs font-medium min-w-[2rem] text-center flex-shrink-0">
-                                            {procurementsByStage[stage].length}
-                                        </div>
+                            {/* Column Header */}
+                            <div className="bg-card/95 backdrop-blur-sm border-b p-3 rounded-t-lg flex-shrink-0">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <Layers className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="flex-1 min-w-0">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={cn(
+                                                                getStageBadgeStyle(stage),
+                                                                "text-xs font-medium px-2 py-1 w-full"
+                                                            )}
+                                                        >
+                                                            <span className="truncate block">{stage}</span>
+                                                        </Badge>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top" className="max-w-xs">
+                                                    <div className="text-center">{stage}</div>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                    <div className="bg-muted text-muted-foreground rounded-full px-2 py-1 
+                                                  text-xs font-medium min-w-[2rem] text-center flex-shrink-0">
+                                        {procurementsByStage[stage].length}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Column Body */}
-                            <div className="p-2.5 lg:p-3 flex-grow overflow-y-auto">
-                                <div className="space-y-2">
-                                    {procurementsByStage[stage].map(procurement => (
-                                        <KanbanCard
-                                            key={procurement.id}
-                                            procurement={procurement}
-                                            onOpenPreProcurementModal={onOpenPreProcurementModal}
-                                            onOpenPreBidModal={onOpenPreBidModal}
-                                            onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
-                                        />
-                                    ))}
-                                </div>
+                            {/* Column Body - Scrollable */}
+                            <div className="p-3 flex-1 min-h-0">
+                                <ScrollArea className="h-full w-full">
+                                    <div className="space-y-2 pr-2">
+                                        {procurementsByStage[stage].map(procurement => (
+                                            <KanbanCard
+                                                key={procurement.id}
+                                                procurement={procurement}
+                                                onOpenPreProcurementModal={onOpenPreProcurementModal}
+                                                onOpenPreBidModal={onOpenPreBidModal}
+                                                onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
+                                            />
+                                        ))}
+                                    </div>
+                                </ScrollArea>
                             </div>
                         </div>
                     ))}

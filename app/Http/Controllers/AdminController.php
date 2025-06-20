@@ -321,7 +321,7 @@ class AdminController extends BaseController
      */
     public function users()
     {
-        $users = User::select('id', 'name', 'email', 'role', 'blockchain_address', 'email_verified_at', 'remember_token', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason')
+        $users = User::select('id', 'name', 'email', 'role', 'blockchain_address', 'email_verified_at', 'remember_token', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'mfa_enabled', 'mfa_enabled_at', 'backup_codes', 'backup_codes_generated_at')
             ->where('id', '!=', Auth::id())
             ->orderBy('created_at', 'desc')
             ->get()
@@ -334,6 +334,10 @@ class AdminController extends BaseController
                     'blockchain_address' => $user->blockchain_address,
                     'email_verified_at' => $user->email_verified_at?->format('Y-m-d H:i:s'),
                     'remember_token' => $user->remember_token,
+                    'mfa_enabled' => $user->mfa_enabled,
+                    'mfa_enabled_at' => $user->mfa_enabled_at?->format('Y-m-d H:i:s'),
+                    'backup_codes' => $user->backup_codes,
+                    'backup_codes_generated_at' => $user->backup_codes_generated_at?->format('Y-m-d H:i:s'),
                     'created_at' => $user->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $user->updated_at?->format('Y-m-d H:i:s'),
                     'account_locked' => $user->account_locked,
@@ -645,6 +649,8 @@ class AdminController extends BaseController
                     'name' => $userData['name'],
                     'email' => $userData['email'],
                     'role' => $userData['role'],
+                    'mfa_enabled' => $userData['mfa_enabled'],
+                    'mfa_enabled_at' => $userData['mfa_enabled_at']?->format('Y-m-d H:i:s'),
                     'account_locked' => true, // All users from getLockedAccounts are locked
                     'locked_at' => $userData['locked_at']?->format('Y-m-d H:i:s'),
                     'lock_expires_at' => $userData['lock_expires_at']?->format('Y-m-d H:i:s'),
