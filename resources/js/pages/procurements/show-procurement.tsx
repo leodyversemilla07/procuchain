@@ -1,8 +1,8 @@
 import { useState, useMemo, JSX, FC, useEffect } from 'react';
 import {
-    FileText, Hash, Clock, RefreshCw, Lock, Download, FileCheck,
+    FileText, Hash, Clock, RefreshCw, Lock, FileCheck,
     CheckCircle, XCircle, Upload, AlertCircle, Calendar, Building, UserRound,
-    HardDrive, PhilippinePeso, Users, ArrowDown, ArrowUp, TrendingUp
+    HardDrive, PhilippinePeso, Users, ArrowDown, ArrowUp, TrendingUp, BarChart3
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Status as StatusInfor } from "@/types/blockchain";
 import { SharedData } from '@/types';
+import { DocumentViews } from '@/components/document-views';
+import { PdfViewerLink } from '@/components/document-viewer-link';
 
 const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
     switch (role) {
@@ -303,22 +305,96 @@ const formatFileSize = (bytes?: number): string => {
 };
 
 
-const getDocumentstage = (doc: Document): string => {
-    if (doc.stage) {
-        const stageIdLower = doc.stage.toLowerCase();
-        if (stageIdLower.includes('pr') && stageIdLower.includes('initiation')) {
-            return 'Procurement Initiation';
-        }
-        if (stageIdLower === 'completed' || stageIdLower.includes('complet')) {
-            return 'Completed';
-        }
-        const knownstage = STAGE_ORDER.find(p => p.toLowerCase() === stageIdLower);
-        if (knownstage) return knownstage;
-
-        return doc.stage;
+// Utility function to format stage names for display
+const formatStageName = (stage: string): string => {
+    if (!stage) return 'Procurement Initiation';
+    
+    const stageIdLower = stage.toLowerCase();
+    
+    // Handle specific stage mappings from backend storage path segments
+    const stageMapping: Record<string, string> = {
+        'procurementinitiation': 'Procurement Initiation',
+        'preprocurementconference': 'Pre-Procurement Conference',
+        'biddingdocuments': 'Bidding Documents',
+        'prebidconference': 'Pre-Bid Conference',
+        'supplementalbidbulletin': 'Supplemental Bid Bulletin',
+        'bidopening': 'Bid Opening',
+        'bidevaluation': 'Bid Evaluation',
+        'postqualification': 'Post-Qualification',
+        'bacresolution': 'BAC Resolution',
+        'noticeofaward': 'Notice of Award',
+        'performancebondcontractandpo': 'Performance Bond, Contract and PO',
+        'noticetoproceed': 'Notice to Proceed',
+        'ntp': 'Notice to Proceed',
+        'monitoring': 'Monitoring',
+        'completion': 'Completed',
+        'completed': 'Completed'
+    };
+    
+    // Check exact match first
+    if (stageMapping[stageIdLower]) {
+        return stageMapping[stageIdLower];
     }
+    
+    // Handle partial matches for flexibility
+    if (stageIdLower.includes('procurement') && stageIdLower.includes('initiation')) {
+        return 'Procurement Initiation';
+    }
+    if (stageIdLower.includes('preprocurement') || stageIdLower.includes('pre-procurement')) {
+        return 'Pre-Procurement Conference';
+    }
+    if (stageIdLower.includes('bidding') && stageIdLower.includes('documents')) {
+        return 'Bidding Documents';
+    }
+    if (stageIdLower.includes('prebid') || stageIdLower.includes('pre-bid')) {
+        return 'Pre-Bid Conference';
+    }
+    if (stageIdLower.includes('supplemental') && stageIdLower.includes('bid')) {
+        return 'Supplemental Bid Bulletin';
+    }
+    if (stageIdLower.includes('bid') && stageIdLower.includes('opening')) {
+        return 'Bid Opening';
+    }
+    if (stageIdLower.includes('bid') && stageIdLower.includes('evaluation')) {
+        return 'Bid Evaluation';
+    }
+    if (stageIdLower.includes('post') && stageIdLower.includes('qualification')) {
+        return 'Post-Qualification';
+    }
+    if (stageIdLower.includes('bac') && stageIdLower.includes('resolution')) {
+        return 'BAC Resolution';
+    }
+    if (stageIdLower.includes('notice') && stageIdLower.includes('award')) {
+        return 'Notice of Award';
+    }
+    if (stageIdLower.includes('performance') && stageIdLower.includes('bond')) {
+        return 'Performance Bond, Contract and PO';
+    }
+    if (stageIdLower.includes('notice') && stageIdLower.includes('proceed')) {
+        return 'Notice to Proceed';
+    }
+    if (stageIdLower.includes('monitoring')) {
+        return 'Monitoring';
+    }
+    if (stageIdLower === 'completed' || stageIdLower.includes('complet')) {
+        return 'Completed';
+    }
+    
+    // Check if it's already a known stage
+    const knownStage = STAGE_ORDER.find(p => p.toLowerCase() === stageIdLower);
+    if (knownStage) return knownStage;
+    
+    // Convert camelCase or PascalCase to proper title case
+    const titleCase = stage
+        .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+        .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+        .trim(); // Remove leading/trailing spaces
+    
+    return titleCase;
+};
 
-    return 'Procurement Initiation';
+const getDocumentstage = (doc: Document): string => {
+    return formatStageName(doc.stage || 'Procurement Initiation');
 };
 
 const createDocumentCountElement = (count?: number): JSX.Element | null => {
@@ -359,6 +435,8 @@ const LastUpdatedTimestamp: FC<{ timestamp?: string }> = ({ timestamp }) => {
 };
 
 const StageDisplay: FC<{ stage: string; stageIndex: number; totalStages: number }> = ({ stage, stageIndex, totalStages }) => {
+    const formattedStage = formatStageName(stage);
+    
     return (
         <div className="flex flex-col gap-1 sm:gap-1.5 w-full sm:w-auto">
             <div className="text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-400">
@@ -366,17 +444,17 @@ const StageDisplay: FC<{ stage: string; stageIndex: number; totalStages: number 
             </div>
             <Badge
                 variant="default"
-                className="flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 text-sm sm:text-base bg-primary/10 text-primary border border-primary/20 font-semibold max-w-[230px] sm:max-w-none"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base bg-gradient-to-r from-primary/10 to-blue-50 dark:from-primary/20 dark:to-blue-900/20 text-primary border border-primary/30 font-semibold max-w-[280px] sm:max-w-none shadow-sm hover:shadow-md transition-all duration-200"
             >
                 <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                <span className="truncate">{stage}</span>
+                <span className="truncate font-medium">{formattedStage}</span>
             </Badge>
-            <div className="text-[10px] sm:text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 sm:mt-1">
+            <div className="text-[10px] sm:text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 sm:mt-1 font-medium">
                 Stage {stageIndex} of {totalStages}
             </div>
-            {STAGE_DESCRIPTIONS[stage] && (
-                <div className="text-[10px] sm:text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 sm:mt-1 max-w-[230px] sm:max-w-xs">
-                    {STAGE_DESCRIPTIONS[stage]}
+            {STAGE_DESCRIPTIONS[formattedStage] && (
+                <div className="text-[10px] sm:text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 sm:mt-1 max-w-[280px] sm:max-w-xs leading-relaxed">
+                    {STAGE_DESCRIPTIONS[formattedStage]}
                 </div>
             )}
         </div>
@@ -588,21 +666,20 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
     };
 
     return (
-        <div className="mt-3.5 ml-0 sm:ml-[58px] max-w-full overflow-hidden">
-            <Card className="bg-gradient-to-r from-neutral-50/80 to-neutral-50/80 dark:from-neutral-800/60 dark:to-neutral-800/60 border border-neutral-200/80 dark:border-neutral-700/80 shadow-sm hover:shadow transition-all duration-200">
-                <CardHeader className="p-3 sm:p-4 pb-1.5 sm:pb-2">
-                    <CardTitle className="flex items-center text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                        <FileCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 text-primary" />
-                        Document Metadata
-                        {metadata.document_type === 'Bid Document' && (
-                            <Badge variant="outline" className="ml-2">
-                                Bid Document
-                            </Badge>
-                        )}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 sm:p-4 md:p-5 pt-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+        <Card className="bg-gradient-to-r from-neutral-50/80 to-neutral-50/80 dark:from-neutral-800/60 dark:to-neutral-800/60 border border-neutral-200/80 dark:border-neutral-700/80 shadow-sm hover:shadow transition-all duration-200">
+            <CardHeader className="p-3 sm:p-4 pb-1.5 sm:pb-2">
+                <CardTitle className="flex items-center text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                    <FileCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 text-primary" />
+                    Document Metadata
+                    {metadata.document_type === 'Bid Document' && (
+                        <Badge variant="outline" className="ml-2">
+                            Bid Document
+                        </Badge>
+                    )}
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-4 md:p-5 pt-0">
+                <div className="grid grid-cols-1 gap-x-4 gap-y-3">
 
                         {metadata.document_type === 'Bid Document' && metadata.opening_date && (
                             <MetadataItem
@@ -622,8 +699,7 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
                     </div>
                 </CardContent>
             </Card>
-        </div>
-    );
+        );
 };
 
 
@@ -646,7 +722,7 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
 
     return (
         <li className="group p-4 sm:p-5 hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40 transition-all duration-200 ease-in-out border-l-2 border-transparent hover:border-primary">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 lg:gap-6">
                 <div className="flex items-start flex-1 min-w-0">
                     <div className="p-2.5 sm:p-3 bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/70 rounded-lg border border-neutral-200 dark:border-neutral-700/80 shadow-sm flex-shrink-0 mr-3.5 sm:mr-4 transition-all duration-200 ease-in-out group-hover:shadow group-hover:border-neutral-300 dark:group-hover:border-neutral-600">
                         {getDocumentIcon()}
@@ -686,66 +762,85 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                     </div>
                 </div>
 
-                <Button
-                    variant="outline"
-                    size="sm"
-                    asChild
-                    className="flex-shrink-0 transition-all font-medium border-neutral-200 dark:border-neutral-700 text-xs sm:text-sm h-8 sm:h-9 mt-2 md:mt-0 self-start md:self-center shadow-sm hover:shadow group-hover:border-primary/30 group-hover:bg-white dark:group-hover:bg-neutral-800"
-                >
-                    <a
-                        href={doc.spaces_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center"
-                    >
-                        <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5" aria-hidden="true" />
-                        View PDF
-                    </a>
-                </Button>
+                <div className="flex flex-col gap-4 md:min-w-[280px] lg:min-w-[320px]">
+                    {/* Action Buttons Row */}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <PdfViewerLink 
+                            fileKey={doc.file_key} 
+                            showStats={false}
+                            className="flex-1"
+                        />
+                    </div>
+                </div>
             </div>
 
-            {doc.hash && (
-                <div className="mt-3.5 ml-0 sm:ml-[58px] max-w-full overflow-hidden">
-                    <Card className="bg-gradient-to-r from-blue-50/80 to-neutral-50/80 dark:from-blue-900/20 dark:to-neutral-800/60 border border-blue-100/80 dark:border-blue-800/30 shadow-sm hover:shadow transition-all duration-200">
-                        <CardContent className="p-3 sm:p-4 md:p-5 flex items-center justify-between">
-                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                                <div className="p-1.5 bg-blue-100/80 dark:bg-blue-900/40 rounded-md border border-blue-200 dark:border-blue-800/50 shadow-sm">
-                                    <Lock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-medium mb-0.5">Document Hash</p>
-                                    <code className="font-mono text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 truncate block">
-                                        {shortenHash(doc.hash)}
-                                    </code>
-                                </div>
-                            </div>
-                            <TooltipProvider delayDuration={300}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 px-2.5 text-xs text-neutral-600 hover:text-primary dark:text-neutral-400 dark:hover:text-primary-light"
-                                            onClick={handleCopyHash}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
-                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1-2 2v1"></path>
-                                            </svg>
-                                            Copy Hash
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-xs">
-                                        Copy document hash to clipboard
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </CardContent>
-                    </Card>
+            {/* Combined Hash, Metadata, and Analytics Section */}
+            <div className="mt-3.5 ml-0 sm:ml-[58px] max-w-full overflow-hidden">
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+                    {/* Left Column: Document Hash and Metadata (spans 3 columns) */}
+                    <div className="space-y-4 order-2 xl:order-1 xl:col-span-3">
+                        {doc.hash && (
+                            <Card className="bg-gradient-to-r from-blue-50/80 to-neutral-50/80 dark:from-blue-900/20 dark:to-neutral-800/60 border border-blue-100/80 dark:border-blue-800/30 shadow-sm hover:shadow transition-all duration-200">
+                                <CardContent className="p-3 sm:p-4 md:p-5 flex items-center justify-between">
+                                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                        <div className="p-1.5 bg-blue-100/80 dark:bg-blue-900/40 rounded-md border border-blue-200 dark:border-blue-800/50 shadow-sm">
+                                            <Lock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-medium mb-0.5">Document Hash</p>
+                                            <code className="font-mono text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 truncate block">
+                                                {shortenHash(doc.hash)}
+                                            </code>
+                                        </div>
+                                    </div>
+                                    <TooltipProvider delayDuration={300}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 px-2.5 text-xs text-neutral-600 hover:text-primary dark:text-neutral-400 dark:hover:text-primary-light"
+                                                    onClick={handleCopyHash}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1-2 2v1"></path>
+                                                    </svg>
+                                                    Copy Hash
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="text-xs">
+                                                Copy document hash to clipboard
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </CardContent>
+                            </Card>
+                        )}
+                        
+                        {/* Document Metadata */}
+                        <DocumentMetadata metadata={doc.stage_metadata} />
+                    </div>
+                    
+                    {/* Right Column: Document Analytics (spans 1 column) */}
+                    <div className="order-1 xl:order-2 xl:col-span-1">
+                        <Card className="bg-gradient-to-r from-green-50/60 to-neutral-50/80 dark:from-green-900/20 dark:to-neutral-800/50 border border-green-200/40 dark:border-green-800/30 shadow-sm hover:shadow-md transition-all duration-200">
+                            <CardHeader className="p-3 sm:p-4 pb-2">
+                                <CardTitle className="flex items-center text-sm font-semibold text-green-700 dark:text-green-300">
+                                    <BarChart3 className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" />
+                                    Document Analytics
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-3 sm:p-4 pt-0">
+                                <DocumentViews 
+                                    fileKey={doc.file_key} 
+                                    className="text-xs"
+                                />
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
-            )}
-
-            <DocumentMetadata metadata={doc.stage_metadata} />
+            </div>
         </li>
     );
 };
@@ -995,8 +1090,8 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                                         <h3 className="text-sm sm:text-base font-semibold tracking-tight text-neutral-800 dark:text-neutral-100 group-hover:text-primary transition-colors">
                                             Stage Transition
                                         </h3>
-                                        <Badge variant="default" className="border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                            {stageItem.stage}
+                                        <Badge variant="default" className="border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 dark:border-blue-700 dark:from-blue-900/30 dark:to-blue-800/40 dark:text-blue-200 font-medium px-2.5 py-1 text-xs shadow-sm">
+                                            {formatStageName(stageItem.stage)}
                                         </Badge>
                                     </div>
                                     <Card className="bg-gradient-to-r from-blue-50/70 to-white dark:from-blue-900/20 dark:to-gray-800 shadow-sm border border-blue-200 dark:border-blue-800/50 transition-all duration-300 group-hover:shadow-md group-hover:border-blue-300 dark:group-hover:border-blue-700/50">
@@ -1010,7 +1105,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                                         </CardHeader>
                                         <CardContent className="p-3 sm:p-4 md:p-5 pt-2">
                                             <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
-                                                Procurement moved to <strong className="text-blue-700 dark:text-blue-400">{stageItem.stage}</strong> stage
+                                                Procurement moved to <strong className="text-blue-700 dark:text-blue-400">{formatStageName(stageItem.stage)}</strong> stage
                                             </p>
                                         </CardContent>
                                     </Card>
@@ -1053,7 +1148,7 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
                                             {eventItem.event_type.replace(/_/g, ' ')}
                                         </h3>
                                         {eventItem.stage && (
-                                            <Badge variant="outline" className="text-[10px] sm:text-xs">{eventItem.stage}</Badge>
+                                            <Badge variant="outline" className="text-[10px] sm:text-xs font-medium border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300">{formatStageName(eventItem.stage)}</Badge>
                                         )}
                                         {eventItem.category && (
                                             <Badge variant="secondary" className="text-[10px] sm:text-xs capitalize">{eventItem.category}</Badge>
@@ -1123,11 +1218,11 @@ export default function ShowProcurement({ procurement, now, error }: ShowProps) 
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="mb-4 grid grid-cols-2 w-full max-w-[320px] border border-sidebar-border/70 dark:border-sidebar-border">
-                        <TabsTrigger value="documents" className="flex items-center gap-1.5 sm:gap-2">
+                        <TabsTrigger value="documents" className="flex items-center gap-1.5 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                             <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             Documents
                         </TabsTrigger>
-                        <TabsTrigger value="timeline" className="flex items-center gap-1.5 sm:gap-2">
+                        <TabsTrigger value="timeline" className="flex items-center gap-1.5 sm:gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                             <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             Timeline
                         </TabsTrigger>

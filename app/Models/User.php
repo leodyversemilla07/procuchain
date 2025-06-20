@@ -35,6 +35,11 @@ class User extends Authenticatable implements CanResetPasswordContract
         'failed_login_attempts',
         'last_failed_login_at',
         'locked_reason',
+        'google2fa_secret',
+        'mfa_enabled',
+        'mfa_enabled_at',
+        'backup_codes',
+        'backup_codes_generated_at',
     ];
 
     /**
@@ -62,6 +67,10 @@ class User extends Authenticatable implements CanResetPasswordContract
             'locked_at' => 'datetime',
             'lock_expires_at' => 'datetime',
             'last_failed_login_at' => 'datetime',
+            'mfa_enabled' => 'boolean',
+            'mfa_enabled_at' => 'datetime',
+            'backup_codes' => 'array',
+            'backup_codes_generated_at' => 'datetime',
         ];
     }
 
@@ -196,26 +205,64 @@ class User extends Authenticatable implements CanResetPasswordContract
 
         $remaining = $this->lock_expires_at->diffForHumans();
 
-        return $remaining;
+        return str_replace(' before', '', $remaining);
     }
 
     /**
-     * Get the remaining lock time in minutes (for API/testing purposes)
+     * Check if MFA is enabled for this user
      */
-    public function getRemainingLockTimeAttribute(): int
+    public function hasMfaEnabled(): bool
     {
-        if (! $this->account_locked || ! $this->lock_expires_at) {
-            return 0;
+        return $this->mfa_enabled && !empty($this->google2fa_secret);
+    }
+
+    /**
+     * Generate backup codes for MFA
+     */
+    public function generateBackupCodes(): array
+    {
+        $codes = [];
+        for ($i = 0; $i < 8; $i++) {
+            $codes[] = strtoupper(bin2hex(random_bytes(4)));
+        }
+        
+        $this->update([
+            'backup_codes' => array_map('hash', array_fill(0, count($codes), 'sha256'), $codes),
+            'backup_codes_generated_at' => now(),
+        ]);
+        
+        return $codes;
+    }
+
+    /**
+     * Verify a backup code
+     */
+    public function verifyBackupCode(string $code): bool
+    {
+        if (!$this->backup_codes) {
+            return false;
         }
 
-        $now = now();
-
-        // If lock has expired, return 0
-        if ($this->lock_expires_at->isPast()) {
-            return 0;
+        $hashedCode = hash('sha256', strtoupper($code));
+        
+        $codes = $this->backup_codes;
+        $key = array_search($hashedCode, $codes);
+        
+        if ($key !== false) {
+            // Remove the used backup code
+            unset($codes[$key]);
+            $this->update(['backup_codes' => array_values($codes)]);
+            return true;
         }
+        
+        return false;
+    }
 
-        // Return remaining minutes (round up to ensure we don't get 0 for partial minutes)
-        return (int) ceil($now->diffInMinutes($this->lock_expires_at, false));
+    /**
+     * Get remaining backup codes count
+     */
+    public function getRemainingBackupCodesCount(): int
+    {
+        return $this->backup_codes ? count($this->backup_codes) : 0;
     }
 }

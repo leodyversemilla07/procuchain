@@ -9,38 +9,23 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Handles procurement stage update notifications for stakeholders
- *
- * This notification class manages the delivery of procurement-related updates
- * to BAC Chairman and HOPE users through configurable channels (mail/database).
- * It formats and delivers notifications about document uploads, status changes,
- * and stage transitions in the procurement workflow.
- *
- * Implements Laravel's queued notifications for asynchronous delivery.
+ * Notification for procurement stage updates sent to stakeholders via email and database
  */
 class ProcurementStageNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     /**
-     * Notification data containing procurement details and update information
+     * Notification data
      *
      * @var array
      */
     protected $data;
 
     /**
-     * Creates a new notification instance
+     * Create a new notification instance
      *
-     * @param  array  $data  Procurement update data including:
-     *                       - procurement_id: Unique identifier
-     *                       - procurement_title: Title of the procurement
-     *                       - stage_identifier: Current workflow stage
-     *                       - current_status: Current status
-     *                       - timestamp: Update timestamp
-     *                       - action_type: Type of update (uploaded/submitted/etc.)
-     *                       - document_count: Number of documents (optional)
-     *                       - next_stage: Next workflow stage (for transitions)
+     * @param  array  $data  Procurement update data
      */
     public function __construct(array $data)
     {
@@ -50,10 +35,8 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     /**
      * Get the notification's delivery channels
      *
-     * Currently configured for email and database notifications.
-     *
-     * @param  object  $notifiable  The user receiving the notification
-     * @return array<int, string> Active notification channels
+     * @param  object  $notifiable
+     * @return array<int, string>
      */
     public function via(object $notifiable): array
     {
@@ -61,13 +44,10 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     }
 
     /**
-     * Generate the role-specific URL for procurement details
+     * Generate role-specific URL for procurement details
      *
-     * Creates a URL to the procurement details page based on the user's role,
-     * ensuring users are directed to their appropriate dashboard views.
-     *
-     * @param  object  $notifiable  The user receiving the notification
-     * @return string The role-specific procurement URL
+     * @param  object  $notifiable
+     * @return string
      */
     protected function getRoleSpecificUrl(object $notifiable): string
     {
@@ -89,13 +69,10 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     }
 
     /**
-     * Format the action type into a human-readable message
+     * Format action type into human-readable message
      *
-     * Maps action types to past-tense verbs for notification messages.
-     * Examples: submitted -> "has been submitted"
-     *
-     * @param  string  $actionType  The type of action that occurred
-     * @return string Formatted action description
+     * @param  string  $actionType
+     * @return string
      */
     protected function formatActionType(string $actionType): string
     {
@@ -132,17 +109,10 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     }
 
     /**
-     * Generate the email representation of the notification
+     * Generate email notification
      *
-     * Creates a detailed email notification using a custom Blade template with:
-     * - Custom styling and layout
-     * - Action description and document count
-     * - Stage transition information if applicable
-     * - Procurement details and status
-     * - Call-to-action button linking to details
-     *
-     * @param  object  $notifiable  The user receiving the notification
-     * @return MailMessage The formatted email message
+     * @param  object  $notifiable
+     * @return MailMessage
      */
     public function toMail(object $notifiable): MailMessage
     {
@@ -171,13 +141,10 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     }
 
     /**
-     * Get the array representation of the notification
+     * Get array representation of notification
      *
-     * Used for API responses and general data access.
-     * Includes all relevant procurement update information.
-     *
-     * @param  object  $notifiable  The user receiving the notification
-     * @return array<string, mixed> Notification data array
+     * @param  object  $notifiable
+     * @return array<string, mixed>
      */
     public function toArray(object $notifiable): array
     {
@@ -201,15 +168,10 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
     }
 
     /**
-     * Get the database representation of the notification
+     * Get database representation of notification
      *
-     * Formats notification data for database storage with:
-     * - Title and descriptive message
-     * - Procurement details and timestamps
-     * - Stage transition information if applicable
-     *
-     * @param  object  $notifiable  The user receiving the notification
-     * @return DatabaseMessage The formatted database notification
+     * @param  object  $notifiable
+     * @return DatabaseMessage
      */
     public function toDatabase(object $notifiable): DatabaseMessage
     {
@@ -218,7 +180,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
 
         $actionText = $this->formatActionType($this->data['action_type'] ?? 'updated');
 
-        $title = $this->data['stage_identifier'].' Update';
+        $title = $this->data['stage_identifier'] . ' Update';
         $message = "The {$this->data['stage_identifier']} stage {$actionText} for \"{$this->data['procurement_title']}\". Current status: {$this->data['current_status']}";
 
         // Add stage transition info to the message if applicable
