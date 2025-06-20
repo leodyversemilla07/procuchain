@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BacChairmanController;
 use App\Http\Controllers\BacSecretariatController;
+use App\Http\Controllers\DocumentViewController;
 use App\Http\Controllers\HopeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProcurementController;
@@ -32,7 +33,7 @@ Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->nam
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    Route::middleware(['role:bac_secretariat'])->group(function () {
+    Route::middleware(['role:bac_secretariat', 'mfa'])->group(function () {
 
         Route::get('/bac-secretariat/dashboard', [BacSecretariatController::class, 'dashboard'])
             ->name('bac-secretariat.dashboard');
@@ -140,7 +141,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('bac-secretariat.upload-completion-documents');
     });
 
-    Route::middleware(['role:bac_chairman'])->group(function () {
+    Route::middleware(['role:bac_chairman', 'mfa'])->group(function () {
         Route::get('bac-chairman/dashboard', [BacChairmanController::class, 'index'])
             ->name('bac-chairman.dashboard');
 
@@ -151,7 +152,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('bac-chairman.procurements.show');
     });
 
-    Route::middleware(['role:hope'])->group(function () {
+    Route::middleware(['role:hope', 'mfa'])->group(function () {
         Route::get('hope/dashboard', [HopeController::class, 'index'])
             ->name('hope.dashboard');
 
@@ -162,7 +163,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('hope.procurements.show');
     });
 
-    Route::middleware(['role:admin'])->group(function () {
+    Route::middleware(['role:admin', 'mfa'])->group(function () {
         Route::get('admin/dashboard', [AdminController::class, 'index'])
             ->name('admin.dashboard');
 
@@ -218,6 +219,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/secure-file/{fileKey}', [SecureFileController::class, 'downloadFile'])
         ->name('secure.file.download')
         ->where('fileKey', '.*'); // Allow forward slashes in file keys
+
+    // Document view tracking routes
+    Route::get('/api/document-views/file/{fileKey}', [DocumentViewController::class, 'getFileViews'])
+        ->where('fileKey', '.*')
+        ->name('document.views.file');
+    Route::get('/api/document-views/file/{fileKey}/stats', [DocumentViewController::class, 'getFileStats'])
+        ->where('fileKey', '.*')
+        ->name('document.views.file.stats');
+    Route::get('/api/document-views/procurement/{procurementId}/stats', [DocumentViewController::class, 'getProcurementViewStats'])
+        ->name('document.views.procurement.stats');
+    Route::get('/api/document-views/history', [DocumentViewController::class, 'getUserViewHistory'])
+        ->name('document.views.history');
+    Route::get('/api/document-views/most-viewed', [DocumentViewController::class, 'getMostViewedDocuments'])
+        ->name('document.views.most-viewed');
+    Route::get('/api/document-views/dashboard-stats', [DocumentViewController::class, 'getDashboardStats'])
+        ->name('document.views.dashboard.stats');
+    Route::post('/api/document-views/update-duration', [DocumentViewController::class, 'updateViewDuration'])
+        ->name('document.views.update-duration');
+
+    // PDF Viewer with Statistics
+    Route::get('/pdf-viewer/{fileKey}', [DocumentViewController::class, 'showPdfViewer'])
+        ->where('fileKey', '.*')
+        ->name('pdf.viewer');
 });
 
 Route::get('/privacy.pdf', function () {
@@ -228,5 +252,5 @@ Route::get('/terms.pdf', function () {
     return response()->file(public_path('docs/terms.pdf'));
 })->name('terms.service');
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

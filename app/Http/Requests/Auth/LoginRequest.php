@@ -62,6 +62,17 @@ class LoginRequest extends FormRequest
             throw $exception;
         }
 
+        // Check if user has MFA enabled
+        $user = Auth::user();
+        if ($user && $user->hasMfaEnabled()) {
+            // Store user info for MFA verification and logout temporarily
+            session(['mfa_user_id' => $user->id, 'remember_user' => $remember]);
+            Auth::logout();
+            
+            // Don't clear rate limiter yet - will be cleared after MFA verification
+            return;
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 
