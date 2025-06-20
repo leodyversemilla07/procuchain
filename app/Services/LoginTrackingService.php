@@ -425,11 +425,14 @@ class LoginTrackingService
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'mfa_enabled' => $user->mfa_enabled,
+                    'mfa_enabled_at' => $user->mfa_enabled_at,
                     'locked_at' => $user->locked_at,
                     'lock_expires_at' => $user->lock_expires_at,
                     'locked_reason' => $user->locked_reason,
                     'failed_attempts' => $user->failed_login_attempts,
                     'time_remaining' => $user->getLockTimeRemaining(),
+                    'time_remaining_minutes' => $user->remaining_lock_time, // Using the accessor attribute
                     'recent_failed_logins' => $user->loginLogs()
                         ->where('successful', false)
                         ->where('login_at', '>=', now()->subHours(24))

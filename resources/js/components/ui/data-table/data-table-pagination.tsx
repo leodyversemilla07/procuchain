@@ -77,36 +77,36 @@ export function DataTablePagination<TData>({
     const endEntry = Math.min((pageIndex + 1) * pageSize, currentEntries);
 
     return (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-sidebar-border/70 dark:border-sidebar-border p-3 rounded-md border shadow-sm">
-            <div className="text-sm text-gray-600 dark:text-gray-300 w-full sm:w-auto text-center sm:text-left">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4 border p-3 rounded-md shadow-sm bg-card">
+            <div className="text-sm text-muted-foreground w-full lg:w-auto text-center lg:text-left">
                 {currentEntries > 0 ? (
                     <>
-                        Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of <span className="font-medium">{currentEntries}</span> entries
+                        Showing <span className="font-medium text-foreground">{startEntry}</span> to <span className="font-medium text-foreground">{endEntry}</span> of <span className="font-medium text-foreground">{currentEntries}</span> entries
                     </>
                 ) : (
                     <>No entries to show</>
                 )}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full lg:w-auto">
                 {/* Rows per page selector */}
-                <div className="flex items-center space-x-2 order-2 sm:order-1">
-                    <span className="text-sm text-gray-600 whitespace-nowrap dark:text-gray-300">Rows per page</span>
+                <div className="flex items-center gap-2 order-2 sm:order-1">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page</span>
                     <Select
                         value={`${pageSize}`}
                         onValueChange={(value) => {
                             table.setPageSize(Number(value));
                         }}
                     >
-                        <SelectTrigger className="h-8 w-[70px] border-sidebar-border/70 dark:border-sidebar-border focus:ring-primary focus:border-primary dark:focus:ring-primary dark:focus:border-primary">
+                        <SelectTrigger className="h-8 w-[70px] border focus:ring-ring focus:border-ring">
                             <SelectValue placeholder={pageSize} />
                         </SelectTrigger>
-                        <SelectContent className="border-sidebar-border/70 dark:border-sidebar-border shadow-lg min-w-[70px]">
+                        <SelectContent className="border shadow-lg min-w-[70px]">
                             {[10, 25, 50, 100, 250].map((size) => (
                                 <SelectItem
                                     key={size}
                                     value={`${size}`}
-                                    className="dark:text-gray-200 dark:hover:bg-gray-700 hover:bg-gray-100"
+                                    className="hover:bg-muted/50"
                                 >
                                     {size}
                                 </SelectItem>
@@ -114,7 +114,7 @@ export function DataTablePagination<TData>({
                             <SelectItem
                                 key="all"
                                 value="9999"
-                                className="dark:text-gray-200 dark:hover:bg-gray-700 hover:bg-gray-100"
+                                className="hover:bg-muted/50"
                             >
                                 All
                             </SelectItem>
@@ -128,7 +128,7 @@ export function DataTablePagination<TData>({
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 mr-1 border-sidebar-border/70 dark:border-sidebar-border hover:bg-muted/50 dark:hover:bg-muted/20 focus:ring-primary dark:focus:ring-primary"
+                            className="h-8 w-8 mr-1 border hover:bg-muted/50 focus:ring-ring"
                             onClick={() => table.setPageIndex(0)}
                             disabled={!table.getCanPreviousPage()}
                             title="First page"
@@ -138,7 +138,7 @@ export function DataTablePagination<TData>({
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 border-sidebar-border/70 dark:border-sidebar-border hover:bg-muted/50 dark:hover:bg-muted/20 focus:ring-primary dark:focus:ring-primary"
+                            className="h-8 w-8 border hover:bg-muted/50 focus:ring-ring"
                             onClick={() => table.previousPage()}
                             disabled={!table.getCanPreviousPage()}
                             title="Previous page"
@@ -146,11 +146,11 @@ export function DataTablePagination<TData>({
                             <ChevronLeftIcon className="h-4 w-4" />
                         </Button>
 
-                        <div className="hidden sm:flex mx-2 items-center">
+                        <div className="hidden md:flex mx-2 items-center">
                             {pageNumbers.map((pageNumber, i) => {
                                 if (pageNumber < 0) {
                                     return (
-                                        <span key={`ellipsis-${i}`} className="px-2 text-gray-400 dark:text-gray-500">
+                                        <span key={`ellipsis-${i}`} className="px-2 text-muted-foreground">
                                             …
                                         </span>
                                     );
@@ -165,7 +165,7 @@ export function DataTablePagination<TData>({
                                         size="sm"
                                         className={`h-8 w-8 mx-0.5 ${isCurrentPage
                                             ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                                            : "border-sidebar-border/70 dark:border-sidebar-border hover:bg-muted/50 dark:hover:bg-muted/20"
+                                            : "border hover:bg-muted/50"
                                             }`}
                                         onClick={() => table.setPageIndex(pageNumber - 1)}
                                     >
@@ -176,14 +176,14 @@ export function DataTablePagination<TData>({
                         </div>
 
                         {/* Mobile page indicator */}
-                        <span className="sm:hidden mx-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <span className="md:hidden mx-3 text-sm font-medium text-muted-foreground">
                             Page {pageIndex + 1} of {table.getPageCount() || 1}
                         </span>
 
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 border-sidebar-border/70 dark:border-sidebar-border hover:bg-muted/50 dark:hover:bg-muted/20 focus:ring-primary dark:focus:ring-primary"
+                            className="h-8 w-8 border hover:bg-muted/50 focus:ring-ring"
                             onClick={() => table.nextPage()}
                             disabled={!table.getCanNextPage()}
                             title="Next page"
@@ -193,7 +193,7 @@ export function DataTablePagination<TData>({
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 ml-1 border-sidebar-border/70 dark:border-sidebar-border hover:bg-muted/50 dark:hover:bg-muted/20 focus:ring-primary dark:focus:ring-primary"
+                            className="h-8 w-8 ml-1 border hover:bg-muted/50 focus:ring-ring"
                             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                             disabled={!table.getCanNextPage()}
                             title="Last page"

@@ -30,8 +30,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-    Shield,
+import {    Shield,
     ShieldOff,
     MoreHorizontal,
     Clock,
@@ -39,7 +38,8 @@ import {
     AlertTriangle,
     Unlock,
     RotateCcw,
-    RefreshCw
+    RefreshCw,
+    QrCode
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
@@ -286,11 +286,11 @@ export default function AdminLockedAccounts() {
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
+                                <Table>                                    <TableHeader>
                                         <TableRow>
                                             <TableHead>User</TableHead>
                                             <TableHead>Role</TableHead>
+                                            <TableHead>MFA Status</TableHead>
                                             <TableHead>Lock Status</TableHead>
                                             <TableHead>Failed Attempts</TableHead>
                                             <TableHead>Locked At</TableHead>
@@ -313,11 +313,24 @@ export default function AdminLockedAccounts() {
                                                             <div className="text-sm text-muted-foreground">{user.email}</div>
                                                         </div>
                                                     </div>
-                                                </TableCell>
-                                                <TableCell>
+                                                </TableCell>                                                <TableCell>
                                                     <Badge className={getRoleBadgeColor(user.role)}>
                                                         {getRoleDisplayName(user.role)}
                                                     </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center space-x-1">
+                                                        {user.mfa_enabled ? (
+                                                            <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-2 py-1 text-xs border border-green-200 dark:border-green-800/30">
+                                                                <QrCode className="mr-1 h-3 w-3" />
+                                                                Enabled
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge className="bg-gray-100 dark:bg-gray-800/50 text-gray-800 dark:text-gray-300 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700/50">
+                                                                Disabled
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge

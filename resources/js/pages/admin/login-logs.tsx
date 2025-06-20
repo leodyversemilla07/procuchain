@@ -47,11 +47,11 @@ import {
     Smartphone,
     Tablet,
     User,
-    MapPin,
-    Activity,
+    MapPin,    Activity,
     X,
     Filter,
-    ChevronDown
+    ChevronDown,
+    QrCode
 } from 'lucide-react';
 
 interface LoginLog {
@@ -62,6 +62,8 @@ interface LoginLog {
         name: string;
         email: string;
         role: string;
+        mfa_enabled?: boolean;
+        mfa_enabled_at?: string;
     };
     ip_address: string;
     user_agent?: string;
@@ -938,11 +940,11 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 </CardHeader>
                                 <CardContent className="px-0 pb-0">
                                     <div className="border-b">
-                                        <Table>
-                                            <TableHeader>
+                                        <Table>                                            <TableHeader>
                                                 <TableRow>
                                                     <TableHead className="pl-6">User</TableHead>
                                                     <TableHead>Role</TableHead>
+                                                    <TableHead>MFA</TableHead>
                                                     <TableHead>Status</TableHead>
                                                     <TableHead>IP Address</TableHead>
                                                     <TableHead>Device</TableHead>
@@ -952,8 +954,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {paginatedRecentLogins.length > 0 ? (
-                                                    paginatedRecentLogins.map((log) => (
+                                                {paginatedRecentLogins.length > 0 ? (                                                    paginatedRecentLogins.map((log) => (
                                                         <TableRow key={log.id}>
                                                             <TableCell className="pl-6">
                                                                 <div className="space-y-1">
@@ -967,6 +968,20 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                             </TableCell>
                                                             <TableCell>
                                                                 {getRoleBadge(log.user?.role)}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex items-center space-x-1">
+                                                                    {log.user?.mfa_enabled ? (
+                                                                        <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-2 py-1 text-xs border border-green-200 dark:border-green-800/30">
+                                                                            <QrCode className="mr-1 h-3 w-3" />
+                                                                            Enabled
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <Badge className="bg-gray-100 dark:bg-gray-800/50 text-gray-800 dark:text-gray-300 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700/50">
+                                                                            Disabled
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                             </TableCell>
                                                             <TableCell>
                                                                 {getStatusBadge(log.successful)}
@@ -1012,7 +1027,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                     ))
                                                 ) : (
                                                     <TableRow>
-                                                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                                                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                                                             {searchTerm ? 'No login logs match your search.' : 'No login logs found.'}
                                                         </TableCell>
                                                     </TableRow>)}
@@ -1046,11 +1061,11 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 </CardHeader>
                                 <CardContent className="px-0 pb-0">
                                     <div className="border-b">
-                                        <Table>
-                                            <TableHeader>
+                                        <Table>                                            <TableHeader>
                                                 <TableRow>
                                                     <TableHead className="pl-6">User/Email</TableHead>
                                                     <TableHead>Role</TableHead>
+                                                    <TableHead>MFA</TableHead>
                                                     <TableHead>Status</TableHead>
                                                     <TableHead>IP Address</TableHead>
                                                     <TableHead>Device</TableHead>
@@ -1071,9 +1086,22 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                                         {log.user?.email || 'Unknown Email'}
                                                                     </div>
                                                                 </div>
+                                                            </TableCell>                                                            <TableCell>
+                                                                {getRoleBadge(log.user?.role)}
                                                             </TableCell>
                                                             <TableCell>
-                                                                {getRoleBadge(log.user?.role)}
+                                                                <div className="flex items-center space-x-1">
+                                                                    {log.user?.mfa_enabled ? (
+                                                                        <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-2 py-1 text-xs border border-green-200 dark:border-green-800/30">
+                                                                            <QrCode className="mr-1 h-3 w-3" />
+                                                                            Enabled
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <Badge className="bg-gray-100 dark:bg-gray-800/50 text-gray-800 dark:text-gray-300 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700/50">
+                                                                            Disabled
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                             </TableCell>
                                                             <TableCell>
                                                                 {getStatusBadge(log.successful)}
@@ -1102,7 +1130,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         </TableRow>
                                                     ))
                                                 ) : (<TableRow>
-                                                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                                                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                                                         {searchTerm ? 'No suspicious activities match your search.' : 'No suspicious activities found.'}
                                                     </TableCell>
                                                 </TableRow>)}
