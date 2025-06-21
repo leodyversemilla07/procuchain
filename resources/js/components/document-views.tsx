@@ -6,11 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Eye, Users, Clock, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { router } from '@inertiajs/react';
-
-interface DocumentViewsResponse {
-  views?: DocumentView[];
-}
 
 interface DocumentView {
   id: number;
@@ -62,32 +57,32 @@ const formatRole = (role: string) => {
 export function DocumentViews({ fileKey, className }: DocumentViewsProps) {
   const [views, setViews] = useState<DocumentView[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); const fetchViews = useCallback(() => {
+  const [error, setError] = useState<string | null>(null); const fetchViews = useCallback(async () => {
     if (!fileKey) return;
 
     setLoading(true);
     setError(null);
 
-    router.get(`/document-views/file/${encodeURIComponent(fileKey)}`, {}, {
-      onSuccess: (page) => {
-        const response = page.props as DocumentViewsResponse;
-        if (response.views) {
-          setViews(response.views);
-        } else {
-          setError('Failed to load document views');
-        }
-      },
-      onError: (errors) => {
+    try {
+      const response = await fetch(`/api/document-views/file/${encodeURIComponent(fileKey)}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setViews(data.data);
+      } else {
         setError('Failed to load document views');
-        console.error('Error fetching document views:', errors);
-      },
-      onFinish: () => {
-        setLoading(false);
-      },
-      preserveState: true,
-      preserveScroll: true,
-      only: ['views']
-    });
+      }
+    } catch (error) {
+      setError('Failed to load document views');
+      console.error('Error fetching document views:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [fileKey]);
 
   useEffect(() => {

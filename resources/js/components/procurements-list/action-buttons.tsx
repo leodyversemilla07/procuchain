@@ -1,6 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Edit2Icon, UploadCloudIcon, BarChart4Icon, EyeIcon } from 'lucide-react';
 import { ProcurementListItem, Stage, Status } from '@/types/blockchain';
 import { SharedData } from '@/types';
@@ -8,84 +7,44 @@ import { cn } from '@/lib/utils';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
-    variant?: 'table' | 'kanban';
     onOpenPreProcurementModal?: (procurement: ProcurementListItem) => void;
     onOpenPreBidModal?: (procurement: ProcurementListItem) => void;
     onOpenSupplementalBidBulletinModal?: (procurement: ProcurementListItem) => void;
 }
 
-interface ActionButtonItemProps {
+const DropdownActionItem = ({ icon, tooltipText, onClick, href }: {
     icon: React.ReactNode;
     tooltipText: string;
     onClick?: () => void;
     href?: string;
-    className?: string;
-    buttonSize: string;
-}
-
-const ActionButtonItem = ({ icon, tooltipText, onClick, href, className, buttonSize }: ActionButtonItemProps) => {
-    const button = (
-        <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-                buttonSize,
-                "p-0 rounded-full transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500/40 active:scale-95",
-                "hover:scale-105 hover:shadow-md",
-                "touch-manipulation select-none",
-                className
-            )}
-            onClick={onClick}
-        >
+}) => {
+    const content = href ? (
+        <DropdownMenuItem asChild>
+            <Link href={href} className="flex items-center gap-2">
+                {icon}
+                <span>{tooltipText}</span>
+            </Link>
+        </DropdownMenuItem>
+    ) : (
+        <DropdownMenuItem onClick={onClick} className="flex items-center gap-2">
             {icon}
-        </Button>
+            <span>{tooltipText}</span>
+        </DropdownMenuItem>
     );
 
-    const content = href ? 
-        <Link href={href} className="block touch-manipulation">
-            {button}
-        </Link> 
-        : button;
-
-    return (
-        <TooltipProvider delayDuration={300}>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-1.5 min-w-0">
-                        {content}
-                        {/* Show text label on mobile for better accessibility */}
-                        <span className="sm:hidden text-xs font-medium text-foreground/70 leading-tight text-center px-1 truncate">
-                            {tooltipText}
-                        </span>
-                    </div>
-                </TooltipTrigger>
-                <TooltipContent 
-                    side="bottom" 
-                    className="bg-gray-900/95 text-white dark:bg-gray-800 text-xs font-medium py-1 px-2 hidden sm:block"
-                >
-                    {tooltipText}
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
-    );
+    return content;
 };
-
-const useButtonSizes = (variant: 'table' | 'kanban') => ({
-    iconSize: variant === 'table' ? 'h-4 w-4' : 'h-4 w-4',
-    buttonSize: variant === 'table' ? 'h-8 w-8' : 'h-9 w-9',
-});
 
 const getButtonConfigs = (
     procurement: ProcurementListItem,
-    iconSize: string,
     handlers: {
         onOpenPreProcurementModal?: (p: ProcurementListItem) => void;
         onOpenPreBidModal?: (p: ProcurementListItem) => void;
         onOpenSupplementalBidBulletinModal?: (p: ProcurementListItem) => void;
-        onOpenMarkCompleteDialog?: (p: ProcurementListItem) => void;
     }
 ) => {
     const { id, stage, current_status: status } = procurement;
+    const iconSize = 'h-4 w-4';
     const configs = [];
 
     if (stage === Stage.PROCUREMENT_INITIATION && status === Status.PROCUREMENT_SUBMITTED) {
@@ -240,41 +199,37 @@ const getButtonConfigs = (
 
 export const ActionButtons = ({
     procurement,
-    variant = 'table',
     onOpenPreProcurementModal,
     onOpenPreBidModal,
     onOpenSupplementalBidBulletinModal,
 }: ActionButtonsProps) => {
     const { id } = procurement;
-    const { iconSize, buttonSize } = useButtonSizes(variant);
     const { auth } = usePage<SharedData>().props;
     const isBacSecretariat = auth.user?.role === 'bac_secretariat';
 
-    const buttonConfigs = getButtonConfigs(procurement, iconSize, {
+    const buttonConfigs = getButtonConfigs(procurement, {
         onOpenPreProcurementModal,
         onOpenPreBidModal,
         onOpenSupplementalBidBulletinModal,
     });
 
+    // Always include View Details action
+    const viewDetailsConfig = {
+        icon: <EyeIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
+        tooltipText: "View Details",
+        href: `procurements-list/${id}`,
+    };
+
+    const allConfigs = [viewDetailsConfig, ...(isBacSecretariat ? buttonConfigs : [])];
+
     return (
-        <div className={cn(
-            "flex items-center justify-center gap-2 sm:gap-1.5 flex-wrap sm:flex-nowrap max-w-full", 
-            variant === "table" ? "sm:justify-end" : "justify-center"
-        )}>
-            <ActionButtonItem
-                icon={<EyeIcon className={cn(iconSize, "text-blue-600 dark:text-blue-400")} />}
-                tooltipText="View Details"
-                href={`procurements-list/${id}`}
-                className="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                buttonSize={buttonSize}
-            />
-            {isBacSecretariat && buttonConfigs.map((config, index) => (
-                <ActionButtonItem
+        <>
+            {allConfigs.map((config, index) => (
+                <DropdownActionItem
                     key={index}
-                    buttonSize={buttonSize}
                     {...config}
                 />
             ))}
-        </div>
+        </>
     );
 };

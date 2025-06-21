@@ -105,7 +105,7 @@ class ViewProcurementsController extends BaseController
                 'from_cache' => Cache::has(self::CACHE_KEY_PROCUREMENTS_LIST),
             ]);
 
-            return Inertia::render('procurements/procurements-list', [
+            return Inertia::render('procurements/procurements-list/index', [
                 'procurements' => $procurements,
             ]);
         } catch (Exception $e) { // Corrected catch block placement
@@ -117,7 +117,7 @@ class ViewProcurementsController extends BaseController
             // Clear cache on error to avoid storing potentially bad data
             Cache::forget(self::CACHE_KEY_PROCUREMENTS_LIST);
 
-            return Inertia::render('procurements/procurements-list', [
+            return Inertia::render('procurements/procurements-list/index', [
                 'procurements' => [],
                 'error' => 'Failed to retrieve procurements. Please try again later.',
             ]);
