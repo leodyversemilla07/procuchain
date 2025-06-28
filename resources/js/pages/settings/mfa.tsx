@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -270,17 +271,25 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                         <Separator />
 
                                         <form onSubmit={submitSetup} className="space-y-4">
-                                            <div className="space-y-2">
+                                            <div className="space-y-2 flex flex-col items-center">
                                                 <Label htmlFor="code">Verification Code</Label>
-                                                <Input
+                                                <InputOTP
                                                     id="code"
-                                                    type="text"
-                                                    placeholder="000000"
-                                                    value={setupForm.data.code}
-                                                    onChange={(e) => setupForm.setData('code', e.target.value)}
                                                     maxLength={6}
-                                                    className="text-center"
-                                                />
+                                                    value={setupForm.data.code}
+                                                    onChange={(value: string) => setupForm.setData('code', value)}
+                                                    disabled={setupForm.processing}
+                                                    className="mx-auto"
+                                                >
+                                                    <InputOTPGroup>
+                                                        <InputOTPSlot index={0} />
+                                                        <InputOTPSlot index={1} />
+                                                        <InputOTPSlot index={2} />
+                                                        <InputOTPSlot index={3} />
+                                                        <InputOTPSlot index={4} />
+                                                        <InputOTPSlot index={5} />
+                                                    </InputOTPGroup>
+                                                </InputOTP>
                                                 <p className="text-xs text-muted-foreground">
                                                     Enter the 6-digit code from your authenticator app
                                                 </p>

@@ -4,7 +4,7 @@ import { Shield, Smartphone } from 'lucide-react';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AuthLayout from '@/layouts/auth-layout';
@@ -38,19 +38,26 @@ export default function MfaVerify() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={submit} className="space-y-6">
-                        <div className="space-y-2">
+                        <div className="space-y-2 flex flex-col items-center">
                             <Label htmlFor="code">Verification Code</Label>
-                            <Input
+                            <InputOTP
                                 id="code"
-                                type="text"
-                                placeholder="000000"
+                                maxLength={6}
                                 value={data.code}
-                                onChange={(e) => setData('code', e.target.value)}
-                                className="text-center text-lg tracking-widest"
-                                maxLength={10}
+                                onChange={(value: string) => setData('code', value)}
+                                disabled={processing}
+                                className="mx-auto"
                                 autoFocus
-                                autoComplete="one-time-code"
-                            />
+                            >
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={0} />
+                                    <InputOTPSlot index={1} />
+                                    <InputOTPSlot index={2} />
+                                    <InputOTPSlot index={3} />
+                                    <InputOTPSlot index={4} />
+                                    <InputOTPSlot index={5} />
+                                </InputOTPGroup>
+                            </InputOTP>
                             <p className="text-xs text-muted-foreground text-center">
                                 Enter the 6-digit code from your authenticator app or an 8-character backup code
                             </p>
