@@ -57,6 +57,7 @@ import CreateUserDialog from '@/components/admin/create-user-dialog';
 import EditUserDialog from '@/components/admin/edit-user-dialog';
 import DeleteUserDialog from '@/components/admin/delete-user-dialog';
 import BulkDeleteDialog from '@/components/admin/bulk-delete-dialog';
+import { Pagination } from '@/components/pagination';
 
 interface User {
     id: number;
@@ -281,12 +282,16 @@ export default function AdminUsers() {
                 const isValidDate = !isNaN(date.getTime());
 
                 return isValidDate ?
-                    date.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    }) : 'Invalid date';
-            };            return {
+                    date.toLocaleDateString('en-US',
+                        {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        }
+                    ) : 'Invalid date';
+            };
+
+            return {
                 Name: user.name,
                 Email: user.email,
                 Role: getRoleDisplayName(user.role),
@@ -448,7 +453,7 @@ export default function AdminUsers() {
                 );
             },
             cell: ({ row }) => {
-                const verifiedAt = row.getValue("email_verified_at") as string;                return (
+                const verifiedAt = row.getValue("email_verified_at") as string; return (
                     <div className="text-muted-foreground text-sm">
                         {verifiedAt ? (
                             <div className="flex items-center">
@@ -484,7 +489,7 @@ export default function AdminUsers() {
                 const user = row.original;
                 const mfaEnabled = user.mfa_enabled;
                 const backupCodesCount = user.backup_codes ? user.backup_codes.length : 0;
-                
+
                 return (
                     <div className="flex items-center space-x-2">
                         {mfaEnabled ? (
@@ -681,6 +686,7 @@ export default function AdminUsers() {
         },
     ];
 
+    // Table setup
     const table = useReactTable({
         data: users,
         columns,
@@ -857,40 +863,15 @@ export default function AdminUsers() {
                                         </Table>
                                     </div>
                                     {/* Pagination */}
-                                    <div className="flex flex-col lg:flex-row items-center justify-between space-y-6 lg:space-y-0 py-6 px-2 border-t bg-gradient-to-r from-background via-muted/30 dark:via-muted/20 to-background backdrop-blur-sm">
-                                        {/* Left side - Selected rows info */}
-                                        <div className="flex items-center justify-center lg:justify-start">
-                                            <div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary border border-primary/20 dark:border-primary/30">
-                                                <span className="w-2 h-2 bg-primary dark:bg-primary rounded-full mr-2 animate-pulse"></span>
-                                                {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                                                {table.getFilteredRowModel().rows.length} row(s) selected
-                                            </div>
-                                        </div>
-
-                                        {/* Right side - Pagination controls and info */}
-                                        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                                            {/* Pagination buttons */}
-                                            <div className="flex items-center space-x-3">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => table.previousPage()}
-                                                    disabled={!table.getCanPreviousPage()}
-                                                    className="h-9 px-3"
-                                                >
-                                                    Previous
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => table.nextPage()}
-                                                    disabled={!table.getCanNextPage()}
-                                                    className="h-9 px-3"
-                                                >
-                                                    Next
-                                                </Button>
-                                            </div>
-                                        </div>
+                                    <div className="mt-4">
+                                        <Pagination
+                                            pageIndex={table.getState().pagination.pageIndex}
+                                            pageSize={table.getState().pagination.pageSize}
+                                            pageCount={table.getPageCount()}
+                                            totalItems={table.getFilteredRowModel().rows.length}
+                                            onPageChange={table.setPageIndex}
+                                            onPageSizeChange={table.setPageSize}
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -907,7 +888,9 @@ export default function AdminUsers() {
                     roles={roles}
                     onSubmit={handleCreateUser}
                     getRoleDisplayName={getRoleDisplayName}
-                />                <EditUserDialog
+                />
+
+                <EditUserDialog
                     open={isEditModalOpen}
                     onOpenChange={setIsEditModalOpen}
                     formData={formData}
@@ -915,7 +898,9 @@ export default function AdminUsers() {
                     roles={roles}
                     onSubmit={handleEditUser}
                     getRoleDisplayName={getRoleDisplayName}
-                />                <DeleteUserDialog
+                />
+
+                <DeleteUserDialog
                     open={isDeleteDialogOpen}
                     onOpenChange={setIsDeleteDialogOpen}
                     user={userToDelete}

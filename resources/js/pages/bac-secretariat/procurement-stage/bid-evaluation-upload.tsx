@@ -1,53 +1,39 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, FileText, Upload, AlertCircle, X, FileUp, Users, BarChart4, Eye } from 'lucide-react';
+import { CalendarIcon, Upload, AlertCircle, BarChart4 } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
+import FileUploadArea from '@/components/file-upload-area';
+import { useFileDrop } from '@/hooks/use-file-drop';
+import DatePicker from '@/components/date-picker';
+import PeopleInput from '@/components/people-input';
+import InputError from '@/components/input-error';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_FILE_TYPES = ['application/pdf'];
 
 interface BidEvaluationUploadProps {
-  procurement: {
+  procurement?: {
     id: string;
     title: string;
   };
-  errors?: Record<string, string>;
 }
 
-export default function BidEvaluationUpload({ procurement, errors = {} }: BidEvaluationUploadProps) {
-  const [isDraggingFile, setIsDraggingFile] = useState(false);
-  const [isDraggingAbstract, setIsDraggingAbstract] = useState(false);
-  const [showPreview, setShowPreview] = useState<{ summary: boolean; abstract: boolean }>({ summary: false, abstract: false });
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+// Helper for type-safe error access
+function getFieldError<T extends object>(errors: T, field: keyof T): string | undefined {
+  return errors && typeof errors === 'object' ? (errors as Record<string, string>)[field as string] : undefined;
+}
 
-  const { data, setData, post, processing } = useForm({
-    procurement_id: procurement.id,
-    procurement_title: procurement.title,
+export default function BidEvaluationUpload({ procurement = { id: '', title: '' } }: BidEvaluationUploadProps) {
+  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+    procurement_id: procurement?.id || '',
+    procurement_title: procurement?.title || '',
     summary_file: null as File | null,
     abstract_file: null as File | null,
     evaluation_date: format(new Date(), 'yyyy-MM-dd'),
@@ -55,217 +41,75 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
   });
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
     { title: `Bid Evaluation Report - ${procurement.id}`, href: '#' },
   ];
 
-  const validateFile = (file: File): string | null => {
+  // File validation
+  const validateFile = (file: File) => {
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast.error('Invalid file type', { description: 'Only PDF files are allowed.' });
+      return false;
+    }
     if (file.size > MAX_FILE_SIZE) {
-      return `File size exceeds 10MB limit`;
+      toast.error('File size exceeds 10MB limit');
+      return false;
     }
-    if (file.type !== 'application/pdf') {
-      return 'Only PDF files are allowed';
-    }
-    return null;
+    return true;
   };
 
-  const handleFileDrop = (e: React.DragEvent, fileType: 'summary' | 'abstract') => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (fileType === 'summary') {
-      setIsDraggingFile(false);
-    } else {
-      setIsDraggingAbstract(false);
-    }
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      const error = validateFile(file);
-      if (error) {
-        toast.error(error);
-        return;
-      }
-      setData(fileType === 'summary' ? 'summary_file' : 'abstract_file', file);
-      toast.success(`${fileType === 'summary' ? 'Summary' : 'Abstract'} file uploaded successfully`);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fileType: 'summary' | 'abstract') => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      const error = validateFile(file);
-      if (error) {
-        toast.error(error);
-        return;
-      }
-      setData(fileType === 'summary' ? 'summary_file' : 'abstract_file', file);
-      toast.success(`${fileType === 'summary' ? 'Summary' : 'Abstract'} file uploaded successfully`);
-    }
-  };
+  // File drop hooks
+  const summaryDrop = useFileDrop({
+    validateFile,
+    setFile: (file) => setData('summary_file', file),
+  });
+  const abstractDrop = useFileDrop({
+    validateFile,
+    setFile: (file) => setData('abstract_file', file),
+  });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setShowConfirmDialog(true);
-  };
-
-  const handleConfirmSubmit = () => {
-    setData('procurement_id', procurement.id);
-    setData('procurement_title', procurement.title);
-
-    post(
-      '/bac-secretariat/upload-bid-evaluation-documents',
-      {
-        forceFormData: true,
-        onSuccess: () => {
-          toast.success("Bid evaluation report uploaded successfully!", {
-            description: "Bid evaluation report has been submitted."
-          });
-        },
-      }
-    );
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const handleDragEvents = (e: React.DragEvent, isDragging = true, fileType: 'summary' | 'abstract') => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (fileType === 'summary') {
-      setIsDraggingFile(isDragging);
-    } else {
-      setIsDraggingAbstract(isDragging);
+    // Client-side validation
+    if (!data.summary_file) {
+      toast.error('Missing summary file', { description: 'Please upload the evaluation summary PDF.' });
+      return;
     }
+    if (!data.abstract_file) {
+      toast.error('Missing abstract file', { description: 'Please upload the bid abstract PDF.' });
+      return;
+    }
+    if (!data.evaluation_date) {
+      toast.error('Missing evaluation date', { description: 'Please select the evaluation date.' });
+      return;
+    }
+    if (!data.evaluator_names.trim()) {
+      toast.error('Missing evaluator names', { description: 'Please enter at least one evaluator.' });
+      return;
+    }
+    post('/bac-secretariat/upload-bid-evaluation-documents', {
+      forceFormData: true,
+      preserveScroll: true,
+      preserveState: true,
+      onSuccess: () => {
+        toast.success("Bid evaluation report uploaded successfully!", {
+          description: "Bid evaluation report has been submitted."
+        });
+        reset();
+        clearErrors();
+      },
+      onError: () => {
+        toast.error('Failed to upload bid evaluation report', {
+          description: 'Please check the form for errors and try again.'
+        });
+      },
+    });
   };
-
-  const FileUploadArea = ({ fileType, file, onFileChange, onFileDrop, isDragging, onDragEvents }: {
-    fileType: 'summary' | 'abstract';
-    file: File | null;
-    onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onFileDrop: (e: React.DragEvent) => void;
-    isDragging: boolean;
-    onDragEvents: (e: React.DragEvent, isDragging: boolean) => void;
-  }) => (
-    <div
-      className={`border-2 border-dashed rounded-lg p-4 sm:p-6 transition-all duration-200 min-h-[180px] sm:min-h-[220px] flex flex-col justify-center ${isDragging
-        ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-        : file
-          ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-          : errors[`${fileType}_file`]
-            ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-        } cursor-pointer group`}
-      onDragEnter={(e) => onDragEvents(e, true)}
-      onDragLeave={(e) => onDragEvents(e, false)}
-      onDragOver={(e) => onDragEvents(e, true)}
-      onDrop={onFileDrop}
-      onClick={() => document.getElementById(`${fileType}-file-input`)?.click()}
-      role="button"
-      tabIndex={0}
-      aria-label={`Upload ${fileType} file`}
-    >
-      {!file ? (
-        <div className="flex flex-col items-center justify-center text-center">
-          <div className="rounded-full bg-muted p-2 sm:p-3 mb-2 sm:mb-3 group-hover:bg-primary/10 transition-colors">
-            <FileUp className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-          </div>
-          <p className="font-medium text-sm sm:text-base text-muted-foreground mb-1 sm:mb-2 group-hover:text-foreground transition-colors">
-            Drag and drop your {fileType} here
-          </p>
-          <p className="text-xs sm:text-sm text-muted-foreground/70 mb-4 sm:mb-5">
-            Only PDF files up to 10MB are supported
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="group-hover:bg-primary/5 transition-colors text-xs sm:text-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              document.getElementById(`${fileType}-file-input`)?.click();
-            }}
-          >
-            Browse Files
-          </Button>
-          <input
-            id={`${fileType}-file-input`}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={onFileChange}
-          />
-        </div>
-      ) : (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="rounded-full bg-primary/10 p-2 sm:p-3 mr-3 sm:mr-4">
-              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm sm:text-base">{file.name}</p>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                {formatFileSize(file.size)} • PDF
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-1 sm:gap-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors h-8 w-8 sm:h-9 sm:w-9"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowPreview({ ...showPreview, [fileType]: true });
-                  }}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[90vw] sm:max-w-4xl h-[80vh]">
-                <DialogHeader>
-                  <DialogTitle className="text-lg sm:text-xl">Preview {fileType === 'summary' ? 'Summary' : 'Abstract'}</DialogTitle>
-                  <DialogDescription className="text-sm sm:text-base">
-                    {file.name}
-                  </DialogDescription>
-                </DialogHeader>
-                <iframe
-                  src={URL.createObjectURL(file)}
-                  className="w-full h-full border-0"
-                  title={`${fileType} preview`}
-                />
-              </DialogContent>
-            </Dialog>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors h-8 w-8 sm:h-9 sm:w-9"
-              onClick={(e) => {
-                e.stopPropagation();
-                setData(`${fileType}_file`, null);
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Upload Bid Evaluation Report" />
-
       <div className="flex h-full flex-1 flex-col gap-4 sm:gap-6 rounded-xl p-3 sm:p-6 bg-gradient-to-b from-background to-muted/20">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-primary">
@@ -291,46 +135,53 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
                   Please upload the bid evaluation summary and abstract in PDF format (max 10MB each)
                 </CardDescription>
               </CardHeader>
-
               <CardContent className="space-y-6 sm:space-y-8">
-                <div className="space-y-2">
-                  <label className="flex items-center text-sm sm:text-base font-medium">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Evaluation Summary
-                  </label>
-                  <FileUploadArea
-                    fileType="summary"
-                    file={data.summary_file}
-                    onFileChange={(e) => handleFileChange(e, 'summary')}
-                    onFileDrop={(e) => handleFileDrop(e, 'summary')}
-                    isDragging={isDraggingFile}
-                    onDragEvents={(e, isDragging) => handleDragEvents(e, isDragging, 'summary')}
-                  />
-                  {errors.summary_file && (
-                    <InputError message={errors.summary_file} />
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="flex items-center text-sm sm:text-base font-medium">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Bid Abstract
-                  </label>
-                  <FileUploadArea
-                    fileType="abstract"
-                    file={data.abstract_file}
-                    onFileChange={(e) => handleFileChange(e, 'abstract')}
-                    onFileDrop={(e) => handleFileDrop(e, 'abstract')}
-                    isDragging={isDraggingAbstract}
-                    onDragEvents={(e, isDragging) => handleDragEvents(e, isDragging, 'abstract')}
-                  />
-                  {errors.abstract_file && (
-                    <InputError message={errors.abstract_file} />
-                  )}
-                </div>
+                <FileUploadArea
+                  label="Evaluation Summary"
+                  file={data.summary_file}
+                  error={getFieldError(errors, 'summary_file')}
+                  isDragging={summaryDrop.isDragging}
+                  onFileChange={e => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      const file = e.target.files[0];
+                      if (validateFile(file)) setData('summary_file', file);
+                    }
+                  }}
+                  onDragEnter={summaryDrop.handleDragEnter}
+                  onDragLeave={summaryDrop.handleDragLeave}
+                  onDragOver={summaryDrop.handleDragOver}
+                  onDrop={summaryDrop.handleDrop}
+                  onRemove={() => setData('summary_file', null)}
+                  inputId="summary-file-input"
+                  required
+                />
+                {getFieldError(errors, 'summary_file') && (
+                  <InputError message={getFieldError(errors, 'summary_file')} />
+                )}
+                <FileUploadArea
+                  label="Bid Abstract"
+                  file={data.abstract_file}
+                  error={getFieldError(errors, 'abstract_file')}
+                  isDragging={abstractDrop.isDragging}
+                  onFileChange={e => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      const file = e.target.files[0];
+                      if (validateFile(file)) setData('abstract_file', file);
+                    }
+                  }}
+                  onDragEnter={abstractDrop.handleDragEnter}
+                  onDragLeave={abstractDrop.handleDragLeave}
+                  onDragOver={abstractDrop.handleDragOver}
+                  onDrop={abstractDrop.handleDrop}
+                  onRemove={() => setData('abstract_file', null)}
+                  inputId="abstract-file-input"
+                  required
+                />
+                {getFieldError(errors, 'abstract_file') && (
+                  <InputError message={getFieldError(errors, 'abstract_file')} />
+                )}
               </CardContent>
             </Card>
-
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
               <CardHeader className="pb-2 sm:pb-4 space-y-1">
                 <CardTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
@@ -342,57 +193,28 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 sm:space-y-6">
-                <div className="space-y-2">
-                  <label className="flex items-center text-sm sm:text-base font-medium">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    Evaluation Date
-                  </label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal text-sm sm:text-base"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {data.evaluation_date ? format(new Date(data.evaluation_date), 'PPP') : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={data.evaluation_date ? new Date(data.evaluation_date) : undefined}
-                        onSelect={(date) => date && setData('evaluation_date', format(date, 'yyyy-MM-dd'))}
-                        initialFocus
-                        className="rounded-md border shadow-md"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {errors.evaluation_date && (
-                    <InputError message={errors.evaluation_date} />
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="flex items-center text-sm sm:text-base font-medium">
-                    <Users className="h-4 w-4 mr-2" />
-                    Evaluator Names
-                  </label>
-                  <Textarea
-                    placeholder="Enter evaluator names (one per line)"
-                    rows={4}
-                    className="min-h-[120px] sm:min-h-[150px] resize-none text-sm sm:text-base"
-                    value={data.evaluator_names}
-                    onChange={(e) => setData('evaluator_names', e.target.value)}
-                  />
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Enter one evaluator name per line for better formatting
-                  </p>
-                  {errors.evaluator_names && (
-                    <InputError message={errors.evaluator_names} />
-                  )}
-                </div>
+                <DatePicker
+                  label="Evaluation Date"
+                  value={data.evaluation_date ? new Date(data.evaluation_date) : undefined}
+                  onChange={date => date && setData('evaluation_date', format(date, 'yyyy-MM-dd'))}
+                  error={getFieldError(errors, 'evaluation_date')}
+                  required
+                />
+                {getFieldError(errors, 'evaluation_date') && (
+                  <InputError message={getFieldError(errors, 'evaluation_date')} />
+                )}
+                <PeopleInput
+                  label="Evaluator Names"
+                  value={data.evaluator_names ? data.evaluator_names.split('\n').filter(Boolean) : []}
+                  onChange={updated => setData('evaluator_names', updated.join('\n'))}
+                  error={getFieldError(errors, 'evaluator_names')}
+                  required
+                  placeholder="Type evaluator name and press Enter or click Add"
+                />
+                {getFieldError(errors, 'evaluator_names') && (
+                  <InputError message={getFieldError(errors, 'evaluator_names')} />
+                )}
               </CardContent>
-
               <CardFooter className="pt-3 sm:pt-4 border-t flex flex-col gap-2 sm:gap-3">
                 <Button
                   type="submit"
@@ -411,7 +233,6 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
                     </>
                   )}
                 </Button>
-
                 <Button
                   type="button"
                   variant="outline"
@@ -425,7 +246,6 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
             </Card>
           </div>
         </form>
-
         {Object.keys(errors).length > 0 && (
           <Card className="border-destructive/50 bg-destructive/5 dark:bg-destructive/10 shadow-md">
             <CardContent className="p-3 sm:p-4">
@@ -445,23 +265,6 @@ export default function BidEvaluationUpload({ procurement, errors = {} }: BidEva
             </CardContent>
           </Card>
         )}
-
-        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-          <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-lg sm:text-xl">Confirm Submission</AlertDialogTitle>
-              <AlertDialogDescription className="text-sm sm:text-base">
-                Are you sure you want to submit the bid evaluation report? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="gap-2 sm:gap-3">
-              <AlertDialogCancel className="text-sm sm:text-base">Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmSubmit} className="text-sm sm:text-base">
-                Submit
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </AppLayout>
   );

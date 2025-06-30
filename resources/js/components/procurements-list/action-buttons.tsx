@@ -7,9 +7,9 @@ import { cn } from '@/lib/utils';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
-    onOpenPreProcurementModal?: (procurement: ProcurementListItem) => void;
-    onOpenPreBidModal?: (procurement: ProcurementListItem) => void;
-    onOpenSupplementalBidBulletinModal?: (procurement: ProcurementListItem) => void;
+    onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
+    onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
+    onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
 }
 
 const DropdownActionItem = ({ icon, tooltipText, onClick, href }: {
@@ -38,9 +38,9 @@ const DropdownActionItem = ({ icon, tooltipText, onClick, href }: {
 const getButtonConfigs = (
     procurement: ProcurementListItem,
     handlers: {
-        onOpenPreProcurementModal?: (p: ProcurementListItem) => void;
-        onOpenPreBidModal?: (p: ProcurementListItem) => void;
-        onOpenSupplementalBidBulletinModal?: (p: ProcurementListItem) => void;
+        onOpenPreProcurementDialog?: (p: ProcurementListItem) => void;
+        onOpenPreBidDialog?: (p: ProcurementListItem) => void;
+        onOpenSupplementalBidBulletinDialog?: (p: ProcurementListItem) => void;
     }
 ) => {
     const { id, stage, current_status: status } = procurement;
@@ -52,7 +52,7 @@ const getButtonConfigs = (
             icon: <Edit2Icon className={cn(iconSize, "text-amber-600 dark:text-amber-400")} />,
             tooltipText: "Record Pre-Procurement Conference Decision",
             className: "bg-amber-50 dark:bg-amber-900/20",
-            onClick: () => handlers.onOpenPreProcurementModal?.(procurement)
+            onClick: () => handlers.onOpenPreProcurementDialog?.(procurement)
         });
     }
 
@@ -83,7 +83,7 @@ const getButtonConfigs = (
                 icon: <Edit2Icon className={cn(iconSize, "text-indigo-600 dark:text-indigo-400")} />,
                 tooltipText: "Record Pre-Bid Conference Decision",
                 className: "bg-indigo-50 dark:bg-indigo-900/20",
-                onClick: () => handlers.onOpenPreBidModal?.(procurement)
+                onClick: () => handlers.onOpenPreBidDialog?.(procurement)
             });
         } else if (status === Status.PRE_BID_CONFERENCE_HELD) {
             configs.push({
@@ -137,7 +137,7 @@ const getButtonConfigs = (
             icon: <Edit2Icon className={cn(iconSize, "text-indigo-600 dark:text-indigo-400")} />,
             tooltipText: "Record Supplemental Bid Bulletin Decision",
             className: "bg-indigo-50 dark:bg-indigo-900/20",
-            onClick: () => handlers.onOpenSupplementalBidBulletinModal?.(procurement)
+            onClick: () => handlers.onOpenSupplementalBidBulletinDialog?.(procurement)
             });
         } else if (status === Status.SUPPLEMENTAL_BID_BULLETINS_ONGOING) {
             configs.push({
@@ -199,18 +199,18 @@ const getButtonConfigs = (
 
 export const ActionButtons = ({
     procurement,
-    onOpenPreProcurementModal,
-    onOpenPreBidModal,
-    onOpenSupplementalBidBulletinModal,
+    onOpenPreProcurementDialog,
+    onOpenPreBidDialog,
+    onOpenSupplementalBidBulletinDialog,
 }: ActionButtonsProps) => {
     const { id } = procurement;
     const { auth } = usePage<SharedData>().props;
     const isBacSecretariat = auth.user?.role === 'bac_secretariat';
 
     const buttonConfigs = getButtonConfigs(procurement, {
-        onOpenPreProcurementModal,
-        onOpenPreBidModal,
-        onOpenSupplementalBidBulletinModal,
+        onOpenPreProcurementDialog,
+        onOpenPreBidDialog,
+        onOpenSupplementalBidBulletinDialog,
     });
 
     // Always include View Details action

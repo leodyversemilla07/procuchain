@@ -14,7 +14,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 
-interface PreBidModalProps {
+interface PreBidDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     procurementId: string;
@@ -28,13 +28,13 @@ interface PageProps {
     errors?: Record<string, string>;
 }
 
-export function PreBidConferenceModal({
+export function PreBidConferenceDialog({
     open,
     onOpenChange,
     procurementId,
     procurementTitle,
     onComplete
-}: PreBidModalProps) {
+}: PreBidDialogProps) {
     const form = useForm({
         procurement_id: procurementId,
         procurement_title: procurementTitle,

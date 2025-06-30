@@ -29,7 +29,8 @@ class PreProcurementConferenceDocumentsRequest extends FormRequest
             'minutes_file' => 'required|file|mimes:pdf|max:10240',
             'attendance_file' => 'required|file|mimes:pdf|max:10240',
             'meeting_date' => 'required|date',
-            'participants' => 'required|string|min:1|max:1000',
+            'participants' => 'required|array|min:1|max:1000',
+            'participants.*' => 'required|string|max:255',
         ];
     }
 }

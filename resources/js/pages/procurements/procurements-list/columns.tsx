@@ -1,5 +1,3 @@
-'use client';
-
 import { ColumnDef } from '@tanstack/react-table';
 import { MoreHorizontal } from 'lucide-react';
 import { ProcurementListItem } from '@/types/blockchain';
@@ -24,15 +22,15 @@ import {
 } from '@/components/procurements-list/table-cells';
 
 interface ColumnsProps {
-    onOpenPreProcurementModal?: (procurement: ProcurementListItem) => void;
-    onOpenPreBidModal?: (procurement: ProcurementListItem) => void;
-    onOpenSupplementalBidBulletinModal?: (procurement: ProcurementListItem) => void;
+    onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
+    onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
+    onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
 }
 
 export const createColumns = ({
-    onOpenPreProcurementModal,
-    onOpenPreBidModal,
-    onOpenSupplementalBidBulletinModal,
+    onOpenPreProcurementDialog,
+    onOpenPreBidDialog,
+    onOpenSupplementalBidBulletinDialog,
 }: ColumnsProps): ColumnDef<ProcurementListItem>[] => [
     {
         id: 'select',
@@ -135,9 +133,9 @@ export const createColumns = ({
                         <DropdownMenuSeparator />
                         <ActionButtons
                             procurement={procurement}
-                            onOpenPreProcurementModal={onOpenPreProcurementModal}
-                            onOpenPreBidModal={onOpenPreBidModal}
-                            onOpenSupplementalBidBulletinModal={onOpenSupplementalBidBulletinModal}
+                            onOpenPreProcurementDialog={onOpenPreProcurementDialog}
+                            onOpenPreBidDialog={onOpenPreBidDialog}
+                            onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
                         />
                     </DropdownMenuContent>
                 </DropdownMenu>

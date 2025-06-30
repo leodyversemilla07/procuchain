@@ -30,7 +30,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {    Shield,
+import {
+    Shield,
     ShieldOff,
     MoreHorizontal,
     Clock,
@@ -44,6 +45,7 @@ import {    Shield,
 import { toast } from 'sonner';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { User, type BreadcrumbItem } from '@/types';
+import { Pagination } from '@/components/pagination';
 
 interface PageProps extends InertiaPageProps {
     lockedAccounts: User[];
@@ -73,27 +75,23 @@ export default function AdminLockedAccounts() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Pagination state
+    const [pageIndex, setPageIndex] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
+    const pageCount = Math.ceil(lockedAccounts.length / pageSize);
+    const paginatedAccounts = lockedAccounts.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
+
     // Handle flash messages
     useEffect(() => {
-        if (flash.success) {
-            toast.success(flash.success);
-        }
-        if (flash.error) {
-            toast.error(flash.error);
-        }
-        if (flash.warning) {
-            toast.warning(flash.warning);
-        }
-        if (flash.info) {
-            toast.info(flash.info);
-        }
+        if (flash.success) toast.success(flash.success);
+        if (flash.error) toast.error(flash.error);
+        if (flash.warning) toast.warning(flash.warning);
+        if (flash.info) toast.info(flash.info);
     }, [flash]);
 
     const refreshPage = () => {
         setIsLoading(true);
-        router.reload({
-            onFinish: () => setIsLoading(false),
-        });
+        router.reload({ onFinish: () => setIsLoading(false) });
     };
 
     const handleUnlockAccount = (user: User) => {
@@ -108,65 +106,47 @@ export default function AdminLockedAccounts() {
 
     const confirmUnlockAccount = () => {
         if (!selectedUser) return;
-
-        router.post(`/admin/accounts/${selectedUser.id}/unlock`, {
-            reason: 'Unlocked by administrator',
-        }, {
+        router.post(`/admin/accounts/${selectedUser.id}/unlock`, { reason: 'Unlocked by administrator' }, {
             onSuccess: () => {
                 setIsUnlockDialogOpen(false);
                 setSelectedUser(null);
-                // The success message will be shown via Inertia's flash message handling
             },
             onError: (errors) => {
                 console.error('Unlock account errors:', errors);
-                // Error handling will be done via Inertia's error handling
             },
         });
     };
 
     const confirmResetAttempts = () => {
         if (!selectedUser) return;
-
         router.post(`/admin/accounts/${selectedUser.id}/reset-attempts`, {}, {
             onSuccess: () => {
                 setIsResetDialogOpen(false);
                 setSelectedUser(null);
-                // The success message will be shown via Inertia's flash message handling
             },
             onError: (errors) => {
                 console.error('Reset attempts errors:', errors);
-                // Error handling will be done via Inertia's error handling
             },
         });
     };
 
     const getRoleBadgeColor = (role: string) => {
         switch (role) {
-            case 'admin':
-                return 'bg-red-100 text-red-800 hover:bg-red-200';
-            case 'bac_chairman':
-                return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-            case 'hope':
-                return 'bg-green-100 text-green-800 hover:bg-green-200';
-            case 'bac_secretariat':
-                return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
-            default:
-                return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+            case 'admin': return 'bg-red-100 text-red-800 hover:bg-red-200';
+            case 'bac_chairman': return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+            case 'hope': return 'bg-green-100 text-green-800 hover:bg-green-200';
+            case 'bac_secretariat': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+            default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
         }
     };
 
     const getRoleDisplayName = (role: string) => {
         switch (role) {
-            case 'bac_secretariat':
-                return 'BAC Secretariat';
-            case 'bac_chairman':
-                return 'BAC Chairman';
-            case 'hope':
-                return 'HOPE';
-            case 'admin':
-                return 'Administrator';
-            default:
-                return role;
+            case 'bac_secretariat': return 'BAC Secretariat';
+            case 'bac_chairman': return 'BAC Chairman';
+            case 'hope': return 'HOPE';
+            case 'admin': return 'Administrator';
+            default: return role;
         }
     };
 
@@ -176,15 +156,13 @@ export default function AdminLockedAccounts() {
     };
 
     const getLockStatusColor = (user: User) => {
-        if (user.is_currently_locked) {
-            return 'bg-red-100 text-red-800 border-red-200';
-        }
+        if (user.is_currently_locked) return 'bg-red-100 text-red-800 border-red-200';
         return 'bg-orange-100 text-orange-800 border-orange-200';
+    };
 
-    }; return (
+    return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Locked Accounts - Admin" />
-
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
                 <div className="border-b pb-6">
@@ -220,7 +198,6 @@ export default function AdminLockedAccounts() {
                         </CardContent>
                     </Card>
                 )}
-
                 {/* Statistics Cards */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <Card>
@@ -232,7 +209,6 @@ export default function AdminLockedAccounts() {
                             <div className="text-2xl font-bold">{lockedAccounts.length}</div>
                         </CardContent>
                     </Card>
-
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Currently Locked</CardTitle>
@@ -244,7 +220,6 @@ export default function AdminLockedAccounts() {
                             </div>
                         </CardContent>
                     </Card>
-
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Failed Attempts</CardTitle>
@@ -257,7 +232,6 @@ export default function AdminLockedAccounts() {
                         </CardContent>
                     </Card>
                 </div>
-
                 {/* Locked Accounts Table */}
                 <Card>
                     <CardHeader className="pb-6">
@@ -277,16 +251,13 @@ export default function AdminLockedAccounts() {
                         {lockedAccounts.length === 0 ? (
                             <div className="text-center py-8">
                                 <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                <h3 className="text-lg font-medium mb-2">
-                                    No Locked Accounts
-                                </h3>
-                                <p className="text-muted-foreground">
-                                    There are currently no locked user accounts in the system.
-                                </p>
+                                <h3 className="text-lg font-medium mb-2">No Locked Accounts</h3>
+                                <p className="text-muted-foreground">There are currently no locked user accounts in the system.</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <Table>                                    <TableHeader>
+                                <Table>
+                                    <TableHeader>
                                         <TableRow>
                                             <TableHead>User</TableHead>
                                             <TableHead>Role</TableHead>
@@ -301,7 +272,7 @@ export default function AdminLockedAccounts() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {lockedAccounts.map((user) => (
+                                        {paginatedAccounts.map((user) => (
                                             <TableRow key={user.id}>
                                                 <TableCell>
                                                     <div className="flex items-center space-x-3">
@@ -313,7 +284,8 @@ export default function AdminLockedAccounts() {
                                                             <div className="text-sm text-muted-foreground">{user.email}</div>
                                                         </div>
                                                     </div>
-                                                </TableCell>                                                <TableCell>
+                                                </TableCell>
+                                                <TableCell>
                                                     <Badge className={getRoleBadgeColor(user.role)}>
                                                         {getRoleDisplayName(user.role)}
                                                     </Badge>
@@ -333,32 +305,23 @@ export default function AdminLockedAccounts() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={getLockStatusColor(user)}
-                                                    >
+                                                    <Badge variant="outline" className={getLockStatusColor(user)}>
                                                         {user.is_currently_locked ? 'Active Lock' : 'Expired Lock'}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center space-x-2">
-                                                        <span className="text-sm font-medium">
-                                                            {user.failed_login_attempts || 0}
-                                                        </span>
+                                                        <span className="text-sm font-medium">{user.failed_login_attempts || 0}</span>
                                                         {(user.failed_login_attempts || 0) >= 3 && (
                                                             <AlertTriangle className="h-4 w-4 text-red-500" />
                                                         )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="text-sm">
-                                                        {formatDateTime(user.locked_at)}
-                                                    </div>
+                                                    <div className="text-sm">{formatDateTime(user.locked_at)}</div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="text-sm">
-                                                        {formatDateTime(user.lock_expires_at)}
-                                                    </div>
+                                                    <div className="text-sm">{formatDateTime(user.lock_expires_at)}</div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="text-sm max-w-xs truncate" title={user.locked_reason || 'N/A'}>
@@ -388,17 +351,12 @@ export default function AdminLockedAccounts() {
                                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                             <DropdownMenuSeparator />
                                                             {user.is_currently_locked && (
-                                                                <DropdownMenuItem
-                                                                    onClick={() => handleUnlockAccount(user)}
-                                                                    className="text-green-600"
-                                                                >
+                                                                <DropdownMenuItem onClick={() => handleUnlockAccount(user)} className="text-green-600">
                                                                     <Unlock className="mr-2 h-4 w-4" />
                                                                     Unlock Account
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            <DropdownMenuItem
-                                                                onClick={() => handleResetAttempts(user)}
-                                                            >
+                                                            <DropdownMenuItem onClick={() => handleResetAttempts(user)}>
                                                                 <RotateCcw className="mr-2 h-4 w-4" />
                                                                 Reset Attempts
                                                             </DropdownMenuItem>
@@ -409,12 +367,24 @@ export default function AdminLockedAccounts() {
                                         ))}
                                     </TableBody>
                                 </Table>
+                                <div className="mt-4">
+                                    <Pagination
+                                        pageIndex={pageIndex}
+                                        pageSize={pageSize}
+                                        pageCount={pageCount}
+                                        totalItems={lockedAccounts.length}
+                                        onPageChange={setPageIndex}
+                                        onPageSizeChange={(size) => {
+                                            setPageSize(size);
+                                            setPageIndex(0);
+                                        }}
+                                    />
+                                </div>
                             </div>
                         )}
                     </CardContent>
                 </Card>
             </div>
-
             {/* Unlock Account Dialog */}
             <AlertDialog open={isUnlockDialogOpen} onOpenChange={setIsUnlockDialogOpen}>
                 <AlertDialogContent>
@@ -436,7 +406,6 @@ export default function AdminLockedAccounts() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
             {/* Reset Attempts Dialog */}
             <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
                 <AlertDialogContent>
