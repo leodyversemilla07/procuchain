@@ -1,40 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format, addDays } from 'date-fns';
 import { toast } from "sonner";
 import { DateRange } from 'react-day-picker';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, FileText, Upload, AlertCircle, X, FileUp, ClipboardList } from 'lucide-react';
+import { CalendarIcon, Upload, AlertCircle, ClipboardList } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
+import FileUploadArea from '@/components/file-upload-area';
+import { useFileDrop } from '@/hooks/use-file-drop';
+import DatePicker from '@/components/date-picker';
+import DateRangePicker from '@/components/date-range-picker';
 
 interface BiddingDocumentsUploadProps {
   procurement: {
     id: string;
     title: string;
-    status?: string;
-    stage?: string;
   };
-  errors?: Record<string, string>;
 }
 
-export default function BiddingDocumentsUpload({ procurement, errors = {} }: BiddingDocumentsUploadProps) {
-  const [isDraggingFile, setIsDraggingFile] = useState(false);
-
-  // Log procurement details for debugging
-  useEffect(() => {
-    console.log('Procurement data received:', procurement);
-  }, [procurement]);
-
-  const { data, setData, post, processing, reset } = useForm({
+export default function BiddingDocumentsUpload({ procurement }: BiddingDocumentsUploadProps) {
+  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
     bidding_documents_file: null as File | null,
@@ -47,21 +37,66 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
     } as DateRange | undefined,
   });
 
+  // File drop logic
+  const validateFile = (file: File) => {
+    if (file.type !== 'application/pdf') {
+      toast.error('Invalid file type', {
+        description: 'Only PDF files are allowed.'
+      });
+      return false;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File too large', {
+        description: 'Maximum file size is 10MB.'
+      });
+      return false;
+    }
+    return true;
+  };
+  const fileDrop = useFileDrop({
+    validateFile,
+    setFile: (file) => setData('bidding_documents_file', file),
+  });
+
+  useEffect(() => {
+    console.log('Procurement data received:', procurement);
+  }, [procurement]);
+
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Procurements', href: '/bac-secretariat/procurements-list' },
-    { title: `Upload Bidding Documents - ${procurement?.id || 'Unknown ID'}`, href: '#' },
+    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+    { title: `Upload Bidding Documents - ${procurement?.id || 'Unknown ID'}${procurement?.title ? ': ' + procurement.title : ''}`, href: '#' },
   ];
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!data.bidding_documents_file) {
+      toast.error('Missing file', {
+        description: 'Please upload the bidding documents file.'
+      });
+      return;
+    }
+    if (!data.issuance_date) {
+      toast.error('Missing issuance date', {
+        description: 'Please select the issuance date.'
+      });
+      return;
+    }
+    if (!data.validity_period || !data.validity_period.from || !data.validity_period.to) {
+      toast.error('Missing validity period', {
+        description: 'Please select the validity period.'
+      });
+      return;
+    }
 
     post('/bac-secretariat/upload-bidding-documents', {
       preserveScroll: true,
       preserveState: true,
       forceFormData: true,
       onSuccess: () => {
-        reset('bidding_documents_file');
+        reset();
+        clearErrors();
         toast.success("Bidding documents uploaded successfully!", {
           description: "Bidding documents have been submitted."
         });
@@ -77,52 +112,18 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.type === 'application/pdf') {
+      if (validateFile(file)) {
         setData('bidding_documents_file', file);
       }
     }
-  };
-
-  const handleFileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingFile(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (file.type === 'application/pdf') {
-        setData('bidding_documents_file', file);
-      }
-    }
-  };
-
-  const handleFileDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingFile(true);
-  };
-
-  const handleFileDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingFile(false);
-  };
-
-  const handleFileDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDraggingFile) setIsDraggingFile(true);
   };
 
   // Handle date selection for validity period
   const handleValidityPeriodChange = (range: DateRange | undefined) => {
     setData('validity_period', range);
-
-    // Also update the formatted date strings for backend submission
     if (range?.from) {
       setData('validity_period_start', format(range.from, 'yyyy-MM-dd'));
     }
-
     if (range?.to) {
       setData('validity_period_end', format(range.to, 'yyyy-MM-dd'));
     }
@@ -171,89 +172,20 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
               </CardHeader>
 
               <CardContent className="space-y-6 sm:space-y-8">
-                <div className="space-y-2">
-                  <label className="flex items-center text-sm sm:text-base font-medium">
-                    <ClipboardList className="h-4 w-4 mr-2" />
-                    Bidding Documents
-                  </label>
-                  <div
-                    className={`relative border-2 border-dashed rounded-lg p-4 sm:p-6 transition-all duration-200 min-h-[200px] sm:min-h-[220px] flex flex-col justify-center ${isDraggingFile
-                        ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                        : data.bidding_documents_file
-                          ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : errors.bidding_documents_file
-                            ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                      } cursor-pointer group`}
-                    onDragEnter={handleFileDragEnter}
-                    onDragLeave={handleFileDragLeave}
-                    onDragOver={handleFileDragOver}
-                    onDrop={handleFileDrop}
-                    onClick={() => document.getElementById('file-input')?.click()}
-                  >
-                    {!data.bidding_documents_file ? (
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <div className="rounded-full bg-muted p-2 sm:p-3 mb-2 sm:mb-3 group-hover:bg-primary/10 transition-colors">
-                          <FileUp className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
-                        <p className="font-medium text-sm sm:text-base text-muted-foreground mb-1 sm:mb-2 group-hover:text-foreground transition-colors">
-                          Drag and drop your bidding documents here
-                        </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground/70 mb-4 sm:mb-5">
-                          Only PDF files are supported
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="group-hover:bg-primary/5 transition-colors text-xs sm:text-sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            document.getElementById('file-input')?.click();
-                          }}
-                        >
-                          Browse Files
-                        </Button>
-                        <input
-                          id="file-input"
-                          type="file"
-                          accept="application/pdf"
-                          className="hidden"
-                          onChange={handleFileChange}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="rounded-full bg-primary/10 p-2 sm:p-3 mr-3 sm:mr-4">
-                            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm sm:text-base">{data.bidding_documents_file.name}</p>
-                            <p className="text-xs sm:text-sm text-muted-foreground">
-                              {(data.bidding_documents_file.size / 1024).toFixed(2)} KB • PDF
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setData('bidding_documents_file', null);
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  {errors.bidding_documents_file && (
-                    <InputError message={errors.bidding_documents_file} />
-                  )}
-                </div>
+                <FileUploadArea
+                  label="Bidding Documents"
+                  file={data.bidding_documents_file}
+                  error={errors.bidding_documents_file}
+                  isDragging={fileDrop.isDragging}
+                  onFileChange={handleFileChange}
+                  onDragEnter={fileDrop.handleDragEnter}
+                  onDragLeave={fileDrop.handleDragLeave}
+                  onDragOver={fileDrop.handleDragOver}
+                  onDrop={fileDrop.handleDrop}
+                  onRemove={() => setData('bidding_documents_file', null)}
+                  inputId="file-input"
+                  required={true}
+                />
               </CardContent>
             </Card>
 
@@ -269,72 +201,23 @@ export default function BiddingDocumentsUpload({ procurement, errors = {} }: Bid
               </CardHeader>
               <CardContent className="space-y-4 sm:space-y-6">
                 <div className="space-y-2">
-                  <label className="flex items-center text-sm sm:text-base font-medium">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    Issuance Date
-                  </label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal text-sm sm:text-base"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {data.issuance_date ? format(data.issuance_date, 'PPP') : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={data.issuance_date}
-                        onSelect={(date) => date && handleIssuanceDateChange(date)}
-                        initialFocus
-                        className="rounded-md border shadow-md"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {errors.issuance_date && (
-                    <InputError message={errors.issuance_date} />
-                  )}
+                  <DatePicker
+                    label="Issuance Date"
+                    value={data.issuance_date}
+                    onChange={handleIssuanceDateChange}
+                    error={errors.issuance_date}
+                    required={true}
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="flex items-center text-sm sm:text-base font-medium">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Validity Period
-                  </label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal text-sm sm:text-base"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {data.validity_period?.from ? (
-                          data.validity_period.to ? (
-                            <>
-                              {format(data.validity_period.from, "LLL dd, y")} -{" "}
-                              {format(data.validity_period.to, "LLL dd, y")}
-                            </>
-                          ) : (
-                            format(data.validity_period.from, "LLL dd, y")
-                          )
-                        ) : (
-                          <span>Pick a date range</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={data.validity_period?.from}
-                        selected={data.validity_period}
-                        onSelect={handleValidityPeriodChange}
-                        numberOfMonths={2}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DateRangePicker
+                    label="Validity Period"
+                    value={data.validity_period}
+                    onChange={handleValidityPeriodChange}
+                    error={errors.validity_period_start || errors.validity_period_end}
+                    required={true}
+                  />
                   {errors.validity_period_start && (
                     <InputError message={errors.validity_period_start} />
                   )}

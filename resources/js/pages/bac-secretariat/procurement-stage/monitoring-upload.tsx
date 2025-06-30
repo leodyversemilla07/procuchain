@@ -1,71 +1,103 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, FileText, Upload, AlertCircle, X, FileUp, ClipboardCheck } from 'lucide-react';
+import { CalendarIcon, FileText, Upload, AlertCircle, ClipboardCheck } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
+import FileUploadArea from '@/components/file-upload-area';
+import { useFileDrop } from '@/hooks/use-file-drop';
+import DatePicker from '@/components/date-picker';
+
+const ALLOWED_FILE_TYPES = ['application/pdf'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface MonitoringUploadProps {
-  procurement: {
+  procurement?: {
     id: string;
     title: string;
   };
-  errors?: Record<string, string>; // Receive initial errors from backend
 }
 
-export default function MonitoringUpload({ procurement, errors: initialErrors = {} }: MonitoringUploadProps) {
-  const [isDraggingFile, setIsDraggingFile] = useState(false);
+// Helper for type-safe error access
+function getFieldError<T extends object>(errors: T, field: keyof T): string | undefined {
+  return errors && typeof errors === 'object' ? (errors as Record<string, string>)[field as string] : undefined;
+}
 
-  // Follow noa-upload pattern for state management
+export default function MonitoringUpload({ procurement = { id: '', title: '' } }: MonitoringUploadProps) {
   const currentDate = new Date();
   const formattedDate = format(currentDate, 'yyyy-MM-dd');
 
-  const { data, setData, post, processing, errors } = useForm({
-    procurement_id: procurement.id, // Include procurement_id in form data
-    procurement_title: procurement.title, // Include procurement_title in form data
+  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+    procurement_id: procurement?.id || '',
+    procurement_title: procurement?.title || '',
     compliance_file: null as File | null,
-    report_date: formattedDate, // String for submission (matches backend expectation)
-    report_date_object: currentDate, // Date object for Calendar UI
+    report_date: formattedDate,
+    report_date_object: currentDate,
     report_notes: '',
   });
 
-  // Combine initial errors with form processing errors
-  const displayErrors = { ...initialErrors, ...errors };
-
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Procurements', href: '/bac-secretariat/procurements-list' },
-    { title: `Upload Compliance Report - ${procurement.id}`, href: '#' },
+    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+    { title: `Upload Compliance Report - ${procurement.id}: ${procurement.title}`, href: '#' },
   ];
+
+  const validateFile = (file: File) => {
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast.error("Invalid file type", { description: "Only PDF files are allowed." });
+      return false;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File too large", { description: "Maximum file size is 10MB." });
+      return false;
+    }
+    return true;
+  };
+
+  const complianceDrop = useFileDrop({
+    validateFile,
+    setFile: (file) => setData('compliance_file', file),
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      if (validateFile(file)) {
+        setData('compliance_file', file);
+      }
+    }
+  };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Use post(url, options) signature, like noa-upload
-    // Data is implicitly taken from useForm state
-    // report_date is already formatted string in state
+    // Client-side validation
+    if (!data.compliance_file) {
+      toast.error("Missing file", { description: "Please upload the compliance report." });
+      return;
+    }
+    if (!data.report_date) {
+      toast.error("Missing report date", { description: "Please select the report date." });
+      return;
+    }
     post('/bac-secretariat/upload-monitoring-document', {
-      forceFormData: true, // Still needed for file upload
-      preserveScroll: true, // Keep scroll position on error
+      forceFormData: true,
+      preserveScroll: true,
+      preserveState: true,
       onSuccess: () => {
         toast.success("Compliance report uploaded successfully!", {
           description: "Compliance report has been submitted."
         });
+        reset();
+        clearErrors();
       },
-      onError: (errorResponse) => {
-        // Errors are automatically populated by useForm
-        console.error("Submission Error:", errorResponse);
+      onError: () => {
         toast.error("Submission failed.", {
           description: "Please check the form for errors."
         });
@@ -73,39 +105,9 @@ export default function MonitoringUpload({ procurement, errors: initialErrors = 
     });
   };
 
-  const handleDragEvents = (e: React.DragEvent, isDragging = true) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingFile(isDragging);
-  };
-
-  const handleFileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingFile(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (file.type === 'application/pdf') {
-        setData('compliance_file', file);
-      }
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      if (file.type === 'application/pdf') {
-        setData('compliance_file', file);
-      }
-    }
-  };
-
-
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Upload Compliance Report" />
-
       <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 bg-gradient-to-b from-background to-muted/20">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-primary">
@@ -118,7 +120,6 @@ export default function MonitoringUpload({ procurement, errors: initialErrors = 
             <span className="font-medium text-foreground italic"> {procurement.title}</span>
           </p>
         </div>
-
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
@@ -131,93 +132,26 @@ export default function MonitoringUpload({ procurement, errors: initialErrors = 
                   Please upload the compliance report in PDF format
                 </CardDescription>
               </CardHeader>
-
               <CardContent className="space-y-8">
-                <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
-                    <ClipboardCheck className="h-4 w-4 mr-2" />
-                    Compliance Report Document
-                  </label>
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${
-                      isDraggingFile
-                        ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                        : data.compliance_file
-                          ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                          : displayErrors.compliance_file
-                            ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                    } cursor-pointer group`}
-                    onDragEnter={(e) => handleDragEvents(e)}
-                    onDragLeave={(e) => handleDragEvents(e, false)}
-                    onDragOver={(e) => handleDragEvents(e)}
-                    onDrop={handleFileDrop}
-                    onClick={() => document.getElementById('file-input')?.click()}
-                  >
-                    {!data.compliance_file ? (
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <div className="rounded-full bg-muted p-3 mb-3 group-hover:bg-primary/10 transition-colors">
-                          <FileUp className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
-                        <p className="font-medium text-muted-foreground mb-2 group-hover:text-foreground transition-colors">
-                          Drag and drop your compliance report here
-                        </p>
-                        <p className="text-sm text-muted-foreground/70 mb-5">
-                          Only PDF files are supported
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="group-hover:bg-primary/5 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            document.getElementById('file-input')?.click();
-                          }}
-                        >
-                          Browse Files
-                        </Button>
-                        <input
-                          id="file-input"
-                          type="file"
-                          accept="application/pdf"
-                          className="hidden"
-                          onChange={handleFileChange}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="rounded-full bg-primary/10 p-3 mr-4">
-                            <FileText className="h-6 w-6 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{data.compliance_file.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {(data.compliance_file.size / 1024).toFixed(2)} KB • PDF
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setData('compliance_file', null);
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  {displayErrors.compliance_file && <InputError message={displayErrors.compliance_file} />}
-                </div>
+                <FileUploadArea
+                  label="Compliance Report Document"
+                  file={data.compliance_file}
+                  error={getFieldError(errors, 'compliance_file')}
+                  isDragging={complianceDrop.isDragging}
+                  onFileChange={handleFileChange}
+                  onDragEnter={complianceDrop.handleDragEnter}
+                  onDragLeave={complianceDrop.handleDragLeave}
+                  onDragOver={complianceDrop.handleDragOver}
+                  onDrop={complianceDrop.handleDrop}
+                  onRemove={() => setData('compliance_file', null)}
+                  inputId="compliance-file-input"
+                  required={true}
+                />
+                {getFieldError(errors, 'compliance_file') && (
+                  <InputError message={getFieldError(errors, 'compliance_file')} />
+                )}
               </CardContent>
             </Card>
-
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
               <CardHeader className="pb-4 space-y-1">
                 <CardTitle className="text-xl font-semibold flex items-center gap-2">
@@ -229,39 +163,21 @@ export default function MonitoringUpload({ procurement, errors: initialErrors = 
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    Report Date
-                  </label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={`w-full justify-start text-left font-normal ${displayErrors.report_date ? 'border-destructive' : ''}`}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {data.report_date_object ? format(data.report_date_object, 'PPP') : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={data.report_date_object}
-                        onSelect={(date) => {
-                          if (date) {
-                            setData('report_date_object', date);
-                            setData('report_date', format(date, 'yyyy-MM-dd')); // Update formatted string
-                          }
-                        }}
-                        initialFocus
-                        className="rounded-md border shadow-md"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {displayErrors.report_date && <InputError message={displayErrors.report_date} />}
-                </div>
-
+                <DatePicker
+                  label="Report Date"
+                  value={data.report_date_object}
+                  onChange={date => {
+                    if (date) {
+                      setData('report_date_object', date);
+                      setData('report_date', format(date, 'yyyy-MM-dd'));
+                    }
+                  }}
+                  error={getFieldError(errors, 'report_date')}
+                  required
+                />
+                {getFieldError(errors, 'report_date') && (
+                  <InputError message={getFieldError(errors, 'report_date')} />
+                )}
                 <div className="space-y-2">
                   <label className="flex items-center text-base font-medium">
                     <FileText className="h-4 w-4 mr-2" />
@@ -270,14 +186,13 @@ export default function MonitoringUpload({ procurement, errors: initialErrors = 
                   <Textarea
                     placeholder="Enter any additional notes or comments about the compliance report"
                     rows={5}
-                    className={`min-h-[150px] resize-none ${displayErrors.report_notes ? 'border-destructive' : ''}`}
+                    className={`min-h-[150px] resize-none ${getFieldError(errors, 'report_notes') ? 'border-destructive' : ''}`}
                     value={data.report_notes}
                     onChange={(e) => setData('report_notes', e.target.value)}
                   />
-                  {displayErrors.report_notes && <InputError message={displayErrors.report_notes} />}
+                  {getFieldError(errors, 'report_notes') && <InputError message={getFieldError(errors, 'report_notes')} />}
                 </div>
               </CardContent>
-
               <CardFooter className="pt-4 border-t flex flex-col gap-3">
                 <Button
                   type="submit"
@@ -296,7 +211,6 @@ export default function MonitoringUpload({ procurement, errors: initialErrors = 
                     </>
                   )}
                 </Button>
-
                 <Button
                   type="button"
                   variant="outline"
@@ -310,8 +224,7 @@ export default function MonitoringUpload({ procurement, errors: initialErrors = 
             </Card>
           </div>
         </form>
-
-        {Object.keys(displayErrors).length > 0 && (
+        {Object.keys(errors).length > 0 && (
           <Card className="border-destructive/50 bg-destructive/5 dark:bg-destructive/10 shadow-md">
             <CardContent className="p-4">
               <div className="flex items-start">
@@ -321,8 +234,8 @@ export default function MonitoringUpload({ procurement, errors: initialErrors = 
                     Please fix the following errors:
                   </h4>
                   <ul className="list-disc list-inside mt-2 text-sm text-destructive/90 space-y-1">
-                    {Object.entries(displayErrors).map(([field, message]) => (
-                      <li key={field}>{message}</li>
+                    {Object.entries(errors).map(([field, message]) => (
+                      <li key={field}>{message as string}</li>
                     ))}
                   </ul>
                 </div>

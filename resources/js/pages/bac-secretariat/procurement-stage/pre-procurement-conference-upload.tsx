@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Head, router } from '@inertiajs/react';
 import { useForm } from '@inertiajs/react';
-import { format } from 'date-fns';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, FileText, Upload, AlertCircle, X, FileUp, Users, ClipboardList, Eye, Loader2 } from 'lucide-react';
+import { CalendarIcon, FileText, Upload, AlertCircle, ClipboardList, Loader2 } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -15,42 +13,31 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BreadcrumbItem } from '@/types';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import FileUploadArea from '@/components/file-upload-area';
+import { useFileDrop } from '@/hooks/use-file-drop';
+import DatePicker from '@/components/date-picker';
+import PeopleInput from '@/components/people-input';
 
-// Constants
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// Allowed file types and max file size for uploads
 const ALLOWED_FILE_TYPES = ['application/pdf'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface PreProcurementUploadProps {
   procurement?: {
     id: string;
     title: string;
-    status: string;
-    stage?: string;
   };
-  errors?: Record<string, string>;
 }
 
-export default function PreProcurementUpload({ procurement = { id: '', title: '', status: '' } }: PreProcurementUploadProps) {
-  const [isDraggingMinutes, setIsDraggingMinutes] = useState(false);
-  const [isDraggingAttendance, setIsDraggingAttendance] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [participantInput, setParticipantInput] = useState('');
-  const [participants, setParticipants] = useState<string[]>([]);
-
-  const { data, setData, post, processing, errors } = useForm({
+export default function PreProcurementUpload({ procurement = { id: '', title: '' } }: PreProcurementUploadProps) {
+  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
     minutes_file: null as File | null,
     attendance_file: null as File | null,
     meeting_date: new Date(),
-    participants: "",
+    participants: [] as string[],
   });
 
   // File validation
@@ -70,85 +57,11 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
     return true;
   };
 
-  // Handle file preview
-  const handleFilePreview = (file: File) => {
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-  };
-
-  // Handle participant input
-  const handleParticipantInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && participantInput.trim()) {
-      e.preventDefault();
-      const newParticipant = participantInput.trim();
-      if (!participants.includes(newParticipant)) {
-        setParticipants([...participants, newParticipant]);
-        setData('participants', [...participants, newParticipant].join(', '));
-      }
-      setParticipantInput('');
-    }
-  };
-
-  const removeParticipant = (index: number) => {
-    const newParticipants = participants.filter((_, i) => i !== index);
-    setParticipants(newParticipants);
-    setData('participants', newParticipants.join(', '));
-  };
-
-  // Calendar display formatter
-  const formatDisplayDate = (date: Date) => {
-    return format(date, 'PPP');
-  };
-
-  // Calendar component
-  const renderCalendar = () => (
-    <Calendar
-      mode="single"
-      selected={data.meeting_date instanceof Date ? data.meeting_date : new Date(data.meeting_date)}
-      onSelect={handleDateSelect}
-      className="rounded-md border shadow-md"
-    />
-  );
-
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
-    { title: `Upload Pre-Procurement Documents - ${procurement.id}`, href: '#' },
+    { title: `Upload Pre-Procurement Documents - ${procurement.id}: ${procurement.title}`, href: '#' },
   ];
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!data.minutes_file || !data.attendance_file) {
-      toast.error("Missing files", {
-        description: "Please upload both minutes and attendance files."
-      });
-      return;
-    }
-
-    if (!data.participants.trim()) {
-      toast.error("Missing participants", {
-        description: "Please add at least one participant."
-      });
-      return;
-    }
-
-    post(route('bac-secretariat.upload-pre-procurement-conference-documents'), {
-      preserveState: true,
-      forceFormData: true,
-      onProgress: (progress) => {
-        if (progress?.percentage !== undefined) {
-          setUploadProgress(progress.percentage);
-        }
-      },
-      onSuccess: () => {
-        toast.success("Documents uploaded successfully!", {
-          description: "Pre-procurement conference documents have been submitted."
-        });
-        setUploadProgress(0);
-      },
-    });
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: "minutes_file" | "attendance_file") => {
     if (e.target.files && e.target.files.length > 0) {
@@ -165,72 +78,50 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
     }
   };
 
-  const handleMinutesDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingMinutes(false);
+  // Use custom hook for minutes file
+  const minutesDrop = useFileDrop({
+    validateFile,
+    setFile: (file) => setData('minutes_file', file),
+  });
+  // Use custom hook for attendance file
+  const attendanceDrop = useFileDrop({
+    validateFile,
+    setFile: (file) => setData('attendance_file', file),
+  });
 
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (validateFile(file)) {
-        setData("minutes_file", file);
-      }
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!data.minutes_file || !data.attendance_file) {
+      toast.error("Missing files", {
+        description: "Please upload both minutes and attendance files."
+      });
+      return;
     }
-  };
 
-  const handleAttendanceDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingAttendance(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (validateFile(file)) {
-        setData("attendance_file", file);
-      }
+    if (!Array.isArray(data.participants) || data.participants.length === 0) {
+      toast.error("Missing participants", {
+        description: "Please add at least one participant."
+      });
+      return;
     }
-  };
 
-  const handleMinutesDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingMinutes(true);
-  };
-
-  const handleMinutesDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingMinutes(false);
-  };
-
-  const handleMinutesDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDraggingMinutes) setIsDraggingMinutes(true);
-  };
-
-  const handleAttendanceDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingAttendance(true);
-  };
-
-  const handleAttendanceDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingAttendance(false);
-  };
-
-  const handleAttendanceDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDraggingAttendance) setIsDraggingAttendance(true);
+    post(route('bac-secretariat.upload-pre-procurement-conference-documents'), {
+      preserveState: true,
+      forceFormData: true,
+      onSuccess: () => {
+        toast.success("Documents uploaded successfully!", {
+          description: "Pre-procurement conference documents have been submitted."
+        });
+        reset();
+        clearErrors();
+      },
+    });
   };
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Upload Pre-Procurement Documents" />
-
       <div className="flex h-full flex-1 flex-col gap-4 sm:gap-6 rounded-xl p-3 sm:p-6 bg-gradient-to-b from-background to-muted/20">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-primary">
@@ -244,7 +135,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
               <CardHeader className="pb-2 sm:pb-4 space-y-1">
@@ -256,214 +147,37 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                   Please upload all required documents in PDF format (max 10MB)
                 </CardDescription>
               </CardHeader>
-
               <CardContent className="space-y-6 sm:space-y-8">
-                <div className="space-y-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div className="flex items-center text-base font-medium">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Minutes of Pre-Procurement Conference
-                    </div>
-                    {data.minutes_file && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleFilePreview(data.minutes_file!)}
-                        className="text-primary w-full sm:w-auto"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview
-                      </Button>
-                    )}
-                  </div>
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-4 sm:p-6 transition-all duration-200 min-h-[180px] sm:min-h-[220px] flex flex-col justify-center ${isDraggingMinutes
-                      ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                      : data.minutes_file
-                        ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                        : errors.minutes_file
-                          ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                      } cursor-pointer group`}
-                    onDragEnter={handleMinutesDragEnter}
-                    onDragLeave={handleMinutesDragLeave}
-                    onDragOver={handleMinutesDragOver}
-                    onDrop={handleMinutesDrop}
-                    onClick={() => document.getElementById('minutes-file-input')?.click()}
-                  >
-                    {!data.minutes_file ? (
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <div className="rounded-full bg-muted p-2 sm:p-3 mb-2 sm:mb-3 group-hover:bg-primary/10 transition-colors">
-                          <FileUp className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
-                        <p className="font-medium text-sm sm:text-base text-muted-foreground mb-1 sm:mb-2 group-hover:text-foreground transition-colors">
-                          Drag and drop your minutes file here
-                        </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground/70 mb-4 sm:mb-5">
-                          Only PDF files are supported
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="group-hover:bg-primary/5 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            document.getElementById('minutes-file-input')?.click();
-                          }}
-                        >
-                          Browse Files
-                        </Button>
-                        <input
-                          id="minutes-file-input"
-                          type="file"
-                          accept="application/pdf"
-                          className="hidden"
-                          onChange={(e) => handleFileChange(e, "minutes_file")}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center">
-                          <div className="rounded-full bg-primary/10 p-2 sm:p-3 mr-3 sm:mr-4">
-                            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm sm:text-base break-all">{data.minutes_file.name}</p>
-                            <p className="text-xs sm:text-sm text-muted-foreground">
-                              {(data.minutes_file.size / 1024).toFixed(2)} KB • PDF
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors self-end sm:self-auto"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setData("minutes_file", null);
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  {errors.minutes_file && <div className="text-destructive text-xs sm:text-sm">{errors.minutes_file}</div>}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div className="flex items-center text-base font-medium">
-                      <Users className="h-4 w-4 mr-2" />
-                      Attendance Sheet
-                    </div>
-                    {data.attendance_file && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleFilePreview(data.attendance_file!)}
-                        className="text-primary w-full sm:w-auto"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview
-                      </Button>
-                    )}
-                  </div>
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-4 sm:p-6 transition-all duration-200 min-h-[180px] sm:min-h-[220px] flex flex-col justify-center ${isDraggingAttendance
-                      ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                      : data.attendance_file
-                        ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                        : errors.attendance_file
-                          ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                          : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                      } cursor-pointer group`}
-                    onDragEnter={handleAttendanceDragEnter}
-                    onDragLeave={handleAttendanceDragLeave}
-                    onDragOver={handleAttendanceDragOver}
-                    onDrop={handleAttendanceDrop}
-                    onClick={() => document.getElementById('attendance-file-input')?.click()}
-                  >
-                    {!data.attendance_file ? (
-                      <div className="flex flex-col items-center justify-center text-center px-2 sm:px-4">
-                        <div className="rounded-full bg-muted p-2 sm:p-3 mb-2 sm:mb-3 group-hover:bg-primary/10 transition-colors">
-                          <FileUp className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
-                        <p className="font-medium text-sm sm:text-base text-muted-foreground mb-1 sm:mb-2 group-hover:text-foreground transition-colors">
-                          Drag and drop your attendance file here
-                        </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground/70 mb-4 sm:mb-5">
-                          Only PDF files are supported
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="group-hover:bg-primary/5 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            document.getElementById('attendance-file-input')?.click();
-                          }}
-                        >
-                          Browse Files
-                        </Button>
-                        <input
-                          id="attendance-file-input"
-                          type="file"
-                          accept="application/pdf"
-                          className="hidden"
-                          onChange={(e) => handleFileChange(e, "attendance_file")}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center min-w-0">
-                          <div className="rounded-full bg-primary/10 p-2 sm:p-3 mr-3 sm:mr-4 flex-shrink-0">
-                            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-sm sm:text-base truncate">
-                              {data.attendance_file.name}
-                            </p>
-                            <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                              {(data.attendance_file.size / 1024).toFixed(2)} KB • PDF
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors self-end sm:self-auto flex-shrink-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setData("attendance_file", null);
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  {errors.attendance_file && <div className="text-destructive text-xs sm:text-sm">{errors.attendance_file}</div>}
-                </div>
-
-                {uploadProgress > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs sm:text-sm">
-                      <span className="text-muted-foreground">Uploading documents...</span>
-                      <span className="font-medium">{uploadProgress}%</span>
-                    </div>
-                    <Progress value={uploadProgress} className="h-1.5 sm:h-2" />
-                  </div>
-                )}
+                <FileUploadArea
+                  label="Minutes of Pre-Procurement Conference"
+                  file={data.minutes_file}
+                  error={errors.minutes_file}
+                  isDragging={minutesDrop.isDragging}
+                  onFileChange={e => handleFileChange(e, 'minutes_file')}
+                  onDragEnter={minutesDrop.handleDragEnter}
+                  onDragLeave={minutesDrop.handleDragLeave}
+                  onDragOver={minutesDrop.handleDragOver}
+                  onDrop={minutesDrop.handleDrop}
+                  onRemove={() => setData('minutes_file', null)}
+                  inputId="minutes-file-input"
+                  required={true}
+                />
+                <FileUploadArea
+                  label="Attendance Sheet"
+                  file={data.attendance_file}
+                  error={errors.attendance_file}
+                  isDragging={attendanceDrop.isDragging}
+                  onFileChange={e => handleFileChange(e, 'attendance_file')}
+                  onDragEnter={attendanceDrop.handleDragEnter}
+                  onDragLeave={attendanceDrop.handleDragLeave}
+                  onDragOver={attendanceDrop.handleDragOver}
+                  onDrop={attendanceDrop.handleDrop}
+                  onRemove={() => setData('attendance_file', null)}
+                  inputId="attendance-file-input"
+                  required={true}
+                />
               </CardContent>
             </Card>
-
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
               <CardHeader className="pb-2 sm:pb-4 space-y-1">
                 <CardTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
@@ -475,67 +189,22 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 sm:space-y-6">
-                <div className="space-y-2">
-                  <Label className="flex items-center text-base font-medium">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    Meeting Date
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal h-10"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {data.meeting_date ? formatDisplayDate(data.meeting_date) : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      {renderCalendar()}
-                    </PopoverContent>
-                  </Popover>
-                  {errors.meeting_date && <div className="text-destructive text-xs sm:text-sm">{errors.meeting_date}</div>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center text-base font-medium">
-                    <Users className="h-4 w-4 mr-2" />
-                    Participants
-                  </Label>
-                  <div className="space-y-3">
-                    <Input
-                      value={participantInput}
-                      onChange={(e) => setParticipantInput(e.target.value)}
-                      onKeyDown={handleParticipantInput}
-                      placeholder="Type participant name and press Enter"
-                      className="h-10"
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      {participants.map((participant, index) => (
-                        <Badge
-                          key={index}
-                          variant="secondary"
-                          className="flex items-center gap-1 py-1 px-2 text-xs sm:text-sm"
-                        >
-                          <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                          {participant}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 sm:h-5 sm:w-5 hover:bg-destructive/10 hover:text-destructive ml-1 -mr-1"
-                            onClick={() => removeParticipant(index)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  {errors.participants && <div className="text-destructive text-xs sm:text-sm">{errors.participants}</div>}
-                </div>
+                <DatePicker
+                  label="Meeting Date"
+                  value={data.meeting_date instanceof Date ? data.meeting_date : new Date(data.meeting_date)}
+                  onChange={handleDateSelect}
+                  error={errors.meeting_date}
+                  required
+                />
+                <PeopleInput
+                  label="Participants"
+                  value={data.participants}
+                  onChange={updated => setData('participants', updated)}
+                  error={errors.participants}
+                  required
+                  placeholder="Type participant name and press Enter or click Add"
+                />
               </CardContent>
-
               <CardFooter className="pt-4 border-t flex flex-col gap-3">
                 <Button
                   type="submit"
@@ -545,7 +214,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                   {processing ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Processing...
+                      Submitting documents...
                     </div>
                   ) : (
                     <>
@@ -592,35 +261,6 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
           </Card>
         )}
       </div>
-
-      {/* PDF Preview Modal */}
-      {previewUrl && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-background rounded-lg p-3 sm:p-4 w-full h-[90vh] sm:w-[90vw] sm:h-[90vh] flex flex-col max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-2 sm:mb-4">
-              <h3 className="text-base sm:text-lg font-semibold">Document Preview</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  URL.revokeObjectURL(previewUrl);
-                  setPreviewUrl(null);
-                }}
-                className="hover:bg-destructive/10 hover:text-destructive transition-colors"
-              >
-                <X className="h-4 w-4 sm:h-5 sm:w-5" />
-              </Button>
-            </div>
-            <div className="flex-1 bg-muted rounded-md overflow-hidden">
-              <iframe
-                src={previewUrl}
-                className="w-full h-full"
-                title="PDF Preview"
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </AppLayout>
   );
 }

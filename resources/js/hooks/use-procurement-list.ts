@@ -11,9 +11,9 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
     const [selectedRows, setSelectedRows] = useState<ProcurementListItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | undefined>(initialError);
-    const [preProcurementModalOpen, setPreProcurementModalOpen] = useState(false);
-    const [preBidConferenceModalOpen, setPreBidConferenceModalOpen] = useState(false);
-    const [supplementalBidBulletinModalOpen, setSupplementalBidBulletinModalOpen] = useState(false);
+    const [preProcurementDialogOpen, setPreProcurementDialogOpen] = useState(false);
+    const [preBidConferenceDialogOpen, setPreBidConferenceDialogOpen] = useState(false);
+    const [supplementalBidBulletinDialogOpen, setSupplementalBidBulletinDialogOpen] = useState(false);
     const [selectedProcurement, setSelectedProcurement] = useState<{
         id: string;
         title: string;
@@ -30,28 +30,28 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
         setProcurements(initialProcurements || []);
     }, [initialProcurements]);
 
-    const handleOpenPreProcurementModal = (procurement: ProcurementListItem) => {
+    const handleOpenPreProcurementDialog = (procurement: ProcurementListItem) => {
         setSelectedProcurement({
             id: procurement.id,
             title: procurement.title,
         });
-        setPreProcurementModalOpen(true);
+        setPreProcurementDialogOpen(true);
     };
 
-    const handleOpenPreBidModal = (procurement: ProcurementListItem) => {
+    const handleOpenPreBidDialog = (procurement: ProcurementListItem) => {
         setSelectedProcurement({
             id: procurement.id,
             title: procurement.title,
         });
-        setPreBidConferenceModalOpen(true);
+        setPreBidConferenceDialogOpen(true);
     };
 
-    const handleOpenSupplementalBidBulletinModal = (procurement: ProcurementListItem) => {
+    const handleOpenSupplementalBidBulletinDialog = (procurement: ProcurementListItem) => {
         setSelectedProcurement({
             id: procurement.id,
             title: procurement.title,
         });
-        setSupplementalBidBulletinModalOpen(true);
+        setSupplementalBidBulletinDialogOpen(true);
     };
 
     return {
@@ -59,17 +59,17 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
         selectedRows,
         loading,
         error,
-        preProcurementModalOpen,
-        preBidConferenceModalOpen,
-        supplementalBidBulletinModalOpen,
+        preProcurementDialogOpen,
+        preBidConferenceDialogOpen,
+        supplementalBidBulletinDialogOpen,
         selectedProcurement,
         setSelectedRows,
         setLoading,
-        setPreProcurementModalOpen,
-        setPreBidConferenceModalOpen,
-        setSupplementalBidBulletinModalOpen,
-        handleOpenPreProcurementModal,
-        handleOpenPreBidModal,
-        handleOpenSupplementalBidBulletinModal,
+        setPreProcurementDialogOpen,
+        setPreBidConferenceDialogOpen,
+        setSupplementalBidBulletinDialogOpen,
+        handleOpenPreProcurementDialog,
+        handleOpenPreBidDialog,
+        handleOpenSupplementalBidBulletinDialog,
     };
 };

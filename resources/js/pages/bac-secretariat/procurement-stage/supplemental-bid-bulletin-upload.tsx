@@ -1,6 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { FileUp, FileText, X, ClipboardList, CalendarIcon as LucideCalendarIcon, Upload } from 'lucide-react';
-import { useState } from 'react';
+import { ClipboardList, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -10,28 +9,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import DatePicker from '@/components/date-picker';
+import FileUploadArea from '@/components/file-upload-area';
+import { useFileDrop } from '@/hooks/use-file-drop';
+
+// Allowed file types and max file size for uploads
+const ALLOWED_FILE_TYPES = ['application/pdf'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface SupplementalBidBulletinUploadProps {
-    procurement: {
+    procurement?: {
         id: string;
         title: string;
     };
-    errors?: {
-        bulletin_file?: string;
-        bulletin_number?: string;
-        bulletin_title?: string;
-        issue_date?: string;
-    };
 }
 
-export default function SupplementalBidBulletinUpload({ procurement, errors = {} }: SupplementalBidBulletinUploadProps) {
-    const [isDraggingFile, setIsDraggingFile] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-
-    const { data, setData, post, processing, reset } = useForm({
+export default function SupplementalBidBulletinUpload({ procurement = { id: '', title: '' } }: SupplementalBidBulletinUploadProps) {
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         procurement_id: procurement.id,
         procurement_title: procurement.title,
         bulletin_file: null as File | null,
@@ -41,7 +35,7 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
     });
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
         { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
         { title: `Upload Supplemental Bid Bulletin - ${procurement.id}: ${procurement.title}`, href: '#' },
     ];
@@ -49,12 +43,38 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!data.bulletin_file) {
+            toast.error('Missing file', {
+                description: 'Please upload the bulletin file.',
+            });
+            return;
+        }
+        if (!data.bulletin_number.trim()) {
+            toast.error('Missing bulletin number', {
+                description: 'Please enter the bulletin number.',
+            });
+            return;
+        }
+        if (!data.bulletin_title.trim()) {
+            toast.error('Missing bulletin title', {
+                description: 'Please enter the bulletin title.',
+            });
+            return;
+        }
+        if (!data.issue_date) {
+            toast.error('Missing issue date', {
+                description: 'Please select the issue date.',
+            });
+            return;
+        }
+
         post('/bac-secretariat/upload-supplemental-bid-bulletin-documents', {
             preserveScroll: true,
             preserveState: true,
             forceFormData: true,
             onSuccess: () => {
-                reset('bulletin_file');
+                reset();
+                clearErrors();
                 toast.success('Supplemental Bid Bulletin uploaded successfully!', {
                     description: 'The bulletin has been submitted.',
                 });
@@ -67,45 +87,39 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
         });
     };
 
+    // File validation
+    const validateFile = (file: File) => {
+        if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+            toast.error('Invalid file type', {
+                description: 'Only PDF files are allowed.',
+            });
+            return false;
+        }
+        if (file.size > MAX_FILE_SIZE) {
+            toast.error('File too large', {
+                description: 'Maximum file size is 10MB.',
+            });
+            return false;
+        }
+        return true;
+    };
+
+    // Use custom hook for file drop
+    const fileDrop = useFileDrop({
+        validateFile,
+        setFile: (file) => setData('bulletin_file', file),
+    });
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
-            setData('bulletin_file', file);
-        }
-    };
-
-    const handleFileDragEnter = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDraggingFile(true);
-    };
-
-    const handleFileDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDraggingFile(false);
-    };
-
-    const handleFileDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-    };
-
-    const handleFileDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDraggingFile(false);
-
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            const file = e.dataTransfer.files[0];
-            if (file.type === 'application/pdf') {
+            if (validateFile(file)) {
                 setData('bulletin_file', file);
-            } else {
-                toast.error('Invalid file type', {
-                    description: 'Please upload a PDF file',
-                });
             }
         }
     };
 
     const handleDateSelect = (date: Date | undefined) => {
-        setSelectedDate(date);
         if (date) {
             setData('issue_date', format(date, 'yyyy-MM-dd'));
         } else {
@@ -116,134 +130,60 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Upload Supplemental Bid Bulletin" />
-
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 bg-gradient-to-b from-background to-muted/20">
+            <div className="flex h-full flex-1 flex-col gap-4 sm:gap-6 rounded-xl p-3 sm:p-6 bg-gradient-to-b from-background to-muted/20">
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-primary">
-                        <ClipboardList className="h-6 w-6" />
-                        <h1 className="text-2xl font-bold">Supplemental Bid Bulletin</h1>
+                        <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6" />
+                        <h1 className="text-xl sm:text-2xl font-bold">Supplemental Bid Bulletin</h1>
                     </div>
-                    <p className="text-muted-foreground max-w-3xl">
+                    <p className="text-sm sm:text-base text-muted-foreground max-w-3xl">
                         Upload the supplemental bid bulletin for procurement
                         <span className="font-medium text-foreground"> #{procurement.id}</span>:
                         <span className="font-medium text-foreground italic"> {procurement.title}</span>
                     </p>
                 </div>
-
-                <form onSubmit={onSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
-                            <CardHeader className="pb-4 space-y-1">
-                                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                                    <ClipboardList className="h-5 w-5 text-primary" />
+                            <CardHeader className="pb-2 sm:pb-4 space-y-1">
+                                <CardTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+                                    <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                                     Required Document
                                 </CardTitle>
-                                <CardDescription>
+                                <CardDescription className="text-sm">
                                     Please upload the supplemental bid bulletin in PDF format
                                 </CardDescription>
                             </CardHeader>
-
-                            <CardContent className="space-y-8">
-                                <div className="space-y-2">
-                                    <label className="flex items-center text-base font-medium">
-                                        <ClipboardList className="h-4 w-4 mr-2" />
-                                        Bulletin File
-                                    </label>
-                                    <div
-                                        className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDraggingFile
-                                            ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                                            : data.bulletin_file
-                                                ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                                                : errors.bulletin_file
-                                                    ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-                                                    : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                                            } cursor-pointer group`}
-                                        onDragEnter={handleFileDragEnter}
-                                        onDragLeave={handleFileDragLeave}
-                                        onDragOver={handleFileDragOver}
-                                        onDrop={handleFileDrop}
-                                        onClick={() => document.getElementById('file-input')?.click()}
-                                    >
-                                        {!data.bulletin_file ? (
-                                            <div className="flex flex-col items-center justify-center text-center">
-                                                <div className="rounded-full bg-muted p-3 mb-3 group-hover:bg-primary/10 transition-colors">
-                                                    <FileUp className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                                                </div>
-                                                <p className="font-medium text-muted-foreground mb-2 group-hover:text-foreground transition-colors">
-                                                    Drag and drop your bulletin file here
-                                                </p>
-                                                <p className="text-sm text-muted-foreground/70 mb-5">
-                                                    Only PDF files are supported
-                                                </p>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="group-hover:bg-primary/5 transition-colors"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        document.getElementById('file-input')?.click();
-                                                    }}
-                                                >
-                                                    Browse Files
-                                                </Button>
-                                                <input
-                                                    id="file-input"
-                                                    type="file"
-                                                    accept="application/pdf"
-                                                    className="hidden"
-                                                    onChange={handleFileChange}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center">
-                                                    <div className="rounded-full bg-primary/10 p-3 mr-4">
-                                                        <FileText className="h-6 w-6 text-primary" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium">{data.bulletin_file.name}</p>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {(data.bulletin_file.size / 1024).toFixed(2)} KB • PDF
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setData('bulletin_file', null);
-                                                    }}
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    {errors.bulletin_file && (
-                                        <InputError message={errors.bulletin_file} />
-                                    )}
-                                </div>
+                            <CardContent className="py-0 flex flex-col justify-center space-y-6 sm:space-y-8">
+                                <FileUploadArea
+                                    label="Bulletin File"
+                                    file={data.bulletin_file}
+                                    error={errors.bulletin_file}
+                                    isDragging={fileDrop.isDragging}
+                                    onFileChange={handleFileChange}
+                                    onDragEnter={fileDrop.handleDragEnter}
+                                    onDragLeave={fileDrop.handleDragLeave}
+                                    onDragOver={fileDrop.handleDragOver}
+                                    onDrop={fileDrop.handleDrop}
+                                    onRemove={() => setData('bulletin_file', null)}
+                                    inputId="file-input"
+                                    required={true}
+                                />
                             </CardContent>
                         </Card>
-
                         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
-                            <CardHeader className="pb-4 space-y-1">
-                                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                                    <LucideCalendarIcon className="h-5 w-5 text-primary" />
+                            <CardHeader className="pb-2 sm:pb-4 space-y-1">
+                                <CardTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+                                    <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                                     Bulletin Details
                                 </CardTitle>
-                                <CardDescription>
+                                <CardDescription className="text-sm">
                                     Provide information about the bulletin
                                 </CardDescription>
                             </CardHeader>
-
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-4 sm:space-y-6">
                                 <div className="space-y-2">
-                                    <label htmlFor="bulletin_number" className="text-sm font-medium">
+                                    <label htmlFor="bulletin_number" className="text-base font-medium">
                                         Bulletin Number
                                     </label>
                                     <Input
@@ -251,6 +191,7 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
                                         value={data.bulletin_number}
                                         onChange={(e) => setData('bulletin_number', e.target.value)}
                                         placeholder="Enter bulletin number"
+                                        className="h-10"
                                     />
                                     {errors.bulletin_number && (
                                         <InputError message={errors.bulletin_number} />
@@ -258,7 +199,7 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="bulletin_title" className="text-sm font-medium">
+                                    <label htmlFor="bulletin_title" className="text-base font-medium">
                                         Bulletin Title
                                     </label>
                                     <Input
@@ -266,6 +207,7 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
                                         value={data.bulletin_title}
                                         onChange={(e) => setData('bulletin_title', e.target.value)}
                                         placeholder="Enter bulletin title"
+                                        className="h-10"
                                     />
                                     {errors.bulletin_title && (
                                         <InputError message={errors.bulletin_title} />
@@ -273,37 +215,13 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="issue_date" className="text-sm font-medium block mb-1">
-                                        Issue Date
-                                    </label>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                                variant={'outline'}
-                                                className={cn(
-                                                    'w-full justify-start text-left font-normal',
-                                                    !selectedDate && 'text-muted-foreground'
-                                                )}
-                                            >
-                                                <LucideCalendarIcon className="mr-2 h-4 w-4" />
-                                                {selectedDate ? format(selectedDate, 'PPP') : <span>Pick a date</span>}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                            <Calendar
-                                                mode="single"
-                                                selected={selectedDate}
-                                                onSelect={handleDateSelect}
-                                                initialFocus
-                                                disabled={(date) =>
-                                                    date > new Date() || date < new Date("1900-01-01")
-                                                }
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                    {errors.issue_date && (
-                                        <InputError message={errors.issue_date} className="mt-1" />
-                                    )}
+                                    <DatePicker
+                                        label="Issue Date"
+                                        value={data.issue_date ? new Date(data.issue_date) : undefined}
+                                        onChange={handleDateSelect}
+                                        error={errors.issue_date}
+                                        required
+                                    />
                                 </div>
                             </CardContent>
 
@@ -311,7 +229,7 @@ export default function SupplementalBidBulletinUpload({ procurement, errors = {}
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="w-full flex items-center gap-2 h-11"
+                                    className="w-full flex items-center gap-2 h-10 sm:h-11"
                                 >
                                     {processing ? (
                                         <div className="flex items-center gap-2">

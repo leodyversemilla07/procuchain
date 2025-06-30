@@ -1,164 +1,40 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, FileText, Upload, AlertCircle, X, FileUp, CheckCircle, XCircle, Building } from 'lucide-react';
+import { CalendarIcon, FileText, Upload, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
+import FileUploadArea from '@/components/file-upload-area';
+import { useFileDrop } from '@/hooks/use-file-drop';
+import DatePicker from '@/components/date-picker';
+import { Label } from '@/components/ui/label';
+
+const ALLOWED_FILE_TYPES = ['application/pdf'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface PostQualificationUploadProps {
-  procurement: {
+  procurement?: {
     id: string;
     title: string;
   };
-  errors?: Record<string, string>;
 }
 
-interface FileInputProps {
-  id: string;
-  label: string;
-  icon: React.ElementType;
-  file: File | null;
-  error?: string;
-  onFileChange: (file: File | null) => void;
-  isDragging: boolean;
-  onDragEnter: (e: React.DragEvent) => void;
-  onDragLeave: (e: React.DragEvent) => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent) => void;
+// Helper for type-safe error access
+function getFieldError<T extends object>(errors: T, field: keyof T): string | undefined {
+  return errors && typeof errors === 'object' ? (errors as Record<string, string>)[field as string] : undefined;
 }
 
-const FileInputDisplay = ({ file, Icon, onFileChange }: { file: File, Icon: React.ElementType, onFileChange: (file: File | null) => void }) => (
-  <div className="flex items-center justify-between">
-    <div className="flex items-center overflow-hidden mr-2">
-      <div className="rounded-full bg-primary/10 p-2.5 mr-3 flex-shrink-0">
-        <Icon className="h-5 w-5 text-primary" />
-      </div>
-      <div className="overflow-hidden">
-        <p className="font-medium text-sm truncate" title={file.name}>{file.name}</p>
-        <p className="text-xs text-muted-foreground">
-          {(file.size / 1024).toFixed(2)} KB • PDF
-        </p>
-      </div>
-    </div>
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0 h-7 w-7"
-      onClick={(e) => {
-        e.stopPropagation();
-        onFileChange(null);
-      }}
-    >
-      <X className="h-4 w-4" />
-    </Button>
-  </div>
-);
-
-const FileInput: React.FC<FileInputProps> = ({
-  id, label, icon: Icon, file, error, onFileChange, isDragging,
-  onDragEnter, onDragLeave, onDragOver, onDrop
-}) => {
-  const validateAndProcessFile = (inputFile: File) => {
-    if (inputFile.type === 'application/pdf') {
-      onFileChange(inputFile);
-    } else {
-      toast.error("Invalid file type. Please upload a PDF.");
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="flex items-center text-base font-medium">
-        <Icon className="h-4 w-4 mr-2" />
-        {label}
-      </label>
-      <div
-        className={`border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[150px] flex flex-col justify-center ${isDragging
-          ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-          : file
-            ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-            : error
-              ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
-              : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-          } cursor-pointer group`}
-        onDragEnter={onDragEnter}
-        onDragLeave={onDragLeave}
-        onDragOver={onDragOver}
-        onDrop={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const droppedFile = e.dataTransfer.files?.[0];
-          if (droppedFile) {
-            validateAndProcessFile(droppedFile);
-          }
-          onDrop(e);
-        }}
-        onClick={() => document.getElementById(id)?.click()}
-      >
-        {!file ? (
-          <div className="flex flex-col items-center justify-center text-center">
-            <div className="rounded-full bg-muted p-3 mb-3 group-hover:bg-primary/10 transition-colors">
-              <FileUp className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-            </div>
-            <p className="font-medium text-sm text-muted-foreground mb-1 group-hover:text-foreground transition-colors">
-              Drag & drop PDF here
-            </p>
-            <p className="text-xs text-muted-foreground/70 mb-3">
-              or click to browse
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="text-xs h-7 group-hover:bg-primary/5 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                document.getElementById(id)?.click();
-              }}
-            >
-              Browse File
-            </Button>
-            <input
-              id={id}
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  validateAndProcessFile(e.target.files[0]);
-                }
-                e.target.value = '';
-              }}
-            />
-          </div>
-        ) : (
-          <FileInputDisplay file={file} Icon={Icon} onFileChange={onFileChange} />
-        )}
-      </div>
-      {error && <InputError message={error} />}
-    </div>
-  );
-};
-
-export default function PostQualificationUpload({ procurement, errors = {} }: PostQualificationUploadProps) {
-  const [isDraggingFile, setIsDraggingFile] = useState(false);
-  const [draggingOverField, setDraggingOverField] = useState<string | null>(null);
-
-  const { data, setData, post, processing } = useForm({
-    procurement_id: procurement.id || '',
-    procurement_title: procurement.title || '',
+export default function PostQualificationUpload({ procurement = { id: '', title: '' } }: PostQualificationUploadProps) {
+  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+    procurement_id: procurement?.id || '',
+    procurement_title: procurement?.title || '',
     post_qualification_report: null as File | null,
     twg_certification: null as File | null,
     notice_of_post_qualification: null as File | null,
@@ -167,83 +43,76 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
     remarks: '',
   });
 
+  // File validation
+  const validateFile = (file: File) => {
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast.error('Invalid file type', { description: 'Only PDF files are allowed.' });
+      return false;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File too large', { description: 'Maximum file size is 10MB.' });
+      return false;
+    }
+    return true;
+  };
+
+  // Use custom hook for each file
+  const pqReportDrop = useFileDrop({
+    validateFile,
+    setFile: (file) => setData('post_qualification_report', file),
+  });
+  const twgCertDrop = useFileDrop({
+    validateFile,
+    setFile: (file) => setData('twg_certification', file),
+  });
+  const noticeDrop = useFileDrop({
+    validateFile,
+    setFile: (file) => setData('notice_of_post_qualification', file),
+  });
+
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Procurements', href: '/bac-secretariat/procurements-list' },
-    { title: `Upload Post-Qualification Report - ${procurement.id}`, href: '#' },
+    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+    { title: `Upload Post-Qualification Report - ${procurement.id}: ${procurement.title}`, href: '#' },
   ];
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (data.outcome === null) {
-      toast.error("Please select an outcome (Verified or Failed)");
+    // Client-side validation
+    if (!data.post_qualification_report) {
+      toast.error('Missing Post-Qualification Report', { description: 'Please upload the post-qualification report PDF.' });
       return;
     }
-
-    const formData = new FormData();
-    formData.append('procurement_id', procurement.id);
-    formData.append('procurement_title', procurement.title);
-
-    // Add document files
-    if (data.post_qualification_report) {
-      formData.append('post_qualification_report', data.post_qualification_report);
+    if (!data.notice_of_post_qualification) {
+      toast.error('Missing Notice of Post-Qualification', { description: 'Please upload the notice of post-qualification PDF.' });
+      return;
     }
-
-    if (data.twg_certification) {
-      formData.append('twg_certification', data.twg_certification);
+    if (data.outcome === null) {
+      toast.error('Please select an outcome (Verified or Failed)');
+      return;
     }
-
-    if (data.notice_of_post_qualification) {
-      formData.append('notice_of_post_qualification', data.notice_of_post_qualification);
-    }
-
-    formData.append('submission_date', data.submission_date);
-    formData.append('outcome', String(data.outcome));
-    if (data.remarks) {
-      formData.append('remarks', data.remarks);
-    }
-
     post('/bac-secretariat/upload-post-qualification-documents', {
       forceFormData: true,
+      preserveScroll: true,
+      preserveState: true,
       onSuccess: () => {
         toast.success("Post-qualification report uploaded successfully!", {
           description: "Post-qualification report has been submitted."
         });
+        reset();
+        clearErrors();
       },
-      onError: (errors) => {
-        // Log the actual errors received from the backend for better debugging
-        console.error("Submission Error:", errors);
-        const firstErrorMessage = Object.values(errors)[0] as string || "An unknown error occurred.";
-        toast.error("Failed to upload documents", {
-          description: firstErrorMessage
+      onError: () => {
+        toast.error('Failed to upload documents', {
+          description: 'Please check the form for errors and try again.'
         });
       }
     });
   };
 
-  const handleDragEvents = (e: React.DragEvent, isEntering = true, field: string | null = null) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingFile(isEntering);
-    setDraggingOverField(isEntering ? field : null);
-  };
-
-  const handleFileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingFile(false);
-    setDraggingOverField(null);
-  };
-
-  const handleFileChange = (field: keyof typeof data, file: File | null) => {
-    setData(field, file);
-  };
-
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Upload Post-Qualification Report" />
-
       <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 bg-gradient-to-b from-background to-muted/20">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-primary">
@@ -256,7 +125,6 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
             <span className="font-medium text-foreground italic"> {procurement.title}</span>
           </p>
         </div>
-
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
@@ -270,50 +138,73 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <FileInput
-                  id="post_qualification_report"
+                <FileUploadArea
                   label="Post-Qualification Report (Required)"
-                  icon={FileText}
                   file={data.post_qualification_report}
-                  error={errors.post_qualification_report}
-                  onFileChange={(file) => handleFileChange('post_qualification_report', file)}
-                  isDragging={isDraggingFile && draggingOverField === 'post_qualification_report'}
-                  onDragEnter={(e) => handleDragEvents(e, true, 'post_qualification_report')}
-                  onDragLeave={(e) => handleDragEvents(e, false)}
-                  onDragOver={(e) => handleDragEvents(e, true, 'post_qualification_report')}
-                  onDrop={handleFileDrop}
+                  error={getFieldError(errors, 'post_qualification_report')}
+                  isDragging={pqReportDrop.isDragging}
+                  onFileChange={e => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      const file = e.target.files[0];
+                      if (validateFile(file)) setData('post_qualification_report', file);
+                    }
+                  }}
+                  onDragEnter={pqReportDrop.handleDragEnter}
+                  onDragLeave={pqReportDrop.handleDragLeave}
+                  onDragOver={pqReportDrop.handleDragOver}
+                  onDrop={pqReportDrop.handleDrop}
+                  onRemove={() => setData('post_qualification_report', null)}
+                  inputId="pq-report-input"
+                  required={true}
                 />
-
-                <FileInput
-                  id="twg_certification"
+                {getFieldError(errors, 'post_qualification_report') && (
+                  <InputError message={getFieldError(errors, 'post_qualification_report')} />
+                )}
+                <FileUploadArea
                   label="TWG Certification (If applicable)"
-                  icon={Building}
                   file={data.twg_certification}
-                  error={errors.twg_certification}
-                  onFileChange={(file) => handleFileChange('twg_certification', file)}
-                  isDragging={isDraggingFile && draggingOverField === 'twg_certification'}
-                  onDragEnter={(e) => handleDragEvents(e, true, 'twg_certification')}
-                  onDragLeave={(e) => handleDragEvents(e, false)}
-                  onDragOver={(e) => handleDragEvents(e, true, 'twg_certification')}
-                  onDrop={handleFileDrop}
+                  error={getFieldError(errors, 'twg_certification')}
+                  isDragging={twgCertDrop.isDragging}
+                  onFileChange={e => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      const file = e.target.files[0];
+                      if (validateFile(file)) setData('twg_certification', file);
+                    }
+                  }}
+                  onDragEnter={twgCertDrop.handleDragEnter}
+                  onDragLeave={twgCertDrop.handleDragLeave}
+                  onDragOver={twgCertDrop.handleDragOver}
+                  onDrop={twgCertDrop.handleDrop}
+                  onRemove={() => setData('twg_certification', null)}
+                  inputId="twg-cert-input"
                 />
-
-                <FileInput
-                  id="notice_of_post_qualification"
+                {getFieldError(errors, 'twg_certification') && (
+                  <InputError message={getFieldError(errors, 'twg_certification')} />
+                )}
+                <FileUploadArea
                   label="Notice of Post-Qualification (Required)"
-                  icon={FileText}
                   file={data.notice_of_post_qualification}
-                  error={errors.notice_of_post_qualification}
-                  onFileChange={(file) => handleFileChange('notice_of_post_qualification', file)}
-                  isDragging={isDraggingFile && draggingOverField === 'notice_of_post_qualification'}
-                  onDragEnter={(e) => handleDragEvents(e, true, 'notice_of_post_qualification')}
-                  onDragLeave={(e) => handleDragEvents(e, false)}
-                  onDragOver={(e) => handleDragEvents(e, true, 'notice_of_post_qualification')}
-                  onDrop={handleFileDrop}
+                  error={getFieldError(errors, 'notice_of_post_qualification')}
+                  isDragging={noticeDrop.isDragging}
+                  onFileChange={e => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      const file = e.target.files[0];
+                      if (validateFile(file)) setData('notice_of_post_qualification', file);
+                    }
+                  }}
+                  onDragEnter={noticeDrop.handleDragEnter}
+                  onDragLeave={noticeDrop.handleDragLeave}
+                  onDragOver={noticeDrop.handleDragOver}
+                  onDrop={noticeDrop.handleDrop}
+                  onRemove={() => setData('notice_of_post_qualification', null)}
+                  inputId="notice-input"
+                  required={true}
                 />
+                {getFieldError(errors, 'notice_of_post_qualification') && (
+                  <InputError message={getFieldError(errors, 'notice_of_post_qualification')} />
+                )}
               </CardContent>
             </Card>
-
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
               <CardHeader className="pb-4 space-y-1">
                 <CardTitle className="text-xl font-semibold flex items-center gap-2">
@@ -325,39 +216,21 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <DatePicker
+                  label="Submission Date"
+                  value={data.submission_date ? new Date(data.submission_date) : undefined}
+                  onChange={date => date && setData('submission_date', format(date, 'yyyy-MM-dd'))}
+                  error={getFieldError(errors, 'submission_date')}
+                  required
+                />
+                {getFieldError(errors, 'submission_date') && (
+                  <InputError message={getFieldError(errors, 'submission_date')} />
+                )}
                 <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    Submission Date
-                  </label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {data.submission_date ? format(new Date(data.submission_date), 'PPP') : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={new Date(data.submission_date)}
-                        onSelect={(date) => date && setData('submission_date', format(date, 'yyyy-MM-dd'))}
-                        initialFocus
-                        className="rounded-md border shadow-md"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {errors.submission_date && <InputError message={errors.submission_date} />}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
+                  <Label className="flex items-center text-base font-medium">
                     <FileText className="h-4 w-4 mr-2" />
                     Outcome
-                  </label>
+                  </Label>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <input
@@ -368,13 +241,13 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
                         onChange={() => setData('outcome', true)}
                         className="peer hidden"
                       />
-                      <label
+                      <Label
                         htmlFor="passed"
                         className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-checked:border-primary cursor-pointer"
                       >
                         <CheckCircle className="mb-3 h-6 w-6 text-green-500" />
                         <span className="text-center">Verified</span>
-                      </label>
+                      </Label>
                     </div>
                     <div>
                       <input
@@ -385,23 +258,23 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
                         onChange={() => setData('outcome', false)}
                         className="peer hidden"
                       />
-                      <label
+                      <Label
                         htmlFor="failed"
                         className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-checked:border-primary cursor-pointer"
                       >
                         <XCircle className="mb-3 h-6 w-6 text-red-500" />
                         <span className="text-center">Failed</span>
-                      </label>
+                      </Label>
                     </div>
                   </div>
-                  {errors.outcome && <InputError message={errors.outcome} />}
+                  {getFieldError(errors, 'outcome') && <InputError message={getFieldError(errors, 'outcome')} />}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
+                  <Label className="flex items-center text-base font-medium">
                     <FileText className="h-4 w-4 mr-2" />
                     Remarks
-                  </label>
+                  </Label>
                   <Textarea
                     placeholder="Enter any additional remarks about the evaluation"
                     rows={5}
@@ -409,7 +282,7 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
                     value={data.remarks}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setData('remarks', e.target.value)}
                   />
-                  {errors.remarks && <InputError message={errors.remarks} />}
+                  {getFieldError(errors, 'remarks') && <InputError message={getFieldError(errors, 'remarks')} />}
                 </div>
               </CardContent>
               <CardFooter className="pt-4 border-t flex flex-col gap-3">
@@ -443,7 +316,6 @@ export default function PostQualificationUpload({ procurement, errors = {} }: Po
             </Card>
           </div>
         </form>
-
         {Object.keys(errors).length > 0 && (
           <Card className="border-destructive/50 bg-destructive/5 dark:bg-destructive/10 shadow-md">
             <CardContent className="p-4">

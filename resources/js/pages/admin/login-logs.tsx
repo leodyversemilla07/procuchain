@@ -47,12 +47,13 @@ import {
     Smartphone,
     Tablet,
     User,
-    MapPin,    Activity,
+    MapPin, Activity,
     X,
     Filter,
     ChevronDown,
     QrCode
 } from 'lucide-react';
+import { Pagination } from '@/components/pagination';
 
 interface LoginLog {
     id: number;
@@ -109,6 +110,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('recent');
+    // Pagination state for recent logins
     const [recentLoginsPage, setRecentLoginsPage] = useState(1);
     const [suspiciousActivitiesPage, setSuspiciousActivitiesPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -281,149 +283,6 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
             dateRange?.from ||
             dateRange?.to;
     }, [debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, dateRange]);
-
-    // Pagination component with modern shadcn/ui design
-    const PaginationControls = ({
-        currentPage,
-        totalPages,
-        onPageChange,
-        totalItems
-    }: {
-        currentPage: number;
-        totalPages: number;
-        onPageChange: (page: number) => void;
-        totalItems: number;
-    }) => {
-        const startItem = (currentPage - 1) * pageSize + 1;
-        const endItem = Math.min(currentPage * pageSize, totalItems);
-
-        // Generate page numbers to show
-        const getPageNumbers = () => {
-            const pages: (number | string)[] = [];
-            const showEllipsis = totalPages > 7;
-
-            if (!showEllipsis) {
-                // Show all pages if 7 or fewer
-                for (let i = 1; i <= totalPages; i++) {
-                    pages.push(i);
-                }
-            } else {
-                // Show first page
-                pages.push(1);
-
-                // Show ellipsis and current page context
-                if (currentPage > 4) {
-                    pages.push('...');
-                }
-
-                // Show pages around current page
-                const start = Math.max(2, currentPage - 1);
-                const end = Math.min(totalPages - 1, currentPage + 1);
-
-                for (let i = start; i <= end; i++) {
-                    if (!pages.includes(i)) {
-                        pages.push(i);
-                    }
-                }
-
-                // Show ellipsis and last page
-                if (currentPage < totalPages - 3) {
-                    pages.push('...');
-                }
-
-                if (!pages.includes(totalPages) && totalPages > 1) {
-                    pages.push(totalPages);
-                }
-            }
-
-            return pages;
-        };
-
-        return (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t bg-muted/30">
-                {/* Left side - Rows per page and showing info */}
-                <div className="flex items-center gap-6 text-sm">
-                    <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground whitespace-nowrap">Rows per page</span>
-                        <Select
-                            value={pageSize.toString()}
-                            onValueChange={(value) => {
-                                setPageSize(Number(value));
-                                setRecentLoginsPage(1);
-                                setSuspiciousActivitiesPage(1);
-                            }}
-                        >
-                            <SelectTrigger className="h-8 w-20 text-sm">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent side="top" className="min-w-20">
-                                {[10, 20, 30, 50, 100].map((size) => (
-                                    <SelectItem key={size} value={size.toString()}>
-                                        {size}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="text-muted-foreground whitespace-nowrap">
-                        Showing <span className="font-medium text-foreground">{startItem}</span> to{' '}
-                        <span className="font-medium text-foreground">{endItem}</span> of{' '}
-                        <span className="font-medium text-foreground">{totalItems}</span> results
-                    </div>
-                </div>
-
-                {/* Right side - Pagination controls */}
-                <div className="flex items-center gap-2">
-                    {totalPages > 1 && (
-                        <>
-                            {/* Previous button */}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onPageChange(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className="gap-1 px-3"
-                            >
-                                <span className="text-sm">Previous</span>
-                            </Button>
-
-                            {/* Page numbers */}
-                            <div className="flex items-center gap-1">
-                                {getPageNumbers().map((page, index) => (
-                                    <React.Fragment key={index}>
-                                        {page === '...' ? (
-                                            <span className="px-2 py-1 text-muted-foreground">...</span>
-                                        ) : (
-                                            <Button
-                                                variant={currentPage === page ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => onPageChange(page as number)}
-                                                className="w-8 h-8 p-0"
-                                            >
-                                                {page}
-                                            </Button>
-                                        )}
-                                    </React.Fragment>
-                                ))}
-                            </div>
-
-                            {/* Next button */}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onPageChange(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className="gap-1 px-3"
-                            >
-                                <span className="text-sm">Next</span>
-                            </Button>
-                        </>
-                    )}
-                </div>
-            </div>
-        );
-    };
 
     // Helper function to highlight search terms
     const highlightSearchTerm = (text: string, searchTerm: string) => {
@@ -759,6 +618,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                             </SelectContent>
                                         </Select>
                                     </div>
+
                                     {/* Date Range Filter */}
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-muted-foreground">Date Range</label>
@@ -940,7 +800,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 </CardHeader>
                                 <CardContent className="px-0 pb-0">
                                     <div className="border-b">
-                                        <Table>                                            <TableHeader>
+                                        <Table>
+                                            <TableHeader>
                                                 <TableRow>
                                                     <TableHead className="pl-6">User</TableHead>
                                                     <TableHead>Role</TableHead>
@@ -954,7 +815,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {paginatedRecentLogins.length > 0 ? (                                                    paginatedRecentLogins.map((log) => (
+                                                {paginatedRecentLogins.length > 0 ? (
+                                                    paginatedRecentLogins.map((log) => (
                                                         <TableRow key={log.id}>
                                                             <TableCell className="pl-6">
                                                                 <div className="space-y-1">
@@ -1030,16 +892,25 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                                                             {searchTerm ? 'No login logs match your search.' : 'No login logs found.'}
                                                         </TableCell>
-                                                    </TableRow>)}
+                                                    </TableRow>
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </div>
-                                    <PaginationControls
-                                        currentPage={recentLoginsPage}
-                                        totalPages={totalRecentLoginsPages}
-                                        onPageChange={setRecentLoginsPage}
-                                        totalItems={filteredAndSortedRecentLogins.length}
-                                    />
+                                    <div className="mt-4 px-6">
+                                        <Pagination
+                                            pageIndex={recentLoginsPage - 1}
+                                            pageSize={pageSize}
+                                            pageCount={totalRecentLoginsPages}
+                                            totalItems={filteredAndSortedRecentLogins.length}
+                                            onPageChange={i => setRecentLoginsPage(i + 1)}
+                                            onPageSizeChange={size => {
+                                                setPageSize(size);
+                                                setRecentLoginsPage(1);
+                                                setSuspiciousActivitiesPage(1);
+                                            }}
+                                        />
+                                    </div>
                                 </CardContent>
                             </Card>
                         </TabsContent>
@@ -1061,7 +932,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 </CardHeader>
                                 <CardContent className="px-0 pb-0">
                                     <div className="border-b">
-                                        <Table>                                            <TableHeader>
+                                        <Table>
+                                            <TableHeader>
                                                 <TableRow>
                                                     <TableHead className="pl-6">User/Email</TableHead>
                                                     <TableHead>Role</TableHead>
@@ -1137,12 +1009,20 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                             </TableBody>
                                         </Table>
                                     </div>
-                                    <PaginationControls
-                                        currentPage={suspiciousActivitiesPage}
-                                        totalPages={totalSuspiciousActivitiesPages}
-                                        onPageChange={setSuspiciousActivitiesPage}
-                                        totalItems={filteredAndSortedSuspiciousActivities.length}
-                                    />
+                                    <div className="mt-4 px-6">
+                                        <Pagination
+                                            pageIndex={suspiciousActivitiesPage - 1}
+                                            pageSize={pageSize}
+                                            pageCount={totalSuspiciousActivitiesPages}
+                                            totalItems={filteredAndSortedSuspiciousActivities.length}
+                                            onPageChange={i => setSuspiciousActivitiesPage(i + 1)}
+                                            onPageSizeChange={size => {
+                                                setPageSize(size);
+                                                setRecentLoginsPage(1);
+                                                setSuspiciousActivitiesPage(1);
+                                            }}
+                                        />
+                                    </div>
                                 </CardContent>
                             </Card>
                         </TabsContent>

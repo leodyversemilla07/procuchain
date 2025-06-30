@@ -10,9 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ErrorState } from '@/components/procurements-list/error-state';
-import { PreBidConferenceModal } from '@/components/pre-bid-conference/pre-bid-conference-modal';
-import { PreProcurementModal } from '@/components/pre-procurement-conference/pre-procurement-conference-modal';
-import { SupplementalBidBulletinModal } from '@/components/supplemental-bid-bulletin/supplemental-bid-bulletin-modal';
+import { PreBidConferenceDialog } from '@/components/pre-bid-conference-dialog';
+import { PreProcurementDialog } from '@/components/pre-procurement-conference-dialog';
+import { SupplementalBidBulletinDialog } from '@/components/supplemental-bid-bulletin-dialog';
 import { useProcurementList } from '@/hooks/use-procurement-list';
 import { getBreadcrumbs } from '@/lib/procurements-list-utils';
 import { createColumns } from './columns';
@@ -36,17 +36,17 @@ export default function ProcurementsList({ procurements: initialProcurements, er
         procurements,
         loading,
         error,
-        preProcurementModalOpen,
-        preBidConferenceModalOpen,
-        supplementalBidBulletinModalOpen,
+        preProcurementDialogOpen,
+        preBidConferenceDialogOpen,
+        supplementalBidBulletinDialogOpen,
         selectedProcurement,
         setSelectedRows,
-        setPreProcurementModalOpen,
-        setPreBidConferenceModalOpen,
-        setSupplementalBidBulletinModalOpen,
-        handleOpenPreProcurementModal,
-        handleOpenPreBidModal,
-        handleOpenSupplementalBidBulletinModal,
+        setPreProcurementDialogOpen,
+        setPreBidConferenceDialogOpen,
+        setSupplementalBidBulletinDialogOpen,
+        handleOpenPreProcurementDialog,
+        handleOpenPreBidDialog,
+        handleOpenSupplementalBidBulletinDialog,
     } = useProcurementList({ initialProcurements, initialError });
 
     // Helper functions for categorizing procurements
@@ -75,9 +75,9 @@ export default function ProcurementsList({ procurements: initialProcurements, er
 
     // Create columns with handlers
     const columns = createColumns({
-        onOpenPreProcurementModal: handleOpenPreProcurementModal,
-        onOpenPreBidModal: handleOpenPreBidModal,
-        onOpenSupplementalBidBulletinModal: handleOpenSupplementalBidBulletinModal,
+        onOpenPreProcurementDialog: handleOpenPreProcurementDialog,
+        onOpenPreBidDialog: handleOpenPreBidDialog,
+        onOpenSupplementalBidBulletinDialog: handleOpenSupplementalBidBulletinDialog,
     });
 
     // Filter procurements based on search and filters
@@ -270,7 +270,8 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="px-3 md:px-6 pt-0 pb-3 md:pb-6">                        <ProcurementsDataTable
+                    <CardContent className="px-3 md:px-6 pt-0 pb-3 md:pb-6">                        
+                        <ProcurementsDataTable
                             columns={columns}
                             data={filteredProcurements}
                             loading={loading}
@@ -283,29 +284,29 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                 </Card>
             </div>
 
-            {/* Modals */}
-            {preProcurementModalOpen && selectedProcurement && (
-                <PreProcurementModal
-                    open={preProcurementModalOpen}
-                    onOpenChange={setPreProcurementModalOpen}
+            {/* Dialogs */}
+            {preProcurementDialogOpen && selectedProcurement && (
+                <PreProcurementDialog
+                    open={preProcurementDialogOpen}
+                    onOpenChange={setPreProcurementDialogOpen}
                     procurementId={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
                     onComplete={() => window.location.reload()}
                 />
             )}
-            {preBidConferenceModalOpen && selectedProcurement && (
-                <PreBidConferenceModal
-                    open={preBidConferenceModalOpen}
-                    onOpenChange={setPreBidConferenceModalOpen}
+            {preBidConferenceDialogOpen && selectedProcurement && (
+                <PreBidConferenceDialog
+                    open={preBidConferenceDialogOpen}
+                    onOpenChange={setPreBidConferenceDialogOpen}
                     procurementId={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
                     onComplete={() => window.location.reload()}
                 />
             )}
-            {supplementalBidBulletinModalOpen && selectedProcurement && (
-                <SupplementalBidBulletinModal
-                    open={supplementalBidBulletinModalOpen}
-                    onOpenChange={setSupplementalBidBulletinModalOpen}
+            {supplementalBidBulletinDialogOpen && selectedProcurement && (
+                <SupplementalBidBulletinDialog
+                    open={supplementalBidBulletinDialogOpen}
+                    onOpenChange={setSupplementalBidBulletinDialogOpen}
                     procurementId={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
                     onComplete={() => window.location.reload()}
