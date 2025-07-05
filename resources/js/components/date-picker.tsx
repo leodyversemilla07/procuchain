@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDownIcon, CalendarIcon } from "lucide-react";
+import { ChevronDownIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -28,19 +28,22 @@ const DatePicker: React.FC<DatePickerProps> = ({
     popoverClassName = "",
     required = false,
 }) => (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-1">
         {label && (
-            <Label className={`flex items-center text-base font-medium ${inputLabelClassName}`}>
-                <CalendarIcon className="h-4 w-4 mr-2" />
+            <Label className={inputLabelClassName}>
                 {label}
-                {required && <span className="text-destructive ml-1">*</span>}
+                {required ? (
+                    <span className="text-destructive ml-1 align-super text-xs" aria-label="required">
+                        *
+                    </span>
+                ) : null}
             </Label>
         )}
         <Popover>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
-                    className={`w-full justify-between text-left font-normal h-10 ${buttonClassName}`}
+                    className={`w-full justify-between text-left font-normal h-9 px-3 py-2 ${buttonClassName}`}
                 >
                     {value ? format(value, "PPP") : <span>Pick a date</span>}
                     <ChevronDownIcon className="ml-2 h-4 w-4 text-muted-foreground" />
