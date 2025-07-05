@@ -1,30 +1,23 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-    FileText, Save, Building, Plus, X
+    FileText, Save, Plus, X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useForm, Head } from '@inertiajs/react';
 import { toast } from 'sonner';
 import { type BreadcrumbItem } from '@/types';
 import AppLayout from '@/layouts/app-layout';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import InputError from '@/components/input-error';
 import DatePicker from '@/components/date-picker';
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { MUNICIPAL_OFFICES } from '@/types/blockchain';
 import PeopleInput from '@/components/people-input';
 import FileUploadArea from '@/components/file-upload-area';
 import { useMultiFileDrop } from '@/hooks/use-file-drop';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { InputWithLabel } from '@/components/ui/input-with-label';
+import MunicipalOfficeSelect from '@/components/municipal-office-select';
+import ReviewProcurementDialog from '@/components/review-procurement-dialog';
 
 interface FileMetadata {
     document_type: string;
@@ -197,28 +190,6 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         setData('metadata', meta);
     }, [data.files, data.metadata, setData]);
 
-    const formatDateForDisplay = (dateValue: Date | string | undefined): string => {
-        if (!dateValue) return 'Not set';
-
-        try {
-            if (dateValue instanceof Date) {
-                return !isNaN(dateValue.getTime())
-                    ? format(dateValue, 'yyyy-MM-dd')
-                    : 'Invalid date';
-            }
-
-            if (typeof dateValue === 'string' && dateValue.trim()) {
-                const parsedDate = parseDate(dateValue);
-                return parsedDate ? format(parsedDate, 'yyyy-MM-dd') : dateValue;
-            }
-
-            return 'Invalid date';
-        } catch (error) {
-            console.error("Error formatting date:", error);
-            return 'Invalid date';
-        }
-    };
-
     const handleFieldChange = (field: keyof UseFormData, value: string): void => {
         clearErrors(field);
         setData(field, value);
@@ -363,22 +334,22 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                         </div>
                         <div className="flex flex-wrap items-center gap-2 mt-2 md:mt-0">
                             <Badge
-                                className="bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20 text-[var(--primary)] text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 rounded-md font-medium transition-colors duration-200"
+                                className="bg-primary/10 hover:bg-primary/20 text-primary text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 rounded-md font-medium transition-colors duration-200"
                             >
                                 Procurement Initiation
                             </Badge>
                             {formState?.reference && (
-                                <Badge className="text-xs md:text-sm bg-[var(--blue-1)]/10 text-[var(--blue-1)] dark:bg-[var(--blue-1)]/20 dark:text-[var(--blue-1)] px-2 py-1 md:px-3 md:py-1.5 rounded-md">
+                                <Badge className="text-xs md:text-sm bg-chart-1/10 text-chart-1 dark:bg-chart-1/20 dark:text-chart-1 px-2 py-1 md:px-3 md:py-1.5 rounded-md">
                                     {formState.reference}
                                 </Badge>
                             )}
                             {formState?.isDraft && (
-                                <Badge className="text-xs md:text-sm bg-[var(--yellow-1)]/10 hover:bg-[var(--yellow-1)]/20 text-[var(--yellow-1)] dark:bg-[var(--yellow-1)]/20 dark:text-[var(--yellow-1)] px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-200">
+                                <Badge className="text-xs md:text-sm bg-chart-4/10 hover:bg-chart-4/20 text-chart-4 dark:bg-chart-4/20 dark:text-chart-4 px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-200">
                                     Draft
                                 </Badge>
                             )}
                             {formState?.isComplete && (
-                                <Badge className="text-xs md:text-sm bg-[var(--green-1)]/10 hover:bg-[var(--green-1)]/20 text-[var(--green-1)] dark:bg-[var(--green-1)]/20 dark:text-[var(--green-1)] px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-200">
+                                <Badge className="text-xs md:text-sm bg-chart-2/10 hover:bg-chart-2/20 text-chart-2 dark:bg-chart-2/20 dark:text-chart-2 px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-200">
                                     Complete
                                 </Badge>
                             )}
@@ -388,128 +359,98 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
 
                 <div className="mt-2 sm:mt-0">
                     <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
-
-                        <Card className="border-[var(--sidebar-border)] dark:border-[var(--sidebar-border)] relative overflow-hidden bg-[var(--card)] dark:bg-[var(--card)]/80 p-4 sm:p-6 shadow-sm">
-                            <div className="space-y-6 sm:space-y-8 animate-fadeIn">
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 sm:mb-6">
-                                    <h2 className="text-xl sm:text-2xl font-semibold text-[var(--foreground)] dark:text-[var(--foreground)]">
-                                        Procurement Details & Upload Documents
-                                    </h2>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-                                    <Card className="p-4 sm:p-6 border-[var(--sidebar-border)] dark:border-[var(--sidebar-border)] shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden relative">
-                                        <div className="space-y-4 sm:space-y-5">
-                                            <div>
-                                                <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between mb-1 sm:mb-2">
-                                                    <Label
-                                                        htmlFor="procurement_id"
-                                                        className="text-sm sm:text-base font-medium text-[var(--foreground)] dark:text-[var(--foreground)] mb-0.5 sm:mb-0"
-                                                    >
-                                                        Procurement ID
-                                                        <span className="text-red-600 dark:text-red-400 text-base ml-0.5 align-super" aria-label="Required">*</span>
-                                                    </Label>
-                                                </div>
-
-                                                <Input
-                                                    id="procurement_id"
-                                                    type="text"
-                                                    value={data.procurement_id}
-                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('procurement_id', e.target.value)}
-                                                    onFocus={() => clearErrors('procurement_id')}
-                                                    placeholder="Enter a unique ID for this procurement"
-                                                    className={`transition-all duration-200 ${hasError('procurement_id')
-                                                        ? 'border-[var(--destructive)] dark:border-[var(--destructive)] ring-1 ring-[var(--destructive)]/30'
-                                                        : 'border-[var(--input)] dark:border-[var(--input)] focus:border-[var(--primary)]'}`}
-                                                    aria-invalid={hasError('procurement_id')}
-                                                />
-
-                                                <InputError
-                                                    message={hasError('procurement_id') ? errors.procurement_id : ''}
-                                                    className="mt-1.5 sm:mt-2"
-                                                />
-
-                                                <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-[var(--muted-foreground)]">
-                                                    The procurement ID is a unique identifier for this procurement process.
-                                                </p>
-                                            </div>
-
-                                            <div className="p-3 sm:p-4 bg-[var(--accent)] dark:bg-[var(--accent)] rounded-lg border border-[var(--accent-foreground)] dark:border-[var(--accent-foreground)]">
-                                                <p className="text-xs sm:text-sm text-[var(--accent-foreground)] dark:text-[var(--accent-foreground)]">
-                                                    <span className="font-medium">Tip:</span> The procurement ID should follow your organization's naming convention, for example: PROC-2025-001
-                                                </p>
-                                            </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 animate-fadeIn">
+                            {/* Left Column - Procurement Details */}
+                            <div className="space-y-4 sm:space-y-6">
+                                {/* Procurement ID */}
+                                <Card className="p-4 sm:p-6 border-sidebar-border shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden relative">
+                                    <div className="space-y-4 sm:space-y-5">
+                                        <div>
+                                            <InputWithLabel
+                                                id="procurement_id"
+                                                label="Procurement ID"
+                                                required
+                                                type="text"
+                                                value={data.procurement_id}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('procurement_id', e.target.value)}
+                                                onFocus={() => clearErrors('procurement_id')}
+                                                placeholder="Enter a unique ID for this procurement"
+                                                className={`transition-all duration-200 ${hasError('procurement_id')
+                                                    ? 'border-destructive ring-1 ring-destructive/30'
+                                                    : 'border-input focus:border-primary'}`}
+                                                aria-invalid={hasError('procurement_id')}
+                                                error={hasError('procurement_id') ? errors.procurement_id : ''}
+                                                errorClassName="mt-1.5 sm:mt-2"
+                                            />
+                                            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
+                                                The procurement ID is a unique identifier for this procurement process.
+                                            </p>
                                         </div>
-                                    </Card>
-
-                                    <Card className="p-4 sm:p-6 border-[var(--sidebar-border)] dark:border-[var(--sidebar-border)] shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden relative">
-                                        <div className="space-y-4 sm:space-y-5">
-                                            <div>
-                                                <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between mb-1 sm:mb-2">
-                                                    <Label
-                                                        htmlFor="procurement_title"
-                                                        className="text-sm sm:text-base font-medium text-[var(--foreground)] dark:text-[var,--foreground)] mb-0.5 sm:mb-0"
-                                                    >
-                                                        Procurement Title
-                                                        <span className="text-red-600 dark:text-red-400 text-base ml-0.5 align-super" aria-label="Required">*</span>
-                                                    </Label>
-                                                </div>
-
-                                                <Input
-                                                    id="procurement_title"
-                                                    type="text"
-                                                    value={data.procurement_title}
-                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('procurement_title', e.target.value)}
-                                                    onFocus={() => clearErrors('procurement_title')}
-                                                    placeholder="Enter a descriptive title for this procurement"
-                                                    className={`transition-all duration-200 ${hasError('procurement_title')
-                                                        ? 'border-[var(--destructive)] dark:border-[var(--destructive)] ring-1 ring-[var(--destructive)]/30'
-                                                        : 'border-[var(--input)] dark:border-[var(--input)] focus:border-[var(--primary)]'}`}
-                                                    aria-invalid={hasError('procurement_title')}
-                                                />
-
-                                                <InputError
-                                                    message={hasError('procurement_title') ? errors.procurement_title : ''}
-                                                    className="mt-1.5 sm:mt-2"
-                                                />
-
-                                                <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-[var(--muted-foreground)]">
-                                                    The procurement title should clearly describe what is being procured.
-                                                </p>
-                                            </div>
-
-                                            <div className="p-3 sm:p-4 bg-accent-foreground dark:bg-accent rounded-lg border border-[var(--accent-foreground)] dark:border-[var(--accent-foreground)]">
-                                                <p className="text-xs sm:text-sm text-[var(--accent-foreground)] dark:text-[var(--accent-foreground)]">
-                                                    <span className="font-medium">Example:</span> "Supply and Delivery of Office Equipment for the Municipal Hall"
-                                                </p>
-                                            </div>
+                                        <div className="p-3 sm:p-4 bg-accent rounded-lg border border-accent-foreground">
+                                            <p className="text-xs sm:text-sm text-accent-foreground">
+                                                <span className="font-medium">Tip:</span> The procurement ID should follow your organization's naming convention, for example: PROC-2025-0001-0001
+                                            </p>
                                         </div>
-                                    </Card>
-                                </div>
+                                    </div>
 
-                                <div className="space-y-6 sm:space-y-8 pt-4">
-                                    {fileIndices.map((index, i) => {
-                                        const file = data.files[index];
-                                        const meta = data.metadata[index];
-                                        const date = dates[index];
-                                        const drop = fileDropHandlers[i];
+                                    {/* Procurement Title */}
+                                    <div className="space-y-4 sm:space-y-5">
+                                        <div>
+                                            <InputWithLabel
+                                                id="procurement_title"
+                                                label="Procurement Title"
+                                                required
+                                                type="text"
+                                                value={data.procurement_title}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('procurement_title', e.target.value)}
+                                                onFocus={() => clearErrors('procurement_title')}
+                                                placeholder="Enter a descriptive title for this procurement"
+                                                className={`transition-all duration-200 ${hasError('procurement_title')
+                                                    ? 'border-destructive ring-1 ring-destructive/30'
+                                                    : 'border-input focus:border-primary'}`}
+                                                aria-invalid={hasError('procurement_title')}
+                                                error={hasError('procurement_title') ? errors.procurement_title : ''}
+                                                errorClassName="mt-1.5 sm:mt-2"
+                                            />
+                                            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
+                                                The procurement title should clearly describe what is being procured.
+                                            </p>
+                                        </div>
 
-                                        return (
-                                            <div
-                                                key={index}
-                                                className={cn(
-                                                    "border-[var(--sidebar-border)] dark:border-[var(--sidebar-border)] rounded-xl overflow-hidden bg-[var(--card)] dark:bg-[var(--card)]/50 transition-all duration-200",
-                                                    hasError(`files.${index}`) || hasError(`metadata.${index}`)
-                                                        ? 'ring-2 ring-[var(--destructive)]/30 border-[var(--destructive)] dark:border-[var,--destructive)]'
-                                                        : 'shadow-sm hover:shadow-md'
-                                                )}
-                                            >
-                                                <div className="bg-[var(--popover)] dark:bg-[var(--popover)] px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div className="p-3 sm:p-4 bg-accent rounded-lg border border-accent-foreground">
+                                            <p className="text-xs sm:text-sm text-accent-foreground">
+                                                <span className="font-medium">Example:</span> "Supply and Delivery of Office Equipment for the Municipal Hall"
+                                            </p>
+                                        </div>
+                                    </div>
+                                </Card>
+                            </div>
+
+                            {/* Right Column - Documents */}
+                            <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+                                {fileIndices.map((index, i) => {
+                                    const file = data.files[index];
+                                    const meta = data.metadata[index];
+                                    const date = dates[index];
+                                    const drop = fileDropHandlers[i];
+
+                                    return (
+                                        <Card
+                                            key={index}
+                                            className={cn(
+                                                "border-sidebar-border transition-all duration-200",
+                                                hasError(`files.${index}`) || hasError(`metadata.${index}`)
+                                                    ? 'ring-2 ring-destructive/30 border-destructive'
+                                                    : 'shadow-sm hover:shadow-md'
+                                            )}
+                                        >
+                                            <CardHeader className="bg-popover">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2 sm:gap-3">
-                                                        <FileText className="h-4 sm:h-5 w-4 sm:w-5 text-[var(--primary)]" />
+                                                        <FileText className="h-4 sm:h-5 w-4 sm:w-5 text-primary" />
                                                         <h3 className="font-medium text-base sm:text-lg">Document {index + 1}</h3>
                                                         {file && (
-                                                            <Badge variant="outline" className="hidden sm:inline-flex bg-[var(--chart-1)]/10 text-[var(--chart-1)] dark:bg-[var(--chart-1)]/20 dark:text-[var(--chart-1)] border-[var(--chart-1)] dark:border-[var(--chart-1)]/50">
+                                                            <Badge variant="outline" className="hidden sm:inline-flex bg-chart-1/10 text-chart-1 border-chart-1/50">
                                                                 File Selected
                                                             </Badge>
                                                         )}
@@ -520,156 +461,107 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                             size="sm"
                                                             variant="ghost"
                                                             onClick={() => removeFile(index)}
-                                                            className="text-[var(--destructive)] hover:text-[var,--destructive] hover:bg-[var(--destructive)]/10 dark:hover:bg-[var(--destructive)]/20"
+                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                         >
                                                             <X className="h-4 w-4 mr-1 sm:mr-0" />
                                                             <span className="sm:sr-only">Remove Document</span>
                                                         </Button>
                                                     )}
                                                 </div>
+                                            </CardHeader>
 
-                                                <Separator />
+                                            <CardContent>
+                                                <div className="space-y-4 sm:space-y-6">
+                                                    {/* File Upload - Full Width */}
+                                                    <FileUploadArea
+                                                        label="Document File"
+                                                        file={file}
+                                                        error={hasError(`files.${index}`) ? (errors as Record<string, string>)[`files.${index}`] : undefined}
+                                                        isDragging={drop.isDragging}
+                                                        onFileChange={e => handleFileChange(e, index)}
+                                                        onDragEnter={drop.handleDragEnter}
+                                                        onDragLeave={drop.handleDragLeave}
+                                                        onDragOver={drop.handleDragOver}
+                                                        onDrop={drop.handleDrop}
+                                                        onRemove={() => {
+                                                            // Only remove the file, not the document entry
+                                                            const newFiles = [...data.files];
+                                                            newFiles[index] = null;
+                                                            setData('files', newFiles);
+                                                        }}
+                                                        inputId={`file-${index}`}
+                                                        accept=".pdf"
+                                                        required
+                                                    />
 
-                                                <div className="p-3 sm:p-6">
-                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-                                                        <div className="space-y-4 sm:space-y-6">
-                                                            <FileUploadArea
-                                                                label="Document File"
-                                                                file={file}
-                                                                error={hasError(`files.${index}`) ? (errors as Record<string, string>)[`files.${index}`] : undefined}
-                                                                isDragging={drop.isDragging}
-                                                                onFileChange={e => handleFileChange(e, index)}
-                                                                onDragEnter={drop.handleDragEnter}
-                                                                onDragLeave={drop.handleDragLeave}
-                                                                onDragOver={drop.handleDragOver}
-                                                                onDrop={drop.handleDrop}
-                                                                onRemove={() => {
-                                                                    // Only remove the file, not the document entry
-                                                                    const newFiles = [...data.files];
-                                                                    newFiles[index] = null;
-                                                                    setData('files', newFiles);
-                                                                }}
-                                                                inputId={`file-${index}`}
-                                                                accept=".pdf"
+                                                    {/* Metadata Fields - 2 Column Grid */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                                        {/* Document Type */}
+                                                        <div>
+                                                            <InputWithLabel
+                                                                id={`document-type-${index}`}
+                                                                label="Document Type"
                                                                 required
+                                                                type="text"
+                                                                value={meta?.document_type || ''}
+                                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleMetadataChange(index, 'document_type', e.target.value)}
+                                                                placeholder="Enter document type"
+                                                                className={cn(
+                                                                    "transition-all duration-200",
+                                                                    hasError(`metadata.${index}.document_type`)
+                                                                        ? 'border-destructive ring-1 ring-destructive/30'
+                                                                        : 'border-input focus:border-primary'
+                                                                )}
+                                                                error={hasError(`metadata.${index}.document_type`) ? (errors as Record<string, string>)[`metadata.${index}.document_type`] : undefined}
+                                                                errorClassName="mt-1.5 sm:mt-2"
                                                             />
+                                                            <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
+                                                                Enter the type of document being uploaded (e.g., Project Proposal, Technical Requirements)
+                                                            </p>
+                                                        </div>
 
-                                                            <div>
-                                                                <div className="flex items-baseline justify-between mb-2">
-                                                                    <Label
-                                                                        htmlFor={`document-type-${index}`}
-                                                                        className="text-sm sm:text-base font-medium text-[var(--foreground)] dark:text-[var,--foreground)]"
-                                                                    >
-                                                                        Document Type
-                                                                    </Label>
-                                                                    <span className="text-[0.65rem] sm:text-[0.7rem] text-[var(--muted-foreground)]">Required</span>
-                                                                </div>
-
-                                                                <Input
-                                                                    id={`document-type-${index}`}
-                                                                    type="text"
-                                                                    value={meta?.document_type || ''}
-                                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleMetadataChange(index, 'document_type', e.target.value)}
-                                                                    placeholder="Enter document type"
-                                                                    className={cn(
-                                                                        "transition-all duration-200",
-                                                                        hasError(`metadata.${index}.document_type`)
-                                                                            ? 'border-[var(--destructive)] dark:border-[var(--destructive)] ring-1 ring-[var(--destructive)]/30'
-                                                                            : 'border-[var(--input)] dark:border-[var(--input)] focus:border-[var(--primary)]'
-                                                                    )}
-                                                                />
-
-                                                                <InputError
-                                                                    message={hasError(`metadata.${index}.document_type`) ? (errors as Record<string, string>)[`metadata.${index}.document_type`] : undefined}
-                                                                    className="mt-2"
-                                                                />
-
-                                                                <p className="mt-2 text-xs sm:text-sm text-[var(--muted-foreground)]">
-                                                                    Enter the type of document being uploaded (e.g., Project Proposal, Technical Requirements)
-                                                                </p>
-                                                            </div>
-
-                                                            <div>
-                                                                <div className="relative">
-                                                                    <DatePicker
-                                                                        label="Submission Date"
-                                                                        value={date}
-                                                                        onChange={(newDate: Date | undefined) => handleDateChange(index, newDate)}
-                                                                        error={(errors as Record<string, string>)[`metadata.${index}.submission_date`]}
-                                                                        required
-                                                                    />
-                                                                </div>
-
-                                                                <InputError
-                                                                    message={(errors as Record<string, string>)[`metadata.${index}.submission_date`]}
-                                                                    className="mt-2"
+                                                        {/* Submission Date */}
+                                                        <div>
+                                                            <div className="relative">
+                                                                <DatePicker
+                                                                    label="Submission Date"
+                                                                    value={date}
+                                                                    onChange={(newDate: Date | undefined) => handleDateChange(index, newDate)}
+                                                                    error={(errors as Record<string, string>)[`metadata.${index}.submission_date`]}
+                                                                    required
                                                                 />
                                                             </div>
                                                         </div>
 
-                                                        <div className="space-y-4 sm:space-y-6">
-                                                            <div>
-                                                                <div className="flex items-baseline justify-between mb-2">
-                                                                    <Label
-                                                                        htmlFor={`municipal-offices-${index}`}
-                                                                        className="text-sm sm:text-base font-medium text-[var(--foreground)] dark:text-[var,--foreground)] flex items-center gap-2"
-                                                                    >
-                                                                        <Building className="h-4 w-4 text-[var(--primary)]/70" />
-                                                                        Municipal Offices
-                                                                    </Label>
-                                                                    <span className="text-[0.65rem] sm:text-[0.7rem] text-[var(--muted-foreground)]">Required</span>
-                                                                </div>
+                                                        {/* Municipal Offices */}
+                                                        <div>
+                                                            <MunicipalOfficeSelect
+                                                                id={`municipal-offices-${index}`}
+                                                                label="Municipal Offices"
+                                                                value={meta?.municipal_offices || ''}
+                                                                onValueChange={(value) => handleMetadataChange(index, 'municipal_offices', value)}
+                                                                error={hasError(`metadata.${index}.municipal_offices`) ? (errors as Record<string, string>)[`metadata.${index}.municipal_offices`] : undefined}
+                                                                required
+                                                            />
+                                                        </div>
 
-                                                                <Select
-                                                                    value={meta?.municipal_offices || ''}
-                                                                    onValueChange={(value) => handleMetadataChange(index, 'municipal_offices', value)}
-                                                                >
-                                                                    <SelectTrigger
-                                                                        id={`municipal-offices-${index}`}
-                                                                        className={cn(
-                                                                            hasError(`metadata.${index}.municipal_offices`)
-                                                                                ? 'border-[var(--destructive)] dark:border-[var(--destructive)] ring-1 ring-[var(--destructive)]/30'
-                                                                                : 'border-[var(--input)] dark:border-[var(--input)]'
-                                                                        )}
-                                                                    >
-                                                                        <SelectValue placeholder="Select municipal office" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        {MUNICIPAL_OFFICES.map((office) => (
-                                                                            <SelectItem key={office.value} value={office.value}>
-                                                                                {office.label}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
-
-                                                                <InputError
-                                                                    message={hasError(`metadata.${index}.municipal_offices`) ? (errors as Record<string, string>)[`metadata.${index}.municipal_offices`] : undefined}
-                                                                    className="mt-2"
-                                                                />
-
-                                                                <p className="mt-2 text-xs sm:text-sm text-[var(--muted-foreground]">
-                                                                    Select the municipal office involved in this document.
-                                                                </p>
-                                                            </div>
-
-                                                            <div>
-                                                                <PeopleInput
-                                                                    label="Signatories"
-                                                                    value={meta?.signatory_details ? meta.signatory_details.split(',').map(s => s.trim()).filter(Boolean) : []}
-                                                                    onChange={peopleArr => handleMetadataChange(index, 'signatory_details', peopleArr.join(', '))}
-                                                                    error={hasError(`metadata.${index}.signatory_details`) ? (errors as Record<string, string>)[`metadata.${index}.signatory_details`] : undefined}
-                                                                    required
-                                                                    placeholder="Enter signatory names and positions, then press Enter or Add"
-                                                                />
-                                                            </div>
+                                                        {/* Signatories - Takes remaining space */}
+                                                        <div>
+                                                            <PeopleInput
+                                                                label="Signatories"
+                                                                value={meta?.signatory_details ? meta.signatory_details.split(',').map(s => s.trim()).filter(Boolean) : []}
+                                                                onChange={peopleArr => handleMetadataChange(index, 'signatory_details', peopleArr.join(', '))}
+                                                                error={hasError(`metadata.${index}.signatory_details`) ? (errors as Record<string, string>)[`metadata.${index}.signatory_details`] : undefined}
+                                                                required
+                                                                placeholder="Enter signatory names and positions, then press Enter or Add"
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
 
                                 <div className="flex justify-center pt-4 sm:pt-6">
                                     <Button
@@ -683,7 +575,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                     </Button>
                                 </div>
                             </div>
-                        </Card>
+                        </div>
 
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 order-3">
                             <Button
@@ -708,127 +600,16 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                 </div>
             </div>
 
-            <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-                <DialogContent id="review-procurement-dialog" className="max-w-full w-full !max-h-none !h-auto">
-                    <DialogHeader>
-                        <DialogTitle>Review Procurement Details</DialogTitle>
-                        <DialogDescription>
-                            Please review all details before submitting. Are you sure you want to proceed?
-                        </DialogDescription>
-                    </DialogHeader>
-                    {/* Use custom ScrollArea for scrollable content */}
-                    <ScrollArea className="max-h-[70vh]">
-                        {/* Procurement Details at the top */}
-                        <div className="mb-4">
-                            <Card className="p-4 sm:p-6 border-[var(--sidebar-border)] dark:border-[var(--sidebar-border)] shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden relative">
-                                <div className="space-y-4 sm:space-y-5">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                        <Label className="text-sm sm:text-base font-medium text-[var(--foreground)] dark:text-[var(--foreground)] mb-0.5 sm:mb-0 flex items-center gap-2">
-                                            Procurement ID:
-                                            <span className="px-3 py-2 text-sm sm:text-base font-normal truncate max-w-[180px] sm:max-w-[300px]">
-                                                {data.procurement_id
-                                                    ? data.procurement_id.length > 40
-                                                        ? `${data.procurement_id.slice(0, 40)}...`
-                                                        : data.procurement_id
-                                                    : <span className="italic text-gray-400">Not set</span>}
-                                            </span>
-                                        </Label>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                        <Label className="text-sm sm:text-base font-medium text-[var(--foreground)] dark:text-[var(--foreground)] mb-0.5 sm:mb-0 flex items-center gap-2">
-                                            Procurement Title:
-                                            <span className="px-3 py-2 text-sm sm:text-base font-normal truncate max-w-[180px] sm:max-w-[300px]">
-                                                {data.procurement_title
-                                                    ? data.procurement_title.length > 40
-                                                        ? `${data.procurement_title.slice(0, 40)}...`
-                                                        : data.procurement_title
-                                                    : <span className="italic text-gray-400">Not set</span>}
-                                            </span>
-                                        </Label>
-                                    </div>
-                                </div>
-                            </Card>
-                        </div>
-                        {/* Uploaded Documents below */}
-                        <div className="mb-4">
-                            <Label htmlFor="files" className="text-sm sm:text-base font-medium text-[var(--foreground)] dark:text-[var,--foreground)] mb-2 block">
-                                Uploaded Documents
-                            </Label>
-                            <div className="flex flex-col gap-4 pr-1">
-                                {data.files.map((file, index) => {
-                                    const meta = data.metadata[index];
-                                    if (!file) return null;
-                                    return (
-                                        <Card key={index} className="p-3 sm:p-4 rounded-lg border bg-muted dark:bg-muted/80 transition-all duration-200">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <FileText className="h-5 w-5 text-[var(--primary)]" />
-                                                    <span className="font-medium text-[var(--foreground)] dark:text-[var,--foreground)]">
-                                                        Document {index + 1}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                                                <div className="flex-1">
-                                                    <p
-                                                        className="text-sm text-muted-foreground truncate overflow-hidden whitespace-nowrap max-w-[12rem]"
-                                                        title={file ? file.name : undefined}
-                                                    >
-                                                        {file
-                                                            ? file.name.length > 40
-                                                                ? `${file.name.slice(0, 20)}...${file.name.slice(-17)}`
-                                                                : file.name
-                                                            : 'No file'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            {/* Show metadata details */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
-                                                <div>
-                                                    <span className="font-semibold">Type:</span>{" "}
-                                                    {meta?.document_type
-                                                        ? meta.document_type.length > 30
-                                                            ? `${meta.document_type.slice(0, 30)}...`
-                                                            : meta.document_type
-                                                        : '-'}
-                                                </div>
-                                                <div>
-                                                    <span className="font-semibold">Submission Date:</span>{" "}
-                                                    {meta?.submission_date ? formatDateForDisplay(meta.submission_date) : '-'}
-                                                </div>
-                                                <div>
-                                                    <span className="font-semibold">Municipal Office:</span>{" "}
-                                                    {meta?.municipal_offices
-                                                        ? meta.municipal_offices.length > 30
-                                                            ? `${meta.municipal_offices.slice(0, 30)}...`
-                                                            : meta.municipal_offices
-                                                        : '-'}
-                                                </div>
-                                                <div>
-                                                    <span className="font-semibold">Signatories:</span>{" "}
-                                                    {meta?.signatory_details
-                                                        ? meta.signatory_details.length > 40
-                                                            ? `${meta.signatory_details.slice(0, 40)}...`
-                                                            : meta.signatory_details
-                                                        : '-'}
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </ScrollArea>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowConfirm(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={onSubmit} disabled={processing}>
-                            Submit Procurement
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <ReviewProcurementDialog
+                open={showConfirm}
+                onOpenChange={setShowConfirm}
+                procurementId={data.procurement_id}
+                procurementTitle={data.procurement_title}
+                files={data.files}
+                metadata={data.metadata}
+                onSubmit={onSubmit}
+                processing={processing}
+            />
         </AppLayout>
     );
 }

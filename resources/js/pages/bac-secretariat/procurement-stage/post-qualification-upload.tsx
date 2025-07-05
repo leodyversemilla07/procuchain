@@ -8,7 +8,7 @@ import { CalendarIcon, FileText, Upload, AlertCircle, CheckCircle, XCircle } fro
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from '@/components/ui/textarea';
+import { TextareaWithLabel } from '@/components/ui/textarea-with-label';
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
 import FileUploadArea from '@/components/file-upload-area';
@@ -271,18 +271,15 @@ export default function PostQualificationUpload({ procurement = { id: '', title:
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="flex items-center text-base font-medium">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Remarks
-                  </Label>
-                  <Textarea
+                  <TextareaWithLabel
+                    label="Remarks"
                     placeholder="Enter any additional remarks about the evaluation"
                     rows={5}
-                    className="min-h-[150px] resize-none"
+                    className="transition-all duration-200border-input focus:border-primary"
                     value={data.remarks}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setData('remarks', e.target.value)}
+                    error={getFieldError(errors, 'remarks')}
                   />
-                  {getFieldError(errors, 'remarks') && <InputError message={getFieldError(errors, 'remarks')} />}
                 </div>
               </CardContent>
               <CardFooter className="pt-4 border-t flex flex-col gap-3">

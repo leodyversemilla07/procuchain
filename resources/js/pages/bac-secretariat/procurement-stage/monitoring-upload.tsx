@@ -4,8 +4,8 @@ import { format } from 'date-fns';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { CalendarIcon, FileText, Upload, AlertCircle, ClipboardCheck } from 'lucide-react';
+import { TextareaWithLabel } from '@/components/ui/textarea-with-label';
+import { CalendarIcon, Upload, AlertCircle, ClipboardCheck } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
@@ -179,16 +179,15 @@ export default function MonitoringUpload({ procurement = { id: '', title: '' } }
                   <InputError message={getFieldError(errors, 'report_date')} />
                 )}
                 <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Report Notes
-                  </label>
-                  <Textarea
-                    placeholder="Enter any additional notes or comments about the compliance report"
-                    rows={5}
-                    className={`min-h-[150px] resize-none ${getFieldError(errors, 'report_notes') ? 'border-destructive' : ''}`}
+                  <TextareaWithLabel
+                    label="Report Notes"
                     value={data.report_notes}
                     onChange={(e) => setData('report_notes', e.target.value)}
+                    placeholder="Enter any additional notes or comments about the compliance report"
+                    rows={5}
+                    required={false}
+                    error={getFieldError(errors, 'report_notes')}
+                    errorClassName="mt-1.5 sm:mt-2"
                   />
                   {getFieldError(errors, 'report_notes') && <InputError message={getFieldError(errors, 'report_notes')} />}
                 </div>

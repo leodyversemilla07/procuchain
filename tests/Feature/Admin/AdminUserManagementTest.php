@@ -13,20 +13,20 @@ beforeEach(function () {
     ]);
 });
 
-it('admin can access user management page', function () {
+test('admin can access user management page', function () {
     $response = $this->actingAs($this->admin)
         ->get('/admin/users');
 
     $response->assertStatus(200);
     $response->assertInertia(
-        fn ($assert) => $assert
+        fn($assert) => $assert
             ->component('admin/users')
             ->has('users')
             ->has('roles')
     );
 });
 
-it('admin can create new user', function () {
+test('admin can create new user', function () {
     $userData = [
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -49,7 +49,7 @@ it('admin can create new user', function () {
     ]);
 });
 
-it('admin can update existing user', function () {
+test('admin can update existing user', function () {
     $user = User::factory()->create([
         'role' => 'bac_secretariat',
         'email' => 'original@example.com',
@@ -76,7 +76,7 @@ it('admin can update existing user', function () {
     ]);
 });
 
-it('admin can delete user', function () {
+test('admin can delete user', function () {
     $user = User::factory()->create([
         'role' => 'bac_secretariat',
     ]);
@@ -92,7 +92,7 @@ it('admin can delete user', function () {
     ]);
 });
 
-it('admin cannot delete own account', function () {
+test('admin cannot delete own account', function () {
     $response = $this->actingAs($this->admin)
         ->delete("/admin/users/{$this->admin->id}");
 
@@ -104,7 +104,7 @@ it('admin cannot delete own account', function () {
     ]);
 });
 
-it('non admin cannot access user management', function () {
+test('non admin cannot access user management', function () {
     $user = User::factory()->create([
         'role' => 'bac_secretariat',
     ]);
@@ -115,7 +115,7 @@ it('non admin cannot access user management', function () {
     $response->assertStatus(403);
 });
 
-it('guest cannot access user management', function () {
+test('guest cannot access user management', function () {
     $response = $this->get('/admin/users');
 
     $response->assertRedirect('/login');

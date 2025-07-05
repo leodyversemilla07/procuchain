@@ -29,18 +29,22 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
     buttonClassName = "",
     popoverClassName = "",
 }) => (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-1">
         {label && (
-            <Label className={`flex items-center text-base font-medium ${inputLabelClassName}`}>
+            <Label className={inputLabelClassName}>
                 {label}
-                {required && <span className="text-destructive ml-1">*</span>}
+                {required ? (
+                    <span className="text-destructive ml-1 align-super text-xs" aria-label="required">
+                        *
+                    </span>
+                ) : null}
             </Label>
         )}
         <Popover>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
-                    className={`w-full justify-between text-left font-normal h-10 ${buttonClassName}`}
+                    className={`w-full justify-between text-left font-normal h-9 px-3 py-2 ${buttonClassName}`}
                 >
                     {value?.from ? (
                         value.to ? (

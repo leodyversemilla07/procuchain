@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, FileUp, X } from 'lucide-react';
+import { FileUp, X, FileText } from 'lucide-react';
 import InputError from '@/components/input-error';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,8 @@ interface FileUploadAreaProps {
     inputId: string;
     accept?: string;
     required?: boolean;
+    labelClassName?: string;
+    errorClassName?: string;
 }
 
 const FileUploadArea: React.FC<FileUploadAreaProps> = ({
@@ -35,12 +37,17 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
     inputId,
     accept = 'application/pdf',
     required = false,
+    labelClassName,
+    errorClassName,
 }) => (
-    <div className="space-y-2">
-        <Label className="flex items-center text-base font-medium">
-            <FileText className="h-4 w-4 mr-2" />
+    <div className="flex flex-col gap-1">
+        <Label htmlFor={inputId} className={labelClassName}>
             {label}
-            {required && <span className="text-destructive ml-1">*</span>}
+            {required ? (
+                <span className="text-destructive ml-1 align-super text-xs" aria-label="required">
+                    *
+                </span>
+            ) : null}
         </Label>
         <div
             className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDragging
@@ -116,7 +123,7 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
                 </div>
             )}
         </div>
-        {error && <InputError message={error} />}
+        {error && <InputError message={error} className={errorClassName} />}
     </div>
 );
 

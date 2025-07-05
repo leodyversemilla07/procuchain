@@ -8,13 +8,12 @@ import { CalendarIcon, FileText, Upload, AlertCircle, CheckCircle } from 'lucide
 import {
     Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from '@/components/ui/textarea';
+import { TextareaWithLabel } from '@/components/ui/textarea-with-label';
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
 import FileUploadArea from '@/components/file-upload-area';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
-import { Label } from '@/components/ui/label';
 
 // Helper for type-safe error access
 function getFieldError<T extends object>(errors: T, field: keyof T): string | undefined {
@@ -180,16 +179,15 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
                                     <InputError message={getFieldError(errors, 'completion_date')} />
                                 )}
                                 <div className="space-y-2">
-                                    <Label className="flex items-center text-base font-medium">
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        Notes
-                                    </Label>
-                                    <Textarea
-                                        placeholder="Enter any additional notes" // Updated placeholder
-                                        rows={3}
-                                        className="min-h-[120px] resize-none"
-                                        value={data.completion_notes} // Renamed key
-                                        onChange={(e) => setData('completion_notes', e.target.value)} // Renamed key
+                                    <TextareaWithLabel
+                                        label="Notes"
+                                        value={data.completion_notes}
+                                        onChange={(e) => setData('completion_notes', e.target.value)}
+                                        placeholder="Enter any additional notes"
+                                        rows={5} // Updated to match the height in monitoring-upload.tsx
+                                        required={false}
+                                        error={getFieldError(errors, 'completion_notes')}
+                                        errorClassName="mt-1.5 sm:mt-2"
                                     />
                                     {getFieldError(errors, 'completion_notes') && <InputError message={getFieldError(errors, 'completion_notes')} />} {/* Renamed key */}
                                 </div>

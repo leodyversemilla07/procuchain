@@ -13,6 +13,8 @@ interface PeopleInputProps {
     error?: string;
     required?: boolean;
     placeholder?: string;
+    labelClassName?: string;
+    errorClassName?: string;
 }
 
 const PeopleInput: React.FC<PeopleInputProps> = ({
@@ -22,6 +24,8 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
     error,
     required = false,
     placeholder = 'Type name and press Enter or click Add',
+    labelClassName,
+    errorClassName,
 }) => {
     const [input, setInput] = useState('');
     const [people, setPeople] = useState<string[]>(value || []);
@@ -47,12 +51,15 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
     };
 
     return (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-1">
             {label && (
-                <Label className="flex items-center text-sm sm:text-base font-medium">
-                    <Users className="h-4 w-4 mr-2" />
+                <Label className={labelClassName}>
                     {label}
-                    {required && <span className="text-destructive ml-1">*</span>}
+                    {required ? (
+                        <span className="text-destructive ml-1 align-super text-xs" aria-label="required">
+                            *
+                        </span>
+                    ) : null}
                 </Label>
             )}
             <div className="space-y-3">
@@ -61,7 +68,6 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         placeholder={placeholder}
-                        className="h-10"
                         onKeyDown={e => {
                             if (e.key === 'Enter') {
                                 addPerson();
@@ -72,7 +78,7 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                     <Button
                         type="button"
                         variant="secondary"
-                        className="h-10 px-3 flex items-center gap-1"
+                        className="px-3 flex items-center gap-1"
                         onClick={addPerson}
                         disabled={!input.trim()}
                     >
@@ -102,7 +108,9 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                     ))}
                 </div>
             </div>
-            {error && <InputError message={error} />}
+            {error && (
+                <InputError message={error} className={errorClassName} />
+            )}
         </div>
     );
 };

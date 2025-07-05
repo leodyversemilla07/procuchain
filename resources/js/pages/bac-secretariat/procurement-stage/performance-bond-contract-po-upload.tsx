@@ -4,8 +4,7 @@ import { format } from 'date-fns';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { CalendarIcon, FileText, Upload, AlertCircle, Shield, Briefcase } from 'lucide-react';
+import { CalendarIcon, FileText, Upload, AlertCircle, Briefcase } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import { BreadcrumbItem } from '@/types';
 import FileUploadArea from '@/components/file-upload-area';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
+import { InputWithLabel } from '@/components/ui/input-with-label';
 
 const ALLOWED_FILE_TYPES = ['application/pdf'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -40,7 +40,7 @@ export default function PerformanceBondContractPOUpload({ procurement = { id: ''
     performance_bond_file: null as File | null,
     submission_date: formattedDate,
     submission_date_object: currentDate,
-    bond_amount: '',
+    bond_amount: '0.00',
     contract_file: null as File | null,
     po_file: null as File | null,
     signing_date: formattedDate,
@@ -235,10 +235,7 @@ export default function PerformanceBondContractPOUpload({ procurement = { id: ''
                   label="Bond Submission Date"
                   value={data.submission_date_object}
                   onChange={date => {
-                    if (date) {
-                      setData('submission_date_object', date);
-                      setData('submission_date', format(date, 'yyyy-MM-dd'));
-                    }
+                    if (date) setData('submission_date', format(date, 'yyyy-MM-dd'));
                   }}
                   error={getFieldError(errors, 'submission_date')}
                   required
@@ -246,30 +243,28 @@ export default function PerformanceBondContractPOUpload({ procurement = { id: ''
                 {getFieldError(errors, 'submission_date') && (
                   <InputError message={getFieldError(errors, 'submission_date')} />
                 )}
-                <div className="space-y-2">
-                  <label className="flex items-center text-base font-medium">
-                    <Shield className="h-4 w-4 mr-2" />
-                    Bond Amount
-                  </label>
-                  <Input
-                    placeholder="Enter bond amount in PHP (e.g., 500000)"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className={`h-10 ${getFieldError(errors, 'bond_amount') ? 'border-destructive' : ''}`}
-                    value={data.bond_amount}
-                    onChange={(e) => setData('bond_amount', e.target.value)}
-                  />
-                  {getFieldError(errors, 'bond_amount') && <InputError message={getFieldError(errors, 'bond_amount')} />}
-                </div>
+                <InputWithLabel
+                  id="bond-amount"
+                  label="Bond Amount"
+                  value={data.bond_amount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^\d*(\.\d{0,2})?$/.test(value)) {
+                      setData('bond_amount', value);
+                    }
+                  }}
+                  placeholder="Enter bond amount"
+                  className="h-10"
+                  required
+                  error={getFieldError(errors, 'bond_amount')}
+                  errorClassName="mt-1.5 sm:mt-2"
+                  type="text"
+                />
                 <DatePicker
                   label="Contract/PO Signing Date"
                   value={data.signing_date_object}
                   onChange={date => {
-                    if (date) {
-                      setData('signing_date_object', date);
-                      setData('signing_date', format(date, 'yyyy-MM-dd'));
-                    }
+                    if (date) setData('signing_date', format(date, 'yyyy-MM-dd'));
                   }}
                   error={getFieldError(errors, 'signing_date')}
                   required

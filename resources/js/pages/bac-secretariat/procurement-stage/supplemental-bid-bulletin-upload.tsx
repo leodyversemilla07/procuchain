@@ -6,8 +6,7 @@ import { format } from 'date-fns';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import InputError from '@/components/input-error';
+import { InputWithLabel } from '@/components/ui/input-with-label';
 import { BreadcrumbItem } from '@/types';
 import DatePicker from '@/components/date-picker';
 import FileUploadArea from '@/components/file-upload-area';
@@ -183,35 +182,29 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
                             </CardHeader>
                             <CardContent className="space-y-4 sm:space-y-6">
                                 <div className="space-y-2">
-                                    <label htmlFor="bulletin_number" className="text-base font-medium">
-                                        Bulletin Number
-                                    </label>
-                                    <Input
+                                    <InputWithLabel
                                         id="bulletin_number"
+                                        label="Bulletin Number"
                                         value={data.bulletin_number}
                                         onChange={(e) => setData('bulletin_number', e.target.value)}
                                         placeholder="Enter bulletin number"
                                         className="h-10"
+                                        required
+                                        error={errors.bulletin_number}
                                     />
-                                    {errors.bulletin_number && (
-                                        <InputError message={errors.bulletin_number} />
-                                    )}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="bulletin_title" className="text-base font-medium">
-                                        Bulletin Title
-                                    </label>
-                                    <Input
+                                    <InputWithLabel
                                         id="bulletin_title"
+                                        label="Bulletin Title"
                                         value={data.bulletin_title}
                                         onChange={(e) => setData('bulletin_title', e.target.value)}
                                         placeholder="Enter bulletin title"
                                         className="h-10"
+                                        required
+                                        error={errors.bulletin_title}
                                     />
-                                    {errors.bulletin_title && (
-                                        <InputError message={errors.bulletin_title} />
-                                    )}
                                 </div>
 
                                 <div className="space-y-2">
