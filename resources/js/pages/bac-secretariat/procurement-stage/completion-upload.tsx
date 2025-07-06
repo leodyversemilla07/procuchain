@@ -8,7 +8,7 @@ import { CalendarIcon, FileText, Upload, AlertCircle, CheckCircle } from 'lucide
 import {
     Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import { TextareaWithLabel } from '@/components/ui/textarea-with-label';
+import { TextareaWithLabel } from '@/components/textarea-with-label';
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
 import FileUploadArea from '@/components/file-upload-area';
