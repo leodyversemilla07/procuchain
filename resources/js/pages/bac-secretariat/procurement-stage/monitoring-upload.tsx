@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { TextareaWithLabel } from '@/components/ui/textarea-with-label';
+import { TextareaWithLabel } from '@/components/textarea-with-label';
 import { CalendarIcon, Upload, AlertCircle, ClipboardCheck } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
