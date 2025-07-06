@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import PeopleInput from '@/components/people-input';
 import FileUploadArea from '@/components/file-upload-area';
 import { useMultiFileDrop } from '@/hooks/use-file-drop';
-import { InputWithLabel } from '@/components/ui/input-with-label';
+import { InputWithLabel } from '@/components/input-with-label';
 import MunicipalOfficeSelect from '@/components/municipal-office-select';
 import ReviewProcurementDialog from '@/components/review-procurement-dialog';
 

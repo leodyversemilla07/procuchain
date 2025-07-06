@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { InputWithLabel } from '@/components/ui/input-with-label';
+import { InputWithLabel } from '@/components/input-with-label';
 import { BreadcrumbItem } from '@/types';
 import DatePicker from '@/components/date-picker';
 import FileUploadArea from '@/components/file-upload-area';

@@ -1,6 +1,6 @@
 import * as React from "react"
-import { Input } from "./input"
-import { Label } from "./label"
+import { Input } from "./ui/input"
+import { Label } from "./ui/label"
 import InputError from '@/components/input-error';
 
 interface InputWithLabelProps extends React.ComponentProps<typeof Input> {

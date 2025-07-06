@@ -13,7 +13,7 @@ import { BreadcrumbItem } from '@/types';
 import FileUploadArea from '@/components/file-upload-area';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
-import { InputWithLabel } from '@/components/ui/input-with-label';
+import { InputWithLabel } from '@/components/input-with-label';
 
 const ALLOWED_FILE_TYPES = ['application/pdf'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
