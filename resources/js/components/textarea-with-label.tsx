@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Label } from "./label";
+import { Label } from "@/components/ui/label";
 import InputError from '@/components/input-error';
 
 interface TextareaWithLabelProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
