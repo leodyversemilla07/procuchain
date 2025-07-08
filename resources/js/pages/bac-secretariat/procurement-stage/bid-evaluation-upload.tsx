@@ -205,11 +205,14 @@ export default function BidEvaluationUpload({ procurement = { id: '', title: '' 
                 )}
                 <PeopleInput
                   label="Evaluator Names"
-                  value={data.evaluator_names ? data.evaluator_names.split('\n').filter(Boolean) : []}
-                  onChange={updated => setData('evaluator_names', updated.join('\n'))}
+                  value={data.evaluator_names
+                    ? data.evaluator_names.split('\n').filter(Boolean).map(name => ({ name, affiliation: '' }))
+                    : []}
+                  onChange={updated => setData('evaluator_names', updated.map(p => p.name).join('\n'))}
                   error={getFieldError(errors, 'evaluator_names')}
                   required
-                  placeholder="Type evaluator name and press Enter or click Add"
+                  namePlaceholder="Type evaluator name"
+                  affiliationType="position"
                 />
                 {getFieldError(errors, 'evaluator_names') && (
                   <InputError message={getFieldError(errors, 'evaluator_names')} />

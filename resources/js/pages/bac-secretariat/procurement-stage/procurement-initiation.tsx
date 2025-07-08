@@ -23,7 +23,7 @@ interface FileMetadata {
     document_type: string;
     submission_date: string;
     municipal_offices: string;
-    signatory_details: string;
+    signatories: string;
     [key: string]: string; // Fix: allow dynamic string keys for metadata fields
 }
 
@@ -82,7 +82,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             document_type: '',
             submission_date: format(new Date(), 'yyyy-MM-dd'),
             municipal_offices: '',
-            signatory_details: ''
+            signatories: ''
         }]
     });
 
@@ -110,7 +110,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             clearErrors();
             const updated = Array.isArray(data.metadata) ? [...data.metadata] : [];
             if (!updated[index]) {
-                updated[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatory_details: '' };
+                updated[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: '' };
             }
             updated[index] = { ...updated[index], [field]: value };
             setData('metadata', updated);
@@ -141,7 +141,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                 setData('files', updatedFiles);
                 const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
                 if (!meta[index]) {
-                    meta[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatory_details: '' };
+                    meta[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: '' };
                     setData('metadata', meta);
                 }
             } else {
@@ -174,7 +174,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         const files = Array.isArray(data.files) ? [...data.files, null] : [];
         const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
         const last = meta.length - 1;
-        const copy = last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatory_details: '' };
+        const copy = last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: '' };
         meta.push({ ...copy, document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd') });
         setData('files', files);
         setData('metadata', meta);
@@ -308,7 +308,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             meta.document_type &&
             meta.submission_date &&
             meta.municipal_offices &&
-            meta.signatory_details
+            meta.signatories
     );
 
     if (!allMetadataComplete) {
@@ -547,14 +547,30 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
 
                                                         {/* Signatories - Takes remaining space */}
                                                         <div>
-                                                            <PeopleInput
-                                                                label="Signatories"
-                                                                value={meta?.signatory_details ? meta.signatory_details.split(',').map(s => s.trim()).filter(Boolean) : []}
-                                                                onChange={peopleArr => handleMetadataChange(index, 'signatory_details', peopleArr.join(', '))}
-                                                                error={hasError(`metadata.${index}.signatory_details`) ? (errors as Record<string, string>)[`metadata.${index}.signatory_details`] : undefined}
-                                                                required
-                                                                placeholder="Enter signatory names and positions, then press Enter or Add"
-                                                            />
+                                                        <PeopleInput
+                                                            label="Signatories"
+                                                            value={meta?.signatories ?
+                                                                meta.signatories.split(';')
+                                                                    .map(s => {
+                                                                        const [name, affiliation] = s.split('|').map(str => str.trim());
+                                                                        if (name && affiliation) {
+                                                                            return { name, affiliation };
+                                                                        }
+                                                                        return undefined;
+                                                                    })
+                                                                    .filter((p): p is { name: string; affiliation: string } => !!p)
+                                                                : []
+                                                            }
+                                                            onChange={peopleArr => handleMetadataChange(
+                                                                index,
+                                                                'signatories',
+                                                                peopleArr.map(p => `${p.name}|${p.affiliation}`).join('; ')
+                                                            )}
+                                                            error={hasError(`metadata.${index}.signatories`) ? (errors as Record<string, string>)[`metadata.${index}.signatories`] : undefined}
+                                                            required
+                                                            affiliationType="position"
+                                                            namePlaceholder="Enter signatory name"
+                                                        />
                                                         </div>
                                                     </div>
                                                 </div>

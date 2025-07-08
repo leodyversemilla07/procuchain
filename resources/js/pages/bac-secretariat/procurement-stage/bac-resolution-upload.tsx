@@ -40,7 +40,7 @@ export default function BacResolutionUpload({ procurement = { id: '', title: '' 
     bac_resolution_file: null as File | null,
     issuance_date: formattedDate,
     resolution_date_object: currentDate, // For UI display only
-    signatory_details: [] as string[],
+    signatory_details: '',
   });
 
   const breadcrumbs: BreadcrumbItem[] = [
@@ -88,7 +88,7 @@ export default function BacResolutionUpload({ procurement = { id: '', title: '' 
       toast.error("Missing resolution date", { description: "Please select the resolution date." });
       return;
     }
-    if (!data.signatory_details || (Array.isArray(data.signatory_details) && data.signatory_details.length === 0)) {
+    if (!data.signatory_details || !data.signatory_details.trim()) {
       toast.error("Missing signatories", { description: "Please enter at least one signatory." });
       return;
     }
@@ -189,11 +189,14 @@ export default function BacResolutionUpload({ procurement = { id: '', title: '' 
                 <div className="space-y-2">
                   <PeopleInput
                     label="Signatories"
-                    value={Array.isArray(data.signatory_details) ? data.signatory_details : (data.signatory_details ? [data.signatory_details] : [])}
-                    onChange={people => setData('signatory_details', people)}
+                    value={data.signatory_details
+                      ? data.signatory_details.split('\n').filter(Boolean).map(name => ({ name, affiliation: '' }))
+                      : []}
+                    onChange={people => setData('signatory_details', people.map(p => p.name).join('\n'))}
                     error={getFieldError(errors, 'signatory_details')}
                     required
-                    placeholder="Enter signatory name and press Enter or click Add"
+                    namePlaceholder="Enter signatory name"
+                    affiliationType="position"
                   />
                   {getFieldError(errors, 'signatory_details') && <InputError message={getFieldError(errors, 'signatory_details')} />}
                 </div>

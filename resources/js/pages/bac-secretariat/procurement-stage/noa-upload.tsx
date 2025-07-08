@@ -39,7 +39,7 @@ export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' 
     noa_file: null as File | null,
     issuance_date: formattedDate,
     issuance_date_object: currentDate,
-    signatories: [] as string[],
+    signatories: [] as Array<{ name: string; affiliation: string }>,
   });
 
   const breadcrumbs: BreadcrumbItem[] = [
@@ -187,7 +187,8 @@ export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' 
                   onChange={updated => setData('signatories', updated)}
                   error={getFieldError(errors, 'signatories')}
                   required
-                  placeholder="Type signatory name and press Enter or click Add"
+                  affiliationType="position"
+                  namePlaceholder="Enter signatory name"
                 />
                 {getFieldError(errors, 'signatories') && (
                   <div className="mt-2"><span className="text-destructive text-sm">{getFieldError(errors, 'signatories')}</span></div>
