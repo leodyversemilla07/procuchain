@@ -32,4 +32,17 @@ class SupplementalBidBulletinDocumentsRequest extends FormRequest
             'issue_date' => 'required|date_format:Y-m-d|before_or_equal:today',
         ];
     }
+
+    /**
+     * Get the custom error messages for validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'bulletin_file.max' => 'The bulletin file must not exceed 10MB in size.',
+            'bulletin_file.mimes' => 'Only PDF files are allowed.',
+        ];
+    }
 }

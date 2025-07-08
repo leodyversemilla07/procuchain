@@ -26,15 +26,31 @@ class PerformanceBondContractAndPoDocumentsRequest extends FormRequest
         return [
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            // Allow files to be nullable to match frontend behavior
             'performance_bond_file' => 'nullable|file|mimes:pdf|max:10240',
             'submission_date' => 'required|date_format:Y-m-d|before_or_equal:today',
-            'bond_amount' => 'required|numeric|min:0|max:9999999999.99', // Changed to numeric validation
-            // Allow files to be nullable to match frontend behavior
+            'bond_amount' => 'required|numeric|min:0',
             'contract_file' => 'nullable|file|mimes:pdf|max:10240',
-            // Allow files to be nullable to match frontend behavior
             'po_file' => 'nullable|file|mimes:pdf|max:10240',
             'signing_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+        ];
+    }
+
+    /**
+     * Get the custom error messages for validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'performance_bond_file.max' => 'The performance bond file must not exceed 10MB in size.',
+            'performance_bond_file.mimes' => 'Only PDF files are allowed.',
+            'contract_file.max' => 'The contract file must not exceed 10MB in size.',
+            'contract_file.mimes' => 'Only PDF files are allowed.',
+            'po_file.max' => 'The purchase order file must not exceed 10MB in size.',
+            'po_file.mimes' => 'Only PDF files are allowed.',
+            'bond_amount.numeric' => 'The bond amount must be a valid number.',
+            'bond_amount.min' => 'The bond amount cannot be negative.',
         ];
     }
 }

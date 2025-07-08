@@ -29,7 +29,29 @@ class BidEvaluationDocumentsRequest extends FormRequest
             'summary_file' => 'required|file|mimes:pdf|max:10240',
             'abstract_file' => 'required|file|mimes:pdf|max:10240',
             'evaluation_date' => 'required|date_format:Y-m-d|before_or_equal:today',
-            'evaluator_names' => 'required|string|min:1|max:500',
+            'evaluators' => 'required|array|min:1',
+            'evaluators.*.name' => 'required|string|min:1|max:255',
+            'evaluators.*.position' => 'required|string|min:1|max:255',
+        ];
+    }
+
+    /**
+     * Get the custom error messages for validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'summary_file.max' => 'The summary file must not exceed 10MB in size.',
+            'summary_file.mimes' => 'Only PDF files are allowed.',
+            'abstract_file.max' => 'The abstract file must not exceed 10MB in size.',
+            'abstract_file.mimes' => 'Only PDF files are allowed.',
+            'evaluators.required' => 'At least one evaluator is required.',
+            'evaluators.array' => 'Evaluators must be provided as an array.',
+            'evaluators.min' => 'At least one evaluator is required.',
+            'evaluators.*.name.required' => 'Each evaluator must have a name.',
+            'evaluators.*.position.required' => 'Each evaluator must have a position.',
         ];
     }
 }

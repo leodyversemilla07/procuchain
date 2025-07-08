@@ -28,7 +28,27 @@ class NoticeOfAwardDocumentRequest extends FormRequest
             'procurement_title' => 'required|string|min:5|max:255',
             'noa_file' => 'required|file|mimes:pdf|max:10240',
             'issuance_date' => 'required|date_format:Y-m-d|before_or_equal:today',
-            'signatory_details' => 'required|string|min:5|max:500',
+            'signatories' => 'required|array|min:1',
+            'signatories.*.name' => 'required|string|min:1|max:255',
+            'signatories.*.position' => 'required|string|min:1|max:255',
+        ];
+    }
+
+    /**
+     * Get the custom error messages for validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'noa_file.max' => 'The notice of award file must not exceed 10MB in size.',
+            'noa_file.mimes' => 'Only PDF files are allowed.',
+            'signatories.required' => 'At least one signatory is required.',
+            'signatories.array' => 'Signatories must be provided as an array.',
+            'signatories.min' => 'At least one signatory is required.',
+            'signatories.*.name.required' => 'Each signatory must have a name.',
+            'signatories.*.position.required' => 'Each signatory must have a position.',
         ];
     }
 }
