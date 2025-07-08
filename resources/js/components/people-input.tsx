@@ -6,13 +6,21 @@ import { Badge } from '@/components/ui/badge';
 import InputError from '@/components/input-error';
 import { Label } from '@/components/ui/label';
 
+interface PersonData {
+    name: string;
+    affiliation: string;
+}
+
+type AffiliationType = 'position' | 'organization';
+
 interface PeopleInputProps {
     label?: string;
-    value: string[];
-    onChange: (people: string[]) => void;
+    value: PersonData[];
+    onChange: (people: PersonData[]) => void;
     error?: string;
     required?: boolean;
-    placeholder?: string;
+    namePlaceholder?: string;
+    affiliationType: AffiliationType;
     labelClassName?: string;
     errorClassName?: string;
 }
@@ -23,24 +31,32 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
     onChange,
     error,
     required = false,
-    placeholder = 'Type name and press Enter or click Add',
+    namePlaceholder = 'Enter name',
+    affiliationType = 'position',
     labelClassName,
     errorClassName,
 }) => {
-    const [input, setInput] = useState('');
-    const [people, setPeople] = useState<string[]>(value || []);
+    const [nameInput, setNameInput] = useState('');
+    const [affiliationInput, setAffiliationInput] = useState('');
+    const [people, setPeople] = useState<PersonData[]>(value || []);
+
+    const getAffiliationPlaceholder = () => {
+        return affiliationType === 'position' ? 'Enter position' : 'Enter organization';
+    };
 
     useEffect(() => {
         setPeople(value || []);
     }, [value]);
 
     const addPerson = () => {
-        const trimmed = input.trim();
-        if (trimmed && !people.includes(trimmed)) {
-            const updated = [...people, trimmed];
+        const trimmedName = nameInput.trim();
+        const trimmedAffiliation = affiliationInput.trim();
+        if (trimmedName && trimmedAffiliation && !people.some(p => p.name === trimmedName && p.affiliation === trimmedAffiliation)) {
+            const updated = [...people, { name: trimmedName, affiliation: trimmedAffiliation }];
             setPeople(updated);
             onChange(updated);
-            setInput('');
+            setNameInput('');
+            setAffiliationInput('');
         }
     };
 
@@ -64,23 +80,36 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
             )}
             <div className="space-y-3">
                 <div className="flex gap-2">
-                    <Input
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        placeholder={placeholder}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                                addPerson();
-                                e.preventDefault();
-                            }
-                        }}
-                    />
+                    <div className="flex-1 flex gap-2">
+                        <Input
+                            value={nameInput}
+                            onChange={e => setNameInput(e.target.value)}
+                            placeholder={namePlaceholder}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && affiliationInput) {
+                                    addPerson();
+                                    e.preventDefault();
+                                }
+                            }}
+                        />
+                        <Input
+                            value={affiliationInput}
+                            onChange={e => setAffiliationInput(e.target.value)}
+                            placeholder={getAffiliationPlaceholder()}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && nameInput) {
+                                    addPerson();
+                                    e.preventDefault();
+                                }
+                            }}
+                        />
+                    </div>
                     <Button
                         type="button"
                         variant="secondary"
-                        className="px-3 flex items-center gap-1"
+                        className="px-3 flex items-center gap-1 whitespace-nowrap"
                         onClick={addPerson}
-                        disabled={!input.trim()}
+                        disabled={!nameInput.trim() || !affiliationInput.trim()}
                     >
                         <Plus className="h-4 w-4" />
                         Add
@@ -94,7 +123,7 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                             className="flex items-center gap-1 py-1 px-2 text-xs sm:text-sm"
                         >
                             <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            {person}
+                            {person.name} - {person.affiliation}
                             <Button
                                 type="button"
                                 variant="ghost"

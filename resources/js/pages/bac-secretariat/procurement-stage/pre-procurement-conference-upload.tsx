@@ -37,7 +37,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
     minutes_file: null as File | null,
     attendance_file: null as File | null,
     meeting_date: new Date(),
-    participants: [] as string[],
+    participants: [] as Array<{ name: string; affiliation: string }>,
   });
 
   // File validation
@@ -202,7 +202,8 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                   onChange={updated => setData('participants', updated)}
                   error={errors.participants}
                   required
-                  placeholder="Type participant name and press Enter or click Add"
+                  affiliationType="organization"
+                  namePlaceholder="Enter participant name"
                 />
               </CardContent>
               <CardFooter className="pt-4 border-t flex flex-col gap-3">

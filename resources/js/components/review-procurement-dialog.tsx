@@ -18,7 +18,7 @@ interface FileMetadata {
     document_type: string;
     submission_date: string;
     municipal_offices: string;
-    signatory_details: string;
+    signatories: string;
     [key: string]: string;
 }
 
@@ -176,10 +176,10 @@ export default function ReviewProcurementDialog({
                                             </div>
                                             <div>
                                                 <span className="font-semibold">Signatories:</span>{" "}
-                                                {meta?.signatory_details
-                                                    ? meta.signatory_details.length > 40
-                                                        ? `${meta.signatory_details.slice(0, 40)}...`
-                                                        : meta.signatory_details
+                                                {meta?.signatories
+                                                    ? meta.signatories.length > 40
+                                                        ? `${meta.signatories.slice(0, 40)}...`
+                                                        : meta.signatories
                                                     : '-'}
                                             </div>
                                         </div>
