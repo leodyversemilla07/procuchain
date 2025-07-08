@@ -31,4 +31,17 @@ class MonitoringDocumentRequest extends FormRequest
             'report_notes' => 'required|string|min:5|max:1000',
         ];
     }
+
+    /**
+     * Get the custom error messages for validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'compliance_file.max' => 'The compliance file must not exceed 10MB in size.',
+            'compliance_file.mimes' => 'Only PDF files are allowed.',
+        ];
+    }
 }

@@ -31,4 +31,17 @@ class CompletionDocumentsRequest extends FormRequest
             'completion_notes' => 'required|string|min:5|max:1000',
         ];
     }
+
+    /**
+     * Get the custom error messages for validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'completion_file.max' => 'The completion file must not exceed 10MB in size.',
+            'completion_file.mimes' => 'Only PDF files are allowed.',
+        ];
+    }
 }

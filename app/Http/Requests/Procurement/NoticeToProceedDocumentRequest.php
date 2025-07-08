@@ -30,4 +30,17 @@ class NoticeToProceedDocumentRequest extends FormRequest
             'issuance_date' => 'required|date_format:Y-m-d|before_or_equal:today',
         ];
     }
+
+    /**
+     * Get the custom error messages for validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'ntp_file.max' => 'The notice to proceed file must not exceed 10MB in size.',
+            'ntp_file.mimes' => 'Only PDF files are allowed.',
+        ];
+    }
 }

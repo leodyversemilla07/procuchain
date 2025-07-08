@@ -31,7 +31,7 @@ class BidOpeningDocumentsRequest extends FormRequest
             'bidders_data' => 'required|array|min:1',
             'bidders_data.*.bidder_name' => 'required|string|min:1|max:255',
             'bidders_data.*.bid_value' => 'required|numeric|min:0',
-            'opening_date_time' => 'required|date_format:Y-m-d H:i:s',
+            'opening_date_time' => 'required|date_format:Y-m-d|before_or_equal:today',
         ];
     }
 
