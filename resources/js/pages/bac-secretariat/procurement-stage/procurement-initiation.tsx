@@ -1,23 +1,24 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-    FileText, Save, Plus, X
-} from 'lucide-react';
 import { format } from 'date-fns';
 import { useForm, Head } from '@inertiajs/react';
 import { toast } from 'sonner';
 import { type BreadcrumbItem } from '@/types';
+import { cn } from '@/lib/utils';
+import { useMultiFileDrop } from '@/hooks/use-file-drop';
+
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import DatePicker from '@/components/date-picker';
-import { cn } from '@/lib/utils';
 import PeopleInput from '@/components/people-input';
 import FileUploadArea from '@/components/file-upload-area';
-import { useMultiFileDrop } from '@/hooks/use-file-drop';
+import ProcurementId from '@/components/procurement-id';
 import { InputWithLabel } from '@/components/input-with-label';
 import MunicipalOfficeSelect from '@/components/municipal-office-select';
 import ReviewProcurementDialog from '@/components/review-procurement-dialog';
+
+import { FileText, Save, Plus, X } from 'lucide-react';
 
 interface FileMetadata {
     document_type: string;
@@ -366,29 +367,50 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                 <Card className="p-4 sm:p-6 border-sidebar-border shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden relative">
                                     <div className="space-y-4 sm:space-y-5">
                                         <div>
-                                            <InputWithLabel
-                                                id="procurement_id"
-                                                label="Procurement ID"
-                                                required
-                                                type="text"
-                                                value={data.procurement_id}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('procurement_id', e.target.value)}
-                                                onFocus={() => clearErrors('procurement_id')}
-                                                placeholder="Enter a unique ID for this procurement"
-                                                className={`transition-all duration-200 ${hasError('procurement_id')
-                                                    ? 'border-destructive ring-1 ring-destructive/30'
-                                                    : 'border-input focus:border-primary'}`}
-                                                aria-invalid={hasError('procurement_id')}
+                                            <ProcurementId
+                                                prNumber="PR"
+                                                year={(data.procurement_id.split('-')[1] || new Date().getFullYear().toString())}
+                                                onYearChange={year => {
+                                                    // Always split into 4 parts, fill missing with defaults
+                                                    const parts = data.procurement_id.split('-');
+                                                    const safeParts = [
+                                                        'PR',
+                                                        parts[1] || new Date().getFullYear().toString(),
+                                                        parts[2] || '',
+                                                        parts[3] || ''
+                                                    ];
+                                                    safeParts[1] = year;
+                                                    setData('procurement_id', safeParts.join('-'));
+                                                }}
+                                                serial1={(data.procurement_id.split('-')[2] || '')}
+                                                onSerial1Change={val => {
+                                                    const parts = data.procurement_id.split('-');
+                                                    const safeParts = [
+                                                        'PR',
+                                                        parts[1] || new Date().getFullYear().toString(),
+                                                        parts[2] || '',
+                                                        parts[3] || ''
+                                                    ];
+                                                    safeParts[2] = val;
+                                                    setData('procurement_id', safeParts.join('-'));
+                                                }}
+                                                serial2={(data.procurement_id.split('-')[3] || '')}
+                                                onSerial2Change={val => {
+                                                    const parts = data.procurement_id.split('-');
+                                                    const safeParts = [
+                                                        'PR',
+                                                        parts[1] || new Date().getFullYear().toString(),
+                                                        parts[2] || '',
+                                                        parts[3] || ''
+                                                    ];
+                                                    safeParts[3] = val;
+                                                    setData('procurement_id', safeParts.join('-'));
+                                                }}
                                                 error={hasError('procurement_id') ? errors.procurement_id : ''}
-                                                errorClassName="mt-1.5 sm:mt-2"
+                                                required
                                             />
                                             <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
                                                 The procurement ID is a unique identifier for this procurement process.
-                                            </p>
-                                        </div>
-                                        <div className="p-3 sm:p-4 bg-accent rounded-lg border border-accent-foreground">
-                                            <p className="text-xs sm:text-sm text-accent-foreground">
-                                                <span className="font-medium">Tip:</span> The procurement ID should follow your organization's naming convention, for example: PROC-2025-0001-0001
                                             </p>
                                         </div>
                                     </div>
@@ -417,8 +439,8 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                             </p>
                                         </div>
 
-                                        <div className="p-3 sm:p-4 bg-accent rounded-lg border border-accent-foreground">
-                                            <p className="text-xs sm:text-sm text-accent-foreground">
+                                        <div className="p-3 sm:p-4 rounded-lg border transition-colors duration-200 bg-accent/10 dark:bg-accent/20 border-accent-foreground/50 dark:border-accent-foreground/70">
+                                            <p className="text-xs sm:text-sm text-accent-foreground dark:text-accent-foreground/80">
                                                 <span className="font-medium">Example:</span> "Supply and Delivery of Office Equipment for the Municipal Hall"
                                             </p>
                                         </div>
