@@ -36,7 +36,7 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
     const [showSetup, setShowSetup] = useState(false);
     const [showBackupCodes, setShowBackupCodes] = useState(false);
     const [displayBackupCodes, setDisplayBackupCodes] = useState<string[]>(backupCodes || []);
-    const [copiedCodes, setCopiedCodes] = useState<boolean>(false);    const setupForm = useForm({
+    const [copiedCodes, setCopiedCodes] = useState<boolean>(false); const setupForm = useForm({
         code: '',
         password: '',
     });
@@ -48,8 +48,8 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
 
     const backupCodesForm = useForm({
         password: '',
-    });    
-    
+    });
+
     const handleSetupMfa = async () => {
         try {
             const response = await fetch('/settings/mfa/setup', {
@@ -96,7 +96,7 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
 
     const handleRegenerateBackupCodes: FormEventHandler = (e) => {
         e.preventDefault();
-        
+
         fetch('/settings/mfa/backup-codes/regenerate', {
             method: 'POST',
             headers: {
@@ -105,17 +105,17 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
             },
             body: JSON.stringify({ password: backupCodesForm.data.password }),
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.backupCodes) {
-                setDisplayBackupCodes(data.backupCodes);
-                setShowBackupCodes(true);
-                backupCodesForm.reset();
-            }
-        })
-        .catch(error => {
-            console.error('Failed to regenerate backup codes:', error);
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.backupCodes) {
+                    setDisplayBackupCodes(data.backupCodes);
+                    setShowBackupCodes(true);
+                    backupCodesForm.reset();
+                }
+            })
+            .catch(error => {
+                console.error('Failed to regenerate backup codes:', error);
+            });
     };
 
     const copyBackupCodes = () => {
@@ -143,10 +143,10 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <HeadingSmall 
-                        title="Multi-Factor Authentication" 
-                        description="Add an extra layer of security to your account" 
-                    />                    
+                    <HeadingSmall
+                        title="Multi-Factor Authentication"
+                        description="Add an extra layer of security to your account"
+                    />
                     {/* Status Messages */}
                     {status === 'mfa-enabled' && displayBackupCodes.length > 0 && (
                         <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
@@ -156,7 +156,7 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                     <div className="flex-1">
                                         <div className="font-semibold mb-1">Multi-Factor Authentication Enabled!</div>
                                         <div className="text-sm">
-                                            Your account is now protected with an additional layer of security. 
+                                            Your account is now protected with an additional layer of security.
                                             Please save your backup codes below in a secure location.
                                         </div>
                                     </div>
@@ -199,7 +199,7 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                     {mfaEnabled ? "Enabled" : "Disabled"}
                                 </Badge>
                             </div>
-                        </CardHeader>                        
+                        </CardHeader>
                         <CardContent>
                             {mfaEnabled ? (
                                 <div className="space-y-4">
@@ -207,7 +207,7 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                         <Check className="h-4 w-4" />
                                         <span>Your account is protected with multi-factor authentication</span>
                                     </div>
-                                    
+
                                     {backupCodesCount > 0 && (
                                         <div className="text-sm text-muted-foreground">
                                             You have {backupCodesCount} backup code{backupCodesCount !== 1 ? 's' : ''} remaining
@@ -247,17 +247,17 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                             <p className="text-sm text-muted-foreground">
                                                 Scan this QR code with your authenticator app
                                             </p>
-                                            
+
                                             {qrCodeUrl && (
-                                                <div className="flex justify-center">
-                                                    <img 
-                                                        src={qrCodeUrl} 
-                                                        alt="QR Code" 
-                                                        className="border border-border rounded-lg"
+                                                <div className="flex justify-center p-6">
+                                                    <img
+                                                        src={qrCodeUrl}
+                                                        alt="QR Code"
+                                                        className="border border-border rounded-lg p-4 bg-white"
                                                     />
                                                 </div>
                                             )}
-                                            
+
                                             <div className="text-center">
                                                 <p className="text-xs text-muted-foreground mb-2">
                                                     Or manually enter this secret key:
@@ -312,9 +312,9 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                                 <Button type="submit" disabled={setupForm.processing}>
                                                     {setupForm.processing ? 'Enabling...' : 'Enable MFA'}
                                                 </Button>
-                                                <Button 
-                                                    type="button" 
-                                                    variant="outline" 
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
                                                     onClick={() => setShowSetup(false)}
                                                 >
                                                     Cancel
@@ -365,9 +365,9 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                         <InputError message={disableForm.errors.password} />
                                     </div>
 
-                                    <Button 
-                                        type="submit" 
-                                        variant="destructive" 
+                                    <Button
+                                        type="submit"
+                                        variant="destructive"
                                         disabled={disableForm.processing}
                                     >
                                         {disableForm.processing ? 'Disabling...' : 'Disable MFA'}
@@ -412,8 +412,8 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                             <InputError message={backupCodesForm.errors.password} />
                                         </div>
 
-                                        <Button 
-                                            type="submit" 
+                                        <Button
+                                            type="submit"
                                             variant="outline"
                                             disabled={backupCodesForm.processing}
                                         >
@@ -442,8 +442,8 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                     <div className="relative">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-sm bg-muted/50 dark:bg-muted/20 p-6 rounded-lg border border-border/50">
                                             {displayBackupCodes.map((code, index) => (
-                                                <div 
-                                                    key={index} 
+                                                <div
+                                                    key={index}
                                                     className="flex items-center justify-between p-3 bg-background dark:bg-background/50 rounded-md border border-border/30 hover:border-border/60 transition-colors"
                                                 >
                                                     <span className="text-foreground font-medium tracking-wider">
@@ -455,7 +455,7 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                                 </div>
                                             ))}
                                         </div>
-                                        
+
                                         {/* Subtle watermark overlay */}
                                         <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-5">
                                             <Key className="h-32 w-32 text-muted-foreground" />
@@ -464,9 +464,9 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
 
                                     {/* Action Buttons */}
                                     <div className="flex flex-wrap gap-3">
-                                        <Button 
-                                            type="button" 
-                                            variant="outline" 
+                                        <Button
+                                            type="button"
+                                            variant="outline"
                                             onClick={copyBackupCodes}
                                             className="flex items-center space-x-2"
                                         >
@@ -482,10 +482,10 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
                                                 </>
                                             )}
                                         </Button>
-                                        
-                                        <Button 
-                                            type="button" 
-                                            variant="outline" 
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
                                             onClick={downloadBackupCodes}
                                             className="flex items-center space-x-2"
                                         >

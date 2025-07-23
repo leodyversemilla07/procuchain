@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Models\User;
-use App\Services\LoginTrackingService;
-use App\Services\ProcurementServices;
+use App\Services\LoginLoggerService;
+use App\Services\AccountLockoutService;
+use App\Services\MultichainService;
+use App\Services\EventTypeLabelMapper;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -19,16 +21,22 @@ use Inertia\Inertia;
 
 class AdminController extends BaseController
 {
-    private $services;
-
-    private LoginTrackingService $loginTracker;
-
+    private LoginLoggerService $loginLogger;
+    private AccountLockoutService $accountLockout;
+    private MultichainService $multiChain;
+    private EventTypeLabelMapper $eventTypeLabelMapper;
     private array $userNameCache = [];
 
-    public function __construct(ProcurementServices $services, LoginTrackingService $loginTracker)
-    {
-        $this->services = $services;
-        $this->loginTracker = $loginTracker;
+    public function __construct(
+        LoginLoggerService $loginLogger,
+        AccountLockoutService $accountLockout,
+        MultichainService $multiChain,
+        EventTypeLabelMapper $eventTypeLabelMapper
+    ) {
+        $this->loginLogger = $loginLogger;
+        $this->accountLockout = $accountLockout;
+        $this->multiChain = $multiChain;
+        $this->eventTypeLabelMapper = $eventTypeLabelMapper;
         $this->middleware('auth');
         $this->middleware('role:admin');
     }
@@ -56,7 +64,7 @@ class AdminController extends BaseController
 
             $procurementsByKey = Cache::remember('admin_dashboard_procurements_by_key', now()->addMinutes(5), function () {
                 Log::info('Cache miss: Recalculating procurementsByKey for Admin dashboard');
-                $states = $this->services->getMultiChain()->listStreamItems(
+                $states = $this->multiChain->listStreamItems(
                     StreamEnums::STATUS->value,
                     true,
                     10000,
@@ -207,7 +215,7 @@ class AdminController extends BaseController
     private function getRecentActivities()
     {
         try {
-            $allEvents = $this->services->getMultiChain()->listStreamItems(
+            $allEvents = $this->multiChain->listStreamItems(
                 StreamEnums::EVENTS->value,
                 true,
                 20,
@@ -217,7 +225,6 @@ class AdminController extends BaseController
 
             if (! $allEvents) {
                 Log::warning('No events found in stream for Admin dashboard');
-
                 return [];
             }
 
@@ -227,7 +234,7 @@ class AdminController extends BaseController
                     if (! isset($data['procurement_id'], $data['procurement_title'])) {
                         return null;
                     }
-                    $actionLabel = $this->services->getEventTypeLabelMapper()->getLabel(
+                    $actionLabel = $this->eventTypeLabelMapper->getLabel(
                         $data['event_type'] ?? '',
                         $data['details'] ?? ''
                     );
@@ -254,7 +261,6 @@ class AdminController extends BaseController
                 'error' => $e->getMessage(),
                 'stack_trace' => $e->getTraceAsString(),
             ]);
-
             return [];
         }
     }
@@ -262,8 +268,7 @@ class AdminController extends BaseController
     private function getTotalDocuments($procurementsByKey)
     {
         try {
-            $client = $this->services->getMultiChain();
-            $documentItems = $client->listStreamItems(
+            $documentItems = $this->multiChain->listStreamItems(
                 StreamEnums::DOCUMENTS->value,
                 true,
                 2000,
@@ -273,20 +278,19 @@ class AdminController extends BaseController
 
             if ($documentItems === null) {
                 Log::warning('Failed to retrieve document stream items for Admin dashboard stats.');
-
                 return 0;
             }
 
             $documentCountMap = collect($documentItems)
-                ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-                ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
+                ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+                ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
                 ->map(function ($items) {
-                    return collect($items)->map(fn ($item) => $item['data']['json']['hash'])->unique()->count();
+                    return collect($items)->map(fn($item) => $item['data']['json']['hash'])->unique()->count();
                 });
 
             $dashboardProcurementIds = $procurementsByKey->keys();
             $totalDocuments = $documentCountMap
-                ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->sum();
 
             Log::info('Admin dashboard document count calculated', ['total_documents' => $totalDocuments]);
@@ -297,7 +301,6 @@ class AdminController extends BaseController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-
             return 0;
         }
     }
@@ -521,7 +524,6 @@ class AdminController extends BaseController
             $message = $deletedCount === 1 ? 'User deleted successfully.' : "{$deletedCount} users deleted successfully.";
 
             return redirect()->back()->with('success', $message);
-
         } catch (Exception $e) {
             Log::error('Failed to bulk delete users', [
                 'admin_id' => Auth::id(),
@@ -539,9 +541,9 @@ class AdminController extends BaseController
     public function loginLogs()
     {
         try {
-            $recentLogins = $this->loginTracker->getRecentLogins(100);
-            $statistics = $this->loginTracker->getLoginStatistics();
-            $suspiciousActivities = $this->loginTracker->getSuspiciousActivities();
+            $recentLogins = $this->loginLogger->getRecentLogins(100);
+            $statistics = $this->loginLogger->getLoginStatistics();
+            $suspiciousActivities = $this->loginLogger->getSuspiciousActivities();
 
             return Inertia::render('admin/login-logs', [
                 'recentLogins' => $recentLogins,
@@ -565,7 +567,7 @@ class AdminController extends BaseController
     {
         try {
             $limit = $request->get('limit', 50);
-            $recentLogins = $this->loginTracker->getRecentLogins($limit);
+            $recentLogins = $this->loginLogger->getRecentLogins($limit);
 
             return response()->json([
                 'success' => true,
@@ -590,7 +592,7 @@ class AdminController extends BaseController
     public function loginStatistics()
     {
         try {
-            $statistics = $this->loginTracker->getLoginStatistics();
+            $statistics = $this->loginLogger->getLoginStatistics();
 
             return response()->json([
                 'success' => true,
@@ -615,7 +617,7 @@ class AdminController extends BaseController
     public function suspiciousActivities()
     {
         try {
-            $activities = $this->loginTracker->getSuspiciousActivities();
+            $activities = $this->loginLogger->getSuspiciousActivities();
 
             return response()->json([
                 'success' => true,
@@ -640,7 +642,7 @@ class AdminController extends BaseController
     public function lockedAccounts()
     {
         try {
-            $lockedUsers = $this->loginTracker->getLockedAccounts();
+            $lockedUsers = $this->accountLockout->getLockedAccounts();
 
             // Format the data for the frontend - the LoginTrackingService already returns formatted data
             $formattedUsers = $lockedUsers->map(function ($userData) {
@@ -689,7 +691,7 @@ class AdminController extends BaseController
                 'reason' => 'nullable|string|max:255',
             ]);
 
-            $result = $this->loginTracker->unlockAccount($user, $validated['reason'] ?? 'Manually unlocked by admin');
+            $result = $this->accountLockout->unlockAccount($user, $validated['reason'] ?? 'Manually unlocked by admin');
 
             if ($result) {
                 Log::info('Admin unlocked user account', [
@@ -758,7 +760,7 @@ class AdminController extends BaseController
             }
 
             $durationHours = $validated['duration_hours'] ?? 24; // Default 24 hours
-            $result = $this->loginTracker->lockAccount($user, $validated['reason'], $durationHours);
+            $result = $this->accountLockout->lockAccount($user, $validated['reason'], $durationHours);
 
             if ($result) {
                 Log::info('Admin manually locked user account', [
@@ -799,7 +801,7 @@ class AdminController extends BaseController
     public function resetFailedAttempts(User $user)
     {
         try {
-            $result = $this->loginTracker->resetFailedAttempts($user);
+            $result = $this->accountLockout->resetFailedAttempts($user);
 
             if ($result) {
                 Log::info('Admin reset failed login attempts', [

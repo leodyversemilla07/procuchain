@@ -4,22 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Models\User;
-use App\Services\ProcurementServices;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use App\Services\MultichainService;
+use App\Services\ProcurementStageTransitionService;
+use App\Services\EventTypeLabelMapper;
 
 class BacSecretariatController extends BaseController
 {
-    private $services;
-
+    private MultichainService $multichainService;
+    private EventTypeLabelMapper $eventTypeLabelMapper;
+    private ProcurementStageTransitionService $stageTransitionService;
     private array $userNameCache = [];
 
-    public function __construct(ProcurementServices $services)
-    {
-        $this->services = $services;
+    public function __construct(
+        MultichainService $multichainService,
+        ProcurementStageTransitionService $stageTransitionService,
+        EventTypeLabelMapper $eventTypeLabelMapper
+    ) {
+        $this->multichainService = $multichainService;
+        $this->stageTransitionService = $stageTransitionService;
+        $this->eventTypeLabelMapper = $eventTypeLabelMapper;
         $this->setupMiddleware();
     }
 
@@ -53,7 +61,7 @@ class BacSecretariatController extends BaseController
             // Cache procurementsByKey for 5 minutes
             $procurementsByKey = Cache::remember('dashboard_procurements_by_key', now()->addMinutes(5), function () {
                 Log::info('Cache miss: Recalculating procurementsByKey for dashboard');
-                $states = $this->services->getMultiChain()->listStreamItems(
+                $states = $this->multichainService->listStreamItems(
                     StreamEnums::STATUS->value,
                     true,
                     10000, // Consider if this limit needs adjustment or pagination
@@ -235,7 +243,7 @@ class BacSecretariatController extends BaseController
     private function getRecentActivities()
     {
         try {
-            $allEvents = $this->services->getMultiChain()->listStreamItems(
+            $allEvents = $this->multichainService->listStreamItems(
                 StreamEnums::EVENTS->value,
                 true,
                 20,
@@ -256,10 +264,7 @@ class BacSecretariatController extends BaseController
                         return null;
                     }
 
-                    $actionLabel = $this->services->getEventTypeLabelMapper()->getLabel(
-                        $data['event_type'] ?? '',
-                        $data['details'] ?? ''
-                    );
+                    $actionLabel = $this->eventTypeLabelMapper->getLabel($data['event_type'] ?? '', $data['details'] ?? '');
 
                     return [
                         'id' => $data['procurement_id'],
@@ -296,7 +301,7 @@ class BacSecretariatController extends BaseController
 
             foreach ($procurementsByKey as $procurement) {
                 try {
-                    $action = $this->services->getStageTransitionService()->getPriorityAction(
+                    $action = $this->stageTransitionService->getPriorityAction(
                         $procurement['stage'],
                         $procurement['status'],
                         $procurement['id'],
@@ -329,7 +334,7 @@ class BacSecretariatController extends BaseController
     private function getTotalDocuments($procurementsByKey)
     {
         try {
-            $client = $this->services->getMultiChain();
+            $client = $this->multichainService;
 
             // Fetch all document items (for all procurements)
             $documentItems = $client->listStreamItems(

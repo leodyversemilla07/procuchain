@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
-import { useForm, Head } from '@inertiajs/react';
 import { toast } from 'sonner';
+import { Head, useForm } from '@inertiajs/react';
+
 import { type BreadcrumbItem } from '@/types';
 import { cn } from '@/lib/utils';
 import { useMultiFileDrop } from '@/hooks/use-file-drop';
 
 import AppLayout from '@/layouts/app-layout';
+
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { InputWithLabel } from '@/components/input-with-label';
+
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
 import FileUploadArea from '@/components/file-upload-area';
 import ProcurementId from '@/components/procurement-id';
-import { InputWithLabel } from '@/components/input-with-label';
 import MunicipalOfficeSelect from '@/components/municipal-office-select';
 import ReviewProcurementDialog from '@/components/review-procurement-dialog';
 
@@ -24,9 +27,17 @@ interface FileMetadata {
     document_type: string;
     submission_date: string;
     municipal_offices: string;
-    signatories: string;
-    [key: string]: string; // Fix: allow dynamic string keys for metadata fields
+    signatories: { name: string; position: string }[];
+    [key: string]: string | { name: string; position: string }[];
 }
+
+type UseFormData = {
+    procurement_id: string;
+    procurement_title: string;
+    files: (File | null)[];
+    metadata: FileMetadata[];
+    // Remove the index signature to allow setData to accept string keys
+};
 
 interface HeaderProps {
     formState?: {
@@ -38,30 +49,10 @@ interface HeaderProps {
     };
 }
 
-type UseFormData = {
-    procurement_id: string;
-    procurement_title: string;
-    files: (File | null)[];
-    metadata: FileMetadata[];
-    // Remove the index signature to allow setData to accept string keys
-};
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurement Initiation', href: '#' },
 ];
-
-function parseDate(dateStr: string): Date | undefined {
-    if (!dateStr) return undefined;
-
-    try {
-        const date = new Date(dateStr);
-        return !isNaN(date.getTime()) ? date : undefined;
-    } catch (e) {
-        console.error("Error parsing date:", e);
-        return undefined;
-    }
-}
 
 export default function ProcurementInitiationForm({ formState }: HeaderProps) {
     const [dates, setDates] = useState<Record<number, Date | undefined>>({});
@@ -83,9 +74,21 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             document_type: '',
             submission_date: format(new Date(), 'yyyy-MM-dd'),
             municipal_offices: '',
-            signatories: ''
+            signatories: []
         }]
     });
+
+    const parseDate = (dateStr: string): Date | undefined => {
+        if (!dateStr) return undefined;
+
+        try {
+            const date = new Date(dateStr);
+            return !isNaN(date.getTime()) ? date : undefined;
+        } catch (e) {
+            console.error("Error parsing date:", e);
+            return undefined;
+        }
+    };
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {
@@ -107,11 +110,11 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
     }, []);
 
     const handleMetadataChange = useCallback(
-        (index: number, field: keyof FileMetadata, value: string) => {
+        (index: number, field: keyof FileMetadata, value: string | { name: string; position: string }[]) => {
             clearErrors();
             const updated = Array.isArray(data.metadata) ? [...data.metadata] : [];
             if (!updated[index]) {
-                updated[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: '' };
+                updated[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: [] };
             }
             updated[index] = { ...updated[index], [field]: value };
             setData('metadata', updated);
@@ -142,7 +145,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                 setData('files', updatedFiles);
                 const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
                 if (!meta[index]) {
-                    meta[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: '' };
+                    meta[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: [] };
                     setData('metadata', meta);
                 }
             } else {
@@ -175,8 +178,8 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         const files = Array.isArray(data.files) ? [...data.files, null] : [];
         const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
         const last = meta.length - 1;
-        const copy = last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: '' };
-        meta.push({ ...copy, document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd') });
+        const copy = last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: [] };
+        meta.push({ ...copy, document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), signatories: [] });
         setData('files', files);
         setData('metadata', meta);
         setDates(d => last >= 0 ? { ...d, [last + 1]: parseDate(format(new Date(), 'yyyy-MM-dd')) } : { 0: parseDate(format(new Date(), 'yyyy-MM-dd')) });
@@ -309,7 +312,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             meta.document_type &&
             meta.submission_date &&
             meta.municipal_offices &&
-            meta.signatories
+            Array.isArray(meta.signatories) && meta.signatories.length > 0
     );
 
     if (!allMetadataComplete) {
@@ -369,42 +372,20 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                         <div>
                                             <ProcurementId
                                                 prNumber="PR"
-                                                year={(data.procurement_id.split('-')[1] || new Date().getFullYear().toString())}
-                                                onYearChange={year => {
-                                                    // Always split into 4 parts, fill missing with defaults
-                                                    const parts = data.procurement_id.split('-');
-                                                    const safeParts = [
-                                                        'PR',
-                                                        parts[1] || new Date().getFullYear().toString(),
-                                                        parts[2] || '',
-                                                        parts[3] || ''
-                                                    ];
-                                                    safeParts[1] = year;
-                                                    setData('procurement_id', safeParts.join('-'));
-                                                }}
                                                 serial1={(data.procurement_id.split('-')[2] || '')}
                                                 onSerial1Change={val => {
+                                                    // Always construct as PR-<year>-<serial1>-<serial2>
                                                     const parts = data.procurement_id.split('-');
-                                                    const safeParts = [
-                                                        'PR',
-                                                        parts[1] || new Date().getFullYear().toString(),
-                                                        parts[2] || '',
-                                                        parts[3] || ''
-                                                    ];
-                                                    safeParts[2] = val;
-                                                    setData('procurement_id', safeParts.join('-'));
+                                                    const year = new Date().getFullYear().toString();
+                                                    const serial2 = parts[3] || '';
+                                                    setData('procurement_id', `PR-${year}-${val}-${serial2}`);
                                                 }}
                                                 serial2={(data.procurement_id.split('-')[3] || '')}
                                                 onSerial2Change={val => {
                                                     const parts = data.procurement_id.split('-');
-                                                    const safeParts = [
-                                                        'PR',
-                                                        parts[1] || new Date().getFullYear().toString(),
-                                                        parts[2] || '',
-                                                        parts[3] || ''
-                                                    ];
-                                                    safeParts[3] = val;
-                                                    setData('procurement_id', safeParts.join('-'));
+                                                    const year = new Date().getFullYear().toString();
+                                                    const serial1 = parts[2] || '';
+                                                    setData('procurement_id', `PR-${year}-${serial1}-${val}`);
                                                 }}
                                                 error={hasError('procurement_id') ? errors.procurement_id : ''}
                                                 required
@@ -569,30 +550,21 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
 
                                                         {/* Signatories - Takes remaining space */}
                                                         <div>
-                                                        <PeopleInput
-                                                            label="Signatories"
-                                                            value={meta?.signatories ?
-                                                                meta.signatories.split(';')
-                                                                    .map(s => {
-                                                                        const [name, affiliation] = s.split('|').map(str => str.trim());
-                                                                        if (name && affiliation) {
-                                                                            return { name, affiliation };
-                                                                        }
-                                                                        return undefined;
-                                                                    })
-                                                                    .filter((p): p is { name: string; affiliation: string } => !!p)
-                                                                : []
-                                                            }
-                                                            onChange={peopleArr => handleMetadataChange(
-                                                                index,
-                                                                'signatories',
-                                                                peopleArr.map(p => `${p.name}|${p.affiliation}`).join('; ')
-                                                            )}
-                                                            error={hasError(`metadata.${index}.signatories`) ? (errors as Record<string, string>)[`metadata.${index}.signatories`] : undefined}
-                                                            required
-                                                            affiliationType="position"
-                                                            namePlaceholder="Enter signatory name"
-                                                        />
+                                                            <PeopleInput
+                                                                label="Signatories"
+                                                                value={Array.isArray(meta?.signatories)
+                                                                    ? meta.signatories.map(s => ({ name: s.name, affiliation: s.position }))
+                                                                    : []}
+                                                                onChange={peopleArr => handleMetadataChange(
+                                                                    index,
+                                                                    'signatories',
+                                                                    peopleArr.map(p => ({ name: p.name, position: p.affiliation }))
+                                                                )}
+                                                                error={hasError(`metadata.${index}.signatories`) ? (errors as Record<string, string>)[`metadata.${index}.signatories`] : undefined}
+                                                                required
+                                                                affiliationType="position"
+                                                                namePlaceholder="Enter signatory name"
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>

@@ -18,6 +18,7 @@ import FileUploadArea from '@/components/file-upload-area';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
+import { format } from 'date-fns';
 
 // Allowed file types and max file size for uploads
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -36,8 +37,8 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
     procurement_title: procurement?.title || '',
     minutes_file: null as File | null,
     attendance_file: null as File | null,
-    meeting_date: new Date(),
-    participants: [] as Array<{ name: string; affiliation: string }>,
+    meeting_date: format(new Date(), 'yyyy-MM-dd'), // store as Y-m-d string
+    participants: [] as Array<{ name: string; organization: string }>,
   });
 
   // File validation
@@ -74,7 +75,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      setData('meeting_date', date);
+      setData('meeting_date', format(new Date(), 'yyyy-MM-dd'));
     }
   };
 
@@ -191,15 +192,23 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
               <CardContent className="space-y-4 sm:space-y-6">
                 <DatePicker
                   label="Meeting Date"
-                  value={data.meeting_date instanceof Date ? data.meeting_date : new Date(data.meeting_date)}
+                  value={data.meeting_date ? new Date(data.meeting_date) : new Date()}
                   onChange={handleDateSelect}
                   error={errors.meeting_date}
                   required
                 />
                 <PeopleInput
                   label="Participants"
-                  value={data.participants}
-                  onChange={updated => setData('participants', updated)}
+                  value={Array.isArray(data.participants)
+                    ? data.participants.map(p => ({ name: p.name, affiliation: p.organization }))
+                    : []}
+                  onChange={updated => {
+                    // Map {name, affiliation} from PeopleInput to {name, organization} for form state
+                    const normalized = Array.isArray(updated)
+                      ? updated.map(p => ({ name: p.name, organization: p.affiliation }))
+                      : [];
+                    setData('participants', normalized);
+                  }}
                   error={errors.participants}
                   required
                   affiliationType="organization"

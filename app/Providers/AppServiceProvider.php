@@ -2,29 +2,10 @@
 
 namespace App\Providers;
 
-use App\Handlers\BacResolution\BacResolutionDocumentHandler;
-use App\Handlers\BiddingDocuments\BiddingDocumentsHandler;
-use App\Handlers\BidEvaluation\BidEvaluationDocumentsHandler;
-use App\Handlers\BidOpening\BidOpeningDocumentsHandler;
-use App\Handlers\Completion\CompletionDocumentsHandler;
-use App\Handlers\Monitoring\MonitoringDocumentHandler;
-use App\Handlers\NoticeOfAward\NoticeOfAwardDocumentHandler;
-use App\Handlers\NoticeToProceed\NoticeToProceedDocumentHandler;
-use App\Handlers\PerformanceBondContractAndPo\PerformanceBondContractAndPoHandler;
-use App\Handlers\PostQualification\PostQualificationDocumentsHandler;
-use App\Handlers\PreBidConference\PreBidConferenceDecisionHandler;
-use App\Handlers\PreBidConference\PreBidConferenceDocumentsHandler;
-use App\Handlers\PreProcurementConference\PreProcurementConferenceDecisionHandler;
-use App\Handlers\PreProcurementConference\PreProcurementConferenceDocumentsHandler;
-use App\Handlers\ProcurementInitiation\ProcurementInitiationHandler;
-use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDecisionHandler;
-use App\Handlers\SupplementalBidBulletin\SupplementalBidBulletinDocumentsHandler;
-use App\Services\BlockchainService;
 use App\Services\EventTypeLabelMapper;
 use App\Services\FileStorageService;
 use App\Services\MultichainService;
 use App\Services\NotificationService;
-use App\Services\ProcurementServices;
 use App\Services\ProcurementStageTransitionService;
 use App\Services\StreamKeyService;
 use Illuminate\Support\Facades\URL;
@@ -34,67 +15,13 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->registerServices();
-        $this->registerHandlers();
-    }
-
-    private function registerServices(): void
-    {
         $this->app->singleton(MultichainService::class);
-        $this->app->singleton(BlockchainService::class);
         $this->app->singleton(StreamKeyService::class);
         $this->app->singleton(ProcurementStageTransitionService::class);
         $this->app->singleton(EventTypeLabelMapper::class);
 
-        $this->app->singleton(ProcurementServices::class, function ($app) {
-            $services = new ProcurementServices(
-                $app->make(MultichainService::class),
-                $app->make(StreamKeyService::class),
-            );
-
-            $services->setStageTransitionService($app->make(ProcurementStageTransitionService::class))
-                ->setEventTypeLabelMapper($app->make(EventTypeLabelMapper::class));
-
-            return $services;
-        });
-    }
-
-    private function registerHandlers(): void
-    {
-        $handlers = [
-            ProcurementInitiationHandler::class,
-            PreProcurementConferenceDecisionHandler::class,
-            PreProcurementConferenceDocumentsHandler::class,
-            BiddingDocumentsHandler::class,
-            PreBidConferenceDecisionHandler::class,
-            PreBidConferenceDocumentsHandler::class,
-            SupplementalBidBulletinDecisionHandler::class,
-            SupplementalBidBulletinDocumentsHandler::class,
-            BidOpeningDocumentsHandler::class,
-            BidEvaluationDocumentsHandler::class,
-            PostQualificationDocumentsHandler::class,
-            BacResolutionDocumentHandler::class,
-            NoticeOfAwardDocumentHandler::class,
-            PerformanceBondContractAndPoHandler::class,
-            NoticeToProceedDocumentHandler::class,
-            MonitoringDocumentHandler::class,
-            CompletionDocumentsHandler::class,
-        ];
-
-        foreach ($handlers as $handler) {
-            $this->registerHandler($handler);
-        }
-    }
-
-    private function registerHandler(string $handlerClass): void
-    {
-        $this->app->bind($handlerClass, function ($app) use ($handlerClass) {
-            return new $handlerClass(
-                $app->make(BlockchainService::class),
-                $app->make(FileStorageService::class),
-                $app->make(NotificationService::class)
-            );
-        });
+        $this->app->bind(FileStorageService::class);
+        $this->app->bind(NotificationService::class);
     }
 
     public function boot(): void
