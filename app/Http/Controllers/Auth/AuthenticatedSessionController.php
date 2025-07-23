@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Services\LoginTrackingService;
+use App\Services\LoginLoggerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,11 +14,11 @@ use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
-    protected LoginTrackingService $loginTracker;
+    protected LoginLoggerService $loginLogger;
 
-    public function __construct(LoginTrackingService $loginTracker)
+    public function __construct(LoginLoggerService $loginLogger)
     {
-        $this->loginTracker = $loginTracker;
+        $this->loginLogger = $loginLogger;
     }
 
     /**
@@ -49,7 +49,7 @@ class AuthenticatedSessionController extends Controller
         $user = Auth::user();
 
         // Log successful login
-        $this->loginTracker->logLogin($user, $request);
+        $this->loginLogger->logLogin($user, $request);
 
         // Mark MFA as verified for this session if user has MFA enabled
         if ($user->hasMfaEnabled()) {
@@ -79,7 +79,7 @@ class AuthenticatedSessionController extends Controller
 
         // Log logout before destroying session
         if ($user) {
-            $this->loginTracker->logLogout($user);
+            $this->loginLogger->logLogout($user);
             // Clear MFA verification for this session
             session()->forget('mfa_verified_' . $user->id);
         }

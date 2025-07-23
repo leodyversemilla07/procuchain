@@ -4,22 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Models\User;
-use App\Services\ProcurementServices;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use App\Services\MultichainService;
+use App\Services\EventTypeLabelMapper;
 
 class BacChairmanController extends BaseController
 {
-    private $services;
-
+    private MultichainService $multichainService;
+    private EventTypeLabelMapper $eventTypeLabelMapper;
     private array $userNameCache = [];
 
-    public function __construct(ProcurementServices $services)
+    public function __construct(MultichainService $multichainService, EventTypeLabelMapper $eventTypeLabelMapper)
     {
-        $this->services = $services;
+        $this->multichainService = $multichainService;
+        $this->eventTypeLabelMapper = $eventTypeLabelMapper;
         $this->middleware('auth');
         $this->middleware('role:bac_chairman');
     }
@@ -47,8 +49,12 @@ class BacChairmanController extends BaseController
 
             $procurementsByKey = Cache::remember('bac_chairman_dashboard_procurements_by_key', now()->addMinutes(5), function () {
                 Log::info('Cache miss: Recalculating procurementsByKey for BAC Chairman dashboard');
-                $states = $this->services->getMultiChain()->listStreamItems(
-                    StreamEnums::STATUS->value, true, 10000, 0, false
+                $states = $this->multichainService->listStreamItems(
+                    StreamEnums::STATUS->value,
+                    true,
+                    10000,
+                    0,
+                    false
                 );
                 if ($states === null) {
                     throw new Exception('Failed to retrieve status stream items for BAC Chairman procurementsByKey cache');
@@ -83,7 +89,6 @@ class BacChairmanController extends BaseController
             Log::info('Successfully retrieved BAC Chairman dashboard data');
 
             return Inertia::render('bac-chairman/dashboard', $dashboardData);
-
         } catch (Exception $e) {
             Log::error('Failed to retrieve BAC Chairman dashboard data', [
                 'error' => $e->getMessage(),
@@ -196,8 +201,12 @@ class BacChairmanController extends BaseController
     private function getRecentActivities()
     {
         try {
-            $allEvents = $this->services->getMultiChain()->listStreamItems(
-                StreamEnums::EVENTS->value, true, 20, -20, true
+            $allEvents = $this->multichainService->listStreamItems(
+                StreamEnums::EVENTS->value,
+                true,
+                20,
+                -20,
+                true
             );
 
             if (! $allEvents) {
@@ -212,8 +221,9 @@ class BacChairmanController extends BaseController
                     if (! isset($data['procurement_id'], $data['procurement_title'])) {
                         return null;
                     }
-                    $actionLabel = $this->services->getEventTypeLabelMapper()->getLabel(
-                        $data['event_type'] ?? '', $data['details'] ?? ''
+                    $actionLabel = $this->eventTypeLabelMapper->getLabel(
+                        $data['event_type'] ?? '',
+                        $data['details'] ?? ''
                     );
 
                     return [
@@ -233,7 +243,6 @@ class BacChairmanController extends BaseController
                 ->take(8)
                 ->values()
                 ->toArray();
-
         } catch (Exception $e) {
             Log::error('Failed to retrieve recent activities for BAC Chairman', [
                 'error' => $e->getMessage(),
@@ -247,9 +256,13 @@ class BacChairmanController extends BaseController
     private function getTotalDocuments($procurementsByKey)
     {
         try {
-            $client = $this->services->getMultiChain();
+            $client = $this->multichainService;
             $documentItems = $client->listStreamItems(
-                StreamEnums::DOCUMENTS->value, true, 2000, 0, false
+                StreamEnums::DOCUMENTS->value,
+                true,
+                2000,
+                0,
+                false
             );
 
             if ($documentItems === null) {
@@ -259,21 +272,20 @@ class BacChairmanController extends BaseController
             }
 
             $documentCountMap = collect($documentItems)
-                ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-                ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
+                ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+                ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
                 ->map(function ($items) {
-                    return collect($items)->map(fn ($item) => $item['data']['json']['hash'])->unique()->count();
+                    return collect($items)->map(fn($item) => $item['data']['json']['hash'])->unique()->count();
                 });
 
             $dashboardProcurementIds = $procurementsByKey->keys();
             $totalDocuments = $documentCountMap
-                ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->sum();
 
             Log::info('BAC Chairman dashboard document count calculated', ['total_documents' => $totalDocuments]);
 
             return $totalDocuments;
-
         } catch (Exception $e) {
             Log::error('Failed to calculate total documents for BAC Chairman dashboard', [
                 'error' => $e->getMessage(),
@@ -288,8 +300,12 @@ class BacChairmanController extends BaseController
     {
         return $procurementsByKey->filter(function ($item) {
             return in_array($item['stage'], [
-                'Notice Of Award', 'Performance Bond', 'Contract And PO',
-                'Notice To Proceed', 'Monitoring', 'Completed',
+                'Notice Of Award',
+                'Performance Bond',
+                'Contract And PO',
+                'Notice To Proceed',
+                'Monitoring',
+                'Completed',
             ]);
         })->count();
     }

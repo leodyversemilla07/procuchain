@@ -3,26 +3,24 @@
 use App\Models\User;
 use App\Notifications\ProcurementStageNotification;
 use App\Services\NotificationService;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->notificationService = new NotificationService;
-
-    // Create test users with specific roles
-    $this->bacChairman = User::factory()->create(['role' => 'bac_chairman']);
-    $this->hope = User::factory()->create(['role' => 'hope']);
-    $this->admin = User::factory()->create(['role' => 'admin']);
-
-    // Fake notifications
-    Notification::fake();
+    $this->notificationService = app(NotificationService::class);
 });
 
 test('notification is sent to bac chairman, hope, and admin', function () {
-    Log::shouldReceive('info')
+    \Illuminate\Support\Facades\Notification::fake();
+
+    $bacChairman = User::factory()->create(['role' => 'bac_chairman']);
+    $hope = User::factory()->create(['role' => 'hope']);
+    $admin = User::factory()->create(['role' => 'admin']);
+
+    \Illuminate\Support\Facades\Log::shouldReceive('info')
         ->once()
         ->withArgs(function ($message, $context) {
             return str_contains($message, 'Procurement stage update notification sent') &&
@@ -40,11 +38,11 @@ test('notification is sent to bac chairman, hope, and admin', function () {
         'uploaded'
     );
 
-    Notification::assertSentTo(
-        [$this->bacChairman, $this->hope, $this->admin],
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        [$bacChairman, $hope, $admin],
         ProcurementStageNotification::class,
-        function ($notification) {
-            $data = $notification->toArray($this->bacChairman);
+        function ($notification) use ($bacChairman) {
+            $data = $notification->toArray($bacChairman);
 
             return $data['procurement_id'] === 'PROC-001' &&
                 $data['procurement_title'] === 'Test Procurement' &&
@@ -56,7 +54,12 @@ test('notification is sent to bac chairman, hope, and admin', function () {
 });
 
 test('notification includes stage transition data when provided', function () {
-    Log::shouldReceive('info')->once();
+    \Illuminate\Support\Facades\Notification::fake();
+    \Illuminate\Support\Facades\Log::shouldReceive('info')->once();
+
+    $bacChairman = User::factory()->create(['role' => 'bac_chairman']);
+    $hope = User::factory()->create(['role' => 'hope']);
+    $admin = User::factory()->create(['role' => 'admin']);
 
     $this->notificationService->notifyStageUpdate(
         'PROC-001',
@@ -70,11 +73,11 @@ test('notification includes stage transition data when provided', function () {
         'Post-Qualification'
     );
 
-    Notification::assertSentTo(
-        [$this->bacChairman, $this->hope, $this->admin],
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        [$bacChairman, $hope, $admin],
         ProcurementStageNotification::class,
-        function ($notification) {
-            $data = $notification->toArray($this->bacChairman);
+        function ($notification) use ($bacChairman) {
+            $data = $notification->toArray($bacChairman);
 
             return $data['procurement_id'] === 'PROC-001' &&
                 $data['next_stage'] === 'Post-Qualification';
@@ -83,10 +86,11 @@ test('notification includes stage transition data when provided', function () {
 });
 
 test('warning is logged when no users found', function () {
+    \Illuminate\Support\Facades\Notification::fake();
     // Delete the test users
     User::query()->delete();
 
-    Log::shouldReceive('warning')
+    \Illuminate\Support\Facades\Log::shouldReceive('warning')
         ->once()
         ->withArgs(function ($message, $context) {
             return str_contains($message, 'No BAC Chairman, HOPE, or Admin users found to notify for procurement update') &&
@@ -102,13 +106,16 @@ test('warning is logged when no users found', function () {
         'uploaded'
     );
 
-    Notification::assertNothingSent();
+    \Illuminate\Support\Facades\Notification::assertNothingSent();
 });
 
 test('notification is not sent to other roles', function () {
-    Log::shouldReceive('info')->once();
+    \Illuminate\Support\Facades\Notification::fake();
+    \Illuminate\Support\Facades\Log::shouldReceive('info')->once();
 
-    // Create a user with a different role
+    $bacChairman = User::factory()->create(['role' => 'bac_chairman']);
+    $hope = User::factory()->create(['role' => 'hope']);
+    $admin = User::factory()->create(['role' => 'admin']);
     $otherUser = User::factory()->create(['role' => 'bac_secretariat']);
 
     $this->notificationService->notifyStageUpdate(
@@ -120,5 +127,5 @@ test('notification is not sent to other roles', function () {
         'uploaded'
     );
 
-    Notification::assertNotSentTo([$otherUser], ProcurementStageNotification::class);
+    \Illuminate\Support\Facades\Notification::assertNotSentTo([$otherUser], ProcurementStageNotification::class);
 });

@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Models\User;
-use App\Services\ProcurementServices;
+use App\Services\MultichainService;
+use App\Services\EventTypeLabelMapper;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Cache;
@@ -13,13 +14,14 @@ use Inertia\Inertia;
 
 class HopeController extends BaseController
 {
-    private $services;
-
+    private MultichainService $multichainService;
+    private EventTypeLabelMapper $eventTypeLabelMapper;
     private array $userNameCache = [];
 
-    public function __construct(ProcurementServices $services)
+    public function __construct(MultichainService $multichainService, EventTypeLabelMapper $eventTypeLabelMapper)
     {
-        $this->services = $services;
+        $this->multichainService = $multichainService;
+        $this->eventTypeLabelMapper = $eventTypeLabelMapper;
         $this->middleware('auth');
         $this->middleware('role:hope');
     }
@@ -47,7 +49,7 @@ class HopeController extends BaseController
 
             $procurementsByKey = Cache::remember('hope_dashboard_procurements_by_key', now()->addMinutes(5), function () {
                 Log::info('Cache miss: Recalculating procurementsByKey for HOPE dashboard');
-                $states = $this->services->getMultiChain()->listStreamItems(
+                $states = $this->multichainService->listStreamItems(
                     StreamEnums::STATUS->value, true, 10000, 0, false
                 );
                 if ($states === null) {
@@ -193,7 +195,7 @@ class HopeController extends BaseController
     private function getRecentActivities()
     {
         try {
-            $allEvents = $this->services->getMultiChain()->listStreamItems(
+            $allEvents = $this->multichainService->listStreamItems(
                 StreamEnums::EVENTS->value, true, 20, -20, true
             );
 
@@ -209,7 +211,7 @@ class HopeController extends BaseController
                     if (! isset($data['procurement_id'], $data['procurement_title'])) {
                         return null;
                     }
-                    $actionLabel = $this->services->getEventTypeLabelMapper()->getLabel(
+                    $actionLabel = $this->eventTypeLabelMapper->getLabel(
                         $data['event_type'] ?? '', $data['details'] ?? ''
                     );
 
@@ -244,7 +246,7 @@ class HopeController extends BaseController
     private function getTotalDocuments($procurementsByKey)
     {
         try {
-            $client = $this->services->getMultiChain();
+            $client = $this->multichainService;
             $documentItems = $client->listStreamItems(
                 StreamEnums::DOCUMENTS->value, true, 2000, 0, false
             );

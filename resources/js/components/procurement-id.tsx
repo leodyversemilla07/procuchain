@@ -2,35 +2,28 @@
 import React from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+// ...existing code...
 import InputError from '@/components/input-error';
 
 interface ProcurementIdFieldProps {
     prNumber: string;
-    year: string;
-    onYearChange: (year: string) => void;
     serial1: string;
     onSerial1Change: (val: string) => void;
     serial2: string;
     onSerial2Change: (val: string) => void;
-    years?: string[];
     error?: string;
     className?: string;
     required?: boolean;
 }
 
 const currentYear = new Date().getFullYear();
-const defaultYears = Array.from({ length: 6 }, (_, i) => String(currentYear - 2 + i));
 
 export const ProcurementId: React.FC<ProcurementIdFieldProps> = ({
     prNumber = 'PR',
-    year,
-    onYearChange,
     serial1,
     onSerial1Change,
     serial2,
     onSerial2Change,
-    years = defaultYears,
     error,
     className = '',
     required = false,
@@ -51,19 +44,17 @@ export const ProcurementId: React.FC<ProcurementIdFieldProps> = ({
                         type="text"
                         value={prNumber || 'PR'}
                         readOnly
-                        className="bg-muted text-muted-foreground border-border text-center w-full"
+                        className="text-center border-border text-foreground w-full"
                         required={required}
                     />
-                    <Select value={year} onValueChange={onYearChange}>
-                        <SelectTrigger className="text-center border-border text-foreground w-full" id="pr-year">
-                            <SelectValue placeholder="Year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {years.map(y => (
-                                <SelectItem key={y} value={y}>{y}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <Input
+                        id="pr-year"
+                        type="text"
+                        value={String(currentYear)}
+                        readOnly
+                        className="text-center border-border text-foreground w-full"
+                        required={required}
+                    />
                     <Input
                         id="pr-serial1"
                         type="text"
