@@ -31,14 +31,12 @@ function getFieldError<T extends object>(errors: T, field: keyof T): string | un
 
 export default function NoticeToProceedUpload({ procurement = { id: '', title: '' } }: NoticeToProceedUploadProps) {
   const currentDate = new Date();
-  const formattedDate = format(currentDate, 'yyyy-MM-dd');
 
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement.id || '',
     procurement_title: procurement.title || '',
     ntp_file: null as File | null,
-    issuance_date: formattedDate,
-    issuance_date_object: currentDate,
+    issuance_date: currentDate,
   });
 
   const breadcrumbs: BreadcrumbItem[] = [
@@ -75,6 +73,12 @@ export default function NoticeToProceedUpload({ procurement = { id: '', title: '
       toast.error("Missing issuance date", { description: "Please select the issuance date." });
       return;
     }
+
+    transform((formData) => ({
+      ...formData,
+      issuance_date: formData.issuance_date ? format(formData.issuance_date, 'yyyy-MM-dd') : '',
+    }));
+    
     post('/bac-secretariat/upload-ntp-document', {
       forceFormData: true,
       preserveScroll: true,
@@ -161,12 +165,9 @@ export default function NoticeToProceedUpload({ procurement = { id: '', title: '
               <CardContent className="space-y-6">
                 <DatePicker
                   label="Issuance Date"
-                  value={data.issuance_date_object}
+                  value={data.issuance_date instanceof Date ? data.issuance_date : new Date(data.issuance_date)}
                   onChange={date => {
-                    if (date) {
-                      setData('issuance_date_object', date);
-                      setData('issuance_date', format(date, 'yyyy-MM-dd'));
-                    }
+                    if (date) setData('issuance_date', date);
                   }}
                   error={getFieldError(errors, 'issuance_date')}
                   required

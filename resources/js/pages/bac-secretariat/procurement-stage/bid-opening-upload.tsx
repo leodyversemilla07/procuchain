@@ -1,4 +1,5 @@
 import React from 'react';
+import { format } from 'date-fns';
 import { Head, useForm } from '@inertiajs/react';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
@@ -31,7 +32,7 @@ function getBidderError<T extends object>(errors: T, index: number, field: 'file
 }
 
 export default function BidSubmissionUpload({ procurement = { id: '', title: '' } }: BidSubmissionUploadProps) {
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
     opening_date: new Date(),
@@ -152,6 +153,11 @@ export default function BidSubmissionUpload({ procurement = { id: '', title: '' 
         return;
       }
     }
+
+    transform((formData) => ({
+      ...formData,
+      opening_date: formData.opening_date ? (typeof formData.opening_date === 'string' ? formData.opening_date : formData.opening_date instanceof Date ? format(formData.opening_date, 'yyyy-MM-dd') : '') : '',
+    }));
 
     post('/bac-secretariat/upload-bid-opening-documents', {
       preserveScroll: true,
@@ -297,7 +303,7 @@ export default function BidSubmissionUpload({ procurement = { id: '', title: '' 
                 <div className="space-y-2">
                   <DatePicker
                     label="Opening Date"
-                    value={data.opening_date}
+                    value={data.opening_date instanceof Date ? data.opening_date : new Date(data.opening_date)}
                     onChange={handleOpeningDateChange}
                     error={errors.opening_date}
                     required={true}

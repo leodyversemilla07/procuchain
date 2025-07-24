@@ -32,19 +32,16 @@ function getFieldError<T extends object>(errors: T, field: keyof T): string | un
 
 export default function PerformanceBondContractPOUpload({ procurement = { id: '', title: '' } }: PerformanceBondContractPOUploadProps) {
   const currentDate = new Date();
-  const formattedDate = format(currentDate, 'yyyy-MM-dd');
 
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement.id || '',
     procurement_title: procurement.title || '',
     performance_bond_file: null as File | null,
-    submission_date: formattedDate,
-    submission_date_object: currentDate,
+    submission_date: currentDate,
     bond_amount: '0.00',
     contract_file: null as File | null,
     po_file: null as File | null,
-    signing_date: formattedDate,
-    signing_date_object: currentDate,
+    signing_date: currentDate,
   });
 
   const breadcrumbs: BreadcrumbItem[] = [
@@ -120,6 +117,12 @@ export default function PerformanceBondContractPOUpload({ procurement = { id: ''
       toast.error('Missing Contract/PO Signing Date', { description: 'Please select the contract/PO signing date.' });
       return;
     }
+    transform((formData) => ({
+      ...formData,
+      submission_date: formData.submission_date ? format(formData.submission_date, 'yyyy-MM-dd') : '',
+      signing_date: formData.signing_date ? format(formData.signing_date, 'yyyy-MM-dd') : '',
+    }));
+    
     post('/bac-secretariat/upload-performance-bond-contract-po-documents', {
       forceFormData: true,
       preserveScroll: true,
@@ -233,9 +236,9 @@ export default function PerformanceBondContractPOUpload({ procurement = { id: ''
               <CardContent className="space-y-6">
                 <DatePicker
                   label="Bond Submission Date"
-                  value={data.submission_date_object}
+                  value={data.submission_date instanceof Date ? data.submission_date : new Date(data.submission_date)}
                   onChange={date => {
-                    if (date) setData('submission_date', format(date, 'yyyy-MM-dd'));
+                    if (date) setData('submission_date', date);
                   }}
                   error={getFieldError(errors, 'submission_date')}
                   required
@@ -262,9 +265,9 @@ export default function PerformanceBondContractPOUpload({ procurement = { id: ''
                 />
                 <DatePicker
                   label="Contract/PO Signing Date"
-                  value={data.signing_date_object}
+                  value={data.signing_date instanceof Date ? data.signing_date : new Date(data.signing_date)}
                   onChange={date => {
-                    if (date) setData('signing_date', format(date, 'yyyy-MM-dd'));
+                    if (date) setData('signing_date', date);
                   }}
                   error={getFieldError(errors, 'signing_date')}
                   required

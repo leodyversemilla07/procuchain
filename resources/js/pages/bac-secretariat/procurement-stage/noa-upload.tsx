@@ -31,14 +31,12 @@ function getFieldError<T extends object>(errors: T, field: keyof T): string | un
 
 export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' } }: NoticeOfAwardUploadProps) {
   const currentDate = new Date();
-  const formattedDate = format(currentDate, 'yyyy-MM-dd');
 
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
     noa_file: null as File | null,
-    issuance_date: formattedDate,
-    issuance_date_object: currentDate,
+    issuance_date: currentDate,
     signatories: [] as Array<{ name: string; affiliation: string }>,
   });
 
@@ -82,6 +80,11 @@ export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' 
       toast.error("Missing signatories", { description: "Please enter at least one signatory." });
       return;
     }
+    transform((formData) => ({
+      ...formData,
+      issuance_date: formData.issuance_date ? format(formData.issuance_date, 'yyyy-MM-dd') : '',
+    }));
+    
     post('/bac-secretariat/upload-noa-document', {
       forceFormData: true,
       preserveScroll: true,
@@ -168,12 +171,9 @@ export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' 
               <CardContent className="space-y-6">
                 <DatePicker
                   label="Issuance Date"
-                  value={data.issuance_date_object}
+                  value={data.issuance_date instanceof Date ? data.issuance_date : new Date(data.issuance_date)}
                   onChange={date => {
-                    if (date) {
-                      setData('issuance_date_object', date);
-                      setData('issuance_date', format(date, 'yyyy-MM-dd'));
-                    }
+                    if (date) setData('issuance_date', date);
                   }}
                   error={getFieldError(errors, 'issuance_date')}
                   required

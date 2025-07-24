@@ -25,10 +25,10 @@ import { FileText, Save, Plus, X } from 'lucide-react';
 
 interface FileMetadata {
     document_type: string;
-    submission_date: string;
+    submission_date: Date | string;
     municipal_offices: string;
     signatories: { name: string; position: string }[];
-    [key: string]: string | { name: string; position: string }[];
+    [key: string]: string | Date | { name: string; position: string }[];
 }
 
 type UseFormData = {
@@ -65,14 +65,15 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         processing,
         errors,
         reset,
-        clearErrors
+        clearErrors,
+        transform
     } = useForm<UseFormData>({
         procurement_id: '',
         procurement_title: '',
         files: [null],
         metadata: [{
             document_type: '',
-            submission_date: format(new Date(), 'yyyy-MM-dd'),
+            submission_date: new Date(),
             municipal_offices: '',
             signatories: []
         }]
@@ -110,13 +111,18 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
     }, []);
 
     const handleMetadataChange = useCallback(
-        (index: number, field: keyof FileMetadata, value: string | { name: string; position: string }[]) => {
+        (index: number, field: keyof FileMetadata, value: string | Date | { name: string; position: string }[]) => {
             clearErrors();
             const updated = Array.isArray(data.metadata) ? [...data.metadata] : [];
             if (!updated[index]) {
-                updated[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: [] };
+                updated[index] = { document_type: '', submission_date: new Date(), municipal_offices: '', signatories: [] };
             }
-            updated[index] = { ...updated[index], [field]: value };
+            // If field is submission_date, ensure value is a Date
+            if (field === 'submission_date') {
+                updated[index] = { ...updated[index], [field]: value instanceof Date ? value : (value ? new Date(value as string) : new Date()) };
+            } else {
+                updated[index] = { ...updated[index], [field]: value };
+            }
             setData('metadata', updated);
         },
         [data.metadata, setData, clearErrors]
@@ -126,11 +132,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         (index: number, date: Date | undefined) => {
             clearErrors();
             setDates(prev => ({ ...prev, [index]: date }));
-            if (date) {
-                handleMetadataChange(index, 'submission_date', format(date, 'yyyy-MM-dd'));
-            } else {
-                handleMetadataChange(index, 'submission_date', '');
-            }
+            handleMetadataChange(index, 'submission_date', date || new Date());
         },
         [handleMetadataChange, clearErrors]
     );
@@ -145,7 +147,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                 setData('files', updatedFiles);
                 const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
                 if (!meta[index]) {
-                    meta[index] = { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: [] };
+                    meta[index] = { document_type: '', submission_date: new Date(), municipal_offices: '', signatories: [] };
                     setData('metadata', meta);
                 }
             } else {
@@ -178,11 +180,11 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         const files = Array.isArray(data.files) ? [...data.files, null] : [];
         const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
         const last = meta.length - 1;
-        const copy = last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), municipal_offices: '', signatories: [] };
-        meta.push({ ...copy, document_type: '', submission_date: format(new Date(), 'yyyy-MM-dd'), signatories: [] });
+        const copy = last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: new Date(), municipal_offices: '', signatories: [] };
+        meta.push({ ...copy, document_type: '', submission_date: new Date(), signatories: [] });
         setData('files', files);
         setData('metadata', meta);
-        setDates(d => last >= 0 ? { ...d, [last + 1]: parseDate(format(new Date(), 'yyyy-MM-dd')) } : { 0: parseDate(format(new Date(), 'yyyy-MM-dd')) });
+        setDates(d => last >= 0 ? { ...d, [last + 1]: new Date() } : { 0: new Date() });
     }, [data.files, data.metadata, setData]);
 
     const removeFile = useCallback((index: number) => {
@@ -218,6 +220,17 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             return;
         }
         const submissionToast = toast.loading("Submitting Procurement...");
+
+        transform((formData) => ({
+            ...formData,
+            metadata: Array.isArray(formData.metadata)
+                ? formData.metadata.map(m => ({
+                    ...m,
+                    submission_date: m.submission_date instanceof Date ? format(m.submission_date, 'yyyy-MM-dd') : m.submission_date
+                }))
+                : formData.metadata
+        }));
+
         post('/bac-secretariat/publish-procurement-initiation', {
             onSuccess: () => {
                 toast.success("Procurement successfully submitted", {
@@ -239,6 +252,17 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
 
     const handleSaveDraft = () => {
         const draftToast = toast.loading("Saving draft...");
+
+        transform((formData) => ({
+            ...formData,
+            metadata: Array.isArray(formData.metadata)
+                ? formData.metadata.map(m => ({
+                    ...m,
+                    submission_date: m.submission_date instanceof Date ? format(m.submission_date, 'yyyy-MM-dd') : m.submission_date
+                }))
+                : formData.metadata
+        }));
+
         post('/bac-secretariat/save-procurement-draft', {
             preserveScroll: true,
             preserveState: true,
@@ -274,7 +298,12 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             const metadata = Array.isArray(data.metadata) ? data.metadata : [];
             metadata.forEach((meta: FileMetadata, index: number) => {
                 if (meta.submission_date) {
-                    const parsedDate = parseDate(meta.submission_date);
+                    let parsedDate: Date | undefined;
+                    if (typeof meta.submission_date === 'string') {
+                        parsedDate = parseDate(meta.submission_date);
+                    } else if (meta.submission_date instanceof Date) {
+                        parsedDate = meta.submission_date;
+                    }
                     if (parsedDate) {
                         newDates[index] = parsedDate;
                     }
@@ -616,7 +645,12 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                 procurementId={data.procurement_id}
                 procurementTitle={data.procurement_title}
                 files={data.files}
-                metadata={data.metadata}
+                metadata={Array.isArray(data.metadata)
+                    ? data.metadata.map(m => ({
+                        ...m,
+                        submission_date: m.submission_date instanceof Date ? format(m.submission_date, 'yyyy-MM-dd') : m.submission_date
+                    }))
+                    : data.metadata}
                 onSubmit={onSubmit}
                 processing={processing}
             />

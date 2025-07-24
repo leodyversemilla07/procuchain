@@ -13,7 +13,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Models\User;
-use App\Services\ProcurementServices;
+use App\Services\MultichainService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
@@ -26,9 +26,9 @@ use Inertia\Response;
 class ViewProcurementsController extends BaseController
 {
     /**
-     * @var ProcurementServices
+     * @var MultichainService
      */
-    private $services;
+    private $multichainService;
 
     /**
      * @var array<string, string>
@@ -48,9 +48,9 @@ class ViewProcurementsController extends BaseController
     /**
      * Constructor
      */
-    public function __construct(ProcurementServices $services)
+    public function __construct(MultichainService $multichainService)
     {
-        $this->services = $services;
+        $this->multichainService = $multichainService;
         $this->setupMiddleware();
     }
 
@@ -131,8 +131,8 @@ class ViewProcurementsController extends BaseController
      */
     private function fetchAndProcessProcurements(): array
     {
-        // Fetch all status items (for all procurements)
-        $statusItems = $this->services->getMultiChain()->listStreamItems(
+        Log::info('fetchAndProcessProcurements: Fetching status items from MultiChain');
+        $statusItems = $this->multichainService->listStreamItems(
             StreamEnums::STATUS->value,
             true,
             self::STATUS_PAGE_SIZE,
@@ -140,11 +140,13 @@ class ViewProcurementsController extends BaseController
             false
         );
         if ($statusItems === null) {
+            Log::error('fetchAndProcessProcurements: Failed to retrieve status stream items');
             throw new Exception('Failed to retrieve status stream items');
         }
+        Log::info('fetchAndProcessProcurements: Retrieved status items', ['count' => count($statusItems)]);
 
-        // Fetch all document items (for all procurements)
-        $documentItems = $this->services->getMultiChain()->listStreamItems(
+        Log::info('fetchAndProcessProcurements: Fetching document items from MultiChain');
+        $documentItems = $this->multichainService->listStreamItems(
             StreamEnums::DOCUMENTS->value,
             true,
             self::DOCUMENT_PAGE_SIZE,
@@ -152,25 +154,29 @@ class ViewProcurementsController extends BaseController
             false
         );
         if ($documentItems === null) {
+            Log::error('fetchAndProcessProcurements: Failed to retrieve document stream items');
             throw new Exception('Failed to retrieve document stream items');
         }
+        Log::info('fetchAndProcessProcurements: Retrieved document items', ['count' => count($documentItems)]);
 
         // Preload user names
         $this->preloadUserNames(collect($statusItems));
 
         // Build a map: procurement_id => document count (unique by hash)
         $documentCountMap = collect($documentItems)
-            ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-            ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
+            ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+            ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
             ->map(function ($items) {
                 return collect($items)
-                    ->map(fn ($item) => $item['data']['json']['hash'])
+                    ->map(fn($item) => $item['data']['json']['hash'])
                     ->unique()
                     ->count();
             });
 
+        Log::info('fetchAndProcessProcurements: Built document count map', ['count' => $documentCountMap->count()]);
+
         // Map procurements, using the precomputed document count
-        return collect($statusItems)
+        $result = collect($statusItems)
             ->map(function ($item) use ($documentCountMap) {
                 $data = $item['data']['json'] ?? [];
                 $originalTimestamp = $data['timestamp'] ?? null;
@@ -199,6 +205,9 @@ class ViewProcurementsController extends BaseController
             })
             ->values()
             ->all();
+
+        Log::info('fetchAndProcessProcurements: Final procurements result count', ['count' => count($result)]);
+        return $result;
     }
 
     /**
@@ -206,7 +215,7 @@ class ViewProcurementsController extends BaseController
      */
     public function showProcurement(string $procurementId): Response
     {
-        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX.$procurementId;
+        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX . $procurementId;
 
         try {
             $this->validateProcurementId($procurementId);
@@ -298,7 +307,7 @@ class ViewProcurementsController extends BaseController
      */
     private function fetchStatusItems(string $procurementId): Collection
     {
-        $statusStreamItems = $this->services->getMultiChain()->listStreamItems(
+        $statusStreamItems = $this->multichainService->listStreamItems(
             StreamEnums::STATUS->value,
             true,
             self::STATUS_PAGE_SIZE,
@@ -340,7 +349,7 @@ class ViewProcurementsController extends BaseController
     private function fetchAndProcessAllDocuments(string $procurementId): array // Removed $procurementTitles parameter
     {
         // Fetch all document items first
-        $allDocumentItems = $this->services->getMultiChain()->listStreamItems(
+        $allDocumentItems = $this->multichainService->listStreamItems(
             StreamEnums::DOCUMENTS->value,
             true, // Verbose
             self::DOCUMENT_PAGE_SIZE, // Use the defined page size
@@ -408,7 +417,7 @@ class ViewProcurementsController extends BaseController
      */
     private function fetchAndProcessEvents(string $procurementId): array
     {
-        $events = $this->services->getMultiChain()->listStreamItems(
+        $events = $this->multichainService->listStreamItems(
             StreamEnums::EVENTS->value
         );
 

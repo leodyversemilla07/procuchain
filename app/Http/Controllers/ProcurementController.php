@@ -28,6 +28,7 @@ use App\Services\DocumentUploadService;
 use App\Services\StatusUpdaterService;
 use App\Services\MultichainService;
 use App\Services\EventTypeLabelMapper;
+use App\Services\NotificationService;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,6 +46,7 @@ class ProcurementController extends BaseController
     protected $eventLogger;
     protected $multiChain;
     protected $eventTypeLabelMapper;
+    protected $notificationService;
 
     public function __construct(
         DocumentUploadService $documentUploadService,
@@ -52,7 +54,8 @@ class ProcurementController extends BaseController
         StatusUpdaterService $statusUpdater,
         BlockchainEventLoggerService $eventLogger,
         MultichainService $multiChain,
-        EventTypeLabelMapper $eventTypeLabelMapper
+        EventTypeLabelMapper $eventTypeLabelMapper,
+        NotificationService $notificationService
     ) {
         $this->documentUploadService = $documentUploadService;
         $this->blockchainOrchestrator = $blockchainOrchestrator;
@@ -60,6 +63,7 @@ class ProcurementController extends BaseController
         $this->eventLogger = $eventLogger;
         $this->multiChain = $multiChain;
         $this->eventTypeLabelMapper = $eventTypeLabelMapper;
+        $this->notificationService = $notificationService;
         $this->middleware('auth');
         $this->middleware('role:bac_secretariat');
 
@@ -315,7 +319,7 @@ class ProcurementController extends BaseController
                 $data['userAddress']
             );
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['stage']->getDisplayName(),
@@ -387,7 +391,7 @@ class ProcurementController extends BaseController
                     $data['timestamp']
                 );
 
-                app(\App\Services\NotificationService::class)->notifyStageUpdate(
+                $this->notificationService->notifyStageUpdate(
                     $data['procurementId'],
                     $data['procurementTitle'],
                     $data['currentStage']->getDisplayName(),
@@ -433,7 +437,7 @@ class ProcurementController extends BaseController
                         $data['timestamp']
                     );
 
-                    app(\App\Services\NotificationService::class)->notifyStageUpdate(
+                    $this->notificationService->notifyStageUpdate(
                         $data['procurementId'],
                         $data['procurementTitle'],
                         $data['currentStage']->getDisplayName(),
@@ -552,7 +556,7 @@ class ProcurementController extends BaseController
                 'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after completing ' . $data['currentStage']->getDisplayName()
             );
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getDisplayName(),
@@ -613,7 +617,7 @@ class ProcurementController extends BaseController
                     'Pre-bid conference held'
                 );
 
-                app(\App\Services\NotificationService::class)->notifyStageUpdate(
+                $this->notificationService->notifyStageUpdate(
                     $data['procurementId'],
                     $data['procurementTitle'],
                     $data['currentStage']->getDisplayName(),
@@ -642,7 +646,7 @@ class ProcurementController extends BaseController
                     'Pre-bid conference skipped'
                 );
 
-                app(\App\Services\NotificationService::class)->notifyStageUpdate(
+                $this->notificationService->notifyStageUpdate(
                     $data['procurementId'],
                     $data['procurementTitle'],
                     $data['currentStage']->getDisplayName(),
@@ -743,7 +747,7 @@ class ProcurementController extends BaseController
                 'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after completing ' . $data['currentStage']->getDisplayName()
             );
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getDisplayName(),
@@ -805,7 +809,7 @@ class ProcurementController extends BaseController
                     'Additional supplemental bid bulletins required'
                 );
 
-                app(\App\Services\NotificationService::class)->notifyStageUpdate(
+                $this->notificationService->notifyStageUpdate(
                     $data['procurementId'],
                     $data['procurementTitle'],
                     $data['currentStage']->getDisplayName(),
@@ -834,7 +838,7 @@ class ProcurementController extends BaseController
                     'No additional supplemental bid bulletins needed'
                 );
 
-                app(\App\Services\NotificationService::class)->notifyStageUpdate(
+                $this->notificationService->notifyStageUpdate(
                     $data['procurementId'],
                     $data['procurementTitle'],
                     $data['currentStage']->getDisplayName(),
@@ -935,7 +939,7 @@ class ProcurementController extends BaseController
                 );
 
                 // Notify users of completion and next stage
-                app(\App\Services\NotificationService::class)->notifyStageUpdate(
+                $this->notificationService->notifyStageUpdate(
                     $data['procurementId'],
                     $data['procurementTitle'],
                     $data['currentStage']->getDisplayName(),
@@ -1029,7 +1033,7 @@ class ProcurementController extends BaseController
                 'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after publishing bidding documents'
             );
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getDisplayName(),
@@ -1125,7 +1129,7 @@ class ProcurementController extends BaseController
                         'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after opening bids'
                     );
 
-                    app(\App\Services\NotificationService::class)->notifyStageUpdate(
+                    $this->notificationService->notifyStageUpdate(
                         $data['procurementId'],
                         $data['procurementTitle'],
                         $data['currentStage']->getDisplayName(),
@@ -1246,7 +1250,7 @@ class ProcurementController extends BaseController
                 'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after ' . $data['currentStage']->getDisplayName()
             );
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getDisplayName(),
@@ -1383,7 +1387,7 @@ class ProcurementController extends BaseController
                 );
             }
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getDisplayName(),
@@ -1475,7 +1479,7 @@ class ProcurementController extends BaseController
                 'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after recording ' . $data['currentStage']->getDisplayName()
             );
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getDisplayName(),
@@ -1575,7 +1579,7 @@ class ProcurementController extends BaseController
                 'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after recording ' . $data['currentStage']->getDisplayName()
             );
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getDisplayName(),
@@ -1728,7 +1732,7 @@ class ProcurementController extends BaseController
                     'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after recording ' . $processedDocumentsCount . ' document(s)'
                 );
 
-                app(\App\Services\NotificationService::class)->notifyStageUpdate(
+                $this->notificationService->notifyStageUpdate(
                     $data['procurementId'],
                     $data['procurementTitle'],
                     $data['currentStage']->getDisplayName(),
@@ -1836,7 +1840,7 @@ class ProcurementController extends BaseController
                 'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after recording ' . $data['currentStage']->getDisplayName()
             );
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getDisplayName(),
@@ -1925,7 +1929,7 @@ class ProcurementController extends BaseController
                 'Transitioning to ' . $data['nextStage']->getDisplayName() . ' after recording ' . $data['currentStage']->getDisplayName() . ' documents.'
             );
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getDisplayName(),
@@ -2010,7 +2014,7 @@ class ProcurementController extends BaseController
                 'Marking procurement as ' . $data['nextStage']->getDisplayName() . ' after uploading ' . $data['currentStage']->getDisplayName() . ' documents.'
             );
 
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            $this->notificationService->notifyStageUpdate(
                 $data['procurementId'],
                 $data['procurementTitle'],
                 $data['currentStage']->getDisplayName(),
