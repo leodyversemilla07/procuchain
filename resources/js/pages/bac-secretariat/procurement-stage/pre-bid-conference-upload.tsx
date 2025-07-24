@@ -9,6 +9,7 @@ import FileUploadArea from '@/components/file-upload-area';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
+import { format } from 'date-fns';
 
 // Allowed file types and max file size for uploads
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -22,7 +23,7 @@ interface PreBidConferenceUploadProps {
 }
 
 export default function PreBidConferenceUpload({ procurement = { id: '', title: '' } }: PreBidConferenceUploadProps) {
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
     minutes_file: null as File | null,
@@ -70,6 +71,11 @@ export default function PreBidConferenceUpload({ procurement = { id: '', title: 
       });
       return;
     }
+
+    transform((formData) => ({
+      ...formData,
+      meeting_date: formData.meeting_date ? format(formData.meeting_date, 'yyyy-MM-dd') : '',
+    }));
 
     post('/bac-secretariat/upload-pre-bid-conference-documents', {
       preserveScroll: true,

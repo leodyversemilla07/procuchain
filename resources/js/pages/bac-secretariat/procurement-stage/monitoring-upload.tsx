@@ -32,14 +32,12 @@ function getFieldError<T extends object>(errors: T, field: keyof T): string | un
 
 export default function MonitoringUpload({ procurement = { id: '', title: '' } }: MonitoringUploadProps) {
   const currentDate = new Date();
-  const formattedDate = format(currentDate, 'yyyy-MM-dd');
 
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
     compliance_file: null as File | null,
-    report_date: formattedDate,
-    report_date_object: currentDate,
+    report_date: currentDate,
     report_notes: '',
   });
 
@@ -86,6 +84,12 @@ export default function MonitoringUpload({ procurement = { id: '', title: '' } }
       toast.error("Missing report date", { description: "Please select the report date." });
       return;
     }
+
+    transform((formData) => ({
+      ...formData,
+      report_date: formData.report_date ? format(formData.report_date, 'yyyy-MM-dd') : '',
+    }));
+    
     post('/bac-secretariat/upload-monitoring-document', {
       forceFormData: true,
       preserveScroll: true,
@@ -165,12 +169,9 @@ export default function MonitoringUpload({ procurement = { id: '', title: '' } }
               <CardContent className="space-y-6">
                 <DatePicker
                   label="Report Date"
-                  value={data.report_date_object}
+                  value={data.report_date instanceof Date ? data.report_date : new Date(data.report_date)}
                   onChange={date => {
-                    if (date) {
-                      setData('report_date_object', date);
-                      setData('report_date', format(date, 'yyyy-MM-dd'));
-                    }
+                    if (date) setData('report_date', date);
                   }}
                   error={getFieldError(errors, 'report_date')}
                   required

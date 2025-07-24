@@ -32,13 +32,13 @@ function getFieldError<T extends object>(errors: T, field: keyof T): string | un
 }
 
 export default function PostQualificationUpload({ procurement = { id: '', title: '' } }: PostQualificationUploadProps) {
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
     post_qualification_report: null as File | null,
     twg_certification: null as File | null,
     notice_of_post_qualification: null as File | null,
-    submission_date: format(new Date(), 'yyyy-MM-dd'),
+    submission_date: new Date(),
     outcome: null as boolean | null,
     remarks: '',
   });
@@ -91,6 +91,12 @@ export default function PostQualificationUpload({ procurement = { id: '', title:
       toast.error('Please select an outcome (Verified or Failed)');
       return;
     }
+
+    transform((formData) => ({
+      ...formData,
+      submission_date: formData.submission_date ? format(formData.submission_date, 'yyyy-MM-dd') : '',
+    }));
+    
     post('/bac-secretariat/upload-post-qualification-documents', {
       forceFormData: true,
       preserveScroll: true,
@@ -218,8 +224,8 @@ export default function PostQualificationUpload({ procurement = { id: '', title:
               <CardContent className="space-y-6">
                 <DatePicker
                   label="Submission Date"
-                  value={data.submission_date ? new Date(data.submission_date) : undefined}
-                  onChange={date => date && setData('submission_date', format(date, 'yyyy-MM-dd'))}
+                  value={data.submission_date instanceof Date ? data.submission_date : new Date(data.submission_date)}
+                  onChange={date => date && setData('submission_date', date)}
                   error={getFieldError(errors, 'submission_date')}
                   required
                 />

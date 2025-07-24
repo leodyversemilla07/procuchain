@@ -24,13 +24,13 @@ interface SupplementalBidBulletinUploadProps {
 }
 
 export default function SupplementalBidBulletinUpload({ procurement = { id: '', title: '' } }: SupplementalBidBulletinUploadProps) {
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+    const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
         procurement_id: procurement.id,
         procurement_title: procurement.title,
         bulletin_file: null as File | null,
         bulletin_number: '',
         bulletin_title: '',
-        issue_date: '',
+        issue_date: new Date(),
     });
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -67,6 +67,11 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
             return;
         }
 
+        transform((formData) => ({
+            ...formData,
+            issue_date: formData.issue_date ? format(formData.issue_date, 'yyyy-MM-dd') : '',
+        }));
+        
         post('/bac-secretariat/upload-supplemental-bid-bulletin-documents', {
             preserveScroll: true,
             preserveState: true,
@@ -120,9 +125,9 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
 
     const handleDateSelect = (date: Date | undefined) => {
         if (date) {
-            setData('issue_date', format(date, 'yyyy-MM-dd'));
+            setData('issue_date', date);
         } else {
-            setData('issue_date', '');
+            setData('issue_date', new Date());
         }
     };
 
@@ -210,7 +215,7 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
                                 <div className="space-y-2">
                                     <DatePicker
                                         label="Issue Date"
-                                        value={data.issue_date ? new Date(data.issue_date) : undefined}
+                                        value={data.issue_date instanceof Date ? data.issue_date : new Date(data.issue_date)}
                                         onChange={handleDateSelect}
                                         error={errors.issue_date}
                                         required

@@ -24,10 +24,10 @@ interface BiddingDocumentsUploadProps {
 }
 
 export default function BiddingDocumentsUpload({ procurement }: BiddingDocumentsUploadProps) {
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
-    bidding_documents_file: null as File | null,
+    bidding_document_file: null as File | null,
     issuance_date: new Date(),
     validity_period_start: format(new Date(), 'yyyy-MM-dd'),
     validity_period_end: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
@@ -55,7 +55,7 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
   };
   const fileDrop = useFileDrop({
     validateFile,
-    setFile: (file) => setData('bidding_documents_file', file),
+    setFile: (file) => setData('bidding_document_file', file),
   });
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!data.bidding_documents_file) {
+    if (!data.bidding_document_file) {
       toast.error('Missing file', {
         description: 'Please upload the bidding documents file.'
       });
@@ -89,6 +89,17 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
       });
       return;
     }
+
+    transform((formData) => ({
+      ...formData,
+      issuance_date: format(formData.issuance_date, 'yyyy-MM-dd'),
+      validity_period_start: formData.validity_period && formData.validity_period.from
+        ? format(formData.validity_period.from, 'yyyy-MM-dd')
+        : '',
+      validity_period_end: formData.validity_period && formData.validity_period.to
+        ? format(formData.validity_period.to, 'yyyy-MM-dd')
+        : '',
+    }));
 
     post('/bac-secretariat/upload-bidding-documents', {
       preserveScroll: true,
@@ -113,7 +124,7 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       if (validateFile(file)) {
-        setData('bidding_documents_file', file);
+        setData('bidding_document_file', file);
       }
     }
   };
@@ -174,15 +185,15 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
               <CardContent className="space-y-6 sm:space-y-8">
                 <FileUploadArea
                   label="Bidding Documents"
-                  file={data.bidding_documents_file}
-                  error={errors.bidding_documents_file}
+                  file={data.bidding_document_file}
+                  error={errors.bidding_document_file}
                   isDragging={fileDrop.isDragging}
                   onFileChange={handleFileChange}
                   onDragEnter={fileDrop.handleDragEnter}
                   onDragLeave={fileDrop.handleDragLeave}
                   onDragOver={fileDrop.handleDragOver}
                   onDrop={fileDrop.handleDrop}
-                  onRemove={() => setData('bidding_documents_file', null)}
+                  onRemove={() => setData('bidding_document_file', null)}
                   inputId="file-input"
                   required={true}
                 />

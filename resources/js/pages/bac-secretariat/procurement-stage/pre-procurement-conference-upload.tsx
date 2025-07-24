@@ -1,6 +1,5 @@
 import React from 'react';
-import { Head, router } from '@inertiajs/react';
-import { useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -32,12 +31,12 @@ interface PreProcurementUploadProps {
 }
 
 export default function PreProcurementUpload({ procurement = { id: '', title: '' } }: PreProcurementUploadProps) {
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
     minutes_file: null as File | null,
     attendance_file: null as File | null,
-    meeting_date: format(new Date(), 'yyyy-MM-dd'), // store as Y-m-d string
+    meeting_date: new Date(), // store as Date object
     participants: [] as Array<{ name: string; organization: string }>,
   });
 
@@ -75,7 +74,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      setData('meeting_date', format(new Date(), 'yyyy-MM-dd'));
+      setData('meeting_date', date);
     }
   };
 
@@ -107,7 +106,12 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
       return;
     }
 
-    post(route('bac-secretariat.upload-pre-procurement-conference-documents'), {
+    transform((formData) => ({
+      ...formData,
+      meeting_date: formData.meeting_date ? format(formData.meeting_date, 'yyyy-MM-dd') : '',
+    }));
+
+    post('/bac-secretariat/upload-pre-procurement-conference-documents', {
       preserveState: true,
       forceFormData: true,
       onSuccess: () => {
@@ -192,7 +196,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
               <CardContent className="space-y-4 sm:space-y-6">
                 <DatePicker
                   label="Meeting Date"
-                  value={data.meeting_date ? new Date(data.meeting_date) : new Date()}
+                  value={data.meeting_date}
                   onChange={handleDateSelect}
                   error={errors.meeting_date}
                   required

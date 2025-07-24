@@ -30,15 +30,13 @@ interface CompletionUploadProps {
 export default function CompletionUpload({ procurement = { id: '', title: '' } }: CompletionUploadProps) {
     // Format current date for initial form data
     const currentDate = new Date();
-    const formattedDate = format(currentDate, 'yyyy-MM-dd');
 
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+    const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
         procurement_id: procurement?.id || '',
         procurement_title: procurement?.title || '',
-        completion_file: null as File | null, // Renamed from acceptance_are_par_file
-        completion_date: formattedDate, // Renamed from acceptance_date
-        completion_date_object: currentDate, // Renamed from acceptance_date_object
-        completion_notes: '', // Renamed from remarks
+        completion_file: null as File | null,
+        completion_date: currentDate,
+        completion_notes: '',
     });
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -58,6 +56,12 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
             toast.error('Missing completion date', { description: 'Please select the completion date.' });
             return;
         }
+
+        transform((formData) => ({
+            ...formData,
+            completion_date: formData.completion_date ? format(formData.completion_date, 'yyyy-MM-dd') : '',
+        }));
+        
         post('/bac-secretariat/upload-completion-documents', {
             preserveScroll: true,
             preserveState: true,
@@ -165,12 +169,9 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
                             <CardContent className="space-y-6">
                                 <DatePicker
                                     label="Completion Date"
-                                    value={data.completion_date_object}
+                                    value={data.completion_date instanceof Date ? data.completion_date : new Date(data.completion_date)}
                                     onChange={date => {
-                                        if (date) {
-                                            setData('completion_date_object', date);
-                                            setData('completion_date', format(date, 'yyyy-MM-dd'));
-                                        }
+                                        if (date) setData('completion_date', date);
                                     }}
                                     error={getFieldError(errors, 'completion_date')}
                                     required

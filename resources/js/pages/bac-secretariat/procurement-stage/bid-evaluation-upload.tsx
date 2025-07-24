@@ -31,12 +31,12 @@ function getFieldError<T extends object>(errors: T, field: keyof T): string | un
 }
 
 export default function BidEvaluationUpload({ procurement = { id: '', title: '' } }: BidEvaluationUploadProps) {
-  const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+  const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
     summary_file: null as File | null,
     abstract_file: null as File | null,
-    evaluation_date: format(new Date(), 'yyyy-MM-dd'),
+    evaluation_date: new Date(),
     evaluator_names: '',
   });
 
@@ -76,18 +76,27 @@ export default function BidEvaluationUpload({ procurement = { id: '', title: '' 
       toast.error('Missing summary file', { description: 'Please upload the evaluation summary PDF.' });
       return;
     }
+
     if (!data.abstract_file) {
       toast.error('Missing abstract file', { description: 'Please upload the bid abstract PDF.' });
       return;
     }
+
     if (!data.evaluation_date) {
       toast.error('Missing evaluation date', { description: 'Please select the evaluation date.' });
       return;
     }
+
     if (!data.evaluator_names.trim()) {
       toast.error('Missing evaluator names', { description: 'Please enter at least one evaluator.' });
       return;
     }
+
+    transform((formData) => ({
+      ...formData,
+      evaluation_date: formData.evaluation_date ? format(formData.evaluation_date, 'yyyy-MM-dd') : '',
+    }));
+
     post('/bac-secretariat/upload-bid-evaluation-documents', {
       forceFormData: true,
       preserveScroll: true,
@@ -195,8 +204,8 @@ export default function BidEvaluationUpload({ procurement = { id: '', title: '' 
               <CardContent className="space-y-4 sm:space-y-6">
                 <DatePicker
                   label="Evaluation Date"
-                  value={data.evaluation_date ? new Date(data.evaluation_date) : undefined}
-                  onChange={date => date && setData('evaluation_date', format(date, 'yyyy-MM-dd'))}
+                  value={data.evaluation_date instanceof Date ? data.evaluation_date : new Date(data.evaluation_date)}
+                  onChange={date => date && setData('evaluation_date', date)}
                   error={getFieldError(errors, 'evaluation_date')}
                   required
                 />

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Models\DocumentView;
-use App\Services\ProcurementServices;
+use App\Services\MultichainService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -16,10 +16,13 @@ use Inertia\Response;
 
 class DocumentViewController extends BaseController
 {
-    public function __construct()
+    private MultichainService $multichainService;
+
+    public function __construct(MultichainService $multichainService)
     {
         $this->middleware('auth');
         $this->middleware('role:bac_chairman,bac_secretariat,hope,admin');
+        $this->multichainService = $multichainService;
     }
 
     /**
@@ -339,10 +342,9 @@ class DocumentViewController extends BaseController
     private function getDocumentData(string $fileKey): ?array
     {
         try {
-            $services = app(ProcurementServices::class);
             Log::info('Attempting to get blockchain data for PDF viewer', ['file_key' => $fileKey]);
 
-            $allDocumentItems = $services->getMultiChain()->listStreamItems(
+            $allDocumentItems = $this->multichainService->listStreamItems(
                 StreamEnums::DOCUMENTS->value,
                 true,
                 10000,
@@ -375,7 +377,7 @@ class DocumentViewController extends BaseController
                     ]);
 
                     return isset($item['data']['json']['file_key']) &&
-                           $item['data']['json']['file_key'] === $fileKey;
+                        $item['data']['json']['file_key'] === $fileKey;
                 })
                 ->first();
 
@@ -406,7 +408,6 @@ class DocumentViewController extends BaseController
                 'user_address' => $data['user_address'] ?? 'unknown@example.com',
                 'stage_metadata' => $data['stage_metadata'] ?? null,
             ];
-
         } catch (\Exception $e) {
             Log::error('Failed to get document data from blockchain', [
                 'file_key' => $fileKey,
@@ -424,8 +425,7 @@ class DocumentViewController extends BaseController
     private function getCurrentProcurementStatus(string $procurementId): ?array
     {
         try {
-            $services = app(ProcurementServices::class);
-            $statusItems = $services->getMultiChain()->listStreamItems(
+            $statusItems = $this->multichainService->listStreamItems(
                 StreamEnums::STATUS->value,
                 true,
                 1000,
@@ -646,8 +646,7 @@ class DocumentViewController extends BaseController
                 'procurement_id' => $procurementId,
                 'file_key' => $fileKey,
             ]);
-            $services = app(ProcurementServices::class);
-            $allDocumentItems = $services->getMultiChain()->listStreamItems(
+            $allDocumentItems = $this->multichainService->listStreamItems(
                 StreamEnums::DOCUMENTS->value,
                 true,
                 10000,
