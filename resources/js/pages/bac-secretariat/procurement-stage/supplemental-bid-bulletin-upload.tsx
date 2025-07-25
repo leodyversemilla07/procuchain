@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { ClipboardList, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useState } from 'react';
 
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -9,8 +10,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { InputWithLabel } from '@/components/input-with-label';
 import { BreadcrumbItem } from '@/types';
 import DatePicker from '@/components/date-picker';
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useFileDrop } from '@/hooks/use-file-drop';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 // Allowed file types and max file size for uploads
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -32,6 +35,10 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
         bulletin_title: '',
         issue_date: new Date(),
     });
+
+    // Smart contract validation state - used in onValidationComplete callback
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [bulletinValidation, setBulletinValidation] = useState<SmartContractValidationResult | null>(null);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
@@ -159,7 +166,7 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="py-0 flex flex-col justify-center space-y-6 sm:space-y-8">
-                                <FileUploadArea
+                                <SmartContractFileUploadArea
                                     label="Bulletin File"
                                     file={data.bulletin_file}
                                     error={errors.bulletin_file}
@@ -172,6 +179,23 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
                                     onRemove={() => setData('bulletin_file', null)}
                                     inputId="file-input"
                                     required={true}
+                                    documentType="Bidding Documents"
+                                    stage="Supplemental Bid Bulletin"
+                                    procurementId={procurement.id}
+                                    enableSmartValidation={true}
+                                    showValidationDetails={true}
+                                    onValidationComplete={(result) => {
+                                        setBulletinValidation(result);
+                                        if (!result.compliant) {
+                                            toast.error('Document validation failed', {
+                                                description: 'Please review the validation details and fix any issues.'
+                                            });
+                                        } else {
+                                            toast.success('Document validation passed', {
+                                                description: 'All validation checks passed successfully.'
+                                            });
+                                        }
+                                    }}
                                 />
                             </CardContent>
                         </Card>
@@ -255,6 +279,9 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
                         </Card>
                     </div>
                 </form>
+
+                {/* Smart Contract Dashboard */}
+                <SmartContractDashboard procurementId={procurement.id} />
             </div>
         </AppLayout>
     );

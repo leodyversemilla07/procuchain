@@ -7,11 +7,13 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\DatabaseMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
+use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * Notification for procurement stage updates sent to stakeholders via email and database
  */
-class ProcurementStageNotification extends Notification implements ShouldQueue
+class ProcurementStageNotification extends Notification
 {
     use Queueable;
 
@@ -40,7 +42,7 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', WebPushChannel::class];
     }
 
     /**
@@ -209,5 +211,41 @@ class ProcurementStageNotification extends Notification implements ShouldQueue
         }
 
         return new DatabaseMessage($data);
+    }
+
+    /**
+     * Get the WebPush representation of the notification
+     *
+     * @param  object  $notifiable
+     * @return WebPushMessage
+     */
+    public function toWebPush(object $notifiable): WebPushMessage
+    {
+        $url = $this->getRoleSpecificUrl($notifiable);
+        $actionText = $this->formatActionType($this->data['action_type'] ?? 'updated');
+        
+        $title = "ProcuChain: {$this->data['stage_identifier']} Update";
+        $body = "The {$this->data['stage_identifier']} stage {$actionText} for \"{$this->data['procurement_title']}\".";
+        
+        // Add stage transition info if applicable
+        if (!empty($this->data['next_stage'])) {
+            $body .= " Moving to {$this->data['next_stage']} stage.";
+        }
+
+        return (new WebPushMessage())
+            ->title($title)
+            ->body($body)
+            ->icon('/favicon.ico') // You can customize this icon
+            ->badge('/favicon.ico') // Badge icon for Android notifications
+            ->data([
+                'procurement_id' => $this->data['procurement_id'],
+                'stage_identifier' => $this->data['stage_identifier'],
+                'current_status' => $this->data['current_status'],
+                'url' => $url,
+                'action_type' => $this->data['action_type'] ?? 'updated',
+                'timestamp' => $this->data['timestamp'],
+            ])
+            ->action('View Details', $url)
+            ->requireInteraction(true); // Keep notification visible until user interacts
     }
 }

@@ -1,19 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Upload, AlertCircle, BarChart4 } from 'lucide-react';
+import { CalendarIcon, Upload, AlertCircle, BarChart4, Shield } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
 import { BreadcrumbItem } from '@/types';
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
 import InputError from '@/components/input-error';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -31,6 +33,12 @@ function getFieldError<T extends object>(errors: T, field: keyof T): string | un
 }
 
 export default function BidEvaluationUpload({ procurement = { id: '', title: '' } }: BidEvaluationUploadProps) {
+  // Smart contract validation state - used in onValidationComplete callbacks
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [summaryValidation, setSummaryValidation] = useState<SmartContractValidationResult | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [abstractValidation, setAbstractValidation] = useState<SmartContractValidationResult | null>(null);
+  
   const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
@@ -132,6 +140,22 @@ export default function BidEvaluationUpload({ procurement = { id: '', title: '' 
           </p>
         </div>
 
+        {/* Smart Contract Dashboard */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Shield className="h-5 w-5 text-primary" />
+              Smart Contract Validation Status
+            </CardTitle>
+            <CardDescription>
+              Real-time blockchain validation for document integrity and compliance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SmartContractDashboard procurementId={procurement.id} />
+          </CardContent>
+        </Card>
+
         <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
@@ -145,7 +169,7 @@ export default function BidEvaluationUpload({ procurement = { id: '', title: '' 
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6 sm:space-y-8">
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="Evaluation Summary"
                   file={data.summary_file}
                   error={getFieldError(errors, 'summary_file')}
@@ -163,11 +187,28 @@ export default function BidEvaluationUpload({ procurement = { id: '', title: '' 
                   onRemove={() => setData('summary_file', null)}
                   inputId="summary-file-input"
                   required
+                  documentType="Evaluation Report"
+                  stage="Bid Evaluation"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setSummaryValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
                 {getFieldError(errors, 'summary_file') && (
                   <InputError message={getFieldError(errors, 'summary_file')} />
                 )}
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="Bid Abstract"
                   file={data.abstract_file}
                   error={getFieldError(errors, 'abstract_file')}
@@ -185,6 +226,23 @@ export default function BidEvaluationUpload({ procurement = { id: '', title: '' 
                   onRemove={() => setData('abstract_file', null)}
                   inputId="abstract-file-input"
                   required
+                  documentType="Evaluation Report"
+                  stage="Bid Evaluation"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setAbstractValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
                 {getFieldError(errors, 'abstract_file') && (
                   <InputError message={getFieldError(errors, 'abstract_file')} />

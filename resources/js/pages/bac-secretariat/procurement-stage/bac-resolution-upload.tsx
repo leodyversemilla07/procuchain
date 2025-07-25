@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
@@ -8,11 +8,13 @@ import { CalendarIcon, FileText, Upload, AlertCircle } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
 import InputError from '@/components/input-error';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 import { BreadcrumbItem } from '@/types';
 
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -40,6 +42,10 @@ export default function BacResolutionUpload({ procurement = { id: '', title: '' 
     issuance_date: currentDate,
     signatory_details: '',
   });
+
+  // Smart contract validation states - used in onValidationComplete callback
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [documentValidation, setDocumentValidation] = useState<SmartContractValidationResult | null>(null);
 
   const breadcrumbs: BreadcrumbItem[] = [
     { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
@@ -145,7 +151,7 @@ export default function BacResolutionUpload({ procurement = { id: '', title: '' 
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="BAC Resolution Document"
                   file={data.bac_resolution_file}
                   error={getFieldError(errors, 'bac_resolution_file')}
@@ -158,6 +164,23 @@ export default function BacResolutionUpload({ procurement = { id: '', title: '' 
                   onRemove={() => setData('bac_resolution_file', null)}
                   inputId="bac-resolution-file-input"
                   required={true}
+                  documentType="BAC Resolution"
+                  stage="BAC Resolution"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setDocumentValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
                 {getFieldError(errors, 'bac_resolution_file') && (
                   <InputError message={getFieldError(errors, 'bac_resolution_file')} />
@@ -253,6 +276,9 @@ export default function BacResolutionUpload({ procurement = { id: '', title: '' 
             </CardContent>
           </Card>
         )}
+
+        {/* Smart Contract Dashboard */}
+        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );

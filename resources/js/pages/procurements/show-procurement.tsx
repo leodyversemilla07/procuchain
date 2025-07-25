@@ -308,9 +308,9 @@ const formatFileSize = (bytes?: number): string => {
 // Utility function to format stage names for display
 const formatStageName = (stage: string): string => {
     if (!stage) return 'Procurement Initiation';
-    
+
     const stageIdLower = stage.toLowerCase();
-    
+
     // Handle specific stage mappings from backend storage path segments
     const stageMapping: Record<string, string> = {
         'procurementinitiation': 'Procurement Initiation',
@@ -330,12 +330,12 @@ const formatStageName = (stage: string): string => {
         'completion': 'Completed',
         'completed': 'Completed'
     };
-    
+
     // Check exact match first
     if (stageMapping[stageIdLower]) {
         return stageMapping[stageIdLower];
     }
-    
+
     // Handle partial matches for flexibility
     if (stageIdLower.includes('procurement') && stageIdLower.includes('initiation')) {
         return 'Procurement Initiation';
@@ -379,17 +379,17 @@ const formatStageName = (stage: string): string => {
     if (stageIdLower === 'completed' || stageIdLower.includes('complet')) {
         return 'Completed';
     }
-    
+
     // Check if it's already a known stage
     const knownStage = STAGE_ORDER.find(p => p.toLowerCase() === stageIdLower);
     if (knownStage) return knownStage;
-    
+
     // Convert camelCase or PascalCase to proper title case
     const titleCase = stage
         .replace(/([A-Z])/g, ' $1') // Add space before capital letters
         .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
         .trim(); // Remove leading/trailing spaces
-    
+
     return titleCase;
 };
 
@@ -436,7 +436,7 @@ const LastUpdatedTimestamp: FC<{ timestamp?: string }> = ({ timestamp }) => {
 
 const StageDisplay: FC<{ stage: string; stageIndex: number; totalStages: number }> = ({ stage, stageIndex, totalStages }) => {
     const formattedStage = formatStageName(stage);
-    
+
     return (
         <div className="flex flex-col gap-1 sm:gap-1.5 w-full sm:w-auto">
             <div className="text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-400">
@@ -681,25 +681,25 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
             <CardContent className="p-3 sm:p-4 md:p-5 pt-0">
                 <div className="grid grid-cols-1 gap-x-4 gap-y-3">
 
-                        {metadata.document_type === 'Bid Document' && metadata.opening_date && (
-                            <MetadataItem
-                                icon={<Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                                label="Opening Date"
-                                value={formatDateOnly(metadata.opening_date)}
-                                highlight={true}
-                            />
-                        )}
+                    {metadata.document_type === 'Bid Document' && metadata.opening_date && (
+                        <MetadataItem
+                            icon={<Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                            label="Opening Date"
+                            value={formatDateOnly(metadata.opening_date)}
+                            highlight={true}
+                        />
+                    )}
 
-                        {metadataMap.map(item => renderMetadataItem(item.key, item))}
+                    {metadataMap.map(item => renderMetadataItem(item.key, item))}
 
-                        {metadata.validity_period && renderMetadataItem('validity_period', {
-                            label: 'Validity Period',
-                            icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        })}
-                    </div>
-                </CardContent>
-            </Card>
-        );
+                    {metadata.validity_period && renderMetadataItem('validity_period', {
+                        label: 'Validity Period',
+                        icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    })}
+                </div>
+            </CardContent>
+        </Card>
+    );
 };
 
 
@@ -765,8 +765,8 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                 <div className="flex flex-col gap-4 md:min-w-[280px] lg:min-w-[320px]">
                     {/* Action Buttons Row */}
                     <div className="flex flex-col sm:flex-row gap-2">
-                        <PdfViewerLink 
-                            fileKey={doc.file_key} 
+                        <PdfViewerLink
+                            fileKey={doc.file_key}
                             showStats={false}
                             className="flex-1"
                         />
@@ -817,11 +817,11 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 </CardContent>
                             </Card>
                         )}
-                        
+
                         {/* Document Metadata */}
                         <DocumentMetadata metadata={doc.stage_metadata} />
                     </div>
-                    
+
                     {/* Right Column: Document Analytics (spans 1 column) */}
                     <div className="order-1 xl:order-2 xl:col-span-1">
                         <Card className="bg-gradient-to-r from-green-50/60 to-neutral-50/80 dark:from-green-900/20 dark:to-neutral-800/50 border border-green-200/40 dark:border-green-800/30 shadow-sm hover:shadow-md transition-all duration-200">
@@ -832,8 +832,8 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-3 sm:p-4 pt-0">
-                                <DocumentViews 
-                                    fileKey={doc.file_key} 
+                                <DocumentViews
+                                    fileKey={doc.file_key}
                                     className="text-xs"
                                 />
                             </CardContent>

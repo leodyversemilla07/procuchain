@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Settings\MfaController;
+use App\Http\Controllers\Settings\PushNotificationController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\TestPushNotificationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -22,6 +24,16 @@ Route::middleware('auth')->group(function () {
     Route::post('settings/mfa/enable', [MfaController::class, 'enable'])->name('mfa.enable');
     Route::post('settings/mfa/disable', [MfaController::class, 'disable'])->name('mfa.disable');
     Route::post('settings/mfa/backup-codes/regenerate', [MfaController::class, 'regenerateBackupCodes'])->name('mfa.backup-codes.regenerate');
+
+    // Push notification settings
+    Route::get('settings/push-notification', [PushNotificationController::class, 'edit'])->name('push-notification.edit')->middleware('mfa');
+    // Push notification API routes
+    Route::get('/settings/push/vapid-public-key', [PushNotificationController::class, 'getVapidPublicKey']);
+    Route::get('/settings/push/subscriptions', [PushNotificationController::class, 'index']);
+    Route::post('/settings/push/subscribe', [PushNotificationController::class, 'store']);
+    Route::delete('/settings/push/unsubscribe', [PushNotificationController::class, 'destroy']);
+    Route::post('/settings/push/test', [TestPushNotificationController::class, 'sendTestNotification']);
+    Route::get('/settings/push/test', [TestPushNotificationController::class, 'sendTestNotification']); // Allow GET for testing
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');

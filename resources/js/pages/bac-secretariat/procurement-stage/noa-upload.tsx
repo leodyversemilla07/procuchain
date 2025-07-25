@@ -1,18 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Upload, AlertCircle, Award } from 'lucide-react';
+import { CalendarIcon, Upload, AlertCircle, Award, Shield } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
 import { BreadcrumbItem } from '@/types';
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 const ALLOWED_FILE_TYPES = ['application/pdf'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -30,6 +32,10 @@ function getFieldError<T extends object>(errors: T, field: keyof T): string | un
 }
 
 export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' } }: NoticeOfAwardUploadProps) {
+  // Smart contract validation state - used in onValidationComplete callback
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [noaValidation, setNoaValidation] = useState<SmartContractValidationResult | null>(null);
+  
   const currentDate = new Date();
 
   const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
@@ -119,6 +125,23 @@ export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' 
             <span className="font-medium text-foreground italic"> {procurement.title}</span>
           </p>
         </div>
+
+        {/* Smart Contract Dashboard */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Shield className="h-5 w-5 text-primary" />
+              Smart Contract Validation Status
+            </CardTitle>
+            <CardDescription>
+              Real-time blockchain validation for document integrity and compliance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SmartContractDashboard procurementId={procurement.id} />
+          </CardContent>
+        </Card>
+
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
@@ -132,7 +155,7 @@ export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' 
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="Notice of Award Document"
                   file={data.noa_file}
                   error={getFieldError(errors, 'noa_file')}
@@ -152,6 +175,23 @@ export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' 
                   onRemove={() => setData('noa_file', null)}
                   inputId="noa-file-input"
                   required={true}
+                  documentType="Notice of Award"
+                  stage="Notice of Award"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setNoaValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
                 {getFieldError(errors, 'noa_file') && (
                   <div className="mt-2"><span className="text-destructive text-sm">{getFieldError(errors, 'noa_file')}</span></div>

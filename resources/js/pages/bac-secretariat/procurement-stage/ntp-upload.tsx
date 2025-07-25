@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
@@ -9,10 +9,12 @@ import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
 import { BreadcrumbItem } from '@/types';
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import InputError from '@/components/input-error';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 const ALLOWED_FILE_TYPES = ['application/pdf'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -38,6 +40,10 @@ export default function NoticeToProceedUpload({ procurement = { id: '', title: '
     ntp_file: null as File | null,
     issuance_date: currentDate,
   });
+
+  // Smart contract validation state - used in onValidationComplete callback
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [ntpValidation, setNtpValidation] = useState<SmartContractValidationResult | null>(null);
 
   const breadcrumbs: BreadcrumbItem[] = [
     { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
@@ -126,12 +132,12 @@ export default function NoticeToProceedUpload({ procurement = { id: '', title: '
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="Notice to Proceed Document"
                   file={data.ntp_file}
                   error={getFieldError(errors, 'ntp_file')}
                   isDragging={ntpDrop.isDragging}
-                  onFileChange={e => {
+                  onFileChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     if (e.target.files && e.target.files.length > 0) {
                       const file = e.target.files[0];
                       if (validateFile(file)) {
@@ -146,6 +152,23 @@ export default function NoticeToProceedUpload({ procurement = { id: '', title: '
                   onRemove={() => setData('ntp_file', null)}
                   inputId="ntp-file-input"
                   required={true}
+                  documentType="Notice to Proceed"
+                  stage="Notice to Proceed"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setNtpValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
                 {getFieldError(errors, 'ntp_file') && (
                   <InputError message={getFieldError(errors, 'ntp_file')} />
@@ -226,6 +249,9 @@ export default function NoticeToProceedUpload({ procurement = { id: '', title: '
             </CardContent>
           </Card>
         )}
+
+        {/* Smart Contract Dashboard */}
+        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );

@@ -100,6 +100,8 @@ interface PdfViewerLinkProps {
 }
 
 export function PdfViewerLink({ fileKey, showStats = true, className }: PdfViewerLinkProps) {
+  const pdfUrl = `/secure-file/${encodeURIComponent(fileKey)}`;
+
   return (
     <div className={cn("space-y-2", className)}>
       <div className="flex gap-2">
@@ -117,21 +119,25 @@ export function PdfViewerLink({ fileKey, showStats = true, className }: PdfViewe
             View with Analytics
           </Link>
         </Button>
+
         <Button
           variant="outline"
           size="sm"
           asChild
           className="flex-shrink-0 transition-all font-medium border-neutral-200 dark:border-neutral-700 text-xs sm:text-sm h-8 sm:h-9 shadow-sm hover:shadow group-hover:border-primary/30 group-hover:bg-white dark:group-hover:bg-neutral-800"
         >
-          <Link
-            href={`/secure-file/${encodeURIComponent(fileKey)}`}
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center"
           >
             <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5" aria-hidden="true" />
             Quick View
-          </Link>
+          </a>
         </Button>
       </div>
+
       {showStats && (
         <DocumentViewStats fileKey={fileKey} />
       )}

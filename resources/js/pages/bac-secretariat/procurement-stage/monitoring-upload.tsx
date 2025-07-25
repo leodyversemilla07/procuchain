@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
@@ -11,9 +11,11 @@ import {
 } from "@/components/ui/card";
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 const ALLOWED_FILE_TYPES = ['application/pdf'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -40,6 +42,10 @@ export default function MonitoringUpload({ procurement = { id: '', title: '' } }
     report_date: currentDate,
     report_notes: '',
   });
+
+  // Smart contract validation states - used in onValidationComplete callback
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [documentValidation, setDocumentValidation] = useState<SmartContractValidationResult | null>(null);
 
   const breadcrumbs: BreadcrumbItem[] = [
     { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
@@ -137,7 +143,7 @@ export default function MonitoringUpload({ procurement = { id: '', title: '' } }
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="Compliance Report Document"
                   file={data.compliance_file}
                   error={getFieldError(errors, 'compliance_file')}
@@ -150,6 +156,23 @@ export default function MonitoringUpload({ procurement = { id: '', title: '' } }
                   onRemove={() => setData('compliance_file', null)}
                   inputId="compliance-file-input"
                   required={true}
+                  documentType="Certificate of Completion"
+                  stage="Monitoring"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setDocumentValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
                 {getFieldError(errors, 'compliance_file') && (
                   <InputError message={getFieldError(errors, 'compliance_file')} />
@@ -243,6 +266,9 @@ export default function MonitoringUpload({ procurement = { id: '', title: '' } }
             </CardContent>
           </Card>
         )}
+
+        {/* Smart Contract Dashboard */}
+        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );

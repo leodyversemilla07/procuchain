@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Head, useForm } from '@inertiajs/react';
 import { toast } from "sonner";
@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/card";
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useMultiFileDrop } from '@/hooks/use-file-drop';
 import { Label } from '@/components/ui/label';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 interface BidSubmissionUploadProps {
   procurement?: {
@@ -38,6 +40,9 @@ export default function BidSubmissionUpload({ procurement = { id: '', title: '' 
     opening_date: new Date(),
     bidders: [{ file: null, bidder_name: '', bid_value: '' }] as { file: File | null; bidder_name: string; bid_value: string; }[],
   });
+
+  // Validation states for each bidder
+  const [bidderValidations, setBidderValidations] = useState<(SmartContractValidationResult | null)[]>([null]);
 
   // File validation
   const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -66,12 +71,17 @@ export default function BidSubmissionUpload({ procurement = { id: '', title: '' 
 
   const addBidder = () => {
     setData('bidders', [...(data.bidders || []), { file: null, bidder_name: '', bid_value: '' }]);
+    setBidderValidations([...bidderValidations, null]);
   };
 
   const removeBidder = (index: number) => {
     const updatedBidders = [...(data.bidders || [])];
     updatedBidders.splice(index, 1);
     setData('bidders', updatedBidders);
+    
+    const updatedValidations = [...bidderValidations];
+    updatedValidations.splice(index, 1);
+    setBidderValidations(updatedValidations);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -226,7 +236,7 @@ export default function BidSubmissionUpload({ procurement = { id: '', title: '' 
                         </Button>
                       )}
                     </div>
-                    <FileUploadArea
+                    <SmartContractFileUploadArea
                       label="Bid Document"
                       file={bidder.file}
                       error={getBidderError(errors, index, 'file')}
@@ -239,6 +249,25 @@ export default function BidSubmissionUpload({ procurement = { id: '', title: '' 
                       onRemove={() => handleFileRemove(index)}
                       inputId={`file-input-${index}`}
                       required={true}
+                      documentType="Bidding Documents"
+                      stage="Bid Opening"
+                      procurementId={procurement.id}
+                      enableSmartValidation={true}
+                      showValidationDetails={true}
+                      onValidationComplete={(result) => {
+                        const updatedValidations = [...bidderValidations];
+                        updatedValidations[index] = result;
+                        setBidderValidations(updatedValidations);
+                        if (!result.compliant) {
+                          toast.error('Document validation failed', {
+                            description: 'Please review the validation details and fix any issues.'
+                          });
+                        } else {
+                          toast.success('Document validation passed', {
+                            description: 'All validation checks passed successfully.'
+                          });
+                        }
+                      }}
                     />
                     {getBidderError(errors, index, 'file') && (
                       <InputError message={getBidderError(errors, index, 'file')} />
@@ -361,6 +390,9 @@ export default function BidSubmissionUpload({ procurement = { id: '', title: '' 
             </CardContent>
           </Card>
         )}
+
+        {/* Smart Contract Dashboard */}
+        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );

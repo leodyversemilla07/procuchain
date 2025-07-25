@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import { toast } from "sonner";
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, FileText, Upload, AlertCircle, ClipboardList, Loader2 } from 'lucide-react';
+import { CalendarIcon, FileText, Upload, AlertCircle, ClipboardList, Loader2, Shield } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -13,11 +13,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { BreadcrumbItem } from '@/types';
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
 import { format } from 'date-fns';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 // Allowed file types and max file size for uploads
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -31,6 +33,12 @@ interface PreProcurementUploadProps {
 }
 
 export default function PreProcurementUpload({ procurement = { id: '', title: '' } }: PreProcurementUploadProps) {
+  // Smart contract validation state - used in onValidationComplete callbacks
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [minutesValidation, setMinutesValidation] = useState<SmartContractValidationResult | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [attendanceValidation, setAttendanceValidation] = useState<SmartContractValidationResult | null>(null);
+
   const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
@@ -140,6 +148,22 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
           </p>
         </div>
 
+        {/* Smart Contract Dashboard */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Shield className="h-5 w-5 text-primary" />
+              Smart Contract Validation Status
+            </CardTitle>
+            <CardDescription>
+              Real-time blockchain validation for document integrity and compliance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SmartContractDashboard procurementId={procurement.id} />
+          </CardContent>
+        </Card>
+
         <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
@@ -153,7 +177,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6 sm:space-y-8">
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="Minutes of Pre-Procurement Conference"
                   file={data.minutes_file}
                   error={errors.minutes_file}
@@ -166,8 +190,25 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                   onRemove={() => setData('minutes_file', null)}
                   inputId="minutes-file-input"
                   required={true}
+                  documentType="Minutes"
+                  stage="Pre-Procurement Conference"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setMinutesValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="Attendance Sheet"
                   file={data.attendance_file}
                   error={errors.attendance_file}
@@ -180,6 +221,23 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                   onRemove={() => setData('attendance_file', null)}
                   inputId="attendance-file-input"
                   required={true}
+                  documentType="Attendance"
+                  stage="Pre-Procurement Conference"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setAttendanceValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
               </CardContent>
             </Card>
