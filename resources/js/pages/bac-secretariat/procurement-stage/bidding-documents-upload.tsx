@@ -1,20 +1,22 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format, addDays } from 'date-fns';
 import { toast } from "sonner";
 import { DateRange } from 'react-day-picker';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Upload, AlertCircle, ClipboardList } from 'lucide-react';
+import { CalendarIcon, Upload, AlertCircle, ClipboardList, Shield } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import DateRangePicker from '@/components/date-range-picker';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 interface BiddingDocumentsUploadProps {
   procurement: {
@@ -24,6 +26,10 @@ interface BiddingDocumentsUploadProps {
 }
 
 export default function BiddingDocumentsUpload({ procurement }: BiddingDocumentsUploadProps) {
+  // Smart contract validation state - used in onValidationComplete callback
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [biddingDocumentValidation, setBiddingDocumentValidation] = useState<SmartContractValidationResult | null>(null);
+
   const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
     procurement_id: procurement?.id || '',
     procurement_title: procurement?.title || '',
@@ -169,6 +175,22 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
           </p>
         </div>
 
+        {/* Smart Contract Dashboard */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Shield className="h-5 w-5 text-primary" />
+              Smart Contract Validation Status
+            </CardTitle>
+            <CardDescription>
+              Real-time blockchain validation for document integrity and compliance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SmartContractDashboard procurementId={procurement.id} />
+          </CardContent>
+        </Card>
+
         <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
@@ -183,7 +205,7 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
               </CardHeader>
 
               <CardContent className="space-y-6 sm:space-y-8">
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="Bidding Documents"
                   file={data.bidding_document_file}
                   error={errors.bidding_document_file}
@@ -196,6 +218,23 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
                   onRemove={() => setData('bidding_document_file', null)}
                   inputId="file-input"
                   required={true}
+                  documentType="Bidding Documents"
+                  stage="Bidding Documents"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setBiddingDocumentValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
               </CardContent>
             </Card>

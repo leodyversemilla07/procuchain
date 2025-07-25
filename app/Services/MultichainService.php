@@ -981,6 +981,11 @@ class MultichainService
         return $this->handleRequest(fn (): mixed => $this->mc->setvariablevalue($name, $value));
     }
 
+    public function listVariables(): mixed
+    {
+        return $this->handleRequest(fn (): mixed => $this->mc->listvariables());
+    }
+
     /********************************/
     /*  Libraries */
     /********************************/

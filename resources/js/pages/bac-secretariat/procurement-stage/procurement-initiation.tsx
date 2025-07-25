@@ -16,12 +16,14 @@ import { InputWithLabel } from '@/components/input-with-label';
 
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import ProcurementId from '@/components/procurement-id';
 import MunicipalOfficeSelect from '@/components/municipal-office-select';
 import ReviewProcurementDialog from '@/components/review-procurement-dialog';
 
 import { FileText, Save, Plus, X } from 'lucide-react';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 interface FileMetadata {
     document_type: string;
@@ -57,6 +59,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function ProcurementInitiationForm({ formState }: HeaderProps) {
     const [dates, setDates] = useState<Record<number, Date | undefined>>({});
     const [showConfirm, setShowConfirm] = useState(false);
+    
+    // Smart contract validation states for multiple files
+    const [fileValidations, setFileValidations] = useState<(SmartContractValidationResult | null)[]>([null]);
 
     const {
         data,
@@ -185,7 +190,8 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         setData('files', files);
         setData('metadata', meta);
         setDates(d => last >= 0 ? { ...d, [last + 1]: new Date() } : { 0: new Date() });
-    }, [data.files, data.metadata, setData]);
+        setFileValidations([...fileValidations, null]);
+    }, [data.files, data.metadata, setData, fileValidations]);
 
     const removeFile = useCallback((index: number) => {
         const files = Array.isArray(data.files) ? [...data.files] : [];
@@ -194,7 +200,11 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         meta.splice(index, 1);
         setData('files', files);
         setData('metadata', meta);
-    }, [data.files, data.metadata, setData]);
+        
+        const updatedValidations = [...fileValidations];
+        updatedValidations.splice(index, 1);
+        setFileValidations(updatedValidations);
+    }, [data.files, data.metadata, setData, fileValidations]);
 
     const handleFieldChange = (field: keyof UseFormData, value: string): void => {
         clearErrors(field);
@@ -505,12 +515,12 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                             <CardContent>
                                                 <div className="space-y-4 sm:space-y-6">
                                                     {/* File Upload - Full Width */}
-                                                    <FileUploadArea
+                                                    <SmartContractFileUploadArea
                                                         label="Document File"
                                                         file={file}
                                                         error={hasError(`files.${index}`) ? (errors as Record<string, string>)[`files.${index}`] : undefined}
                                                         isDragging={drop.isDragging}
-                                                        onFileChange={e => handleFileChange(e, index)}
+                                                        onFileChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, index)}
                                                         onDragEnter={drop.handleDragEnter}
                                                         onDragLeave={drop.handleDragLeave}
                                                         onDragOver={drop.handleDragOver}
@@ -522,8 +532,26 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                             setData('files', newFiles);
                                                         }}
                                                         inputId={`file-${index}`}
-                                                        accept=".pdf"
                                                         required
+                                                        documentType="Purchase Request"
+                                                        stage="Procurement Initiation"
+                                                        procurementId={data.procurement_id || `draft-${Date.now()}`}
+                                                        enableSmartValidation={true}
+                                                        showValidationDetails={true}
+                                                        onValidationComplete={(result) => {
+                                                            const updatedValidations = [...fileValidations];
+                                                            updatedValidations[index] = result;
+                                                            setFileValidations(updatedValidations);
+                                                            if (!result.compliant) {
+                                                                toast.error('Document validation failed', {
+                                                                    description: 'Please review the validation details and fix any issues.'
+                                                                });
+                                                            } else {
+                                                                toast.success('Document validation passed', {
+                                                                    description: 'All validation checks passed successfully.'
+                                                                });
+                                                            }
+                                                        }}
                                                     />
 
                                                     {/* Metadata Fields - 2 Column Grid */}
@@ -637,6 +665,9 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                         </div>
                     </div>
                 </div>
+
+                {/* Smart Contract Dashboard */}
+                <SmartContractDashboard procurementId={data.procurement_id || `draft-${Date.now()}`} />
             </div>
 
             <ReviewProcurementDialog

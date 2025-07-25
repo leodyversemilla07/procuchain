@@ -296,7 +296,7 @@ class ProcurementController extends BaseController
                 'files' => $validated['files'] ?? [],
                 'metadata' => $validated['metadata'] ?? [],
                 'timestamp' => now()->toIso8601String(),
-                'userAddress' => optional(Auth::user())->blockchain_address,
+                'userAddress' => Auth::user()->blockchain_address,
                 'stage' => StageEnums::PROCUREMENT_INITIATION,
                 'status' => StatusEnums::PROCUREMENT_SUBMITTED,
             ];
@@ -673,7 +673,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -773,7 +773,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -865,7 +865,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -966,7 +966,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1059,7 +1059,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1176,7 +1176,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1277,7 +1277,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1420,7 +1420,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1506,7 +1506,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1606,7 +1606,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1769,7 +1769,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1867,7 +1867,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1956,7 +1956,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -2041,7 +2041,7 @@ class ProcurementController extends BaseController
         if ($result['success']) {
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+                ->with('success', $result['message']);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
@@ -11,10 +11,12 @@ import {
 import { TextareaWithLabel } from '@/components/textarea-with-label';
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
-import FileUploadArea from '@/components/file-upload-area';
+import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import { Label } from '@/components/ui/label';
+import SmartContractDashboard from '@/components/smart-contract-dashboard';
+import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 const ALLOWED_FILE_TYPES = ['application/pdf'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -42,6 +44,14 @@ export default function PostQualificationUpload({ procurement = { id: '', title:
     outcome: null as boolean | null,
     remarks: '',
   });
+
+  // Smart contract validation states - used in onValidationComplete callbacks
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [pqReportValidation, setPqReportValidation] = useState<SmartContractValidationResult | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [twgCertificationValidation, setTwgCertificationValidation] = useState<SmartContractValidationResult | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [noticeValidation, setNoticeValidation] = useState<SmartContractValidationResult | null>(null);
 
   // File validation
   const validateFile = (file: File) => {
@@ -144,7 +154,7 @@ export default function PostQualificationUpload({ procurement = { id: '', title:
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="Post-Qualification Report (Required)"
                   file={data.post_qualification_report}
                   error={getFieldError(errors, 'post_qualification_report')}
@@ -162,11 +172,28 @@ export default function PostQualificationUpload({ procurement = { id: '', title:
                   onRemove={() => setData('post_qualification_report', null)}
                   inputId="pq-report-input"
                   required={true}
+                  documentType="Evaluation Report"
+                  stage="Post-Qualification"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setPqReportValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
                 {getFieldError(errors, 'post_qualification_report') && (
                   <InputError message={getFieldError(errors, 'post_qualification_report')} />
                 )}
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="TWG Certification (If applicable)"
                   file={data.twg_certification}
                   error={getFieldError(errors, 'twg_certification')}
@@ -183,11 +210,28 @@ export default function PostQualificationUpload({ procurement = { id: '', title:
                   onDrop={twgCertDrop.handleDrop}
                   onRemove={() => setData('twg_certification', null)}
                   inputId="twg-cert-input"
+                  documentType="Certificate of Completion"
+                  stage="Post-Qualification"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setTwgCertificationValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
                 {getFieldError(errors, 'twg_certification') && (
                   <InputError message={getFieldError(errors, 'twg_certification')} />
                 )}
-                <FileUploadArea
+                <SmartContractFileUploadArea
                   label="Notice of Post-Qualification (Required)"
                   file={data.notice_of_post_qualification}
                   error={getFieldError(errors, 'notice_of_post_qualification')}
@@ -205,6 +249,23 @@ export default function PostQualificationUpload({ procurement = { id: '', title:
                   onRemove={() => setData('notice_of_post_qualification', null)}
                   inputId="notice-input"
                   required={true}
+                  documentType="Notice to Proceed"
+                  stage="Post-Qualification"
+                  procurementId={procurement.id}
+                  enableSmartValidation={true}
+                  showValidationDetails={true}
+                  onValidationComplete={(result) => {
+                    setNoticeValidation(result);
+                    if (!result.compliant) {
+                      toast.error('Document validation failed', {
+                        description: 'Please review the validation details and fix any issues.'
+                      });
+                    } else {
+                      toast.success('Document validation passed', {
+                        description: 'All validation checks passed successfully.'
+                      });
+                    }
+                  }}
                 />
                 {getFieldError(errors, 'notice_of_post_qualification') && (
                   <InputError message={getFieldError(errors, 'notice_of_post_qualification')} />
@@ -338,6 +399,9 @@ export default function PostQualificationUpload({ procurement = { id: '', title:
             </CardContent>
           </Card>
         )}
+
+        {/* Smart Contract Dashboard */}
+        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );

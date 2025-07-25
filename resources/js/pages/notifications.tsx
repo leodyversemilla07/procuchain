@@ -15,6 +15,7 @@ import axios from 'axios';
 import { cn } from '@/lib/utils';
 import { BreadcrumbItem } from '@/types';
 import { User } from '@/types';
+import PushNotificationSettings from '@/pages/settings/push-notification';
 
 interface Notification {
     id: string;
@@ -373,6 +374,9 @@ export default function Notifications() {
                                 </CardContent>
                             </Card>
                         </div>
+
+                        {/* Push Notification Settings */}
+                        <PushNotificationSettings />
 
                         {/* Notifications List */}
                         <Card className="overflow-hidden">

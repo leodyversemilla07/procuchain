@@ -6,7 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Models\DocumentView;
-use App\Services\ProcurementServices;
+use App\Services\MultichainService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -17,11 +17,11 @@ use Illuminate\Support\Facades\Storage;
 
 class SecureFileController extends BaseController
 {
-    private ProcurementServices $services;
+    private MultichainService $multichainService;
 
-    public function __construct(ProcurementServices $services)
+    public function __construct(MultichainService $multichainService)
     {
-        $this->services = $services;
+        $this->multichainService = $multichainService;
         $this->middleware('auth');
         $this->middleware('role:bac_chairman,bac_secretariat,hope,admin'); // Ensure only authorized roles can access this controller
     }
@@ -61,15 +61,17 @@ class SecureFileController extends BaseController
                     'ip' => $request->ip(),
                 ]);
 
-                // Return the placeholder PDF
+                // Return the placeholder PDF with proper headers
                 return response($placeholderPdf)
                     ->header('Content-Type', 'application/pdf')
-                    ->header('Content-Disposition', 'inline; filename="'.basename($fileKey).'"')
+                    ->header('Content-Disposition', 'inline; filename="' . basename($fileKey) . '"')
                     ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
                     ->header('Pragma', 'no-cache')
                     ->header('Expires', '0')
                     ->header('X-Content-Type-Options', 'nosniff')
-                    ->header('X-Frame-Options', 'SAMEORIGIN'); // Allow iframe embedding for PDF viewer
+                    ->header('X-Frame-Options', 'SAMEORIGIN') // Allow iframe embedding for PDF viewer
+                    ->header('Accept-Ranges', 'bytes') // Enable range requests for better PDF support
+                    ->header('Content-Security-Policy', "default-src 'self'; object-src 'self'; frame-src 'self';"); // Allow PDF object embedding
             }
 
             // Get file content and metadata
@@ -88,15 +90,17 @@ class SecureFileController extends BaseController
                 'ip' => $request->ip(),
             ]);
 
-            // Return the file with appropriate headers
+            // Return the file with appropriate headers for PDF viewing
             return response($fileContent)
                 ->header('Content-Type', $mimeType)
-                ->header('Content-Disposition', 'inline; filename="'.$fileName.'"')
+                ->header('Content-Disposition', 'inline; filename="' . $fileName . '"')
                 ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
                 ->header('Pragma', 'no-cache')
                 ->header('Expires', '0')
                 ->header('X-Content-Type-Options', 'nosniff')
-                ->header('X-Frame-Options', 'SAMEORIGIN'); // Allow iframe embedding for PDF viewer
+                ->header('X-Frame-Options', 'SAMEORIGIN') // Allow iframe embedding for PDF viewer
+                ->header('Accept-Ranges', 'bytes') // Enable range requests for better PDF support
+                ->header('Content-Security-Policy', "default-src 'self'; object-src 'self'; frame-src 'self';"); // Allow PDF object embedding
 
         } catch (Exception $e) {
             Log::error('Secure file download failed', [
@@ -116,7 +120,7 @@ class SecureFileController extends BaseController
     {
         try {
             // Fetch all document items to validate the file exists in our system
-            $allDocumentItems = $this->services->getMultiChain()->listStreamItems(
+            $allDocumentItems = $this->multichainService->listStreamItems(
                 StreamEnums::DOCUMENTS->value,
                 true,
                 10000, // Large enough to get all documents
@@ -153,7 +157,6 @@ class SecureFileController extends BaseController
             }
 
             return null;
-
         } catch (Exception $e) {
             Log::error('File access validation failed', [
                 'file_key' => $fileKey,
