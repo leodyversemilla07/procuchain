@@ -18,7 +18,7 @@ class UserSeeder extends Seeder
             'name' => 'Leodyver Semilla',
             'email' => 'admin@example.com',
             'role' => 'bac_secretariat',
-            'blockchain_address' => env('MULTICHAIN_BAC_SECRETARIAT_ADDRESS'),
+            'blockchain_address' => config('multichain.addresses.bac_secretariat'),
             'password' => Hash::make('Leodyver07'),
         ]);
 
@@ -27,7 +27,7 @@ class UserSeeder extends Seeder
             'name' => 'Lunar Spectre',
             'email' => 'lunarspectre00@gmail.com',
             'role' => 'bac_chairman',
-            'blockchain_address' => env('MULTICHAIN_BAC_CHAIRMAN_ADDRESS'),
+            'blockchain_address' => config('multichain.addresses.bac_chairman'),
             'password' => Hash::make('LunarSpectre00'),
         ]);
 
@@ -36,7 +36,7 @@ class UserSeeder extends Seeder
             'name' => 'Leif Sage Semilla',
             'email' => 'leifsagesemilla@gmail.com',
             'role' => 'hope',
-            'blockchain_address' => env('MULTICHAIN_HOPE_ADDRESS'),
+            'blockchain_address' => config('multichain.addresses.hope'),
             'password' => Hash::make('LeifSage07'),
         ]);
 
@@ -45,7 +45,7 @@ class UserSeeder extends Seeder
             'name' => 'LeoBriel Zilvrak',
             'email' => 'leobrielzilvrak@gmail.com',
             'role' => 'admin',
-            'blockchain_address' => env('MULTICHAIN_ADMIN_ADDRESS'),
+            'blockchain_address' => config('multichain.addresses.admin'),
             'password' => Hash::make('LeoBriel07'),
         ]);
     }

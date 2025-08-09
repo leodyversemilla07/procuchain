@@ -342,3 +342,4 @@ Route::get('/terms.pdf', function () {
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
 require __DIR__ . '/smart-contracts.php';
+require __DIR__ . '/analytics.php';
