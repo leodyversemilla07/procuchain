@@ -59,7 +59,7 @@ export const Pagination: React.FC<PaginationProps> = ({
     const endEntry = Math.min((pageIndex + 1) * pageSize, totalItems);
 
     return (
-        <UIPagination className={cn("flex flex-col lg:flex-row items-center justify-between gap-4 border p-3 rounded-md shadow-sm bg-card", className)}>
+        <UIPagination className={cn("flex flex-col lg:flex-row items-center justify-between gap-4", className)}>
             <div className="text-sm text-muted-foreground w-full lg:w-auto text-center lg:text-left">
                 {totalItems > 0 ? (
                     <>
