@@ -10,9 +10,9 @@ use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SecureFileController;
 use App\Http\Controllers\ViewProcurementsController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
 
 Route::get('/bac-secretariat/preprocurement', function () {
     return Inertia::render('bac-secretariat/procurement-stage/pre-procurement-conference-upload', [
@@ -176,9 +176,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/bac-secretariat/publish-procurement-initiation', [ProcurementController::class, 'publishProcurementInitiation'])
             ->name('publish-procurement-initiation');
 
-        Route::post('/bac-secretariat/save-procurement-draft', [ProcurementController::class, 'saveProcurementDraft'])
-            ->name('bac-secretariat.save-procurement-draft');
-
         Route::post('/bac-secretariat/publish-pre-procurement-conference-decision', [ProcurementController::class, 'publishPreProcurementConferenceDecision'])
             ->name('bac-secretariat.publish-pre-procurement-conference-decision');
 
@@ -339,7 +336,7 @@ Route::get('/terms.pdf', function () {
     return response()->file(public_path('docs/terms.pdf'));
 })->name('terms.service');
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
-require __DIR__ . '/smart-contracts.php';
-require __DIR__ . '/analytics.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';
+require __DIR__.'/smart-contracts.php';
+require __DIR__.'/analytics.php';

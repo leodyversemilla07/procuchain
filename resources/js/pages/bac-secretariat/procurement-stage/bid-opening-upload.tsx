@@ -13,7 +13,6 @@ import {
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
 import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
-import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useMultiFileDrop } from '@/hooks/use-file-drop';
 import { Label } from '@/components/ui/label';
 import { SmartContractValidationResult } from '@/types/smart-contracts';
@@ -390,9 +389,6 @@ export default function BidSubmissionUpload({ procurement = { id: '', title: '' 
             </CardContent>
           </Card>
         )}
-
-        {/* Smart Contract Dashboard */}
-        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );

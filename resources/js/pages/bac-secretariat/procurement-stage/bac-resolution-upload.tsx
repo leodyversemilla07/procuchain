@@ -13,7 +13,6 @@ import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
 import InputError from '@/components/input-error';
-import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { SmartContractValidationResult } from '@/types/smart-contracts';
 import { BreadcrumbItem } from '@/types';
 
@@ -276,9 +275,6 @@ export default function BacResolutionUpload({ procurement = { id: '', title: '' 
             </CardContent>
           </Card>
         )}
-
-        {/* Smart Contract Dashboard */}
-        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );

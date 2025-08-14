@@ -7,7 +7,6 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
-import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
@@ -286,9 +285,6 @@ export default function PreBidConferenceUpload({ procurement = { id: '', title: 
             </Card>
           </div>
         </form>
-
-        {/* Smart Contract Dashboard */}
-        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );

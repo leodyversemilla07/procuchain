@@ -14,7 +14,6 @@ import { BreadcrumbItem } from '@/types';
 import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
-import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -266,9 +265,6 @@ export default function MonitoringUpload({ procurement = { id: '', title: '' } }
             </CardContent>
           </Card>
         )}
-
-        {/* Smart Contract Dashboard */}
-        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );

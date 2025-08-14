@@ -13,7 +13,6 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -37,17 +36,11 @@ import {
     type RowSelectionState,
 } from '@tanstack/react-table';
 import {
-    ArrowUpDown,
-    Calendar,
-    Clock,
     Download,
     Edit,
-    Key,
-    Mail,
     MoreHorizontal,
     Plus,
     QrCode,
-    Shield,
     Trash2,
     Users,
 } from 'lucide-react';
@@ -66,7 +59,6 @@ interface User {
     role: string;
     blockchain_address?: string;
     email_verified_at?: string;
-    remember_token?: string;
     mfa_enabled?: boolean;
     mfa_enabled_at?: string;
     backup_codes?: string[];
@@ -302,7 +294,6 @@ export default function AdminUsers() {
                 'MFA Enabled Date': user.mfa_enabled_at ? formatDateForCSV(user.mfa_enabled_at) : 'Not enabled',
                 'Backup Codes Count': user.backup_codes ? user.backup_codes.length.toString() : '0',
                 'Backup Codes Generated': user.backup_codes_generated_at ? formatDateForCSV(user.backup_codes_generated_at) : 'Not generated',
-                'Remember Token': user.remember_token ? 'Set' : 'None',
                 'Created Date': formatDateForCSV(user.created_at),
                 'Updated Date': formatDateForCSV(user.updated_at)
             };
@@ -357,43 +348,17 @@ export default function AdminUsers() {
         },
         {
             accessorKey: "name",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="h-8 p-0 hover:bg-transparent"
-                    >
-                        Name
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
-            cell: ({ row }) => {
-                return (
-                    <div className="font-medium">{row.getValue("name")}</div>
-                );
-            },
+            header: "Name",
+            cell: ({ row }) => (
+                <div className="font-medium">{row.getValue("name")}</div>
+            ),
         },
         {
             accessorKey: "email",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="h-8 p-0 hover:bg-transparent"
-                    >
-                        Email
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
-            cell: ({ row }) => {
-                return (
-                    <div className="text-muted-foreground">{row.getValue("email")}</div>
-                );
-            },
+            header: "Email",
+            cell: ({ row }) => (
+                <div className="text-muted-foreground">{row.getValue("email")}</div>
+            ),
         },
         {
             accessorKey: "role",
@@ -409,19 +374,7 @@ export default function AdminUsers() {
         },
         {
             accessorKey: "blockchain_address",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="h-8 p-0 hover:bg-transparent"
-                    >
-                        <Shield className="mr-2 h-4 w-4" />
-                        Blockchain Address
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
+            header: "Blockchain Address",
             cell: ({ row }) => {
                 const address = row.getValue("blockchain_address") as string;
                 return (
@@ -439,21 +392,10 @@ export default function AdminUsers() {
         },
         {
             accessorKey: "email_verified_at",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="h-8 p-0 hover:bg-transparent"
-                    >
-                        <Mail className="mr-2 h-4 w-4" />
-                        Email Verified
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
+            header: "Email Verified",
             cell: ({ row }) => {
-                const verifiedAt = row.getValue("email_verified_at") as string; return (
+                const verifiedAt = row.getValue("email_verified_at") as string;
+                return (
                     <div className="text-muted-foreground text-sm">
                         {verifiedAt ? (
                             <div className="flex items-center">
@@ -472,19 +414,7 @@ export default function AdminUsers() {
         },
         {
             accessorKey: "mfa_enabled",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="h-8 p-0 hover:bg-transparent"
-                    >
-                        <QrCode className="mr-2 h-4 w-4" />
-                        MFA Status
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
+            header: "MFA Status",
             cell: ({ row }) => {
                 const user = row.original;
                 const mfaEnabled = user.mfa_enabled;
@@ -514,50 +444,8 @@ export default function AdminUsers() {
             },
         },
         {
-            accessorKey: "remember_token",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="h-8 p-0 hover:bg-transparent"
-                    >
-                        <Key className="mr-2 h-4 w-4" />
-                        Remember Token
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
-            cell: ({ row }) => {
-                const token = row.getValue("remember_token") as string;
-                return (
-                    <div className="text-muted-foreground text-sm font-mono">
-                        {token ? (
-                            <span className="truncate max-w-[150px] block" title={token}>
-                                {token.substring(0, 20)}...
-                            </span>
-                        ) : (
-                            <span className="text-muted-foreground/50">None</span>
-                        )}
-                    </div>
-                );
-            },
-        },
-        {
             accessorKey: "created_at",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="h-8 p-0 hover:bg-transparent"
-                    >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        Created
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
+            header: "Created",
             cell: ({ row }) => {
                 const dateValue = row.getValue("created_at") as string;
 
@@ -591,19 +479,7 @@ export default function AdminUsers() {
         },
         {
             accessorKey: "updated_at",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="h-8 p-0 hover:bg-transparent"
-                    >
-                        <Clock className="mr-2 h-4 w-4" />
-                        Updated
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                );
-            },
+            header: "Updated",
             cell: ({ row }) => {
                 const dateValue = row.getValue("updated_at") as string;
 
@@ -628,9 +504,7 @@ export default function AdminUsers() {
                                 day: 'numeric'
                             })
                         ) : (
-                            <span className="text-muted-foreground/50" title={`Invalid date: ${dateValue}`}>
-                                Invalid date
-                            </span>
+                            <span className="text-muted-foreground/50" title={`Invalid date: ${dateValue}`}>Invalid date</span>
                         )}
                     </div>
                 );
@@ -735,148 +609,135 @@ export default function AdminUsers() {
 
                 {/* Data Table Section */}
                 <div className="flex-1">
-                    <Card>
-                        <CardHeader className="pb-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle className="text-lg md:text-xl font-semibold">
-                                        Users ({users.length})
-                                    </CardTitle>
-                                    <CardDescription className="mt-2">
-                                        All registered users in the procurement system
-                                    </CardDescription>
+                    <div className="pb-6">
+                        {/* Search and Filter */}
+                        <div className="flex items-center space-x-2 mt-6">
+                            <Input
+                                placeholder="Search users..."
+                                value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+                                onChange={(event) =>
+                                    table.getColumn("name")?.setFilterValue(event.target.value)
+                                }
+                                className="max-w-sm h-9"
+                            />
+                        </div>
+
+                        {/* Bulk Actions Bar */}
+                        {table.getFilteredSelectedRowModel().rows.length > 0 && (
+                            <div className="flex items-center justify-between p-4 mt-4 bg-accent/50 dark:bg-accent/20 border border-accent dark:border-accent/40 rounded-lg">
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-sm font-medium text-accent-foreground dark:text-accent-foreground">
+                                        {table.getFilteredSelectedRowModel().rows.length} user(s) selected
+                                    </span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={exportSelectedToCSV}
+                                        className="h-8 border-primary/20 dark:border-primary/30 text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/20"
+                                    >
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Export to CSV
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={handleBulkDelete}
+                                        className="h-8"
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete Selected
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => table.toggleAllPageRowsSelected(false)}
+                                        className="h-8 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
+                                    >
+                                        Clear Selection
+                                    </Button>
                                 </div>
                             </div>
+                        )}
+                    </div>
 
-                            {/* Search and Filter */}
-                            <div className="flex items-center space-x-2 mt-6">
-                                <Input
-                                    placeholder="Search users..."
-                                    value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-                                    onChange={(event) =>
-                                        table.getColumn("name")?.setFilterValue(event.target.value)
-                                    }
-                                    className="max-w-sm h-9"
-                                />
+                    <div className="px-0 pb-6">
+                        {users.length === 0 ? (
+                            <div className="text-center py-16">
+                                <Users className="h-16 w-16 text-muted-foreground/30 dark:text-muted-foreground/20 mx-auto mb-4" />
+                                <p className="text-muted-foreground text-lg font-medium">No users found</p>
+                                <p className="text-muted-foreground/70 dark:text-muted-foreground/60 text-sm mt-2">
+                                    Click "Add User" to create your first user
+                                </p>
                             </div>
-
-                            {/* Bulk Actions Bar */}
-                            {table.getFilteredSelectedRowModel().rows.length > 0 && (
-                                <div className="flex items-center justify-between p-4 mt-4 bg-accent/50 dark:bg-accent/20 border border-accent dark:border-accent/40 rounded-lg">
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-sm font-medium text-accent-foreground dark:text-accent-foreground">
-                                            {table.getFilteredSelectedRowModel().rows.length} user(s) selected
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={exportSelectedToCSV}
-                                            className="h-8 border-primary/20 dark:border-primary/30 text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/20"
-                                        >
-                                            <Download className="h-4 w-4 mr-2" />
-                                            Export to CSV
-                                        </Button>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={handleBulkDelete}
-                                            className="h-8"
-                                        >
-                                            <Trash2 className="h-4 w-4 mr-2" />
-                                            Delete Selected
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => table.toggleAllPageRowsSelected(false)}
-                                            className="h-8 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
-                                        >
-                                            Clear Selection
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </CardHeader>
-
-                        <CardContent className="px-6 pb-6">
-                            {users.length === 0 ? (
-                                <div className="text-center py-16">
-                                    <Users className="h-16 w-16 text-muted-foreground/30 dark:text-muted-foreground/20 mx-auto mb-4" />
-                                    <p className="text-muted-foreground text-lg font-medium">No users found</p>
-                                    <p className="text-muted-foreground/70 dark:text-muted-foreground/60 text-sm mt-2">
-                                        Click "Add User" to create your first user
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="space-y-6">
-                                    {/* Data Table */}
-                                    <div className="rounded-md border">
-                                        <Table>
-                                            <TableHeader>
-                                                {table.getHeaderGroups().map((headerGroup) => (
-                                                    <TableRow key={headerGroup.id}>
-                                                        {headerGroup.headers.map((header) => {
-                                                            return (
-                                                                <TableHead key={header.id}>
-                                                                    {header.isPlaceholder
-                                                                        ? null
-                                                                        : flexRender(
-                                                                            header.column.columnDef.header,
-                                                                            header.getContext()
-                                                                        )}
-                                                                </TableHead>
-                                                            );
-                                                        })}
-                                                    </TableRow>
-                                                ))}
-                                            </TableHeader>
-                                            <TableBody>
-                                                {table.getRowModel().rows?.length ? (
-                                                    table.getRowModel().rows.map((row) => (
-                                                        <TableRow
-                                                            key={row.id}
-                                                            data-state={row.getIsSelected() && "selected"}
-                                                        >
-                                                            {row.getVisibleCells().map((cell) => (
-                                                                <TableCell key={cell.id}>
-                                                                    {flexRender(
-                                                                        cell.column.columnDef.cell,
-                                                                        cell.getContext()
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Data Table */}
+                                <div className="rounded-md border">
+                                    <Table>
+                                        <TableHeader>
+                                            {table.getHeaderGroups().map((headerGroup) => (
+                                                <TableRow key={headerGroup.id}>
+                                                    {headerGroup.headers.map((header) => {
+                                                        return (
+                                                            <TableHead key={header.id}>
+                                                                {header.isPlaceholder
+                                                                    ? null
+                                                                    : flexRender(
+                                                                        header.column.columnDef.header,
+                                                                        header.getContext()
                                                                     )}
-                                                                </TableCell>
-                                                            ))}
-                                                        </TableRow>
-                                                    ))
-                                                ) : (
-                                                    <TableRow>
-                                                        <TableCell
-                                                            colSpan={columns.length}
-                                                            className="h-24 text-center"
-                                                        >
-                                                            No results.
-                                                        </TableCell>
+                                                            </TableHead>
+                                                        );
+                                                    })}
+                                                </TableRow>
+                                            ))}
+                                        </TableHeader>
+                                        <TableBody>
+                                            {table.getRowModel().rows?.length ? (
+                                                table.getRowModel().rows.map((row) => (
+                                                    <TableRow
+                                                        key={row.id}
+                                                        data-state={row.getIsSelected() && "selected"}
+                                                    >
+                                                        {row.getVisibleCells().map((cell) => (
+                                                            <TableCell key={cell.id}>
+                                                                {flexRender(
+                                                                    cell.column.columnDef.cell,
+                                                                    cell.getContext()
+                                                                )}
+                                                            </TableCell>
+                                                        ))}
                                                     </TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                    {/* Pagination */}
-                                    <div className="mt-4">
-                                        <Pagination
-                                            pageIndex={table.getState().pagination.pageIndex}
-                                            pageSize={table.getState().pagination.pageSize}
-                                            pageCount={table.getPageCount()}
-                                            totalItems={table.getFilteredRowModel().rows.length}
-                                            onPageChange={table.setPageIndex}
-                                            onPageSizeChange={table.setPageSize}
-                                        />
-                                    </div>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell
+                                                        colSpan={columns.length}
+                                                        className="h-24 text-center"
+                                                    >
+                                                        No results.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                {/* Pagination */}
+                                <div className="mt-4">
+                                    <Pagination
+                                        pageIndex={table.getState().pagination.pageIndex}
+                                        pageSize={table.getState().pagination.pageSize}
+                                        pageCount={table.getPageCount()}
+                                        totalItems={table.getFilteredRowModel().rows.length}
+                                        onPageChange={table.setPageIndex}
+                                        onPageSizeChange={table.setPageSize}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Dialog Components */}

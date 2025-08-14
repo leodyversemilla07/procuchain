@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
@@ -14,8 +14,6 @@ import FileUploadArea from '@/components/file-upload-area';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import { InputWithLabel } from '@/components/input-with-label';
-import SmartContractDashboard from '@/components/smart-contract-dashboard';
-import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 const ALLOWED_FILE_TYPES = ['application/pdf'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -45,10 +43,6 @@ export default function PerformanceBondContractPOUpload({ procurement = { id: ''
     po_file: null as File | null,
     signing_date: currentDate,
   });
-
-  // Smart contract validation states - used in onValidationComplete callbacks
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [documentValidation, setDocumentValidation] = useState<SmartContractValidationResult | null>(null);
 
   const breadcrumbs: BreadcrumbItem[] = [
     { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
@@ -332,9 +326,6 @@ export default function PerformanceBondContractPOUpload({ procurement = { id: ''
             </CardContent>
           </Card>
         )}
-
-        {/* Smart Contract Dashboard */}
-        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );
