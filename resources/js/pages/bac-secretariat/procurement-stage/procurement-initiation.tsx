@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 
 import { type BreadcrumbItem } from '@/types';
 import { cn } from '@/lib/utils';
@@ -17,12 +17,10 @@ import { InputWithLabel } from '@/components/input-with-label';
 import DatePicker from '@/components/date-picker';
 import PeopleInput from '@/components/people-input';
 import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
-import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import ProcurementId from '@/components/procurement-id';
 import MunicipalOfficeSelect from '@/components/municipal-office-select';
-import ReviewProcurementDialog from '@/components/review-procurement-dialog';
 
-import { FileText, Save, Plus, X } from 'lucide-react';
+import { FileText, Plus, X } from 'lucide-react';
 import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 interface FileMetadata {
@@ -43,7 +41,6 @@ type UseFormData = {
 
 interface HeaderProps {
     formState?: {
-        isDraft?: boolean;
         isComplete?: boolean;
         createdAt?: string;
         lastUpdated?: string;
@@ -58,8 +55,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function ProcurementInitiationForm({ formState }: HeaderProps) {
     const [dates, setDates] = useState<Record<number, Date | undefined>>({});
-    const [showConfirm, setShowConfirm] = useState(false);
-    
+
     // Smart contract validation states for multiple files
     const [fileValidations, setFileValidations] = useState<(SmartContractValidationResult | null)[]>([null]);
 
@@ -200,7 +196,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         meta.splice(index, 1);
         setData('files', files);
         setData('metadata', meta);
-        
+
         const updatedValidations = [...fileValidations];
         updatedValidations.splice(index, 1);
         setFileValidations(updatedValidations);
@@ -211,7 +207,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         setData(field, value);
     };
 
-    const validateForm = () => {
+    const validateForm = useCallback(() => {
         let isBasicValid = true;
         if (!data.procurement_id || String(data.procurement_id).trim() === '') {
             isBasicValid = false;
@@ -221,12 +217,14 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         }
         const areDocumentsValid = validateDocuments();
         return isBasicValid && areDocumentsValid;
-    };
+    }, [data.procurement_id, data.procurement_title, validateDocuments]);
 
-    const onSubmit = (e: React.FormEvent) => {
+    const onSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm()) {
-            setShowConfirm(true);
+            toast.error("Please complete all required fields", {
+                description: "Fill in all required fields and upload necessary documents before submitting."
+            });
             return;
         }
         const submissionToast = toast.loading("Submitting Procurement...");
@@ -247,6 +245,13 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                     id: submissionToast,
                 });
                 reset();
+                // Navigate to the procurement list with a success message
+                setTimeout(() => {
+                    router.visit('/bac-secretariat/procurements-list', {
+                        preserveState: false,
+                        replace: true
+                    });
+                }, 1500);
             },
             onError: (formErrors: Record<string, string>) => {
                 toast.error("Failed to submit", {
@@ -254,46 +259,19 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                     description: Object.values(formErrors)[0]
                 });
             },
+            onFinish: () => {
+                // Cleanup any temporary states
+                setFileValidations(prev => prev.map(() => null));
+            },
             forceFormData: true,
             preserveScroll: true,
             preserveState: true
         });
-    };
+    }, [validateForm, transform, post, reset]);
 
-    const handleSaveDraft = () => {
-        const draftToast = toast.loading("Saving draft...");
-
-        transform((formData) => ({
-            ...formData,
-            metadata: Array.isArray(formData.metadata)
-                ? formData.metadata.map(m => ({
-                    ...m,
-                    submission_date: m.submission_date instanceof Date ? format(m.submission_date, 'yyyy-MM-dd') : m.submission_date
-                }))
-                : formData.metadata
-        }));
-
-        post('/bac-secretariat/save-procurement-draft', {
-            preserveScroll: true,
-            preserveState: true,
-            forceFormData: true,
-            onSuccess: () => {
-                toast.success('Draft saved successfully', {
-                    id: draftToast
-                });
-            },
-            onError: (errors: Record<string, string>) => {
-                toast.error('Failed to save draft', {
-                    id: draftToast,
-                    description: Object.values(errors)[0]
-                });
-            }
-        });
-    };
-
-    const hasError = (field: string) => {
+    const hasError = useCallback((field: string) => {
         return Object.keys(errors).some(error => error === field || error.startsWith(`${field}.`));
-    };
+    }, [errors]);
 
     const fileIndices = useMemo(
         () => Array.isArray(data.files)
@@ -335,40 +313,17 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         }
     );
 
-    const incompleteFields = [];
-
-    if (!data.procurement_id || !data.procurement_title) {
-        incompleteFields.push('Basic procurement details');
-    }
-
-    const hasDocuments = data.files.some((file) => file);
-    if (!hasDocuments) {
-        incompleteFields.push('Document uploads');
-    }
-
-    const allMetadataComplete = data.metadata.every(
-        (meta) =>
-            meta.document_type &&
-            meta.submission_date &&
-            meta.municipal_offices &&
-            Array.isArray(meta.signatories) && meta.signatories.length > 0
-    );
-
-    if (!allMetadataComplete) {
-        incompleteFields.push('Document metadata');
-    }
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Initiate Procurement" />
 
-            <div className="w-full space-y-4 p-4 md:p-6 lg:p-8">
+            <div className="w-full space-y-4 p-4 md:p-6 lg:p-8" role="main" aria-labelledby="page-title">
                 {/* Header Section (redesigned to match procurements-list) */}
                 <div className="border-b pb-6">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div>
-                            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight flex items-center">
-                                <FileText className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 mr-2 md:mr-3 text-primary" />
+                            <h1 id="page-title" className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight flex items-center">
+                                <FileText className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 mr-2 md:mr-3 text-primary" aria-hidden="true" />
                                 New Procurement
                             </h1>
                             <p className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm lg:text-base">
@@ -384,11 +339,6 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                             {formState?.reference && (
                                 <Badge className="text-xs md:text-sm bg-chart-1/10 text-chart-1 dark:bg-chart-1/20 dark:text-chart-1 px-2 py-1 md:px-3 md:py-1.5 rounded-md">
                                     {formState.reference}
-                                </Badge>
-                            )}
-                            {formState?.isDraft && (
-                                <Badge className="text-xs md:text-sm bg-chart-4/10 hover:bg-chart-4/20 text-chart-4 dark:bg-chart-4/20 dark:text-chart-4 px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-200">
-                                    Draft
                                 </Badge>
                             )}
                             {formState?.isComplete && (
@@ -466,6 +416,77 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                         </div>
                                     </div>
                                 </Card>
+
+                                {/* Preview Card */}
+                                {(data.procurement_id || data.procurement_title || data.files.some(f => f !== null)) && (
+                                    <Card className="p-4 sm:p-6 border-sidebar-border shadow-sm transition-all duration-200 hover:shadow-md bg-muted/30 dark:bg-muted/10">
+                                        <CardHeader className="px-0 pt-0 pb-4">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-semibold text-sm text-muted-foreground">Procurement Preview</h3>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="px-0 pb-0 space-y-4">
+                                            {/* Procurement ID Preview */}
+                                            {data.procurement_id && (
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Procurement ID</p>
+                                                    <p className="font-mono text-sm font-semibold text-foreground">{data.procurement_id}</p>
+                                                </div>
+                                            )}
+
+                                            {/* Procurement Title Preview */}
+                                            {data.procurement_title && (
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title</p>
+                                                    <p className="text-sm text-foreground">{data.procurement_title}</p>
+                                                </div>
+                                            )}
+
+                                            {/* Files Preview */}
+                                            {data.files.some(f => f !== null) && (
+                                                <div className="space-y-2">
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                        Documents ({data.files.filter(f => f !== null).length})
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {data.files.map((file, index) => {
+                                                            if (!file) return null;
+                                                            const metadata = data.metadata[index];
+                                                            return (
+                                                                <div key={index} className="flex items-start gap-3 p-2 rounded border bg-background/50">
+                                                                    <FileText className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                                                                    <div className="min-w-0 flex-1 space-y-1">
+                                                                        <p className="text-xs font-medium text-foreground truncate" title={file.name}>
+                                                                            {file.name}
+                                                                        </p>
+                                                                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                                                            <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                                                                            {metadata?.document_type && (
+                                                                                <Badge variant="secondary" className="h-4 text-[10px] px-1">
+                                                                                    {metadata.document_type}
+                                                                                </Badge>
+                                                                            )}
+                                                                            {metadata?.municipal_offices && (
+                                                                                <Badge variant="outline" className="h-4 text-[10px] px-1">
+                                                                                    {metadata.municipal_offices}
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                        {metadata?.signatories && metadata.signatories.length > 0 && (
+                                                                            <p className="text-xs text-muted-foreground">
+                                                                                {metadata.signatories.length} signator{metadata.signatories.length === 1 ? 'y' : 'ies'}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </div>
 
                             {/* Right Column - Documents */}
@@ -535,7 +556,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                         required
                                                         documentType="Purchase Request"
                                                         stage="Procurement Initiation"
-                                                        procurementId={data.procurement_id || `draft-${Date.now()}`}
+                                                        procurementId={data.procurement_id || `temp-${Date.now()}`}
                                                         enableSmartValidation={true}
                                                         showValidationDetails={true}
                                                         onValidationComplete={(result) => {
@@ -646,45 +667,17 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
 
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 order-3">
                             <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleSaveDraft}
-                                className="gap-2 text-xs sm:text-sm"
-                            >
-                                <Save className="h-3 sm:h-4 w-3 sm:w-4" />
-                                Save Draft
-                            </Button>
-
-                            <Button
-                                type="button"
-                                onClick={() => setShowConfirm(true)}
+                                type="submit"
+                                onClick={onSubmit}
+                                disabled={processing}
                                 className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
                             >
-                                Submit
+                                {processing ? 'Submitting...' : 'Submit Procurement'}
                             </Button>
                         </div>
                     </div>
                 </div>
-
-                {/* Smart Contract Dashboard */}
-                <SmartContractDashboard procurementId={data.procurement_id || `draft-${Date.now()}`} />
             </div>
-
-            <ReviewProcurementDialog
-                open={showConfirm}
-                onOpenChange={setShowConfirm}
-                procurementId={data.procurement_id}
-                procurementTitle={data.procurement_title}
-                files={data.files}
-                metadata={Array.isArray(data.metadata)
-                    ? data.metadata.map(m => ({
-                        ...m,
-                        submission_date: m.submission_date instanceof Date ? format(m.submission_date, 'yyyy-MM-dd') : m.submission_date
-                    }))
-                    : data.metadata}
-                onSubmit={onSubmit}
-                processing={processing}
-            />
         </AppLayout>
     );
 }

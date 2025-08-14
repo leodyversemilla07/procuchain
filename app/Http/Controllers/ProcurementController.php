@@ -25,27 +25,32 @@ use App\Http\Requests\Procurement\SupplementalBidBulletinDocumentsRequest;
 use App\Services\BlockchainEventLoggerService;
 use App\Services\BlockchainOrchestratorService;
 use App\Services\DocumentUploadService;
-use App\Services\StatusUpdaterService;
-use App\Services\MultichainService;
 use App\Services\EventTypeLabelMapper;
+use App\Services\MultichainService;
 use App\Services\NotificationService;
+use App\Services\StatusUpdaterService;
 use Exception;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Auth;
 
 class ProcurementController extends BaseController
 {
     protected $documentUploadService;
+
     protected $blockchainOrchestrator;
+
     protected $statusUpdater;
+
     protected $eventLogger;
+
     protected $multiChain;
+
     protected $eventTypeLabelMapper;
+
     protected $notificationService;
 
     public function __construct(
@@ -72,12 +77,12 @@ class ProcurementController extends BaseController
             if ($response instanceof RedirectResponse) {
                 $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, private, max-age=0');
                 $response->headers->set('Pragma', 'no-cache');
-                $response->headers->set('Expires', gmdate('D, d M Y H:i:s', time()) . ' GMT');
+                $response->headers->set('Expires', gmdate('D, d M Y H:i:s', time()).' GMT');
 
                 $response->headers->set('X-Frame-Options', 'DENY');
                 $response->headers->set('X-Content-Type-Options', 'nosniff');
 
-                $response->headers->set('Last-Modified', gmdate('D, d M Y H:i:s') . ' GMT');
+                $response->headers->set('Last-Modified', gmdate('D, d M Y H:i:s').' GMT');
             }
 
             return $response;
@@ -92,6 +97,7 @@ class ProcurementController extends BaseController
     public function showPreProcurementConferenceUpload($id): Response
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/pre-procurement-conference-upload', [
             'procurement' => [
                 'id' => $id,
@@ -105,6 +111,7 @@ class ProcurementController extends BaseController
     public function showPreBidConferenceUpload($id): Response
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/pre-bid-conference-upload', [
             'procurement' => [
                 'id' => $id,
@@ -118,6 +125,7 @@ class ProcurementController extends BaseController
     public function showBiddingDocumentsUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/bidding-documents-upload', [
             'procurement' => [
                 'id' => $id,
@@ -131,6 +139,7 @@ class ProcurementController extends BaseController
     public function showSupplementalBidBulletinUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/supplemental-bid-bulletin-upload', [
             'procurement' => [
                 'id' => $id,
@@ -144,6 +153,7 @@ class ProcurementController extends BaseController
     public function showBidOpeningUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/bid-opening-upload', [
             'procurement' => [
                 'id' => $id,
@@ -157,6 +167,7 @@ class ProcurementController extends BaseController
     public function showBidEvaluationUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/bid-evaluation-upload', [
             'procurement' => [
                 'id' => $id,
@@ -170,6 +181,7 @@ class ProcurementController extends BaseController
     public function showPostQualificationUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/post-qualification-upload', [
             'procurement' => [
                 'id' => $id,
@@ -183,6 +195,7 @@ class ProcurementController extends BaseController
     public function showBacResolutionUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/bac-resolution-upload', [
             'procurement' => [
                 'id' => $id,
@@ -196,6 +209,7 @@ class ProcurementController extends BaseController
     public function showNoaUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/noa-upload', [
             'procurement' => [
                 'id' => $id,
@@ -209,6 +223,7 @@ class ProcurementController extends BaseController
     public function showPerformanceBondContactAndPoUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/performance-bond-contract-po-upload', [
             'procurement' => [
                 'id' => $id,
@@ -222,6 +237,7 @@ class ProcurementController extends BaseController
     public function showNTPUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/ntp-upload', [
             'procurement' => [
                 'id' => $id,
@@ -235,6 +251,7 @@ class ProcurementController extends BaseController
     public function showMonitoringUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/monitoring-upload', [
             'procurement' => [
                 'id' => $id,
@@ -248,6 +265,7 @@ class ProcurementController extends BaseController
     public function showCompletionUpload($id)
     {
         $procurement = $this->findProcurementById($id);
+
         return Inertia::render('bac-secretariat/procurement-stage/completion-upload', [
             'procurement' => [
                 'id' => $id,
@@ -260,7 +278,8 @@ class ProcurementController extends BaseController
 
     /**
      * Helper to find procurement by id from the STATUS stream.
-     * @param string|int $id
+     *
+     * @param  string|int  $id
      * @return array|null
      */
     private function findProcurementById($id)
@@ -271,7 +290,7 @@ class ProcurementController extends BaseController
             1000,
             0
         );
-        if (!empty($statusItems)) {
+        if (! empty($statusItems)) {
             foreach ($statusItems as $item) {
                 if (
                     isset($item['data']['json']) &&
@@ -282,6 +301,7 @@ class ProcurementController extends BaseController
                 }
             }
         }
+
         return null;
     }
 
@@ -331,13 +351,13 @@ class ProcurementController extends BaseController
 
             $result = [
                 'success' => true,
-                'message' => $data['stage']->getDisplayName() . ' documents published successfully',
+                'message' => $data['stage']->getDisplayName().' documents published successfully',
             ];
         } catch (Exception $e) {
             Log::error('Error in publishProcurementInitiation', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to publish ' . ($data['stage'] ?? StageEnums::PROCUREMENT_INITIATION)->getDisplayName() . ' documents: ' . $e->getMessage(),
+                'message' => 'Failed to publish '.($data['stage'] ?? StageEnums::PROCUREMENT_INITIATION)->getDisplayName().' documents: '.$e->getMessage(),
             ];
         }
 
@@ -404,7 +424,7 @@ class ProcurementController extends BaseController
 
                 $result = [
                     'success' => true,
-                    'message' => $status->getDisplayName() . '. Please upload documents.',
+                    'message' => $status->getDisplayName().'. Please upload documents.',
                 ];
             } else {
                 try {
@@ -428,7 +448,7 @@ class ProcurementController extends BaseController
                         $data['procurementId'],
                         $data['procurementTitle'],
                         $data['currentStage']->getDisplayName(),
-                        'Pre-procurement conference skipped - proceeding to ' . $data['nextStage']->getDisplayName(),
+                        'Pre-procurement conference skipped - proceeding to '.$data['nextStage']->getDisplayName(),
                         0,
                         $data['userAddress'],
                         'decision',
@@ -455,7 +475,7 @@ class ProcurementController extends BaseController
 
                     $result = [
                         'success' => true,
-                        'message' => $status->getDisplayName() . '. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+                        'message' => $status->getDisplayName().'. Proceeding to '.$data['nextStage']->getDisplayName().'.',
                         'nextPhase' => $data['nextStage']->getDisplayName(),
                     ];
                 } catch (Exception $e) {
@@ -470,16 +490,17 @@ class ProcurementController extends BaseController
             Log::error('Error in publishPreProcurementConferenceDecision', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to process ' . ($data['currentStage']->getDisplayName() ?? 'Pre-Procurement Conference') . ' decision: ' . $e->getMessage(),
+                'message' => 'Failed to process '.($data['currentStage']->getDisplayName() ?? 'Pre-Procurement Conference').' decision: '.$e->getMessage(),
             ];
         }
 
         if ($result['success']) {
-            if (!empty($result['nextPhase'])) {
+            if (! empty($result['nextPhase'])) {
                 return redirect()
                     ->route('bac-secretariat.procurements-list.index')
                     ->with(['success' => true, 'message' => $result['message'], 'nextPhase' => $result['nextPhase']]);
             }
+
             return redirect()
                 ->route('bac-secretariat.procurements-list.index')
                 ->with(['success' => true, 'message' => $result['message']]);
@@ -553,7 +574,7 @@ class ProcurementController extends BaseController
                 $data['currentStage']->getDisplayName(),
                 $data['nextStage']->getDisplayName(),
                 $data['userAddress'],
-                'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after completing ' . $data['currentStage']->getDisplayName()
+                'Proceeding to '.$data['nextStage']->getDisplayName().' after completing '.$data['currentStage']->getDisplayName()
             );
 
             $this->notificationService->notifyStageUpdate(
@@ -569,13 +590,13 @@ class ProcurementController extends BaseController
 
             $result = [
                 'success' => true,
-                'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+                'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
             ];
         } catch (Exception $e) {
             Log::error('Error in uploadPreProcurementConferenceDocuments', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload ' . (isset($data['currentStage']) ? $data['currentStage']->getDisplayName() : 'Pre-Procurement Conference') . ' documents: ' . $e->getMessage(),
+                'message' => 'Failed to upload '.(isset($data['currentStage']) ? $data['currentStage']->getDisplayName() : 'Pre-Procurement Conference').' documents: '.$e->getMessage(),
             ];
         }
 
@@ -630,7 +651,7 @@ class ProcurementController extends BaseController
 
                 $result = [
                     'success' => true,
-                    'message' => $status->getDisplayName() . '. Pre-bid conference is in progress.',
+                    'message' => $status->getDisplayName().'. Pre-bid conference is in progress.',
                 ];
             } else {
                 $status = StatusEnums::PRE_BID_CONFERENCE_SKIPPED;
@@ -659,14 +680,14 @@ class ProcurementController extends BaseController
 
                 $result = [
                     'success' => true,
-                    'message' => $status->getDisplayName() . '. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+                    'message' => $status->getDisplayName().'. Proceeding to '.$data['nextStage']->getDisplayName().'.',
                 ];
             }
         } catch (Exception $e) {
             Log::error('Error in publishPreBidConferenceDecision', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to process ' . (isset($data['currentStage']) ? $data['currentStage']->getDisplayName() : 'Pre-Bid Conference') . ' decision: ' . $e->getMessage(),
+                'message' => 'Failed to process '.(isset($data['currentStage']) ? $data['currentStage']->getDisplayName() : 'Pre-Bid Conference').' decision: '.$e->getMessage(),
             ];
         }
 
@@ -744,7 +765,7 @@ class ProcurementController extends BaseController
                 $data['currentStage']->getDisplayName(),
                 $data['nextStage']->getDisplayName(),
                 $data['userAddress'],
-                'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after completing ' . $data['currentStage']->getDisplayName()
+                'Proceeding to '.$data['nextStage']->getDisplayName().' after completing '.$data['currentStage']->getDisplayName()
             );
 
             $this->notificationService->notifyStageUpdate(
@@ -760,13 +781,13 @@ class ProcurementController extends BaseController
 
             $result = [
                 'success' => true,
-                'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+                'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
             ];
         } catch (Exception $e) {
             Log::error('Error in uploadPreBidConferenceDocuments', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload Pre-Bid Conference documents: ' . $e->getMessage(),
+                'message' => 'Failed to upload Pre-Bid Conference documents: '.$e->getMessage(),
             ];
         }
 
@@ -822,7 +843,7 @@ class ProcurementController extends BaseController
 
                 $result = [
                     'success' => true,
-                    'message' => $status->getDisplayName() . '. Additional supplemental bid bulletins are required.',
+                    'message' => $status->getDisplayName().'. Additional supplemental bid bulletins are required.',
                 ];
             } else {
                 $status = StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED;
@@ -851,14 +872,14 @@ class ProcurementController extends BaseController
 
                 $result = [
                     'success' => true,
-                    'message' => $status->getDisplayName() . '. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+                    'message' => $status->getDisplayName().'. Proceeding to '.$data['nextStage']->getDisplayName().'.',
                 ];
             }
         } catch (Exception $e) {
             Log::error('Error in publishSupplementalBidBulletinDecision', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to process ' . ($data['currentStage']->getDisplayName() ?? 'Supplemental Bid Bulletin') . ' decision: ' . $e->getMessage(),
+                'message' => 'Failed to process '.($data['currentStage']->getDisplayName() ?? 'Supplemental Bid Bulletin').' decision: '.$e->getMessage(),
             ];
         }
 
@@ -935,7 +956,7 @@ class ProcurementController extends BaseController
                     $data['currentStage']->getDisplayName(),
                     $data['nextStage']->getDisplayName(),
                     $data['userAddress'],
-                    'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after ' . $data['currentStage']->getDisplayName()
+                    'Proceeding to '.$data['nextStage']->getDisplayName().' after '.$data['currentStage']->getDisplayName()
                 );
 
                 // Notify users of completion and next stage
@@ -952,14 +973,14 @@ class ProcurementController extends BaseController
 
                 $result = [
                     'success' => true,
-                    'message' => $data['currentStage']->getDisplayName() . ' uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+                    'message' => $data['currentStage']->getDisplayName().' uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
                 ];
             }
         } catch (Exception $e) {
             Log::error('Error uploading supplemental bid bulletin', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload supplemental bid bulletin: ' . $e->getMessage(),
+                'message' => 'Failed to upload supplemental bid bulletin: '.$e->getMessage(),
             ];
         }
 
@@ -1030,7 +1051,7 @@ class ProcurementController extends BaseController
                 $data['currentStage']->getDisplayName(),                              // From BIDDING_DOCUMENTS
                 $data['nextStage']->getDisplayName(),                                 // To PRE_BID_CONFERENCE
                 $data['userAddress'],
-                'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after publishing bidding documents'
+                'Proceeding to '.$data['nextStage']->getDisplayName().' after publishing bidding documents'
             );
 
             $this->notificationService->notifyStageUpdate(
@@ -1046,13 +1067,13 @@ class ProcurementController extends BaseController
 
             $result = [
                 'success' => true,
-                'message' => $data['currentStage']->getDisplayName() . ' published successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+                'message' => $data['currentStage']->getDisplayName().' published successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
             ];
         } catch (Exception $e) {
             Log::error('Error in uploadBiddingDocuments', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to publish ' . StageEnums::BIDDING_DOCUMENTS->getDisplayName() . ': ' . $e->getMessage(),
+                'message' => 'Failed to publish '.StageEnums::BIDDING_DOCUMENTS->getDisplayName().': '.$e->getMessage(),
             ];
         }
 
@@ -1126,7 +1147,7 @@ class ProcurementController extends BaseController
                         $data['currentStage']->getDisplayName(),
                         $data['nextStage']->getDisplayName(),
                         $data['userAddress'],
-                        'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after opening bids'
+                        'Proceeding to '.$data['nextStage']->getDisplayName().' stage after opening bids'
                     );
 
                     $this->notificationService->notifyStageUpdate(
@@ -1143,7 +1164,7 @@ class ProcurementController extends BaseController
 
                     $result = [
                         'success' => true,
-                        'message' => count($metadataArray) . ' bid documents uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage.',
+                        'message' => count($metadataArray).' bid documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().' stage.',
                     ];
                 } catch (Exception $e) {
                     Log::error('Error in processBidDocuments', [
@@ -1155,7 +1176,7 @@ class ProcurementController extends BaseController
                         'success' => false,
                         'message' => 'Failed to process bid documents. Please try again.',
                         'errors' => [
-                            'bid_documents' => 'Failed to upload bid documents: ' . $e->getMessage(),
+                            'bid_documents' => 'Failed to upload bid documents: '.$e->getMessage(),
                         ],
                     ];
                 }
@@ -1169,7 +1190,7 @@ class ProcurementController extends BaseController
             Log::error('Error in uploadBidOpeningDocuments', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload bid documents: ' . $e->getMessage(),
+                'message' => 'Failed to upload bid documents: '.$e->getMessage(),
             ];
         }
 
@@ -1247,7 +1268,7 @@ class ProcurementController extends BaseController
                 $data['currentStage']->getDisplayName(),
                 $data['nextStage']->getDisplayName(),
                 $data['userAddress'],
-                'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after ' . $data['currentStage']->getDisplayName()
+                'Proceeding to '.$data['nextStage']->getDisplayName().' after '.$data['currentStage']->getDisplayName()
             );
 
             $this->notificationService->notifyStageUpdate(
@@ -1264,13 +1285,13 @@ class ProcurementController extends BaseController
 
             $result = [
                 'success' => true,
-                'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+                'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
             ];
         } catch (Exception $e) {
             Log::error('Error in uploadBidEvaluationDocuments', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload ' . StageEnums::BID_EVALUATION->getDisplayName() . ' documents: ' . $e->getMessage(),
+                'message' => 'Failed to upload '.StageEnums::BID_EVALUATION->getDisplayName().' documents: '.$e->getMessage(),
             ];
         }
 
@@ -1369,7 +1390,7 @@ class ProcurementController extends BaseController
                     $data['currentStage']->getDisplayName(),
                     $data['nextStage']->getDisplayName(),
                     $data['userAddress'],
-                    'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after successful post-qualification'
+                    'Proceeding to '.$data['nextStage']->getDisplayName().' after successful post-qualification'
                 );
             } else {
                 // If verification failed, log the failure event
@@ -1398,9 +1419,9 @@ class ProcurementController extends BaseController
                 $data['outcome']
             );
 
-            $message = $data['currentStage']->getDisplayName() . ' documents uploaded successfully';
+            $message = $data['currentStage']->getDisplayName().' documents uploaded successfully';
             if ($data['outcome']) {
-                $message .= '. Proceeding to ' . $data['nextStage']->getDisplayName() . '.';
+                $message .= '. Proceeding to '.$data['nextStage']->getDisplayName().'.';
             } else {
                 $message .= '. Post-qualification failed - procurement process halted.';
             }
@@ -1413,7 +1434,7 @@ class ProcurementController extends BaseController
             Log::error('Error in uploadPostQualificationDocuments', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload ' . StageEnums::POST_QUALIFICATION->getDisplayName() . ' documents: ' . $e->getMessage(),
+                'message' => 'Failed to upload '.StageEnums::POST_QUALIFICATION->getDisplayName().' documents: '.$e->getMessage(),
             ];
         }
 
@@ -1476,7 +1497,7 @@ class ProcurementController extends BaseController
                 $data['currentStage']->getDisplayName(),
                 $data['nextStage']->getDisplayName(),
                 $data['userAddress'],
-                'Proceeding to ' . $data['nextStage']->getDisplayName() . ' after recording ' . $data['currentStage']->getDisplayName()
+                'Proceeding to '.$data['nextStage']->getDisplayName().' after recording '.$data['currentStage']->getDisplayName()
             );
 
             $this->notificationService->notifyStageUpdate(
@@ -1493,13 +1514,13 @@ class ProcurementController extends BaseController
 
             $result = [
                 'success' => true,
-                'message' => $data['currentStage']->getDisplayName() . ' document uploaded successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . '.',
+                'message' => $data['currentStage']->getDisplayName().' document uploaded successfully. Proceeding to '.$data['nextStage']->getDisplayName().'.',
             ];
         } catch (Exception $e) {
             Log::error('Error in uploadBacResolutionDocument', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload ' . StageEnums::BAC_RESOLUTION->getDisplayName() . ' document: ' . $e->getMessage(),
+                'message' => 'Failed to upload '.StageEnums::BAC_RESOLUTION->getDisplayName().' document: '.$e->getMessage(),
             ];
         }
 
@@ -1576,7 +1597,7 @@ class ProcurementController extends BaseController
                 $data['currentStage']->getDisplayName(),
                 $data['nextStage']->getDisplayName(),
                 $data['userAddress'],
-                'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after recording ' . $data['currentStage']->getDisplayName()
+                'Proceeding to '.$data['nextStage']->getDisplayName().' stage after recording '.$data['currentStage']->getDisplayName()
             );
 
             $this->notificationService->notifyStageUpdate(
@@ -1593,13 +1614,13 @@ class ProcurementController extends BaseController
 
             $result = [
                 'success' => true,
-                'message' => $data['currentStage']->getDisplayName() . ' document uploaded and published successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage.',
+                'message' => $data['currentStage']->getDisplayName().' document uploaded and published successfully. Proceeding to '.$data['nextStage']->getDisplayName().' stage.',
             ];
         } catch (Exception $e) {
             Log::error('Error in uploadNoaDocument', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload ' . StageEnums::NOTICE_OF_AWARD->getDisplayName() . ' document: ' . $e->getMessage(),
+                'message' => 'Failed to upload '.StageEnums::NOTICE_OF_AWARD->getDisplayName().' document: '.$e->getMessage(),
             ];
         }
 
@@ -1643,9 +1664,10 @@ class ProcurementController extends BaseController
                     $commonData['procurementTitle'],
                     $documentType
                 );
-                if (empty($metadataResult) || !isset($metadataResult[0])) {
+                if (empty($metadataResult) || ! isset($metadataResult[0])) {
                     throw new \Exception("Failed to prepare metadata for document type: {$documentType}");
                 }
+
                 return $metadataResult[0];
             };
 
@@ -1673,7 +1695,7 @@ class ProcurementController extends BaseController
                     $publishSingleDocument($bondMetadata, $data);
                     $processedDocumentsCount++;
                 } catch (Exception $e) {
-                    $errors[] = 'Failed to process Performance Bond: ' . $e->getMessage();
+                    $errors[] = 'Failed to process Performance Bond: '.$e->getMessage();
                     Log::error('Error processing Performance Bond', ['error' => $e->getMessage(), 'data' => $data]);
                 }
             }
@@ -1690,7 +1712,7 @@ class ProcurementController extends BaseController
                     $publishSingleDocument($contractMetadata, $data);
                     $processedDocumentsCount++;
                 } catch (Exception $e) {
-                    $errors[] = 'Failed to process Contract: ' . $e->getMessage();
+                    $errors[] = 'Failed to process Contract: '.$e->getMessage();
                     Log::error('Error processing Contract', ['error' => $e->getMessage(), 'data' => $data]);
                 }
             }
@@ -1707,13 +1729,13 @@ class ProcurementController extends BaseController
                     $publishSingleDocument($poMetadata, $data);
                     $processedDocumentsCount++;
                 } catch (Exception $e) {
-                    $errors[] = 'Failed to process Purchase Order: ' . $e->getMessage();
+                    $errors[] = 'Failed to process Purchase Order: '.$e->getMessage();
                     Log::error('Error processing Purchase Order', ['error' => $e->getMessage(), 'data' => $data]);
                 }
             }
 
             // Check if at least one document was processed successfully
-            if ($processedDocumentsCount === 0 && !empty($errors)) {
+            if ($processedDocumentsCount === 0 && ! empty($errors)) {
                 throw new \Exception(implode('; ', $errors));
             } elseif ($processedDocumentsCount === 0) {
                 throw new \Exception('No document files were provided for upload.');
@@ -1729,7 +1751,7 @@ class ProcurementController extends BaseController
                     $data['currentStage']->getDisplayName(),
                     $data['nextStage']->getDisplayName(),
                     $data['userAddress'],
-                    'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after recording ' . $processedDocumentsCount . ' document(s)'
+                    'Proceeding to '.$data['nextStage']->getDisplayName().' stage after recording '.$processedDocumentsCount.' document(s)'
                 );
 
                 $this->notificationService->notifyStageUpdate(
@@ -1745,9 +1767,9 @@ class ProcurementController extends BaseController
                 );
             }
 
-            $successMessage = $data['currentStage']->getDisplayName() . ' documents processed successfully (' . $processedDocumentsCount . ' files). Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage.';
-            if (!empty($errors)) {
-                $successMessage .= ' Some files failed: ' . implode('; ', $errors);
+            $successMessage = $data['currentStage']->getDisplayName().' documents processed successfully ('.$processedDocumentsCount.' files). Proceeding to '.$data['nextStage']->getDisplayName().' stage.';
+            if (! empty($errors)) {
+                $successMessage .= ' Some files failed: '.implode('; ', $errors);
             }
 
             $result = [
@@ -1756,9 +1778,9 @@ class ProcurementController extends BaseController
             ];
         } catch (Exception $e) {
             Log::error('Error in uploadPerformanceBondContractAndPoDocuments', ['error' => $e->getMessage()]);
-            $errorMessage = 'Failed to upload ' . StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName() . ' documents: ' . $e->getMessage();
-            if (!empty($errors)) {
-                $errorMessage .= ' Individual errors: ' . implode('; ', $errors);
+            $errorMessage = 'Failed to upload '.StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName().' documents: '.$e->getMessage();
+            if (! empty($errors)) {
+                $errorMessage .= ' Individual errors: '.implode('; ', $errors);
             }
             $result = [
                 'success' => false,
@@ -1837,7 +1859,7 @@ class ProcurementController extends BaseController
                 $data['currentStage']->getDisplayName(),
                 $data['nextStage']->getDisplayName(),
                 $data['userAddress'],
-                'Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage after recording ' . $data['currentStage']->getDisplayName()
+                'Proceeding to '.$data['nextStage']->getDisplayName().' stage after recording '.$data['currentStage']->getDisplayName()
             );
 
             $this->notificationService->notifyStageUpdate(
@@ -1854,13 +1876,13 @@ class ProcurementController extends BaseController
 
             $result = [
                 'success' => true,
-                'message' => $data['currentStage']->getDisplayName() . ' document uploaded and published successfully. Proceeding to ' . $data['nextStage']->getDisplayName() . ' stage.',
+                'message' => $data['currentStage']->getDisplayName().' document uploaded and published successfully. Proceeding to '.$data['nextStage']->getDisplayName().' stage.',
             ];
         } catch (Exception $e) {
             Log::error('Error in uploadNTPDocument', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload ' . StageEnums::NOTICE_TO_PROCEED->getDisplayName() . ' document: ' . $e->getMessage(),
+                'message' => 'Failed to upload '.StageEnums::NOTICE_TO_PROCEED->getDisplayName().' document: '.$e->getMessage(),
             ];
         }
 
@@ -1926,7 +1948,7 @@ class ProcurementController extends BaseController
                 $data['currentStage']->getDisplayName(),
                 $data['nextStage']->getDisplayName(),
                 $data['userAddress'],
-                'Transitioning to ' . $data['nextStage']->getDisplayName() . ' after recording ' . $data['currentStage']->getDisplayName() . ' documents.'
+                'Transitioning to '.$data['nextStage']->getDisplayName().' after recording '.$data['currentStage']->getDisplayName().' documents.'
             );
 
             $this->notificationService->notifyStageUpdate(
@@ -1943,13 +1965,13 @@ class ProcurementController extends BaseController
 
             $result = [
                 'success' => true,
-                'message' => $data['currentStage']->getDisplayName() . ' documents uploaded and process transitioned to ' . $data['nextStage']->getDisplayName() . ' stage successfully.',
+                'message' => $data['currentStage']->getDisplayName().' documents uploaded and process transitioned to '.$data['nextStage']->getDisplayName().' stage successfully.',
             ];
         } catch (Exception $e) {
             Log::error('Error in uploadMonitoringDocument', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload compliance report: ' . $e->getMessage(),
+                'message' => 'Failed to upload compliance report: '.$e->getMessage(),
             ];
         }
 
@@ -2011,7 +2033,7 @@ class ProcurementController extends BaseController
                 $data['currentStage']->getDisplayName(),
                 $data['nextStage']->getDisplayName(),
                 $data['userAddress'],
-                'Marking procurement as ' . $data['nextStage']->getDisplayName() . ' after uploading ' . $data['currentStage']->getDisplayName() . ' documents.'
+                'Marking procurement as '.$data['nextStage']->getDisplayName().' after uploading '.$data['currentStage']->getDisplayName().' documents.'
             );
 
             $this->notificationService->notifyStageUpdate(
@@ -2028,13 +2050,13 @@ class ProcurementController extends BaseController
 
             $result = [
                 'success' => true,
-                'message' => $data['currentStage']->getDisplayName() . ' documents uploaded successfully. Procurement process is now ' . $data['status']->getDisplayName() . '.',
+                'message' => $data['currentStage']->getDisplayName().' documents uploaded successfully. Procurement process is now '.$data['status']->getDisplayName().'.',
             ];
         } catch (Exception $e) {
             Log::error('Error in uploadCompletionDocuments', ['error' => $e->getMessage()]);
             $result = [
                 'success' => false,
-                'message' => 'Failed to upload completion documents: ' . $e->getMessage(),
+                'message' => 'Failed to upload completion documents: '.$e->getMessage(),
             ];
         }
 
@@ -2045,30 +2067,5 @@ class ProcurementController extends BaseController
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
-    }
-
-    public function saveProcurementDraft(Request $request)
-    {
-        try {
-            // Store draft data in session for now
-            session(['procurement_draft' => $request->all()]);
-
-            if ($request->wantsJson()) {
-                return response()->json(['success' => true, 'message' => 'Draft saved successfully']);
-            }
-
-            return back()->with('success', 'Draft saved successfully');
-        } catch (Exception $e) {
-            Log::error('Failed to save procurement draft:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            if ($request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => 'Failed to save draft'], 500);
-            }
-
-            return back()->withErrors(['error' => 'Failed to save draft']);
-        }
     }
 }

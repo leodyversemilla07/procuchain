@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { BreadcrumbItem } from '@/types';
 import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
-import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import InputError from '@/components/input-error';
@@ -249,9 +248,6 @@ export default function NoticeToProceedUpload({ procurement = { id: '', title: '
             </CardContent>
           </Card>
         )}
-
-        {/* Smart Contract Dashboard */}
-        <SmartContractDashboard procurementId={procurement.id} />
       </div>
     </AppLayout>
   );

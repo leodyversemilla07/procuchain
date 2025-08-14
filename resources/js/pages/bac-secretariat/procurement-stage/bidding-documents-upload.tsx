@@ -5,14 +5,13 @@ import { toast } from "sonner";
 import { DateRange } from 'react-day-picker';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Upload, AlertCircle, ClipboardList, Shield } from 'lucide-react';
+import { CalendarIcon, Upload, AlertCircle, ClipboardList } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card";
 import InputError from '@/components/input-error';
 import { BreadcrumbItem } from '@/types';
 import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
-import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import DatePicker from '@/components/date-picker';
 import DateRangePicker from '@/components/date-range-picker';
@@ -174,22 +173,6 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
             )}
           </p>
         </div>
-
-        {/* Smart Contract Dashboard */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Shield className="h-5 w-5 text-primary" />
-              Smart Contract Validation Status
-            </CardTitle>
-            <CardDescription>
-              Real-time blockchain validation for document integrity and compliance
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SmartContractDashboard procurementId={procurement.id} />
-          </CardContent>
-        </Card>
 
         <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">

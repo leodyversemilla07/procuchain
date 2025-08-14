@@ -11,7 +11,6 @@ import { InputWithLabel } from '@/components/input-with-label';
 import { BreadcrumbItem } from '@/types';
 import DatePicker from '@/components/date-picker';
 import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
-import SmartContractDashboard from '@/components/smart-contract-dashboard';
 import { useFileDrop } from '@/hooks/use-file-drop';
 import { SmartContractValidationResult } from '@/types/smart-contracts';
 
@@ -278,10 +277,7 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
                             </CardFooter>
                         </Card>
                     </div>
-                </form>
-
-                {/* Smart Contract Dashboard */}
-                <SmartContractDashboard procurementId={procurement.id} />
+                </form>s
             </div>
         </AppLayout>
     );

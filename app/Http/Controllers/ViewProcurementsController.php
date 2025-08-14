@@ -105,7 +105,7 @@ class ViewProcurementsController extends BaseController
                 'from_cache' => Cache::has(self::CACHE_KEY_PROCUREMENTS_LIST),
             ]);
 
-            return Inertia::render('procurements/procurements-list/index', [
+            return Inertia::render('procurements/procurements-list', [
                 'procurements' => $procurements,
             ]);
         } catch (Exception $e) { // Corrected catch block placement
@@ -117,7 +117,7 @@ class ViewProcurementsController extends BaseController
             // Clear cache on error to avoid storing potentially bad data
             Cache::forget(self::CACHE_KEY_PROCUREMENTS_LIST);
 
-            return Inertia::render('procurements/procurements-list/index', [
+            return Inertia::render('procurements/procurements-list', [
                 'procurements' => [],
                 'error' => 'Failed to retrieve procurements. Please try again later.',
             ]);
@@ -164,11 +164,11 @@ class ViewProcurementsController extends BaseController
 
         // Build a map: procurement_id => document count (unique by hash)
         $documentCountMap = collect($documentItems)
-            ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-            ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+            ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+            ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
             ->map(function ($items) {
                 return collect($items)
-                    ->map(fn($item) => $item['data']['json']['hash'])
+                    ->map(fn ($item) => $item['data']['json']['hash'])
                     ->unique()
                     ->count();
             });
@@ -207,6 +207,7 @@ class ViewProcurementsController extends BaseController
             ->all();
 
         Log::info('fetchAndProcessProcurements: Final procurements result count', ['count' => count($result)]);
+
         return $result;
     }
 
@@ -215,7 +216,7 @@ class ViewProcurementsController extends BaseController
      */
     public function showProcurement(string $procurementId): Response
     {
-        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX . $procurementId;
+        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX.$procurementId;
 
         try {
             $this->validateProcurementId($procurementId);
