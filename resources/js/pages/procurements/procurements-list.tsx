@@ -15,7 +15,7 @@ import {
     type Column,
 } from '@tanstack/react-table';
 import { Download, ArrowUpDown, ArrowUpIcon, ArrowDownIcon, EyeOffIcon, MoreHorizontal, CalendarIcon, FileIcon, CheckCircle, Clock, AlertCircle, Milestone, FileText, Award, PlayCircle, Monitor, Check, ListChecks, FileCheck, FileQuestion, HelpCircle, Activity, Archive, RefreshCw, Plus, Search } from 'lucide-react';
-import { Link, usePage, Head } from '@inertiajs/react';
+import { Link, usePage, Head, router, usePoll } from '@inertiajs/react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Internal imports
@@ -231,7 +231,12 @@ export const IdCell = ({ id }: { id: string }) => {
     const baseRoute = `/${userRole}/procurements-list/${id}`;
     return (
         <div className="font-medium text-blue-600 dark:text-blue-400">
-            <Link href={baseRoute} className="hover:underline transition-all duration-150 flex items-center">
+            <Link
+                href={baseRoute}
+                className="hover:underline transition-all duration-150 flex items-center"
+                prefetch="hover"
+                cacheFor="5m"
+            >
                 <span className="font-mono text-xs bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800/60">
                     {id}
                 </span>
@@ -251,6 +256,8 @@ export const TitleCell = ({ procurement }: { procurement: ProcurementListItem })
             <Link
                 href={baseRoute}
                 className="hover:text-blue-600 hover:underline transition-colors duration-150 text-gray-900 dark:text-gray-100"
+                prefetch="hover"
+                cacheFor="5m"
             >
                 {procurement.title}
             </Link>
@@ -349,10 +356,18 @@ export const StatusCell = ({ status }: { status: Status }) => (
 
 export const DocumentCountCell = ({ count }: { count: number }) => (
     <div className="flex items-center gap-1.5">
-        <div className="flex items-center bg-blue-50 dark:bg-blue-900/20 rounded-full pl-1 pr-2 py-0.5">
-            <FileIcon className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 mr-1" />
-            <span className="font-medium text-blue-700 dark:text-blue-300 text-xs">{count}</span>
-        </div>
+        {count !== undefined ? (
+            <div className="flex items-center bg-blue-50 dark:bg-blue-900/20 rounded-full pl-1 pr-2 py-0.5">
+                <FileIcon className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 mr-1" />
+                <span className="font-medium text-blue-700 dark:text-blue-300 text-xs">{count}</span>
+            </div>
+        ) : (
+            // Skeleton loader for deferred document counts
+            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full pl-1 pr-2 py-0.5 animate-pulse">
+                <div className="h-3.5 w-3.5 bg-gray-300 dark:bg-gray-600 rounded mr-1"></div>
+                <div className="h-3 w-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+            </div>
+        )}
     </div>
 );
 
@@ -815,6 +830,17 @@ export default function ProcurementsList({ procurements: initialProcurements, er
     const [searchValue, setSearchValue] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [stageFilter, setStageFilter] = useState('all');
+
+    // Ref for search timeout to avoid TypeScript window property issues
+    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Add polling for real-time updates every 30 seconds
+    usePoll(30000, {
+        only: ['procurements'], // Only reload procurement data
+        onStart: () => console.log('Polling for procurement updates...'),
+        onFinish: () => console.log('Procurement data updated'),
+    });
+
     const {
         procurements,
         loading,
@@ -853,6 +879,23 @@ export default function ProcurementsList({ procurements: initialProcurements, er
             const count = Number(p.document_count) || 0;
             return sum + count;
         }, 0);
+    };
+
+    // Optimized filter function using Inertia partial reloads
+    const handleFilterChange = (filterType: 'search' | 'status' | 'stage', value: string) => {
+        const params = new URLSearchParams(window.location.search);
+
+        if (value && value !== 'all') {
+            params.set(filterType, value);
+        } else {
+            params.delete(filterType);
+        }
+
+        // Use Inertia to navigate with partial reload
+        router.visit(`${window.location.pathname}?${params.toString()}`, {
+            only: ['procurements'], // Only reload procurement data
+            replace: true, // Replace history state
+        });
     };
 
     const columns = createColumns({
@@ -965,13 +1008,25 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                                         type="text"
                                         placeholder="Search procurements..."
                                         value={searchValue}
-                                        onChange={(e) => setSearchValue(e.target.value)}
+                                        onChange={(e) => {
+                                            setSearchValue(e.target.value);
+                                            // Debounce search for better UX
+                                            if (searchTimeoutRef.current) {
+                                                clearTimeout(searchTimeoutRef.current);
+                                            }
+                                            searchTimeoutRef.current = setTimeout(() => {
+                                                handleFilterChange('search', e.target.value);
+                                            }, 500);
+                                        }}
                                         className="pl-10 h-10"
                                     />
                                 </div>
                             </div>
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <Select value={statusFilter} onValueChange={(value) => {
+                                    setStatusFilter(value);
+                                    handleFilterChange('status', value);
+                                }}>
                                     <SelectTrigger className="w-full sm:w-[180px] h-10">
                                         <SelectValue placeholder="All Status" />
                                     </SelectTrigger>
@@ -992,7 +1047,10 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                                         <SelectItem value="COMPLETED">Completed</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <Select value={stageFilter} onValueChange={setStageFilter}>
+                                <Select value={stageFilter} onValueChange={(value) => {
+                                    setStageFilter(value);
+                                    handleFilterChange('stage', value);
+                                }}>
                                     <SelectTrigger className="w-full sm:w-[180px] h-10">
                                         <SelectValue placeholder="All Stages" />
                                     </SelectTrigger>
@@ -1016,7 +1074,36 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                             </div>
                             <div className="flex justify-center sm:justify-end">
                                 <Button
-                                    onClick={() => window.location.reload()}
+                                    onClick={() => {
+                                        // Enhanced Inertia partial reload with progress indicators
+                                        router.reload({
+                                            only: ['procurements'],
+                                            onStart: () => {
+                                                toast.info('Refreshing procurement data...', {
+                                                    description: 'Getting latest updates from the server'
+                                                });
+                                            },
+                                            onProgress: (progress) => {
+                                                if (progress && progress.percentage) {
+                                                    console.log(`Loading: ${Math.round(progress.percentage)}%`);
+                                                }
+                                            },
+                                            onSuccess: (page) => {
+                                                const procurements = page.props.procurements as ProcurementListItem[] | undefined;
+                                                toast.success('Data refreshed successfully', {
+                                                    description: `Updated ${procurements?.length || 0} procurements`
+                                                });
+                                            },
+                                            onError: (errors) => {
+                                                toast.error('Failed to refresh data', {
+                                                    description: Object.values(errors).flat().join(', ') || 'Please try again later'
+                                                });
+                                            },
+                                            onFinish: () => {
+                                                console.log('Refresh operation completed');
+                                            }
+                                        });
+                                    }}
                                     disabled={loading}
                                     variant="outline"
                                     size="default"
@@ -1047,7 +1134,7 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                     onOpenChange={setPreProcurementDialogOpen}
                     procurementId={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
-                    onComplete={() => window.location.reload()}
+                    onComplete={() => router.reload({ only: ['procurements'] })}
                 />
             )}
             {preBidConferenceDialogOpen && selectedProcurement && (
@@ -1056,7 +1143,7 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                     onOpenChange={setPreBidConferenceDialogOpen}
                     procurementId={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
-                    onComplete={() => window.location.reload()}
+                    onComplete={() => router.reload({ only: ['procurements'] })}
                 />
             )}
             {supplementalBidBulletinDialogOpen && selectedProcurement && (
@@ -1065,7 +1152,7 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                     onOpenChange={setSupplementalBidBulletinDialogOpen}
                     procurementId={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
-                    onComplete={() => window.location.reload()}
+                    onComplete={() => router.reload({ only: ['procurements'] })}
                 />
             )}
         </AppLayout>

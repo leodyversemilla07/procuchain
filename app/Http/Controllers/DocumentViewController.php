@@ -7,6 +7,7 @@ use App\Models\DocumentView;
 use App\Services\MultichainService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -527,39 +528,6 @@ class DocumentViewController extends BaseController
                 ->orderBy('viewed_at', 'desc')
                 ->first()?->viewed_at?->format('M j, Y g:i A'),
         ];
-    }
-
-    /**
-     * Update view duration for a document
-     */
-    public function updateViewDuration(Request $request): JsonResponse
-    {
-        $request->validate([
-            'file_key' => 'required|string',
-            'duration' => 'required|integer|min:1',
-        ]);
-
-        try {
-            // Find the most recent view for this user and file
-            $view = DocumentView::where('file_key', $request->file_key)
-                ->where('user_id', Auth::id())
-                ->orderBy('viewed_at', 'desc')
-                ->first();
-
-            if ($view) {
-                $view->update(['view_duration' => $request->duration]);
-            }
-
-            return response()->json(['success' => true]);
-        } catch (\Exception $e) {
-            Log::error('Failed to update view duration', [
-                'file_key' => $request->file_key,
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json(['success' => false], 500);
-        }
     }
 
     /**

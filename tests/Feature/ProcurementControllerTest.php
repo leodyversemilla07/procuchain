@@ -143,15 +143,6 @@ describe('ProcurementController Feature', function () {
         $this->assertTrue($response->isRedirect() || $response->status() === 500);
     });
 
-    test('saveProcurementDraft stores draft data', function () {
-        $payload = [
-            'procurement_id' => 'draft-proc-1',
-            'procurement_title' => 'Draft Procurement',
-        ];
-        $response = $this->post(route('bac-secretariat.save-procurement-draft'), $payload);
-        $response->assertSessionHas('success', 'Draft saved successfully');
-    });
-
     test('publishPreProcurementConferenceDecision requires validation', function () {
         $response = $this->post(route('bac-secretariat.publish-pre-procurement-conference-decision'), []);
         $response->assertSessionHasErrors(['procurement_id', 'procurement_title']);

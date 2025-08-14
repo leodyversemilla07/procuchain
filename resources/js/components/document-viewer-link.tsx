@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Eye, Users, TrendingUp } from 'lucide-react';
+import { Eye, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
 
@@ -10,85 +8,16 @@ interface DocumentViewStatsProps {
   className?: string;
 }
 
-interface ViewStats {
-  total_views: number;
-  unique_viewers: number;
-  today_views: number;
-}
-
-interface DocumentView {
-  user: {
-    name: string;
-    role: string;
-  };
-  viewed_at: string;
-}
-
-interface ApiResponse {
-  success: boolean;
-  data: DocumentView[];
-}
-
-export function DocumentViewStats({ fileKey, className }: DocumentViewStatsProps) {
-  const [stats, setStats] = useState<ViewStats | null>(null);
-  const [loading, setLoading] = useState(false); useEffect(() => {
-    const fetchStats = async () => {
-      if (!fileKey) return;
-
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/document-views/file/${encodeURIComponent(fileKey)}`);
-        const data: ApiResponse = await response.json();
-
-        if (data.success) {
-          const views: DocumentView[] = data.data;
-          const uniqueViewers = new Set(views.map((v) => v.user.name)).size;
-          const todayViews = views.filter((v) => {
-            const viewDate = new Date(v.viewed_at).toDateString();
-            const today = new Date().toDateString();
-            return viewDate === today;
-          }).length;
-
-          setStats({
-            total_views: views.length,
-            unique_viewers: uniqueViewers,
-            today_views: todayViews,
-          });
-        }
-      } catch (error) {
-        console.error('Failed to fetch view stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, [fileKey]);
-
-  if (loading || !stats) {
-    return (
-      <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", className)}>
-        <Eye className="h-3 w-3" />
-        <span>Loading...</span>
-      </div>
-    );
-  }
-
+export function DocumentViewStats({ className }: DocumentViewStatsProps) {
+  // Note: Stats are now only available in the full PDF viewer with analytics
+  // This component remains for compatibility but directs users to the full viewer
+  
   return (
     <div className={cn("flex items-center gap-3 text-xs text-muted-foreground", className)}>
       <div className="flex items-center gap-1">
         <Eye className="h-3 w-3" />
-        <span>{stats.total_views}</span>
+        <span>View stats in analytics page</span>
       </div>
-      <div className="flex items-center gap-1">
-        <Users className="h-3 w-3" />
-        <span>{stats.unique_viewers}</span>
-      </div>
-      {stats.today_views > 0 && (
-        <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-          {stats.today_views} today
-        </Badge>
-      )}
     </div>
   );
 }
@@ -99,7 +28,7 @@ interface PdfViewerLinkProps {
   className?: string;
 }
 
-export function PdfViewerLink({ fileKey, showStats = true, className }: PdfViewerLinkProps) {
+export function PdfViewerLink({ fileKey, showStats = false, className }: PdfViewerLinkProps) {
   const pdfUrl = `/secure-file/${encodeURIComponent(fileKey)}`;
 
   return (

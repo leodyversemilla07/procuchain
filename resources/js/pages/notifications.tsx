@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { useState, useCallback, useMemo } from 'react';
+import { Head, usePage, router } from '@inertiajs/react';
+import { usePoll } from '@inertiajs/react';
 import { formatDistanceToNow, format } from 'date-fns';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +12,6 @@ import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bell, CheckCheck, Clock, AlertCircle, RotateCw, Check, Filter, ExternalLink, X } from 'lucide-react';
 import { toast } from "sonner";
-import axios from 'axios';
 import { cn } from '@/lib/utils';
 import { BreadcrumbItem } from '@/types';
 import { User } from '@/types';
@@ -37,17 +37,6 @@ interface Notification {
     read_at: string | null;
     created_at: string;
     updated_at: string;
-}
-
-interface NotificationResponse {
-    notifications: Notification[];
-    pagination: {
-        total: number;
-        per_page: number;
-        current_page: number;
-        last_page: number;
-    };
-    unread_count: number;
 }
 
 type FilterType = 'all' | 'read' | 'unread';
@@ -79,23 +68,29 @@ const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
     }
 };
 
+interface NotificationPageProps {
+    auth: { user: User };
+    notifications: Notification[];
+    pagination: {
+        total: number;
+        per_page: number;
+        current_page: number;
+        last_page: number;
+    };
+    unread_count: number;
+    [key: string]: unknown; // Index signature for PageProps compatibility
+}
+
 export default function Notifications() {
-    const { auth } = usePage().props as unknown as { auth: { user: User } };
+    const { auth, notifications: initialNotifications, pagination: initialPagination, unread_count } = usePage<NotificationPageProps>().props;
     const userRole = auth.user?.role;
     const breadcrumbs = getBreadcrumbs(userRole);
 
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
+    // Use polling to keep notifications updated
+    usePoll(30000); // Poll every 30 seconds
+
     const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [pagination, setPagination] = useState({
-        currentPage: 1,
-        lastPage: 1,
-        total: 0,
-        perPage: ITEMS_PER_PAGE,
-    });
-    const [loading, setLoading] = useState(true);
-    const [unreadCount, setUnreadCount] = useState(0);
     const [filter, setFilter] = useState<FilterType>('all');
     const [refreshing, setRefreshing] = useState(false);
 
@@ -105,100 +100,51 @@ export default function Notifications() {
         return notifications;
     }, []);
 
-    const updatePaginatedData = useCallback((filteredData: Notification[], page: number) => {
-        const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
-        const validPage = Math.min(Math.max(1, page), totalPages);
-        const startIndex = (validPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
+    const filteredNotifications = useMemo(() => {
+        return filterNotifications(initialNotifications, filter);
+    }, [initialNotifications, filter, filterNotifications]);
 
-        setNotifications(filteredData.slice(startIndex, endIndex));
-        setPagination(prev => ({
-            ...prev,
-            currentPage: validPage,
-            lastPage: totalPages,
-            total: filteredData.length,
-        }));
-    }, []);
-
-    const fetchNotifications = useCallback(async (page = 1) => {
-        try {
-            setLoading(true);
-            const response = await axios.get<NotificationResponse>(`/notifications/list`);
-
-            setAllNotifications(response.data.notifications);
-            const filteredData = filterNotifications(response.data.notifications, filter);
-            updatePaginatedData(filteredData, page);
-
-            setUnreadCount(response.data.notifications.filter(n => !n.read_at).length);
-        } catch {
-            toast.error('Failed to fetch notifications');
-            setNotifications([]);
-            setAllNotifications([]);
-            setPagination(prev => ({ ...prev, currentPage: 1, lastPage: 1, total: 0 }));
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [filter, filterNotifications, updatePaginatedData]);
+    const currentPage = initialPagination.current_page;
+    const totalPages = Math.max(1, Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE));
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const paginatedNotifications = filteredNotifications.slice(startIndex, endIndex);
 
     const handleFilterChange = useCallback((newFilter: FilterType) => {
         setFilter(newFilter);
-        const filteredData = filterNotifications(allNotifications, newFilter);
-        updatePaginatedData(filteredData, 1);
-    }, [allNotifications, filterNotifications, updatePaginatedData]);
+    }, []);
 
     const handleMarkAsRead = useCallback(async (id: string) => {
-        try {
-            await axios.post(`/notifications/${id}/mark-as-read`);
-            const currentTime = new Date().toISOString();
-
-            const updateNotificationList = (list: Notification[]) =>
-                list.map(n => n.id === id ? { ...n, read_at: currentTime } : n);
-
-            const updatedAllNotifications = updateNotificationList(allNotifications);
-            setAllNotifications(updatedAllNotifications);
-
-            const filteredData = filterNotifications(updatedAllNotifications, filter);
-            updatePaginatedData(filteredData, pagination.currentPage);
-
-            setUnreadCount(prev => Math.max(0, prev - 1));
-            toast.success('Notification marked as read');
-        } catch {
-            toast.error('Failed to mark notification as read');
-        }
-    }, [allNotifications, filter, filterNotifications, pagination.currentPage, updatePaginatedData]);
+        router.post(`/notifications/${id}/mark-as-read`, {}, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Notification marked as read'),
+            onError: () => toast.error('Failed to mark notification as read'),
+        });
+    }, []);
 
     const handleMarkAllAsRead = useCallback(async () => {
-        try {
-            await axios.post('/notifications/mark-all-as-read');
-            const currentTime = new Date().toISOString();
-
-            const updatedAllNotifications = allNotifications.map(n => ({ ...n, read_at: currentTime }));
-            setAllNotifications(updatedAllNotifications);
-
-            const filteredData = filterNotifications(updatedAllNotifications, filter);
-            updatePaginatedData(filteredData, 1);
-
-            setUnreadCount(0);
-            toast.success('All notifications marked as read');
-        } catch {
-            toast.error('Failed to mark all notifications as read');
-        }
-    }, [allNotifications, filter, filterNotifications, updatePaginatedData]);
+        router.post('/notifications/mark-all-as-read', {}, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('All notifications marked as read'),
+            onError: () => toast.error('Failed to mark all notifications as read'),
+        });
+    }, []);
 
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
-        fetchNotifications(pagination.currentPage);
-    }, [fetchNotifications, pagination.currentPage]);
-
-    useEffect(() => {
-        fetchNotifications(1);
-    }, [fetchNotifications]);
+        router.reload({
+            only: ['notifications', 'unread_count', 'pagination'],
+            onFinish: () => setRefreshing(false),
+        });
+    }, []);
 
     const pageNumbers = useMemo(() =>
-        Array.from({ length: pagination.lastPage }, (_, i) => i + 1),
-        [pagination.lastPage]
+        Array.from({ length: totalPages }, (_, i) => i + 1),
+        [totalPages]
     );
+
+    // Loading state will be handled by Inertia's processing state
+    const loading = false;
 
     const getNotificationIcon = (type: string) => {
         switch (type) {
@@ -314,7 +260,7 @@ export default function Notifications() {
                                 >
                                     <RotateCw className="h-4 w-4" />
                                 </Button>
-                                {notifications.some(n => !n.read_at) && (
+                                {paginatedNotifications.some((n: Notification) => !n.read_at) && (
                                     <Button
                                         onClick={handleMarkAllAsRead}
                                         variant="outline"
@@ -342,7 +288,7 @@ export default function Notifications() {
                                         </div>
                                         <div>
                                             <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Notifications</p>
-                                            <p className="text-xl sm:text-2xl font-bold">{pagination.total}</p>
+                                            <p className="text-xl sm:text-2xl font-bold">{filteredNotifications.length}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -355,7 +301,7 @@ export default function Notifications() {
                                         </div>
                                         <div>
                                             <p className="text-xs sm:text-sm font-medium text-muted-foreground">Unread</p>
-                                            <p className="text-xl sm:text-2xl font-bold">{unreadCount}</p>
+                                            <p className="text-xl sm:text-2xl font-bold">{unread_count}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -368,7 +314,7 @@ export default function Notifications() {
                                         </div>
                                         <div>
                                             <p className="text-xs sm:text-sm font-medium text-muted-foreground">Read</p>
-                                            <p className="text-xl sm:text-2xl font-bold">{pagination.total - unreadCount}</p>
+                                            <p className="text-xl sm:text-2xl font-bold">{filteredNotifications.length - unread_count}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -399,11 +345,11 @@ export default function Notifications() {
                                             ))}
                                         </div>
                                     </div>
-                                ) : notifications.length === 0 ? (
+                                ) : paginatedNotifications.length === 0 ? (
                                     <EmptyState />
                                 ) : (
                                     <div className="divide-y divide-border">
-                                        {notifications.map((notification) => (
+                                        {paginatedNotifications.map((notification: Notification) => (
                                             <div
                                                 key={notification.id}
                                                 className={cn(
@@ -470,20 +416,23 @@ export default function Notifications() {
                                 )}
 
                                 {/* Pagination */}
-                                {pagination.lastPage > 1 && (
+                                {totalPages > 1 && (
                                     <div className="flex items-center justify-center gap-2 py-3 sm:py-4 border-t border-border bg-card/50">
                                         <div className="flex flex-wrap gap-1">
                                             {pageNumbers.map((pageNum) => (
                                                 <Button
                                                     key={pageNum}
-                                                    variant={pageNum === pagination.currentPage ? "default" : "outline"}
+                                                    variant={pageNum === currentPage ? "default" : "outline"}
                                                     size="sm"
                                                     className={cn(
                                                         "w-7 h-7 sm:w-8 sm:h-8 p-0",
-                                                        pageNum === pagination.currentPage && "bg-primary text-primary-foreground hover:bg-primary/90",
-                                                        pageNum !== pagination.currentPage && "text-muted-foreground hover:text-foreground"
+                                                        pageNum === currentPage && "bg-primary text-primary-foreground hover:bg-primary/90",
+                                                        pageNum !== currentPage && "text-muted-foreground hover:text-foreground"
                                                     )}
-                                                    onClick={() => fetchNotifications(pageNum)}
+                                                    onClick={() => router.get(window.location.pathname, { page: pageNum }, { 
+                                                        preserveState: true,
+                                                        preserveScroll: true 
+                                                    })}
                                                 >
                                                     {pageNum}
                                                 </Button>
