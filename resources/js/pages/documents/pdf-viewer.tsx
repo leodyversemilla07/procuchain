@@ -29,7 +29,6 @@ import {
     FileText,
     Activity,
     BarChart3,
-    Timer,
     PlayCircle,
     FileCheck,
     Gavel,
@@ -49,7 +48,6 @@ import {
 import { cn } from '@/lib/utils';
 import { SharedData, BreadcrumbItem } from '@/types';
 
-// Type definitions for Inertia.js page props
 interface User {
     name: string;
     role: string;
@@ -90,7 +88,6 @@ interface Document {
     status_timestamp?: string;
 }
 
-// Inertia.js Props interface
 interface Props {
     document: Document;
     fileKey: string;
@@ -100,9 +97,7 @@ interface Props {
 }
 
 const getBreadcrumbs = (role?: string, procurementId?: string): BreadcrumbItem[] => {
-    // Generate the correct procurement details URL based on role
     const getProcurementDetailsHref = (role: string, id?: string) => {
-        // If no procurement ID or it's 'Unknown', return # to disable the link
         if (!id || id === 'Unknown' || id.trim() === '') return '#';
         switch (role) {
             case 'bac_secretariat':
@@ -243,17 +238,6 @@ const formatFileSize = (bytes?: number): string => {
     return `${size} ${units[i]}`;
 };
 
-const formatDuration = (seconds?: number) => {
-    if (!seconds) return 'Unknown';
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-
-    if (minutes > 0) {
-        return `${minutes}m ${remainingSeconds}s`;
-    }
-    return `${remainingSeconds}s`;
-};
-
 const formatTimestamp = (timestamp: string) => {
     try {
         const date = new Date(timestamp);
@@ -298,7 +282,6 @@ const formatUserAddress = (address: string) => {
 
 const formatStatus = (status: string) => {
     if (!status) return 'Unknown';
-    // Convert status to a more readable format
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
@@ -334,122 +317,67 @@ const getStatusIcon = (status: string) => {
     return Activity;
 };
 
-// Inertia.js Page Component following proper structure
 export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recentViews }: Props) {
-    // State management
-    const [viewStartTime] = useState(Date.now());
-    const [currentViewDuration, setCurrentViewDuration] = useState(0);
     const [pdfLoading, setPdfLoading] = useState(true);
     const [pdfError, setPdfError] = useState(false);
     const [pdfHeight, setPdfHeight] = useState(800);
-    const [actualFileSize, setActualFileSize] = useState<number | null>(null);
     const [showAllViewersDialog, setShowAllViewersDialog] = useState(false);
 
-    // Refs for DOM elements
     const statisticsPanelRef = useRef<HTMLDivElement>(null);
     const pdfViewerRef = useRef<HTMLDivElement>(null);
-    
-    // Get authenticated user from Inertia shared data
+
     const { auth } = usePage<SharedData>().props;
     const userRole = auth?.user?.role || "guest";
     const breadcrumbs = getBreadcrumbs(userRole, document.procurement_id);
-      // Effects for component lifecycle management
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentViewDuration(Math.floor((Date.now() - viewStartTime) / 1000));
-        }, 1000); 
-        return () => clearInterval(interval);
-    }, [viewStartTime]);
 
-    // Auto-fallback if PDF doesn't load within reasonable time
     useEffect(() => {
         const timer = setTimeout(() => {
             if (pdfLoading) {
-                console.warn('PDF taking too long to load, showing fallback');
+                console.log('PDF still loading after 15 seconds, but not forcing error');
                 setPdfLoading(false);
             }
-        }, 5000); // Give 5 seconds for PDF to load
+        }, 15000);
 
         return () => clearTimeout(timer);
     }, [pdfLoading]);
 
-    // Height matching effect
     useEffect(() => {
+        const initialHeight = 800;
+        setPdfHeight(initialHeight);
+
         const updateHeight = () => {
-            if (statisticsPanelRef.current && window.innerWidth >= 1024) { // lg breakpoint
+            if (statisticsPanelRef.current && window.innerWidth >= 1024) {
                 const statsHeight = statisticsPanelRef.current.offsetHeight;
-                setPdfHeight(Math.max(600, statsHeight)); // Minimum 600px height
-            } else {
-                setPdfHeight(800); // Default height for mobile/tablet
+                const newHeight = Math.max(600, Math.min(1200, statsHeight));
+                setPdfHeight(newHeight);
             }
         };
 
-        updateHeight();
-        window.addEventListener('resize', updateHeight);
+        const delayedUpdate = setTimeout(() => {
+            updateHeight();
+        }, 2000);
 
-        // Update after a short delay to account for content loading
-        const timeoutId = setTimeout(updateHeight, 500);
-
-        return () => {
-            window.removeEventListener('resize', updateHeight);
-            clearTimeout(timeoutId);
+        let resizeTimeout: NodeJS.Timeout;
+        const debouncedResize = () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(updateHeight, 500);
         };
-    }, [viewStats, recentViews]); // Re-run when data changes
 
-    // Fetch actual file size if not provided (simplified version)
-    useEffect(() => {
-        // Only fetch if we don't have a valid file size and haven't already fetched
-        const hasValidFileSize = document.file_size && document.file_size > 0;
+        window.addEventListener('resize', debouncedResize);
 
-        if (!hasValidFileSize && pdfUrl && actualFileSize === null) {
-            console.log('Fetching file size from:', pdfUrl);
-            fetch(pdfUrl, { method: 'HEAD' })
-                .then(response => {
-                    const contentLength = response.headers.get('content-length');
-                    console.log('Content-Length header:', contentLength);
-                    if (contentLength && parseInt(contentLength, 10) > 0) {
-                        const size = parseInt(contentLength, 10);
-                        console.log('Setting actual file size to:', size);
-                        setActualFileSize(size);
-                    } else {
-                        // Set to 0 to indicate we tried and failed
-                        setActualFileSize(0);
-                    }
-                })
-                .catch(error => {
-                    console.warn('Could not fetch file size:', error);
-                    // Set to 0 to indicate we tried and failed
-                    setActualFileSize(0);
-                });
-        }
-    }, [document.file_size, pdfUrl, actualFileSize]);
-
-    // Track PDF view duration when component unmounts
-    useEffect(() => {
         return () => {
-            // Send view duration to backend
-            const csrfToken = window.document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            fetch(`/api/document-views/update-duration`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify({
-                    file_key: fileKey,
-                    duration: Math.floor((Date.now() - viewStartTime) / 1000),
-                }),
-            }).catch(console.error);
-        };    }, [fileKey, viewStartTime]);
+            window.removeEventListener('resize', debouncedResize);
+            clearTimeout(delayedUpdate);
+            clearTimeout(resizeTimeout);
+        };
+    }, []);
 
-    // Render the PDF Viewer page with proper Inertia.js structure
     return (
         <TooltipProvider>
             <AppLayout breadcrumbs={breadcrumbs}>
                 <Head title={`PDF Viewer - ${document.document_type}`} />
 
                 <div className="p-4 md:p-6 lg:p-8">
-                    {/* Header */}
                     <div className="mb-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -481,8 +409,8 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     {viewStats.total_views} views
                                 </Badge>
                                 <Badge variant="outline" className="flex items-center gap-1">
-                                    <Timer className="h-3 w-3" />
-                                    {formatDuration(currentViewDuration)}
+                                    <Users className="h-3 w-3" />
+                                    {viewStats.unique_viewers} unique
                                 </Badge>
                                 {pdfError && (
                                     <Badge variant="destructive" className="flex items-center gap-1">
@@ -490,7 +418,6 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                         PDF Blocked
                                     </Badge>
                                 )}
-                                {/* Moved action buttons to header */}
                                 <Button variant="outline" size="sm" asChild>
                                     <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
                                         <Eye className="h-4 w-4 mr-2" />
@@ -507,14 +434,15 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                         </div>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* PDF Viewer */}
                         <div
                             ref={pdfViewerRef}
-                            className="lg:col-span-2 relative"
-                            style={{ height: `${pdfHeight}px` }}
+                            className="lg:col-span-2 relative bg-white dark:bg-gray-900 rounded-lg border"
+                            style={{
+                                height: `${pdfHeight}px`,
+                                minHeight: '600px'
+                            }}
                         >
                             {pdfError ? (
-                                /* Fallback when PDF fails to load */
                                 <div className="flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800">
                                     <div className="text-center p-8 max-w-md">
                                         <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -542,30 +470,30 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                 </div>
                             ) : (
                                 <>
-                                    {/* Using object tag instead of iframe - better browser compatibility */}
                                     <object
                                         data={pdfUrl}
                                         type="application/pdf"
-                                        className="w-full h-full rounded-lg"
+                                        className="w-full h-full rounded-lg bg-white"
+                                        style={{ minHeight: '600px' }}
                                         onLoad={() => {
                                             console.log('PDF object loaded successfully');
                                             setPdfLoading(false);
+                                            setPdfError(false);
                                         }}
                                         onError={() => {
-                                            console.error('PDF object failed to load');
+                                            console.log('PDF object load event failed - showing fallback');
                                             setPdfError(true);
                                             setPdfLoading(false);
                                         }}
                                     >
-                                        {/* Fallback content when object fails */}
-                                        <div className="flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800">
+                                        <div className="flex flex-col items-center justify-center w-full h-full bg-gray-50 dark:bg-gray-800 rounded-lg" style={{ minHeight: '600px' }}>
                                             <div className="text-center p-8 max-w-md">
                                                 <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                                                     PDF Plugin Not Available
                                                 </h3>
                                                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                                                    Your browser doesn't have a PDF plugin or it's disabled. Use the buttons below to view the document.
+                                                    Your browser doesn't support embedded PDFs. Use the buttons below to view the document.
                                                 </p>
                                                 <div className="space-y-3">
                                                     <Button asChild className="w-full">
@@ -586,18 +514,20 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </object>
 
                                     {pdfLoading && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-lg">
-                                            <div className="text-center">
-                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">Loading PDF...</p>
+                                        <div className="absolute inset-0 flex items-center justify-center bg-white/95 dark:bg-gray-800/95 rounded-lg backdrop-blur-sm z-10">
+                                            <div className="text-center p-8">
+                                                <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-blue-600 mx-auto mb-4"></div>
+                                                <p className="text-lg font-medium text-gray-900 dark:text-white">Loading PDF...</p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                                    Please wait while the document loads
+                                                </p>
                                             </div>
-                                        </div>)}
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>
-                        {/* Statistics Panel */}
                         <div ref={statisticsPanelRef} className="space-y-6">
-                            {/* Quick Stats */}
                             <div className="grid grid-cols-2 gap-4">
                                 <Card>
                                     <CardContent className="p-4">
@@ -645,7 +575,6 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </CardContent>
                                 </Card>
                             </div>
-                            {/* Document Info */}
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
@@ -657,7 +586,6 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    {/* Basic Document Info */}
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-start">
                                             <span className="text-sm text-muted-foreground flex items-center gap-1.5">
@@ -698,7 +626,6 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                 {formatStage(document.stage)}
                                             </Badge>
                                         </div>
-                                        {/* Procurement Status */}
                                         {document.current_status && (
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
@@ -712,7 +639,6 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                             </div>
                                         )}
 
-                                        {/* Status Last Updated */}
                                         {document.status_timestamp && (
                                             <div className="flex justify-between items-start">
                                                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
@@ -741,17 +667,9 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                 </span>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-medium">
-                                                        {(() => {
-                                                            // Try document.file_size first, then actualFileSize
-                                                            const fileSize = document.file_size || actualFileSize;
-                                                            if (fileSize && fileSize > 0) {
-                                                                return formatFileSize(fileSize);
-                                                            } else if (actualFileSize === null && pdfUrl) {
-                                                                return 'Loading...';
-                                                            } else {
-                                                                return 'N/A';
-                                                            }
-                                                        })()}
+                                                        {document.file_size && document.file_size > 0
+                                                            ? formatFileSize(document.file_size)
+                                                            : 'N/A'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -868,11 +786,11 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
 
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                                    <Timer className="h-3.5 w-3.5" />
+                                                    <Clock className="h-3.5 w-3.5" />
                                                     Current Session:
                                                 </span>
                                                 <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                                                    {formatDuration(currentViewDuration)}
+                                                    Active
                                                 </span>
                                             </div>
                                         </div>
@@ -880,7 +798,6 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                 </CardContent>
                             </Card>
 
-                            {/* Views by Role */}
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
@@ -905,7 +822,6 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                 </CardContent>
                             </Card>
 
-                            {/* Recent Viewers */}
                             <Card>
                                 <CardHeader>
                                     <div className="flex items-center justify-between">
@@ -965,15 +881,6 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                                             </div>
                                                                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                                                 <span>{view.viewed_at_human}</span>
-                                                                                {view.view_duration && (
-                                                                                    <>
-                                                                                        <span>•</span>
-                                                                                        <span className="flex items-center gap-1">
-                                                                                            <Timer className="h-3 w-3" />
-                                                                                            {formatDuration(view.view_duration)}
-                                                                                        </span>
-                                                                                    </>
-                                                                                )}
                                                                                 {view.user_address && (
                                                                                     <>
                                                                                         <span>•</span>
@@ -1026,12 +933,6 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                             </div>
                                                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                                 <span>{view.viewed_at_human}</span>
-                                                                {view.view_duration && (
-                                                                    <>
-                                                                        <span>•</span>
-                                                                        <span>{formatDuration(view.view_duration)}</span>
-                                                                    </>
-                                                                )}
                                                                 {view.user_address && (
                                                                     <>
                                                                         <span>•</span>
@@ -1066,10 +967,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                         </div>
                     </div>
                 </div>
-            </AppLayout>        </TooltipProvider>
+            </AppLayout>
+        </TooltipProvider>
     );
 }
-
-// Export the component for Inertia.js page routing
-// This component should be registered in your Laravel routes (web.php) 
-// and rendered via Inertia::render('documents/pdf-viewer', $props)

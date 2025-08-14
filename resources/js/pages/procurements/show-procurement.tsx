@@ -2,7 +2,7 @@ import { useState, useMemo, JSX, FC, useEffect } from 'react';
 import {
     FileText, Hash, Clock, RefreshCw, Lock, FileCheck,
     CheckCircle, XCircle, Upload, AlertCircle, Calendar, Building, UserRound,
-    HardDrive, PhilippinePeso, Users, ArrowDown, ArrowUp, TrendingUp, BarChart3
+    HardDrive, PhilippinePeso, Users, ArrowDown, ArrowUp, TrendingUp
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
@@ -19,7 +19,6 @@ import { toast } from "sonner";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Status as StatusInfor } from "@/types/blockchain";
 import { SharedData } from '@/types';
-import { DocumentViews } from '@/components/document-views';
 import { PdfViewerLink } from '@/components/document-viewer-link';
 
 const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
@@ -774,71 +773,50 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                 </div>
             </div>
 
-            {/* Combined Hash, Metadata, and Analytics Section */}
+            {/* Combined Hash and Metadata Section */}
             <div className="mt-3.5 ml-0 sm:ml-[58px] max-w-full overflow-hidden">
-                <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
-                    {/* Left Column: Document Hash and Metadata (spans 3 columns) */}
-                    <div className="space-y-4 order-2 xl:order-1 xl:col-span-3">
-                        {doc.hash && (
-                            <Card className="bg-gradient-to-r from-blue-50/80 to-neutral-50/80 dark:from-blue-900/20 dark:to-neutral-800/60 border border-blue-100/80 dark:border-blue-800/30 shadow-sm hover:shadow transition-all duration-200">
-                                <CardContent className="p-3 sm:p-4 md:p-5 flex items-center justify-between">
-                                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                                        <div className="p-1.5 bg-blue-100/80 dark:bg-blue-900/40 rounded-md border border-blue-200 dark:border-blue-800/50 shadow-sm">
-                                            <Lock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-medium mb-0.5">Document Hash</p>
-                                            <code className="font-mono text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 truncate block">
-                                                {shortenHash(doc.hash)}
-                                            </code>
-                                        </div>
+                <div className="space-y-4">
+                    {doc.hash && (
+                        <Card className="bg-gradient-to-r from-blue-50/80 to-neutral-50/80 dark:from-blue-900/20 dark:to-neutral-800/60 border border-blue-100/80 dark:border-blue-800/30 shadow-sm hover:shadow transition-all duration-200">
+                            <CardContent className="p-3 sm:p-4 md:p-5 flex items-center justify-between">
+                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                    <div className="p-1.5 bg-blue-100/80 dark:bg-blue-900/40 rounded-md border border-blue-200 dark:border-blue-800/50 shadow-sm">
+                                        <Lock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                                     </div>
-                                    <TooltipProvider delayDuration={300}>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 px-2.5 text-xs text-neutral-600 hover:text-primary dark:text-neutral-400 dark:hover:text-primary-light"
-                                                    onClick={handleCopyHash}
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
-                                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1-2 2v1"></path>
-                                                    </svg>
-                                                    Copy Hash
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top" className="text-xs">
-                                                Copy document hash to clipboard
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Document Metadata */}
-                        <DocumentMetadata metadata={doc.stage_metadata} />
-                    </div>
-
-                    {/* Right Column: Document Analytics (spans 1 column) */}
-                    <div className="order-1 xl:order-2 xl:col-span-1">
-                        <Card className="bg-gradient-to-r from-green-50/60 to-neutral-50/80 dark:from-green-900/20 dark:to-neutral-800/50 border border-green-200/40 dark:border-green-800/30 shadow-sm hover:shadow-md transition-all duration-200">
-                            <CardHeader className="p-3 sm:p-4 pb-2">
-                                <CardTitle className="flex items-center text-sm font-semibold text-green-700 dark:text-green-300">
-                                    <BarChart3 className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" />
-                                    Document Analytics
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-3 sm:p-4 pt-0">
-                                <DocumentViews
-                                    fileKey={doc.file_key}
-                                    className="text-xs"
-                                />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-medium mb-0.5">Document Hash</p>
+                                        <code className="font-mono text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 truncate block">
+                                            {shortenHash(doc.hash)}
+                                        </code>
+                                    </div>
+                                </div>
+                                <TooltipProvider delayDuration={300}>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 px-2.5 text-xs text-neutral-600 hover:text-primary dark:text-neutral-400 dark:hover:text-primary-light"
+                                                onClick={handleCopyHash}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1-2 2v1"></path>
+                                                </svg>
+                                                Copy Hash
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="text-xs">
+                                            Copy document hash to clipboard
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             </CardContent>
                         </Card>
-                    </div>
+                    )}
+
+                    {/* Document Metadata */}
+                    <DocumentMetadata metadata={doc.stage_metadata} />
                 </div>
             </div>
         </li>

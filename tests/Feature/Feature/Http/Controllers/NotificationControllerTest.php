@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
@@ -11,7 +12,7 @@ beforeEach(function () {
     $this->user = User::factory()->create(['role' => 'bac_chairman']);
 });
 
-test('user can fetch their notifications with pagination', function () {
+test('user can view notifications page with data', function () {
     $this->actingAs($this->user);
 
     foreach (range(1, 15) as $i) {
@@ -31,32 +32,23 @@ test('user can fetch their notifications with pagination', function () {
         ]);
     }
 
-    $response = $this->getJson('/notifications/list');
+    $response = $this->get('/notifications');
 
     $response->assertStatus(200)
-        ->assertJsonStructure([
-            'notifications',
-            'pagination' => [
-                'total',
-                'per_page',
-                'current_page',
-                'last_page',
-            ],
-            'unread_count',
-        ])
-        ->assertJsonCount(10, 'notifications')
-        ->assertJson([
-            'pagination' => [
-                'total' => 15,
-                'per_page' => 10,
-                'current_page' => 1,
-                'last_page' => 2,
-            ],
-            'unread_count' => 15,
-        ]);
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('notifications')
+            ->has('notifications', 10) // Should have paginated data
+            ->has('pagination', fn (Assert $pagination) => $pagination
+                ->where('total', 15)
+                ->where('per_page', 10)
+                ->where('current_page', 1)
+                ->where('last_page', 2)
+            )
+            ->where('unread_count', 15)
+        );
 });
 
-test('user can mark a notification as read', function () {
+test('user can mark a notification as read via form submission', function () {
     $this->actingAs($this->user);
 
     $notification = DatabaseNotification::create([
@@ -68,12 +60,11 @@ test('user can mark a notification as read', function () {
         'created_at' => now(),
     ]);
 
-    $response = $this->withHeader('X-CSRF-TOKEN', 'test-token')
-        ->withSession(['_token' => 'test-token'])
-        ->postJson("/notifications/{$notification->id}/mark-as-read", ['_token' => 'test-token']);
+    $response = $this->from('/notifications')
+        ->post("/notifications/{$notification->id}/mark-as-read");
 
-    $response->assertStatus(200)
-        ->assertJson(['message' => 'Notification marked as read']);
+    $response->assertRedirect('/notifications')
+        ->assertSessionHas('success', 'Notification marked as read');
 
     $this->assertNotNull($notification->fresh()->read_at);
 });
@@ -91,15 +82,16 @@ test('user cannot mark another users notification as read', function () {
         'created_at' => now(),
     ]);
 
-    $response = $this->withHeader('X-CSRF-TOKEN', 'test-token')
-        ->withSession(['_token' => 'test-token'])
-        ->postJson("/notifications/{$notification->id}/mark-as-read", ['_token' => 'test-token']);
+    $response = $this->from('/notifications')
+        ->post("/notifications/{$notification->id}/mark-as-read");
 
-    $response->assertStatus(404);
+    $response->assertRedirect('/notifications')
+        ->assertSessionHasErrors(['error' => 'Notification not found']);
+
     $this->assertNull($notification->fresh()->read_at);
 });
 
-test('user can mark all notifications as read', function () {
+test('user can mark all notifications as read via form submission', function () {
     $this->actingAs($this->user);
 
     foreach (range(1, 5) as $i) {
@@ -113,12 +105,11 @@ test('user can mark all notifications as read', function () {
         ]);
     }
 
-    $response = $this->withHeader('X-CSRF-TOKEN', 'test-token')
-        ->withSession(['_token' => 'test-token'])
-        ->postJson('/notifications/mark-all-as-read', ['_token' => 'test-token']);
+    $response = $this->from('/notifications')
+        ->post('/notifications/mark-all-as-read');
 
-    $response->assertStatus(200)
-        ->assertJson(['message' => 'All notifications marked as read']);
+    $response->assertRedirect('/notifications')
+        ->assertSessionHas('success', 'All notifications marked as read');
 
     $this->assertEquals(
         0,

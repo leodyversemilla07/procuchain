@@ -14,84 +14,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/bac-secretariat/preprocurement', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/pre-procurement-conference-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.preprocurement');
-
-Route::get('/bac-secretariat/pre-bid-conference-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/pre-bid-conference-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.pre-bid-conference-upload.simple');
-
-Route::get('/bac-secretariat/supplemental-bid-bulletin-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/supplemental-bid-bulletin-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.supplemental-bid-bulletin-upload.simple');
-
-Route::get('/bac-secretariat/bidding-documents-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/bidding-documents-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.bidding-documents-upload.simple');
-
-Route::get('/bac-secretariat/bid-opening-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/bid-opening-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.bid-opening-upload.simple');
-
-Route::get('/bac-secretariat/bid-evaluation-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/bid-evaluation-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.bid-evaluation-upload.simple');
-
-Route::get('/bac-secretariat/bac-resolution-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/bac-resolution-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.bac-resolution-upload.simple');
-
-Route::get('/bac-secretariat/post-qualification-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/post-qualification-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.post-qualification-upload.simple');
-
-Route::get('/bac-secretariat/noa-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/noa-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.noa-upload.simple');
-
-Route::get('/bac-secretariat/performance-bond-contract-po-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/performance-bond-contract-po-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.performance-bond-contract-po-upload.simple');
-
-Route::get('/bac-secretariat/ntp-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/ntp-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.ntp-upload.simple');
-
-Route::get('/bac-secretariat/monitoring-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/monitoring-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.monitoring-upload.simple');
-
-Route::get('/bac-secretariat/completion-upload', function () {
-    return Inertia::render('bac-secretariat/procurement-stage/completion-upload', [
-        'user' => Auth::user(),
-    ]);
-})->name('bac-secretariat.completion-upload.simple');
-
 Route::get('/', function () {
     return Inertia::render('home');
 })->name('home');
@@ -119,9 +41,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->middleware('role:bac_secretariat,bac_chairman,admin')->name('smart-contract.demo');
 
     Route::middleware(['role:bac_secretariat', 'mfa'])->group(function () {
-        // Job status polling endpoint (for frontend polling job status)
-        Route::get('/api/job-status/{id}', [App\Http\Controllers\ProcurementController::class, 'getJobStatus'])->name('api.job-status.show');
-
         Route::get('/bac-secretariat/dashboard', [BacSecretariatController::class, 'dashboard'])
             ->name('bac-secretariat.dashboard');
 
@@ -294,35 +213,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'page'])
         ->name('notifications');
 
-    // Notification API routes
-    Route::get('/notifications/list', [NotificationController::class, 'index']);
-    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
-    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])
+        ->name('notifications.mark-as-read');
+    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])
+        ->name('notifications.mark-all-as-read');
 
     // Secure file download route (requires authentication)
     Route::get('/secure-file/{fileKey}', [SecureFileController::class, 'downloadFile'])
         ->name('secure.file.download')
         ->where('fileKey', '.*'); // Allow forward slashes in file keys
 
-    // Document view tracking routes
-    Route::get('/api/document-views/file/{fileKey}', [DocumentViewController::class, 'getFileViews'])
-        ->where('fileKey', '.*')
-        ->name('document.views.file');
-    Route::get('/api/document-views/file/{fileKey}/stats', [DocumentViewController::class, 'getFileStats'])
-        ->where('fileKey', '.*')
-        ->name('document.views.file.stats');
-    Route::get('/api/document-views/procurement/{procurementId}/stats', [DocumentViewController::class, 'getProcurementViewStats'])
-        ->name('document.views.procurement.stats');
-    Route::get('/api/document-views/history', [DocumentViewController::class, 'getUserViewHistory'])
-        ->name('document.views.history');
-    Route::get('/api/document-views/most-viewed', [DocumentViewController::class, 'getMostViewedDocuments'])
-        ->name('document.views.most-viewed');
-    Route::get('/api/document-views/dashboard-stats', [DocumentViewController::class, 'getDashboardStats'])
-        ->name('document.views.dashboard.stats');
-    Route::post('/api/document-views/update-duration', [DocumentViewController::class, 'updateViewDuration'])
-        ->name('document.views.update-duration');
-
-    // PDF Viewer with Statistics
+    // PDF Viewer with Statistics (includes all necessary data via Inertia props)
     Route::get('/pdf-viewer/{fileKey}', [DocumentViewController::class, 'showPdfViewer'])
         ->where('fileKey', '.*')
         ->name('pdf.viewer');
@@ -340,3 +241,5 @@ require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/smart-contracts.php';
 require __DIR__.'/analytics.php';
+
+require __DIR__.'/file-uploads-ui-preview.php'; // Include the file uploads UI preview routes
