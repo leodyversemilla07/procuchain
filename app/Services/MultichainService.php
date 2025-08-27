@@ -206,9 +206,12 @@ class MultichainService
         return $this->handleRequest(fn (): mixed => $this->mc->getnewaddress());
     }
 
-    public function importAddress(string $address): mixed
+    public function importAddress(string $address, ?string $label = null): mixed
     {
-        return $this->handleRequest(fn (): mixed => $this->mc->importaddress($address));
+        return $this->handleRequest(fn (): mixed => $label !== null
+            ? $this->mc->importaddress($address, $label)
+            : $this->mc->importaddress($address)
+        );
     }
 
     public function listAddresses($address = null, bool $verbose = false): mixed

@@ -157,15 +157,15 @@ const getBreadcrumbs = (role?: string, procurementId?: string): BreadcrumbItem[]
 const getRoleBadgeColor = (role: string) => {
     switch (role) {
         case 'bac_chairman':
-            return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
+            return 'bg-primary/10 text-primary';
         case 'bac_secretariat':
-            return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+            return 'bg-info/10 text-info';
         case 'hope':
-            return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+            return 'bg-success/10 text-success';
         case 'admin':
-            return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
+            return 'bg-destructive/10 text-destructive';
         default:
-            return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300';
+            return 'bg-muted text-muted-foreground';
     }
 };
 
@@ -286,19 +286,19 @@ const formatStatus = (status: string) => {
 };
 
 const getStatusBadgeColor = (status: string) => {
-    if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300';
+    if (!status) return 'bg-muted text-muted-foreground';
 
     const lowerStatus = status.toLowerCase();
     if (lowerStatus.includes('active') || lowerStatus.includes('in_progress') || lowerStatus.includes('ongoing')) {
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+        return 'bg-success/10 text-success';
     } else if (lowerStatus.includes('pending') || lowerStatus.includes('waiting')) {
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
+        return 'bg-warning/10 text-warning';
     } else if (lowerStatus.includes('complete') || lowerStatus.includes('finished') || lowerStatus.includes('closed')) {
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+        return 'bg-primary/10 text-primary';
     } else if (lowerStatus.includes('cancelled') || lowerStatus.includes('rejected')) {
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
+        return 'bg-destructive/10 text-destructive';
     }
-    return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300';
+    return 'bg-muted text-muted-foreground';
 };
 
 const getStatusIcon = (status: string) => {
@@ -381,14 +381,14 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                     <div className="mb-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                <h1 className="text-2xl font-bold text-primary">
                                     {document.document_type}
                                 </h1>
-                                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                <p className="mt-1 text-sm text-muted-foreground">
                                     {document.procurement_title}
                                 </p>
                                 <div className="mt-2 flex items-center gap-2 flex-wrap">
-                                    <Badge variant="outline" className="bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-200 dark:from-blue-900/20 dark:to-indigo-900/20 dark:text-blue-300 dark:border-blue-800 flex items-center gap-1.5 px-3 py-1">
+                                    <Badge variant="outline" className="flex items-center gap-1.5">
                                         {React.createElement(getStageIcon(document.stage), { className: "h-3.5 w-3.5" })}
                                         <span className="font-medium">{formatStage(document.stage)}</span>
                                     </Badge>
@@ -399,8 +399,16 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                         </Badge>
                                     )}
                                 </div>
-                                <p className="mt-2 text-xs text-gray-500 dark:text-gray-500 font-mono">
-                                    PDF URL: {pdfUrl}
+                                <p className="mt-2 text-xs font-mono">
+                                    PDF URL: {' '}
+                                    <a
+                                        href={pdfUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="underline text-primary hover:text-primary/80"
+                                    >
+                                        {pdfUrl}
+                                    </a>
                                 </p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -436,20 +444,20 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div
                             ref={pdfViewerRef}
-                            className="lg:col-span-2 relative bg-white dark:bg-gray-900 rounded-lg border"
+                            className="lg:col-span-2 relative bg-background rounded-lg border"
                             style={{
                                 height: `${pdfHeight}px`,
                                 minHeight: '600px'
                             }}
                         >
                             {pdfError ? (
-                                <div className="flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-800">
+                                <div className="flex flex-col items-center justify-center h-full bg-muted">
                                     <div className="text-center p-8 max-w-md">
-                                        <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                        <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                                        <h3 className="text-lg font-semibold text-primary mb-2">
                                             PDF Viewer Error
                                         </h3>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                                        <p className="text-sm text-muted-foreground mb-6">
                                             Unable to display the PDF in the browser. You can view the document using the options below.
                                         </p>
                                         <div className="space-y-3">
@@ -473,7 +481,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     <object
                                         data={pdfUrl}
                                         type="application/pdf"
-                                        className="w-full h-full rounded-lg bg-white"
+                                        className="w-full h-full rounded-lg bg-background"
                                         style={{ minHeight: '600px' }}
                                         onLoad={() => {
                                             console.log('PDF object loaded successfully');
@@ -486,13 +494,13 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                             setPdfLoading(false);
                                         }}
                                     >
-                                        <div className="flex flex-col items-center justify-center w-full h-full bg-gray-50 dark:bg-gray-800 rounded-lg" style={{ minHeight: '600px' }}>
+                                        <div className="flex flex-col items-center justify-center w-full h-full bg-muted rounded-lg" style={{ minHeight: '600px' }}>
                                             <div className="text-center p-8 max-w-md">
-                                                <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                                <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                                                <h3 className="text-lg font-semibold text-primary mb-2">
                                                     PDF Plugin Not Available
                                                 </h3>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                                                <p className="text-sm text-muted-foreground mb-6">
                                                     Your browser doesn't support embedded PDFs. Use the buttons below to view the document.
                                                 </p>
                                                 <div className="space-y-3">
@@ -514,11 +522,11 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </object>
 
                                     {pdfLoading && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-white/95 dark:bg-gray-800/95 rounded-lg backdrop-blur-sm z-10">
+                                        <div className="absolute inset-0 flex items-center justify-center bg-background/95 rounded-lg backdrop-blur-sm z-10">
                                             <div className="text-center p-8">
-                                                <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-blue-600 mx-auto mb-4"></div>
-                                                <p className="text-lg font-medium text-gray-900 dark:text-white">Loading PDF...</p>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                                <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-primary mx-auto mb-4"></div>
+                                                <p className="text-lg font-medium text-primary">Loading PDF...</p>
+                                                <p className="text-sm text-muted-foreground mt-2">
                                                     Please wait while the document loads
                                                 </p>
                                             </div>
@@ -592,7 +600,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                 <Hash className="h-3.5 w-3.5" />
                                                 Procurement ID:
                                             </span>
-                                            <span className="text-sm font-medium font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                                            <span className="text-sm font-medium font-mono bg-muted px-2 py-1 rounded">
                                                 {document.procurement_id}
                                             </span>
                                         </div>
@@ -621,7 +629,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                 <Target className="h-3.5 w-3.5" />
                                                 Current Stage:
                                             </span>
-                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 flex items-center gap-1.5">
+                                            <Badge variant="outline" className="flex items-center gap-1.5">
                                                 {React.createElement(getStageIcon(document.stage), { className: "h-3.5 w-3.5" })}
                                                 {formatStage(document.stage)}
                                             </Badge>
@@ -658,7 +666,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </div>
 
                                     <div className="border-t pt-3">
-                                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">File Details</h4>
+                                        <h4 className="text-sm font-medium text-primary mb-3">File Details</h4>
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
@@ -680,7 +688,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                 </span>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded max-w-[180px] truncate cursor-help">
+                                                        <span className="text-xs font-mono bg-muted px-2 py-1 rounded max-w-[180px] truncate cursor-help">
                                                             {fileKey}
                                                         </span>
                                                     </TooltipTrigger>
@@ -693,7 +701,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </div>
 
                                     <div className="border-t pt-3">
-                                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Blockchain & Security</h4>
+                                        <h4 className="text-sm font-medium text-primary mb-3">Blockchain & Security</h4>
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-start">
                                                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
@@ -705,7 +713,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                         <>
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                    <span className="text-xs font-mono bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded cursor-help">
+                                                                    <span className="text-xs font-mono bg-muted text-muted-foreground px-2 py-1 rounded cursor-help">
                                                                         {formatUserAddress(document.hash)}
                                                                     </span>
                                                                 </TooltipTrigger>
@@ -719,7 +727,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-1 rounded">
+                                                            <span className="text-xs font-mono bg-muted text-muted-foreground px-2 py-1 rounded">
                                                                 Not available
                                                             </span>
                                                             <p className="text-xs text-muted-foreground mt-1">
@@ -748,14 +756,14 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </div>
 
                                     <div className="border-t pt-3">
-                                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Viewing Statistics</h4>
+                                        <h4 className="text-sm font-medium text-primary mb-3">Viewing Statistics</h4>
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
                                                     <Eye className="h-3.5 w-3.5" />
                                                     Total Views:
                                                 </span>
-                                                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                                <span className="text-sm font-bold text-primary">
                                                     {viewStats.total_views}
                                                 </span>
                                             </div>
@@ -765,7 +773,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                     <Users className="h-3.5 w-3.5" />
                                                     Unique Viewers:
                                                 </span>
-                                                <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                                                <span className="text-sm font-bold text-success">
                                                     {viewStats.unique_viewers}
                                                 </span>
                                             </div>
@@ -789,7 +797,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                     <Clock className="h-3.5 w-3.5" />
                                                     Current Session:
                                                 </span>
-                                                <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                                                <span className="text-sm font-medium text-warning">
                                                     Active
                                                 </span>
                                             </div>
@@ -936,7 +944,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                                 {view.user_address && (
                                                                     <>
                                                                         <span>•</span>
-                                                                        <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">
+                                                                        <span className="font-mono text-xs bg-muted text-muted-foreground px-1 py-0.5 rounded">
                                                                             {formatUserAddress(view.user_address)}
                                                                         </span>
                                                                     </>

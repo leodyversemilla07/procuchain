@@ -24,123 +24,18 @@ import AppLayout from "@/layouts/app-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Head, Link } from "@inertiajs/react"
+import { Head, Link, usePage } from "@inertiajs/react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { SharedData } from "@/types"
+
+// ============================================================================
+// TYPES AND INTERFACES
+// ============================================================================
 
 interface BreadcrumbItem {
     title: string
     href: string
-}
-
-const Status = {
-    PROCUREMENT_SUBMITTED: "PROCUREMENT_SUBMITTED",
-    PRE_PROCUREMENT_CONFERENCE_HELD: "PRE_PROCUREMENT_CONFERENCE_HELD",
-    PRE_PROCUREMENT_CONFERENCE_SKIPPED: "PRE_PROCUREMENT_CONFERENCE_SKIPPED",
-    PRE_PROCUREMENT_CONFERENCE_COMPLETED: "PRE_PROCUREMENT_CONFERENCE_COMPLETED",
-    BIDDING_DOCUMENTS_PUBLISHED: "BIDDING_DOCUMENTS_PUBLISHED",
-    PRE_BID_CONFERENCE_HELD: "PRE_BID_CONFERENCE_HELD",
-    PRE_BID_CONFERENCE_SKIPPED: "PRE_BID_CONFERENCE_SKIPPED",
-    PRE_BID_CONFERENCE_COMPLETED: "PRE_BID_CONFERENCE_COMPLETED",
-    SUPPLEMENTAL_BID_BULLETINS_ONGOING: "SUPPLEMENTAL_BID_BULLETINS_ONGOING",
-    SUPPLEMENTAL_BID_BULLETINS_COMPLETED: "SUPPLEMENTAL_BID_BULLETINS_COMPLETED",
-    BIDS_OPENED: "BIDS_OPENED",
-    BIDS_EVALUATED: "BIDS_EVALUATED",
-    POST_QUALIFICATION_VERIFIED: "POST_QUALIFICATION_VERIFIED",
-    POST_QUALIFICATION_FAILED: "POST_QUALIFICATION_FAILED",
-    RESOLUTION_RECORDED: "RESOLUTION_RECORDED",
-    AWARDED: "AWARDED",
-    PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED: "PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED",
-    NTP_RECORDED: "NTP_RECORDED",
-    MONITORING_COMPLETED: "MONITORING_COMPLETED",
-    COMPLETION_DOCUMENTS_UPLOADED: "COMPLETION_DOCUMENTS_UPLOADED",
-    COMPLETED: "COMPLETED",
-} as const
-
-const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
-    switch (role) {
-        case "bac_secretariat":
-            return [
-                { title: "BAC Secretariat Dashboard", href: "/bac-secretariat/dashboard" },
-                { title: "Procurement List", href: "/bac-secretariat/procurements-list" },
-                { title: "Procurement Details", href: "#" },
-            ]
-        case "bac_chairman":
-            return [
-                { title: "BAC Chairman Dashboard", href: "/bac-chairman/dashboard" },
-                { title: "Procurement List", href: "/bac-chairman/procurements-list" },
-                { title: "Procurement Details", href: "#" },
-            ]
-        case "hope":
-            return [
-                { title: "HOPE Dashboard", href: "/hope/dashboard" },
-                { title: "Procurement List", href: "/hope/procurements-list" },
-                { title: "Procurement Details", href: "#" },
-            ]
-        case "admin":
-            return [
-                { title: "Admin Dashboard", href: "/admin/dashboard" },
-                { title: "Procurement List", href: "/admin/procurements-list" },
-                { title: "Procurement Details", href: "#" },
-            ]
-        default:
-            return [
-                { title: "Dashboard", href: "/dashboard" },
-                { title: "Procurement List", href: "#" },
-                { title: "Procurement Details", href: "#" },
-            ]
-    }
-}
-
-const STAGE_ORDER = [
-    "Procurement Initiation",
-    "Pre-Procurement Conference",
-    "Bidding Documents",
-    "Pre-Bid Conference",
-    "Supplemental Bid Bulletin",
-    "Bid Opening",
-    "Bid Evaluation",
-    "Post-Qualification",
-    "BAC Resolution",
-    "Notice of Award",
-    "Performance Bond, Contract and PO",
-    "Notice to Proceed",
-    "Monitoring",
-    "Completed",
-]
-
-// Stage descriptions for better user understanding
-const STAGE_DESCRIPTIONS: Record<string, string> = {
-    "Procurement Initiation": "Initial request and approval of procurement",
-    "Pre-Procurement Conference": "Planning and preparation before bidding",
-    "Bidding Documents": "Publication and release of bidding requirements",
-    "Pre-Bid Conference": "Meeting with prospective bidders to clarify requirements",
-    "Supplemental Bid Bulletin": "Additional information or clarification for bidders",
-    "Bid Opening": "Public opening and recording of submitted bids",
-    "Bid Evaluation": "Technical and financial assessment of bids",
-    "Post-Qualification": "Verification of winning bidder's qualifications",
-    "BAC Resolution": "BAC recommendation of award to winning bidder",
-    "Notice of Award": "Official notification to winning bidder",
-    "Performance Bond, Contract and PO": "Finalization of contract documents",
-    "Notice to Proceed": "Authorization to begin project implementation",
-    Monitoring: "Oversight of project implementation",
-    Completed: "All procurement activities have been completed",
-}
-
-interface Document {
-    file_key: string
-    document_type: string
-    spaces_url?: string
-    hash?: string
-    file_size?: number
-    stage?: string
-    stage_metadata?: StageMetadata
-    procurement_id?: string
-    procurement_title?: string
-    user_address?: string
-    timestamp?: string
-    document_index?: number
-    formatted_date?: string
 }
 
 interface StageMetadata {
@@ -176,6 +71,22 @@ interface StageMetadata {
     issue_date?: string
     completion_date?: string
     completion_notes?: string
+}
+
+interface Document {
+    file_key: string
+    document_type: string
+    spaces_url?: string
+    hash?: string
+    file_size?: number
+    stage?: string
+    stage_metadata?: StageMetadata
+    procurement_id?: string
+    procurement_title?: string
+    user_address?: string
+    timestamp?: string
+    document_index?: number
+    formatted_date?: string
 }
 
 interface Event {
@@ -227,9 +138,367 @@ type ProcessedTimelineItem = {
     stage?: string
 }
 
+type BadgeVariant = "default" | "destructive" | "outline" | "secondary" | null
+
+interface StatusInfo {
+    variant: BadgeVariant
+    icon: JSX.Element
+    label: string
+}
+
+interface ShowProps {
+    procurement: Procurement
+    now?: string
+    error?: string
+}
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const Status = {
+    PROCUREMENT_SUBMITTED: "PROCUREMENT_SUBMITTED",
+    PRE_PROCUREMENT_CONFERENCE_HELD: "PRE_PROCUREMENT_CONFERENCE_HELD",
+    PRE_PROCUREMENT_CONFERENCE_SKIPPED: "PRE_PROCUREMENT_CONFERENCE_SKIPPED",
+    PRE_PROCUREMENT_CONFERENCE_COMPLETED: "PRE_PROCUREMENT_CONFERENCE_COMPLETED",
+    BIDDING_DOCUMENTS_PUBLISHED: "BIDDING_DOCUMENTS_PUBLISHED",
+    PRE_BID_CONFERENCE_HELD: "PRE_BID_CONFERENCE_HELD",
+    PRE_BID_CONFERENCE_SKIPPED: "PRE_BID_CONFERENCE_SKIPPED",
+    PRE_BID_CONFERENCE_COMPLETED: "PRE_BID_CONFERENCE_COMPLETED",
+    SUPPLEMENTAL_BID_BULLETINS_ONGOING: "SUPPLEMENTAL_BID_BULLETINS_ONGOING",
+    SUPPLEMENTAL_BID_BULLETINS_COMPLETED: "SUPPLEMENTAL_BID_BULLETINS_COMPLETED",
+    BIDS_OPENED: "BIDS_OPENED",
+    BIDS_EVALUATED: "BIDS_EVALUATED",
+    POST_QUALIFICATION_VERIFIED: "POST_QUALIFICATION_VERIFIED",
+    POST_QUALIFICATION_FAILED: "POST_QUALIFICATION_FAILED",
+    RESOLUTION_RECORDED: "RESOLUTION_RECORDED",
+    AWARDED: "AWARDED",
+    PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED: "PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED",
+    NTP_RECORDED: "NTP_RECORDED",
+    MONITORING_COMPLETED: "MONITORING_COMPLETED",
+    COMPLETION_DOCUMENTS_UPLOADED: "COMPLETION_DOCUMENTS_UPLOADED",
+    COMPLETED: "COMPLETED",
+} as const
+
+const STAGE_ORDER = [
+    "Procurement Initiation",
+    "Pre-Procurement Conference",
+    "Bidding Documents",
+    "Pre-Bid Conference",
+    "Supplemental Bid Bulletin",
+    "Bid Opening",
+    "Bid Evaluation",
+    "Post-Qualification",
+    "BAC Resolution",
+    "Notice of Award",
+    "Performance Bond, Contract and PO",
+    "Notice to Proceed",
+    "Monitoring",
+    "Completed",
+]
+
+const STAGE_DESCRIPTIONS: Record<string, string> = {
+    "Procurement Initiation": "Initial request and approval of procurement",
+    "Pre-Procurement Conference": "Planning and preparation before bidding",
+    "Bidding Documents": "Publication and release of bidding requirements",
+    "Pre-Bid Conference": "Meeting with prospective bidders to clarify requirements",
+    "Supplemental Bid Bulletin": "Additional information or clarification for bidders",
+    "Bid Opening": "Public opening and recording of submitted bids",
+    "Bid Evaluation": "Technical and financial assessment of bids",
+    "Post-Qualification": "Verification of winning bidder's qualifications",
+    "BAC Resolution": "BAC recommendation of award to winning bidder",
+    "Notice of Award": "Official notification to winning bidder",
+    "Performance Bond, Contract and PO": "Finalization of contract documents",
+    "Notice to Proceed": "Authorization to begin project implementation",
+    Monitoring: "Oversight of project implementation",
+    Completed: "All procurement activities have been completed",
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+const formatFileSize = (bytes?: number): string => {
+    if (bytes === undefined || bytes === null || isNaN(bytes) || bytes < 0) return "N/A"
+    if (bytes === 0) return "0 B"
+
+    const units = ["B", "KB", "MB", "GB", "TB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(1024))
+    const size = Number.parseFloat((bytes / Math.pow(1024, i)).toFixed(i > 1 ? 1 : 0))
+
+    return `${size} ${units[i]}`
+}
+
+const formatStageName = (stage: string): string => {
+    if (!stage) return "Procurement Initiation"
+
+    const stageIdLower = stage.toLowerCase()
+
+    const stageMapping: Record<string, string> = {
+        procurementinitiation: "Procurement Initiation",
+        preprocurementconference: "Pre-Procurement Conference",
+        biddingdocuments: "Bidding Documents",
+        prebidconference: "Pre-Bid Conference",
+        supplementalbidbulletin: "Supplemental Bid Bulletin",
+        bidopening: "Bid Opening",
+        bidevaluation: "Bid Evaluation",
+        postqualification: "Post-Qualification",
+        bacresolution: "BAC Resolution",
+        noticeofaward: "Notice of Award",
+        performancebondcontractandpo: "Performance Bond, Contract and PO",
+        noticetoproceed: "Notice to Proceed",
+        ntp: "Notice to Proceed",
+        monitoring: "Monitoring",
+        completion: "Completed",
+        completed: "Completed",
+    }
+
+    if (stageMapping[stageIdLower]) {
+        return stageMapping[stageIdLower]
+    }
+
+    // Handle partial matches for flexibility
+    if (stageIdLower.includes("procurement") && stageIdLower.includes("initiation")) {
+        return "Procurement Initiation"
+    }
+    if (stageIdLower.includes("preprocurement") || stageIdLower.includes("pre-procurement")) {
+        return "Pre-Procurement Conference"
+    }
+    if (stageIdLower.includes("bidding") && stageIdLower.includes("documents")) {
+        return "Bidding Documents"
+    }
+    if (stageIdLower.includes("prebid") || stageIdLower.includes("pre-bid")) {
+        return "Pre-Bid Conference"
+    }
+    if (stageIdLower.includes("supplemental") && stageIdLower.includes("bid")) {
+        return "Supplemental Bid Bulletin"
+    }
+    if (stageIdLower.includes("bid") && stageIdLower.includes("opening")) {
+        return "Bid Opening"
+    }
+    if (stageIdLower.includes("bid") && stageIdLower.includes("evaluation")) {
+        return "Bid Evaluation"
+    }
+    if (stageIdLower.includes("post") && stageIdLower.includes("qualification")) {
+        return "Post-Qualification"
+    }
+    if (stageIdLower.includes("bac") && stageIdLower.includes("resolution")) {
+        return "BAC Resolution"
+    }
+    if (stageIdLower.includes("notice") && stageIdLower.includes("award")) {
+        return "Notice of Award"
+    }
+    if (stageIdLower.includes("performance") && stageIdLower.includes("bond")) {
+        return "Performance Bond, Contract and PO"
+    }
+    if (stageIdLower.includes("notice") && stageIdLower.includes("proceed")) {
+        return "Notice to Proceed"
+    }
+    if (stageIdLower.includes("monitoring")) {
+        return "Monitoring"
+    }
+    if (stageIdLower === "completed" || stageIdLower.includes("complet")) {
+        return "Completed"
+    }
+
+    const knownStage = STAGE_ORDER.find((p) => p.toLowerCase() === stageIdLower)
+    if (knownStage) return knownStage
+
+    const titleCase = stage
+        .replace(/([A-Z])/g, " $1")
+        .replace(/^./, (str) => str.toUpperCase())
+        .trim()
+
+    return titleCase
+}
+
+const getDocumentStage = (doc: Document): string => {
+    return formatStageName(doc.stage || "Procurement Initiation")
+}
+
+const shortenHash = (hash?: string, startLength = 5, endLength = 5): string => {
+    if (!hash) return "N/A"
+    if (hash.length <= startLength + endLength) return hash
+    return `${hash.substring(0, startLength)}...${hash.substring(hash.length - endLength)}`
+}
+
+const formatDate = (dateString?: string): string => {
+    if (!dateString) return "Invalid Date"
+    try {
+        return new Date(dateString).toLocaleString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+        })
+    } catch (e) {
+        return `Invalid Date ${e}`
+    }
+}
+
+const formatDateOnly = (dateString?: string | number): string => {
+    if (dateString === null || dateString === undefined) return "Invalid Date"
+    try {
+        return new Date(dateString).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        })
+    } catch (e) {
+        return `Invalid Date ${e}`
+    }
+}
+
+const formatTimeOnly = (dateString?: string): string => {
+    if (!dateString) return "Invalid Time"
+    try {
+        return new Date(dateString).toLocaleTimeString(undefined, {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+        })
+    } catch (e) {
+        return `Invalid Time ${e}`
+    }
+}
+
+const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
+    switch (role) {
+        case "bac_secretariat":
+            return [
+                { title: "BAC Secretariat Dashboard", href: "/bac-secretariat/dashboard" },
+                { title: "Procurement List", href: "/bac-secretariat/procurements-list" },
+                { title: "Procurement Details", href: "#" },
+            ]
+        case "bac_chairman":
+            return [
+                { title: "BAC Chairman Dashboard", href: "/bac-chairman/dashboard" },
+                { title: "Procurement List", href: "/bac-chairman/procurements-list" },
+                { title: "Procurement Details", href: "#" },
+            ]
+        case "hope":
+            return [
+                { title: "HOPE Dashboard", href: "/hope/dashboard" },
+                { title: "Procurement List", href: "/hope/procurements-list" },
+                { title: "Procurement Details", href: "#" },
+            ]
+        case "admin":
+            return [
+                { title: "Admin Dashboard", href: "/admin/dashboard" },
+                { title: "Procurement List", href: "/admin/procurements-list" },
+                { title: "Procurement Details", href: "#" },
+            ]
+        default:
+            return [
+                { title: "Dashboard", href: "/dashboard" },
+                { title: "Procurement List", href: "/procurements-list" },
+                { title: "Procurement Details", href: "#" },
+            ]
+    }
+}
+
+const getStatusInfo = (statusText?: string): StatusInfo => {
+    const safeStatus = statusText || "Unknown Status"
+
+    const statusMap: Record<string, { variant: BadgeVariant; icon: JSX.Element }> = {
+        PROCUREMENT_SUBMITTED: { variant: "default", icon: <FileText className="w-4 h-4" /> },
+        PRE_PROCUREMENT_CONFERENCE_HELD: { variant: "secondary", icon: <Users className="w-4 h-4" /> },
+        PRE_PROCUREMENT_CONFERENCE_SKIPPED: { variant: "outline", icon: <AlertCircle className="w-4 h-4" /> },
+        PRE_PROCUREMENT_CONFERENCE_COMPLETED: { variant: "secondary", icon: <FileCheck className="w-4 h-4" /> },
+        BIDDING_DOCUMENTS_PUBLISHED: { variant: "secondary", icon: <Upload className="w-4 h-4" /> },
+        PRE_BID_CONFERENCE_HELD: { variant: "secondary", icon: <Users className="w-4 h-4" /> },
+        PRE_BID_CONFERENCE_SKIPPED: { variant: "outline", icon: <AlertCircle className="w-4 h-4" /> },
+        PRE_BID_CONFERENCE_COMPLETED: { variant: "secondary", icon: <FileCheck className="w-4 h-4" /> },
+        SUPPLEMENTAL_BID_BULLETINS_ONGOING: { variant: "default", icon: <RefreshCw className="w-4 h-4" /> },
+        SUPPLEMENTAL_BID_BULLETINS_COMPLETED: { variant: "secondary", icon: <FileCheck className="w-4 h-4" /> },
+        BIDS_OPENED: { variant: "outline", icon: <FileText className="w-4 h-4" /> },
+        BIDS_EVALUATED: { variant: "default", icon: <CheckCircle className="w-4 h-4" /> },
+        POST_QUALIFICATION_VERIFIED: { variant: "secondary", icon: <CheckCircle className="w-4 h-4" /> },
+        POST_QUALIFICATION_FAILED: { variant: "destructive", icon: <XCircle className="w-4 h-4" /> },
+        RESOLUTION_RECORDED: { variant: "default", icon: <FileText className="w-4 h-4" /> },
+        AWARDED: { variant: "secondary", icon: <CheckCircle className="w-4 h-4" /> },
+        PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED: { variant: "outline", icon: <FileText className="w-4 h-4" /> },
+        NTP_RECORDED: { variant: "default", icon: <Clock className="w-4 h-4" /> },
+        MONITORING_COMPLETED: { variant: "secondary", icon: <FileCheck className="w-4 h-4" /> },
+        COMPLETION_DOCUMENTS_UPLOADED: { variant: "outline", icon: <FileText className="w-4 h-4" /> },
+        COMPLETED: { variant: "default", icon: <CheckCircle className="w-4 h-4" /> },
+    }
+
+    const defaultStatus = {
+        variant: "outline" as const,
+        icon: <AlertCircle className="w-4 h-4" />,
+    }
+
+    const status = statusMap[safeStatus] || defaultStatus
+
+    return {
+        ...status,
+        label: safeStatus,
+    }
+}
+
+const getDocumentIcon = (): JSX.Element => {
+    return <FileText className="w-6 h-6 text-destructive" />
+}
+
+// ============================================================================
+// COMPONENT INTERFACES
+// ============================================================================
+
 interface DocumentMetadataProps {
     metadata?: StageMetadata | null
 }
+
+interface DocumentItemProps {
+    doc: Document
+}
+
+interface MetadataItemProps {
+    icon: JSX.Element
+    label: string
+    value?: string | number | null
+    highlight?: boolean
+}
+
+interface ProcurementHeaderProps {
+    title: string
+    id: string
+    status?: Status
+}
+
+// ============================================================================
+// SUB-COMPONENTS
+// ============================================================================
+
+const MetadataItem: FC<MetadataItemProps> = ({ icon, label, value, highlight = false }) => {
+    if (value === null || value === undefined || String(value).trim() === "") {
+        return null
+    }
+
+    return (
+        <div className={`flex items-start gap-3 p-3 border-b last:border-b-0 ${highlight ? 'bg-primary/5 border-primary/20' : ''}`}>
+            <div className="text-muted-foreground mt-0.5">{icon}</div>
+            <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{label}</div>
+                <div className={`text-sm break-words ${highlight ? 'text-primary font-semibold' : 'text-foreground'}`}>{value}</div>
+            </div>
+        </div>
+    )
+}
+
+const DocumentProcessedCount: FC<{ count: number }> = ({ count }) => {
+    if (count === 0) return null
+
+    return (
+        <div className="mt-2 text-xs font-medium px-2 py-1 bg-muted border border-border text-muted-foreground rounded-md inline-flex items-center">
+            <FileText className="w-3.5 h-3.5 mr-1.5" />
+            {count} {count === 1 ? "document" : "documents"} processed
+        </div>
+    )
+}
+
 const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
     if (!metadata || Object.values(metadata).every((v) => !v)) {
         return null
@@ -422,10 +691,6 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
     )
 }
 
-interface DocumentItemProps {
-    doc: Document
-}
-
 const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
     const handleCopyHash = async () => {
         if (!doc.hash) return
@@ -528,160 +793,6 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
     )
 }
 
-interface MetadataItemProps {
-    icon: JSX.Element
-    label: string
-    value?: string | number | null
-    highlight?: boolean
-}
-
-const MetadataItem: FC<MetadataItemProps> = ({ icon, label, value, highlight = false }) => {
-    if (value === null || value === undefined || String(value).trim() === "") {
-        return null
-    }
-
-    return (
-        <div className={`flex items-start gap-3 p-3 border-b last:border-b-0 ${highlight ? 'bg-primary/5 border-primary/20' : ''}`}>
-            <div className="text-muted-foreground mt-0.5">{icon}</div>
-            <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{label}</div>
-                <div className={`text-sm break-words ${highlight ? 'text-primary font-semibold' : 'text-foreground'}`}>{value}</div>
-            </div>
-        </div>
-    )
-}
-
-const getDocumentIcon = (): JSX.Element => {
-    return <FileText className="w-6 h-6 text-destructive" />
-}
-
-const formatFileSize = (bytes?: number): string => {
-    if (bytes === undefined || bytes === null || isNaN(bytes) || bytes < 0) return "N/A"
-    if (bytes === 0) return "0 B"
-
-    const units = ["B", "KB", "MB", "GB", "TB"]
-    const i = Math.floor(Math.log(bytes) / Math.log(1024))
-    const size = Number.parseFloat((bytes / Math.pow(1024, i)).toFixed(i > 1 ? 1 : 0))
-
-    return `${size} ${units[i]}`
-}
-
-// Utility function to format stage names for display
-const formatStageName = (stage: string): string => {
-    if (!stage) return "Procurement Initiation"
-
-    const stageIdLower = stage.toLowerCase()
-
-    // Handle specific stage mappings from backend storage path segments
-    const stageMapping: Record<string, string> = {
-        procurementinitiation: "Procurement Initiation",
-        preprocurementconference: "Pre-Procurement Conference",
-        biddingdocuments: "Bidding Documents",
-        prebidconference: "Pre-Bid Conference",
-        supplementalbidbulletin: "Supplemental Bid Bulletin",
-        bidopening: "Bid Opening",
-        bidevaluation: "Bid Evaluation",
-        postqualification: "Post-Qualification",
-        bacresolution: "BAC Resolution",
-        noticeofaward: "Notice of Award",
-        performancebondcontractandpo: "Performance Bond, Contract and PO",
-        noticetoproceed: "Notice to Proceed",
-        ntp: "Notice to Proceed",
-        monitoring: "Monitoring",
-        completion: "Completed",
-        completed: "Completed",
-    }
-
-    // Check exact match first
-    if (stageMapping[stageIdLower]) {
-        return stageMapping[stageIdLower]
-    }
-
-    // Handle partial matches for flexibility
-    if (stageIdLower.includes("procurement") && stageIdLower.includes("initiation")) {
-        return "Procurement Initiation"
-    }
-    if (stageIdLower.includes("preprocurement") || stageIdLower.includes("pre-procurement")) {
-        return "Pre-Procurement Conference"
-    }
-    if (stageIdLower.includes("bidding") && stageIdLower.includes("documents")) {
-        return "Bidding Documents"
-    }
-    if (stageIdLower.includes("prebid") || stageIdLower.includes("pre-bid")) {
-        return "Pre-Bid Conference"
-    }
-    if (stageIdLower.includes("supplemental") && stageIdLower.includes("bid")) {
-        return "Supplemental Bid Bulletin"
-    }
-    if (stageIdLower.includes("bid") && stageIdLower.includes("opening")) {
-        return "Bid Opening"
-    }
-    if (stageIdLower.includes("bid") && stageIdLower.includes("evaluation")) {
-        return "Bid Evaluation"
-    }
-    if (stageIdLower.includes("post") && stageIdLower.includes("qualification")) {
-        return "Post-Qualification"
-    }
-    if (stageIdLower.includes("bac") && stageIdLower.includes("resolution")) {
-        return "BAC Resolution"
-    }
-    if (stageIdLower.includes("notice") && stageIdLower.includes("award")) {
-        return "Notice of Award"
-    }
-    if (stageIdLower.includes("performance") && stageIdLower.includes("bond")) {
-        return "Performance Bond, Contract and PO"
-    }
-    if (stageIdLower.includes("notice") && stageIdLower.includes("proceed")) {
-        return "Notice to Proceed"
-    }
-    if (stageIdLower.includes("monitoring")) {
-        return "Monitoring"
-    }
-    if (stageIdLower === "completed" || stageIdLower.includes("complet")) {
-        return "Completed"
-    }
-
-    // Check if it's already a known stage
-    const knownStage = STAGE_ORDER.find((p) => p.toLowerCase() === stageIdLower)
-    if (knownStage) return knownStage
-
-    // Convert camelCase or PascalCase to proper title case
-    const titleCase = stage
-        .replace(/([A-Z])/g, " $1") // Add space before capital letters
-        .replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
-        .trim() // Remove leading/trailing spaces
-
-    return titleCase
-}
-
-const getDocumentstage = (doc: Document): string => {
-    return formatStageName(doc.stage || "Procurement Initiation")
-}
-
-const DocumentProcessedCount: FC<{ count: number }> = ({ count }) => {
-    if (count === 0) return null
-
-    return (
-        <div className="mt-2 text-xs font-medium px-2 py-1 bg-muted border border-border text-muted-foreground rounded-md inline-flex items-center">
-            <FileText className="w-3.5 h-3.5 mr-1.5" />
-            {count} {count === 1 ? "document" : "documents"} processed
-        </div>
-    )
-}
-
-// Helper function to shorten hash strings
-const shortenHash = (hash?: string, startLength = 5, endLength = 5): string => {
-    if (!hash) return "N/A"
-    if (hash.length <= startLength + endLength) return hash
-    return `${hash.substring(0, startLength)}...${hash.substring(hash.length - endLength)}`
-}
-
-interface ProcurementHeaderProps {
-    title: string
-    id: string
-    status?: Status
-}
-
 const LastUpdatedTimestamp: FC<{ timestamp?: string }> = ({ timestamp }) => {
     if (!timestamp) return null
 
@@ -778,122 +889,16 @@ const ProcurementHeader: FC<ProcurementHeaderProps> = ({ title, id, status }) =>
     )
 }
 
-const getStatusInfo = (statusText?: string): StatusInfo => {
-    const safeStatus = statusText || "Unknown Status"
+// ============================================================================
+// CUSTOM HOOKS
+// ============================================================================
 
-    const statusMap: Record<string, { variant: BadgeVariant; icon: JSX.Element }> = {
-        PROCUREMENT_SUBMITTED: { variant: "default", icon: <FileText className="w-4 h-4" /> },
-        PRE_PROCUREMENT_CONFERENCE_HELD: { variant: "secondary", icon: <Users className="w-4 h-4" /> },
-        PRE_PROCUREMENT_CONFERENCE_SKIPPED: { variant: "outline", icon: <AlertCircle className="w-4 h-4" /> },
-        PRE_PROCUREMENT_CONFERENCE_COMPLETED: {
-            variant: "secondary",
-            icon: <FileCheck className="w-4 h-4" />,
-        },
-        BIDDING_DOCUMENTS_PUBLISHED: { variant: "secondary", icon: <Upload className="w-4 h-4" /> },
-        PRE_BID_CONFERENCE_HELD: { variant: "secondary", icon: <Users className="w-4 h-4" /> },
-        PRE_BID_CONFERENCE_SKIPPED: { variant: "outline", icon: <AlertCircle className="w-4 h-4" /> },
-        PRE_BID_CONFERENCE_COMPLETED: { variant: "secondary", icon: <FileCheck className="w-4 h-4" /> },
-        SUPPLEMENTAL_BID_BULLETINS_ONGOING: { variant: "default", icon: <RefreshCw className="w-4 h-4" /> },
-        SUPPLEMENTAL_BID_BULLETINS_COMPLETED: {
-            variant: "secondary",
-            icon: <FileCheck className="w-4 h-4" />,
-        },
-        BIDS_OPENED: { variant: "outline", icon: <FileText className="w-4 h-4" /> },
-        BIDS_EVALUATED: { variant: "default", icon: <CheckCircle className="w-4 h-4" /> },
-        POST_QUALIFICATION_VERIFIED: { variant: "secondary", icon: <CheckCircle className="w-4 h-4" /> },
-        POST_QUALIFICATION_FAILED: { variant: "destructive", icon: <XCircle className="w-4 h-4" /> },
-        RESOLUTION_RECORDED: { variant: "default", icon: <FileText className="w-4 h-4" /> },
-        AWARDED: { variant: "secondary", icon: <CheckCircle className="w-4 h-4" /> },
-        PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED: {
-            variant: "outline",
-            icon: <FileText className="w-4 h-4" />,
-        },
-        NTP_RECORDED: { variant: "default", icon: <Clock className="w-4 h-4" /> },
-        MONITORING_COMPLETED: { variant: "secondary", icon: <FileCheck className="w-4 h-4" /> },
-        COMPLETION_DOCUMENTS_UPLOADED: { variant: "outline", icon: <FileText className="w-4 h-4" /> },
-        COMPLETED: { variant: "default", icon: <CheckCircle className="w-4 h-4" /> },
-    }
+const useDocumentsByStage = (documents?: Document[]) => {
+    return useMemo(() => {
+        if (!documents) return {}
 
-    const defaultStatus = {
-        variant: "outline" as const,
-        icon: <AlertCircle className="w-4 h-4" />,
-    }
-
-    const status = statusMap[safeStatus] || defaultStatus
-
-    return {
-        ...status,
-        label: safeStatus,
-    }
-}
-
-const formatDate = (dateString?: string): string => {
-    if (!dateString) return "Invalid Date"
-    try {
-        return new Date(dateString).toLocaleString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-        })
-    } catch (e) {
-        return "Invalid Date" + e
-    }
-}
-
-const formatDateOnly = (dateString?: string | number): string => {
-    if (dateString === null || dateString === undefined) return "Invalid Date"
-    try {
-        return new Date(dateString).toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        })
-    } catch (e) {
-        return "Invalid Date" + e
-    }
-}
-
-const formatTimeOnly = (dateString?: string): string => {
-    if (!dateString) return "Invalid Time"
-    try {
-        return new Date(dateString).toLocaleTimeString(undefined, {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-        })
-    } catch (e) {
-        return "Invalid Time" + e
-    }
-}
-
-type BadgeVariant = "default" | "destructive" | "outline" | "secondary" | null
-interface StatusInfo {
-    variant: BadgeVariant
-    icon: JSX.Element
-    label: string
-}
-
-interface ShowProps {
-    procurement: Procurement
-    now?: string
-    error?: string
-}
-
-export default function ShowProcurement({ procurement: initialProcurement }: ShowProps) {
-    const [procurement] = useState<Procurement | null>(initialProcurement)
-    const [error] = useState<string | null>(null)
-
-    const userRole = "guest"
-    const breadcrumbs = getBreadcrumbs(userRole)
-
-    const documentsBystage = useMemo(() => {
-        if (!procurement?.documents) return {}
-
-        const grouped = procurement.documents.reduce((acc: Record<string, Document[]>, doc) => {
-            const stage = getDocumentstage(doc)
+        const grouped = documents.reduce((acc: Record<string, Document[]>, doc) => {
+            const stage = getDocumentStage(doc)
             if (!acc[stage]) {
                 acc[stage] = []
             }
@@ -905,7 +910,8 @@ export default function ShowProcurement({ procurement: initialProcurement }: Sho
             if (stage === "Bid Opening" || stage === "Performance Bond, Contract and PO") {
                 grouped[stage] = grouped[stage].sort(
                     (a, b) =>
-                        (b.timestamp ? new Date(b.timestamp).getTime() : 0) - (a.timestamp ? new Date(a.timestamp).getTime() : 0),
+                        (b.timestamp ? new Date(b.timestamp).getTime() : 0) -
+                        (a.timestamp ? new Date(a.timestamp).getTime() : 0),
                 )
             } else {
                 const uniqueDocs = new Map<string, Document>()
@@ -913,7 +919,8 @@ export default function ShowProcurement({ procurement: initialProcurement }: Sho
                 grouped[stage]
                     .sort(
                         (a, b) =>
-                            (b.timestamp ? new Date(b.timestamp).getTime() : 0) - (a.timestamp ? new Date(a.timestamp).getTime() : 0),
+                            (b.timestamp ? new Date(b.timestamp).getTime() : 0) -
+                            (a.timestamp ? new Date(a.timestamp).getTime() : 0),
                     )
                     .forEach((doc) => {
                         const key = doc.document_type || doc.file_key
@@ -925,16 +932,19 @@ export default function ShowProcurement({ procurement: initialProcurement }: Sho
 
                 grouped[stage] = Array.from(uniqueDocs.values()).sort(
                     (a, b) =>
-                        (b.timestamp ? new Date(b.timestamp).getTime() : 0) - (a.timestamp ? new Date(a.timestamp).getTime() : 0),
+                        (b.timestamp ? new Date(b.timestamp).getTime() : 0) -
+                        (a.timestamp ? new Date(a.timestamp).getTime() : 0),
                 )
             }
         })
 
         return grouped
-    }, [procurement?.documents])
+    }, [documents])
+}
 
-    const sortedstageKeys = useMemo(() => {
-        const stageKeys = Object.keys(documentsBystage)
+const useSortedStageKeys = (documentsByStage: Record<string, Document[]>) => {
+    return useMemo(() => {
+        const stageKeys = Object.keys(documentsByStage)
         return stageKeys.sort((a, b) => {
             const aIndex = STAGE_ORDER.indexOf(a)
             const bIndex = STAGE_ORDER.indexOf(b)
@@ -944,14 +954,14 @@ export default function ShowProcurement({ procurement: initialProcurement }: Sho
             if (bIndex === -1) return -1
             return bIndex - aIndex // Reversed to show latest stages first
         })
-    }, [documentsBystage])
+    }, [documentsByStage])
+}
 
-    const totalDocuments = useMemo(() => procurement?.documents?.length ?? 0, [procurement?.documents])
+const useTimelineItems = (timeline?: TimelineItem[], events?: Event[]) => {
+    return useMemo(() => {
+        const combinedItems: Array<Omit<ProcessedTimelineItem, "content" | "stageOrder"> & { raw: TimelineItem | Event }> = []
 
-    const timelineItemsByDate = useMemo(() => {
-        const combinedItems: Array<Omit<ProcessedTimelineItem, "content" | "stageOrder"> & { raw: TimelineItem | Event }> =
-            []
-            ; (procurement?.timeline ?? []).forEach((item) => {
+            ; (timeline ?? []).forEach((item) => {
                 combinedItems.push({
                     timestamp: item.timestamp,
                     formatted_date: formatDate(item.timestamp),
@@ -960,7 +970,8 @@ export default function ShowProcurement({ procurement: initialProcurement }: Sho
                     raw: item,
                 })
             })
-            ; (procurement?.events ?? []).forEach((event) => {
+
+            ; (events ?? []).forEach((event) => {
                 combinedItems.push({
                     timestamp: event.timestamp,
                     formatted_date: formatDate(event.timestamp),
@@ -1078,9 +1089,27 @@ export default function ShowProcurement({ procurement: initialProcurement }: Sho
         })
 
         return itemsByDate
-    }, [procurement?.timeline, procurement?.events])
+    }, [timeline, events])
+}
 
-    if (error) {
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
+export default function ShowProcurement({ procurement: initialProcurement, error }: ShowProps) {
+    const [procurement] = useState<Procurement | null>(initialProcurement)
+    const [currentError] = useState<string | null>(error || null)
+
+    const { auth } = usePage<SharedData>().props;
+    const userRole = auth?.user?.role || "guest";
+    const breadcrumbs = getBreadcrumbs(userRole);
+
+    const documentsByStage = useDocumentsByStage(procurement?.documents)
+    const sortedStageKeys = useSortedStageKeys(documentsByStage)
+    const totalDocuments = useMemo(() => procurement?.documents?.length ?? 0, [procurement?.documents])
+    const timelineItemsByDate = useTimelineItems(procurement?.timeline, procurement?.events)
+
+    if (currentError) {
         return (
             <AppLayout breadcrumbs={breadcrumbs}>
                 <div className="p-4 sm:p-6">
@@ -1089,7 +1118,7 @@ export default function ShowProcurement({ procurement: initialProcurement }: Sho
                             <AlertCircle className="h-4 w-4 text-destructive" />
                             <h3 className="font-medium text-destructive">Error Loading Procurement</h3>
                         </div>
-                        <p className="mt-2 text-sm text-destructive/80">{error}</p>
+                        <p className="mt-2 text-sm text-destructive/80">{currentError}</p>
                     </div>
                 </div>
             </AppLayout>
@@ -1144,7 +1173,7 @@ export default function ShowProcurement({ procurement: initialProcurement }: Sho
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-0">
-                                        {sortedstageKeys.map((stage, stageIndex) => {
+                                        {sortedStageKeys.map((stage, stageIndex) => {
                                             const isLatestStage = stageIndex === 0
 
                                             return (
@@ -1153,7 +1182,7 @@ export default function ShowProcurement({ procurement: initialProcurement }: Sho
                                                         <div className="flex items-center justify-between">
                                                             <h3 className="font-semibold flex items-center gap-2">
                                                                 <FileCheck className="w-4 h-4" />
-                                                                {stage} ({documentsBystage[stage].length})
+                                                                {stage} ({documentsByStage[stage].length})
                                                                 {isLatestStage && (
                                                                     <Badge variant="secondary" className="text-xs">
                                                                         Latest
@@ -1163,7 +1192,7 @@ export default function ShowProcurement({ procurement: initialProcurement }: Sho
                                                         </div>
                                                     </div>
                                                     <ul>
-                                                        {documentsBystage[stage].map((doc, docIndex) => (
+                                                        {documentsByStage[stage].map((doc, docIndex) => (
                                                             <DocumentItem key={`${doc.file_key}-${docIndex}`} doc={doc} />
                                                         ))}
                                                     </ul>
