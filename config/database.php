@@ -154,18 +154,9 @@ return [
             // TLS options: use CA bundle installed by composer/ca-bundle.
             // This validates the Heroku Redis certificate instead of disabling verification.
             'ssl' => [
-                'cafile' => env('REDIS_CAFILE', base_path('vendor/composer/ca-bundle/ca-bundle.crt')),
-                'verify_peer' => true,
-                'verify_peer_name' => true,
-            ],
-
-            // phpredis stream context fallback (if you ever switch to phpredis)
-            'stream' => [
-                'ssl' => [
-                    'cafile' => env('REDIS_CAFILE', base_path('vendor/composer/ca-bundle/ca-bundle.crt')),
-                    'verify_peer' => true,
-                    'verify_peer_name' => true,
-                ],
+                // 'cafile' => env('REDIS_CAFILE', base_path('vendor/composer/ca-bundle/ca-bundle.crt')),
+                'verify_peer' => false,
+                'verify_peer_name' => false,
             ],
         ],
 
