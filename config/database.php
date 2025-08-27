@@ -147,17 +147,8 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_') . '_database_'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
             'persistent' => env('REDIS_PERSISTENT', false),
-
-
-            // TLS options: use CA bundle installed by composer/ca-bundle.
-            // This validates the Heroku Redis certificate instead of disabling verification.
-            'ssl' => [
-                // 'cafile' => env('REDIS_CAFILE', base_path('vendor/composer/ca-bundle/ca-bundle.crt')),
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-            ],
         ],
 
         'default' => [
