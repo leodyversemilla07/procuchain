@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
     Table,
@@ -132,11 +132,11 @@ export default function AdminLockedAccounts() {
 
     const getRoleBadgeColor = (role: string) => {
         switch (role) {
-            case 'admin': return 'bg-red-100 text-red-800 hover:bg-red-200';
-            case 'bac_chairman': return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-            case 'hope': return 'bg-green-100 text-green-800 hover:bg-green-200';
-            case 'bac_secretariat': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
-            default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+            case 'admin': return 'bg-destructive/10 text-destructive hover:bg-destructive/20';
+            case 'bac_chairman': return 'bg-accent/10 text-accent-foreground hover:bg-accent/20';
+            case 'hope': return 'bg-success/10 text-success hover:bg-success/20';
+            case 'bac_secretariat': return 'bg-warning/10 text-warning hover:bg-warning/20';
+            default: return 'bg-muted text-muted-foreground hover:bg-accent/5';
         }
     };
 
@@ -156,8 +156,8 @@ export default function AdminLockedAccounts() {
     };
 
     const getLockStatusColor = (user: User) => {
-        if (user.is_currently_locked) return 'bg-red-100 text-red-800 border-red-200';
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        if (user.is_currently_locked) return 'bg-destructive/10 text-destructive border-destructive/50';
+        return 'bg-warning/10 text-warning border-warning/50';
     };
 
     return (
@@ -169,7 +169,7 @@ export default function AdminLockedAccounts() {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center">
-                                <Shield className="h-6 w-6 md:h-8 md:w-8 mr-3 text-primary" />
+                                <Shield className="h-6 w-6 md:h-8 md:w-8 mr-3 text-foreground" />
                                 Locked Accounts
                             </h1>
                             <p className="text-muted-foreground mt-2 text-sm md:text-base">
@@ -189,9 +189,9 @@ export default function AdminLockedAccounts() {
                 </div>
                 {/* Error Display */}
                 {flash.error && (
-                    <Card className="border-red-200 bg-red-50">
+                    <Card className="border-destructive/50 bg-destructive/10">
                         <CardContent className="p-4">
-                            <div className="flex items-center space-x-2 text-red-800">
+                            <div className="flex items-center space-x-2 text-destructive">
                                 <AlertTriangle className="h-5 w-5" />
                                 <span>{flash.error}</span>
                             </div>
@@ -233,157 +233,143 @@ export default function AdminLockedAccounts() {
                     </Card>
                 </div>
                 {/* Locked Accounts Table */}
-                <Card>
-                    <CardHeader className="pb-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <ShieldOff className="h-5 w-5" />
-                                    <span>Locked User Accounts</span>
-                                </CardTitle>
-                                <CardDescription className="mt-2">
-                                    Accounts that have been locked due to failed login attempts or administrative action
-                                </CardDescription>
-                            </div>
+                {lockedAccounts.length === 0 ? (
+                    <div className="text-center py-8">
+                        <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">No Locked Accounts</h3>
+                        <p className="text-muted-foreground">There are currently no locked user accounts in the system.</p>
+                    </div>
+                ) : (
+                    <>
+                    <div className="overflow-x-auto border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>User</TableHead>
+                                    <TableHead>Role</TableHead>
+                                    <TableHead>MFA Status</TableHead>
+                                    <TableHead>Lock Status</TableHead>
+                                    <TableHead>Failed Attempts</TableHead>
+                                    <TableHead>Locked At</TableHead>
+                                    <TableHead>Expires At</TableHead>
+                                    <TableHead>Reason</TableHead>
+                                    <TableHead>Time Remaining</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paginatedAccounts.map((user) => (
+                                    <TableRow key={user.id}>
+                                        <TableCell>
+                                            <div className="flex items-center space-x-3">
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                                                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                                                </div>
+                                                <div>
+                                                    <div className="font-medium">{user.name}</div>
+                                                    <div className="text-sm text-muted-foreground">{user.email}</div>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge className={getRoleBadgeColor(user.role)}>
+                                                {getRoleDisplayName(user.role)}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center space-x-1">
+                                                {user.mfa_enabled ? (
+                                                    <Badge className="bg-success/10 dark:bg-success/20 text-success dark:text-success-foreground px-2 py-1 text-xs border border-success/50 dark:border-success/30">
+                                                        <QrCode className="mr-1 h-3 w-3" />
+                                                        Enabled
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge className="bg-muted dark:bg-muted/50 text-muted-foreground dark:text-muted-foreground/80 px-2 py-1 text-xs border border-muted/50 dark:border-muted/30">
+                                                        Disabled
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className={getLockStatusColor(user)}>
+                                                {user.is_currently_locked ? 'Active Lock' : 'Expired Lock'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center space-x-2">
+                                                <span className="text-sm font-medium">{user.failed_login_attempts || 0}</span>
+                                                {(user.failed_login_attempts || 0) >= 3 && (
+                                                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="text-sm">{formatDateTime(user.locked_at)}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="text-sm">{formatDateTime(user.lock_expires_at)}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="text-sm max-w-xs truncate" title={user.locked_reason || 'N/A'}>
+                                                {user.locked_reason || 'N/A'}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="text-sm">
+                                                {user.is_currently_locked ? (
+                                                    <div className="flex items-center space-x-1 text-warning">
+                                                        <Clock className="h-3 w-3" />
+                                                        <span>{user.lock_time_remaining ?? '—'}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-muted-foreground">Expired</span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    {user.is_currently_locked && (
+                                                        <DropdownMenuItem onClick={() => handleUnlockAccount(user)} className="text-success">
+                                                            <Unlock className="mr-2 h-4 w-4" />
+                                                            Unlock Account
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuItem onClick={() => handleResetAttempts(user)}>
+                                                        <RotateCcw className="mr-2 h-4 w-4" />
+                                                        Reset Attempts
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                        
+                    </div>
+                    <div className="mt-4">
+                            <Pagination
+                                pageIndex={pageIndex}
+                                pageSize={pageSize}
+                                pageCount={pageCount}
+                                totalItems={lockedAccounts.length}
+                                onPageChange={setPageIndex}
+                                onPageSizeChange={(size) => {
+                                    setPageSize(size);
+                                    setPageIndex(0);
+                                }}
+                            />
                         </div>
-                    </CardHeader>
-                    <CardContent className="px-6 pb-6">
-                        {lockedAccounts.length === 0 ? (
-                            <div className="text-center py-8">
-                                <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                <h3 className="text-lg font-medium mb-2">No Locked Accounts</h3>
-                                <p className="text-muted-foreground">There are currently no locked user accounts in the system.</p>
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>User</TableHead>
-                                            <TableHead>Role</TableHead>
-                                            <TableHead>MFA Status</TableHead>
-                                            <TableHead>Lock Status</TableHead>
-                                            <TableHead>Failed Attempts</TableHead>
-                                            <TableHead>Locked At</TableHead>
-                                            <TableHead>Expires At</TableHead>
-                                            <TableHead>Reason</TableHead>
-                                            <TableHead>Time Remaining</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {paginatedAccounts.map((user) => (
-                                            <TableRow key={user.id}>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                                                            <UserIcon className="h-4 w-4 text-muted-foreground" />
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-medium">{user.name}</div>
-                                                            <div className="text-sm text-muted-foreground">{user.email}</div>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge className={getRoleBadgeColor(user.role)}>
-                                                        {getRoleDisplayName(user.role)}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-1">
-                                                        {user.mfa_enabled ? (
-                                                            <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-2 py-1 text-xs border border-green-200 dark:border-green-800/30">
-                                                                <QrCode className="mr-1 h-3 w-3" />
-                                                                Enabled
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge className="bg-gray-100 dark:bg-gray-800/50 text-gray-800 dark:text-gray-300 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700/50">
-                                                                Disabled
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="outline" className={getLockStatusColor(user)}>
-                                                        {user.is_currently_locked ? 'Active Lock' : 'Expired Lock'}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="text-sm font-medium">{user.failed_login_attempts || 0}</span>
-                                                        {(user.failed_login_attempts || 0) >= 3 && (
-                                                            <AlertTriangle className="h-4 w-4 text-red-500" />
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm">{formatDateTime(user.locked_at)}</div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm">{formatDateTime(user.lock_expires_at)}</div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm max-w-xs truncate" title={user.locked_reason || 'N/A'}>
-                                                        {user.locked_reason || 'N/A'}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm">
-                                                        {user.is_currently_locked ? (
-                                                            <div className="flex items-center space-x-1 text-orange-600">
-                                                                <Clock className="h-3 w-3" />
-                                                                <span>{user.lock_time_remaining || 'N/A'}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">Expired</span>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                            <DropdownMenuSeparator />
-                                                            {user.is_currently_locked && (
-                                                                <DropdownMenuItem onClick={() => handleUnlockAccount(user)} className="text-green-600">
-                                                                    <Unlock className="mr-2 h-4 w-4" />
-                                                                    Unlock Account
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            <DropdownMenuItem onClick={() => handleResetAttempts(user)}>
-                                                                <RotateCcw className="mr-2 h-4 w-4" />
-                                                                Reset Attempts
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                                <div className="mt-4">
-                                    <Pagination
-                                        pageIndex={pageIndex}
-                                        pageSize={pageSize}
-                                        pageCount={pageCount}
-                                        totalItems={lockedAccounts.length}
-                                        onPageChange={setPageIndex}
-                                        onPageSizeChange={(size) => {
-                                            setPageSize(size);
-                                            setPageIndex(0);
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                    </>
+                )}
             </div>
             {/* Unlock Account Dialog */}
             <AlertDialog open={isUnlockDialogOpen} onOpenChange={setIsUnlockDialogOpen}>
@@ -399,7 +385,7 @@ export default function AdminLockedAccounts() {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmUnlockAccount}
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-success text-success-foreground hover:bg-success/90"
                         >
                             Unlock Account
                         </AlertDialogAction>

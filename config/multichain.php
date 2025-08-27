@@ -72,7 +72,7 @@ return [
 
     'connection_timeout' => env('MULTICHAIN_CONNECTION_TIMEOUT', 30),
     'max_retries' => env('MULTICHAIN_MAX_RETRIES', 3),
-    
+
     /*
     |--------------------------------------------------------------------------
     | MultiChain User Addresses
@@ -87,5 +87,36 @@ return [
         'bac_chairman' => env('MULTICHAIN_BAC_CHAIRMAN_ADDRESS', 'default_bac_chairman_address'),
         'hope' => env('MULTICHAIN_HOPE_ADDRESS', 'default_hope_address'),
         'admin' => env('MULTICHAIN_ADMIN_ADDRESS', 'default_admin_address'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permission Matrix (Roles)
+    |--------------------------------------------------------------------------
+    |
+    | Central definition of the global + stream permissions granted to each
+    | role by the multichain:setup command. Keeping this in config lets us
+    | adjust blockchain permissioning without editing the command class.
+    |
+    */
+    'permissions' => [
+        'roles' => [
+            'admin' => [
+                'global' => ['admin', 'send', 'receive', 'create', 'issue', 'mine', 'activate'],
+                'stream' => ['admin', 'write', 'read'],
+            ],
+            'bac_secretariat' => [
+                'global' => ['send', 'receive', 'create', 'issue', 'activate'],
+                'stream' => ['admin', 'write', 'read'],
+            ],
+            'bac_chairman' => [
+                'global' => ['send', 'receive'],
+                'stream' => ['write', 'read'],
+            ],
+            'hope' => [
+                'global' => ['send', 'receive'],
+                'stream' => ['write', 'read'],
+            ],
+        ],
     ],
 ];

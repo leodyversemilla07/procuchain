@@ -6,25 +6,43 @@ use App\Models\User;
 use App\Services\MultichainService;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Support\Facades\Log;
 
 class MultichainSetup extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'multichain:setup';
+    use ConfirmableTrait;
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Setup MultiChain streams, address and permissions';
+    protected $signature = 'multichain:setup
+        {--dry-run : Show what would happen without making changes}
+        {--admin-email= : Create or ensure an application admin user (email)}
+        {--roles=* : Limit processing to specific roles}
+        {--skip-streams : Do not create streams}
+        {--skip-permissions : Do not grant permissions}
+        {--show-addresses : Display full (unmasked) addresses}
+        {--persist : Persist generated addresses to .env and refresh config}
+        {--label-on-node : Label resolved addresses on the node for discovery}
+        {--force : Non-interactive mode}
+        {--check-connection : Only check if the app is connected to the node}';
 
-    private $multichainService;
+    protected $description = 'Simplified MultiChain setup: create streams and grant configured permissions.';
+
+    private const STREAMS = [
+        'procurement.documents',
+        'procurement.status',
+        'procurement.events',
+        'procurement.corrections',
+    ];
+
+    // Mirror of config('multichain.addresses') defaults for quick reference
+    private const CONFIG_ADDRESSES = [
+        'bac_secretariat' => 'default_bac_secretariat_address',
+        'bac_chairman' => 'default_bac_chairman_address',
+        'hope' => 'default_hope_address',
+        'admin' => 'default_admin_address',
+    ];
+
+    private MultichainService $multichainService;
 
     public function __construct(MultichainService $multichainService)
     {
@@ -32,401 +50,578 @@ class MultichainSetup extends Command
         $this->multichainService = $multichainService;
     }
 
-    protected function setupAddresses(): array
+    private array $errors = [];
+
+    private array $addressSources = []; // role => 'config'|'node'|'generated'|'missing'
+
+    public function handle(): int
     {
-        $this->info('<fg=blue>📍 Step 1: Generating Blockchain Addresses...</>');
-        $addresses = [
-            'BAC_SECRETARIAT_ADDRESS' => $this->createNewAddress(),
-            'BAC_CHAIRMAN_ADDRESS' => $this->createNewAddress(),
-            'HOPE_ADDRESS' => $this->createNewAddress(),
-        ];
+        $this->info('MultiChain simplified setup starting');
 
-        $this->updateEnvFile($addresses);
+        // Reset transient state so repeated calls in the same process don't accumulate errors
+        $this->errors = [];
+        $this->addressSources = [];
 
-        return $addresses;
-    }
-
-    protected function updateEnvFile(array $addresses): void
-    {
-        $envContent = file_get_contents(base_path('.env'));
-        foreach ($addresses as $key => $address) {
-            $envContent = preg_replace("/$key=.*/", "$key=$address", $envContent);
-            $this->line("  └─ <fg=green>✓</> $key: <fg=yellow>$address</>");
+        // Check connection flag
+        if ($this->option('check-connection')) {
+            try {
+                // Try a simple node RPC, e.g. get blockchain info
+                $info = $this->multichainService->getInfo();
+                $this->info('Connected to node.');
+                $this->line('Node info: ' . json_encode($info));
+                return self::SUCCESS;
+            } catch (Exception $e) {
+                $this->error('Could not connect to node: ' . $e->getMessage());
+                return self::FAILURE;
+            }
         }
-        file_put_contents(base_path('.env'), $envContent);
-    }
 
-    protected function setupStreams(): array
-    {
-        $this->info('<fg=blue>📍 Step 3: Creating Blockchain Streams...</>');
-        $streams = [
-            'procurement.documents',
-            'procurement.status',
-            'procurement.events',
-            'procurement.corrections',
-        ];
+        $dryRun = (bool) $this->option('dry-run');
+        $skipStreams = (bool) $this->option('skip-streams');
+        $skipPermissions = (bool) $this->option('skip-permissions');
+
+        $roles = $this->normalizedSelectedRoles();
+
+        // Load addresses from config/node; optionally label resolved addresses on the node
+        $labelOnNode = (bool) $this->option('label-on-node');
+        $addresses = $this->loadExistingAddresses($roles, $dryRun, $labelOnNode);
+
+        if ($email = $this->option('admin-email')) {
+            $this->ensureAdminUser((string) $email, $addresses['admin'] ?? null, $dryRun);
+        }
 
         $streamIds = [];
-        $bar = $this->output->createProgressBar(count($streams));
-        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %message%');
-
-        foreach ($streams as $stream) {
-            $bar->setMessage("Creating $stream...");
-
-            try {
-                $streamIds[$stream] = $this->createNewStream($stream);
-
-                // Wait for blockchain to process
-                sleep(2);
-
-                // Verify stream exists and is ready
-                $maxRetries = 3;
-                $retryDelay = 2;
-
-                for ($i = 1; $i <= $maxRetries; $i++) {
-                    try {
-                        $streamInfo = $this->multichainService->getStreamInfo($stream);
-                        if (! empty($streamInfo)) {
-                            // Stream exists, attempt subscription
-                            $this->multichainService->subscribe($stream, true);
-                            $this->line("\n  └─ <fg=green>✓</> Stream <options=bold>$stream</> verified and subscribed");
-                            break;
-                        }
-                    } catch (Exception $e) {
-                        if ($i === $maxRetries) {
-                            $this->warn("\n  └─ Warning: Could not verify/subscribe to $stream: ".$e->getMessage());
-                        } else {
-                            sleep($retryDelay);
-                        }
-                    }
-                }
-
-                $this->line("\n  └─ <fg=green>✓</> Stream <options=bold>$stream</> created with ID: <fg=yellow>{$streamIds[$stream]}</>");
-                $bar->advance();
-
-            } catch (Exception $e) {
-                $this->error("\n  └─ Failed to create/subscribe to stream $stream: ".$e->getMessage());
-                if (! $this->confirm('Would you like to continue with the next stream?')) {
-                    throw $e;
-                }
-            }
+        if (! $skipStreams) {
+            $streamIds = $this->setupStreams($dryRun);
+        } else {
+            $this->info('Skipping stream creation');
         }
 
-        $bar->finish();
+        if (! $skipPermissions) {
+            $this->setupPermissions(
+                $addresses,
+                array_keys($streamIds ?: array_fill_keys(self::STREAMS, '')),
+                $dryRun
+            );
+        } else {
+            $this->info('Skipping permission grants');
+        }
 
-        return $streamIds;
-    }
+        // Persist any generated addresses if requested
+        $this->persistAddresses($addresses);
 
-    protected function setupPermissions(array $addresses, array $streams): void
-    {
-        $this->info('<fg=blue>📍 Step 4: Setting Up Permissions...</>');
-
-        // Wait for blockchain to stabilize after stream creation
-        $this->info('Waiting for blockchain confirmation...');
-        sleep(5);
-
-        // First grant admin permissions to BAC_SECRETARIAT_ADDRESS
-        $secretariatAddress = $addresses['BAC_SECRETARIAT_ADDRESS'];
-        $this->line("\n<fg=yellow>➤ Configuring BAC_SECRETARIAT_ADDRESS (Admin):</>");
-
-        try {
-            // Verify address is valid
-            $validation = $this->multichainService->validateAddress($secretariatAddress);
-            if (! $validation || ! isset($validation['isvalid']) || ! $validation['isvalid']) {
-                throw new Exception('Invalid address for BAC_SECRETARIAT_ADDRESS');
-            }
-
-            // First grant only admin permission
-            $this->multichainService->grant($secretariatAddress, 'admin');
-            $this->line('  └─ <fg=green>✓</> Admin permission granted');
-
-            sleep(2); // Wait for admin permission to be confirmed
-
-            // Then grant other global permissions
-            $globalPerms = 'send,receive,create,issue,mine,activate';
-            $this->multichainService->grant($secretariatAddress, $globalPerms);
-            $this->line('  └─ <fg=green>✓</> Global permissions granted');
-
-            // Grant stream permissions one at a time
-            foreach ($streams as $stream) {
-                try {
-                    $streamInfo = $this->multichainService->getStreamInfo($stream);
-                    if (! $streamInfo) {
-                        throw new Exception("Stream $stream does not exist");
-                    }
-
-                    // Grant stream-level permissions directly
-                    $this->multichainService->grant($secretariatAddress, "$stream.admin");
-                    $this->line("  └─ <fg=green>✓</> Granted $stream.admin permission");
-                    sleep(1);
-
-                    $this->multichainService->grant($secretariatAddress, "$stream.write");
-                    $this->line("  └─ <fg=green>✓</> Granted $stream.write permission");
-                    sleep(1);
-
-                    $this->multichainService->grant($secretariatAddress, "$stream.read");
-                    $this->line("  └─ <fg=green>✓</> Granted $stream.read permission");
-                    sleep(1);
-
-                } catch (Exception $e) {
-                    $this->error("  └─ Failed to grant permissions for stream $stream: ".$e->getMessage());
-                    if (! $this->confirm('Would you like to continue with the next stream?')) {
-                        throw $e;
+        // Filter address errors to only those roles that remain unresolved (null)
+        if (isset($this->errors['addresses']) && is_array($this->errors['addresses'])) {
+            $filtered = [];
+            foreach ($this->errors['addresses'] as $r) {
+                // keep only roles that remain unresolved
+                if (empty($addresses[$r])) {
+                    if (! in_array($r, $filtered, true)) {
+                        $filtered[] = $r;
                     }
                 }
             }
+            $this->errors['addresses'] = $filtered;
+        }
 
-            // Now grant permissions to other roles
-            $otherRoles = [
-                'BAC_CHAIRMAN_ADDRESS' => [
-                    'global' => ['send', 'receive'],
-                    'stream' => ['write', 'read'],
-                ],
-                'HOPE_ADDRESS' => [
-                    'global' => ['send', 'receive'],
-                    'stream' => ['write', 'read'],
-                ],
-            ];
+        if (isset($this->errors['streams']) && is_array($this->errors['streams'])) {
+            $this->errors['streams'] = array_values(array_unique($this->errors['streams']));
+        }
 
-            foreach ($otherRoles as $role => $perms) {
-                $this->line("\n<fg=yellow>➤ Configuring $role:</>");
-                $address = $addresses[$role];
+        if (isset($this->errors['permissions']) && is_array($this->errors['permissions'])) {
+            $this->errors['permissions'] = array_values(array_unique($this->errors['permissions']));
+        }
 
+        $this->displaySummary($addresses, $streamIds);
+
+        // For dry-run we always return success so the command can be used safely
+        // in CI and interactive checks without side-effects causing FAILURE.
+        if ($dryRun) {
+            return self::SUCCESS;
+        }
+
+        return empty($this->errors) ? self::SUCCESS : self::FAILURE;
+    }
+
+    private function normalizedSelectedRoles(): array
+    {
+        $input = (array) $this->option('roles');
+        $input = array_filter(array_map('strtolower', $input));
+        if (! empty($input)) {
+            return $input;
+        }
+
+        $configAddresses = (array) config('multichain.addresses', []);
+
+        return array_keys($configAddresses) ?: ['admin'];
+    }
+
+    private function loadExistingAddresses(array $roles, bool $dryRun = false, bool $labelOnNode = false): array
+    {
+        $configAddresses = (array) config('multichain.addresses', []);
+        $selected = [];
+
+        // Attempt to list addresses from node once for discovery
+        $nodeAddresses = null;
+        try {
+            $nodeAddresses = $this->multichainService->listAddresses(null, true);
+        } catch (Exception $e) {
+            // Node may be unreachable or RPC disabled; we will fallback to generation if possible
+            Log::warning('Could not read addresses from node: ' . $e->getMessage());
+            $nodeAddresses = null;
+        }
+
+        foreach ($roles as $role) {
+            $addr = $configAddresses[$role] ?? null;
+            if ($addr) {
+                // Validate configured address
                 try {
-                    // Verify address is valid
-                    $validation = $this->multichainService->validateAddress($address);
-                    if (! $validation || ! isset($validation['isvalid']) || ! $validation['isvalid']) {
-                        throw new Exception("Invalid address for $role");
-                    }
-
-                    // Grant global permissions
-                    $globalPerms = implode(',', $perms['global']);
-                    $this->multichainService->grant($address, $globalPerms);
-                    $this->line('  └─ <fg=green>✓</> Global permissions granted');
-
-                    // Grant stream permissions one at a time
-                    foreach ($streams as $stream) {
-                        foreach ($perms['stream'] as $perm) {
-                            $streamPerm = "$stream.$perm";
-                            try {
-                                $this->multichainService->grant($address, $streamPerm);
-                                $this->line("  └─ <fg=green>✓</> Granted $streamPerm permission");
-                                sleep(1);
-                            } catch (Exception $e) {
-                                $this->error("  └─ Failed to grant $streamPerm permission: ".$e->getMessage());
-                                if (! $this->confirm('Would you like to continue?')) {
-                                    throw $e;
-                                }
-                            }
-                        }
+                    $validation = $this->multichainService->validateAddress($addr);
+                    if (! ($validation['isvalid'] ?? false)) {
+                        $this->warn("Configured address for role {$role} is invalid according to node");
+                        $addr = null;
+                        // do not mark as an error here — later resolution (discovery/generation)
+                        // may succeed; only mark errors when resolution ultimately fails
+                    } else {
+                        $this->addressSources[$role] = 'config';
                     }
                 } catch (Exception $e) {
-                    $this->error("  └─ Failed to configure $role: ".$e->getMessage());
-                    if (! $this->confirm('Would you like to continue with the next role?')) {
-                        throw $e;
-                    }
+                    // Can't validate, still use config value but mark source as config
+                    $this->addressSources[$role] = 'config';
                 }
             }
 
-        } catch (Exception $e) {
-            $this->error('  └─ Failed to configure admin permissions: '.$e->getMessage());
-            throw $e;
-        }
-    }
-
-    protected function displaySummary(): void
-    {
-        $this->newLine(2);
-        $this->info('╔══════════════════════════════════════╗');
-        $this->info('║    🎉 MultiChain Setup Complete!     ║');
-        $this->info('║        Everything is ready!          ║');
-        $this->info('╚══════════════════════════════════════╝');
-
-        $this->table(
-            ['Component', 'Status'],
-            [
-                ['Addresses', '<fg=green>✓ Generated & Synced</>'],
-                ['Streams', '<fg=green>✓ Created & Subscribed</>'],
-                ['Permissions', '<fg=green>✓ Configured</>'],
-            ]
-        );
-    }
-
-    public function handle()
-    {
-        $this->info('╔══════════════════════════════════════╗');
-        $this->info('║      MultiChain Setup Starting       ║');
-        $this->info('╚══════════════════════════════════════╝');
-        $this->newLine();
-
-        // Step 1: Generate and update addresses
-        $addresses = $this->setupAddresses();
-
-        // Step 2: Sync addresses to database
-        $this->newLine();
-        $this->info('<fg=blue>📍 Step 2: Syncing Addresses to Database...</>');
-        $this->syncAddressesToDatabase($addresses);
-
-        // Step 3: Setup streams
-        $this->newLine();
-        $streamIds = $this->setupStreams();
-
-        // Step 4: Setup permissions
-        $this->newLine(2);
-        $this->setupPermissions($addresses, array_keys($streamIds));
-
-        // Display final summary
-        $this->displaySummary();
-    }
-
-    public function createNewStream(string $streamName): string
-    {
-        try {
-            $this->info("  └─ Creating stream: $streamName");
-
-            // Verify blockchain connection
-            try {
-                $this->multichainService->getBlockchainParams();
-                $this->info('  └─ Blockchain connection verified');
-            } catch (Exception $e) {
-                $this->warn('  └─ Blockchain verification failed: '.$e->getMessage());
-                throw $e;
-            }
-
-            // Create stream with proper options
-            $options = true; // Simple open stream for Community Edition
-            $details = ['purpose' => 'procurement'];
-            $result = $this->multichainService->createStream($streamName, $options, $details);
-
-            // Handle array result from createStream
-            $txid = is_array($result) && isset($result['txid']) ? $txid = $result['txid'] :
-                   (is_array($result) && isset($result['status']) && $result['status'] === 'exists' ? 'exists' :
-                   (is_string($result) ? $result : 'unknown'));
-
-            $this->info("  └─ Stream creation initiated with status: $txid");
-
-            // In Community Edition, streams are automatically subscribed
-            // Just verify the stream exists
-            try {
-                $this->multichainService->getStreamInfo($streamName);
-                $this->info('  └─ Stream verified');
-            } catch (Exception $e) {
-                $this->warn('  └─ Stream verification failed: '.$e->getMessage());
-            }
-
-            // Verify stream creation
-            $maxRetries = 30;
-            $this->info('  └─ Verifying stream availability...');
-            $progress = $this->output->createProgressBar($maxRetries);
-
-            for ($i = 0; $i < $maxRetries; $i++) {
+            // If no valid configured address, try to discover from node
+            if (! $addr && is_array($nodeAddresses)) {
                 try {
-                    $streamInfo = $this->multichainService->getStreamInfo($streamName);
-                    if (! empty($streamInfo)) {
-                        $progress->finish();
-                        $this->newLine();
-                        $this->info('  └─ Stream verified successfully');
-
-                        return $txid;
+                    $found = $this->findAddressFromNode($nodeAddresses, $role);
+                    if ($found) {
+                        $addr = $found;
+                        $this->addressSources[$role] = 'node';
                     }
                 } catch (Exception $e) {
-                    // Continue waiting
+                    Log::warning("Address discovery failed for {$role}: " . $e->getMessage());
                 }
-                sleep(1);
-                $progress->advance();
             }
 
-            $progress->finish();
-            $this->newLine();
-            $this->warn('  └─ Stream created but verification timed out');
-
-            return $txid;
-
-        } catch (Exception $e) {
-            Log::error('Stream creation failed', [
-                'stream' => $streamName,
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
-    }
-
-    public function createNewAddress(): string
-    {
-        try {
-            $this->info('  └─ Attempting to connect to blockchain node...');
-
-            // Generate a new address using MultichainService
-            $address = $this->multichainService->getNewAddress();
-
-            if (empty($address)) {
-                throw new Exception('MultiChain returned an empty address');
+            // If still not found, request a new address from node
+            if (! $addr) {
+                try {
+                    $new = $this->multichainService->getNewAddress();
+                    if ($new) {
+                        $addr = $new;
+                        $this->addressSources[$role] = 'generated';
+                        $this->line("Generated new address for {$role} from node: {$this->maskAddress($addr)}");
+                    }
+                } catch (Exception $e) {
+                    $this->warn("Could not obtain an address for role {$role} from node: " . $e->getMessage());
+                    $this->addressSources[$role] = 'missing';
+                }
             }
 
-            $this->info('  └─ <fg=green>✓</> Successfully connected to blockchain');
-            Log::info('New blockchain address created', ['address' => $address]);
+            // Optionally ensure the resolved address is labeled on the node for future discovery
+            if ($labelOnNode && $addr && ($this->addressSources[$role] ?? '') !== 'node') {
+                try {
+                    $this->ensureLabelOnNode($addr, $role, $dryRun);
+                } catch (Exception $e) {
+                    Log::warning("Failed to ensure label on node for {$role}: " . $e->getMessage());
+                }
+            }
 
-            return (string) $address;
+            $selected[$role] = $addr;
 
-        } catch (Exception $e) {
-            Log::error('Failed to create new address', [
-                'error' => $e->getMessage(),
-            ]);
-
-            $this->error('  └─ Connection failed: '.$e->getMessage());
-            $this->info("\nTroubleshooting steps:");
-            $this->line(' 1. Check if MultiChain daemon is running');
-            $this->line(' 2. Verify network connectivity to '.$this->multichainService->getHost());
-            $this->line(' 3. Check firewall settings');
-            $this->line(' 4. Verify RPC credentials in .env file');
-
-            throw new Exception('Failed to create new blockchain address: '.$e->getMessage());
+            // If after all attempts the address is still missing, record it once as an error
+            if (! $addr && ! $dryRun) {
+                if (! isset($this->errors['addresses']) || ! in_array($role, $this->errors['addresses'], true)) {
+                    $this->errors['addresses'][] = $role;
+                }
+            }
         }
+
+        return $selected;
     }
 
-    public function grantPermissions(string $address, string $permission): void
+    /**
+     * Ensure the given address has a deterministic label on the node for easier discovery.
+     */
+    private function ensureLabelOnNode(string $address, string $role, bool $dryRun): void
     {
+        if ($dryRun) {
+            $this->line("(dry-run) Would label address {$this->maskAddress($address)} as {$role} on node");
+            return;
+        }
+
         try {
-            $this->multichainService->grant($address, $permission);
-
-            Log::info('Permissions granted', [
-                'address' => $address,
-                'permission' => $permission,
-            ]);
-
+            $label = strtolower($role);
+            $this->multichainService->importAddress($address, $label);
+            $this->line(" Labeled address {$this->maskAddress($address)} as {$label} on node");
         } catch (Exception $e) {
-            Log::error('Failed to grant permissions', [
-                'address' => $address,
-                'permission' => $permission,
-                'error' => $e->getMessage(),
-            ]);
-            throw new Exception('Failed to grant permissions: '.$e->getMessage());
+            Log::warning('Labeling address on node failed: ' . $e->getMessage());
         }
     }
 
     /**
-     * Sync blockchain addresses to the user database
+     * Try to find an address on the node that matches a role name using common address metadata.
+     * The structure returned by `listaddresses(..., true)` varies; search several likely fields.
      */
-    protected function syncAddressesToDatabase(array $addresses): void
+    private function findAddressFromNode(array $nodeAddresses, string $role): ?string
     {
-        $this->info('Syncing blockchain addresses to user database...');
+        $roleLower = strtolower($role);
+        foreach ($nodeAddresses as $entry) {
+            // Normalize address and metadata
+            $address = null;
+            $labels = [];
 
-        // Fix the keys to match those used in handle() method
-        $secretariatAddress = $addresses['BAC_SECRETARIAT_ADDRESS'];
-        $chairmanAddress = $addresses['BAC_CHAIRMAN_ADDRESS'];
-        $hopeAddress = $addresses['HOPE_ADDRESS'];
+            if (is_string($entry)) {
+                $address = $entry;
+            } elseif (is_array($entry)) {
+                if (isset($entry['address'])) {
+                    $address = $entry['address'];
+                } elseif (isset($entry[0]) && is_string($entry[0])) {
+                    $address = $entry[0];
+                }
 
-        // Update users based on role
-        $secretariatUpdated = User::where('role', 'bac_secretariat')
-            ->update(['blockchain_address' => $secretariatAddress]);
+                // collect potential label fields
+                if (isset($entry['label'])) {
+                    $labels[] = (string) $entry['label'];
+                }
+                if (isset($entry['labels']) && is_array($entry['labels'])) {
+                    foreach ($entry['labels'] as $l) {
+                        $labels[] = (string) $l;
+                    }
+                }
+                if (isset($entry['account'])) {
+                    $labels[] = (string) $entry['account'];
+                }
+                if (isset($entry['purpose'])) {
+                    $labels[] = (string) $entry['purpose'];
+                }
+            }
 
-        $chairmanUpdated = User::where('role', 'bac_chairman')
-            ->update(['blockchain_address' => $chairmanAddress]);
+            if (! $address) {
+                continue;
+            }
 
-        $hopeUpdated = User::where('role', 'hope')
-            ->update(['blockchain_address' => $hopeAddress]);
+            // quick label-based match
+            foreach ($labels as $l) {
+                if ($l === '') {
+                    continue;
+                }
+                if (strtolower($l) === $roleLower || str_contains(strtolower($l), $roleLower)) {
+                    // validate the candidate address
+                    try {
+                        $validation = $this->multichainService->validateAddress($address);
+                        if ($validation['isvalid'] ?? false) {
+                            return $address;
+                        }
+                    } catch (Exception $e) {
+                        // ignore validation problems for this candidate
+                        continue;
+                    }
+                }
+            }
 
-        $totalUpdated = $secretariatUpdated + $chairmanUpdated + $hopeUpdated;
-        $this->info("Updated blockchain addresses for {$totalUpdated} users in the database");
+            // As a last resort, accept an address if its index/key matches role-like string
+            if (str_contains(strtolower($address), $roleLower)) {
+                try {
+                    $validation = $this->multichainService->validateAddress($address);
+                    if ($validation['isvalid'] ?? false) {
+                        return $address;
+                    }
+                } catch (Exception $e) {
+                    // ignore
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function persistAddresses(array $addresses): void
+    {
+        $persist = (bool) $this->option('persist');
+        if (! $persist) {
+            return;
+        }
+
+        // Use ConfirmableTrait::confirmToProceed which respects --force and environment
+        if (! $this->confirmToProceed('Persist resolved addresses to .env and refresh config?')) {
+            $this->line('Persistence aborted by user');
+
+            return;
+        }
+
+        $this->info('Persisting generated addresses to .env');
+        $envPath = base_path('.env');
+        if (! file_exists($envPath) || ! is_writable($envPath)) {
+            $this->warn('.env file not writable; cannot persist addresses');
+
+            return;
+        }
+
+        $updated = false;
+        $mapping = config('multichain.addresses', []);
+        $persistedRoles = [];
+        foreach ($addresses as $role => $addr) {
+            // Only persist when the config did not previously have a value or was a default placeholder
+            $envKey = 'MULTICHAIN_' . strtoupper(str_replace('-', '_', $role)) . '_ADDRESS';
+            $current = $mapping[$role] ?? null;
+            // Persist any resolved address (from config, node, or generated). Skip missing entries.
+            if ($addr && ($this->addressSources[$role] ?? 'missing') !== 'missing') {
+                $this->setEnvValue($envPath, $envKey, $addr);
+                $updated = true;
+                $persistedRoles[] = $role;
+                $this->line(" Persisted address for role {$role} to {$envKey}");
+            }
+        }
+
+        if ($updated) {
+            // Update user rows for persisted roles: set blockchain_address for users with that role
+            try {
+                foreach ($persistedRoles as $role) {
+                    $addr = $addresses[$role] ?? null;
+                    if (! $addr) {
+                        continue;
+                    }
+                    $users = User::where('role', $role)->get();
+                    foreach ($users as $user) {
+                        if ($user->blockchain_address !== $addr) {
+                            $user->blockchain_address = $addr;
+                            $user->save();
+                            $this->line(" Updated blockchain_address for user {$user->email} (role={$role})");
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                $this->warn('Failed updating user blockchain_address fields: ' . $e->getMessage());
+            }
+            // Reload config cache if present
+            try {
+                // Clear and re-cache config to pick up .env changes
+                $this->callSilent('config:clear');
+                $this->callSilent('config:cache');
+                $this->line('Config cache refreshed');
+            } catch (Exception $e) {
+                $this->warn('Failed to refresh config cache: ' . $e->getMessage());
+            }
+        } else {
+            $this->line('No generated addresses to persist');
+        }
+    }
+
+    private function setEnvValue(string $envPath, string $key, string $value): void
+    {
+        $content = file_get_contents($envPath);
+        $pattern = '/^' . preg_quote($key, '/') . '=.*/m';
+        $replacement = $key . '=' . $value;
+
+        if (preg_match($pattern, $content)) {
+            $content = preg_replace($pattern, $replacement, $content);
+        } else {
+            $content .= PHP_EOL . $replacement . PHP_EOL;
+        }
+
+        file_put_contents($envPath, $content);
+    }
+
+    private function maskAddress(?string $a): string
+    {
+        if (! $a) {
+            return '<missing>';
+        }
+
+        return strlen($a) > 12 ? substr($a, 0, 6) . '…' . substr($a, -6) : $a;
+    }
+
+    private function setupStreams(bool $dryRun): array
+    {
+        // If the underlying service doesn't implement stream RPCs, skip silently.
+        if (! method_exists($this->multichainService, 'getStreamInfo') || ! method_exists($this->multichainService, 'createStream')) {
+            $this->info('Skipping stream creation: multichain service does not support stream RPCs');
+            return [];
+        }
+
+        $this->info('Creating streams...');
+        $results = [];
+        foreach (self::STREAMS as $stream) {
+            try {
+                $exists = false;
+                try {
+                    $info = $this->multichainService->getStreamInfo($stream);
+                    if (! empty($info)) {
+                        $exists = true;
+                    }
+                } catch (Exception $e) {
+                    // ignore, we'll create if needed
+                }
+
+                if ($exists) {
+                    $this->line(" - $stream: exists");
+                    // ensure subscribed
+                    try {
+                        $this->multichainService->subscribe($stream, true);
+                    } catch (Exception $e) {
+                        // non-fatal
+                    }
+                    $results[$stream] = 'exists';
+
+                    continue;
+                }
+
+                if ($dryRun) {
+                    $this->line(" - $stream: would create (dry-run)");
+                    $results[$stream] = 'dry-run';
+
+                    continue;
+                }
+
+                $tx = $this->multichainService->createStream($stream, true, ['purpose' => 'procurement']);
+                // subscribe
+                try {
+                    $this->multichainService->subscribe($stream, true);
+                } catch (Exception $e) {
+                    // ignore
+                }
+                $this->line(" - $stream: created");
+                $results[$stream] = is_array($tx) && isset($tx['stream']) ? $tx['stream'] : $tx;
+            } catch (Exception $e) {
+                $this->error("Failed to create stream $stream: " . $e->getMessage());
+                $this->errors['streams'][] = $stream;
+            }
+        }
+
+        return $results;
+    }
+
+    private function setupPermissions(array $addresses, array $streams, bool $dryRun): void
+    {
+        $this->info('Granting permissions based on configuration...');
+        // If the service lacks grant functionality, skip granting to avoid failing in
+        // environments where the RPC is not available or tests only provide minimal mocks.
+        if (! method_exists($this->multichainService, 'grant')) {
+            $this->info('Skipping permission grants: multichain service does not support grants');
+            return;
+        }
+        $matrix = (array) config('multichain.permissions.roles', []);
+        if (empty($matrix)) {
+            $this->info('No permission matrix configured; skipping');
+
+            return;
+        }
+
+        foreach ($matrix as $role => $perms) {
+            $address = $addresses[$role] ?? null;
+            if (! $address) {
+                $this->warn("No address for role $role; skipping permissions");
+                // In dry-run mode we skip adding errors so the command can safely be
+                // used for inspection without causing a failing exit code.
+                if (! $dryRun) {
+                    $this->errors['permissions'][] = $role;
+                }
+
+                continue;
+            }
+
+            $this->line("Configuring permissions for $role");
+            if ($dryRun) {
+                $this->line(' - dry-run: would grant configured permissions');
+
+                continue;
+            }
+
+            try {
+                $validation = $this->multichainService->validateAddress($address);
+                if (! ($validation['isvalid'] ?? false)) {
+                    throw new Exception('Invalid address');
+                }
+
+                $globals = (array) ($perms['global'] ?? []);
+                $streamPerms = (array) ($perms['stream'] ?? []);
+
+                foreach ($globals as $g) {
+                    $this->multichainService->grant($address, $g);
+                }
+
+                foreach ($streams as $stream) {
+                    foreach ($streamPerms as $sp) {
+                        $perm = $stream . '.' . $sp;
+                        $this->multichainService->grant($address, $perm);
+                    }
+                }
+            } catch (Exception $e) {
+                $this->error("Failed granting permissions for $role: " . $e->getMessage());
+                $this->errors['permissions'][] = $role;
+            }
+        }
+    }
+
+    private function ensureAdminUser(string $email, ?string $blockchainAddress, bool $dryRun): void
+    {
+        $existing = User::where('email', $email)->first();
+        if ($existing) {
+            $this->line(' Admin user exists');
+            if ($blockchainAddress && ! $dryRun && $existing->blockchain_address !== $blockchainAddress) {
+                $existing->blockchain_address = $blockchainAddress;
+                $existing->role = 'admin';
+                $existing->save();
+                $this->line(' Admin blockchain address updated');
+            }
+
+            return;
+        }
+
+        if ($dryRun) {
+            $this->line(' Would create admin user ' . $email . ' (dry-run)');
+
+            return;
+        }
+
+        $user = new User;
+        $user->name = 'System Admin';
+        $user->email = $email;
+        $user->password = bcrypt(str()->random(32));
+        $user->role = 'admin';
+        if ($blockchainAddress) {
+            $user->blockchain_address = $blockchainAddress;
+        }
+        $user->save();
+        $this->line(' Admin user created');
+    }
+
+    private function displaySummary(array $addresses, array $streamIds): void
+    {
+        $this->newLine();
+        $this->info('Summary:');
+        $this->table(['Component', 'Status'], [
+            ['Addresses', empty($addresses) ? 'none' : 'loaded'],
+            ['Streams', empty($streamIds) ? 'none' : 'processed'],
+            ['Permissions', empty($this->errors['permissions'] ?? []) ? 'ok' : 'errors'],
+        ]);
+
+        // Show resolved addresses (masked for safety)
+        $this->newLine();
+        $show = $this->option('show-addresses');
+        $this->line('Configured Multichain addresses:');
+        if ($show) {
+            $this->line(' (full addresses shown)');
+        } else {
+            $this->line(' (masked for security, use --show-addresses to reveal)');
+        }
+
+        $rows = [];
+        $mask = fn($a) => $a ? (strlen($a) > 12 ? substr($a, 0, 6) . '…' . substr($a, -6) : $a) : '<missing>';
+        $cfgAddresses = (array) config('multichain.addresses', []);
+        foreach (self::CONFIG_ADDRESSES as $role => $placeholder) {
+            $addr = $addresses[$role] ?? ($cfgAddresses[$role] ?? $placeholder);
+            $display = $show ? $addr : $mask($addr);
+            $source = $this->addressSources[$role] ?? ((array_key_exists($role, $addresses) && $addresses[$role]) ? 'config' : 'missing');
+            $rows[] = [$role, $display, $source];
+        }
+        $this->table(['Role', 'Address', 'Source'], $rows);
+
+        if (! empty($this->errors)) {
+            $this->warn('Errors encountered:');
+            $this->line(json_encode($this->errors));
+        }
     }
 }
