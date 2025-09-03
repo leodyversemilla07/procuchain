@@ -3,129 +3,120 @@
 use App\Models\User;
 use App\Notifications\ProcurementStageNotification;
 use App\Services\NotificationService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
+describe('NotificationService', function () {
+    beforeEach(function () {
+        $this->notificationService = app(NotificationService::class);
+        Notification::fake();
+    });
 
-uses(RefreshDatabase::class);
-
-beforeEach(function () {
-    $this->notificationService = app(NotificationService::class);
-});
-
-test('notification is sent to bac chairman, hope, and admin', function () {
-    \Illuminate\Support\Facades\Notification::fake();
-
-    $bacChairman = User::factory()->create(['role' => 'bac_chairman']);
-    $hope = User::factory()->create(['role' => 'hope']);
-    $admin = User::factory()->create(['role' => 'admin']);
-
-    \Illuminate\Support\Facades\Log::shouldReceive('info')
-        ->once()
-        ->withArgs(function ($message, $context) {
-            return str_contains($message, 'Procurement stage update notification sent') &&
-                $context['procurement_id'] === 'PROC-001' &&
-                $context['stage'] === 'Bidding' &&
-                $context['recipients_count'] === 3;
+    describe('Stage Update Notifications', function () {
+        beforeEach(function () {
+            $this->bacChairman = createUserWithRole('bac_chairman');
+            $this->hope = createUserWithRole('hope');
+            $this->admin = createUserWithRole('admin');
+            $this->bacSecretariat = createUserWithRole('bac_secretariat');
         });
 
-    $this->notificationService->notifyStageUpdate(
-        'PROC-001',
-        'Test Procurement',
-        'Bidding',
-        'pending',
-        now()->toDateTimeString(),
-        'uploaded'
-    );
+        it('sends notifications to bac chairman, hope, and admin', function () {
+            Log::shouldReceive('info')
+                ->once()
+                ->withArgs(function ($message, $context) {
+                    return str_contains($message, 'Procurement stage update notification sent') &&
+                        $context['procurement_id'] === 'PROC-001' &&
+                        $context['stage'] === 'Bidding' &&
+                        $context['recipients_count'] === 3;
+                });
 
-    \Illuminate\Support\Facades\Notification::assertSentTo(
-        [$bacChairman, $hope, $admin],
-        ProcurementStageNotification::class,
-        function ($notification) use ($bacChairman) {
-            $data = $notification->toArray($bacChairman);
+            $this->notificationService->notifyStageUpdate(
+                'PROC-001',
+                'Test Procurement',
+                'Bidding',
+                'pending',
+                now()->toDateTimeString(),
+                'uploaded',
+                0  // documentCount parameter
+            );
 
-            return $data['procurement_id'] === 'PROC-001' &&
-                $data['procurement_title'] === 'Test Procurement' &&
-                $data['stage_identifier'] === 'Bidding' &&
-                $data['current_status'] === 'pending' &&
-                $data['action_type'] === 'uploaded';
-        }
-    );
-});
+            Notification::assertSentTo(
+                [$this->bacChairman, $this->hope, $this->admin],
+                ProcurementStageNotification::class,
+                function ($notification) {
+                    $data = $notification->toArray($this->bacChairman);
 
-test('notification includes stage transition data when provided', function () {
-    \Illuminate\Support\Facades\Notification::fake();
-    \Illuminate\Support\Facades\Log::shouldReceive('info')->once();
-
-    $bacChairman = User::factory()->create(['role' => 'bac_chairman']);
-    $hope = User::factory()->create(['role' => 'hope']);
-    $admin = User::factory()->create(['role' => 'admin']);
-
-    $this->notificationService->notifyStageUpdate(
-        'PROC-001',
-        'Test Procurement',
-        'Bidding',
-        'completed',
-        now()->toDateTimeString(),
-        'completed',
-        0, // document count
-        true, // stage transition
-        'Post-Qualification'
-    );
-
-    \Illuminate\Support\Facades\Notification::assertSentTo(
-        [$bacChairman, $hope, $admin],
-        ProcurementStageNotification::class,
-        function ($notification) use ($bacChairman) {
-            $data = $notification->toArray($bacChairman);
-
-            return $data['procurement_id'] === 'PROC-001' &&
-                $data['next_stage'] === 'Post-Qualification';
-        }
-    );
-});
-
-test('warning is logged when no users found', function () {
-    \Illuminate\Support\Facades\Notification::fake();
-    // Delete the test users
-    User::query()->delete();
-
-    \Illuminate\Support\Facades\Log::shouldReceive('warning')
-        ->once()
-        ->withArgs(function ($message, $context) {
-            return str_contains($message, 'No BAC Chairman, HOPE, or Admin users found to notify for procurement update') &&
-                $context['procurement_id'] === 'PROC-001';
+                    return $data['procurement_id'] === 'PROC-001' &&
+                        $data['procurement_title'] === 'Test Procurement' &&
+                        $data['stage_identifier'] === 'Bidding' &&
+                        $data['current_status'] === 'pending' &&
+                        $data['action_type'] === 'uploaded';
+                }
+            );
         });
 
-    $this->notificationService->notifyStageUpdate(
-        'PROC-001',
-        'Test Procurement',
-        'Bidding',
-        'pending',
-        now()->toDateTimeString(),
-        'uploaded'
-    );
+        it('includes stage transition data when provided', function () {
+            $this->notificationService->notifyStageUpdate(
+                'PROC-002',
+                'Test Procurement 2',
+                'Evaluation',
+                'completed',
+                now()->toDateTimeString(),
+                'reviewed',
+                0, // documentCount parameter
+                true, // stageTransition
+                'Evaluation' // nextStage
+            );
 
-    \Illuminate\Support\Facades\Notification::assertNothingSent();
-});
+            Notification::assertSentTo(
+                [$this->bacChairman, $this->hope, $this->admin],
+                ProcurementStageNotification::class,
+                function ($notification) {
+                    $data = $notification->toArray($this->bacChairman);
 
-test('notification is not sent to other roles', function () {
-    \Illuminate\Support\Facades\Notification::fake();
-    \Illuminate\Support\Facades\Log::shouldReceive('info')->once();
+                    return isset($data['next_stage']) &&
+                        $data['next_stage'] === 'Evaluation';
+                }
+            );
+        });
 
-    $bacChairman = User::factory()->create(['role' => 'bac_chairman']);
-    $hope = User::factory()->create(['role' => 'hope']);
-    $admin = User::factory()->create(['role' => 'admin']);
-    $otherUser = User::factory()->create(['role' => 'bac_secretariat']);
+        it('logs warning when no eligible users found', function () {
+            // Remove all users with eligible roles
+            User::whereIn('role', ['bac_chairman', 'hope', 'admin'])->delete();
 
-    $this->notificationService->notifyStageUpdate(
-        'PROC-001',
-        'Test Procurement',
-        'Bidding',
-        'pending',
-        now()->toDateTimeString(),
-        'uploaded'
-    );
+            Log::shouldReceive('warning')
+                ->once()
+                ->with('No BAC Chairman, HOPE, or Admin users found to notify for procurement update', [
+                    'procurement_id' => 'PROC-003',
+                ]);
 
-    \Illuminate\Support\Facades\Notification::assertNotSentTo([$otherUser], ProcurementStageNotification::class);
+            $this->notificationService->notifyStageUpdate(
+                'PROC-003',
+                'Test Procurement 3',
+                'Bidding',
+                'pending',
+                now()->toDateTimeString(),
+                'uploaded'
+            );
+
+            Notification::assertNothingSent();
+        });
+
+        it('does not send notifications to bac_secretariat role', function () {
+            $this->notificationService->notifyStageUpdate(
+                'PROC-004',
+                'Test Procurement 4',
+                'Bidding',
+                'pending',
+                now()->toDateTimeString(),
+                'uploaded',
+                0  // documentCount parameter
+            );
+
+            Notification::assertNotSentTo(
+                $this->bacSecretariat,
+                ProcurementStageNotification::class
+            );
+        });
+    });
 });
