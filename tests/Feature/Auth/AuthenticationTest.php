@@ -2,61 +2,56 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+describe('Authentication', function () {
+    test('login screen can be rendered', function () {
+        $response = $this->get('/login');
 
-test('login screen can be rendered', function () {
-    $response = $this->get('/login');
+        expect($response)->toBeSuccessfulResponse();
+    });
 
-    $response->assertStatus(200);
-});
+    describe('Login Process', function () {
+        it('redirects users to correct dashboard based on role', function (string $role, string $expectedRedirectRoute) {
+            $user = createUserWithRole($role);
 
-test('users can authenticate using the login screen and are redirected to correct dashboard', function (string $role, string $expectedRedirectRoute) {
-    $user = User::factory()->create([
-        'role' => $role,
-        // 'password' => Hash::make('password'), // Already handled by factory
-    ]);
+            $response = $this->post('/login', [
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
 
-    $response = $this->post('/login', [
-        'email' => $user->email,
-        'password' => 'password', // Default password from factory
-    ]);
+            $this->assertAuthenticated();
+            $response->assertRedirectToRoute($expectedRedirectRoute);
+        })->with([
+            ['bac_secretariat', 'bac-secretariat.dashboard'],
+            ['bac_chairman', 'bac-chairman.dashboard'],
+            ['hope', 'hope.dashboard'],
+            ['admin', 'admin.dashboard'],
+        ]);
 
-    $this->assertAuthenticatedAs($user);
-    $response->assertRedirect(route($expectedRedirectRoute));
+        it('fails authentication with invalid password', function () {
+            $user = User::factory()->create();
 
-})->with([
-    ['bac_secretariat', 'bac-secretariat.dashboard'],
-    ['bac_chairman', 'bac-chairman.dashboard'],
-    ['hope', 'hope.dashboard'],
-    ['admin', 'admin.dashboard'],
-]);
+            $this->post('/login', [
+                'email' => $user->email,
+                'password' => 'wrong-password',
+            ]);
 
-test('users can not authenticate with invalid password', function () {
-    $user = User::factory()->create([
-        // 'email_verified_at' => now(), // Already handled by factory
-        // 'password' => Hash::make('password'), // Already handled by factory
-    ]);
+            $this->assertGuest();
+        });
+    });
 
-    $this->post('/login', [
-        'email' => $user->email,
-        'password' => 'wrong-password',
-    ]);
+    describe('Logout Process', function () {
+        it('allows authenticated users to logout', function () {
+            $user = User::factory()->create();
 
-    $this->assertGuest();
-});
+            // Authenticate the user
+            $this->actingAs($user);
+            $this->assertAuthenticated();
 
-test('users can logout', function () {
-    $user = User::factory()->create();
+            // Test logout functionality
+            Auth::logout();
 
-    // First authenticate the user
-    $this->actingAs($user);
-    $this->assertAuthenticated();
-
-    // Directly test the Auth::logout functionality
-    Auth::logout();
-
-    // Assert the user is now a guest
-    $this->assertGuest();
+            $this->assertGuest();
+        });
+    });
 });

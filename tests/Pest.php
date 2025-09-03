@@ -17,7 +17,7 @@ pest()->extend(Tests\TestCase::class)
 
 /*
 |--------------------------------------------------------------------------
-| Expectations
+| Custom Expectations
 |--------------------------------------------------------------------------
 |
 | When you're writing tests, you often need to check that values meet certain conditions. The
@@ -30,9 +30,27 @@ expect()->extend('toBeOne', function () {
     return $this->toBe(1);
 });
 
+expect()->extend('toBeValidUser', function () {
+    return $this->toBeInstanceOf(App\Models\User::class)
+        ->and($this->value->exists)
+        ->toBeTrue();
+});
+
+expect()->extend('toHaveValidationError', function (string $field) {
+    return $this->toHaveKey('errors')
+        ->and($this->value['errors'])
+        ->toHaveKey($field);
+});
+
+expect()->extend('toBeSuccessfulResponse', function () {
+    return $this->toBeInstanceOf(Illuminate\Testing\TestResponse::class)
+        ->and($this->value->status())
+        ->toBeBetween(200, 299);
+});
+
 /*
 |--------------------------------------------------------------------------
-| Functions
+| Helper Functions
 |--------------------------------------------------------------------------
 |
 | While Pest is very powerful out-of-the-box, you may have some testing code specific to your
@@ -41,7 +59,18 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function createUserWithRole(string $role, array $attributes = []): App\Models\User
 {
-    // ..
+    return App\Models\User::factory()->create(array_merge(['role' => $role], $attributes));
+}
+
+function createLockedUser(array $attributes = []): App\Models\User
+{
+    return App\Models\User::factory()->create(array_merge([
+        'account_locked' => true,
+        'locked_at' => now(),
+        'lock_expires_at' => now()->addMinutes(30),
+        'failed_login_attempts' => 3,
+        'locked_reason' => 'Multiple failed login attempts',
+    ], $attributes));
 }
