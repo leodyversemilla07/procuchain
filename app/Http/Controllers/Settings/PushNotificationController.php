@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use NotificationChannels\WebPush\PushSubscription;
 
 class PushNotificationController extends Controller
 {
@@ -15,16 +15,15 @@ class PushNotificationController extends Controller
      */
     public function edit()
     {
-        return Inertia::render('settings/push-notification');
+        return Inertia::render('settings/push-notification', [
+            'vapidPublicKey' => config('webpush.vapid.public_key'),
+        ]);
     }
 
     /**
-     * Subscribe user to push notifications
-     *
-     * @param Request $request
-     * @return \Inertia\Response
+     * Subscribe user to push notifications (POST)
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'endpoint' => 'required|string',
@@ -33,11 +32,14 @@ class PushNotificationController extends Controller
         ]);
 
         $user = Auth::user();
-        
-        if (!$user) {
-            return Inertia::render('settings/push-notification', [
-                'error' => 'User not authenticated'
-            ]);
+
+        if (! $user) {
+            return redirect()
+                ->route('push-notification.edit')
+                ->with('flash', [
+                    'message' => 'User not authenticated',
+                    'type' => 'error',
+                ]);
         }
 
         // Check if subscription already exists
@@ -46,48 +48,48 @@ class PushNotificationController extends Controller
             ->first();
 
         if ($existingSubscription) {
-            return Inertia::render('settings/push-notification', [
-                'flash' => [
+            return redirect()
+                ->route('push-notification.edit')
+                ->with('flash', [
                     'message' => 'You are already subscribed to push notifications',
-                    'type' => 'info'
-                ]
-            ]);
+                    'type' => 'info',
+                ]);
         }
 
         // Create new subscription
-        $subscription = $user->pushSubscriptions()->create([
+        $user->pushSubscriptions()->create([
             'endpoint' => $request->endpoint,
             'public_key' => $request->input('keys.p256dh'),
             'auth_token' => $request->input('keys.auth'),
             'content_encoding' => $request->input('contentEncoding', 'aesgcm'),
         ]);
 
-        return Inertia::render('settings/push-notification', [
-            'flash' => [
+        return redirect()
+            ->route('push-notification.edit')
+            ->with('flash', [
                 'message' => 'Successfully subscribed to push notifications!',
-                'type' => 'success'
-            ]
-        ]);
+                'type' => 'success',
+            ]);
     }
 
     /**
-     * Unsubscribe user from push notifications
-     *
-     * @param Request $request
-     * @return \Inertia\Response
+     * Unsubscribe user from push notifications (DELETE)
      */
-    public function destroy(Request $request)
+    public function destroy(Request $request): RedirectResponse
     {
         $request->validate([
             'endpoint' => 'required|string',
         ]);
 
         $user = Auth::user();
-        
-        if (!$user) {
-            return Inertia::render('settings/push-notification', [
-                'error' => 'User not authenticated'
-            ]);
+
+        if (! $user) {
+            return redirect()
+                ->route('push-notification.edit')
+                ->with('flash', [
+                    'message' => 'User not authenticated',
+                    'type' => 'error',
+                ]);
         }
 
         $deleted = $user->pushSubscriptions()
@@ -95,20 +97,20 @@ class PushNotificationController extends Controller
             ->delete();
 
         if ($deleted) {
-            return Inertia::render('settings/push-notification', [
-                'flash' => [
+            return redirect()
+                ->route('push-notification.edit')
+                ->with('flash', [
                     'message' => 'Successfully unsubscribed from push notifications',
-                    'type' => 'success'
-                ]
-            ]);
+                    'type' => 'success',
+                ]);
         }
 
-        return Inertia::render('settings/push-notification', [
-            'flash' => [
+        return redirect()
+            ->route('push-notification.edit')
+            ->with('flash', [
                 'message' => 'Push subscription not found',
-                'type' => 'error'
-            ]
-        ]);
+                'type' => 'error',
+            ]);
     }
 
     /**
@@ -119,8 +121,8 @@ class PushNotificationController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
-        if (!$user) {
+
+        if (! $user) {
             return response()->json(['error' => 'User not authenticated'], 401);
         }
 
@@ -128,25 +130,7 @@ class PushNotificationController extends Controller
 
         return response()->json([
             'subscriptions' => $subscriptions,
-            'count' => $subscriptions->count()
-        ]);
-    }
-
-    /**
-     * Get VAPID public key for client-side subscription
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getVapidPublicKey()
-    {
-        $publicKey = config('webpush.vapid.public_key');
-        
-        if (!$publicKey) {
-            return response()->json(['error' => 'VAPID public key not configured'], 500);
-        }
-
-        return response()->json([
-            'vapid_public_key' => $publicKey
+            'count' => $subscriptions->count(),
         ]);
     }
 }

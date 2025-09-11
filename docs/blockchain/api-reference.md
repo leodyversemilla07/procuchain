@@ -6,23 +6,23 @@
 
 To access MultiChain’s API, use the included `multichain-cli` command-line tool, a JSON-RPC client with basic access authentication, or one of many official or third-party libraries.
 
--   **API Credentials**: Stored in `~/.multichain/[chain-name]/multichain.conf`, randomly generated on first `multichaind` call for that chain.
+- **API Credentials**: Stored in `~/.multichain/[chain-name]/multichain.conf`, randomly generated on first `multichaind` call for that chain.
 
-    -   Path customizable with `-datadir=` option.
-    -   Windows equivalent: `%APPDATA%\MultiChain\`.
+    - Path customizable with `-datadir=` option.
+    - Windows equivalent: `%APPDATA%\MultiChain\`.
 
--   **Single Command Usage**:
+- **Single Command Usage**:
 
     ```
     multichain-cli [chain-name] [command] [parameters...]
     ```
 
--   **Interactive Mode (Linux)**:
+- **Interactive Mode (Linux)**:
     ```
     multichain-cli [chain-name]
     ```
-    -   Enter commands as `[command] [parameters...]`.
-    -   Exit with `bye`, `exit`, `quit`, or `Control-D`.
+    - Enter commands as `[command] [parameters...]`.
+    - Exit with `bye`, `exit`, `quit`, or `Control-D`.
 
 ---
 
@@ -401,28 +401,28 @@ All optional parameters are in `(round brackets)` with defaults after `=`. Multi
 
 Specifies transaction output content:
 
--   Native currency: `0.01`
--   Single asset: `{"asset1":50}`
--   Single token: `{"asset1":{"token":"token1","qty":5}}`
--   Multiple assets: `{"asset1":50,"asset2":1.5}`
--   Multiple tokens: `{"asset1":[{"token":"token1","qty":5},{"token":"token2","qty":10}]}`
--   Mixed with native: `{"asset1":{"token":"token1","qty":5},"asset2":1.5,"":0.01}`
--   With binary metadata: `{"asset1":{"token":"token1","qty":5},"data":"a1b2c3d4"}`
--   With textual metadata: `{"asset1":50,"data":{"text":"hello"}}`
--   With JSON metadata: `{"":0.01,"asset1":50,"data":{"json":[1,2,3]}}`
+- Native currency: `0.01`
+- Single asset: `{"asset1":50}`
+- Single token: `{"asset1":{"token":"token1","qty":5}}`
+- Multiple assets: `{"asset1":50,"asset2":1.5}`
+- Multiple tokens: `{"asset1":[{"token":"token1","qty":5},{"token":"token2","qty":10}]}`
+- Mixed with native: `{"asset1":{"token":"token1","qty":5},"asset2":1.5,"":0.01}`
+- With binary metadata: `{"asset1":{"token":"token1","qty":5},"data":"a1b2c3d4"}`
+- With textual metadata: `{"asset1":50,"data":{"text":"hello"}}`
+- With JSON metadata: `{"":0.01,"asset1":50,"data":{"json":[1,2,3]}}`
 
 Assets can use name, ref, or issuance txid.
 
 ### Metadata Parameter Forms
 
--   Binary hex: `a1b2c3d4`
--   Binary cache: `{"cache":"Ev1HQV1aUCY"}`
--   Textual: `{"text":"hello world"}`
--   JSON: `{"json":{"i":[1,2],"j":"yes"}}`
--   Binary stream item: `{"for":"stream1","keys":["key1","key2"],"data":"a1b2c3d4"}`
--   Cache stream item: `{"for":"stream1","keys":["key1","key2"],"data":{"cache":"Ev1HQV1aUCY"}}`
--   Textual stream item: `{"for":"stream1","keys":["key1","key2"],"data":{"text":"hello"}}`
--   JSON stream item: `{"for":"stream1","keys":["key1"],"data":{"json":{"i":[1,2]}}}`
+- Binary hex: `a1b2c3d4`
+- Binary cache: `{"cache":"Ev1HQV1aUCY"}`
+- Textual: `{"text":"hello world"}`
+- JSON: `{"json":{"i":[1,2],"j":"yes"}}`
+- Binary stream item: `{"for":"stream1","keys":["key1","key2"],"data":"a1b2c3d4"}`
+- Cache stream item: `{"for":"stream1","keys":["key1","key2"],"data":{"cache":"Ev1HQV1aUCY"}}`
+- Textual stream item: `{"for":"stream1","keys":["key1","key2"],"data":{"text":"hello"}}`
+- JSON stream item: `{"for":"stream1","keys":["key1"],"data":{"json":{"i":[1,2]}}}`
 
 Stream items can use `"key":"key1"` instead of `"keys"`, and add `"options":"offchain"`.
 
@@ -432,12 +432,12 @@ Stream items can use `"key":"key1"` instead of `"keys"`, and add `"options":"off
 
 MultiChain 2.x is mostly backwards compatible with 1.0.x, but some changes apply:
 
--   Stream item `key` replaced by `keys` array.
--   Stream `open` field replaced by `restrict.write`.
--   Wallet transaction stream payloads not in top-level `data`.
--   Raw transaction decoding omits empty arrays.
--   Asset issuance requires explicit `"create":"asset"`.
--   Follow-on issuance requires `"update":[asset-identifier]`.
+- Stream item `key` replaced by `keys` array.
+- Stream `open` field replaced by `restrict.write`.
+- Wallet transaction stream payloads not in top-level `data`.
+- Raw transaction decoding omits empty arrays.
+- Asset issuance requires explicit `"create":"asset"`.
+- Follow-on issuance requires `"update":[asset-identifier]`.
 
 Set `v1apicompatible=1` for 1.0 field compatibility.
 

@@ -1,6 +1,6 @@
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler, useState } from 'react';
+import { Head, useForm, router } from '@inertiajs/react';
+import { FormEventHandler, useEffect, useState } from 'react';
 import { Shield, Smartphone, Key, AlertTriangle, Download, RefreshCw, Copy, Check } from 'lucide-react';
 
 import HeadingSmall from '@/components/heading-small';
@@ -28,15 +28,21 @@ interface MfaProps {
     backupCodesCount: number;
     status?: string;
     backupCodes?: string[];
+    mfaSetup?: {
+        secret: string;
+        qrCodeUrl: string;
+    };
 }
 
-export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes }: MfaProps) {
+export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes, mfaSetup }: MfaProps) {
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
     const [secret, setSecret] = useState<string>('');
     const [showSetup, setShowSetup] = useState(false);
     const [showBackupCodes, setShowBackupCodes] = useState(false);
     const [displayBackupCodes, setDisplayBackupCodes] = useState<string[]>(backupCodes || []);
-    const [copiedCodes, setCopiedCodes] = useState<boolean>(false); const setupForm = useForm({
+    const [copiedCodes, setCopiedCodes] = useState<boolean>(false);
+
+    const setupForm = useForm({
         code: '',
         password: '',
     });
@@ -50,29 +56,10 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
         password: '',
     });
 
-    const handleSetupMfa = async () => {
-        try {
-            const response = await fetch('/settings/mfa/setup', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setQrCodeUrl(data.qrCodeUrl);
-                setSecret(data.secret);
-                setShowSetup(true);
-            } else {
-                console.error('Setup failed with status:', response.status);
-                const errorData = await response.text();
-                console.error('Error response:', errorData);
-            }
-        } catch (error) {
-            console.error('Failed to setup MFA:', error);
-        }
+    const handleSetupMfa = () => {
+        router.post(route('mfa.setup'), {}, {
+            preserveScroll: true,
+        });
     };
 
     const submitSetup: FormEventHandler = (e) => {
@@ -96,27 +83,27 @@ export default function Mfa({ mfaEnabled, backupCodesCount, status, backupCodes 
 
     const handleRegenerateBackupCodes: FormEventHandler = (e) => {
         e.preventDefault();
-
-        fetch('/settings/mfa/backup-codes/regenerate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-            },
-            body: JSON.stringify({ password: backupCodesForm.data.password }),
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.backupCodes) {
-                    setDisplayBackupCodes(data.backupCodes);
-                    setShowBackupCodes(true);
-                    backupCodesForm.reset();
-                }
-            })
-            .catch(error => {
-                console.error('Failed to regenerate backup codes:', error);
-            });
+        backupCodesForm.post(route('mfa.backup-codes.regenerate'), {
+            preserveScroll: true,
+            onFinish: () => backupCodesForm.reset('password'),
+        });
     };
+
+    // Reflect server-flashed props into local UI state when they change
+    useEffect(() => {
+        if (mfaSetup) {
+            setQrCodeUrl(mfaSetup.qrCodeUrl);
+            setSecret(mfaSetup.secret);
+            setShowSetup(true);
+        }
+    }, [mfaSetup]);
+
+    useEffect(() => {
+        if (backupCodes && backupCodes.length > 0) {
+            setDisplayBackupCodes(backupCodes);
+            setShowBackupCodes(true);
+        }
+    }, [backupCodes, status]);
 
     const copyBackupCodes = () => {
         const codes = displayBackupCodes.join('\n');
