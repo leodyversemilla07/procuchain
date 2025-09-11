@@ -1,10 +1,9 @@
 <?php
 
 use App\Http\Controllers\Settings\MfaController;
-use App\Http\Controllers\Settings\PushNotificationController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\TestPushNotificationController;
+use App\Http\Controllers\Settings\PushNotificationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -27,13 +26,10 @@ Route::middleware('auth')->group(function () {
 
     // Push notification settings
     Route::get('settings/push-notification', [PushNotificationController::class, 'edit'])->name('push-notification.edit')->middleware('mfa');
-    // Push notification API routes
-    Route::get('/settings/push/vapid-public-key', [PushNotificationController::class, 'getVapidPublicKey']);
+    // Push notification routes
     Route::get('/settings/push/subscriptions', [PushNotificationController::class, 'index']);
     Route::post('/settings/push/subscribe', [PushNotificationController::class, 'store']);
     Route::delete('/settings/push/unsubscribe', [PushNotificationController::class, 'destroy']);
-    Route::post('/settings/push/test', [TestPushNotificationController::class, 'sendTestNotification']);
-    Route::get('/settings/push/test', [TestPushNotificationController::class, 'sendTestNotification']); // Allow GET for testing
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');
@@ -42,9 +38,10 @@ Route::middleware('auth')->group(function () {
 
 // MFA verification routes (outside auth middleware)
 Route::get('mfa/verify', function () {
-    if (!session('mfa_user_id')) {
+    if (! session('mfa_user_id')) {
         return redirect()->route('login');
     }
+
     return Inertia::render('auth/mfa-verify');
 })->name('mfa.verify.form');
 

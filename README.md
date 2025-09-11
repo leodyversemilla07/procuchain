@@ -29,20 +29,34 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 
 ## Features
 
-- Secure document storage and management
-- Blockchain-based document verification
-- Automated workflow for bids and awards processes
-- Real-time tracking of procurement status
-- Access control and user management
-- Audit trail and document history
+- **Secure Document Management**: Upload, store, and manage procurement documents with blockchain integrity verification
+- **Blockchain-based Document Verification**: Immutable audit trails using MultiChain streams
+- **Automated Workflow**: Streamlined bids and awards process with stage transitions
+- **Real-time Status Tracking**: Live updates on procurement progress and document status
+- **Role-based Access Control**: Granular permissions for different user roles (Admin, BAC Secretariat, BAC Chairman, HOPE)
+- **Comprehensive Audit Trail**: Complete history of document changes and workflow transitions
+- **Cloud Storage Integration**: Secure document storage using AWS S3-compatible services (DigitalOcean Spaces)
+- **Email Notifications**: Automated email alerts for workflow transitions and updates
+- **Push Notifications**: Real-time browser notifications using WebPush/VAPID
+- **Responsive Interface**: Modern React-based SPA with Inertia.js for seamless user experience
 
 ## Technology Stack
 
-- Laravel 12
-- PHP 8.2+
-- Blockchain Integration
-- MultiChain
-- MySQL Database
+- **Backend**: Laravel 12 with PHP 8.2+
+- **Frontend**: React 19 with Inertia.js v2 for SPA experience
+- **Database**: MySQL with database-driven sessions, cache, and queue
+- **Blockchain**: MultiChain for immutable document integrity and audit trails
+- **File Storage**: AWS S3-compatible storage (DigitalOcean Spaces)
+- **Styling**: Tailwind CSS v4 for responsive design
+- **Build Tools**: Vite for fast frontend asset compilation
+- **Testing**: Pest v3 for expressive PHP testing
+- **Code Quality**: Laravel Pint for consistent code formatting
+- **Notifications**:
+    - SMTP email notifications
+    - WebPush browser notifications with VAPID
+- **Development**:
+    - Hot module replacement with Vite
+    - Database-driven development stack
 
 ## Architecture Snapshot
 
@@ -63,6 +77,8 @@ High level components:
 - Node.js and npm
 - MySQL database
 - MultiChain (installed and configured)
+- SMTP email service (for notifications)
+- AWS S3-compatible storage or DigitalOcean Spaces (for file storage)
 
 ```bash
 # Clone the repository
@@ -84,12 +100,12 @@ cp .env.example .env
 # DB_DATABASE=procuchain
 # DB_USERNAME=root
 # DB_PASSWORD=
-#
-# MULTICHAIN_HOST=localhost
-# MULTICHAIN_PORT=7447
-# MULTICHAIN_CHAIN=procuchain
-# MULTICHAIN_USER=multichainrpc
-# MULTICHAIN_PASS=your-rpc-password
+
+# MULTICHAIN_CHAIN_NAME=procuchain
+# MULTICHAIN_HOST=your_multichain_host
+# MULTICHAIN_PORT=7000
+# MULTICHAIN_USERNAME=multichainrpc
+# MULTICHAIN_PASSWORD=your_multichain_password
 
 # Generate application key
 php artisan key:generate
@@ -118,82 +134,129 @@ multichaind procuchain -daemon
 
 #### Application Bootstrap (Artisan Command)
 
-After the node is up, use the built-in Artisan command to generate or sync blockchain addresses, streams, and permissions. Always perform a dry run first.
+After the node is up, use the built-in Artisan command to generate blockchain addresses, create streams, and grant permissions.
 
-Dry run (no changes):
-
-```bash
-php artisan multichain:setup --dry-run --strict --json-summary --no-progress
-```
-
-Initial real bootstrap (generates all role addresses, creates streams, grants permissions, creates admin user, writes .env):
+Check MultiChain connection:
 
 ```bash
-php artisan multichain:setup \
-	--regenerate-addresses \
-	--admin-email=admin@yourdomain.com \
-	--strict \
-	--json-summary \
-	--addresses-json=storage/app/multichain-bootstrap.json \
-	--no-progress
+php artisan multichain:setup --check
 ```
 
-Common follow-up scenarios:
-| Scenario | Command |
-|---------|---------|
-| Permissions matrix changed only | `php artisan multichain:setup --only-permissions --strict --json-summary --no-progress` |
-| Add new streams only | `php artisan multichain:setup --only-streams --json-summary --no-progress` |
-| Rotate a subset of roles (example) | `php artisan multichain:setup --regenerate-only=hope,bac_chairman --strict --json-summary --addresses-json=storage/app/multichain-rotate.json --no-progress` |
-| Full address rotation (rare) | `php artisan multichain:setup --regenerate-addresses --strict --json-summary --no-progress` |
+Full setup (generates addresses, creates streams, grants permissions):
 
-Key flags:
-| Flag | Purpose |
-|------|---------|
-| `--dry-run` | Preview actions without side effects |
-| `--regenerate-addresses` | Force generation of all role addresses |
-| `--regenerate-only=role1,role2` | Rotate only specified roles |
-| `--only-permissions` / `--only-streams` | Scope operation to one concern |
-| `--admin-email=` | Ensure/create admin user and sync its blockchain address |
-| `--json-summary` | Emit machine-readable JSON to stdout |
-| `--addresses-json=path` | Persist addresses + metadata to a file |
-| `--show-addresses` | Disable masking (avoid in shared logs) |
-| `--strict` | Fail on incomplete permission matrix or placeholders |
-| `--continue-on-error` | Attempt remaining steps after failures |
-| `--no-env-write` | Prevent .env mutation (use external secrets manager) |
-| `--no-progress` | Cleaner CI logs |
+```bash
+php artisan multichain:setup
+```
 
-Operational tips:
+The setup command performs the following operations:
 
-1. Always run a dry run in CI and parse the JSON summary (fail if any error counts > 0).
-2. After generating new addresses, move them into your secret manager and limit exposure.
-3. If config was cached, clear it: `php artisan config:clear`.
-4. Use selective rotation (`--regenerate-only`) instead of full regeneration where possible.
-5. Keep the exported metadata JSON (`--addresses-json`) in a secure, access-controlled location for audit.
+1. **Connection Check**: Verifies connectivity to the MultiChain node
+2. **Address Setup**: Generates new blockchain addresses for roles that don't have them configured, or uses existing configured addresses
+3. **Stream Creation**: Creates the following streams if they don't exist:
+    - `procurement.documents`
+    - `procurement.status`
+    - `procurement.events`
+    - `procurement.corrections`
+4. **Permission Grants**: Assigns appropriate permissions to each role address based on the configuration
+5. **Address Persistence**: Updates the `.env` file with newly generated addresses and syncs user records in the database
 
-Rollback: retain a previous `.env` copy. If rotation causes issues, restore it and re-run `php artisan multichain:setup --only-permissions --strict` to re-apply grants.
+**Available Options:**
 
-Security: Avoid committing or sharing full unmasked addresses. Default output masks them; only use `--show-addresses` locally.
+| Option    | Purpose                                                     |
+| --------- | ----------------------------------------------------------- |
+| `--check` | Only check connection to MultiChain node (no setup actions) |
+
+**Supported Roles:**
+
+The command manages blockchain addresses for these roles:
+
+- `bac_secretariat` → `MULTICHAIN_BAC_SECRETARIAT_ADDRESS`
+- `bac_chairman` → `MULTICHAIN_BAC_CHAIRMAN_ADDRESS`
+- `hope` → `MULTICHAIN_HOPE_ADDRESS`
+- `admin` → `MULTICHAIN_ADMIN_ADDRESS`
+
+**Address Management:**
+
+- If an address is already configured in the `.env` file, it will be reused
+- If an address is missing or contains `default_`, a new address will be generated
+- New addresses are automatically added to the `.env` file
+- User records with matching roles are updated with the new blockchain addresses
+- For security, addresses are displayed masked in the output (first 6 + last 6 characters)
+
+**Operational Notes:**
+
+1. Ensure your MultiChain node is running before executing the setup
+2. The command will fail if it cannot connect to the MultiChain RPC endpoint
+3. Generated addresses are immediately granted the necessary permissions
+4. If config is cached, clear it after setup: `php artisan config:clear`
+5. Keep your `.env` file secure as it contains the blockchain addresses
 
 ## Configuration
 
 Environment variables (core subset):
 
-| Key                                   | Purpose                    | Example                 |
-| ------------------------------------- | -------------------------- | ----------------------- |
-| `APP_ENV`                             | Environment name           | `production`            |
-| `APP_KEY`                             | Encryption key (generated) | _(generated)_           |
-| `DB_CONNECTION`                       | Database driver            | `mysql`                 |
-| `DB_HOST` / `DB_PORT`                 | DB host/port               | `127.0.0.1` / `3306`    |
-| `DB_DATABASE`                         | Database name              | `procuchain`            |
-| `DB_USERNAME` / `DB_PASSWORD`         | DB credentials             | `procuchain` / `secret` |
-| `MULTICHAIN_HOST`                     | RPC host                   | `localhost`             |
-| `MULTICHAIN_PORT`                     | RPC port                   | `7447`                  |
-| `MULTICHAIN_CHAIN`                    | Chain name                 | `procuchain`            |
-| `MULTICHAIN_USER` / `MULTICHAIN_PASS` | RPC auth                   | `multichainrpc` / `***` |
-| `MULTICHAIN_ADMIN_ADDRESS`            | Generated by setup         | _(generated)_           |
-| Other role addresses                  | BAC addresses              | _(generated)_           |
+| Key                                  | Purpose                    | Example                    |
+| ------------------------------------ | -------------------------- | -------------------------- |
+| `APP_ENV`                            | Environment name           | `local`                    |
+| `APP_KEY`                            | Encryption key (generated) | _(generated)_              |
+| `APP_DEBUG`                          | Debug mode                 | `true`                     |
+| `APP_URL`                            | Application URL            | `http://127.0.0.1:8000`    |
+| `DB_CONNECTION`                      | Database driver            | `mysql`                    |
+| `DB_HOST` / `DB_PORT`                | DB host/port               | `127.0.0.1` / `3306`       |
+| `DB_DATABASE`                        | Database name              | `procuchain`               |
+| `DB_USERNAME` / `DB_PASSWORD`        | DB credentials             | `root` / `(empty)`         |
+| `MULTICHAIN_HOST`                    | MultiChain RPC host        | `your_multichain_host`     |
+| `MULTICHAIN_PORT`                    | MultiChain RPC port        | `7000`                     |
+| `MULTICHAIN_CHAIN_NAME`              | Chain name                 | `procuchain`               |
+| `MULTICHAIN_USERNAME`                | RPC username               | `multichainrpc`            |
+| `MULTICHAIN_PASSWORD`                | RPC password               | `your_multichain_password` |
+| `MULTICHAIN_USE_SSL`                 | Use SSL for RPC            | `false`                    |
+| `MULTICHAIN_VERIFY_SSL`              | Verify SSL certificates    | `false`                    |
+| `MULTICHAIN_CONNECTION_TIMEOUT`      | Connection timeout (sec)   | `30`                       |
+| `MULTICHAIN_MAX_RETRIES`             | Max retry attempts         | `3`                        |
+| `MULTICHAIN_ADMIN_ADDRESS`           | Admin blockchain address   | _(generated by setup)_     |
+| `MULTICHAIN_BAC_SECRETARIAT_ADDRESS` | BAC Secretariat address    | _(generated by setup)_     |
+| `MULTICHAIN_BAC_CHAIRMAN_ADDRESS`    | BAC Chairman address       | _(generated by setup)_     |
+| `MULTICHAIN_HOPE_ADDRESS`            | HOPE blockchain address    | _(generated by setup)_     |
 
-After first successful `multichain:setup`, move addresses into your secret manager and avoid exposing them in logs.
+**Additional Configuration:**
+
+- **File Storage**: Uses AWS S3-compatible storage (DigitalOcean Spaces)
+
+    ```bash
+    AWS_ACCESS_KEY_ID=your_access_key_id
+    AWS_SECRET_ACCESS_KEY=your_secret_access_key
+    AWS_DEFAULT_REGION=sgp1
+    AWS_BUCKET=your_bucket_name
+    AWS_ENDPOINT=https://sgp1.digitaloceanspaces.com
+    ```
+
+- **Email Configuration**: SMTP settings for notifications
+
+    ```bash
+    MAIL_MAILER=smtp
+    MAIL_HOST=smtp.gmail.com
+    MAIL_PORT=587
+    MAIL_USERNAME=your_email@gmail.com
+    MAIL_PASSWORD=your_app_password
+    MAIL_ENCRYPTION=tls
+    MAIL_FROM_ADDRESS=your_email@gmail.com
+    MAIL_FROM_NAME="${APP_NAME}"
+    ```
+
+- **WebPush Notifications**: Browser push notifications (VAPID keys provided)
+
+    ```bash
+    VAPID_PUBLIC_KEY="your_vapid_public_key"
+    VAPID_PRIVATE_KEY="your_vapid_private_key"
+    VAPID_SUBJECT="mailto:admin@example.com"
+    ```
+
+- **Queue**: Database-driven queue system
+- **Cache**: Database-driven cache system
+- **Session**: Database-driven session storage
+
+After running `php artisan multichain:setup`, the role addresses will be automatically generated and added to your `.env` file. Keep this file secure as it contains the blockchain addresses and sensitive credentials.
 
 ## Testing
 
@@ -242,29 +305,29 @@ vendor/bin/pint
 1. Install dependencies (`composer install --no-dev --optimize-autoloader`, `npm ci && npm run build`).
 2. Optimize Laravel (`php artisan config:cache && php artisan route:cache && php artisan view:cache`).
 3. Boot MultiChain node & ensure RPC reachable.
-4. Run dry run of setup (fail pipeline if errors):
+4. Check connection to MultiChain node:
     ```bash
-    php artisan multichain:setup --dry-run --strict --json-summary --no-progress
+    php artisan multichain:setup --check
     ```
-5. Execute real bootstrap if first time:
+5. Execute setup to create addresses, streams, and permissions:
     ```bash
-    php artisan multichain:setup --regenerate-addresses --admin-email=admin@yourdomain.com --strict --json-summary --no-progress
+    php artisan multichain:setup
     ```
-6. Store generated addresses securely; optionally re-cache config.
-7. Health check (app endpoint + test publish if applicable).
+6. Store generated addresses securely from `.env` file; optionally re-cache config.
+7. Health check (app endpoint + verify MultiChain integration).
 
-Rolling updates: use `--only-permissions` after permission matrix changes or `--regenerate-only` for partial rotations.
+For subsequent deployments, re-run the setup command to ensure streams exist and permissions are properly granted.
 
 ## Troubleshooting
 
-| Symptom                                  | Cause                                | Fix                                                               |
-| ---------------------------------------- | ------------------------------------ | ----------------------------------------------------------------- |
-| `permission_grant_failure` errors        | Node RPC issue or invalid permission | Validate node logs; retry with `--continue-on-error` then inspect |
-| Streams reported as existing but no data | Subscription permissions missing     | Re-run with `--only-permissions --strict`                         |
-| Addresses not updating in app            | Config cache stale                   | `php artisan config:clear`                                        |
-| `.env` not updated                       | File permissions or `--no-env-write` | Fix permissions or remove flag                                    |
-| Masked addresses hide debugging          | Masking default                      | Use `--show-addresses` locally only                               |
-| Invalid address in permissions phase     | Placeholder or rotated mid-run       | Regenerate selectively or fix config                              |
+| Symptom                                   | Cause                                          | Fix                                                       |
+| ----------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- |
+| Setup command fails with connection error | MultiChain node not running or RPC unreachable | Check node status; verify RPC credentials in `.env`       |
+| Permission grant failures                 | Node RPC issue or invalid configuration        | Check MultiChain logs; verify permission matrix in config |
+| Streams already exist but no data         | Missing subscription or permissions            | Re-run setup command to ensure proper permissions         |
+| Addresses not updating in application     | Config cache stale                             | `php artisan config:clear`                                |
+| `.env` file not updated                   | File permissions issue                         | Check file is writable                                    |
+| Connection check passes but setup fails   | Permission or stream creation issues           | Check MultiChain node logs for detailed error messages    |
 
 ## Security
 
@@ -275,14 +338,18 @@ Rolling updates: use `--only-permissions` after permission matrix changes or `--
 3. Follow the intuitive interface to manage documents
 4. Track and verify documents using blockchain features
 
+## Security
+
 Core practices:
 
 - Role-based access enforcement (app + blockchain).
 - Immutable audit anchors via MultiChain streams.
 - Principle of least privilege in permission matrix.
 - Environment isolation: never reuse production addresses in non-prod.
-- Secrets rotation using `--regenerate-only` when feasible.
-- Avoid logging full addresses (masking default).
+- Secure storage of blockchain addresses in `.env` file.
+- Addresses are displayed masked by default (first 6 + last 6 characters) for security.
+- Regular backup of `.env` file and MultiChain configuration.
+- Proper MultiChain node security and access controls.
 
 ## License
 
