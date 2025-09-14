@@ -2,12 +2,44 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import { toast } from "sonner";
-import { ArrowRight, Clock, FileText, Bell, CheckCircle, FileIcon } from "lucide-react";
-import type { DashboardProps } from '@/types/dashboard';
-import { RecentActivities } from '@/components/dashboard/recent-activities';
-import { RecentProcurementsTable } from '@/components/dashboard/recent-procurements-table';
+import { ArrowRight, Clock, FileText, CheckCircle, FileIcon, EyeIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { User, BreadcrumbItem } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { getActionIcon, getActionBadgeStyle } from '@/lib/action-utils';
+import type { BreadcrumbItem, SharedData} from '@/types';
+import { Status, Stage } from '@/types/blockchain';
+
+interface DashboardStats {
+    ongoingProjects: number;
+    completedBiddings: number;
+    totalDocuments: number;
+}
+
+interface RecentActivity {
+    id: string;
+    title: string;
+    action: string;
+    date: string;
+    user: string;
+    stage?: string;
+}
+
+interface RecentProcurement {
+    id: string;
+    title: string;
+    stage: Stage;
+    status: Status;
+}
+
+interface DashboardProps extends SharedData {
+    recentProcurements: RecentProcurement[];
+    recentActivities: RecentActivity[];
+    stats: DashboardStats;
+    error?: string;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -18,8 +50,22 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function HOPEDashboard() {
     const { recentProcurements = [], recentActivities = [], stats, error } = usePage<DashboardProps>().props;
-    const { auth } = usePage().props as unknown as { auth: { user: User } };
-    const userRole = auth.user?.role;
+
+    const formatRelativeDate = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hr ago`;
+        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} day ago`;
+
+        return new Date(dateString).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        });
+    };
 
     // Define all possible cards
     const allCards = [
@@ -28,13 +74,6 @@ export default function HOPEDashboard() {
             value: stats?.ongoingProjects || 0,
             icon: FileText,
             colors: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20"
-        },
-        {
-            label: "Pending Actions",
-            value: stats?.pendingActions || 0,
-            icon: Bell,
-            colors: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
-            roles: ['bac_secretariat'] // Only show for bac_secretariat
         },
         {
             label: "Completed Biddings",
@@ -51,7 +90,7 @@ export default function HOPEDashboard() {
     ];
 
     // Filter cards based on the current user's role
-    const cardsToShow = allCards.filter(card => !card.roles || card.roles.includes(userRole));
+    const cardsToShow = allCards;
 
     // Determine grid columns based on the number of cards to show
     const gridColsClass = cardsToShow.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3";
@@ -119,7 +158,62 @@ export default function HOPEDashboard() {
                                 </Link>
                             </CardHeader>
                             <CardContent>
-                                <RecentActivities activities={recentActivities} />
+                                {recentActivities.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <Clock className="mx-auto h-8 w-8 text-muted-foreground opacity-20 mb-2" />
+                                        <p>No recent activities found</p>
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            Activities will appear here when procurement actions are taken.<br />
+                                            Try refreshing if you've recently performed actions.
+                                        </p>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="mt-4"
+                                            onClick={() => window.location.reload()}
+                                        >
+                                            Refresh Data
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {recentActivities.map((activity, index) => {
+                                            const ActionIcon = getActionIcon(activity.action);
+                                            return (
+                                                <div key={index} className={`${index < recentActivities.length - 1 ? "border-b pb-3" : ""}`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <Link
+                                                            href={`/bac-secretariat/procurements-list/${activity.id}`}
+                                                            className="font-medium text-primary hover:underline text-sm max-w-[70%] truncate"
+                                                        >
+                                                            {activity.title || `Procurement #${activity.id}`}
+                                                        </Link>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {formatRelativeDate(activity.date)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-1.5 flex items-center justify-between">
+                                                        <div className="flex items-center">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={`${getActionBadgeStyle(activity.action)} text-xs mr-2 flex items-center gap-1`}
+                                                            >
+                                                                <ActionIcon className="h-3.5 w-3.5" />
+                                                                <span>{activity.action}</span>
+                                                            </Badge>
+                                                            {activity.stage && (
+                                                                <span className="text-xs text-muted-foreground ml-1">
+                                                                    in {activity.stage} stage
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-xs text-muted-foreground">by {activity.user}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -135,8 +229,65 @@ export default function HOPEDashboard() {
                                     View all <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
                                 </Link>
                             </CardHeader>
-                            <CardContent>
-                                <RecentProcurementsTable procurements={recentProcurements} />
+                            <CardContent className="p-0">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>ID</TableHead>
+                                            <TableHead>Title</TableHead>
+                                            <TableHead>Stage</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {recentProcurements.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center py-8">
+                                                    No procurement data available
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            recentProcurements.map(procurement => (
+                                                <TableRow key={procurement.id}>
+                                                    <TableCell className="font-medium">{procurement.id}</TableCell>
+                                                    <TableCell className="max-w-[140px] truncate" title={procurement.title}>
+                                                        {procurement.title}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge>
+                                                            {procurement.stage}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline">
+                                                            {procurement.status}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    asChild
+                                                                    className="h-8 px-2"
+                                                                >
+                                                                    <Link href={route('hope.procurements.show', { id: procurement.id })}>
+                                                                        <EyeIcon className="h-4 w-4" />
+                                                                    </Link>
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>View Procurement Details</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
                             </CardContent>
                         </Card>
                     </div>
