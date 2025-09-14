@@ -925,29 +925,33 @@ export default function ProcurementsList({ procurements: initialProcurements, er
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Procurement List" />
             <div className="w-full space-y-4 p-4 md:p-6 lg:p-8">
-                <div className="border-b pb-6">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight flex items-center">
-                                <FileText className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 mr-2 md:mr-3 text-primary" />
-                                Procurement List
-                            </h1>
-                            <p className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm lg:text-base">
-                                View and manage procurement items across all stages
-                            </p>
+                <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <FileText className="h-6 w-6 text-primary" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-foreground">Procurement List</h1>
+                                    <p className="text-muted-foreground text-sm mt-1">
+                                        View and manage procurement items across all stages
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 md:gap-3">
+                                {userRole === 'bac_secretariat' && (
+                                    <Button asChild>
+                                        <Link href="/bac-secretariat/procurement/procurement-initiation" className="flex items-center space-x-2">
+                                            <Plus className="h-4 w-4" />
+                                            <span>New Procurement</span>
+                                        </Link>
+                                    </Button>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2 md:gap-3">
-                            {userRole === 'bac_secretariat' && (
-                                <Button asChild>
-                                    <Link href="/bac-secretariat/procurement/procurement-initiation" className="flex items-center space-x-2">
-                                        <Plus className="h-4 w-4" />
-                                        <span>New Procurement</span>
-                                    </Link>
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
                 {error && (
                     <Card className="border-destructive/50 bg-destructive/10 dark:border-destructive/20 dark:bg-destructive/5">

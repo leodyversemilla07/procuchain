@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -89,7 +90,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function AdminUsers() {
+export default function AdminUserManagement() {
     const page = usePage<PageProps>();
     const { users, roles } = page.props;
 
@@ -585,27 +586,26 @@ export default function AdminUsers() {
             <Head title="User Management" />
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
-                <div className="border-b pb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center">
-                                <Users className="h-6 w-6 md:h-8 md:w-8 mr-3 text-primary" />
-                                User Management
-                            </h1>
-                            <p className="text-muted-foreground mt-2 text-sm md:text-base">
-                                Manage system users and their roles
-                            </p>
-                        </div>
+                <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Users className="h-6 w-6 text-primary" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-foreground">User Management</h1>
+                                    <p className="text-muted-foreground text-sm mt-1">Manage system users and their roles</p>
+                                </div>
+                            </div>
 
-                        <Button
-                            className="flex items-center space-x-2 shadow-md"
-                            onClick={() => setIsCreateModalOpen(true)}
-                        >
-                            <Plus className="h-4 w-4" />
-                            <span>Add User</span>
-                        </Button>
-                    </div>
-                </div>
+                            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                Add User
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* Data Table Section */}
                 <div className="flex-1">

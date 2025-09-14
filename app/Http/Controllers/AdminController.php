@@ -8,8 +8,10 @@ use App\Services\LoginLoggerService;
 use App\Services\AccountLockoutService;
 use App\Services\MultichainService;
 use App\Services\EventTypeLabelMapper;
+use App\Services\AnalyticsService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -18,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class AdminController extends BaseController
 {
@@ -25,18 +28,21 @@ class AdminController extends BaseController
     private AccountLockoutService $accountLockout;
     private MultichainService $multiChain;
     private EventTypeLabelMapper $eventTypeLabelMapper;
+    private AnalyticsService $analyticsService;
     private array $userNameCache = [];
 
     public function __construct(
         LoginLoggerService $loginLogger,
         AccountLockoutService $accountLockout,
         MultichainService $multiChain,
-        EventTypeLabelMapper $eventTypeLabelMapper
+        EventTypeLabelMapper $eventTypeLabelMapper,
+        AnalyticsService $analyticsService
     ) {
         $this->loginLogger = $loginLogger;
         $this->accountLockout = $accountLockout;
         $this->multiChain = $multiChain;
         $this->eventTypeLabelMapper = $eventTypeLabelMapper;
+        $this->analyticsService = $analyticsService;
         $this->middleware('auth');
         $this->middleware('role:admin');
     }
@@ -57,7 +63,7 @@ class AdminController extends BaseController
         return $this->userNameCache[$address] = $name;
     }
 
-    public function index()
+    public function index(): Response
     {
         try {
             Log::info('Fetching Admin dashboard data');
@@ -93,13 +99,29 @@ class AdminController extends BaseController
                 return $this->getDashboardStats($procurementsByKey, 0);
             });
 
+            // Get user activity analytics for the dashboard
+            $userActivityAnalytics = Cache::remember('admin_dashboard_user_activity', now()->addMinutes(10), function () {
+                try {
+                    return $this->analyticsService->getUserActivityAnalytics([
+                        'time_range' => '30_days',
+                        'role' => Auth::user()->role,
+                    ]);
+                } catch (Exception $e) {
+                    Log::error('Failed to get user activity analytics for dashboard', [
+                        'error' => $e->getMessage(),
+                    ]);
+                    return null;
+                }
+            });
+
             $dashboardData = [
                 'recentProcurements' => $this->getRecentProcurements($procurementsByKey),
                 'recentActivities' => $recentActivities,
                 'stats' => $stats,
+                'analytics' => [
+                    'user_activity' => $userActivityAnalytics,
+                ],
             ];
-
-            Log::info('Successfully retrieved Admin dashboard data');
 
             return Inertia::render('admin/dashboard', $dashboardData);
         } catch (Exception $e) {
@@ -112,11 +134,13 @@ class AdminController extends BaseController
             Cache::forget('admin_dashboard_recent_activities');
             Cache::forget('admin_dashboard_stats');
             Cache::forget('admin_dashboard_total_documents');
+            Cache::forget('admin_dashboard_user_activity');
 
             return Inertia::render('admin/dashboard', [
                 'recentProcurements' => [],
                 'recentActivities' => [],
                 'stats' => $this->getEmptyStats(),
+                'userActivityAnalytics' => null,
                 'error' => 'Failed to retrieve dashboard data. Please try again later.',
             ]);
         }
@@ -322,7 +346,7 @@ class AdminController extends BaseController
     /**
      * Display user management page
      */
-    public function users()
+    public function users(): Response
     {
         $users = User::select('id', 'name', 'email', 'role', 'blockchain_address', 'email_verified_at', 'remember_token', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'mfa_enabled', 'mfa_enabled_at', 'backup_codes', 'backup_codes_generated_at')
             ->where('id', '!=', Auth::id())
@@ -353,7 +377,7 @@ class AdminController extends BaseController
                 ];
             });
 
-        return Inertia::render('admin/users', [
+        return Inertia::render('admin/user-management', [
             'users' => $users,
             'roles' => ['bac_secretariat', 'bac_chairman', 'hope', 'admin'],
         ]);
@@ -538,7 +562,7 @@ class AdminController extends BaseController
     /**
      * Display login logs page
      */
-    public function loginLogs()
+    public function loginLogs(): Response
     {
         try {
             $recentLogins = $this->loginLogger->getRecentLogins(100);
@@ -556,7 +580,12 @@ class AdminController extends BaseController
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect()->back()->withErrors(['error' => 'Failed to load login logs. Please try again.']);
+            return Inertia::render('admin/login-logs', [
+                'recentLogins' => [],
+                'statistics' => [],
+                'suspiciousActivities' => [],
+                'error' => 'Failed to load login logs. Please try again.',
+            ]);
         }
     }
 
@@ -639,7 +668,7 @@ class AdminController extends BaseController
     /**
      * Display locked accounts page
      */
-    public function lockedAccounts()
+    public function lockedAccounts(): Response
     {
         try {
             $lockedUsers = $this->accountLockout->getLockedAccounts();

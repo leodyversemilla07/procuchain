@@ -412,19 +412,23 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
-                <div className="border-b pb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center">
-                                <Shield className="h-6 w-6 md:h-8 md:w-8 mr-3 text-primary" />
-                                Login Logs
-                            </h1>
-                            <p className="text-muted-foreground mt-2 text-sm md:text-base">
-                                Monitor user login activities and security events
-                            </p>
+                <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Shield className="h-6 w-6 text-primary" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-foreground">Login Logs</h1>
+                                    <p className="text-muted-foreground text-sm mt-1">
+                                        Monitor user login activities and security events
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
                 {/* Statistics Cards */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

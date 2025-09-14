@@ -319,36 +319,40 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
 
             <div className="w-full space-y-4 p-4 md:p-6 lg:p-8" role="main" aria-labelledby="page-title">
                 {/* Header Section (redesigned to match procurements-list) */}
-                <div className="border-b pb-6">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h1 id="page-title" className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight flex items-center">
-                                <FileText className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 mr-2 md:mr-3 text-primary" aria-hidden="true" />
-                                New Procurement
-                            </h1>
-                            <p className="text-muted-foreground mt-1 md:mt-2 text-xs md:text-sm lg:text-base">
-                                Start your procurement process by providing necessary details.
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 mt-2 md:mt-0">
-                            <Badge
-                                className="bg-primary/10 hover:bg-primary/20 text-primary text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 rounded-md font-medium transition-colors duration-200"
-                            >
-                                Procurement Initiation
-                            </Badge>
-                            {formState?.reference && (
-                                <Badge className="text-xs md:text-sm bg-chart-1/10 text-chart-1 dark:bg-chart-1/20 dark:text-chart-1 px-2 py-1 md:px-3 md:py-1.5 rounded-md">
-                                    {formState.reference}
+                <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <FileText className="h-6 w-6 text-primary" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-foreground">New Procurement</h1>
+                                    <p className="text-muted-foreground text-sm mt-1">
+                                        Start your procurement process by providing necessary details.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Badge
+                                    className="bg-primary/10 hover:bg-primary/20 text-primary text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 rounded-md font-medium transition-colors duration-200"
+                                >
+                                    Procurement Initiation
                                 </Badge>
-                            )}
-                            {formState?.isComplete && (
-                                <Badge className="text-xs md:text-sm bg-chart-2/10 hover:bg-chart-2/20 text-chart-2 dark:bg-chart-2/20 dark:text-chart-2 px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-200">
-                                    Complete
-                                </Badge>
-                            )}
+                                {formState?.reference && (
+                                    <Badge className="text-xs md:text-sm bg-chart-1/10 text-chart-1 dark:bg-chart-1/20 dark:text-chart-1 px-2 py-1 md:px-3 md:py-1.5 rounded-md">
+                                        {formState.reference}
+                                    </Badge>
+                                )}
+                                {formState?.isComplete && (
+                                    <Badge className="text-xs md:text-sm bg-chart-2/10 hover:bg-chart-2/20 text-chart-2 dark:bg-chart-2/20 dark:text-chart-2 px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-200">
+                                        Complete
+                                    </Badge>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
                 <div className="mt-2 sm:mt-0">
                     <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
