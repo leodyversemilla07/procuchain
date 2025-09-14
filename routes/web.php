@@ -10,7 +10,6 @@ use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SecureFileController;
 use App\Http\Controllers\ViewProcurementsController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -31,14 +30,6 @@ Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-
-    // Smart Contract Demo Route (accessible to BAC roles)
-    Route::get('/smart-contract-demo/{procurement_id}', function ($procurement_id) {
-        return Inertia::render('smart-contract-demo/document-upload', [
-            'user' => Auth::user(),
-            'procurement_id' => $procurement_id,
-        ]);
-    })->middleware('role:bac_secretariat,bac_chairman,admin')->name('smart-contract.demo');
 
     Route::middleware(['role:bac_secretariat', 'mfa'])->group(function () {
         Route::get('/bac-secretariat/dashboard', [BacSecretariatController::class, 'dashboard'])
@@ -240,6 +231,5 @@ Route::get('/terms.pdf', function () {
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/smart-contracts.php';
-require __DIR__.'/analytics.php';
 
 require __DIR__.'/file-uploads-ui-preview.php'; // Include the file uploads UI preview routes

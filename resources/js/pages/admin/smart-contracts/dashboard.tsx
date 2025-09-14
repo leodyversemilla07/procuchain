@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Head } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +34,7 @@ export default function SmartContractDashboard({ user }: SmartContractDashboardP
     data?: {
       blockchain_status: string;
       features: string[];
-      blockchain_info?: any;
+      blockchain_info?: Record<string, unknown>;
     };
     error?: string;
   } | null>(null);
@@ -46,17 +46,43 @@ export default function SmartContractDashboard({ user }: SmartContractDashboardP
     { title: 'Smart Contracts', href: '#' },
   ];
 
-  const fetchSystemStatus = async () => {
+  const fetchSystemStatus = useCallback(async () => {
     setIsRefreshing(true);
     try {
       const status = await getSystemStatus();
-      setSystemStatus(status as any);
-    } catch {
+      // Transform the API response to match our expected structure
+      const transformedStatus = {
+        success: status.success,
+        message: status.validation_setup?.message || (status.success ? 'System is operational' : 'System has issues'),
+        data: {
+          blockchain_status: status.php_validation_ready ? 'connected' : 'disconnected',
+          features: status.library_created && status.filters_created ? ['validation', 'audit', 'storage'] : [],
+          blockchain_info: status.validation_setup ? {
+            network: 'MultiChain',
+            status: status.php_validation_ready ? 'connected' : 'disconnected',
+            last_check: new Date().toISOString()
+          } : undefined
+        },
+        error: status.errors.length > 0 ? status.errors.join(', ') : undefined
+      };
+      setSystemStatus(transformedStatus);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setSystemStatus({
+        success: false,
+        message: 'Failed to fetch system status',
+        data: {
+          blockchain_status: 'disconnected',
+          features: [],
+          blockchain_info: undefined
+        },
+        error: errorMessage
+      });
       toast.error('Failed to fetch system status');
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [getSystemStatus]);
 
   const handleInitializeSystem = async () => {
     try {
@@ -82,7 +108,7 @@ export default function SmartContractDashboard({ user }: SmartContractDashboardP
 
   useEffect(() => {
     fetchSystemStatus();
-  }, []);
+  }, [fetchSystemStatus]);
 
   const isSystemConnected = systemStatus?.data?.blockchain_status === 'connected';
 

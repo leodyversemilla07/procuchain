@@ -4,20 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Models\User;
+use App\Services\EventTypeLabelMapper;
+use App\Services\MultichainService;
+use App\Services\ProcurementStageTransitionService;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
-use App\Services\MultichainService;
-use App\Services\ProcurementStageTransitionService;
-use App\Services\EventTypeLabelMapper;
 
 class BacSecretariatController extends BaseController
 {
     private MultichainService $multichainService;
+
     private EventTypeLabelMapper $eventTypeLabelMapper;
+
     private ProcurementStageTransitionService $stageTransitionService;
+
     private array $userNameCache = [];
 
     public function __construct(
@@ -93,9 +96,13 @@ class BacSecretariatController extends BaseController
                 return array_slice($allPriorityActions, 0, 3);
             });
 
-            // Cache dashboard stats for 5 minutes
+            // Cache count of all priority actions for 2 minutes
             $allPriorityActionsCount = Cache::remember('dashboard_priority_actions_count', now()->addMinutes(2), function () use ($procurementsByKey) {
                 return count($this->getPriorityActions($procurementsByKey));
+            });
+            // Cache procurement distribution data for 5 minutes
+            $procurementDistribution = Cache::remember('dashboard_procurement_distribution', now()->addMinutes(5), function () use ($procurementsByKey) {
+                return $this->getProcurementDistributionData($procurementsByKey);
             });
             $stats = Cache::remember('dashboard_stats', now()->addMinutes(5), function () use ($procurementsByKey, $allPriorityActionsCount) {
                 Log::info('Cache miss: Recalculating dashboard stats');
@@ -105,6 +112,7 @@ class BacSecretariatController extends BaseController
 
             $dashboardData = [
                 'recentProcurements' => $this->getRecentProcurements($procurementsByKey),
+                'procurementDistribution' => $procurementDistribution,
                 'recentActivities' => $recentActivities,
                 'priorityActions' => $priorityActions,
                 'stats' => $stats,
@@ -112,6 +120,8 @@ class BacSecretariatController extends BaseController
 
             Log::info('Successfully retrieved dashboard data', [
                 'procurement_count' => $procurementsByKey ? $procurementsByKey->count() : 0,
+                'recent_procurements_count' => count($dashboardData['recentProcurements']),
+                'distribution_data_count' => count($dashboardData['procurementDistribution']),
                 'activities_count' => count($dashboardData['recentActivities']),
                 'stats_from_cache' => Cache::has('dashboard_stats'),
                 'procurements_from_cache' => Cache::has('dashboard_procurements_by_key'),
@@ -131,9 +141,11 @@ class BacSecretariatController extends BaseController
             Cache::forget('dashboard_recent_activities');
             Cache::forget('dashboard_priority_actions');
             Cache::forget('dashboard_priority_actions_count');
+            Cache::forget('dashboard_procurement_distribution');
 
             return Inertia::render('bac-secretariat/dashboard', [
                 'recentProcurements' => [],
+                'procurementDistribution' => [],
                 'recentActivities' => [],
                 'priorityActions' => [],
                 'stats' => $this->getEmptyStats(),
@@ -226,6 +238,22 @@ class BacSecretariatController extends BaseController
     }
 
     private function getRecentProcurements($procurementsByKey)
+    {
+        return $procurementsByKey->sortByDesc('timestamp')
+            ->take(5) // Keep only 5 for the recent procurements table
+            ->values()
+            ->map(function ($item) {
+                return [
+                    'id' => $item['id'],
+                    'title' => $item['title'],
+                    'stage' => $item['stage'],
+                    'status' => $item['status'],
+                ];
+            })
+            ->toArray();
+    }
+
+    private function getProcurementDistributionData($procurementsByKey)
     {
         return $procurementsByKey->sortByDesc('timestamp')
             ->values()

@@ -1,16 +1,26 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Button } from "@/components/ui/button";
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { toast } from "sonner";
 import { PlusIcon, Bell, ArrowRight, Clock, FileText, ActivityIcon, CheckCircle, FileIcon, CheckIcon, FileUpIcon, EyeIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid,
+    PieChart, Pie,
+} from 'recharts';
+import {
+    ChartConfig,
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    ChartLegend,
+    ChartLegendContent,
+} from '@/components/ui/chart';
 import type { User, SharedData } from "@/types";
-
-// Type definitions from dashboard.ts
 import { Stage, Status } from '@/types/blockchain';
 
 interface DashboardStats {
@@ -33,6 +43,7 @@ interface RecentActivity {
     action: string;
     date: string;
     user: string;
+    user_role?: string;
     stage?: string;
 }
 
@@ -45,6 +56,7 @@ interface RecentProcurement {
 
 interface DashboardProps extends SharedData {
     recentProcurements: RecentProcurement[];
+    procurementDistribution: RecentProcurement[];
     recentActivities: RecentActivity[];
     stats: DashboardStats;
     error?: string;
@@ -57,13 +69,62 @@ const breadcrumbs = [
     },
 ];
 
-
-
 export default function Dashboard() {
     const pageProps = usePage<DashboardProps>().props;
-    const { recentProcurements = [], recentActivities = [], priorityActions, stats, error } = pageProps as DashboardProps;
+    const { recentProcurements = [], procurementDistribution = [], recentActivities = [], priorityActions, stats, error } = pageProps as DashboardProps;
     const { auth } = pageProps as unknown as { auth: { user: User } };
     const userRole = auth.user?.role;
+
+    // State for procurement distribution chart
+    const [activeChart, setActiveChart] = useState<"stage" | "status">("stage");
+
+    // Calculate distribution from procurementDistribution data (separate from recent procurements)
+    const stageDistribution = useMemo(() => {
+        const distribution: Record<string, number> = {};
+        procurementDistribution.forEach(procurement => {
+            const stage = procurement.stage;
+            distribution[stage] = (distribution[stage] || 0) + 1;
+        });
+        return distribution;
+    }, [procurementDistribution]);
+
+    const statusDistribution = useMemo(() => {
+        const distribution: Record<string, number> = {};
+        procurementDistribution.forEach(procurement => {
+            const status = procurement.status;
+            distribution[status] = (distribution[status] || 0) + 1;
+        });
+        return distribution;
+    }, [procurementDistribution]);
+
+    // Chart configuration for Pie Chart - Dynamic based on actual stages
+    const stageChartConfig: ChartConfig = useMemo(() => {
+        const config: ChartConfig = {
+            count: {
+                label: "Count",
+                color: "var(--chart-1)",
+            },
+        };
+
+        // If we have stage distribution data, create dynamic config
+        if (stageDistribution && Object.keys(stageDistribution).length > 0) {
+            Object.keys(stageDistribution).forEach((stage, index) => {
+                config[stage] = {
+                    label: stage,
+                    color: `var(--chart-${(index % 5) + 1})`,
+                };
+            });
+        } else {
+            // Fallback static config
+            config.stage1 = { label: "Stage 1", color: "var(--chart-1)" };
+            config.stage2 = { label: "Stage 2", color: "var(--chart-2)" };
+            config.stage3 = { label: "Stage 3", color: "var(--chart-3)" };
+            config.stage4 = { label: "Stage 4", color: "var(--chart-4)" };
+            config.stage5 = { label: "Stage 5", color: "var(--chart-5)" };
+        }
+
+        return config;
+    }, [stageDistribution]);
 
     useEffect(() => {
         if (error) {
@@ -73,31 +134,6 @@ export default function Dashboard() {
             });
         }
     }, [error]);
-
-    // Utility functions
-
-    const getProcurementShowRoute = (procurementId: string) => {
-        switch (userRole) {
-            case 'bac_secretariat':
-                return `/bac-secretariat/procurements/${procurementId}`;
-            case 'bac_chairman':
-                return `/bac-chairman/procurements/${procurementId}`;
-            case 'hope':
-                return `/hope/procurements/${procurementId}`;
-            case 'admin':
-                return `/admin/procurements/${procurementId}`;
-            default:
-                console.warn('Unknown user role for procurement link:', userRole);
-                return '#';
-        }
-    };
-
-    const getStatusIcon = (status: string) => {
-        if (status === 'Pre-Procurement Conference Completed') return <CheckIcon className="h-3 w-3 mr-1" />;
-        if (status === 'Bids Opened') return <FileIcon className="h-3 w-3 mr-1" />;
-        if (status === 'Awarded') return <CheckCircle className="h-3 w-3 mr-1" />;
-        return null;
-    };
 
     const formatRelativeDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -109,9 +145,13 @@ export default function Dashboard() {
         if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hr ago`;
         if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} day ago`;
 
-        return new Date(dateString).toLocaleDateString('en-US', {
+        // For dates older than a week, show full date with year and time
+        return date.toLocaleDateString('en-US', {
             month: 'short',
-            day: 'numeric'
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
         });
     };
 
@@ -258,7 +298,14 @@ export default function Dashboard() {
                                         </span>
                                     )}
                                 </div>
-                                <span className="text-xs text-muted-foreground">by {activity.user}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    by {activity.user}
+                                    {activity.user_role && (
+                                        <span className="ml-1 text-muted-foreground/70">
+                                            ({activity.user_role})
+                                        </span>
+                                    )}
+                                </span>
                             </div>
                         </div>
                     );
@@ -267,84 +314,179 @@ export default function Dashboard() {
         );
     };
 
-    const renderRecentProcurements = () => {
-        if (recentProcurements.length === 0) {
+    const renderProcurementDistribution = () => {
+        // Chart configuration
+        const chartConfig: ChartConfig = {
+            count: {
+                label: "Count",
+                color: "var(--chart-1)",
+            },
+        };
+
+        const data = activeChart === "stage" ? stageDistribution : statusDistribution;
+
+        if (procurementDistribution.length === 0) {
             return (
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>ID</TableHead>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Stage</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8">
-                                No procurement data available
-                            </TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
+                <Card className="shadow-sm">
+                    <CardContent className="p-6 text-center">
+                        <FileText className="mx-auto h-8 w-8 text-muted-foreground opacity-20 mb-2" />
+                        <p className="text-muted-foreground">No procurement data available for distribution</p>
+                    </CardContent>
+                </Card>
             );
         }
 
         return (
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Stage</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {recentProcurements.map(procurement => (
-                        <TableRow key={procurement.id}>
-                            <TableCell className="font-medium">{procurement.id}</TableCell>
-                            <TableCell className="max-w-[140px] truncate" title={procurement.title}>
-                                {procurement.title}
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant="secondary">
-                                    {procurement.stage}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant="secondary">
-                                    {getStatusIcon(procurement.status)}
-                                    <span className="truncate max-w-[100px]" title={procurement.status}>
-                                        {procurement.status}
+            <Card className="py-0 shadow-sm">
+                <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
+                    <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 sm:!py-0">
+                        <CardTitle>Procurement Distribution</CardTitle>
+                        <CardDescription>
+                            Distribution of procurements across stages and statuses
+                        </CardDescription>
+                    </div>
+                    <div className="flex">
+                        {["stage", "status"].map((key) => {
+                            const chart = key as "stage" | "status";
+                            const chartData = chart === "stage" ? stageDistribution : statusDistribution;
+                            const chartTotal = Object.values(chartData).reduce((sum, count) => sum + count, 0);
+
+                            return (
+                                <button
+                                    key={chart}
+                                    data-active={activeChart === chart}
+                                    className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+                                    onClick={() => setActiveChart(chart)}
+                                >
+                                    <span className="text-muted-foreground text-xs capitalize">
+                                        {chart} Distribution
                                     </span>
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            asChild
-                                            className="h-8 px-2"
-                                        >
-                                            <Link href={getProcurementShowRoute(procurement.id)}>
-                                                <EyeIcon className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>View Procurement Details</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                                    <span className="text-lg leading-none font-bold sm:text-3xl">
+                                        {chartTotal.toLocaleString()}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </CardHeader>
+                <CardContent className="px-2 sm:p-6">
+                    <ChartContainer
+                        config={chartConfig}
+                        className="aspect-auto h-[300px] w-full"
+                    >
+                        <BarChart
+                            accessibilityLayer
+                            data={Object.entries(data).map(([key, count]) => ({
+                                name: key,
+                                count: count
+                            }))}
+                            margin={{
+                                left: 12,
+                                right: 12,
+                            }}
+                        >
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                                dataKey="name"
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={8}
+                                tickFormatter={(value) => value.length > 15 ? `${value.slice(0, 15)}...` : value}
+                            />
+                            <YAxis />
+                            <ChartTooltip
+                                content={
+                                    <ChartTooltipContent
+                                        className="w-[200px]"
+                                        nameKey="count"
+                                        labelFormatter={(value) => `${activeChart.charAt(0).toUpperCase() + activeChart.slice(1)}: ${value}`}
+                                    />
+                                }
+                            />
+                            <Bar
+                                dataKey="count"
+                                fill={`var(--color-count)`}
+                                radius={4}
+                            />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+        );
+    };
+
+    const renderStagePieChart = () => {
+        if (Object.keys(stageDistribution).length === 0) {
+            return (
+                <Card className="shadow-sm">
+                    <CardContent className="p-6 text-center">
+                        <FileText className="mx-auto h-8 w-8 text-muted-foreground opacity-20 mb-2" />
+                        <p className="text-muted-foreground">No stage data available</p>
+                    </CardContent>
+                </Card>
+            );
+        }
+
+        return (
+            <Card className="flex flex-col shadow-sm">
+                <CardHeader className="items-center pb-0">
+                    <CardTitle>Procurement by Stage</CardTitle>
+                    <CardDescription>Distribution of procurements across stages</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 pb-0">
+                    <ChartContainer
+                        config={stageChartConfig}
+                        className="mx-auto aspect-square"
+                    >
+                        <PieChart>
+                            <ChartTooltip
+                                content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                        const data = payload[0].payload;
+                                        const total = Object.values(stageDistribution).reduce((sum, count) => sum + count, 0);
+                                        const percentage = ((data.count / total) * 100).toFixed(1);
+
+                                        return (
+                                            <div className="border-border/50 bg-background rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
+                                                <div className="font-medium">{data.stage}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <div
+                                                        className="h-2.5 w-2.5 rounded-full"
+                                                        style={{ backgroundColor: data.fill }}
+                                                    />
+                                                    <span>{data.count} ({percentage}%)</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                }}
+                            />
+                            <Pie
+                                data={Object.entries(stageDistribution).map(([stage, count], index) => ({
+                                    stage: stage,
+                                    count: count,
+                                    fill: `var(--chart-${(index % 5) + 1})`
+                                }))}
+                                dataKey="count"
+                                nameKey="stage"
+                            />
+                            <ChartLegend
+                                content={<ChartLegendContent nameKey="stage" />}
+                                className="-translate-y-2 flex flex-wrap justify-center gap-4 [&>*]:flex [&>*]:items-center"
+                            />
+                        </PieChart>
+                    </ChartContainer>
+                </CardContent>
+                <CardFooter className="flex-col gap-2 text-sm">
+                    <div className="flex items-center gap-2 leading-none font-medium">
+                        Stage distribution overview
+                    </div>
+                    <div className="text-muted-foreground leading-none">
+                        Showing current distribution across procurement stages
+                    </div>
+                </CardFooter>
+            </Card>
         );
     };
 
@@ -397,10 +539,13 @@ export default function Dashboard() {
                 {/* Stats Cards Section */}
                 {renderStatsCards()}
 
+                {/* Procurement Distribution Section */}
+                {renderProcurementDistribution()}
+
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left Column */}
-                    <div className="lg:col-span-1 space-y-6">
+                    <div className="space-y-6">
                         {/* Priority Actions */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -415,8 +560,8 @@ export default function Dashboard() {
                         </Card>
                     </div>
 
-                    {/* Right Column */}
-                    <div className="lg:col-span-2">
+                    {/* Middle Column - Recent Activities */}
+                    <div>
                         {/* Recent Activities moved here */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -433,10 +578,88 @@ export default function Dashboard() {
                             </CardContent>
                         </Card>
                     </div>
+
+                    {/* Right Column - Pie Chart */}
+                    <div>
+                        {/* Stage Distribution Pie Chart */}
+                        {renderStagePieChart()}
+                    </div>
                 </div>
 
                 {/* Recent Procurements Section */}
-                {renderRecentProcurements()}
+                {recentProcurements.length === 0 ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>ID</TableHead>
+                                <TableHead>Title</TableHead>
+                                <TableHead>Stage</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell colSpan={5} className="text-center py-8">
+                                    No procurement data available
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <div className="rounded-lg border overflow-hidden">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>ID</TableHead>
+                                    <TableHead>Title</TableHead>
+                                    <TableHead>Stage</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {recentProcurements.map(procurement => (
+                                    <TableRow key={procurement.id}>
+                                        <TableCell className="font-medium">{procurement.id}</TableCell>
+                                        <TableCell className="max-w-[140px] truncate" title={procurement.title}>
+                                            {procurement.title}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge>
+                                                {procurement.stage}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary">
+                                                {procurement.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        asChild
+                                                        className="h-8 px-2"
+                                                    >
+                                                        <Link href={`/bac-secretariat/procurements-list/${procurement.id}`}>
+                                                            <EyeIcon className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>View Procurement Details</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );
