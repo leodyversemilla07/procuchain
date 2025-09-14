@@ -33,27 +33,26 @@ class AnalyticsController extends Controller
         try {
             Log::info('Analytics dashboard accessed', ['user_id' => Auth::id()]);
 
-            // Get filter parameters from request
             $filters = [
                 'time_range' => $request->get('time_range', '30_days'),
                 'role' => Auth::user()->role,
             ];
 
-            // Get initial analytics data for the dashboard
-            $procurementData = $this->analyticsService->getProcurementAnalytics($filters);
-            $documentData = $this->analyticsService->getDocumentAnalytics($filters);
-            $userActivityData = $this->analyticsService->getUserActivityAnalytics($filters);
-            $blockchainData = $this->analyticsService->getBlockchainAnalytics($filters);
+            // Immediate (critical) data
+            $procurement = $this->analyticsService->getProcurementAnalytics($filters);
+
+            // Heavy / secondary data deferred (Inertia v2 deferred props)
+            $documents = $this->analyticsService->getDocumentAnalytics($filters);
+            $userActivity = $this->analyticsService->getUserActivityAnalytics($filters);
+            $blockchain = $this->analyticsService->getBlockchainAnalytics($filters);
 
             return Inertia::render('analytics/dashboard', [
-                'analytics' => [
-                    'procurement' => $procurementData,
-                    'documents' => $documentData,
-                    'user_activity' => $userActivityData,
-                    'blockchain' => $blockchainData,
-                ],
+                'procurement' => $procurement,
+                'documents' => $documents,
+                'userActivity' => $userActivity,
+                'blockchain' => $blockchain,
                 'filters' => $filters,
-                'time_range_options' => [
+                'timeRangeOptions' => [
                     ['value' => '7_days', 'label' => 'Last 7 Days'],
                     ['value' => '30_days', 'label' => 'Last 30 Days'],
                     ['value' => '90_days', 'label' => 'Last 90 Days'],
@@ -69,7 +68,7 @@ class AnalyticsController extends Controller
             return Inertia::render('analytics/dashboard', [
                 'error' => 'Failed to load analytics data. Please try again later.',
                 'filters' => ['time_range' => '30_days'],
-                'time_range_options' => [
+                'timeRangeOptions' => [
                     ['value' => '7_days', 'label' => 'Last 7 Days'],
                     ['value' => '30_days', 'label' => 'Last 30 Days'],
                     ['value' => '90_days', 'label' => 'Last 90 Days'],
@@ -79,183 +78,8 @@ class AnalyticsController extends Controller
         }
     }
 
-    /**
-     * Get procurement analytics data
-     */
-    public function procurementAnalytics(Request $request): JsonResponse
-    {
-        try {
-            $request->validate([
-                'time_range' => 'sometimes|string|in:7_days,30_days,90_days,1_year',
-                'procurement_id' => 'sometimes|string',
-                'stage' => 'sometimes|string',
-                'status' => 'sometimes|string',
-            ]);
-
-            $options = array_filter([
-                'time_range' => $request->get('time_range', '30_days'),
-                'procurement_id' => $request->get('procurement_id'),
-                'stage' => $request->get('stage'),
-                'status' => $request->get('status'),
-            ]);
-
-            $analytics = $this->analyticsService->getProcurementAnalytics($options);
-
-            Log::info('Procurement analytics generated', [
-                'user_id' => Auth::id(),
-                'options' => $options,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'data' => $analytics,
-            ]);
-        } catch (Exception $e) {
-            Log::error('Failed to generate procurement analytics', [
-                'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
-                'request_data' => $request->all(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to generate analytics data',
-                'message' => 'Unable to process analytics request. Please try again.',
-            ], 500);
-        }
-    }
-
-    /**
-     * Get document analytics data
-     */
-    public function documentAnalytics(Request $request): JsonResponse
-    {
-        try {
-            $request->validate([
-                'time_range' => 'sometimes|string|in:7_days,30_days,90_days,1_year',
-                'procurement_id' => 'sometimes|string',
-                'document_type' => 'sometimes|string',
-                'stage' => 'sometimes|string',
-            ]);
-
-            $options = array_filter([
-                'time_range' => $request->get('time_range', '30_days'),
-                'procurement_id' => $request->get('procurement_id'),
-                'document_type' => $request->get('document_type'),
-                'stage' => $request->get('stage'),
-            ]);
-
-            $analytics = $this->analyticsService->getDocumentAnalytics($options);
-
-            Log::info('Document analytics generated', [
-                'user_id' => Auth::id(),
-                'options' => $options,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'data' => $analytics,
-            ]);
-        } catch (Exception $e) {
-            Log::error('Failed to generate document analytics', [
-                'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
-                'request_data' => $request->all(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to generate document analytics',
-                'message' => 'Unable to process document analytics request.',
-            ], 500);
-        }
-    }
-
-    /**
-     * Get user activity analytics data
-     */
-    public function userActivityAnalytics(Request $request): JsonResponse
-    {
-        try {
-            $request->validate([
-                'time_range' => 'sometimes|string|in:7_days,30_days,90_days,1_year',
-                'user_id' => 'sometimes|integer',
-                'role' => 'sometimes|string|in:bac_secretariat,bac_chairman,hope,admin',
-            ]);
-
-            $options = array_filter([
-                'time_range' => $request->get('time_range', '30_days'),
-                'user_id' => $request->get('user_id'),
-                'role' => $request->get('role'),
-            ]);
-
-            $analytics = $this->analyticsService->getUserActivityAnalytics($options);
-
-            Log::info('User activity analytics generated', [
-                'user_id' => Auth::id(),
-                'options' => $options,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'data' => $analytics,
-            ]);
-        } catch (Exception $e) {
-            Log::error('Failed to generate user activity analytics', [
-                'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
-                'request_data' => $request->all(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to generate user activity analytics',
-                'message' => 'Unable to process user activity analytics request.',
-            ], 500);
-        }
-    }
-
-    /**
-     * Get blockchain analytics data
-     */
-    public function blockchainAnalytics(Request $request): JsonResponse
-    {
-        try {
-            $request->validate([
-                'time_range' => 'sometimes|string|in:7_days,30_days,90_days,1_year',
-                'stream' => 'sometimes|string|in:documents,status,events',
-            ]);
-
-            $options = array_filter([
-                'time_range' => $request->get('time_range', '30_days'),
-                'stream' => $request->get('stream'),
-            ]);
-
-            $analytics = $this->analyticsService->getBlockchainAnalytics($options);
-
-            Log::info('Blockchain analytics generated', [
-                'user_id' => Auth::id(),
-                'options' => $options,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'data' => $analytics,
-            ]);
-        } catch (Exception $e) {
-            Log::error('Failed to generate blockchain analytics', [
-                'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
-                'request_data' => $request->all(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to generate blockchain analytics',
-                'message' => 'Unable to process blockchain analytics request.',
-            ], 500);
-        }
-    }
+    // Removed separate JSON analytics methods (procurementAnalytics, documentAnalytics, blockchainAnalytics)
+    // in favor of pure Inertia partial reloads & deferred props.
 
     /**
      * Get comprehensive analytics report
@@ -494,18 +318,6 @@ class AnalyticsController extends Controller
             'type' => $type,
             'format' => $format,
             'timestamp' => now()->timestamp,
-        ]);
-    }
-
-    /**
-     * Download exported file
-     */
-    public function downloadExport(Request $request)
-    {
-        // Implementation for downloading exported analytics files
-        return response()->json([
-            'success' => false,
-            'message' => 'Export download not yet implemented',
         ]);
     }
 }

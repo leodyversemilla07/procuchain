@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { cn } from '@/lib/utils';
 import { BreadcrumbItem } from '@/types';
 import { User } from '@/types';
-import PushNotificationSettings from '@/pages/settings/push-notification';
 
 interface Notification {
     id: string;
@@ -321,9 +320,6 @@ export default function Notifications() {
                             </Card>
                         </div>
 
-                        {/* Push Notification Settings */}
-                        <PushNotificationSettings />
-
                         {/* Notifications List */}
                         <Card className="overflow-hidden">
                             <CardHeader className="bg-card border-b px-4 sm:px-6 py-3 sm:py-4">
@@ -582,7 +578,7 @@ export default function Notifications() {
                                 className="flex-1"
                                 onClick={() => {
                                     if (selectedNotification?.data.procurement_id) {
-                                        window.location.href = `/${userRole?.replace('_', '-')}/procurements-list/${selectedNotification.data.procurement_id}`;
+                                        router.visit(`/${userRole?.replace('_', '-')}/procurements-list/${selectedNotification.data.procurement_id}`);
                                     }
                                 }}
                             >

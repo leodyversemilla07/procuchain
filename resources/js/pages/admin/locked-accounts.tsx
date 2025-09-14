@@ -110,10 +110,13 @@ export default function AdminLockedAccounts() {
             onSuccess: () => {
                 setIsUnlockDialogOpen(false);
                 setSelectedUser(null);
+                toast.success('Account unlocked successfully');
             },
             onError: (errors) => {
                 console.error('Unlock account errors:', errors);
+                toast.error('Failed to unlock account');
             },
+            preserveScroll: true,
         });
     };
 
@@ -123,10 +126,13 @@ export default function AdminLockedAccounts() {
             onSuccess: () => {
                 setIsResetDialogOpen(false);
                 setSelectedUser(null);
+                toast.success('Failed login attempts reset successfully');
             },
             onError: (errors) => {
                 console.error('Reset attempts errors:', errors);
+                toast.error('Failed to reset attempts');
             },
+            preserveScroll: true,
         });
     };
 
@@ -165,28 +171,32 @@ export default function AdminLockedAccounts() {
             <Head title="Locked Accounts - Admin" />
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
-                <div className="border-b pb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center">
-                                <Shield className="h-6 w-6 md:h-8 md:w-8 mr-3 text-foreground" />
-                                Locked Accounts
-                            </h1>
-                            <p className="text-muted-foreground mt-2 text-sm md:text-base">
-                                Manage user accounts that have been locked due to security reasons
-                            </p>
+                <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Shield className="h-6 w-6 text-primary" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-foreground">Locked Accounts</h1>
+                                    <p className="text-muted-foreground text-sm mt-1">
+                                        Manage user accounts that have been locked due to security reasons
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                onClick={refreshPage}
+                                disabled={isLoading}
+                                variant="outline"
+                                className="flex items-center space-x-2"
+                            >
+                                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                                <span>Refresh</span>
+                            </Button>
                         </div>
-                        <Button
-                            onClick={refreshPage}
-                            disabled={isLoading}
-                            variant="outline"
-                            className="flex items-center space-x-2"
-                        >
-                            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                            <span>Refresh</span>
-                        </Button>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
                 {/* Error Display */}
                 {flash.error && (
                     <Card className="border-destructive/50 bg-destructive/10">

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, LabelList, LineChart, Line
+    PieChart, Pie, LabelList,
 } from 'recharts';
 import {
     ChartConfig,
@@ -17,35 +17,21 @@ import {
     ChartLegendContent,
 } from '@/components/ui/chart';
 import {
-    TrendingUp, TrendingDown, Activity, FileText, Users,
+    TrendingUp, TrendingDown, Activity, FileText,
     Download, RefreshCw, BarChart3, CheckCircle
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { useAnalyticsExport } from '@/hooks/use-analytics';
-import type {
-    ProcurementAnalytics,
-    DocumentAnalytics,
-    UserActivityAnalytics,
-    BlockchainAnalytics,
-    TimeRangeKey
-} from '@/types/analytics';
 
-interface AnalyticsDashboardProps {
-    analytics: {
-        procurement: ProcurementAnalytics;
-        documents: DocumentAnalytics;
-        user_activity: UserActivityAnalytics;
-        blockchain: BlockchainAnalytics;
-    };
-    filters: {
-        time_range: TimeRangeKey;
-        role?: string;
-    };
-    time_range_options: Array<{
-        value: TimeRangeKey;
-        label: string;
-    }>;
+export interface AnalyticsDashboardProps {
+    procurement: ProcurementAnalytics;
+    documents?: DocumentAnalytics; // deferred
+    userActivity?: UserActivityAnalytics; // deferred
+    blockchain?: BlockchainAnalytics; // deferred
+    filters: { time_range: TimeRangeKey; role?: string };
+    timeRangeOptions?: Array<{ value: TimeRangeKey; label: string }>; // new camelCase
+    time_range_options?: Array<{ value: TimeRangeKey; label: string }>; // legacy snake_case (backward compat)
     error?: string;
 }
 
@@ -56,53 +42,411 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function AnalyticsDashboard({
-    analytics,
-    filters,
-    time_range_options,
-    error
-}: AnalyticsDashboardProps) {
+// Analytics Types for ProcuChain System
+
+export interface AnalyticsTimeRange {
+    '7_days': '7 Days';
+    '30_days': '30 Days';
+    '90_days': '90 Days';
+    '1_year': '1 Year';
+}
+
+export type TimeRangeKey = keyof AnalyticsTimeRange;
+
+// Procurement Analytics Types
+export interface ProcurementOverview {
+    total_procurements: number;
+    active_procurements: number;
+    completed_procurements: number;
+    stage_distribution: Record<string, number>;
+    status_distribution: Record<string, number>;
+    average_processing_time_days: number;
+    completion_rate: number;
+    total_value_change: number; // Added for dashboard
+}
+
+export interface StageAnalytics {
+    stage_transitions: Record<string, number>;
+    stage_duration: Record<string, number>;
+    bottlenecks: string[];
+    efficiency_scores: Record<string, number>;
+}
+
+export interface PerformanceMetrics {
+    average_cycle_time: number;
+    efficiency_rating: number;
+    cost_per_procurement: number;
+    time_savings: number;
+    avg_completion_time: number; // Added for dashboard
+    success_rate: number; // Added for dashboard
+    on_time_rate: number; // Added for dashboard
+}
+
+export interface TimelineAnalytics {
+    daily_activity: Record<string, number>;
+    weekly_trends: Record<string, number>;
+    monthly_patterns: Record<string, number>;
+    seasonal_analysis: Record<string, number>;
+}
+
+export interface ValueDistribution {
+    range: string;
+    count: number;
+    total_value: number;
+}
+
+export interface MonthlyTrend {
+    month: string;
+    count: number;
+    total_value: number;
+}
+
+export interface ProcurementAnalytics {
+    overview: ProcurementOverview;
+    stage_analytics: StageAnalytics;
+    performance_metrics: PerformanceMetrics;
+    timeline_analytics: TimelineAnalytics;
+    by_stage: Array<{ name: string; count: number }>; // Added for charts
+    value_distribution: ValueDistribution[]; // Added for charts
+    monthly_trend: MonthlyTrend[]; // Added for charts
+    generated_at: string;
+}
+
+// Document Analytics Types
+export interface DocumentOverview {
+    total_documents: number;
+    growth_rate: number;
+}
+
+export interface DocumentPerformance {
+    avg_review_time: number;
+    review_time_trend: number;
+}
+
+export interface DocumentViewStatistics {
+    total_views: number;
+    unique_viewers: number;
+    average_view_duration_seconds: number;
+    views_by_stage: Record<string, number>;
+    views_by_document_type: Record<string, number>;
+    engagement_rate: number;
+}
+
+export interface DocumentAccessPatterns {
+    peak_access_hours: Array<{
+        hour: number;
+        count: number;
+        formatted_hour: string;
+    }>;
+    access_by_role: Record<string, number>;
+    device_breakdown: Record<string, number>;
+}
+
+export interface PopularDocument {
+    file_key: string;
+    document_type: string;
+    procurement_title: string;
+    view_count: number;
+}
+
+export interface DocumentEngagement {
+    average_engagement_time: number;
+    high_engagement_threshold: number;
+    bounce_rate: number;
+    return_visitor_rate: number;
+}
+
+export interface DocumentAnalytics {
+    overview: DocumentOverview; // Added for dashboard
+    performance: DocumentPerformance; // Added for dashboard
+    view_statistics: DocumentViewStatistics;
+    access_patterns: DocumentAccessPatterns;
+    popular_documents: PopularDocument[];
+    user_engagement: DocumentEngagement;
+    by_status: Array<{ status: string; count: number }>; // Added for charts
+    generated_at: string;
+}
+
+// User Activity Analytics Types
+export interface UserActivityOverview {
+    total_active_users: number;
+    growth_rate: number;
+}
+
+export interface LoginPatterns {
+    total_logins: number;
+    successful_logins: number;
+    failed_logins: number;
+    success_rate: number;
+    peak_hours: Array<{
+        hour: number;
+        count: number;
+        formatted_hour: string;
+    }>;
+    daily_login_trend: Record<string, number>;
+}
+
+export interface RoleActivity {
+    [role: string]: number;
+}
+
+export interface SessionAnalytics {
+    average_session_duration: number;
+    total_sessions: number;
+    active_sessions: number;
+    session_breakdown_by_hour: Record<string, number>;
+}
+
+export interface SecurityMetrics {
+    security_score: number;
+    failed_login_rate: number;
+    suspicious_ip_count: number;
+    mfa_adoption_rate: number;
+}
+
+export interface UserActivityAnalytics {
+    overview: UserActivityOverview; // Added for dashboard
+    login_patterns: LoginPatterns;
+    role_activity: RoleActivity;
+    session_analytics: SessionAnalytics;
+    security_metrics: SecurityMetrics;
+    daily_activity: Array<{ date: string; active_users: number }>; // Added for charts
+    generated_at: string;
+}
+
+// Blockchain Analytics Types
+export interface BlockchainTransactionVolume {
+    total_transactions: number;
+    transactions_by_stream: Record<string, number>;
+    average_daily_transactions: number;
+}
+
+export interface BlockchainIntegrityMetrics {
+    integrity_score: number;
+    verified_documents: number;
+    hash_mismatches: number;
+    verification_success_rate: number;
+}
+
+export interface StreamAnalytics {
+    documents_stream: {
+        total_entries: number;
+        average_size: number;
+        growth_rate: number;
+    };
+    status_stream: {
+        total_entries: number;
+        update_frequency: number;
+    };
+    events_stream: {
+        total_entries: number;
+        event_types: Record<string, number>;
+    };
+}
+
+export interface VerificationStatistics {
+    total_verifications: number;
+    successful_verifications: number;
+    failed_verifications: number;
+    verification_time_avg: number;
+}
+
+export interface BlockchainAnalytics {
+    transaction_volume: BlockchainTransactionVolume;
+    integrity_metrics: BlockchainIntegrityMetrics;
+    stream_analytics: StreamAnalytics;
+    verification_statistics: VerificationStatistics;
+    generated_at: string;
+}
+
+// Combined Analytics Types
+export interface ComprehensiveAnalytics {
+    metadata: {
+        generated_at: string;
+        generated_by: string;
+        time_range: TimeRangeKey;
+        procurement_id?: string;
+        format: string;
+    };
+    procurement_analytics: ProcurementAnalytics;
+    document_analytics: DocumentAnalytics;
+    user_activity_analytics: UserActivityAnalytics;
+    blockchain_analytics: BlockchainAnalytics;
+}
+
+// Real-time Analytics Types
+export interface RealtimeActivity {
+    user: string;
+    role: string;
+    action: string;
+    procurement_id: string;
+    timestamp: string;
+}
+
+export interface RealtimeData {
+    active_users: number;
+    recent_activities: RealtimeActivity[];
+    current_stage_distribution: Record<string, number>;
+    pending_actions: number;
+    last_updated: string;
+}
+
+// Analytics API Response Types
+export interface AnalyticsApiResponse<T = unknown> {
+    success: boolean;
+    data?: T;
+    error?: string;
+    message?: string;
+}
+
+// Chart Data Types for Visualization
+export interface ChartDataPoint {
+    label: string;
+    value: number;
+    color?: string;
+    percentage?: number;
+}
+
+export interface TimeSeriesDataPoint {
+    date: string;
+    value: number;
+    category?: string;
+}
+
+export interface AnalyticsChartData {
+    labels: string[];
+    datasets: Array<{
+        label: string;
+        data: number[];
+        backgroundColor?: string | string[];
+        borderColor?: string;
+        borderWidth?: number;
+    }>;
+}
+
+// Export Options
+export interface AnalyticsExportOptions {
+    type: 'procurement' | 'document' | 'user_activity' | 'blockchain';
+    format: 'json' | 'csv' | 'excel' | 'pdf';
+    sections: Array<'procurement' | 'document' | 'user_activity' | 'blockchain'>;
+    filters: Partial<AnalyticsFilters>;
+}
+
+export interface AnalyticsExportResult {
+    success: boolean;
+    download_url?: string;
+    export_url?: string;
+    filename?: string;
+    generated_at?: string;
+    error?: string;
+    message?: string;
+}
+
+// Filter Options
+export interface AnalyticsFilters {
+    time_range: TimeRangeKey;
+    procurement_id?: string;
+    stage?: string;
+    status?: string;
+    document_type?: string;
+    user_role?: string;
+    user_id?: number;
+}
+
+// Analytics Component Props
+export interface AnalyticsCardProps {
+    title: string;
+    value: number | string;
+    change?: number;
+    changeType?: 'increase' | 'decrease' | 'neutral';
+    icon?: React.ComponentType;
+    loading?: boolean;
+}
+
+export interface AnalyticsChartProps {
+    title: string;
+    data: AnalyticsChartData | ChartDataPoint[] | TimeSeriesDataPoint[];
+    type: 'bar' | 'line' | 'pie' | 'doughnut' | 'area';
+    height?: number;
+    loading?: boolean;
+}
+
+export interface AnalyticsTableProps {
+    title: string;
+    columns: Array<{
+        key: string;
+        label: string;
+        sortable?: boolean;
+        render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode;
+    }>;
+    data: Record<string, unknown>[];
+    loading?: boolean;
+    pagination?: boolean;
+    pageSize?: number;
+}
+
+// Dashboard Layout Types
+export interface AnalyticsDashboardSection {
+    id: string;
+    title: string;
+    span?: number; // Grid span
+    component: React.ComponentType<Record<string, unknown>>;
+    props?: Record<string, unknown>;
+    visible?: boolean;
+    order?: number;
+}
+
+export interface AnalyticsDashboardLayout {
+    sections: AnalyticsDashboardSection[];
+    columns: number;
+    gap: number;
+}
+
+// Hook Types for Analytics
+export interface UseAnalyticsOptions {
+    autoRefresh?: boolean;
+    refreshInterval?: number; // in milliseconds
+    filters?: AnalyticsFilters;
+    enabled?: boolean;
+}
+
+export interface UseAnalyticsReturn<T> {
+    data: T | null;
+    loading: boolean;
+    error: string | null;
+    refetch: () => Promise<void>;
+    lastUpdated: Date | null;
+}
+
+// Error Types
+export interface AnalyticsError {
+    code: string;
+    message: string;
+    details?: Record<string, unknown>;
+}
+
+export type AnalyticsErrorHandler = (error: AnalyticsError) => void;
+
+export default function AnalyticsDashboard(props: AnalyticsDashboardProps) {
+    const {
+        procurement,
+        documents,
+        blockchain,
+        filters,
+        timeRangeOptions,
+        time_range_options,
+        error,
+    } = props;
+
+    // Backward compatible merged time range options
+    const mergedTimeRangeOptions = (timeRangeOptions && timeRangeOptions.length
+        ? timeRangeOptions
+        : (time_range_options || []));
     const { exportData, loading: exportLoading } = useAnalyticsExport();
 
     // Use analytics data directly from props
-    const procurementAnalytics = analytics.procurement;
-    const documentAnalytics = analytics.documents;
-    const userActivityAnalytics = analytics.user_activity;
-
-    // State for interactive login chart
-    const [activeLoginChart, setActiveLoginChart] = useState<"logins" | "success">("logins");
-
-    // Prepare login chart data
-    const loginChartData = useMemo(() => {
-        if (!userActivityAnalytics?.login_patterns?.daily_login_trend) return [];
-
-        return Object.entries(userActivityAnalytics.login_patterns.daily_login_trend).map(([date, count]) => ({
-            date: date,
-            logins: count,
-            success: Math.floor(count * (userActivityAnalytics.login_patterns.success_rate || 100) / 100),
-        }));
-    }, [userActivityAnalytics?.login_patterns]);
-
-    // Interactive login chart config
-    const interactiveLoginChartConfig = {
-        views: {
-            label: "Login Activity",
-        },
-        logins: {
-            label: "Total Logins",
-            color: "var(--chart-1)",
-        },
-        success: {
-            label: "Successful Logins",
-            color: "var(--chart-2)",
-        },
-    };
-
-    // Calculate totals for login chart
-    const loginTotals = useMemo(() => ({
-        logins: loginChartData.reduce((acc, curr) => acc + curr.logins, 0),
-        success: loginChartData.reduce((acc, curr) => acc + curr.success, 0),
-    }), [loginChartData]);
+    const procurementAnalytics = procurement;
+    const documentAnalytics = documents;
 
     // Chart configuration for Status Distribution - Dynamic based on actual statuses
     const statusChartConfig: ChartConfig = useMemo(() => {
@@ -114,8 +458,8 @@ export default function AnalyticsDashboard({
         };
 
         // If we have status distribution data, create dynamic config
-        if (analytics.procurement?.overview?.status_distribution) {
-            Object.keys(analytics.procurement.overview.status_distribution).forEach((status, index) => {
+        if (procurementAnalytics?.overview?.status_distribution) {
+            Object.keys(procurementAnalytics.overview.status_distribution).forEach((status, index) => {
                 config[status] = {
                     label: status,
                     color: `var(--chart-${(index % 5) + 1})`,
@@ -131,7 +475,7 @@ export default function AnalyticsDashboard({
         }
 
         return config;
-    }, [analytics.procurement?.overview?.status_distribution]);
+    }, [procurementAnalytics?.overview?.status_distribution]);
 
     // Chart configuration for Pie Chart - Dynamic based on actual stages
     const stageChartConfig: ChartConfig = useMemo(() => {
@@ -143,8 +487,8 @@ export default function AnalyticsDashboard({
         };
 
         // If we have stage distribution data, create dynamic config
-        if (analytics.procurement?.overview?.stage_distribution) {
-            Object.keys(analytics.procurement.overview.stage_distribution).forEach((stage, index) => {
+        if (procurementAnalytics?.overview?.stage_distribution) {
+            Object.keys(procurementAnalytics.overview.stage_distribution).forEach((stage, index) => {
                 config[stage] = {
                     label: stage,
                     color: `var(--chart-${(index % 5) + 1})`,
@@ -160,22 +504,23 @@ export default function AnalyticsDashboard({
         }
 
         return config;
-    }, [analytics.procurement?.overview?.stage_distribution]);
+    }, [procurementAnalytics?.overview?.stage_distribution]);
 
     // Loading state (false since data comes from props)
     const isLoading = false;
 
     // Handle filter changes by navigating with new parameters
     const handleFilterChange = (newTimeRange: TimeRangeKey) => {
-        router.get('/analytics', { time_range: newTimeRange }, {
+        router.get(route('analytics.dashboard'), { time_range: newTimeRange }, {
+            only: ['procurement'], // partial reload just procurement by default
             preserveState: true,
-            preserveScroll: true
+            preserveScroll: true,
         });
     };
 
     // Overview metrics
     const overviewMetrics = useMemo(() => {
-        if (error || !procurementAnalytics || !documentAnalytics || !userActivityAnalytics) {
+        if (error || !procurementAnalytics || !documentAnalytics) {
             return [];
         }
 
@@ -195,13 +540,6 @@ export default function AnalyticsDashboard({
                 color: 'text-green-600',
             },
             {
-                title: 'Total Logins',
-                value: userActivityAnalytics.login_patterns?.total_logins || 0,
-                change: 2.1, // Placeholder growth rate
-                icon: Users,
-                color: 'text-purple-600',
-            },
-            {
                 title: 'Completion Rate',
                 value: `${(procurementAnalytics.overview?.completion_rate || 0).toFixed(1)}%`,
                 change: 1.2, // Placeholder improvement
@@ -216,7 +554,7 @@ export default function AnalyticsDashboard({
                 color: 'text-orange-600',
             },
         ];
-    }, [error, procurementAnalytics, documentAnalytics, userActivityAnalytics]);
+    }, [error, procurementAnalytics, documentAnalytics]);
 
     // Show error state if there's an error from backend
     if (error) {
@@ -312,7 +650,7 @@ export default function AnalyticsDashboard({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {time_range_options.map((option) => (
+                                    {mergedTimeRangeOptions.map((option) => (
                                         <SelectItem key={option.value} value={option.value}>
                                             {option.label}
                                         </SelectItem>
@@ -425,7 +763,7 @@ export default function AnalyticsDashboard({
                             )}
 
                             {/* Document Status Chart */}
-                            {documentAnalytics && documentAnalytics.view_statistics?.views_by_document_type && (
+                            {documentAnalytics && documentAnalytics.view_statistics?.views_by_document_type ? (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>Document Types</CardTitle>
@@ -446,6 +784,8 @@ export default function AnalyticsDashboard({
                                         </ResponsiveContainer>
                                     </CardContent>
                                 </Card>
+                            ) : (
+                                <div className="p-4 text-sm text-muted-foreground bg-muted/30 rounded border border-dashed">Document analytics not loaded.</div>
                             )}
                         </div>
                     </div>
@@ -597,92 +937,6 @@ export default function AnalyticsDashboard({
                                         </Card>
                                     )}
                                 </div>
-
-                                {/* Login Activity Trend */}
-                                {userActivityAnalytics && userActivityAnalytics.login_patterns?.daily_login_trend && (
-                                    <Card className="py-4 sm:py-0">
-                                        <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
-                                            <div className="flex flex-1 flex-col justify-center gap-1 px-6 pb-3 sm:pb-0">
-                                                <CardTitle>Login Activity Trend</CardTitle>
-                                                <CardDescription>
-                                                    Daily login activity over selected time period
-                                                </CardDescription>
-                                            </div>
-                                            <div className="flex">
-                                                {(["logins", "success"] as const).map((key) => {
-                                                    return (
-                                                        <button
-                                                            key={key}
-                                                            data-active={activeLoginChart === key}
-                                                            className="data-[active=true]:bg-muted/50 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
-                                                            onClick={() => setActiveLoginChart(key)}
-                                                        >
-                                                            <span className="text-muted-foreground text-xs">
-                                                                {interactiveLoginChartConfig[key].label}
-                                                            </span>
-                                                            <span className="text-lg leading-none font-bold sm:text-3xl">
-                                                                {loginTotals[key].toLocaleString()}
-                                                            </span>
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="px-2 sm:p-6">
-                                            <ChartContainer
-                                                config={interactiveLoginChartConfig}
-                                                className="aspect-auto h-[250px] w-full"
-                                            >
-                                                <LineChart
-                                                    accessibilityLayer
-                                                    data={loginChartData}
-                                                    margin={{
-                                                        left: 12,
-                                                        right: 12,
-                                                    }}
-                                                >
-                                                    <CartesianGrid vertical={false} />
-                                                    <XAxis
-                                                        dataKey="date"
-                                                        tickLine={false}
-                                                        axisLine={false}
-                                                        tickMargin={8}
-                                                        minTickGap={32}
-                                                        tickFormatter={(value) => {
-                                                            const date = new Date(value);
-                                                            return date.toLocaleDateString("en-US", {
-                                                                month: "short",
-                                                                day: "numeric",
-                                                            });
-                                                        }}
-                                                    />
-                                                    <ChartTooltip
-                                                        content={
-                                                            <ChartTooltipContent
-                                                                className="w-[150px]"
-                                                                nameKey="views"
-                                                                labelFormatter={(value) => {
-                                                                    return new Date(value).toLocaleDateString("en-US", {
-                                                                        month: "short",
-                                                                        day: "numeric",
-                                                                        year: "numeric",
-                                                                    });
-                                                                }}
-                                                            />
-                                                        }
-                                                    />
-                                                    <Line
-                                                        dataKey={activeLoginChart}
-                                                        type="monotone"
-                                                        stroke={`var(--color-${activeLoginChart})`}
-                                                        strokeWidth={2}
-                                                        dot={false}
-                                                    />
-                                                </LineChart>
-                                            </ChartContainer>
-                                        </CardContent>
-                                    </Card>
-                                )}
                             </>
                         )}
                     </div>
@@ -693,7 +947,7 @@ export default function AnalyticsDashboard({
                             <h2 className="text-xl font-semibold">Document Analytics</h2>
                         </div>
 
-                        {documentAnalytics && (
+                        {documentAnalytics ? (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <Card>
                                     <CardHeader>
@@ -740,65 +994,41 @@ export default function AnalyticsDashboard({
                                     </CardContent>
                                 </Card>
                             </div>
+                        ) : (
+                            <div className="text-sm text-muted-foreground">No document analytics loaded.</div>
                         )}
                     </div>
 
-                    {/* User Activity Section */}
-                    <div className="space-y-6">
-                        <div className="flex items-center space-x-2 mb-4">
-                            <h2 className="text-xl font-semibold">User Activity Analytics</h2>
-                        </div>
-
-                        {userActivityAnalytics && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Blockchain Section */}
+                    {blockchain && blockchain.transaction_volume && blockchain.integrity_metrics ? (
+                        <div className="space-y-6">
+                            <div className="flex items-center space-x-2 mb-4">
+                                <h2 className="text-xl font-semibold">Blockchain Analytics</h2>
+                            </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle>Login Statistics</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex justify-between items-center">
-                                            <span>Total Logins</span>
-                                            <Badge variant="secondary">
-                                                {formatValue(userActivityAnalytics.login_patterns.total_logins)}
-                                            </Badge>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span>Success Rate</span>
-                                            <Badge variant="default">
-                                                {(userActivityAnalytics.login_patterns.success_rate || 0).toFixed(1)}%
-                                            </Badge>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span>Failed Logins</span>
-                                            <Badge variant="destructive">
-                                                {formatValue(userActivityAnalytics.login_patterns.failed_logins)}
-                                            </Badge>
-                                        </div>
+                                    <CardHeader><CardTitle>Total Transactions</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">{blockchain?.transaction_volume?.total_transactions ?? 0}</div>
                                     </CardContent>
                                 </Card>
-
                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle>Security Metrics</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex justify-between items-center">
-                                            <span>Security Score</span>
-                                            <Badge variant="default">
-                                                {(userActivityAnalytics.security_metrics?.security_score || 0).toFixed(1)}/100
-                                            </Badge>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span>Failed Login Rate</span>
-                                            <Badge variant="secondary">
-                                                {(userActivityAnalytics.security_metrics?.failed_login_rate || 0).toFixed(1)}%
-                                            </Badge>
-                                        </div>
+                                    <CardHeader><CardTitle>Integrity Score</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">{blockchain?.integrity_metrics?.integrity_score ?? 'N/A'}</div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader><CardTitle>Verification Success</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">{(blockchain?.integrity_metrics?.verification_success_rate || 0).toFixed(1)}%</div>
                                     </CardContent>
                                 </Card>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="text-sm text-muted-foreground p-4">Blockchain analytics not yet loaded.</div>
+                    )}
 
                     {/* Loading State */}
                     {isLoading && (
