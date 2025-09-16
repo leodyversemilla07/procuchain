@@ -74,8 +74,14 @@ class HopeController extends BaseController
                 return $this->getDashboardStats($procurementsByKey, 0);
             });
 
+            // Cache procurement distribution data for 5 minutes
+            $procurementDistribution = Cache::remember('hope_dashboard_procurement_distribution', now()->addMinutes(5), function () use ($procurementsByKey) {
+                return $this->getProcurementDistributionData($procurementsByKey);
+            });
+
             $dashboardData = [
                 'recentProcurements' => $this->getRecentProcurements($procurementsByKey),
+                'procurementDistribution' => $procurementDistribution,
                 'recentActivities' => $recentActivities,
                 'stats' => $stats,
             ];
@@ -94,9 +100,11 @@ class HopeController extends BaseController
             Cache::forget('hope_dashboard_recent_activities');
             Cache::forget('hope_dashboard_stats');
             Cache::forget('hope_dashboard_total_documents');
+            Cache::forget('hope_dashboard_procurement_distribution');
 
             return Inertia::render('hope/dashboard', [
                 'recentProcurements' => [],
+                'procurementDistribution' => [],
                 'recentActivities' => [],
                 'stats' => $this->getEmptyStats(),
                 'error' => 'Failed to retrieve dashboard data. Please try again later.',
@@ -180,6 +188,21 @@ class HopeController extends BaseController
     {
         return $procurementsByKey->sortByDesc('timestamp')
             ->take(5)
+            ->values()
+            ->map(function ($item) {
+                return [
+                    'id' => $item['id'],
+                    'title' => $item['title'],
+                    'stage' => $item['stage'],
+                    'status' => $item['status'],
+                ];
+            })
+            ->toArray();
+    }
+
+    private function getProcurementDistributionData($procurementsByKey)
+    {
+        return $procurementsByKey->sortByDesc('timestamp')
             ->values()
             ->map(function ($item) {
                 return [

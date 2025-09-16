@@ -3,7 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from 'react';
 import { toast } from "sonner";
-import { PlusIcon, Bell, ArrowRight, Clock, FileText, ActivityIcon, CheckCircle, FileIcon, CheckIcon, FileUpIcon, EyeIcon } from "lucide-react";
+import { PlusIcon, Bell, ArrowRight, Clock, FileText, ActivityIcon, CheckCircle, FileIcon, CheckIcon, FileUpIcon, EyeIcon, FileTextIcon, ExternalLinkIcon, } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,29 @@ import {
 } from '@/components/ui/chart';
 import type { User, SharedData } from "@/types";
 import { Stage, Status } from '@/types/blockchain';
+
+const ACTION_ICON_MAP = {
+    upload: FileUpIcon,
+    document: FileUpIcon,
+    stage: ArrowRight,
+    transition: ArrowRight,
+    'pre-procurement': FileTextIcon,
+    decision: CheckCircle,
+    publish: ExternalLinkIcon,
+    complete: CheckIcon,
+    submit: PlusIcon,
+    add: PlusIcon,
+    review: FileTextIcon,
+    evaluate: FileTextIcon,
+} as const;
+
+const getActionIcon = (action: string) => {
+    const IconComponent = Object.entries(ACTION_ICON_MAP).find(
+        ([key]) => action.toLowerCase().includes(key)
+    )?.[1] || ActivityIcon;
+
+    return IconComponent;
+};
 
 interface DashboardStats {
     ongoingProjects: number;
@@ -69,7 +92,7 @@ const breadcrumbs = [
     },
 ];
 
-export default function Dashboard() {
+export default function BACSecretariatDashboard() {
     const pageProps = usePage<DashboardProps>().props;
     const { recentProcurements = [], procurementDistribution = [], recentActivities = [], priorityActions, stats, error } = pageProps as DashboardProps;
     const { auth } = pageProps as unknown as { auth: { user: User } };
@@ -266,9 +289,7 @@ export default function Dashboard() {
         return (
             <div className="space-y-3">
                 {recentActivities.map((activity, index) => {
-                    const ActionIcon = activity.action.includes('Created') ? FileText :
-                        activity.action.includes('Updated') ? CheckCircle :
-                            FileIcon;
+                    const ActionIcon = getActionIcon(activity.action);
 
                     return (
                         <div key={index} className={`${index < recentActivities.length - 1 ? "border-b pb-3" : ""}`}>
@@ -496,7 +517,7 @@ export default function Dashboard() {
 
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
-                <Card className="border-0 shadow-sm">
+                <Card>
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -587,79 +608,90 @@ export default function Dashboard() {
                 </div>
 
                 {/* Recent Procurements Section */}
-                {recentProcurements.length === 0 ? (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>ID</TableHead>
-                                <TableHead>Title</TableHead>
-                                <TableHead>Stage</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            <TableRow>
-                                <TableCell colSpan={5} className="text-center py-8">
-                                    No procurement data available
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                ) : (
-                    <div className="rounded-lg border overflow-hidden">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>ID</TableHead>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead>Stage</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {recentProcurements.map(procurement => (
-                                    <TableRow key={procurement.id}>
-                                        <TableCell className="font-medium">{procurement.id}</TableCell>
-                                        <TableCell className="max-w-[140px] truncate" title={procurement.title}>
-                                            {procurement.title}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge>
-                                                {procurement.stage}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="secondary">
-                                                {procurement.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        asChild
-                                                        className="h-8 px-2"
-                                                    >
-                                                        <Link href={`/bac-secretariat/procurements-list/${procurement.id}`}>
-                                                            <EyeIcon className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>View Procurement Details</p>
-                                                </TooltipContent>
-                                            </Tooltip>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-base md:text-lg font-semibold flex items-center">
+                            <FileText className="h-4 w-4 md:h-5 md:w-5 mr-2 text-primary" />
+                            Recent Procurements
+                        </CardTitle>
+                        <Link href="/bac-secretariat/procurements-list" className="text-xs md:text-sm text-primary hover:underline flex items-center shrink-0 ml-2">
+                            View all <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
+                        </Link>
+                    </CardHeader>
+                    <CardContent>
+                        {recentProcurements.length === 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>ID</TableHead>
+                                        <TableHead>Title</TableHead>
+                                        <TableHead>Stage</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8">
+                                            No procurement data available
                                         </TableCell>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                )}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>ID</TableHead>
+                                        <TableHead>Title</TableHead>
+                                        <TableHead>Stage</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {recentProcurements.map(procurement => (
+                                        <TableRow key={procurement.id}>
+                                            <TableCell className="font-medium">{procurement.id}</TableCell>
+                                            <TableCell className="max-w-[140px] truncate" title={procurement.title}>
+                                                {procurement.title}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge>
+                                                    {procurement.stage}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary">
+                                                    {procurement.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            asChild
+                                                            className="h-8 px-2"
+                                                        >
+                                                            <Link href={`/bac-secretariat/procurements-list/${procurement.id}`}>
+                                                                <EyeIcon className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>View Procurement Details</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </AppLayout>
     );

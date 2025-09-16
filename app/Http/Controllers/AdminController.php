@@ -96,6 +96,11 @@ class AdminController extends BaseController
                 return $this->getDashboardStats($procurementsByKey, 0);
             });
 
+            // Cache procurement distribution data for 5 minutes
+            $procurementDistribution = Cache::remember('admin_dashboard_procurement_distribution', now()->addMinutes(5), function () use ($procurementsByKey) {
+                return $this->getProcurementDistributionData($procurementsByKey);
+            });
+
             // Get user activity analytics for the dashboard
             $userActivityAnalytics = Cache::remember('admin_dashboard_user_activity', now()->addMinutes(10), function () {
                 try {
@@ -137,6 +142,7 @@ class AdminController extends BaseController
 
             $dashboardData = [
                 'recentProcurements' => $this->getRecentProcurements($procurementsByKey),
+                'procurementDistribution' => $procurementDistribution,
                 'recentActivities' => $recentActivities,
                 'stats' => $stats,
                 'analytics' => [
@@ -155,13 +161,17 @@ class AdminController extends BaseController
             Cache::forget('admin_dashboard_recent_activities');
             Cache::forget('admin_dashboard_stats');
             Cache::forget('admin_dashboard_total_documents');
+            Cache::forget('admin_dashboard_procurement_distribution');
             Cache::forget('admin_dashboard_user_activity');
 
             return Inertia::render('admin/dashboard', [
                 'recentProcurements' => [],
+                'procurementDistribution' => [],
                 'recentActivities' => [],
                 'stats' => $this->getEmptyStats(),
-                'userActivityAnalytics' => null,
+                'analytics' => [
+                    'user_activity' => null,
+                ],
                 'error' => 'Failed to retrieve dashboard data. Please try again later.',
             ]);
         }
@@ -245,6 +255,21 @@ class AdminController extends BaseController
     {
         return $procurementsByKey->sortByDesc('timestamp')
             ->take(5)
+            ->values()
+            ->map(function ($item) {
+                return [
+                    'id' => $item['id'],
+                    'title' => $item['title'],
+                    'stage' => $item['stage'],
+                    'status' => $item['status'],
+                ];
+            })
+            ->toArray();
+    }
+
+    private function getProcurementDistributionData($procurementsByKey)
+    {
+        return $procurementsByKey->sortByDesc('timestamp')
             ->values()
             ->map(function ($item) {
                 return [
