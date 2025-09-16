@@ -32,7 +32,7 @@ export interface OSInfo {
 export function detectWindowsVersion(): OSInfo {
     const platform = navigator.platform;
     const userAgent = navigator.userAgent;
-    
+
     // Default platform detection
     const osInfo: OSInfo = {
         platform: platform.includes('Win') ? 'Windows' : platform
@@ -41,10 +41,10 @@ export function detectWindowsVersion(): OSInfo {
     // Enhanced Windows 11 detection using multiple indicators
     if (platform.includes('Win') || userAgent.includes('Windows')) {
         osInfo.platform = 'Windows';
-        
+
         // Try to detect Windows 11 using various methods
         const isWindows11 = detectWindows11();
-        
+
         if (isWindows11) {
             osInfo.version = '11';
             osInfo.isWindows11 = true;
@@ -54,7 +54,7 @@ export function detectWindowsVersion(): OSInfo {
             osInfo.platform = 'Windows 10';
         }
     }
-    
+
     return osInfo;
 }
 
@@ -83,7 +83,7 @@ function detectWindows11(): boolean {
         const screenWidth = screen.width;
         const screenHeight = screen.height;
         const pixelRatio = window.devicePixelRatio;
-        
+
         // Windows 11 common resolutions and high DPI support
         const commonWin11Resolutions = [
             { width: 1920, height: 1080 },
@@ -91,13 +91,13 @@ function detectWindows11(): boolean {
             { width: 3840, height: 2160 },
             { width: 1366, height: 768 }
         ];
-        
+
         const hasCommonWin11Resolution = commonWin11Resolutions.some(
             res => Math.abs(screenWidth - res.width) <= 50 && Math.abs(screenHeight - res.height) <= 50
         );
 
         // Method 3: Check for modern browser features typically available on Windows 11
-        const hasModernFeatures = 
+        const hasModernFeatures =
             'serviceWorker' in navigator &&
             'webkitRequestFullscreen' in document.documentElement &&
             CSS.supports('backdrop-filter', 'blur(10px)') &&
@@ -105,17 +105,17 @@ function detectWindows11(): boolean {
 
         // Method 4: Check User Agent for Windows 11 specific patterns
         const userAgent = navigator.userAgent;
-        const hasWin11Indicators = 
+        const hasWin11Indicators =
             userAgent.includes('Windows NT 10.0') &&
             (userAgent.includes('WebView/3.0') || // Edge WebView in Windows 11
-             userAgent.includes('Chrome/1') && parseInt(userAgent.match(/Chrome\/(\d+)/)?.[1] || '0') >= 96);
+                userAgent.includes('Chrome/1') && parseInt(userAgent.match(/Chrome\/(\d+)/)?.[1] || '0') >= 96);
 
         // Method 5: Check for Windows 11 specific browser versions
         const chromeVersion = userAgent.match(/Chrome\/(\d+)/)?.[1];
         const firefoxVersion = userAgent.match(/Firefox\/(\d+)/)?.[1];
         const edgeVersion = userAgent.match(/Edg\/(\d+)/)?.[1];
-        
-        const hasModernBrowser = 
+
+        const hasModernBrowser =
             (chromeVersion && parseInt(chromeVersion) >= 96) ||
             (firefoxVersion && parseInt(firefoxVersion) >= 94) ||
             (edgeVersion && parseInt(edgeVersion) >= 96);
@@ -127,12 +127,12 @@ function detectWindows11(): boolean {
             hasWin11Indicators,
             hasModernBrowser
         ];
-        
+
         const positiveIndicators = indicators.filter(Boolean).length;
-        
+
         // If we have 2 or more positive indicators, likely Windows 11
         return positiveIndicators >= 2;
-        
+
     } catch (error) {
         console.warn('Error detecting Windows 11:', error);
         return false;
@@ -144,7 +144,7 @@ function detectWindows11(): boolean {
  */
 export function getDeviceInfo() {
     const osInfo = detectWindowsVersion();
-    
+
     return {
         platform: osInfo.platform,
         userAgent: navigator.userAgent,

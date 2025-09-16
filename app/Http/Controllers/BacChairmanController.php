@@ -80,8 +80,14 @@ class BacChairmanController extends BaseController
                 return $this->getDashboardStats($procurementsByKey, $pendingActions);
             });
 
+            // Cache procurement distribution data for 5 minutes
+            $procurementDistribution = Cache::remember('bac_chairman_dashboard_procurement_distribution', now()->addMinutes(5), function () use ($procurementsByKey) {
+                return $this->getProcurementDistributionData($procurementsByKey);
+            });
+
             $dashboardData = [
                 'recentProcurements' => $this->getRecentProcurements($procurementsByKey),
+                'procurementDistribution' => $procurementDistribution,
                 'recentActivities' => $recentActivities,
                 'stats' => $stats,
             ];
@@ -99,9 +105,11 @@ class BacChairmanController extends BaseController
             Cache::forget('bac_chairman_dashboard_recent_activities');
             Cache::forget('bac_chairman_dashboard_stats');
             Cache::forget('bac_chairman_dashboard_total_documents');
+            Cache::forget('bac_chairman_dashboard_procurement_distribution');
 
             return Inertia::render('bac-chairman/dashboard', [
                 'recentProcurements' => [],
+                'procurementDistribution' => [],
                 'recentActivities' => [],
                 'priorityActions' => [],
                 'stats' => $this->getEmptyStats(),
@@ -186,6 +194,21 @@ class BacChairmanController extends BaseController
     {
         return $procurementsByKey->sortByDesc('timestamp')
             ->take(5)
+            ->values()
+            ->map(function ($item) {
+                return [
+                    'id' => $item['id'],
+                    'title' => $item['title'],
+                    'stage' => $item['stage'],
+                    'status' => $item['status'],
+                ];
+            })
+            ->toArray();
+    }
+
+    private function getProcurementDistributionData($procurementsByKey)
+    {
+        return $procurementsByKey->sortByDesc('timestamp')
             ->values()
             ->map(function ($item) {
                 return [

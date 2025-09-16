@@ -2,7 +2,10 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect, useState, useMemo } from 'react';
 import { toast } from "sonner";
-import { ArrowRight, Clock, FileText, Shield, Users, CheckCircle, FileIcon, EyeIcon } from "lucide-react";
+import {
+    ArrowRight, Clock, FileText, Shield, Users, CheckCircle, FileIcon, EyeIcon, FileUpIcon,
+    FileTextIcon, ExternalLinkIcon, CheckIcon, PlusIcon, ActivityIcon,
+} from "lucide-react";
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { PageProps } from '@inertiajs/core';
 import { Stage, Status } from '@/types/blockchain';
@@ -14,9 +17,33 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
     LineChart, Line, XAxis, CartesianGrid,
+    BarChart, Bar, YAxis,
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { getActionIcon, getActionBadgeStyle } from "@/lib/action-utils";
+import type { ChartConfig } from '@/components/ui/chart';
+
+const ACTION_ICON_MAP = {
+    upload: FileUpIcon,
+    document: FileUpIcon,
+    stage: ArrowRight,
+    transition: ArrowRight,
+    'pre-procurement': FileTextIcon,
+    decision: CheckCircle,
+    publish: ExternalLinkIcon,
+    complete: CheckIcon,
+    submit: PlusIcon,
+    add: PlusIcon,
+    review: FileTextIcon,
+    evaluate: FileTextIcon,
+} as const;
+
+const getActionIcon = (action: string) => {
+    const IconComponent = Object.entries(ACTION_ICON_MAP).find(
+        ([key]) => action.toLowerCase().includes(key)
+    )?.[1] || ActivityIcon;
+
+    return IconComponent;
+};
 
 export type TimeRangeKey = '7_days' | '30_days' | '90_days' | '1_year';
 
@@ -100,6 +127,7 @@ export interface RecentProcurement {
 
 export interface DashboardProps extends PageProps, AnalyticsProps, SharedData {
     recentProcurements: RecentProcurement[];
+    procurementDistribution: RecentProcurement[];
     recentActivities: RecentActivity[];
     stats: DashboardStats;
     error?: string;
@@ -130,9 +158,13 @@ const formatRelativeDate = (dateString: string) => {
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hr ago`;
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} day ago`;
 
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // For dates older than a week, show full date with year and time
+    return date.toLocaleDateString('en-US', {
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
     });
 };
 
@@ -143,8 +175,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard() {
-    const { analytics, recentProcurements = [], recentActivities = [], stats, error } = usePage<DashboardProps>().props;
+export default function AdminDashboard() {
+    const { analytics, recentProcurements = [], procurementDistribution = [], recentActivities = [], stats, error } = usePage<DashboardProps>().props;
 
     const userActivityAnalytics = analytics?.user_activity;
 
@@ -157,39 +189,58 @@ export default function Dashboard() {
         }
     }, [error]);
 
+    // State for procurement distribution chart
+    const [activeChart, setActiveChart] = useState<"stage" | "status">("stage");
+
+    // Calculate distribution from procurementDistribution data (separate from recent procurements)
+    const stageDistribution = useMemo(() => {
+        const distribution: Record<string, number> = {};
+        procurementDistribution.forEach(procurement => {
+            const stage = procurement.stage;
+            distribution[stage] = (distribution[stage] || 0) + 1;
+        });
+        return distribution;
+    }, [procurementDistribution]);
+
+    const statusDistribution = useMemo(() => {
+        const distribution: Record<string, number> = {};
+        procurementDistribution.forEach(procurement => {
+            const status = procurement.status;
+            distribution[status] = (distribution[status] || 0) + 1;
+        });
+        return distribution;
+    }, [procurementDistribution]);
+
     // Define all possible cards for stats
     const allStatsCards = [
         {
             label: "Ongoing Projects",
             value: stats?.ongoingProjects || 0,
             icon: FileText,
-            colors: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20"
+            colors: "text-primary bg-primary/10"
         },
         {
             label: "Completed Biddings",
             value: stats?.completedBiddings || 0,
             icon: CheckCircle,
-            colors: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20"
+            colors: "text-primary bg-primary/10"
         },
         {
             label: "Total Documents",
             value: stats?.totalDocuments || 0,
             icon: FileIcon,
-            colors: "text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800"
+            colors: "text-muted-foreground bg-muted"
         },
         {
             label: 'Total Logins',
             value: userActivityAnalytics.login_patterns?.total_logins || 0,
             icon: Users,
-            colors: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20',
+            colors: 'text-primary bg-primary/10',
         }
     ];
 
-    // Filter cards based on the current user's role
-    const statsCardsToShow = allStatsCards;
-
     // Determine grid columns based on the number of cards to show
-    const statsGridColsClass = statsCardsToShow.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3";
+    const statsGridColsClass = allStatsCards.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3";
 
     // State for interactive login chart
     const [activeLoginChart, setActiveLoginChart] = useState<"logins" | "success">("logins");
@@ -226,12 +277,113 @@ export default function Dashboard() {
         success: loginChartData.reduce((acc, curr) => acc + (curr.success as number), 0),
     }), [loginChartData]);
 
+    const renderProcurementDistribution = () => {
+        // Chart configuration
+        const chartConfig: ChartConfig = {
+            count: {
+                label: "Count",
+                color: "var(--chart-1)",
+            },
+        };
+
+        const data = activeChart === "stage" ? stageDistribution : statusDistribution;
+
+        if (procurementDistribution.length === 0) {
+            return (
+                <Card className="shadow-sm">
+                    <CardContent className="p-6 text-center">
+                        <FileText className="mx-auto h-8 w-8 text-muted-foreground opacity-20 mb-2" />
+                        <p className="text-muted-foreground">No procurement data available for distribution</p>
+                    </CardContent>
+                </Card>
+            );
+        }
+
+        return (
+            <Card className="py-0 shadow-sm">
+                <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
+                    <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 sm:!py-0">
+                        <CardTitle>Procurement Distribution</CardTitle>
+                        <CardDescription>
+                            Distribution of procurements across stages and statuses
+                        </CardDescription>
+                    </div>
+                    <div className="flex">
+                        {["stage", "status"].map((key) => {
+                            const chart = key as "stage" | "status";
+                            const chartData = chart === "stage" ? stageDistribution : statusDistribution;
+                            const chartTotal = Object.values(chartData as Record<string, number>).reduce((sum: number, count: number) => sum + count, 0);
+
+                            return (
+                                <button
+                                    key={chart}
+                                    data-active={activeChart === chart}
+                                    className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+                                    onClick={() => setActiveChart(chart)}
+                                >
+                                    <span className="text-muted-foreground text-xs capitalize">
+                                        {chart} Distribution
+                                    </span>
+                                    <span className="text-lg leading-none font-bold sm:text-3xl">
+                                        {chartTotal.toLocaleString()}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </CardHeader>
+                <CardContent className="px-2 sm:p-6">
+                    <ChartContainer
+                        config={chartConfig}
+                        className="aspect-auto h-[300px] w-full"
+                    >
+                        <BarChart
+                            accessibilityLayer
+                            data={Object.entries(data).map(([key, count]) => ({
+                                name: key,
+                                count: count
+                            }))}
+                            margin={{
+                                left: 12,
+                                right: 12,
+                            }}
+                        >
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                                dataKey="name"
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={8}
+                                tickFormatter={(value: string) => value.length > 15 ? `${value.slice(0, 15)}...` : value}
+                            />
+                            <YAxis />
+                            <ChartTooltip
+                                content={
+                                    <ChartTooltipContent
+                                        className="w-[200px]"
+                                        nameKey="count"
+                                        labelFormatter={(value) => `${activeChart.charAt(0).toUpperCase() + activeChart.slice(1)}: ${value}`}
+                                    />
+                                }
+                            />
+                            <Bar
+                                dataKey="count"
+                                fill={`var(--color-count)`}
+                                radius={4}
+                            />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard" />
 
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
-                <Card className="border-0 shadow-sm">
+                <Card>
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -249,38 +401,45 @@ export default function Dashboard() {
                     </CardContent>
                 </Card>
 
-                <div className={`grid grid-cols-1 ${statsGridColsClass} gap-4`}>
-                    {statsCardsToShow.map(({ label, value, icon: Icon, colors }) => (
-                        <Card key={label} className="shadow-sm">
-                            <CardContent className="p-6">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <p className="text-3xl font-bold">{value}</p>
-                                        <p className="text-sm text-muted-foreground mt-0.5">{label}</p>
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${statsGridColsClass} gap-4`}>
+                    {allStatsCards.map((card, index) => {
+                        const IconComponent = card.icon;
+                        return (
+                            <Card key={index} className="shadow-sm">
+                                <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-muted-foreground">{card.label}</p>
+                                            <p className="text-2xl font-bold">{card.value}</p>
+                                        </div>
+                                        <div className={`p-2 rounded-full ${card.colors}`}>
+                                            <IconComponent className="h-5 w-5" />
+                                        </div>
                                     </div>
-                                    <div className={`p-2 rounded-full ${colors}`}>
-                                        <Icon className="h-5 w-5" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
+
+                {/* Procurement Distribution Section */}
+                {renderProcurementDistribution()}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-1 space-y-6">
-                        <div className="flex flex-row items-center justify-between space-y-0 pb-4">
-                            <h3 className="text-base md:text-lg font-semibold flex items-center">
-                                <Clock className="h-4 w-4 md:h-5 md:w-5 mr-2 text-purple-500" />
-                                System Activities {recentActivities.length > 0 && `(${recentActivities.length})`}
-                            </h3>
-                            <Link href={route('admin.procurements-list.index')} className="text-xs md:text-sm text-primary hover:underline flex items-center shrink-0 ml-2">
-                                View all <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
-                            </Link>
-                        </div>
-
                         <Card className="shadow-sm">
-                            <CardContent className="p-4">
+                            <CardHeader>
+                                <div className="flex flex-row items-center justify-between">
+                                    <h3 className="text-base md:text-lg font-semibold flex items-center">
+                                        <Clock className="h-4 w-4 md:h-5 md:w-5 mr-2 text-primary" />
+                                        System Activities {recentActivities.length > 0 && `(${recentActivities.length})`}
+                                    </h3>
+                                    <Link href={route('admin.procurements-list.index')} className="text-xs md:text-sm text-primary hover:underline flex items-center shrink-0 ml-2">
+                                        View all <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
+                                    </Link>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
                                 <div className="space-y-3">
                                     {recentActivities.map((activity, index) => {
                                         const ActionIcon = getActionIcon(activity.action);
@@ -300,8 +459,8 @@ export default function Dashboard() {
                                                 <div className="mt-1.5 flex items-center justify-between">
                                                     <div className="flex items-center">
                                                         <Badge
-                                                            variant="outline"
-                                                            className={`${getActionBadgeStyle(activity.action)} text-xs mr-2 flex items-center gap-1`}
+                                                            variant="secondary"
+                                                            className="text-xs mr-2 flex items-center gap-1"
                                                         >
                                                             <ActionIcon className="h-3.5 w-3.5" />
                                                             <span>{activity.action}</span>
@@ -323,18 +482,19 @@ export default function Dashboard() {
                     </div>
 
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="flex flex-row items-center justify-between space-y-0 pb-4">
-                            <h3 className="text-base md:text-lg font-semibold flex items-center">
-                                <FileText className="h-4 w-4 md:h-5 md:w-5 mr-2 text-blue-500" />
-                                Recent Procurements {recentProcurements.length > 0 && `(${recentProcurements.length})`}
-                            </h3>
-                            <Link href={route('admin.procurements-list.index')} className="text-xs md:text-sm text-primary hover:underline flex items-center shrink-0 ml-2">
-                                View all <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
-                            </Link>
-                        </div>
-
-                        <Card className="shadow-sm">
-                            <CardContent className="p-0">
+                        <Card>
+                            <CardHeader>
+                                <div className="flex flex-row items-center justify-between">
+                                    <h3 className="text-base md:text-lg font-semibold flex items-center">
+                                        <FileText className="h-4 w-4 md:h-5 md:w-5 mr-2 text-primary" />
+                                        Recent Procurements {recentProcurements.length > 0 && `(${recentProcurements.length})`}
+                                    </h3>
+                                    <Link href={route('admin.procurements-list.index')} className="text-xs md:text-sm text-primary hover:underline flex items-center shrink-0 ml-2">
+                                        View all <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
+                                    </Link>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
