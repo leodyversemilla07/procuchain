@@ -18,7 +18,6 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -39,11 +38,7 @@ class ViewProcurementsController extends BaseController
 
     private const DOCUMENT_PAGE_SIZE = 10000;
 
-    private const CACHE_DURATION_MINUTES = 5;
-
-    private const CACHE_KEY_PROCUREMENTS_LIST = 'procurements_list_data';
-
-    private const CACHE_KEY_PROCUREMENT_DETAILS_PREFIX = 'procurement_details_'; // Cache key prefix for details
+    // Caching removed
 
     /**
      * Constructor
@@ -93,16 +88,10 @@ class ViewProcurementsController extends BaseController
     {
         try {
             Log::info('Fetching procurements list');
-
-            $procurements = Cache::remember(self::CACHE_KEY_PROCUREMENTS_LIST, now()->addMinutes(self::CACHE_DURATION_MINUTES), function () {
-                Log::info('Cache miss: Recalculating procurements list data');
-
-                return $this->fetchAndProcessProcurements();
-            });
+            $procurements = $this->fetchAndProcessProcurements();
 
             Log::info('Successfully retrieved procurements list', [
                 'count' => count($procurements),
-                'from_cache' => Cache::has(self::CACHE_KEY_PROCUREMENTS_LIST),
             ]);
 
             return Inertia::render('procurements/procurements-list', [
@@ -114,12 +103,9 @@ class ViewProcurementsController extends BaseController
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Clear cache on error to avoid storing potentially bad data
-            Cache::forget(self::CACHE_KEY_PROCUREMENTS_LIST);
-
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => [],
-                'error' => 'Failed to retrieve procurements. Please try again later.',
+                'error' => 'Unable to connect to the blockchain node right now. Please try again shortly.',
             ]);
         }
     }
@@ -216,44 +202,32 @@ class ViewProcurementsController extends BaseController
      */
     public function showProcurement(string $procurementId): Response
     {
-        $cacheKey = self::CACHE_KEY_PROCUREMENT_DETAILS_PREFIX.$procurementId;
-
         try {
             $this->validateProcurementId($procurementId);
 
             Log::info('Fetching procurement details', ['procurement_id' => $procurementId]);
 
-            // Cache the entire procurement data structure
-            $procurementData = Cache::remember($cacheKey, now()->addMinutes(self::CACHE_DURATION_MINUTES), function () use ($procurementId) {
-                Log::info('Cache miss: Recalculating procurement details', ['procurement_id' => $procurementId]);
+            // Directly compute procurement details (caching removed)
+            $statusItems = $this->fetchStatusItems($procurementId);
+            $currentStatus = $statusItems->first();
 
-                $statusItems = $this->fetchStatusItems($procurementId);
-                $currentStatus = $statusItems->first();
+            if (! $currentStatus) {
+                return $this->renderNotFound();
+            }
 
-                if (! $currentStatus) {
-                    // Return null or throw an exception that can be caught outside the cache closure
-                    // Returning null might be simpler if the outer code handles it.
-                    return null;
-                }
+            $documents = $this->fetchAndProcessAllDocuments($procurementId);
+            $events = $this->fetchAndProcessEvents($procurementId);
 
-                // Fetch all documents using the updated method (no titles needed here)
-                $documents = $this->fetchAndProcessAllDocuments($procurementId); // Pass only ID
-                $events = $this->fetchAndProcessEvents($procurementId);
+            $this->preloadUserNames(collect($events));
 
-                // Preload user names for events (if not already done broadly)
-                // Consider if getUserName calls within event processing need optimization
-                $this->preloadUserNames(collect($events)); // Assuming events have user_address
-
-                // Build procurement data
-                /** @phpstan-ignore-next-line Excess number of function arguments */
-                return $this->buildProcurementData(
-                    $procurementId,
-                    $currentStatus,
-                    $documents,
-                    $events,
-                    $statusItems
-                );
-            });
+            /** @phpstan-ignore-next-line Excess number of function arguments */
+            $procurementData = $this->buildProcurementData(
+                $procurementId,
+                $currentStatus,
+                $documents,
+                $events,
+                $statusItems
+            );
 
             // Handle case where procurement was not found inside the cache closure
             if ($procurementData === null) {
@@ -264,7 +238,6 @@ class ViewProcurementsController extends BaseController
 
             Log::info('Successfully retrieved procurement details', [
                 'procurement_id' => $procurementId,
-                'from_cache' => Cache::has($cacheKey),
             ]);
 
             // dd($procurementData); // Debugging line, remove in production
@@ -279,9 +252,6 @@ class ViewProcurementsController extends BaseController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-
-            // Clear cache for this specific procurement on error
-            Cache::forget($cacheKey);
 
             return Inertia::render('procurements/show-procurement', [
                 'error' => 'Failed to retrieve procurement details. Please try again later.',
@@ -474,8 +444,8 @@ class ViewProcurementsController extends BaseController
      */
     private function renderNotFound(): Response
     {
-        return Inertia::render('procurements/not-found', [
-            'message' => 'Procurement not found',
+        return Inertia::render('procurements/show-procurement', [
+            'error' => 'Procurement not found',
         ]);
     }
 }

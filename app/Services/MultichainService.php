@@ -12,14 +12,21 @@ class MultichainService
 
     private $maxRetries;
 
-    private $retryDelay = 2; // seconds
+    private $retryDelay = 2; // seconds (web total ~ timeout*retries + delays)
 
     private $timeout;
 
     public function __construct()
     {
-        $this->maxRetries = config('multichain.max_retries', 3);
-        $this->timeout = config('multichain.connection_timeout', 30);
+        // Use shorter caps for web requests to avoid 60s limit
+        $isConsole = app()->runningInConsole();
+        $this->maxRetries = $isConsole
+            ? (int) config('multichain.max_retries', 3)
+            : (int) config('multichain.web_max_retries', 2);
+
+        $this->timeout = $isConsole
+            ? (int) config('multichain.connection_timeout', 30)
+            : (int) config('multichain.web_connection_timeout', 12);
         $this->initializeClient();
     }
 
@@ -152,6 +159,10 @@ class MultichainService
             'Unable to connect',
             'Connection timed out',
             'Network is unreachable',
+            // Windows-specific Winsock messages
+            'A connection attempt failed',
+            'connected party did not properly respond',
+            'host has failed to respond',
         ];
 
         foreach ($connectionErrors as $error) {

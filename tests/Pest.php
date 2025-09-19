@@ -74,3 +74,14 @@ function createLockedUser(array $attributes = []): App\Models\User
         'locked_reason' => 'Multiple failed login attempts',
     ], $attributes));
 }
+
+/**
+ * Helper to set private/protected properties via reflection.
+ */
+function setPrivate(object $object, string $property, mixed $value): void
+{
+    $ref = new \ReflectionClass($object);
+    $prop = $ref->getProperty($property);
+    $prop->setAccessible(true);
+    $prop->setValue($object, $value);
+}
