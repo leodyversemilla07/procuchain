@@ -73,6 +73,10 @@ return [
     'connection_timeout' => env('MULTICHAIN_CONNECTION_TIMEOUT', 30),
     'max_retries' => env('MULTICHAIN_MAX_RETRIES', 3),
 
+    // Web-request specific caps to avoid hitting PHP's 60s max execution time
+    'web_connection_timeout' => env('MULTICHAIN_WEB_CONNECTION_TIMEOUT', 12),
+    'web_max_retries' => env('MULTICHAIN_WEB_MAX_RETRIES', 2),
+
     /*
     |--------------------------------------------------------------------------
     | MultiChain User Addresses

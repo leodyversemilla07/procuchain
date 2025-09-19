@@ -48,8 +48,12 @@ class MultichainSetup extends Command
         }
 
         try {
-            // 1. Check connection
-            $this->checkConnection();
+            // 1. Check connection (abort further steps if it fails)
+            if ($this->checkConnection() === self::FAILURE) {
+                $this->warn('Aborting setup because connection to MultiChain node could not be established.');
+
+                return self::FAILURE;
+            }
 
             // 2. Setup addresses
             $addresses = $this->setupAddresses();
@@ -78,12 +82,11 @@ class MultichainSetup extends Command
     {
         try {
             $info = $this->multichainService->getInfo();
-            $this->info('✅ Connected to MultiChain node');
-            $this->line('Chain: '.($info['chainname'] ?? 'Unknown'));
+            $this->info('✅ Connected to MultiChain node (chain: '.($info['chainname'] ?? 'Unknown').')');
 
             return self::SUCCESS;
         } catch (Exception $e) {
-            $this->error('❌ Cannot connect to MultiChain node: '.$e->getMessage());
+            $this->error('❌ Cannot connect: '.$e->getMessage());
 
             return self::FAILURE;
         }

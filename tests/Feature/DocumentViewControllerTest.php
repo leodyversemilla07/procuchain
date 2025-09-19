@@ -2,13 +2,20 @@
 
 use App\Models\DocumentView;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+
+uses(RefreshDatabase::class);
 
 it('can view documents through the application', function () {
-    // Create a user and authenticate
-    $user = User::factory()->create([
-        'role' => 'admin'
+    /** @var User $user */
+    $user = User::factory()->createOne([
+        'role' => 'admin',
     ]);
-    $this->actingAs($user);
+    actingAs($user);
 
     // Create a document view record for testing data
     DocumentView::factory()->create([
@@ -19,11 +26,10 @@ it('can view documents through the application', function () {
         'procurement_id' => 'TEST-001',
     ]);
 
-    // Test that authenticated users can access PDF viewer
-    $response = $this->get('/pdf-viewer/test-document');
-    
+    $response = get('/pdf-viewer/test-document');
+
     $response->assertSuccessful();
-    $response->assertInertia(fn ($page) => $page
+    $response->assertInertia(fn (Assert $page) => $page
         ->component('documents/pdf-viewer')
         ->has('document')
         ->has('viewStats')
@@ -32,16 +38,17 @@ it('can view documents through the application', function () {
 });
 
 it('requires authentication for PDF viewer access', function () {
-    $response = $this->get('/pdf-viewer/test-document');
+    $response = get('/pdf-viewer/test-document');
 
     $response->assertRedirect('/login');
 });
 
 it('requires proper role for PDF viewer access', function () {
-    $user = User::factory()->create([
-        'role' => 'hope' // Valid role but let's test middleware
+    /** @var User $user */
+    $user = User::factory()->createOne([
+        'role' => 'hope', // Valid role but let's test middleware
     ]);
-    $this->actingAs($user);
+    actingAs($user);
 
     DocumentView::factory()->create([
         'user_id' => $user->id,
@@ -51,7 +58,7 @@ it('requires proper role for PDF viewer access', function () {
         'procurement_id' => 'TEST-001',
     ]);
 
-    $response = $this->get('/pdf-viewer/test-document');
+    $response = get('/pdf-viewer/test-document');
 
     // Should succeed for valid roles
     $response->assertSuccessful();

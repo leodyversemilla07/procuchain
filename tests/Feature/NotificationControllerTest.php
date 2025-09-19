@@ -6,6 +6,9 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
@@ -13,7 +16,7 @@ beforeEach(function () {
 });
 
 test('user can view notifications page with data', function () {
-    $this->actingAs($this->user);
+    actingAs($this->user);
 
     foreach (range(1, 15) as $i) {
         DatabaseNotification::create([
@@ -32,9 +35,9 @@ test('user can view notifications page with data', function () {
         ]);
     }
 
-    $response = $this->get('/notifications');
+    $response = get('/notifications');
 
-    $response->assertStatus(200)
+    $response->assertSuccessful()
         ->assertInertia(fn (Assert $page) => $page
             ->component('notifications')
             ->has('notifications', 10) // Should have paginated data
@@ -49,7 +52,7 @@ test('user can view notifications page with data', function () {
 });
 
 test('user can mark a notification as read via form submission', function () {
-    $this->actingAs($this->user);
+    actingAs($this->user);
 
     $notification = DatabaseNotification::create([
         'id' => Str::uuid(),
@@ -66,11 +69,11 @@ test('user can mark a notification as read via form submission', function () {
     $response->assertRedirect('/notifications')
         ->assertSessionHas('success', 'Notification marked as read');
 
-    $this->assertNotNull($notification->fresh()->read_at);
+    expect($notification->fresh()->read_at)->not->toBeNull();
 });
 
 test('user cannot mark another users notification as read', function () {
-    $this->actingAs($this->user);
+    actingAs($this->user);
     $otherUser = User::factory()->create(['role' => 'hope']);
 
     $notification = DatabaseNotification::create([
@@ -88,11 +91,11 @@ test('user cannot mark another users notification as read', function () {
     $response->assertRedirect('/notifications')
         ->assertSessionHasErrors(['error' => 'Notification not found']);
 
-    $this->assertNull($notification->fresh()->read_at);
+    expect($notification->fresh()->read_at)->toBeNull();
 });
 
 test('user can mark all notifications as read via form submission', function () {
-    $this->actingAs($this->user);
+    actingAs($this->user);
 
     foreach (range(1, 5) as $i) {
         DatabaseNotification::create([
@@ -111,9 +114,6 @@ test('user can mark all notifications as read via form submission', function () 
     $response->assertRedirect('/notifications')
         ->assertSessionHas('success', 'All notifications marked as read');
 
-    $this->assertEquals(
-        0,
-        $this->user->unreadNotifications()->count(),
-        'All notifications should be marked as read'
-    );
+    expect($this->user->unreadNotifications()->count())
+        ->toBe(0, 'All notifications should be marked as read');
 });

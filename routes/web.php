@@ -8,7 +8,6 @@ use App\Http\Controllers\HopeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\SecureFileController;
 use App\Http\Controllers\ViewProcurementsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -210,7 +209,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('notifications.mark-all-as-read');
 
     // Secure file download route (requires authentication)
-    Route::get('/secure-file/{fileKey}', [SecureFileController::class, 'downloadFile'])
+    Route::get('/secure-file/{fileKey}', [DocumentViewController::class, 'downloadFile'])
         ->name('secure.file.download')
         ->where('fileKey', '.*'); // Allow forward slashes in file keys
 
