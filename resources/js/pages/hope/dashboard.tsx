@@ -407,7 +407,7 @@ export default function HOPEDashboard() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="HOPE Dashboard" />
+            <Head title="Head of Procuring Entity Dashboard" />
 
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
                 <Card>

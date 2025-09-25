@@ -68,7 +68,7 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
   }, [procurement]);
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
     { title: `Upload Bidding Documents - ${procurement?.id || 'Unknown ID'}${procurement?.title ? ': ' + procurement.title : ''}`, href: '#' },
   ];

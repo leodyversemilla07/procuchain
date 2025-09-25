@@ -796,17 +796,17 @@ export const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
     switch (role) {
         case 'bac_secretariat':
             return [
-                { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+                { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
                 { title: 'Procurement List', href: '#' },
             ];
         case 'bac_chairman':
             return [
-                { title: 'BAC Chairman Dashboard', href: '/bac-chairman/dashboard' },
+                { title: 'Bids and Awards Committee Chairman Dashboard', href: '/bac-chairman/dashboard' },
                 { title: 'Procurement List', href: '#' },
             ];
         case 'hope':
             return [
-                { title: 'HOPE Dashboard', href: '/hope/dashboard' },
+                { title: 'Head of Procuring Entity Dashboard', href: '/hope/dashboard' },
                 { title: 'Procurement List', href: '#' },
             ];
         case 'admin':
@@ -925,7 +925,7 @@ export default function ProcurementsList({ procurements: initialProcurements, er
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Procurement List" />
             <div className="w-full space-y-4 p-4 md:p-6 lg:p-8">
-                <Card className="border-0 shadow-sm">
+                <Card>
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">

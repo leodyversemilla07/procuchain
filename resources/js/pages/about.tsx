@@ -3,7 +3,7 @@ import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, FileText, Database, Server, BarChart2 } from 'lucide-react';
+import { CheckCircle, Database, Server, BarChart2, AlertTriangle, XCircle } from 'lucide-react';
 
 export default function About() {
   return (
@@ -54,7 +54,7 @@ export default function About() {
                 <CardContent className="p-4 sm:p-6 md:p-8">
                   <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                     <div className="p-2 bg-destructive/10 rounded-lg">
-                      <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
+                      <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
                     </div>
                     <h2 className="text-lg sm:text-xl md:text-2xl font-medium">The Problem</h2>
                   </div>
@@ -67,7 +67,7 @@ export default function About() {
                       "Challenges in establishing accountability"
                     ].map((item, index) => (
                       <li key={index} className="flex items-start text-sm sm:text-base text-muted-foreground">
-                        <div className="mr-2 sm:mr-3 mt-1 text-destructive">•</div>
+                        <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 sm:mr-3 mt-1 text-destructive flex-shrink-0" />
                         <span>{item}</span>
                       </li>
                     ))}

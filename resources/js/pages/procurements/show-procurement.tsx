@@ -368,19 +368,19 @@ const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
     switch (role) {
         case "bac_secretariat":
             return [
-                { title: "BAC Secretariat Dashboard", href: "/bac-secretariat/dashboard" },
+                { title: "Bids and Awards Committee Secretariat Dashboard", href: "/bac-secretariat/dashboard" },
                 { title: "Procurement List", href: "/bac-secretariat/procurements-list" },
                 { title: "Procurement Details", href: "#" },
             ]
         case "bac_chairman":
             return [
-                { title: "BAC Chairman Dashboard", href: "/bac-chairman/dashboard" },
+                { title: "Bids and Awards Committee Chairman Dashboard", href: "/bac-chairman/dashboard" },
                 { title: "Procurement List", href: "/bac-chairman/procurements-list" },
                 { title: "Procurement Details", href: "#" },
             ]
         case "hope":
             return [
-                { title: "HOPE Dashboard", href: "/hope/dashboard" },
+                { title: "Head of Procuring Entity Dashboard", href: "/hope/dashboard" },
                 { title: "Procurement List", href: "/hope/procurements-list" },
                 { title: "Procurement Details", href: "#" },
             ]

@@ -40,7 +40,7 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
     const [bulletinValidation, setBulletinValidation] = useState<SmartContractValidationResult | null>(null);
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+        { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
         { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
         { title: `Upload Supplemental Bid Bulletin - ${procurement.id}: ${procurement.title}`, href: '#' },
     ];

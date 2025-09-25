@@ -586,7 +586,7 @@ export default function AdminUserManagement() {
             <Head title="User Management" />
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
-                <Card className="border-0 shadow-sm">
+                <Card>
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">

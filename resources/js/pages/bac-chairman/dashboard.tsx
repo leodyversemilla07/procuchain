@@ -391,7 +391,7 @@ export default function BACChairmanDashboard() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="BAC Chairman Dashboard" />
+            <Head title="Bids and Awards Committee Chairman Dashboard" />
 
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
                 <Card>

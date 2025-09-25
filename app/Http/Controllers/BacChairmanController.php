@@ -47,10 +47,10 @@ class BacChairmanController extends BaseController
     public function index()
     {
         try {
-            Log::info('Fetching BAC Chairman dashboard data');
+            Log::info('Fetching Bids and Awards Committee Chairman Dashboard data');
 
             $procurementsByKey = Cache::remember('bac_chairman_dashboard_procurements_by_key', now()->addMinutes(5), function () {
-                Log::info('Cache miss: Recalculating procurementsByKey for BAC Chairman dashboard');
+                Log::info('Cache miss: Recalculating procurementsByKey for Bids and Awards Committee Chairman Dashboard');
                 $states = $this->multichainService->listStreamItems(
                     StreamEnums::STATUS->value,
                     true,
@@ -75,7 +75,7 @@ class BacChairmanController extends BaseController
             });
 
             $stats = Cache::remember('bac_chairman_dashboard_stats', now()->addMinutes(5), function () use ($procurementsByKey) {
-                Log::info('Cache miss: Recalculating BAC Chairman dashboard stats');
+                Log::info('Cache miss: Recalculating Bids and Awards Committee Chairman Dashboard stats');
                 // TODO: Implement logic for calculating actual pending actions if needed
                 $pendingActions = 0; // Placeholder value
 
@@ -94,11 +94,11 @@ class BacChairmanController extends BaseController
                 'stats' => $stats,
             ];
 
-            Log::info('Successfully retrieved BAC Chairman dashboard data');
+            Log::info('Successfully retrieved Bids and Awards Committee Chairman Dashboard data');
 
             return Inertia::render('bac-chairman/dashboard', $dashboardData);
         } catch (Exception $e) {
-            Log::error('Failed to retrieve BAC Chairman dashboard data', [
+            Log::error('Failed to retrieve Bids and Awards Committee Chairman Dashboard data', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -124,7 +124,7 @@ class BacChairmanController extends BaseController
     {
         try {
             $totalDocuments = Cache::remember('bac_chairman_dashboard_total_documents', now()->addMinutes(5), function () use ($procurementsByKey) {
-                Log::info('Cache miss: Recalculating total documents for BAC Chairman dashboard stats');
+                Log::info('Cache miss: Recalculating total documents for Bids and Awards Committee Chairman Dashboard stats');
 
                 return $this->getTotalDocuments($procurementsByKey);
             });
@@ -135,7 +135,7 @@ class BacChairmanController extends BaseController
                 'totalDocuments' => $totalDocuments,
             ];
         } catch (Exception $e) {
-            Log::error('Failed to calculate BAC Chairman dashboard stats', ['error' => $e->getMessage()]);
+            Log::error('Failed to calculate Bids and Awards Committee Chairman Dashboard stats', ['error' => $e->getMessage()]);
             Cache::forget('bac_chairman_dashboard_total_documents');
 
             return $this->getEmptyStats();
@@ -235,7 +235,7 @@ class BacChairmanController extends BaseController
             );
 
             if (! $allEvents) {
-                Log::warning('No events found in stream for BAC Chairman dashboard');
+                Log::warning('No events found in stream for Bids and Awards Committee Chairman Dashboard');
 
                 return [];
             }
@@ -291,7 +291,7 @@ class BacChairmanController extends BaseController
             );
 
             if ($documentItems === null) {
-                Log::warning('Failed to retrieve document stream items for BAC Chairman dashboard stats.');
+                Log::warning('Failed to retrieve document stream items for Bids and Awards Committee Chairman Dashboard stats.');
 
                 return 0;
             }
@@ -308,11 +308,11 @@ class BacChairmanController extends BaseController
                 ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->sum();
 
-            Log::info('BAC Chairman dashboard document count calculated', ['total_documents' => $totalDocuments]);
+            Log::info('Bids and Awards Committee Chairman Dashboard document count calculated', ['total_documents' => $totalDocuments]);
 
             return $totalDocuments;
         } catch (Exception $e) {
-            Log::error('Failed to calculate total documents for BAC Chairman dashboard', [
+            Log::error('Failed to calculate total documents for Bids and Awards Committee Chairman Dashboard', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

@@ -47,7 +47,7 @@ export default function MonitoringUpload({ procurement = { id: '', title: '' } }
   const [documentValidation, setDocumentValidation] = useState<SmartContractValidationResult | null>(null);
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
     { title: `Upload Compliance Report - ${procurement.id}: ${procurement.title}`, href: '#' },
   ];

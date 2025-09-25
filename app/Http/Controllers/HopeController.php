@@ -47,10 +47,10 @@ class HopeController extends BaseController
     public function index()
     {
         try {
-            Log::info('Fetching HOPE dashboard data');
+            Log::info('Fetching Head of Procuring Entity Dashboard data');
 
             $procurementsByKey = Cache::remember('hope_dashboard_procurements_by_key', now()->addMinutes(5), function () {
-                Log::info('Cache miss: Recalculating procurementsByKey for HOPE dashboard');
+                Log::info('Cache miss: Recalculating procurementsByKey for Head of Procuring Entity Dashboard');
                 $states = $this->multichainService->listStreamItems(
                     StreamEnums::STATUS->value, true, 10000, 0, false
                 );
@@ -71,7 +71,7 @@ class HopeController extends BaseController
             });
 
             $stats = Cache::remember('hope_dashboard_stats', now()->addMinutes(5), function () use ($procurementsByKey) {
-                Log::info('Cache miss: Recalculating HOPE dashboard stats');
+                Log::info('Cache miss: Recalculating Head of Procuring Entity Dashboard stats');
 
                 return $this->getDashboardStats($procurementsByKey, 0);
             });
@@ -88,12 +88,12 @@ class HopeController extends BaseController
                 'stats' => $stats,
             ];
 
-            Log::info('Successfully retrieved HOPE dashboard data');
+            Log::info('Successfully retrieved Head of Procuring Entity Dashboard data');
 
             return Inertia::render('hope/dashboard', $dashboardData);
 
         } catch (Exception $e) {
-            Log::error('Failed to retrieve HOPE dashboard data', [
+            Log::error('Failed to retrieve Head of Procuring Entity Dashboard data', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -118,7 +118,7 @@ class HopeController extends BaseController
     {
         try {
             $totalDocuments = Cache::remember('hope_dashboard_total_documents', now()->addMinutes(5), function () use ($procurementsByKey) {
-                Log::info('Cache miss: Recalculating total documents for HOPE dashboard stats');
+                Log::info('Cache miss: Recalculating total documents for Head of Procuring Entity Dashboard stats');
 
                 return $this->getTotalDocuments($procurementsByKey);
             });
@@ -129,7 +129,7 @@ class HopeController extends BaseController
                 'totalDocuments' => $totalDocuments,
             ];
         } catch (Exception $e) {
-            Log::error('Failed to calculate HOPE dashboard stats', ['error' => $e->getMessage()]);
+            Log::error('Failed to calculate Head of Procuring Entity Dashboard stats', ['error' => $e->getMessage()]);
             Cache::forget('hope_dashboard_total_documents');
 
             return $this->getEmptyStats();
@@ -225,7 +225,7 @@ class HopeController extends BaseController
             );
 
             if (! $allEvents) {
-                Log::warning('No events found in stream for HOPE dashboard');
+                Log::warning('No events found in stream for Head of Procuring Entity Dashboard');
 
                 return [];
             }
@@ -277,7 +277,7 @@ class HopeController extends BaseController
             );
 
             if ($documentItems === null) {
-                Log::warning('Failed to retrieve document stream items for HOPE dashboard stats.');
+                Log::warning('Failed to retrieve document stream items for Head of Procuring Entity Dashboard stats.');
 
                 return 0;
             }
@@ -294,12 +294,12 @@ class HopeController extends BaseController
                 ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->sum();
 
-            Log::info('HOPE dashboard document count calculated', ['total_documents' => $totalDocuments]);
+            Log::info('Head of Procuring Entity Dashboard document count calculated', ['total_documents' => $totalDocuments]);
 
             return $totalDocuments;
 
         } catch (Exception $e) {
-            Log::error('Failed to calculate total documents for HOPE dashboard', [
+            Log::error('Failed to calculate total documents for Head of Procuring Entity Dashboard', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

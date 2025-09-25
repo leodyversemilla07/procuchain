@@ -59,7 +59,7 @@ class BacSecretariatController extends BaseController
     public function dashboard()
     {
         try {
-            Log::info('Fetching BAC Secretariat dashboard data');
+            Log::info('Fetching Bids and Awards Committee Secretariat Dashboard data');
 
             // Cache procurementsByKey for 5 minutes
             $procurementsByKey = Cache::remember('dashboard_procurements_by_key', now()->addMinutes(5), function () {

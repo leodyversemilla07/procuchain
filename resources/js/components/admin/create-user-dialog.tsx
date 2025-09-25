@@ -63,7 +63,7 @@ export default function CreateUserDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] p-0 gap-0">
-                <DialogHeader className="px-6 py-6 pb-4 bg-gradient-to-r from-primary/5 dark:from-primary/10 to-background border-b">
+                <DialogHeader className="px-6 py-6 pb-4 border-b">
                     <div className="flex items-center space-x-3">
                         <div className="h-10 w-10 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
                             <Plus className="h-5 w-5 text-primary" />

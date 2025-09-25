@@ -5,13 +5,13 @@ use App\Models\User;
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 test('guests are redirected to login for all dashboards', function () {
-    // Test BAC Secretariat dashboard
+    // Test Bids and Awards Committee Secretariat Dashboard
     $this->get(route('bac-secretariat.dashboard'))->assertRedirect('/login');
 
-    // Test BAC Chairman dashboard
+    // Test Bids and Awards Committee Chairman Dashboard
     $this->get(route('bac-chairman.dashboard'))->assertRedirect('/login');
 
-    // Test Hope dashboard
+    // Test Head of Procuring Entity Dashboard
     $this->get(route('hope.dashboard'))->assertRedirect('/login');
 
     // Test Admin dashboard
