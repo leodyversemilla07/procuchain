@@ -4,18 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Models\User;
+use App\Services\EventTypeLabelMapper;
+use App\Services\MultichainService;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
-use App\Services\MultichainService;
-use App\Services\EventTypeLabelMapper;
 
 class BacChairmanController extends BaseController
 {
     private MultichainService $multichainService;
+
     private EventTypeLabelMapper $eventTypeLabelMapper;
+
     private array $userNameCache = [];
 
     public function __construct(MultichainService $multichainService, EventTypeLabelMapper $eventTypeLabelMapper)
@@ -295,15 +297,15 @@ class BacChairmanController extends BaseController
             }
 
             $documentCountMap = collect($documentItems)
-                ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-                ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+                ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+                ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
                 ->map(function ($items) {
-                    return collect($items)->map(fn($item) => $item['data']['json']['hash'])->unique()->count();
+                    return collect($items)->map(fn ($item) => $item['data']['json']['hash'])->unique()->count();
                 });
 
             $dashboardProcurementIds = $procurementsByKey->keys();
             $totalDocuments = $documentCountMap
-                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->sum();
 
             Log::info('BAC Chairman dashboard document count calculated', ['total_documents' => $totalDocuments]);

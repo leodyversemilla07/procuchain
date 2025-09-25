@@ -2,12 +2,11 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Mail;
 use App\Mail\AccountLockedMail;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
-
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class AccountLockoutService
 {
@@ -24,12 +23,14 @@ class AccountLockoutService
                 'reason' => $reason,
                 'unlocked_by' => Auth::check() ? Auth::id() : null,
             ]);
+
             return true;
         } catch (\Exception $e) {
             Log::error('Failed to unlock user account', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -45,18 +46,22 @@ class AccountLockoutService
                 'previous_attempts' => $previousAttempts,
                 'reset_by' => Auth::check() ? Auth::id() : null,
             ]);
+
             return true;
         } catch (\Exception $e) {
             Log::error('Failed to reset failed login attempts', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
+
     public function isAccountLocked(string $email): bool
     {
         $user = User::where('email', $email)->first();
+
         return $user ? $user->isAccountLocked() : false;
     }
 
@@ -89,7 +94,6 @@ class AccountLockoutService
             });
     }
 
-
     public function unlockUserAccount(int $userId, string $adminReason = 'Manually unlocked by administrator'): bool
     {
         try {
@@ -103,16 +107,17 @@ class AccountLockoutService
                 'user_email' => $user->email,
                 'reason' => $adminReason,
             ]);
+
             return true;
         } catch (\Exception $e) {
             Log::error('Failed to unlock user account', [
                 'user_id' => $userId,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
-
 
     public function lockAccount(User $user, string $reason, int $durationHours = 24): bool
     {
@@ -152,6 +157,7 @@ class AccountLockoutService
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

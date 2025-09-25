@@ -18,12 +18,19 @@ class HandleStageTransitionJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $procurementId;
+
     protected $procurementTitle;
+
     protected $fromStatus;
+
     protected $toStatus;
+
     protected $fromStage;
+
     protected $toStage;
+
     protected $userAddress;
+
     protected $details;
 
     public function __construct(

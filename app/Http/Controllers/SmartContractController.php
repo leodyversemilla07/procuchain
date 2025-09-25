@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\SmartContractService;
 use App\Services\MultichainService;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
+use App\Services\SmartContractService;
 use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SmartContractController extends Controller
 {
@@ -24,38 +24,40 @@ class SmartContractController extends Controller
         try {
             // Create document management library
             $libraryResult = $this->smartContractService->createDocumentManagementLibrary();
-            
+
             // Create document validation filters
             $filterResults = $this->smartContractService->createDocumentValidationFilters();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Document management smart contract system initialized successfully',
                 'data' => [
                     'library_txid' => $libraryResult,
-                    'filters' => $filterResults
-                ]
+                    'filters' => $filterResults,
+                ],
             ]);
 
         } catch (Exception $e) {
             Log::error('Document management smart contract initialization failed', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to initialize document management smart contract system',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
-    }    /**
+    }
+
+    /**
      * Validate document integrity
      */
     public function validateDocumentIntegrity(Request $request): JsonResponse
     {
         $request->validate([
             'procurement_id' => 'required|string',
-            'document_hash' => 'required|string|size:64'
+            'document_hash' => 'required|string|size:64',
         ]);
 
         try {
@@ -67,20 +69,20 @@ class SmartContractController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Document integrity validation completed',
-                'data' => $result
+                'data' => $result,
             ]);
 
         } catch (Exception $e) {
             Log::error('Document integrity validation failed', [
                 'procurement_id' => $request->procurement_id,
                 'document_hash' => $request->document_hash,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Document integrity validation failed',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -92,7 +94,7 @@ class SmartContractController extends Controller
     {
         $request->validate([
             'metadata' => 'required|array',
-            'stage' => 'required|string'
+            'stage' => 'required|string',
         ]);
 
         try {
@@ -104,19 +106,19 @@ class SmartContractController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Metadata compliance check completed',
-                'data' => $result
+                'data' => $result,
             ]);
 
         } catch (Exception $e) {
             Log::error('Metadata compliance check failed', [
                 'stage' => $request->stage,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Metadata compliance check failed',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -127,7 +129,7 @@ class SmartContractController extends Controller
     public function validateStorageConsistency(Request $request): JsonResponse
     {
         $request->validate([
-            'procurement_id' => 'required|string'
+            'procurement_id' => 'required|string',
         ]);
 
         try {
@@ -138,19 +140,19 @@ class SmartContractController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Document storage consistency validation completed',
-                'data' => $result
+                'data' => $result,
             ]);
 
         } catch (Exception $e) {
             Log::error('Document storage consistency validation failed', [
                 'procurement_id' => $request->procurement_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Document storage consistency validation failed',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -169,20 +171,20 @@ class SmartContractController extends Controller
                 'data' => [
                     'procurement_id' => $auditTrailResult['procurement_id'],
                     'total_entries' => $auditTrailResult['total_entries'],
-                    'audit_trail' => $auditTrailResult['audit_trail']
-                ]
+                    'audit_trail' => $auditTrailResult['audit_trail'],
+                ],
             ]);
 
         } catch (Exception $e) {
             Log::error('Audit trail retrieval failed', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve audit trail',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -195,7 +197,7 @@ class SmartContractController extends Controller
         try {
             // Check if blockchain is accessible
             $blockchainStatus = $this->multichainService->getInfo();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Document management smart contract system is operational',
@@ -207,14 +209,14 @@ class SmartContractController extends Controller
                         'document_metadata_compliance_checking',
                         'document_storage_consistency_validation',
                         'document_audit_trail_generation',
-                        'document_validation_filters'
-                    ]
-                ]
+                        'document_validation_filters',
+                    ],
+                ],
             ]);
 
         } catch (Exception $e) {
             Log::error('Smart contract status check failed', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -222,8 +224,8 @@ class SmartContractController extends Controller
                 'message' => 'Smart contract system status check failed',
                 'error' => $e->getMessage(),
                 'data' => [
-                    'blockchain_status' => 'disconnected'
-                ]
+                    'blockchain_status' => 'disconnected',
+                ],
             ], 500);
         }
     }

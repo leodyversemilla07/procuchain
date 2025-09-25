@@ -17,7 +17,7 @@ use NotificationChannels\WebPush\HasPushSubscriptions;
 class User extends Authenticatable implements CanResetPasswordContract
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use CanResetPassword, HasFactory, Notifiable, HasPushSubscriptions;
+    use CanResetPassword, HasFactory, HasPushSubscriptions, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -201,24 +201,24 @@ class User extends Authenticatable implements CanResetPasswordContract
     public function getLockTimeRemaining(): ?string
     {
         $remainingMinutes = $this->getRemainingLockTimeAttribute();
-        
+
         if ($remainingMinutes === 0) {
             return null;
         }
 
         // Convert minutes to human-readable format
         if ($remainingMinutes < 60) {
-            return $remainingMinutes . ' minute' . ($remainingMinutes !== 1 ? 's' : '');
+            return $remainingMinutes.' minute'.($remainingMinutes !== 1 ? 's' : '');
         }
-        
+
         $hours = floor($remainingMinutes / 60);
         $minutes = $remainingMinutes % 60;
-        
-        $result = $hours . ' hour' . ($hours !== 1 ? 's' : '');
+
+        $result = $hours.' hour'.($hours !== 1 ? 's' : '');
         if ($minutes > 0) {
-            $result .= ' ' . $minutes . ' minute' . ($minutes !== 1 ? 's' : '');
+            $result .= ' '.$minutes.' minute'.($minutes !== 1 ? 's' : '');
         }
-        
+
         return $result;
     }
 
@@ -228,7 +228,7 @@ class User extends Authenticatable implements CanResetPasswordContract
     public function getRemainingLockTimeAttribute(): int
     {
         // Return 0 if account is not locked or no expiration time is set
-        if (!$this->account_locked || !$this->lock_expires_at) {
+        if (! $this->account_locked || ! $this->lock_expires_at) {
             return 0;
         }
 
@@ -246,7 +246,7 @@ class User extends Authenticatable implements CanResetPasswordContract
      */
     public function hasMfaEnabled(): bool
     {
-        return $this->mfa_enabled && !empty($this->google2fa_secret);
+        return $this->mfa_enabled && ! empty($this->google2fa_secret);
     }
 
     /**
@@ -258,12 +258,12 @@ class User extends Authenticatable implements CanResetPasswordContract
         for ($i = 0; $i < 8; $i++) {
             $codes[] = strtoupper(bin2hex(random_bytes(4)));
         }
-        
+
         $this->update([
             'backup_codes' => array_map('hash', array_fill(0, count($codes), 'sha256'), $codes),
             'backup_codes_generated_at' => now(),
         ]);
-        
+
         return $codes;
     }
 
@@ -272,22 +272,23 @@ class User extends Authenticatable implements CanResetPasswordContract
      */
     public function verifyBackupCode(string $code): bool
     {
-        if (!$this->backup_codes) {
+        if (! $this->backup_codes) {
             return false;
         }
 
         $hashedCode = hash('sha256', strtoupper($code));
-        
+
         $codes = $this->backup_codes;
         $key = array_search($hashedCode, $codes);
-        
+
         if ($key !== false) {
             // Remove the used backup code
             unset($codes[$key]);
             $this->update(['backup_codes' => array_values($codes)]);
+
             return true;
         }
-        
+
         return false;
     }
 

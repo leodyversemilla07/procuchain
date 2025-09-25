@@ -53,7 +53,7 @@ class AuthenticatedSessionController extends Controller
 
         // Mark MFA as verified for this session if user has MFA enabled
         if ($user->hasMfaEnabled()) {
-            session(['mfa_verified_' . $user->id => true]);
+            session(['mfa_verified_'.$user->id => true]);
         }
 
         switch ($user->role) {
@@ -81,7 +81,7 @@ class AuthenticatedSessionController extends Controller
         if ($user) {
             $this->loginLogger->logLogout($user);
             // Clear MFA verification for this session
-            session()->forget('mfa_verified_' . $user->id);
+            session()->forget('mfa_verified_'.$user->id);
         }
 
         // Clear any MFA session data

@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
-
 use App\Models\User;
 use App\Models\UserLoginLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class LoginLoggerService
 {
@@ -23,6 +22,7 @@ class LoginLoggerService
     public function getSuspiciousActivities(): \Illuminate\Support\Collection
     {
         $recentTime = now()->subHours(24);
+
         return \App\Models\UserLoginLog::where('login_at', '>=', $recentTime)
             ->where(function ($query) use ($recentTime) {
                 $query->where('successful', false)
@@ -54,16 +54,17 @@ class LoginLoggerService
                 'login_at' => now(),
             ]);
             $user->resetFailedLoginAttempts();
+
             return $loginLog;
         } catch (\Exception $e) {
             Log::error('Failed to log user login', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
-
 
     public function logFailedLogin(?string $email, Request $request): ?UserLoginLog
     {
@@ -84,16 +85,17 @@ class LoginLoggerService
             if ($user) {
                 $user->incrementFailedLoginAttempts();
             }
+
             return $loginLog;
         } catch (\Exception $e) {
             Log::error('Failed to log failed login attempt', [
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
-
 
     public function logLogout(User $user): void
     {

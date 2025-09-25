@@ -68,7 +68,7 @@ class LoginRequest extends FormRequest
             // Store user info for MFA verification and logout temporarily
             session(['mfa_user_id' => $user->id, 'remember_user' => $remember]);
             Auth::logout();
-            
+
             // Don't clear rate limiter yet - will be cleared after MFA verification
             return;
         }

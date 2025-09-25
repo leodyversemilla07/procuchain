@@ -9,12 +9,7 @@ class DocumentMetadataService
     /**
      * Prepare metadata for procurement documents.
      *
-     * @param UploadedFile[] $files
-     * @param array $metadata
-     * @param string $procurementId
-     * @param string $procurementTitle
-     * @param string $stageFolder
-     * @return array
+     * @param  UploadedFile[]  $files
      */
     public function prepareMetadata(array $files, array $metadata, string $procurementId, string $procurementTitle, string $stageFolder): array
     {
@@ -36,6 +31,7 @@ class DocumentMetadataService
                 $metadata[$index]
             );
         }
+
         return $metadataArray;
     }
 }

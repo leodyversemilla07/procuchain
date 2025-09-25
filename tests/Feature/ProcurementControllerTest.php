@@ -2,8 +2,8 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
     $this->user = User::factory()->create([
@@ -24,98 +24,98 @@ describe('ProcurementController Feature', function () {
     test('showProcurementInitiation returns ok', function () {
         $response = $this->get(route('bac-secretariat.procurement.procurement-initiation'));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/procurement-initiation'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/procurement-initiation'));
     });
 
     test('showPreProcurementConferenceUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.pre-procurement-conference-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/pre-procurement-conference-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/pre-procurement-conference-upload'));
     });
 
     test('showPreBidConferenceUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.pre-bid-conference-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/pre-bid-conference-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/pre-bid-conference-upload'));
     });
 
     test('showBiddingDocumentsUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.bidding-documents-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/bidding-documents-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/bidding-documents-upload'));
     });
 
     test('showSupplementalBidBulletinUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.supplemental-bid-bulletin-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/supplemental-bid-bulletin-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/supplemental-bid-bulletin-upload'));
     });
 
     test('showBidOpeningUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.bid-opening-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/bid-opening-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/bid-opening-upload'));
     });
 
     test('showBidEvaluationUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.bid-evaluation-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/bid-evaluation-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/bid-evaluation-upload'));
     });
 
     test('showPostQualificationUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.post-qualification-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/post-qualification-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/post-qualification-upload'));
     });
 
     test('showBacResolutionUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.bac-resolution-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/bac-resolution-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/bac-resolution-upload'));
     });
 
     test('showNoaUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.noa-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/noa-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/noa-upload'));
     });
 
     test('showPerformanceBondContactAndPoUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.performance-bond-contract-po-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/performance-bond-contract-po-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/performance-bond-contract-po-upload'));
     });
 
     test('showNTPUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.ntp-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/ntp-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/ntp-upload'));
     });
 
     test('showMonitoringUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.monitoring-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/monitoring-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/monitoring-upload'));
     });
 
     test('showCompletionUpload returns ok', function () {
         $id = 1;
         $response = $this->get(route('bac-secretariat.completion-upload', $id));
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('bac-secretariat/procurement-stage/completion-upload'));
+        $response->assertInertia(fn ($page) => $page->component('bac-secretariat/procurement-stage/completion-upload'));
     });
 
     // --- POST endpoint tests ---
@@ -124,7 +124,6 @@ describe('ProcurementController Feature', function () {
         $response = $this->post(route('publish-procurement-initiation'), []);
         $response->assertSessionHasErrors(['procurement_id', 'procurement_title']);
     });
-
 
     test('publishProcurementInitiation succeeds with valid data', function () {
         $file = \Illuminate\Http\UploadedFile::fake()->create('test.pdf', 100, 'application/pdf');
@@ -352,7 +351,7 @@ describe('ProcurementController Feature', function () {
             'procurement_title' => 'BAC Resolution Procurement',
             'bac_resolution_file' => $file,
             'issuance_date' => now()->toDateString(),
-            'signatory_details' => [['name' => 'John Doe', 'position' => 'Chair']]
+            'signatory_details' => [['name' => 'John Doe', 'position' => 'Chair']],
         ];
         $response = $this->post(route('bac-secretariat.upload-bac-resolution-document'), $payload);
         $this->assertTrue($response->isRedirect() || $response->status() === 500);
@@ -457,7 +456,6 @@ describe('ProcurementController Feature', function () {
         $response = $this->post(route('bac-secretariat.upload-pre-procurement-conference-documents'), []);
         $response->assertSessionHasErrors(['procurement_id', 'procurement_title', 'meeting_date']);
     });
-
 
     test('uploadPreProcurementConferenceDocuments succeeds with valid data', function () {
         $minutes = \Illuminate\Http\UploadedFile::fake()->create('minutes.pdf', 100, 'application/pdf');

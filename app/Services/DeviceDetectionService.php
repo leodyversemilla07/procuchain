@@ -22,6 +22,7 @@ class DeviceDetectionService
         } elseif ($this->agent->isDesktop()) {
             return 'Desktop';
         }
+
         return 'Unknown';
     }
 
@@ -29,6 +30,7 @@ class DeviceDetectionService
     {
         $browser = $this->agent->browser();
         $version = $this->agent->version($browser);
+
         return $browser.($version ? " {$version}" : '');
     }
 
@@ -36,6 +38,7 @@ class DeviceDetectionService
     {
         $platform = $this->agent->platform();
         $version = $this->agent->version($platform);
+
         return $platform.($version ? " {$version}" : '');
     }
 }

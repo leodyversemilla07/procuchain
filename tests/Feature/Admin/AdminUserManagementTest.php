@@ -19,8 +19,8 @@ test('admin can access user management page', function () {
 
     $response->assertStatus(200);
     $response->assertInertia(
-        fn($assert) => $assert
-            ->component('admin/users')
+        fn ($assert) => $assert
+            ->component('admin/user-management')
             ->has('users')
             ->has('roles')
     );

@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\StreamEnums;
 use App\Models\User;
 use App\Models\UserLoginLog;
-use App\Services\LoginLoggerService;
 use App\Services\AccountLockoutService;
-use App\Services\MultichainService;
 use App\Services\EventTypeLabelMapper;
+use App\Services\LoginLoggerService;
+use App\Services\MultichainService;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -18,16 +19,19 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Carbon\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AdminController extends BaseController
 {
     private LoginLoggerService $loginLogger;
+
     private AccountLockoutService $accountLockout;
+
     private MultichainService $multiChain;
+
     private EventTypeLabelMapper $eventTypeLabelMapper;
+
     private array $userNameCache = [];
 
     public function __construct(
@@ -104,11 +108,11 @@ class AdminController extends BaseController
             // Get user activity analytics for the dashboard
             $userActivityAnalytics = Cache::remember('admin_dashboard_user_activity', now()->addMinutes(10), function () {
                 try {
-                    $cacheKey = 'user_activity_analytics_' . md5(serialize([
+                    $cacheKey = 'user_activity_analytics_'.md5(serialize([
                         'time_range' => '30_days',
                         'role' => Auth::user()->role,
                     ]));
-                    
+
                     return Cache::remember($cacheKey, now()->addMinutes(10), function () {
                         try {
                             $timeRange = '30_days';
@@ -129,6 +133,7 @@ class AdminController extends BaseController
                                     'role' => Auth::user()->role,
                                 ],
                             ]);
+
                             return $this->getEmptyUserAnalytics();
                         }
                     });
@@ -136,6 +141,7 @@ class AdminController extends BaseController
                     Log::error('Failed to get user activity analytics for dashboard', [
                         'error' => $e->getMessage(),
                     ]);
+
                     return null;
                 }
             });
@@ -295,6 +301,7 @@ class AdminController extends BaseController
 
             if (! $allEvents) {
                 Log::warning('No events found in stream for Admin dashboard');
+
                 return [];
             }
 
@@ -331,6 +338,7 @@ class AdminController extends BaseController
                 'error' => $e->getMessage(),
                 'stack_trace' => $e->getTraceAsString(),
             ]);
+
             return [];
         }
     }
@@ -348,19 +356,20 @@ class AdminController extends BaseController
 
             if ($documentItems === null) {
                 Log::warning('Failed to retrieve document stream items for Admin dashboard stats.');
+
                 return 0;
             }
 
             $documentCountMap = collect($documentItems)
-                ->filter(fn($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-                ->groupBy(fn($item) => $item['data']['json']['procurement_id'])
+                ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
+                ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
                 ->map(function ($items) {
-                    return collect($items)->map(fn($item) => $item['data']['json']['hash'])->unique()->count();
+                    return collect($items)->map(fn ($item) => $item['data']['json']['hash'])->unique()->count();
                 });
 
             $dashboardProcurementIds = $procurementsByKey->keys();
             $totalDocuments = $documentCountMap
-                ->filter(fn($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
                 ->sum();
 
             Log::info('Admin dashboard document count calculated', ['total_documents' => $totalDocuments]);
@@ -371,6 +380,7 @@ class AdminController extends BaseController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return 0;
         }
     }
@@ -1047,7 +1057,7 @@ class AdminController extends BaseController
             }
         }
 
-        $averageSessionDuration = !empty($sessionDurations) ? array_sum($sessionDurations) / count($sessionDurations) : 0;
+        $averageSessionDuration = ! empty($sessionDurations) ? array_sum($sessionDurations) / count($sessionDurations) : 0;
 
         // Session frequency analysis
         $dailySessions = $query->selectRaw('DATE(login_at) as date, COUNT(DISTINCT user_id) as unique_users, COUNT(*) as total_sessions')
@@ -1073,6 +1083,7 @@ class AdminController extends BaseController
                     $item->session_count >= 1 => 'Low',
                     default => 'Inactive',
                 };
+
                 return [
                     'user_id' => $item->user_id,
                     'session_count' => $item->session_count,
