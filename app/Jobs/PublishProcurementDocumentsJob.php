@@ -3,11 +3,11 @@
 namespace App\Jobs;
 
 use App\Enums\StreamEnums;
+use App\Services\BlockchainEventLoggerService;
 use App\Services\BlockchainOrchestratorService;
 use App\Services\MultichainService;
-use App\Services\StreamKeyService;
 use App\Services\StatusUpdaterService;
-use App\Services\BlockchainEventLoggerService;
+use App\Services\StreamKeyService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -20,21 +20,19 @@ class PublishProcurementDocumentsJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $procurementId;
+
     protected $procurementTitle;
+
     protected $state;
+
     protected $status;
+
     protected $metadataArray;
+
     protected $userAddress;
 
     /**
      * Create a new job instance.
-     *
-     * @param string $procurementId
-     * @param string $procurementTitle
-     * @param string $state
-     * @param string $status
-     * @param array $metadataArray
-     * @param string $userAddress
      */
     public function __construct(
         string $procurementId,
@@ -55,7 +53,7 @@ class PublishProcurementDocumentsJob implements ShouldQueue
     /**
      * Execute the job.
      *
-     * @param BlockchainOrchestratorService $blockchainOrchestrator
+     * @param  BlockchainOrchestratorService  $blockchainOrchestrator
      * @return void
      */
     public function handle(

@@ -2,11 +2,9 @@
 
 namespace App\Services;
 
-use App\Services\MultichainService;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
-use Carbon\Carbon;
 
 class SmartContractService
 {
@@ -26,7 +24,7 @@ class SmartContractService
                 'filters_created' => false,
                 'configuration_set' => false,
                 'php_validation_ready' => false,
-                'errors' => []
+                'errors' => [],
             ];
 
             // Set up document validation configuration
@@ -40,12 +38,12 @@ class SmartContractService
                 $results['php_validation_ready'] = $validationResults['php_validation_ready'] ?? false;
                 $results['validation_setup'] = $validationResults;
             } catch (Exception $e) {
-                $results['errors'][] = 'PHP validation setup failed: ' . $e->getMessage();
+                $results['errors'][] = 'PHP validation setup failed: '.$e->getMessage();
                 Log::warning('PHP validation setup failed, but system can still function', ['error' => $e->getMessage()]);
             }
 
             Log::info('Document management system initialized successfully with pure PHP validation');
-            
+
             return $results;
 
         } catch (Exception $e) {
@@ -60,6 +58,7 @@ class SmartContractService
     public function createDocumentManagementLibrary(): string
     {
         $results = $this->initializeDocumentManagementSystem();
+
         return $results['configuration_set'] ? 'system_initialized' : 'initialization_failed';
     }
 
@@ -80,69 +79,70 @@ class SmartContractService
         $requiredFields = $this->getRequiredDocumentFields();
         $missing = [];
         $invalid = [];
-        
+
         // Check for required basic fields
         foreach ($requiredFields as $field => $rules) {
-            if (!isset($metadata[$field]) || $metadata[$field] === null || $metadata[$field] === '') {
+            if (! isset($metadata[$field]) || $metadata[$field] === null || $metadata[$field] === '') {
                 $missing[] = $field;
+
                 continue;
             }
-            
+
             $value = $metadata[$field];
-            
+
             // Validate field based on rules
             if (isset($rules['type'])) {
-                if ($rules['type'] === 'string' && !is_string($value)) {
+                if ($rules['type'] === 'string' && ! is_string($value)) {
                     $invalid[] = "{$field} must be a string";
-                } elseif ($rules['type'] === 'numeric' && !is_numeric($value)) {
+                } elseif ($rules['type'] === 'numeric' && ! is_numeric($value)) {
                     $invalid[] = "{$field} must be numeric";
-                } elseif ($rules['type'] === 'array' && !is_array($value)) {
+                } elseif ($rules['type'] === 'array' && ! is_array($value)) {
                     $invalid[] = "{$field} must be an array";
                 }
             }
-            
+
             // Validate string length
             if (isset($rules['max_length']) && is_string($value) && strlen($value) > $rules['max_length']) {
                 $invalid[] = "{$field} exceeds maximum length of {$rules['max_length']}";
             }
-            
+
             // Validate numeric values
             if (isset($rules['min_value']) && is_numeric($value) && $value < $rules['min_value']) {
                 $invalid[] = "{$field} is below minimum value of {$rules['min_value']}";
             }
-            
+
             if (isset($rules['max_value']) && is_numeric($value) && $value > $rules['max_value']) {
                 $invalid[] = "{$field} exceeds maximum value of {$rules['max_value']}";
             }
-            
+
             // Validate specific formats
-            if ($field === 'hash' && !$this->validateDocumentHash($value)) {
-                $invalid[] = "Hash must be a valid 64-character hexadecimal string (SHA-256)";
+            if ($field === 'hash' && ! $this->validateDocumentHash($value)) {
+                $invalid[] = 'Hash must be a valid 64-character hexadecimal string (SHA-256)';
             }
-            
-            if ($field === 'timestamp' && !$this->validateTimestampFormat($value)) {
-                $invalid[] = "Timestamp must be in valid ISO 8601 format";
+
+            if ($field === 'timestamp' && ! $this->validateTimestampFormat($value)) {
+                $invalid[] = 'Timestamp must be in valid ISO 8601 format';
             }
-            
-            if ($field === 'document_type' && !$this->validateDocumentType($value)) {
+
+            if ($field === 'document_type' && ! $this->validateDocumentType($value)) {
                 $invalid[] = "Document type '{$value}' is not in the allowed list";
             }
         }
-        
+
         // Check for duplicate hash within procurement (if both hash and procurement_id are provided)
         if (isset($metadata['hash']) && isset($metadata['procurement_id'])) {
             $duplicateCheck = $this->checkForDuplicateHash($metadata['procurement_id'], $metadata['hash']);
-            if (!$duplicateCheck['unique']) {
-                $invalid[] = "Document with this hash already exists in procurement";
+            if (! $duplicateCheck['unique']) {
+                $invalid[] = 'Document with this hash already exists in procurement';
             }
         }
-        
+
         return [
             'compliant' => empty($missing) && empty($invalid),
             'missing_fields' => $missing,
             'invalid_fields' => $invalid,
             'stage' => $stage,
-            'validation_timestamp' => now()->toISOString()
+            'validation_timestamp' => now()->toISOString(),
         ];
     }
 
@@ -160,17 +160,17 @@ class SmartContractService
                 0, // Start from beginning
                 false // Don't fetch local order
             );
-            
+
             if ($streamItems) {
                 foreach ($streamItems as $item) {
                     $data = $item['data']['json'] ?? [];
-                    
+
                     // Check if this document matches our search criteria
-                    if (isset($data['procurement_id']) && 
-                        isset($data['hash']) && 
-                        $data['procurement_id'] === $procurementId && 
+                    if (isset($data['procurement_id']) &&
+                        isset($data['hash']) &&
+                        $data['procurement_id'] === $procurementId &&
                         $data['hash'] === $documentHash) {
-                        
+
                         // Document found in stream - verify integrity
                         return [
                             'valid' => true,
@@ -185,18 +185,18 @@ class SmartContractService
                             'blockchain_timestamp' => $data['timestamp'] ?? null,
                             'validation_timestamp' => now()->toISOString(),
                             'source' => 'blockchain_stream',
-                            'stream_name' => 'procurement.documents'
+                            'stream_name' => 'procurement.documents',
                         ];
                     }
                 }
             }
-            
+
             // Fallback: Search for document in blockchain variables (legacy method)
-            $variablePrefix = 'pr2025_' . substr($documentHash, 0, 8);
+            $variablePrefix = 'pr2025_'.substr($documentHash, 0, 8);
             try {
                 $variableValue = $this->multichainService->getVariableValue($variablePrefix);
                 $data = json_decode($variableValue, true);
-                
+
                 if ($data && isset($data['document_hash']) && $data['document_hash'] === $documentHash) {
                     // Document found in variables - verify integrity
                     return [
@@ -210,31 +210,31 @@ class SmartContractService
                         'blockchain_timestamp' => $data['timestamp'] ?? null,
                         'validation_timestamp' => now()->toISOString(),
                         'source' => 'blockchain_variable',
-                        'variable_name' => $variablePrefix
+                        'variable_name' => $variablePrefix,
                     ];
                 }
             } catch (Exception $e) {
                 // Variable not found, continue to return not found
             }
-            
+
             return [
                 'valid' => false,
                 'error' => 'Document hash not found on blockchain',
                 'searched_procurement' => $procurementId,
                 'searched_hash' => $documentHash,
-                'validation_timestamp' => now()->toISOString()
+                'validation_timestamp' => now()->toISOString(),
             ];
-            
+
         } catch (Exception $e) {
             Log::error('Document integrity validation failed', [
                 'procurement_id' => $procurementId,
                 'hash' => $documentHash,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return [
                 'valid' => false,
-                'error' => 'Validation error: ' . $e->getMessage()
+                'error' => 'Validation error: '.$e->getMessage(),
             ];
         }
     }
@@ -246,28 +246,28 @@ class SmartContractService
     {
         try {
             $auditTrail = [];
-            
+
             // Get all document-related transactions
             $documentKey = "procurement.documents.{$procurementId}";
             $documentItems = $this->multichainService->listStreamKeyItems('procurement.documents', $documentKey);
-            
+
             // Get status updates for context
             $statusKey = "procurement.status.{$procurementId}";
             $statusItems = $this->multichainService->listStreamKeyItems('procurement.status', $statusKey);
-            
+
             // Get events for additional context
             $eventKey = "procurement.events.{$procurementId}";
             $eventItems = $this->multichainService->listStreamKeyItems('procurement.events', $eventKey);
-            
+
             // Combine and sort by block time
             $allItems = array_merge($documentItems, $statusItems, $eventItems);
-            usort($allItems, function($a, $b) {
+            usort($allItems, function ($a, $b) {
                 return ($a['blocktime'] ?? 0) <=> ($b['blocktime'] ?? 0);
             });
-            
+
             foreach ($allItems as $item) {
                 $data = json_decode($item['data'], true);
-                
+
                 $auditEntry = [
                     'txid' => $item['txid'] ?? 'unknown',
                     'block_time' => $item['blocktime'] ?? null,
@@ -276,36 +276,36 @@ class SmartContractService
                     'user_address' => $data['user_address'] ?? 'unknown',
                     'timestamp' => $data['timestamp'] ?? null,
                     'action' => $this->determineActionType($data),
-                    'data' => $data
+                    'data' => $data,
                 ];
-                
+
                 // Add specific fields based on stream type
                 if (isset($data['hash'])) {
                     $auditEntry['document_hash'] = $data['hash'];
                     $auditEntry['document_type'] = $data['document_type'] ?? 'unknown';
                     $auditEntry['file_size'] = $data['file_size'] ?? null;
                 }
-                
+
                 if (isset($data['stage'])) {
                     $auditEntry['stage'] = $data['stage'];
                 }
-                
+
                 $auditTrail[] = $auditEntry;
             }
-            
+
             return [
                 'procurement_id' => $procurementId,
                 'total_entries' => count($auditTrail),
                 'audit_trail' => $auditTrail,
-                'generated_at' => now()->toISOString()
+                'generated_at' => now()->toISOString(),
             ];
-            
+
         } catch (Exception $e) {
             Log::error('Failed to get audit trail', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             throw $e;
         }
     }
@@ -321,21 +321,21 @@ class SmartContractService
                 'inconsistencies' => [],
                 'total_documents' => 0,
                 'validated_documents' => 0,
-                'validation_details' => []
+                'validation_details' => [],
             ];
-            
+
             // Get all documents for this procurement from blockchain
             $key = "procurement.documents.{$procurementId}";
             $documentItems = $this->multichainService->listStreamKeyItems('procurement.documents', $key);
-            
+
             $results['total_documents'] = count($documentItems);
-            
+
             foreach ($documentItems as $item) {
                 $blockchainData = json_decode($item['data'], true);
                 $documentHash = $blockchainData['hash'] ?? 'unknown';
-                
+
                 $validation = $this->validateSingleDocumentConsistency($blockchainData, $item);
-                
+
                 if ($validation['valid']) {
                     $results['validated_documents']++;
                 } else {
@@ -344,32 +344,32 @@ class SmartContractService
                         'txid' => $item['txid'],
                         'document_hash' => $documentHash,
                         'errors' => $validation['errors'],
-                        'blockchain_data' => $blockchainData
+                        'blockchain_data' => $blockchainData,
                     ];
                 }
-                
+
                 $results['validation_details'][] = [
                     'hash' => $documentHash,
                     'valid' => $validation['valid'],
-                    'checks_performed' => $validation['checks']
+                    'checks_performed' => $validation['checks'],
                 ];
             }
-            
-            $results['consistency_percentage'] = $results['total_documents'] > 0 
-                ? ($results['validated_documents'] / $results['total_documents']) * 100 
+
+            $results['consistency_percentage'] = $results['total_documents'] > 0
+                ? ($results['validated_documents'] / $results['total_documents']) * 100
                 : 100;
-            
+
             return $results;
-            
+
         } catch (Exception $e) {
             Log::error('Document storage consistency validation failed', [
                 'procurement_id' => $procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return [
                 'consistent' => false,
-                'error' => 'Validation error: ' . $e->getMessage()
+                'error' => 'Validation error: '.$e->getMessage(),
             ];
         }
     }
@@ -394,7 +394,7 @@ class SmartContractService
                 'Contract',
                 'Purchase Order',
                 'Notice to Proceed',
-                'Certificate of Completion'
+                'Certificate of Completion',
             ],
             'hash_algorithm' => 'sha256',
             'timestamp_format' => 'iso8601',
@@ -402,7 +402,7 @@ class SmartContractService
             'duplicate_prevention_enabled' => true,
             'audit_trail_enabled' => true,
             'created_at' => now()->toISOString(),
-            'version' => '1.0.0'
+            'version' => '1.0.0',
         ];
 
         try {
@@ -420,7 +420,7 @@ class SmartContractService
     private function createBasicValidationFilters(): array
     {
         $results = [];
-        
+
         // Instead of JavaScript filters, we rely on PHP validation methods
         // Test that our PHP validation methods are working
         try {
@@ -428,11 +428,11 @@ class SmartContractService
             $testMetadata = [
                 'hash' => 'test',
                 'file_size' => 1000,
-                'document_type' => 'Purchase Request'
+                'document_type' => 'Purchase Request',
             ];
-            
+
             $validationTest = $this->checkDocumentMetadataCompliance($testMetadata, 'test');
-            
+
             if (isset($validationTest['compliant'])) {
                 $results['php_validation_ready'] = true;
                 Log::info('PHP validation system is ready and functional');
@@ -440,7 +440,7 @@ class SmartContractService
                 $results['php_validation_ready'] = false;
                 Log::warning('PHP validation system test failed');
             }
-            
+
             // Set up validation flags in blockchain (optional)
             try {
                 $this->multichainService->setVariableValue('validation_mode', 'php_only');
@@ -450,13 +450,14 @@ class SmartContractService
                 Log::warning('Could not update blockchain validation config', ['error' => $e->getMessage()]);
                 $results['blockchain_config_updated'] = false;
             }
-            
+
         } catch (Exception $e) {
             Log::warning('PHP validation system test failed', ['error' => $e->getMessage()]);
             $results['php_validation_ready'] = false;
         }
 
         $results['message'] = 'Using pure PHP validation - no JavaScript filters needed';
+
         return $results;
     }
 
@@ -469,33 +470,33 @@ class SmartContractService
             'hash' => [
                 'type' => 'string',
                 'max_length' => 64,
-                'description' => 'SHA-256 hash of document content'
+                'description' => 'SHA-256 hash of document content',
             ],
             'file_key' => [
                 'type' => 'string',
                 'max_length' => 500,
-                'description' => 'Storage file key/path'
+                'description' => 'Storage file key/path',
             ],
             'file_size' => [
                 'type' => 'numeric',
                 'min_value' => 1,
                 'max_value' => 10485760, // 10MB
-                'description' => 'File size in bytes'
+                'description' => 'File size in bytes',
             ],
             'document_type' => [
                 'type' => 'string',
                 'max_length' => 100,
-                'description' => 'Type/category of document'
+                'description' => 'Type/category of document',
             ],
             'user_address' => [
                 'type' => 'string',
                 'max_length' => 100,
-                'description' => 'Blockchain address of uploader'
+                'description' => 'Blockchain address of uploader',
             ],
             'timestamp' => [
                 'type' => 'string',
-                'description' => 'ISO 8601 timestamp'
-            ]
+                'description' => 'ISO 8601 timestamp',
+            ],
         ];
     }
 
@@ -514,6 +515,7 @@ class SmartContractService
     {
         try {
             $carbon = Carbon::parse($timestamp);
+
             return $carbon instanceof Carbon && str_contains($timestamp, 'T');
         } catch (Exception $e) {
             return false;
@@ -537,7 +539,7 @@ class SmartContractService
             'Contract',
             'Purchase Order',
             'Notice to Proceed',
-            'Certificate of Completion'
+            'Certificate of Completion',
         ];
 
         return in_array($documentType, $allowedTypes);
@@ -551,21 +553,22 @@ class SmartContractService
         try {
             $key = "procurement.documents.{$procurementId}";
             $items = $this->multichainService->listStreamKeyItems('procurement.documents', $key);
-            
+
             foreach ($items as $item) {
                 $data = json_decode($item['data'], true);
                 if (isset($data['hash']) && $data['hash'] === $hash) {
                     return [
                         'unique' => false,
-                        'existing_txid' => $item['txid']
+                        'existing_txid' => $item['txid'],
                     ];
                 }
             }
-            
+
             return ['unique' => true];
-            
+
         } catch (Exception $e) {
             Log::warning('Could not check for duplicate hash', ['error' => $e->getMessage()]);
+
             return ['unique' => true]; // Assume unique if check fails
         }
     }
@@ -579,7 +582,7 @@ class SmartContractService
         $valid = true;
 
         // Check hash format
-        if (!$this->validateDocumentHash($data['hash'] ?? '')) {
+        if (! $this->validateDocumentHash($data['hash'] ?? '')) {
             $checks[] = 'Invalid hash format';
             $valid = false;
         } else {
@@ -587,7 +590,7 @@ class SmartContractService
         }
 
         // Check file size
-        if (!isset($data['file_size']) || $data['file_size'] <= 0 || $data['file_size'] > 10485760) {
+        if (! isset($data['file_size']) || $data['file_size'] <= 0 || $data['file_size'] > 10485760) {
             $checks[] = 'Invalid file size';
             $valid = false;
         } else {
@@ -595,7 +598,7 @@ class SmartContractService
         }
 
         // Check timestamp
-        if (!$this->validateTimestampFormat($data['timestamp'] ?? '')) {
+        if (! $this->validateTimestampFormat($data['timestamp'] ?? '')) {
             $checks[] = 'Invalid timestamp format';
             $valid = false;
         } else {
@@ -608,8 +611,8 @@ class SmartContractService
             'details' => [
                 'hash_length' => strlen($data['hash'] ?? ''),
                 'file_size' => $data['file_size'] ?? null,
-                'timestamp' => $data['timestamp'] ?? null
-            ]
+                'timestamp' => $data['timestamp'] ?? null,
+            ],
         ];
     }
 
@@ -624,7 +627,7 @@ class SmartContractService
         // Check required fields
         $requiredFields = ['hash', 'file_key', 'file_size', 'document_type', 'user_address', 'timestamp'];
         foreach ($requiredFields as $field) {
-            if (!isset($blockchainData[$field]) || $blockchainData[$field] === null || $blockchainData[$field] === '') {
+            if (! isset($blockchainData[$field]) || $blockchainData[$field] === null || $blockchainData[$field] === '') {
                 $errors[] = "Missing field: {$field}";
             } else {
                 $checks[] = "Field present: {$field}";
@@ -633,7 +636,7 @@ class SmartContractService
 
         // Validate data integrity
         $integrityCheck = $this->performIntegrityChecks($blockchainData);
-        if (!$integrityCheck['valid']) {
+        if (! $integrityCheck['valid']) {
             $errors = array_merge($errors, $integrityCheck['checks']);
         } else {
             $checks = array_merge($checks, $integrityCheck['checks']);
@@ -642,7 +645,7 @@ class SmartContractService
         return [
             'valid' => empty($errors),
             'errors' => $errors,
-            'checks' => $checks
+            'checks' => $checks,
         ];
     }
 
@@ -658,7 +661,7 @@ class SmartContractService
         } elseif (str_contains($key, 'procurement.events')) {
             return 'events';
         }
-        
+
         return 'unknown';
     }
 
@@ -674,7 +677,7 @@ class SmartContractService
         } elseif (isset($data['event_type'])) {
             return 'event_log';
         }
-        
+
         return 'unknown';
     }
 }

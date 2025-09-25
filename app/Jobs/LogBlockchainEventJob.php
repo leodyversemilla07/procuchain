@@ -17,14 +17,23 @@ class LogBlockchainEventJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $procurementId;
+
     protected $procurementTitle;
+
     protected $stage;
+
     protected $details;
+
     protected $documentCount;
+
     protected $userAddress;
+
     protected $eventType;
+
     protected $category;
+
     protected $severity;
+
     protected $timestamp;
 
     public function __construct(

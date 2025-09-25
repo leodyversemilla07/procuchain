@@ -17,10 +17,15 @@ class UpdateProcurementStatusJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $procurementId;
+
     protected $procurementTitle;
+
     protected $status;
+
     protected $stage;
+
     protected $userAddress;
+
     protected $timestamp;
 
     public function __construct(

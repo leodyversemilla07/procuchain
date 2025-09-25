@@ -3,14 +3,13 @@
 namespace App\Jobs;
 
 use App\Services\SmartContractService;
-use App\Services\MultichainService;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class DocumentValidationJob implements ShouldQueue
 {
@@ -32,29 +31,29 @@ class DocumentValidationJob implements ShouldQueue
             Log::info('Processing document validation job', [
                 'operation' => $this->operation,
                 'procurement_id' => $this->procurementId,
-                'user_address' => $this->userAddress
+                'user_address' => $this->userAddress,
             ]);
 
             switch ($this->operation) {
                 case 'document_integrity':
                     $this->processDocumentIntegrity($smartContractService);
                     break;
-                    
+
                 case 'metadata_compliance':
                     $this->processMetadataCompliance($smartContractService);
                     break;
-                    
+
                 case 'storage_consistency':
                     $this->processStorageConsistency($smartContractService);
                     break;
-                    
+
                 case 'audit_trail_generation':
                     $this->processAuditTrailGeneration($smartContractService);
                     break;
-                    
+
                 default:
                     Log::warning('Unknown document validation operation', [
-                        'operation' => $this->operation
+                        'operation' => $this->operation,
                     ]);
             }
 
@@ -62,9 +61,9 @@ class DocumentValidationJob implements ShouldQueue
             Log::error('Document validation job failed', [
                 'operation' => $this->operation,
                 'procurement_id' => $this->procurementId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             throw $e;
         }
     }
@@ -74,7 +73,7 @@ class DocumentValidationJob implements ShouldQueue
      */
     private function processDocumentIntegrity(SmartContractService $smartContractService): void
     {
-        if (!isset($this->data['document_hash'])) {
+        if (! isset($this->data['document_hash'])) {
             throw new Exception('Document hash is required for integrity validation');
         }
 
@@ -86,7 +85,7 @@ class DocumentValidationJob implements ShouldQueue
         Log::info('Document integrity validation completed', [
             'procurement_id' => $this->procurementId,
             'document_hash' => $this->data['document_hash'],
-            'valid' => $result['valid']
+            'valid' => $result['valid'],
         ]);
     }
 
@@ -95,7 +94,7 @@ class DocumentValidationJob implements ShouldQueue
      */
     private function processMetadataCompliance(SmartContractService $smartContractService): void
     {
-        if (!isset($this->data['metadata']) || !isset($this->data['stage'])) {
+        if (! isset($this->data['metadata']) || ! isset($this->data['stage'])) {
             throw new Exception('Metadata and stage are required for compliance checking');
         }
 
@@ -107,7 +106,7 @@ class DocumentValidationJob implements ShouldQueue
         Log::info('Metadata compliance check completed', [
             'procurement_id' => $this->procurementId,
             'stage' => $this->data['stage'],
-            'compliant' => $result['compliant']
+            'compliant' => $result['compliant'],
         ]);
     }
 
@@ -124,7 +123,7 @@ class DocumentValidationJob implements ShouldQueue
             'procurement_id' => $this->procurementId,
             'consistent' => $result['consistent'],
             'total_documents' => $result['total_documents'],
-            'validated_documents' => $result['validated_documents']
+            'validated_documents' => $result['validated_documents'],
         ]);
     }
 
@@ -137,7 +136,7 @@ class DocumentValidationJob implements ShouldQueue
 
         Log::info('Audit trail generation completed', [
             'procurement_id' => $result['procurement_id'],
-            'total_entries' => $result['total_entries']
+            'total_entries' => $result['total_entries'],
         ]);
     }
 
@@ -150,7 +149,7 @@ class DocumentValidationJob implements ShouldQueue
             'operation' => $this->operation,
             'procurement_id' => $this->procurementId,
             'user_address' => $this->userAddress,
-            'error' => $exception->getMessage()
+            'error' => $exception->getMessage(),
         ]);
     }
 }

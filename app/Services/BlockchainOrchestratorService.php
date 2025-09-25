@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Jobs\PublishProcurementDocumentsJob;
 use App\Jobs\HandleStageTransitionJob;
+use App\Jobs\PublishProcurementDocumentsJob;
 
 class BlockchainOrchestratorService
 {

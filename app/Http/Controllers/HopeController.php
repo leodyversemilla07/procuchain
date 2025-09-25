@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
 use App\Models\User;
-use App\Services\MultichainService;
 use App\Services\EventTypeLabelMapper;
+use App\Services\MultichainService;
 use Exception;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Cache;
@@ -15,7 +15,9 @@ use Inertia\Inertia;
 class HopeController extends BaseController
 {
     private MultichainService $multichainService;
+
     private EventTypeLabelMapper $eventTypeLabelMapper;
+
     private array $userNameCache = [];
 
     public function __construct(MultichainService $multichainService, EventTypeLabelMapper $eventTypeLabelMapper)

@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\DatabaseMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -37,7 +36,6 @@ class ProcurementStageNotification extends Notification
     /**
      * Get the notification's delivery channels
      *
-     * @param  object  $notifiable
      * @return array<int, string>
      */
     public function via(object $notifiable): array
@@ -47,9 +45,6 @@ class ProcurementStageNotification extends Notification
 
     /**
      * Generate role-specific URL for procurement details
-     *
-     * @param  object  $notifiable
-     * @return string
      */
     protected function getRoleSpecificUrl(object $notifiable): string
     {
@@ -72,9 +67,6 @@ class ProcurementStageNotification extends Notification
 
     /**
      * Format action type into human-readable message
-     *
-     * @param  string  $actionType
-     * @return string
      */
     protected function formatActionType(string $actionType): string
     {
@@ -112,9 +104,6 @@ class ProcurementStageNotification extends Notification
 
     /**
      * Generate email notification
-     *
-     * @param  object  $notifiable
-     * @return MailMessage
      */
     public function toMail(object $notifiable): MailMessage
     {
@@ -145,7 +134,6 @@ class ProcurementStageNotification extends Notification
     /**
      * Get array representation of notification
      *
-     * @param  object  $notifiable
      * @return array<string, mixed>
      */
     public function toArray(object $notifiable): array
@@ -171,9 +159,6 @@ class ProcurementStageNotification extends Notification
 
     /**
      * Get database representation of notification
-     *
-     * @param  object  $notifiable
-     * @return DatabaseMessage
      */
     public function toDatabase(object $notifiable): DatabaseMessage
     {
@@ -182,7 +167,7 @@ class ProcurementStageNotification extends Notification
 
         $actionText = $this->formatActionType($this->data['action_type'] ?? 'updated');
 
-        $title = $this->data['stage_identifier'] . ' Update';
+        $title = $this->data['stage_identifier'].' Update';
         $message = "The {$this->data['stage_identifier']} stage {$actionText} for \"{$this->data['procurement_title']}\". Current status: {$this->data['current_status']}";
 
         // Add stage transition info to the message if applicable
@@ -215,24 +200,21 @@ class ProcurementStageNotification extends Notification
 
     /**
      * Get the WebPush representation of the notification
-     *
-     * @param  object  $notifiable
-     * @return WebPushMessage
      */
     public function toWebPush(object $notifiable): WebPushMessage
     {
         $url = $this->getRoleSpecificUrl($notifiable);
         $actionText = $this->formatActionType($this->data['action_type'] ?? 'updated');
-        
+
         $title = "ProcuChain: {$this->data['stage_identifier']} Update";
         $body = "The {$this->data['stage_identifier']} stage {$actionText} for \"{$this->data['procurement_title']}\".";
-        
+
         // Add stage transition info if applicable
-        if (!empty($this->data['next_stage'])) {
+        if (! empty($this->data['next_stage'])) {
             $body .= " Moving to {$this->data['next_stage']} stage.";
         }
 
-        return (new WebPushMessage())
+        return (new WebPushMessage)
             ->title($title)
             ->body($body)
             ->icon('/favicon.ico') // You can customize this icon

@@ -2,14 +2,15 @@
 
 namespace App\Console\Commands;
 
-use App\Services\SmartContractService;
 use App\Services\MultichainService;
-use Illuminate\Console\Command;
+use App\Services\SmartContractService;
 use Exception;
+use Illuminate\Console\Command;
 
 class SmartContractSetup extends Command
 {
     protected $signature = 'smart-contracts:setup {--test : Run in test mode}';
+
     protected $description = 'Set up document management smart contract system for ProcuChain';
 
     public function __construct(
@@ -68,7 +69,8 @@ class SmartContractSetup extends Command
             return Command::SUCCESS;
 
         } catch (Exception $e) {
-            $this->error('❌ Document management smart contract setup failed: ' . $e->getMessage());
+            $this->error('❌ Document management smart contract setup failed: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }
@@ -94,12 +96,13 @@ class SmartContractSetup extends Command
     {
         try {
             $this->line('  └─ Creating document validation library...');
-            
+
             // Check if library already exists
             try {
                 $existingLibrary = $this->multichainService->getLibraryCode('document_management_validation');
-                if (!empty($existingLibrary)) {
+                if (! empty($existingLibrary)) {
                     $this->warn('  └─ ⚠️  Library already exists, skipping creation');
+
                     return 'existing';
                 }
             } catch (Exception $e) {
@@ -107,10 +110,10 @@ class SmartContractSetup extends Command
             }
 
             $txid = $this->smartContractService->createDocumentManagementLibrary();
-            
+
             // Wait for library to be created
             sleep(3);
-            
+
             return $txid;
 
         } catch (Exception $e) {
@@ -123,12 +126,12 @@ class SmartContractSetup extends Command
         try {
             $this->line('  └─ Creating document upload validation filter...');
             $this->line('  └─ Creating metadata integrity filter...');
-            
+
             $results = $this->smartContractService->createDocumentValidationFilters();
-            
+
             // Wait for filters to be created
             sleep(3);
-            
+
             return $results;
 
         } catch (Exception $e) {
@@ -155,14 +158,14 @@ class SmartContractSetup extends Command
                     'Contract',
                     'Purchase Order',
                     'Notice to Proceed',
-                    'Certificate of Completion'
+                    'Certificate of Completion',
                 ],
                 'hash_algorithm' => 'sha256',
                 'metadata_compliance_enabled' => true,
                 'audit_trail_enabled' => true,
                 'storage_consistency_checks' => true,
                 'created_at' => time(),
-                'version' => '1.0.0'
+                'version' => '1.0.0',
             ];
 
             $this->line('  └─ Creating document validation configuration...');
@@ -171,7 +174,7 @@ class SmartContractSetup extends Command
                 $this->multichainService->getVariableValue('document_validation_config');
                 $this->warn('  └─ ⚠️  Configuration already exists, updating...');
                 $this->multichainService->setVariableValue(
-                    'document_validation_config', 
+                    'document_validation_config',
                     json_encode($documentConfig)
                 );
             } catch (Exception $e) {
@@ -190,7 +193,7 @@ class SmartContractSetup extends Command
                 'timestamp_format' => 'iso8601',
                 'user_address_min_length' => 25,
                 'duplicate_hash_prevention' => true,
-                'chronological_order_validation' => true
+                'chronological_order_validation' => true,
             ];
 
             $this->line('  └─ Creating validation rules...');
@@ -222,24 +225,24 @@ class SmartContractSetup extends Command
     {
         try {
             $this->line('  └─ Testing document integrity validation...');
-            
+
             // Test document integrity validation
             $testProcurementId = 'TEST-DOC-001';
             $testDocumentHash = 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234567a'; // Exactly 64 chars
-            
+
             $integrityResult = $this->smartContractService->validateDocumentIntegrity(
                 $testProcurementId,
                 $testDocumentHash
             );
 
-            if (!$integrityResult['valid'] && $integrityResult['error'] === 'Document hash not found on blockchain') {
+            if (! $integrityResult['valid'] && $integrityResult['error'] === 'Document hash not found on blockchain') {
                 $this->line('    ✅ Document integrity validation test passed (expected: not found)');
             } else {
                 $this->warn('    ⚠️  Document integrity validation test unexpected result');
             }
 
             $this->line('  └─ Testing metadata compliance...');
-            
+
             // Test metadata compliance
             $testMetadata = [
                 'hash' => $testDocumentHash,
@@ -250,8 +253,8 @@ class SmartContractSetup extends Command
                 'timestamp' => '2024-01-15T10:30:00Z',
                 'stage_metadata' => [
                     'stage' => 'Procurement Initiation',
-                    'submission_date' => '2024-01-15'
-                ]
+                    'submission_date' => '2024-01-15',
+                ],
             ];
 
             $complianceResult = $this->smartContractService->checkDocumentMetadataCompliance(
@@ -262,11 +265,11 @@ class SmartContractSetup extends Command
             if ($complianceResult['compliant']) {
                 $this->line('    ✅ Metadata compliance test passed');
             } else {
-                $this->warn('    ⚠️  Metadata compliance test failed: ' . implode(', ', $complianceResult['invalid_fields']));
+                $this->warn('    ⚠️  Metadata compliance test failed: '.implode(', ', $complianceResult['invalid_fields']));
             }
 
             $this->line('  └─ Testing storage consistency...');
-            
+
             // Test storage consistency
             $consistencyResult = $this->smartContractService->validateDocumentStorageConsistency(
                 $testProcurementId
@@ -279,12 +282,12 @@ class SmartContractSetup extends Command
             }
 
             $this->line('  └─ Testing audit trail generation...');
-            
+
             // Test audit trail
             $auditResult = $this->smartContractService->getDocumentAuditTrail($testProcurementId);
 
             if (isset($auditResult['procurement_id']) && $auditResult['procurement_id'] === $testProcurementId) {
-                $this->line('    ✅ Audit trail generation test passed (entries: ' . $auditResult['total_entries'] . ')');
+                $this->line('    ✅ Audit trail generation test passed (entries: '.$auditResult['total_entries'].')');
             } else {
                 $this->warn('    ⚠️  Audit trail generation test failed');
             }
@@ -308,7 +311,7 @@ class SmartContractSetup extends Command
                 ['Document Management Library', '✅ Created'],
                 ['Document Validation Filters', '✅ Deployed'],
                 ['Validation Configuration', '✅ Configured'],
-                ['System Status', '✅ Ready']
+                ['System Status', '✅ Ready'],
             ]
         );
 
@@ -320,7 +323,7 @@ class SmartContractSetup extends Command
         $this->info('   • Storage consistency validation');
         $this->info('   • Comprehensive audit trails');
         $this->newLine();
-        
+
         $this->comment('Next steps:');
         $this->comment('1. Test the system with actual document uploads');
         $this->comment('2. Integrate validation into your document upload flow');
