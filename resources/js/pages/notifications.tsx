@@ -46,12 +46,12 @@ const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
     switch (role) {
         case 'bac_chairman':
             return [
-                { title: 'BAC Chairman Dashboard', href: '/bac-chairman/dashboard' },
+                { title: 'Bids and Awards Committee Chairman Dashboard', href: '/bac-chairman/dashboard' },
                 { title: 'Notifications', href: '/notifications' },
             ];
         case 'hope':
             return [
-                { title: 'HOPE Dashboard', href: '/hope/dashboard' },
+                { title: 'Head of Procuring Entity Dashboard', href: '/hope/dashboard' },
                 { title: 'Notifications', href: '/notifications' },
             ];
         case 'admin':

@@ -49,7 +49,7 @@ interface HeaderProps {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurement Initiation', href: '#' },
 ];
 
@@ -319,7 +319,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
 
             <div className="w-full space-y-4 p-4 md:p-6 lg:p-8" role="main" aria-labelledby="page-title">
                 {/* Header Section (redesigned to match procurements-list) */}
-                <Card className="border-0 shadow-sm">
+                <Card>
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">

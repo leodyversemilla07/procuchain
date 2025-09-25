@@ -80,7 +80,7 @@ export default function PostQualificationUpload({ procurement = { id: '', title:
   });
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
     { title: `Upload Post-Qualification Report - ${procurement.id}: ${procurement.title}`, href: '#' },
   ];

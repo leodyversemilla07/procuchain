@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -39,7 +38,7 @@ export default function DeleteUserDialog({
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent className="sm:max-w-[500px] p-0 gap-0">
-                <AlertDialogHeader className="px-6 py-6 pb-4 bg-gradient-to-r from-destructive/5 dark:from-destructive/10 to-background border-b">
+                <AlertDialogHeader className="px-6 py-6 pb-4 border-b">
                     <div className="flex items-center space-x-3">
                         <div className="h-12 w-12 rounded-lg bg-destructive/10 dark:bg-destructive/20 flex items-center justify-center">
                             <Trash2 className="h-6 w-6 text-destructive" />

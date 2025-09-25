@@ -45,7 +45,7 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
   const [documentValidation, setDocumentValidation] = useState<SmartContractValidationResult | null>(null);
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+        { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
         { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
         { title: `Upload Certificate of Completion - ${procurement.id}`, href: '#' },
     ];

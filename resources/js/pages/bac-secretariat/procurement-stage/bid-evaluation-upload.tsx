@@ -48,7 +48,7 @@ export default function BidEvaluationUpload({ procurement = { id: '', title: '' 
   });
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
     { title: `Bid Evaluation Report - ${procurement.id}`, href: '#' },
   ];

@@ -46,7 +46,7 @@ export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' 
   });
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
     { title: `Upload Notice of Award - ${procurement.id}: ${procurement.title}`, href: '#' },
   ];

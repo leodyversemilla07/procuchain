@@ -58,7 +58,7 @@ export default function PreBidConferenceUpload({ procurement = { id: '', title: 
   };
 
   const breadcrumbs = [
-    { title: 'BAC Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
+    { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
     { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
     { title: `Upload Pre-Bid Conference Documents - ${procurement.id}: ${procurement.title}`, href: '#' },
   ];

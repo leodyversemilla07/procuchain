@@ -513,7 +513,7 @@ export default function BACSecretariatDashboard() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="BAC Secretariat Dashboard" />
+            <Head title="Bids and Awards Committee Secretariat Dashboard" />
 
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
