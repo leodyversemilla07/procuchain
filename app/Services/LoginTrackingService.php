@@ -364,24 +364,26 @@ class LoginTrackingService
                     'failed_attempts' => $user->failed_login_attempts,
                     'locked_until' => $user->lock_expires_at,                ]);
 
-                // Send account locked notification email
-                try {
-                    Mail::to($user->email)->send(new AccountLockedMail(
-                        $user,
-                        'Account locked due to multiple failed login attempts',
-                        "{$lockDurationMinutes} minutes"
-                    ));
+                // Send account locked notification email if user has email notifications enabled
+                if ($user->email_notifications_enabled) {
+                    try {
+                        Mail::to($user->email)->send(new AccountLockedMail(
+                            $user,
+                            'Account locked due to multiple failed login attempts',
+                            "{$lockDurationMinutes} minutes"
+                        ));
 
-                    Log::info('Account locked notification email sent', [
-                        'user_id' => $user->id,
-                        'user_email' => $user->email,
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('Failed to send account locked notification email', [
-                        'user_id' => $user->id,
-                        'user_email' => $user->email,
-                        'error' => $e->getMessage(),
-                    ]);
+                        Log::info('Account locked notification email sent', [
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send account locked notification email', [
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
             } else {
                 Log::info('Failed login attempt recorded', [
@@ -519,25 +521,27 @@ class LoginTrackingService
                 'locked_by' => Auth::check() ? Auth::id() : null,
             ]);
 
-            // Send account locked notification email
-            try {
-                Mail::to($user->email)->send(new AccountLockedMail(
-                    $user,
-                    $reason,
-                    "{$durationHours} hours"
-                ));
+            // Send account locked notification email if user has email notifications enabled
+            if ($user->email_notifications_enabled) {
+                try {
+                    Mail::to($user->email)->send(new AccountLockedMail(
+                        $user,
+                        $reason,
+                        "{$durationHours} hours"
+                    ));
 
-                Log::info('Account locked notification email sent for manual lock', [
-                    'user_id' => $user->id,
-                    'user_email' => $user->email,
-                    'reason' => $reason,
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to send account locked notification email for manual lock', [
-                    'user_id' => $user->id,
-                    'user_email' => $user->email,
-                    'error' => $e->getMessage(),
-                ]);
+                    Log::info('Account locked notification email sent for manual lock', [
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'reason' => $reason,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send account locked notification email for manual lock', [
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             return true;

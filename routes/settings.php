@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\EmailNotificationController;
 use App\Http\Controllers\Settings\MfaController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -30,6 +31,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/push/subscriptions', [PushNotificationController::class, 'index']);
     Route::post('/settings/push/subscribe', [PushNotificationController::class, 'store']);
     Route::delete('/settings/push/unsubscribe', [PushNotificationController::class, 'destroy']);
+
+    // Email notification settings
+    Route::get('settings/email-notification', [EmailNotificationController::class, 'edit'])->name('email-notification.edit')->middleware('mfa');
+    Route::patch('settings/email-notification', [EmailNotificationController::class, 'update'])->name('email-notification.update')->middleware('mfa');
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');

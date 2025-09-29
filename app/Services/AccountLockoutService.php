@@ -131,24 +131,26 @@ class AccountLockoutService
                 'duration_hours' => $durationHours,
             ]);
 
-            // Send account locked notification email
-            try {
-                Mail::to($user->email)->send(new AccountLockedMail(
-                    $user,
-                    $reason,
-                    "{$durationHours} hours"
-                ));
-                Log::info('Account locked notification email sent for manual lock', [
-                    'user_id' => $user->id,
-                    'user_email' => $user->email,
-                    'reason' => $reason,
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to send account locked notification email for manual lock', [
-                    'user_id' => $user->id,
-                    'user_email' => $user->email,
-                    'error' => $e->getMessage(),
-                ]);
+            // Send account locked notification email if user has email notifications enabled
+            if ($user->email_notifications_enabled) {
+                try {
+                    Mail::to($user->email)->send(new AccountLockedMail(
+                        $user,
+                        $reason,
+                        "{$durationHours} hours"
+                    ));
+                    Log::info('Account locked notification email sent for manual lock', [
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'reason' => $reason,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send account locked notification email for manual lock', [
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             return true;
