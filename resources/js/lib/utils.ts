@@ -40,14 +40,14 @@ export function validateFile(file: File | null): { isValid: boolean; errorMessag
     if (file.size > MAX_FILE_SIZE) {
         return {
             isValid: false,
-            errorMessage: `File size exceeds the limit of ${formatBytes(MAX_FILE_SIZE)}`
+            errorMessage: `File size exceeds the limit of ${formatBytes(MAX_FILE_SIZE)}`,
         };
     }
 
     if (!isPdfFile(file)) {
         return {
             isValid: false,
-            errorMessage: 'Only PDF files are accepted'
+            errorMessage: 'Only PDF files are accepted',
         };
     }
 

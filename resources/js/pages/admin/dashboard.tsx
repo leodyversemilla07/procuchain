@@ -1,26 +1,35 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { useEffect, useState, useMemo } from 'react';
-import { toast } from "sonner";
-import {
-    ArrowRight, Clock, FileText, Shield, Users, CheckCircle, FileIcon, EyeIcon, FileUpIcon,
-    FileTextIcon, ExternalLinkIcon, CheckIcon, PlusIcon, ActivityIcon,
-} from "lucide-react";
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { PageProps } from '@inertiajs/core';
 import { Stage, Status } from '@/types/blockchain';
+import { PageProps } from '@inertiajs/core';
+import { Head, Link, usePage } from '@inertiajs/react';
+import {
+    ActivityIcon,
+    ArrowRight,
+    CheckCircle,
+    CheckIcon,
+    Clock,
+    ExternalLinkIcon,
+    EyeIcon,
+    FileIcon,
+    FileText,
+    FileTextIcon,
+    FileUpIcon,
+    PlusIcon,
+    Shield,
+    Users,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-    LineChart, Line, XAxis, CartesianGrid,
-    BarChart, Bar, YAxis,
-} from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ChartConfig } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 const ACTION_ICON_MAP = {
     upload: FileUpIcon,
@@ -38,9 +47,7 @@ const ACTION_ICON_MAP = {
 } as const;
 
 const getActionIcon = (action: string) => {
-    const IconComponent = Object.entries(ACTION_ICON_MAP).find(
-        ([key]) => action.toLowerCase().includes(key)
-    )?.[1] || ActivityIcon;
+    const IconComponent = Object.entries(ACTION_ICON_MAP).find(([key]) => action.toLowerCase().includes(key))?.[1] || ActivityIcon;
 
     return IconComponent;
 };
@@ -164,7 +171,7 @@ const formatRelativeDate = (dateString: string) => {
         day: 'numeric',
         year: 'numeric',
         hour: 'numeric',
-        minute: '2-digit'
+        minute: '2-digit',
     });
 };
 
@@ -182,7 +189,7 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         if (error) {
-            toast.error("Error loading dashboard", {
+            toast.error('Error loading dashboard', {
                 description: error,
                 duration: 5000,
             });
@@ -190,12 +197,12 @@ export default function AdminDashboard() {
     }, [error]);
 
     // State for procurement distribution chart
-    const [activeChart, setActiveChart] = useState<"stage" | "status">("stage");
+    const [activeChart, setActiveChart] = useState<'stage' | 'status'>('stage');
 
     // Calculate distribution from procurementDistribution data (separate from recent procurements)
     const stageDistribution = useMemo(() => {
         const distribution: Record<string, number> = {};
-        procurementDistribution.forEach(procurement => {
+        procurementDistribution.forEach((procurement) => {
             const stage = procurement.stage;
             distribution[stage] = (distribution[stage] || 0) + 1;
         });
@@ -204,7 +211,7 @@ export default function AdminDashboard() {
 
     const statusDistribution = useMemo(() => {
         const distribution: Record<string, number> = {};
-        procurementDistribution.forEach(procurement => {
+        procurementDistribution.forEach((procurement) => {
             const status = procurement.status;
             distribution[status] = (distribution[status] || 0) + 1;
         });
@@ -214,36 +221,36 @@ export default function AdminDashboard() {
     // Define all possible cards for stats
     const allStatsCards = [
         {
-            label: "Ongoing Projects",
+            label: 'Ongoing Projects',
             value: stats?.ongoingProjects || 0,
             icon: FileText,
-            colors: "text-primary bg-primary/10"
+            colors: 'text-primary bg-primary/10',
         },
         {
-            label: "Completed Biddings",
+            label: 'Completed Biddings',
             value: stats?.completedBiddings || 0,
             icon: CheckCircle,
-            colors: "text-primary bg-primary/10"
+            colors: 'text-primary bg-primary/10',
         },
         {
-            label: "Total Documents",
+            label: 'Total Documents',
             value: stats?.totalDocuments || 0,
             icon: FileIcon,
-            colors: "text-muted-foreground bg-muted"
+            colors: 'text-muted-foreground bg-muted',
         },
         {
             label: 'Total Logins',
             value: userActivityAnalytics.login_patterns?.total_logins || 0,
             icon: Users,
             colors: 'text-primary bg-primary/10',
-        }
+        },
     ];
 
     // Determine grid columns based on the number of cards to show
-    const statsGridColsClass = allStatsCards.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3";
+    const statsGridColsClass = allStatsCards.length === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3';
 
     // State for interactive login chart
-    const [activeLoginChart, setActiveLoginChart] = useState<"logins" | "success">("logins");
+    const [activeLoginChart, setActiveLoginChart] = useState<'logins' | 'success'>('logins');
 
     // Prepare login chart data
     const loginChartData = useMemo(() => {
@@ -252,47 +259,50 @@ export default function AdminDashboard() {
         return Object.entries(userActivityAnalytics.login_patterns.daily_login_trend).map(([date, count]) => ({
             date: date,
             logins: count as number,
-            success: Math.floor((count as number) * (userActivityAnalytics.login_patterns.success_rate || 100) / 100),
+            success: Math.floor(((count as number) * (userActivityAnalytics.login_patterns.success_rate || 100)) / 100),
         }));
     }, [userActivityAnalytics?.login_patterns]);
 
     // Interactive login chart config
     const interactiveLoginChartConfig = {
         views: {
-            label: "Login Activity",
+            label: 'Login Activity',
         },
         logins: {
-            label: "Total Logins",
-            color: "var(--chart-1)",
+            label: 'Total Logins',
+            color: 'var(--chart-1)',
         },
         success: {
-            label: "Successful Logins",
-            color: "var(--chart-2)",
+            label: 'Successful Logins',
+            color: 'var(--chart-2)',
         },
     };
 
     // Calculate totals for login chart
-    const loginTotals = useMemo(() => ({
-        logins: loginChartData.reduce((acc, curr) => acc + (curr.logins as number), 0),
-        success: loginChartData.reduce((acc, curr) => acc + (curr.success as number), 0),
-    }), [loginChartData]);
+    const loginTotals = useMemo(
+        () => ({
+            logins: loginChartData.reduce((acc, curr) => acc + (curr.logins as number), 0),
+            success: loginChartData.reduce((acc, curr) => acc + (curr.success as number), 0),
+        }),
+        [loginChartData],
+    );
 
     const renderProcurementDistribution = () => {
         // Chart configuration
         const chartConfig: ChartConfig = {
             count: {
-                label: "Count",
-                color: "var(--chart-1)",
+                label: 'Count',
+                color: 'var(--chart-1)',
             },
         };
 
-        const data = activeChart === "stage" ? stageDistribution : statusDistribution;
+        const data = activeChart === 'stage' ? stageDistribution : statusDistribution;
 
         if (procurementDistribution.length === 0) {
             return (
                 <Card className="shadow-sm">
                     <CardContent className="p-6 text-center">
-                        <FileText className="mx-auto h-8 w-8 text-muted-foreground opacity-20 mb-2" />
+                        <FileText className="text-muted-foreground mx-auto mb-2 h-8 w-8 opacity-20" />
                         <p className="text-muted-foreground">No procurement data available for distribution</p>
                     </CardContent>
                 </Card>
@@ -304,15 +314,16 @@ export default function AdminDashboard() {
                 <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
                     <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 sm:!py-0">
                         <CardTitle>Procurement Distribution</CardTitle>
-                        <CardDescription>
-                            Distribution of procurements across stages and statuses
-                        </CardDescription>
+                        <CardDescription>Distribution of procurements across stages and statuses</CardDescription>
                     </div>
                     <div className="flex">
-                        {["stage", "status"].map((key) => {
-                            const chart = key as "stage" | "status";
-                            const chartData = chart === "stage" ? stageDistribution : statusDistribution;
-                            const chartTotal = Object.values(chartData as Record<string, number>).reduce((sum: number, count: number) => sum + count, 0);
+                        {['stage', 'status'].map((key) => {
+                            const chart = key as 'stage' | 'status';
+                            const chartData = chart === 'stage' ? stageDistribution : statusDistribution;
+                            const chartTotal = Object.values(chartData as Record<string, number>).reduce(
+                                (sum: number, count: number) => sum + count,
+                                0,
+                            );
 
                             return (
                                 <button
@@ -321,27 +332,20 @@ export default function AdminDashboard() {
                                     className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
                                     onClick={() => setActiveChart(chart)}
                                 >
-                                    <span className="text-muted-foreground text-xs capitalize">
-                                        {chart} Distribution
-                                    </span>
-                                    <span className="text-lg leading-none font-bold sm:text-3xl">
-                                        {chartTotal.toLocaleString()}
-                                    </span>
+                                    <span className="text-muted-foreground text-xs capitalize">{chart} Distribution</span>
+                                    <span className="text-lg leading-none font-bold sm:text-3xl">{chartTotal.toLocaleString()}</span>
                                 </button>
                             );
                         })}
                     </div>
                 </CardHeader>
                 <CardContent className="px-2 sm:p-6">
-                    <ChartContainer
-                        config={chartConfig}
-                        className="aspect-auto h-[300px] w-full"
-                    >
+                    <ChartContainer config={chartConfig} className="aspect-auto h-[300px] w-full">
                         <BarChart
                             accessibilityLayer
                             data={Object.entries(data).map(([key, count]) => ({
                                 name: key,
-                                count: count
+                                count: count,
                             }))}
                             margin={{
                                 left: 12,
@@ -354,7 +358,7 @@ export default function AdminDashboard() {
                                 tickLine={false}
                                 axisLine={false}
                                 tickMargin={8}
-                                tickFormatter={(value: string) => value.length > 15 ? `${value.slice(0, 15)}...` : value}
+                                tickFormatter={(value: string) => (value.length > 15 ? `${value.slice(0, 15)}...` : value)}
                             />
                             <YAxis />
                             <ChartTooltip
@@ -366,11 +370,7 @@ export default function AdminDashboard() {
                                     />
                                 }
                             />
-                            <Bar
-                                dataKey="count"
-                                fill={`var(--color-count)`}
-                                radius={4}
-                            />
+                            <Bar dataKey="count" fill={`var(--color-count)`} radius={4} />
                         </BarChart>
                     </ChartContainer>
                 </CardContent>
@@ -387,14 +387,12 @@ export default function AdminDashboard() {
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <Shield className="h-6 w-6 text-primary" />
+                                <div className="bg-primary/10 rounded-lg p-2">
+                                    <Shield className="text-primary h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
-                                    <p className="text-muted-foreground text-sm mt-1">
-                                        System-wide overview and administrative controls
-                                    </p>
+                                    <h1 className="text-foreground text-2xl font-bold">Admin Dashboard</h1>
+                                    <p className="text-muted-foreground mt-1 text-sm">System-wide overview and administrative controls</p>
                                 </div>
                             </div>
                         </div>
@@ -409,10 +407,10 @@ export default function AdminDashboard() {
                                 <CardContent className="p-4">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">{card.label}</p>
+                                            <p className="text-muted-foreground text-sm font-medium">{card.label}</p>
                                             <p className="text-2xl font-bold">{card.value}</p>
                                         </div>
-                                        <div className={`p-2 rounded-full ${card.colors}`}>
+                                        <div className={`rounded-full p-2 ${card.colors}`}>
                                             <IconComponent className="h-5 w-5" />
                                         </div>
                                     </div>
@@ -425,17 +423,20 @@ export default function AdminDashboard() {
                 {/* Procurement Distribution Section */}
                 {renderProcurementDistribution()}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-1 space-y-6">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div className="space-y-6 lg:col-span-1">
                         <Card className="shadow-sm">
                             <CardHeader>
                                 <div className="flex flex-row items-center justify-between">
-                                    <h3 className="text-base md:text-lg font-semibold flex items-center">
-                                        <Clock className="h-4 w-4 md:h-5 md:w-5 mr-2 text-primary" />
+                                    <h3 className="flex items-center text-base font-semibold md:text-lg">
+                                        <Clock className="text-primary mr-2 h-4 w-4 md:h-5 md:w-5" />
                                         System Activities {recentActivities.length > 0 && `(${recentActivities.length})`}
                                     </h3>
-                                    <Link href={route('admin.procurements-list.index')} className="text-xs md:text-sm text-primary hover:underline flex items-center shrink-0 ml-2">
-                                        View all <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
+                                    <Link
+                                        href={route('admin.procurements-list.index')}
+                                        className="text-primary ml-2 flex shrink-0 items-center text-xs hover:underline md:text-sm"
+                                    >
+                                        View all <ArrowRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
                                     </Link>
                                 </div>
                             </CardHeader>
@@ -444,34 +445,27 @@ export default function AdminDashboard() {
                                     {recentActivities.map((activity, index) => {
                                         const ActionIcon = getActionIcon(activity.action);
                                         return (
-                                            <div key={index} className={`${index < recentActivities.length - 1 ? "border-b pb-3" : ""}`}>
+                                            <div key={index} className={`${index < recentActivities.length - 1 ? 'border-b pb-3' : ''}`}>
                                                 <div className="flex items-center justify-between">
                                                     <Link
                                                         href={`/bac-secretariat/procurements-list/${activity.id}`}
-                                                        className="font-medium text-primary hover:underline text-sm max-w-[70%] truncate"
+                                                        className="text-primary max-w-[70%] truncate text-sm font-medium hover:underline"
                                                     >
                                                         {activity.title || `Procurement #${activity.id}`}
                                                     </Link>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {formatRelativeDate(activity.date)}
-                                                    </span>
+                                                    <span className="text-muted-foreground text-xs">{formatRelativeDate(activity.date)}</span>
                                                 </div>
                                                 <div className="mt-1.5 flex items-center justify-between">
                                                     <div className="flex items-center">
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="text-xs mr-2 flex items-center gap-1"
-                                                        >
+                                                        <Badge variant="secondary" className="mr-2 flex items-center gap-1 text-xs">
                                                             <ActionIcon className="h-3.5 w-3.5" />
                                                             <span>{activity.action}</span>
                                                         </Badge>
                                                         {activity.stage && (
-                                                            <span className="text-xs text-muted-foreground ml-1">
-                                                                in {activity.stage} stage
-                                                            </span>
+                                                            <span className="text-muted-foreground ml-1 text-xs">in {activity.stage} stage</span>
                                                         )}
                                                     </div>
-                                                    <span className="text-xs text-muted-foreground">by {activity.user}</span>
+                                                    <span className="text-muted-foreground text-xs">by {activity.user}</span>
                                                 </div>
                                             </div>
                                         );
@@ -481,16 +475,19 @@ export default function AdminDashboard() {
                         </Card>
                     </div>
 
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="space-y-6 lg:col-span-2">
                         <Card>
                             <CardHeader>
                                 <div className="flex flex-row items-center justify-between">
-                                    <h3 className="text-base md:text-lg font-semibold flex items-center">
-                                        <FileText className="h-4 w-4 md:h-5 md:w-5 mr-2 text-primary" />
+                                    <h3 className="flex items-center text-base font-semibold md:text-lg">
+                                        <FileText className="text-primary mr-2 h-4 w-4 md:h-5 md:w-5" />
                                         Recent Procurements {recentProcurements.length > 0 && `(${recentProcurements.length})`}
                                     </h3>
-                                    <Link href={route('admin.procurements-list.index')} className="text-xs md:text-sm text-primary hover:underline flex items-center shrink-0 ml-2">
-                                        View all <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
+                                    <Link
+                                        href={route('admin.procurements-list.index')}
+                                        className="text-primary ml-2 flex shrink-0 items-center text-xs hover:underline md:text-sm"
+                                    >
+                                        View all <ArrowRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
                                     </Link>
                                 </div>
                             </CardHeader>
@@ -508,36 +505,27 @@ export default function AdminDashboard() {
                                     <TableBody>
                                         {recentProcurements.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={5} className="text-center py-8">
+                                                <TableCell colSpan={5} className="py-8 text-center">
                                                     No procurement data available
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
-                                            recentProcurements.map(procurement => (
+                                            recentProcurements.map((procurement) => (
                                                 <TableRow key={procurement.id}>
                                                     <TableCell className="font-medium">{procurement.id}</TableCell>
                                                     <TableCell className="max-w-[140px] truncate" title={procurement.title}>
                                                         {procurement.title}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <Badge>
-                                                            {procurement.stage}
-                                                        </Badge>
+                                                        <Badge>{procurement.stage}</Badge>
                                                     </TableCell>
                                                     <TableCell>
-                                                        <Badge variant="outline">
-                                                            {procurement.status}
-                                                        </Badge>
+                                                        <Badge variant="outline">{procurement.status}</Badge>
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    asChild
-                                                                    className="h-8 px-2"
-                                                                >
+                                                                <Button variant="ghost" size="sm" asChild className="h-8 px-2">
                                                                     <Link href={route('admin.procurements.show', { id: procurement.id })}>
                                                                         <EyeIcon className="h-4 w-4" />
                                                                     </Link>
@@ -564,12 +552,10 @@ export default function AdminDashboard() {
                         <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
                             <div className="flex flex-1 flex-col justify-center gap-1 px-6 pb-3 sm:pb-0">
                                 <CardTitle>Login Activity Trend</CardTitle>
-                                <CardDescription>
-                                    Daily login activity over selected time period
-                                </CardDescription>
+                                <CardDescription>Daily login activity over selected time period</CardDescription>
                             </div>
                             <div className="flex">
-                                {(["logins", "success"] as const).map((key) => {
+                                {(['logins', 'success'] as const).map((key) => {
                                     return (
                                         <button
                                             key={key}
@@ -577,22 +563,15 @@ export default function AdminDashboard() {
                                             className="data-[active=true]:bg-muted/50 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
                                             onClick={() => setActiveLoginChart(key)}
                                         >
-                                            <span className="text-muted-foreground text-xs">
-                                                {interactiveLoginChartConfig[key].label}
-                                            </span>
-                                            <span className="text-lg leading-none font-bold sm:text-3xl">
-                                                {loginTotals[key].toLocaleString()}
-                                            </span>
+                                            <span className="text-muted-foreground text-xs">{interactiveLoginChartConfig[key].label}</span>
+                                            <span className="text-lg leading-none font-bold sm:text-3xl">{loginTotals[key].toLocaleString()}</span>
                                         </button>
                                     );
                                 })}
                             </div>
                         </CardHeader>
                         <CardContent className="px-2 sm:p-6">
-                            <ChartContainer
-                                config={interactiveLoginChartConfig}
-                                className="aspect-auto h-[250px] w-full"
-                            >
+                            <ChartContainer config={interactiveLoginChartConfig} className="aspect-auto h-[250px] w-full">
                                 <LineChart
                                     accessibilityLayer
                                     data={loginChartData}
@@ -610,9 +589,9 @@ export default function AdminDashboard() {
                                         minTickGap={32}
                                         tickFormatter={(value) => {
                                             const date = new Date(value);
-                                            return date.toLocaleDateString("en-US", {
-                                                month: "short",
-                                                day: "numeric",
+                                            return date.toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
                                             });
                                         }}
                                     />
@@ -622,10 +601,10 @@ export default function AdminDashboard() {
                                                 className="w-[150px]"
                                                 nameKey="views"
                                                 labelFormatter={(value) => {
-                                                    return new Date(value).toLocaleDateString("en-US", {
-                                                        month: "short",
-                                                        day: "numeric",
-                                                        year: "numeric",
+                                                    return new Date(value).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        year: 'numeric',
                                                     });
                                                 }}
                                             />
@@ -646,34 +625,28 @@ export default function AdminDashboard() {
 
                 {/* User Activity Section */}
                 <div className="space-y-6">
-                    <div className="flex items-center space-x-2 mb-4">
+                    <div className="mb-4 flex items-center space-x-2">
                         <h2 className="text-xl font-semibold">User Activity Analytics</h2>
                     </div>
 
                     {userActivityAnalytics && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Login Statistics</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex items-center justify-between">
                                         <span>Total Logins</span>
-                                        <Badge variant="secondary">
-                                            {formatValue(userActivityAnalytics.login_patterns.total_logins)}
-                                        </Badge>
+                                        <Badge variant="secondary">{formatValue(userActivityAnalytics.login_patterns.total_logins)}</Badge>
                                     </div>
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex items-center justify-between">
                                         <span>Success Rate</span>
-                                        <Badge variant="default">
-                                            {(userActivityAnalytics.login_patterns.success_rate || 0).toFixed(1)}%
-                                        </Badge>
+                                        <Badge variant="default">{(userActivityAnalytics.login_patterns.success_rate || 0).toFixed(1)}%</Badge>
                                     </div>
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex items-center justify-between">
                                         <span>Failed Logins</span>
-                                        <Badge variant="destructive">
-                                            {formatValue(userActivityAnalytics.login_patterns.failed_logins)}
-                                        </Badge>
+                                        <Badge variant="destructive">{formatValue(userActivityAnalytics.login_patterns.failed_logins)}</Badge>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -683,13 +656,13 @@ export default function AdminDashboard() {
                                     <CardTitle>Security Metrics</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex items-center justify-between">
                                         <span>Security Score</span>
                                         <Badge variant="default">
                                             {(userActivityAnalytics.security_metrics?.security_score || 0).toFixed(1)}/100
                                         </Badge>
                                     </div>
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex items-center justify-between">
                                         <span>Failed Login Rate</span>
                                         <Badge variant="secondary">
                                             {(userActivityAnalytics.security_metrics?.failed_login_rate || 0).toFixed(1)}%

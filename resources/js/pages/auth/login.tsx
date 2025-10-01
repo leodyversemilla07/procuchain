@@ -78,7 +78,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                         <div className="relative">
                             <Input
                                 id="password"
-                                type={showPassword ? "text" : "password"}
+                                type={showPassword ? 'text' : 'password'}
                                 required
                                 tabIndex={2}
                                 autoComplete="current-password"
@@ -89,14 +89,15 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2"
+                                className="absolute top-1/2 right-3 -translate-y-1/2"
                                 tabIndex={3}
-                                aria-label={showPassword ? "Hide password" : "Show password"}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
                             >
-                                {showPassword ?
-                                    <EyeOff className="h-4 w-4 text-muted-foreground" /> :
-                                    <Eye className="h-4 w-4 text-muted-foreground" />
-                                }
+                                {showPassword ? (
+                                    <EyeOff className="text-muted-foreground h-4 w-4" />
+                                ) : (
+                                    <Eye className="text-muted-foreground h-4 w-4" />
+                                )}
                             </button>
                         </div>
                         <InputError message={errors.password} />

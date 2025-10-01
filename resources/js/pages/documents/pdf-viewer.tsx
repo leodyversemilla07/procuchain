@@ -1,52 +1,40 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Head, usePage } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
+import { BreadcrumbItem, SharedData } from '@/types';
+import { Head, usePage } from '@inertiajs/react';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
-    Eye,
-    Users,
+    Activity,
+    Award,
+    BarChart3,
+    Building2,
     Calendar,
+    CalendarDays,
+    CheckCircle,
     Clock,
     Download,
-    FileText,
-    Activity,
-    BarChart3,
-    PlayCircle,
+    Eye,
     FileCheck,
-    Gavel,
-    Users2,
-    Award,
-    CheckCircle,
+    FileText,
     Flag,
-    Target,
-    Hash,
-    Building2,
-    User,
+    Gavel,
     Globe,
     HardDrive,
-    CalendarDays,
-    Shield
+    Hash,
+    PlayCircle,
+    Shield,
+    Target,
+    User,
+    Users,
+    Users2,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { SharedData, BreadcrumbItem } from '@/types';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface User {
     name: string;
@@ -180,26 +168,26 @@ const formatRole = (role: string) => {
         case 'admin':
             return 'Administrator';
         default:
-            return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return role.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     }
 };
 
 const formatStage = (stage: string) => {
     const stageFormatMap: Record<string, string> = {
-        'ProcurementInitiation': 'Procurement Initiation',
-        'PreProcurementConference': 'Pre-Procurement Conference',
-        'BiddingDocuments': 'Bidding Documents',
-        'PreBidConference': 'Pre-Bid Conference',
-        'BidOpening': 'Bid Opening',
-        'BidEvaluation': 'Bid Evaluation',
-        'PostQualification': 'Post Qualification',
-        'NoticeOfAward': 'Notice of Award',
-        'NoticeToProceed': 'Notice to Proceed',
-        'PerformanceBondContractAndPo': 'Performance Bond, Contract & PO',
-        'Monitoring': 'Monitoring',
-        'Completion': 'Completion',
-        'BacResolution': 'BAC Resolution',
-        'SupplementalBidBulletin': 'Supplemental Bid Bulletin'
+        ProcurementInitiation: 'Procurement Initiation',
+        PreProcurementConference: 'Pre-Procurement Conference',
+        BiddingDocuments: 'Bidding Documents',
+        PreBidConference: 'Pre-Bid Conference',
+        BidOpening: 'Bid Opening',
+        BidEvaluation: 'Bid Evaluation',
+        PostQualification: 'Post Qualification',
+        NoticeOfAward: 'Notice of Award',
+        NoticeToProceed: 'Notice to Proceed',
+        PerformanceBondContractAndPo: 'Performance Bond, Contract & PO',
+        Monitoring: 'Monitoring',
+        Completion: 'Completion',
+        BacResolution: 'BAC Resolution',
+        SupplementalBidBulletin: 'Supplemental Bid Bulletin',
     };
 
     return stageFormatMap[stage] || stage.replace(/([A-Z])/g, ' $1').trim();
@@ -207,20 +195,20 @@ const formatStage = (stage: string) => {
 
 const getStageIcon = (stage: string) => {
     const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-        'ProcurementInitiation': PlayCircle,
-        'PreProcurementConference': Users2,
-        'BiddingDocuments': FileCheck,
-        'PreBidConference': Users2,
-        'BidOpening': FileText,
-        'BidEvaluation': BarChart3,
-        'PostQualification': CheckCircle,
-        'NoticeOfAward': Award,
-        'NoticeToProceed': Flag,
-        'PerformanceBondContractAndPo': FileCheck,
-        'Monitoring': Activity,
-        'Completion': Target,
-        'BacResolution': Gavel,
-        'SupplementalBidBulletin': FileText
+        ProcurementInitiation: PlayCircle,
+        PreProcurementConference: Users2,
+        BiddingDocuments: FileCheck,
+        PreBidConference: Users2,
+        BidOpening: FileText,
+        BidEvaluation: BarChart3,
+        PostQualification: CheckCircle,
+        NoticeOfAward: Award,
+        NoticeToProceed: Flag,
+        PerformanceBondContractAndPo: FileCheck,
+        Monitoring: Activity,
+        Completion: Target,
+        BacResolution: Gavel,
+        SupplementalBidBulletin: FileText,
     };
 
     const IconComponent = iconMap[stage] || FileText;
@@ -245,20 +233,20 @@ const formatTimestamp = (timestamp: string) => {
             date: date.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
-                day: 'numeric'
+                day: 'numeric',
             }),
             time: date.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: true
+                hour12: true,
             }),
-            relative: getRelativeTime(date)
+            relative: getRelativeTime(date),
         };
     } catch {
         return {
             date: 'Invalid Date',
             time: 'Invalid Time',
-            relative: 'Unknown'
+            relative: 'Unknown',
         };
     }
 };
@@ -282,7 +270,7 @@ const formatUserAddress = (address: string) => {
 
 const formatStatus = (status: string) => {
     if (!status) return 'Unknown';
-    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
 const getStatusBadgeColor = (status: string) => {
@@ -327,7 +315,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
     const pdfViewerRef = useRef<HTMLDivElement>(null);
 
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.user?.role || "guest";
+    const userRole = auth?.user?.role || 'guest';
     const breadcrumbs = getBreadcrumbs(userRole, document.procurement_id);
 
     useEffect(() => {
@@ -381,31 +369,30 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                     <div className="mb-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-2xl font-bold text-primary">
-                                    {document.document_type}
-                                </h1>
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                    {document.procurement_title}
-                                </p>
-                                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                <h1 className="text-primary text-2xl font-bold">{document.document_type}</h1>
+                                <p className="text-muted-foreground mt-1 text-sm">{document.procurement_title}</p>
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
                                     <Badge variant="outline" className="flex items-center gap-1.5">
-                                        {React.createElement(getStageIcon(document.stage), { className: "h-3.5 w-3.5" })}
+                                        {React.createElement(getStageIcon(document.stage), { className: 'h-3.5 w-3.5' })}
                                         <span className="font-medium">{formatStage(document.stage)}</span>
                                     </Badge>
                                     {document.current_status && (
-                                        <Badge variant="outline" className={cn("flex items-center gap-1.5 px-3 py-1", getStatusBadgeColor(document.current_status))}>
-                                            {React.createElement(getStatusIcon(document.current_status), { className: "h-3.5 w-3.5" })}
+                                        <Badge
+                                            variant="outline"
+                                            className={cn('flex items-center gap-1.5 px-3 py-1', getStatusBadgeColor(document.current_status))}
+                                        >
+                                            {React.createElement(getStatusIcon(document.current_status), { className: 'h-3.5 w-3.5' })}
                                             <span className="font-medium">{formatStatus(document.current_status)}</span>
                                         </Badge>
                                     )}
                                 </div>
-                                <p className="mt-2 text-xs font-mono">
-                                    PDF URL: {' '}
+                                <p className="mt-2 font-mono text-xs">
+                                    PDF URL:{' '}
                                     <a
                                         href={pdfUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="underline text-primary hover:text-primary/80"
+                                        className="text-primary hover:text-primary/80 underline"
                                     >
                                         {pdfUrl}
                                     </a>
@@ -428,48 +415,46 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                 )}
                                 <Button variant="outline" size="sm" asChild>
                                     <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                                        <Eye className="h-4 w-4 mr-2" />
+                                        <Eye className="mr-2 h-4 w-4" />
                                         Open in Tab
                                     </a>
                                 </Button>
                                 <Button asChild>
                                     <a href={pdfUrl} download>
-                                        <Download className="h-4 w-4 mr-2" />
+                                        <Download className="mr-2 h-4 w-4" />
                                         Download
                                     </a>
                                 </Button>
                             </div>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                         <div
                             ref={pdfViewerRef}
-                            className="lg:col-span-2 relative bg-background rounded-lg border"
+                            className="bg-background relative rounded-lg border lg:col-span-2"
                             style={{
                                 height: `${pdfHeight}px`,
-                                minHeight: '600px'
+                                minHeight: '600px',
                             }}
                         >
                             {pdfError ? (
-                                <div className="flex flex-col items-center justify-center h-full bg-muted">
-                                    <div className="text-center p-8 max-w-md">
-                                        <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold text-primary mb-2">
-                                            PDF Viewer Error
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground mb-6">
+                                <div className="bg-muted flex h-full flex-col items-center justify-center">
+                                    <div className="max-w-md p-8 text-center">
+                                        <FileText className="text-muted-foreground mx-auto mb-4 h-16 w-16" />
+                                        <h3 className="text-primary mb-2 text-lg font-semibold">PDF Viewer Error</h3>
+                                        <p className="text-muted-foreground mb-6 text-sm">
                                             Unable to display the PDF in the browser. You can view the document using the options below.
                                         </p>
                                         <div className="space-y-3">
                                             <Button asChild className="w-full">
                                                 <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                                                    <Eye className="h-4 w-4 mr-2" />
+                                                    <Eye className="mr-2 h-4 w-4" />
                                                     Open PDF in New Tab
                                                 </a>
                                             </Button>
                                             <Button variant="outline" asChild className="w-full">
                                                 <a href={pdfUrl} download>
-                                                    <Download className="h-4 w-4 mr-2" />
+                                                    <Download className="mr-2 h-4 w-4" />
                                                     Download PDF
                                                 </a>
                                             </Button>
@@ -481,7 +466,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     <object
                                         data={pdfUrl}
                                         type="application/pdf"
-                                        className="w-full h-full rounded-lg bg-background"
+                                        className="bg-background h-full w-full rounded-lg"
                                         style={{ minHeight: '600px' }}
                                         onLoad={() => {
                                             console.log('PDF object loaded successfully');
@@ -494,25 +479,26 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                             setPdfLoading(false);
                                         }}
                                     >
-                                        <div className="flex flex-col items-center justify-center w-full h-full bg-muted rounded-lg" style={{ minHeight: '600px' }}>
-                                            <div className="text-center p-8 max-w-md">
-                                                <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                                                <h3 className="text-lg font-semibold text-primary mb-2">
-                                                    PDF Plugin Not Available
-                                                </h3>
-                                                <p className="text-sm text-muted-foreground mb-6">
+                                        <div
+                                            className="bg-muted flex h-full w-full flex-col items-center justify-center rounded-lg"
+                                            style={{ minHeight: '600px' }}
+                                        >
+                                            <div className="max-w-md p-8 text-center">
+                                                <FileText className="text-muted-foreground mx-auto mb-4 h-16 w-16" />
+                                                <h3 className="text-primary mb-2 text-lg font-semibold">PDF Plugin Not Available</h3>
+                                                <p className="text-muted-foreground mb-6 text-sm">
                                                     Your browser doesn't support embedded PDFs. Use the buttons below to view the document.
                                                 </p>
                                                 <div className="space-y-3">
                                                     <Button asChild className="w-full">
                                                         <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                                                            <Eye className="h-4 w-4 mr-2" />
+                                                            <Eye className="mr-2 h-4 w-4" />
                                                             Open PDF in New Tab
                                                         </a>
                                                     </Button>
                                                     <Button variant="outline" asChild className="w-full">
                                                         <a href={pdfUrl} download>
-                                                            <Download className="h-4 w-4 mr-2" />
+                                                            <Download className="mr-2 h-4 w-4" />
                                                             Download PDF
                                                         </a>
                                                     </Button>
@@ -522,13 +508,11 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </object>
 
                                     {pdfLoading && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-background/95 rounded-lg backdrop-blur-sm z-10">
-                                            <div className="text-center p-8">
-                                                <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-primary mx-auto mb-4"></div>
-                                                <p className="text-lg font-medium text-primary">Loading PDF...</p>
-                                                <p className="text-sm text-muted-foreground mt-2">
-                                                    Please wait while the document loads
-                                                </p>
+                                        <div className="bg-background/95 absolute inset-0 z-10 flex items-center justify-center rounded-lg backdrop-blur-sm">
+                                            <div className="p-8 text-center">
+                                                <div className="border-primary mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-3"></div>
+                                                <p className="text-primary text-lg font-medium">Loading PDF...</p>
+                                                <p className="text-muted-foreground mt-2 text-sm">Please wait while the document loads</p>
                                             </div>
                                         </div>
                                     )}
@@ -541,10 +525,10 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     <CardContent className="p-4">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-muted-foreground">Total Views</p>
+                                                <p className="text-muted-foreground text-sm">Total Views</p>
                                                 <p className="text-2xl font-bold">{viewStats.total_views}</p>
                                             </div>
-                                            <Eye className="h-8 w-8 text-muted-foreground" />
+                                            <Eye className="text-muted-foreground h-8 w-8" />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -552,10 +536,10 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     <CardContent className="p-4">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-muted-foreground">Unique Viewers</p>
+                                                <p className="text-muted-foreground text-sm">Unique Viewers</p>
                                                 <p className="text-2xl font-bold">{viewStats.unique_viewers}</p>
                                             </div>
-                                            <Users className="h-8 w-8 text-muted-foreground" />
+                                            <Users className="text-muted-foreground h-8 w-8" />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -564,10 +548,10 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     <CardContent className="p-4">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-muted-foreground">Today</p>
+                                                <p className="text-muted-foreground text-sm">Today</p>
                                                 <p className="text-2xl font-bold">{viewStats.today_views}</p>
                                             </div>
-                                            <Calendar className="h-8 w-8 text-muted-foreground" />
+                                            <Calendar className="text-muted-foreground h-8 w-8" />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -575,10 +559,10 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     <CardContent className="p-4">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-sm text-muted-foreground">This Week</p>
+                                                <p className="text-muted-foreground text-sm">This Week</p>
                                                 <p className="text-2xl font-bold">{viewStats.week_views}</p>
                                             </div>
-                                            <Activity className="h-8 w-8 text-muted-foreground" />
+                                            <Activity className="text-muted-foreground h-8 w-8" />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -589,34 +573,30 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                         <FileText className="h-5 w-5" />
                                         Document Information
                                     </CardTitle>
-                                    <CardDescription>
-                                        Complete details about this document
-                                    </CardDescription>
+                                    <CardDescription>Complete details about this document</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-start">
-                                            <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                        <div className="flex items-start justify-between">
+                                            <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                 <Hash className="h-3.5 w-3.5" />
                                                 Procurement ID:
                                             </span>
-                                            <span className="text-sm font-medium font-mono bg-muted px-2 py-1 rounded">
+                                            <span className="bg-muted rounded px-2 py-1 font-mono text-sm font-medium">
                                                 {document.procurement_id}
                                             </span>
                                         </div>
 
-                                        <div className="flex justify-between items-start">
-                                            <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                        <div className="flex items-start justify-between">
+                                            <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                 <Building2 className="h-3.5 w-3.5" />
                                                 Procurement Title:
                                             </span>
-                                            <span className="text-sm font-medium text-right max-w-[200px]">
-                                                {document.procurement_title}
-                                            </span>
+                                            <span className="max-w-[200px] text-right text-sm font-medium">{document.procurement_title}</span>
                                         </div>
 
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                 <FileText className="h-3.5 w-3.5" />
                                                 Document Type:
                                             </span>
@@ -624,41 +604,43 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                 {document.document_type}
                                             </Badge>
                                         </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                 <Target className="h-3.5 w-3.5" />
                                                 Current Stage:
                                             </span>
                                             <Badge variant="outline" className="flex items-center gap-1.5">
-                                                {React.createElement(getStageIcon(document.stage), { className: "h-3.5 w-3.5" })}
+                                                {React.createElement(getStageIcon(document.stage), { className: 'h-3.5 w-3.5' })}
                                                 {formatStage(document.stage)}
                                             </Badge>
                                         </div>
                                         {document.current_status && (
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                     <Activity className="h-3.5 w-3.5" />
                                                     Procurement Status:
                                                 </span>
-                                                <Badge variant="outline" className={cn("flex items-center gap-1.5", getStatusBadgeColor(document.current_status))}>
-                                                    {React.createElement(getStatusIcon(document.current_status), { className: "h-3.5 w-3.5" })}
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn('flex items-center gap-1.5', getStatusBadgeColor(document.current_status))}
+                                                >
+                                                    {React.createElement(getStatusIcon(document.current_status), { className: 'h-3.5 w-3.5' })}
                                                     {formatStatus(document.current_status)}
                                                 </Badge>
                                             </div>
                                         )}
 
                                         {document.status_timestamp && (
-                                            <div className="flex justify-between items-start">
-                                                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                            <div className="flex items-start justify-between">
+                                                <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                     <Clock className="h-3.5 w-3.5" />
                                                     Status Updated:
                                                 </span>
                                                 <div className="text-right">
-                                                    <span className="text-sm font-medium">
-                                                        {formatTimestamp(document.status_timestamp).date}
-                                                    </span>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {formatTimestamp(document.status_timestamp).time} ({formatTimestamp(document.status_timestamp).relative})
+                                                    <span className="text-sm font-medium">{formatTimestamp(document.status_timestamp).date}</span>
+                                                    <p className="text-muted-foreground text-xs">
+                                                        {formatTimestamp(document.status_timestamp).time} (
+                                                        {formatTimestamp(document.status_timestamp).relative})
                                                     </p>
                                                 </div>
                                             </div>
@@ -666,29 +648,27 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </div>
 
                                     <div className="border-t pt-3">
-                                        <h4 className="text-sm font-medium text-primary mb-3">File Details</h4>
+                                        <h4 className="text-primary mb-3 text-sm font-medium">File Details</h4>
                                         <div className="space-y-3">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                     <HardDrive className="h-3.5 w-3.5" />
                                                     File Size:
                                                 </span>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-medium">
-                                                        {document.file_size && document.file_size > 0
-                                                            ? formatFileSize(document.file_size)
-                                                            : 'N/A'}
+                                                        {document.file_size && document.file_size > 0 ? formatFileSize(document.file_size) : 'N/A'}
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                     <Globe className="h-3.5 w-3.5" />
                                                     File Key:
                                                 </span>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <span className="text-xs font-mono bg-muted px-2 py-1 rounded max-w-[180px] truncate cursor-help">
+                                                        <span className="bg-muted max-w-[180px] cursor-help truncate rounded px-2 py-1 font-mono text-xs">
                                                             {fileKey}
                                                         </span>
                                                     </TooltipTrigger>
@@ -701,10 +681,10 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </div>
 
                                     <div className="border-t pt-3">
-                                        <h4 className="text-sm font-medium text-primary mb-3">Blockchain & Security</h4>
+                                        <h4 className="text-primary mb-3 text-sm font-medium">Blockchain & Security</h4>
                                         <div className="space-y-3">
-                                            <div className="flex justify-between items-start">
-                                                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                            <div className="flex items-start justify-between">
+                                                <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                     <Shield className="h-3.5 w-3.5" />
                                                     Document Hash:
                                                 </span>
@@ -713,7 +693,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                         <>
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                    <span className="text-xs font-mono bg-muted text-muted-foreground px-2 py-1 rounded cursor-help">
+                                                                    <span className="bg-muted text-muted-foreground cursor-help rounded px-2 py-1 font-mono text-xs">
                                                                         {formatUserAddress(document.hash)}
                                                                     </span>
                                                                 </TooltipTrigger>
@@ -721,33 +701,27 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                                     <p className="font-mono text-xs break-all">{document.hash}</p>
                                                                 </TooltipContent>
                                                             </Tooltip>
-                                                            <p className="text-xs text-muted-foreground mt-1">
-                                                                Blockchain verified
-                                                            </p>
+                                                            <p className="text-muted-foreground mt-1 text-xs">Blockchain verified</p>
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <span className="text-xs font-mono bg-muted text-muted-foreground px-2 py-1 rounded">
+                                                            <span className="bg-muted text-muted-foreground rounded px-2 py-1 font-mono text-xs">
                                                                 Not available
                                                             </span>
-                                                            <p className="text-xs text-muted-foreground mt-1">
-                                                                No blockchain data
-                                                            </p>
+                                                            <p className="text-muted-foreground mt-1 text-xs">No blockchain data</p>
                                                         </>
                                                     )}
                                                 </div>
                                             </div>
 
-                                            <div className="flex justify-between items-start">
-                                                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                            <div className="flex items-start justify-between">
+                                                <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                     <CalendarDays className="h-3.5 w-3.5" />
                                                     Created:
                                                 </span>
                                                 <div className="text-right">
-                                                    <span className="text-sm font-medium">
-                                                        {formatTimestamp(document.timestamp).date}
-                                                    </span>
-                                                    <p className="text-xs text-muted-foreground">
+                                                    <span className="text-sm font-medium">{formatTimestamp(document.timestamp).date}</span>
+                                                    <p className="text-muted-foreground text-xs">
                                                         {formatTimestamp(document.timestamp).time} • {formatTimestamp(document.timestamp).relative}
                                                     </p>
                                                 </div>
@@ -756,50 +730,40 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     </div>
 
                                     <div className="border-t pt-3">
-                                        <h4 className="text-sm font-medium text-primary mb-3">Viewing Statistics</h4>
+                                        <h4 className="text-primary mb-3 text-sm font-medium">Viewing Statistics</h4>
                                         <div className="space-y-3">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                     <Eye className="h-3.5 w-3.5" />
                                                     Total Views:
                                                 </span>
-                                                <span className="text-sm font-bold text-primary">
-                                                    {viewStats.total_views}
-                                                </span>
+                                                <span className="text-primary text-sm font-bold">{viewStats.total_views}</span>
                                             </div>
 
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                     <Users className="h-3.5 w-3.5" />
                                                     Unique Viewers:
                                                 </span>
-                                                <span className="text-sm font-bold text-success">
-                                                    {viewStats.unique_viewers}
-                                                </span>
+                                                <span className="text-success text-sm font-bold">{viewStats.unique_viewers}</span>
                                             </div>
 
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-muted-foreground">First Viewed:</span>
-                                                <span className="text-sm font-medium">
-                                                    {viewStats.first_viewed || 'Never'}
-                                                </span>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground text-sm">First Viewed:</span>
+                                                <span className="text-sm font-medium">{viewStats.first_viewed || 'Never'}</span>
                                             </div>
 
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-muted-foreground">Last Viewed:</span>
-                                                <span className="text-sm font-medium">
-                                                    {viewStats.last_viewed || 'Never'}
-                                                </span>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground text-sm">Last Viewed:</span>
+                                                <span className="text-sm font-medium">{viewStats.last_viewed || 'Never'}</span>
                                             </div>
 
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
                                                     <Clock className="h-3.5 w-3.5" />
                                                     Current Session:
                                                 </span>
-                                                <span className="text-sm font-medium text-warning">
-                                                    Active
-                                                </span>
+                                                <span className="text-warning text-sm font-medium">Active</span>
                                             </div>
                                         </div>
                                     </div>
@@ -817,10 +781,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     <div className="space-y-2">
                                         {Object.entries(viewStats.views_by_role).map(([role, count]) => (
                                             <div key={role} className="flex items-center justify-between">
-                                                <Badge
-                                                    variant="secondary"
-                                                    className={cn("text-xs", getRoleBadgeColor(role))}
-                                                >
+                                                <Badge variant="secondary" className={cn('text-xs', getRoleBadgeColor(role))}>
                                                     {formatRole(role)}
                                                 </Badge>
                                                 <span className="text-sm font-medium">{count}</span>
@@ -849,7 +810,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                         View All ({recentViews.length})
                                                     </Button>
                                                 </DialogTrigger>
-                                                <DialogContent className="max-w-4xl max-h-[80vh]">
+                                                <DialogContent className="max-h-[80vh] max-w-4xl">
                                                     <DialogHeader>
                                                         <DialogTitle className="flex items-center gap-2">
                                                             <Users className="h-5 w-5" />
@@ -859,16 +820,16 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                             Complete list of {recentViews.length} users who have viewed this document
                                                         </DialogDescription>
                                                     </DialogHeader>
-                                                    <ScrollArea className="h-[60vh] mt-4">
+                                                    <ScrollArea className="mt-4 h-[60vh]">
                                                         <div className="space-y-3 pr-4">
                                                             {recentViews.map((view, index) => (
                                                                 <div
                                                                     key={view.id}
-                                                                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                                                                    className="bg-card hover:bg-accent/50 flex items-center justify-between rounded-lg border p-3 transition-colors"
                                                                 >
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="flex items-center gap-2">
-                                                                            <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+                                                                            <span className="text-muted-foreground bg-muted rounded px-2 py-1 font-mono text-xs">
                                                                                 #{index + 1}
                                                                             </span>
                                                                             <Avatar className="h-8 w-8">
@@ -882,17 +843,17 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                                                 <span className="text-sm font-medium">{view.user.name}</span>
                                                                                 <Badge
                                                                                     variant="secondary"
-                                                                                    className={cn("text-xs", getRoleBadgeColor(view.user.role))}
+                                                                                    className={cn('text-xs', getRoleBadgeColor(view.user.role))}
                                                                                 >
                                                                                     {formatRole(view.user.role)}
                                                                                 </Badge>
                                                                             </div>
-                                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                            <div className="text-muted-foreground flex items-center gap-2 text-xs">
                                                                                 <span>{view.viewed_at_human}</span>
                                                                                 {view.user_address && (
                                                                                     <>
                                                                                         <span>•</span>
-                                                                                        <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded flex items-center gap-1">
+                                                                                        <span className="bg-muted flex items-center gap-1 rounded px-1 py-0.5 font-mono text-xs">
                                                                                             <Shield className="h-3 w-3" />
                                                                                             {formatUserAddress(view.user_address)}
                                                                                         </span>
@@ -919,32 +880,27 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                     <ScrollArea className="h-64">
                                         <div className="space-y-3">
                                             {recentViews.slice(0, 10).map((view) => (
-                                                <div
-                                                    key={view.id}
-                                                    className="flex items-center justify-between p-2 rounded-lg border"
-                                                >
+                                                <div key={view.id} className="flex items-center justify-between rounded-lg border p-2">
                                                     <div className="flex items-center gap-3">
                                                         <Avatar className="h-8 w-8">
-                                                            <AvatarFallback>
-                                                                {view.user.name.charAt(0).toUpperCase()}
-                                                            </AvatarFallback>
+                                                            <AvatarFallback>{view.user.name.charAt(0).toUpperCase()}</AvatarFallback>
                                                         </Avatar>
                                                         <div>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-sm font-medium">{view.user.name}</span>
                                                                 <Badge
                                                                     variant="secondary"
-                                                                    className={cn("text-xs", getRoleBadgeColor(view.user.role))}
+                                                                    className={cn('text-xs', getRoleBadgeColor(view.user.role))}
                                                                 >
                                                                     {formatRole(view.user.role)}
                                                                 </Badge>
                                                             </div>
-                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                            <div className="text-muted-foreground flex items-center gap-2 text-xs">
                                                                 <span>{view.viewed_at_human}</span>
                                                                 {view.user_address && (
                                                                     <>
                                                                         <span>•</span>
-                                                                        <span className="font-mono text-xs bg-muted text-muted-foreground px-1 py-0.5 rounded">
+                                                                        <span className="bg-muted text-muted-foreground rounded px-1 py-0.5 font-mono text-xs">
                                                                             {formatUserAddress(view.user_address)}
                                                                         </span>
                                                                     </>
@@ -952,20 +908,14 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {view.ip_address}
-                                                    </div>
+                                                    <div className="text-muted-foreground text-xs">{view.ip_address}</div>
                                                 </div>
                                             ))}
                                         </div>
                                     </ScrollArea>
                                     {recentViews.length > 10 && (
-                                        <div className="mt-4 pt-4 border-t">
-                                            <Button
-                                                variant="ghost"
-                                                className="w-full text-sm"
-                                                onClick={() => setShowAllViewersDialog(true)}
-                                            >
+                                        <div className="mt-4 border-t pt-4">
+                                            <Button variant="ghost" className="w-full text-sm" onClick={() => setShowAllViewersDialog(true)}>
                                                 View All {recentViews.length} Viewers
                                             </Button>
                                         </div>

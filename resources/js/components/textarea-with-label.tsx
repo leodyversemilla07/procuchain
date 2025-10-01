@@ -1,6 +1,6 @@
-import * as React from "react";
-import { Label } from "@/components/ui/label";
 import InputError from '@/components/input-error';
+import { Label } from '@/components/ui/label';
+import * as React from 'react';
 
 interface TextareaWithLabelProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
     label: string;
@@ -14,7 +14,7 @@ interface TextareaWithLabelProps extends React.TextareaHTMLAttributes<HTMLTextAr
 const TextareaWithLabel = React.forwardRef<HTMLTextAreaElement, TextareaWithLabelProps>(
     (
         { label, labelClassName, id, required, error, errorClassName, ...props }: TextareaWithLabelProps,
-        ref: React.ForwardedRef<HTMLTextAreaElement>
+        ref: React.ForwardedRef<HTMLTextAreaElement>,
     ) => {
         const generatedId = React.useId();
         const textareaId = id ?? generatedId;
@@ -28,15 +28,13 @@ const TextareaWithLabel = React.forwardRef<HTMLTextAreaElement, TextareaWithLabe
                         </span>
                     ) : null}
                 </Label>
-                <textarea ref={ref} id={textareaId} required={required} {...props} className="border rounded-md p-2" />
-                {error && (
-                    <InputError message={error} className={errorClassName} />
-                )}
+                <textarea ref={ref} id={textareaId} required={required} {...props} className="rounded-md border p-2" />
+                {error && <InputError message={error} className={errorClassName} />}
             </div>
         );
-    }
+    },
 );
 
-TextareaWithLabel.displayName = "TextareaWithLabel";
+TextareaWithLabel.displayName = 'TextareaWithLabel';
 
 export { TextareaWithLabel };

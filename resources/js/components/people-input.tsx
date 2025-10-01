@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Plus, X } from 'lucide-react';
+import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import InputError from '@/components/input-error';
 import { Label } from '@/components/ui/label';
+import { Plus, Users, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 interface PersonData {
     name: string;
@@ -51,7 +51,7 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
     const addPerson = () => {
         const trimmedName = nameInput.trim();
         const trimmedAffiliation = affiliationInput.trim();
-        if (trimmedName && trimmedAffiliation && !people.some(p => p.name === trimmedName && p.affiliation === trimmedAffiliation)) {
+        if (trimmedName && trimmedAffiliation && !people.some((p) => p.name === trimmedName && p.affiliation === trimmedAffiliation)) {
             const updated = [...people, { name: trimmedName, affiliation: trimmedAffiliation }];
             setPeople(updated);
             onChange(updated);
@@ -80,12 +80,12 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
             )}
             <div className="space-y-3">
                 <div className="flex gap-2">
-                    <div className="flex-1 flex gap-2">
+                    <div className="flex flex-1 gap-2">
                         <Input
                             value={nameInput}
-                            onChange={e => setNameInput(e.target.value)}
+                            onChange={(e) => setNameInput(e.target.value)}
                             placeholder={namePlaceholder}
-                            onKeyDown={e => {
+                            onKeyDown={(e) => {
                                 if (e.key === 'Enter' && affiliationInput) {
                                     addPerson();
                                     e.preventDefault();
@@ -94,9 +94,9 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                         />
                         <Input
                             value={affiliationInput}
-                            onChange={e => setAffiliationInput(e.target.value)}
+                            onChange={(e) => setAffiliationInput(e.target.value)}
                             placeholder={getAffiliationPlaceholder()}
-                            onKeyDown={e => {
+                            onKeyDown={(e) => {
                                 if (e.key === 'Enter' && nameInput) {
                                     addPerson();
                                     e.preventDefault();
@@ -107,7 +107,7 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                     <Button
                         type="button"
                         variant="secondary"
-                        className="px-3 flex items-center gap-1 whitespace-nowrap"
+                        className="flex items-center gap-1 px-3 whitespace-nowrap"
                         onClick={addPerson}
                         disabled={!nameInput.trim() || !affiliationInput.trim()}
                     >
@@ -117,18 +117,14 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {people.map((person, index) => (
-                        <Badge
-                            key={index}
-                            variant="secondary"
-                            className="flex items-center gap-1 py-1 px-2 text-xs sm:text-sm"
-                        >
+                        <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1 text-xs sm:text-sm">
                             <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             {person.name} - {person.affiliation}
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-4 w-4 sm:h-5 sm:w-5 hover:bg-destructive/10 hover:text-destructive ml-1 -mr-1"
+                                className="hover:bg-destructive/10 hover:text-destructive -mr-1 ml-1 h-4 w-4 sm:h-5 sm:w-5"
                                 onClick={() => removePerson(index)}
                             >
                                 <X className="h-3 w-3" />
@@ -137,9 +133,7 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                     ))}
                 </div>
             </div>
-            {error && (
-                <InputError message={error} className={errorClassName} />
-            )}
+            {error && <InputError message={error} className={errorClassName} />}
         </div>
     );
 };

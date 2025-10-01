@@ -1,22 +1,19 @@
-import * as React from "react"
-import { Input } from "./ui/input"
-import { Label } from "./ui/label"
 import InputError from '@/components/input-error';
+import * as React from 'react';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 interface InputWithLabelProps extends React.ComponentProps<typeof Input> {
-    label: string
-    labelClassName?: string
-    id?: string
-    required?: boolean
+    label: string;
+    labelClassName?: string;
+    id?: string;
+    required?: boolean;
     error?: string;
     errorClassName?: string;
 }
 
 const InputWithLabel = React.forwardRef<HTMLInputElement, InputWithLabelProps>(
-    (
-        { label, labelClassName, id, required, error, errorClassName, ...props }: InputWithLabelProps,
-        ref: React.ForwardedRef<HTMLInputElement>
-    ) => {
+    ({ label, labelClassName, id, required, error, errorClassName, ...props }: InputWithLabelProps, ref: React.ForwardedRef<HTMLInputElement>) => {
         const generatedId = React.useId();
         const inputId = id ?? generatedId;
         return (
@@ -30,14 +27,12 @@ const InputWithLabel = React.forwardRef<HTMLInputElement, InputWithLabelProps>(
                     ) : null}
                 </Label>
                 <Input ref={ref} id={inputId} required={required} {...props} />
-                {error && (
-                    <InputError message={error} className={errorClassName} />
-                )}
+                {error && <InputError message={error} className={errorClassName} />}
             </div>
         );
-    }
+    },
 );
 
-InputWithLabel.displayName = "InputWithLabel";
+InputWithLabel.displayName = 'InputWithLabel';
 
 export { InputWithLabel };

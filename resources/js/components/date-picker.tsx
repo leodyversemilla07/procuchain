@@ -1,11 +1,11 @@
-import React from "react";
-import { ChevronDownIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import InputError from "@/components/input-error";
-import { format } from "date-fns";
-import { Label } from "@/components/ui/label";
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { ChevronDownIcon } from 'lucide-react';
+import React from 'react';
 
 interface DatePickerProps {
     label?: string;
@@ -19,13 +19,13 @@ interface DatePickerProps {
 }
 
 const DatePicker: React.FC<DatePickerProps> = ({
-    label = "Date",
+    label = 'Date',
     value,
     onChange,
     error,
-    inputLabelClassName = "",
-    buttonClassName = "",
-    popoverClassName = "",
+    inputLabelClassName = '',
+    buttonClassName = '',
+    popoverClassName = '',
     required = false,
 }) => (
     <div className="flex flex-col gap-1">
@@ -41,22 +41,13 @@ const DatePicker: React.FC<DatePickerProps> = ({
         )}
         <Popover>
             <PopoverTrigger asChild>
-                <Button
-                    variant="outline"
-                    className={`w-full justify-between text-left font-normal h-9 px-3 py-2 ${buttonClassName}`}
-                >
-                    {value ? format(value, "PPP") : <span>Pick a date</span>}
-                    <ChevronDownIcon className="ml-2 h-4 w-4 text-muted-foreground" />
+                <Button variant="outline" className={`h-9 w-full justify-between px-3 py-2 text-left font-normal ${buttonClassName}`}>
+                    {value ? format(value, 'PPP') : <span>Pick a date</span>}
+                    <ChevronDownIcon className="text-muted-foreground ml-2 h-4 w-4" />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className={`w-auto p-0 ${popoverClassName}`} align="start">
-                <Calendar
-                    mode="single"
-                    selected={value}
-                    onSelect={onChange}
-                    className="rounded-md border shadow-md"
-                    captionLayout="dropdown"
-                />
+                <Calendar mode="single" selected={value} onSelect={onChange} className="rounded-md border shadow-md" captionLayout="dropdown" />
             </PopoverContent>
         </Popover>
         {error && <InputError message={error} />}

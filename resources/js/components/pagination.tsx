@@ -1,21 +1,15 @@
-import * as React from "react";
 import {
-    Pagination as UIPagination,
     PaginationContent,
+    PaginationEllipsis,
     PaginationItem,
     PaginationLink,
-    PaginationPrevious,
     PaginationNext,
-    PaginationEllipsis,
-} from "@/components/ui/pagination";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+    PaginationPrevious,
+    Pagination as UIPagination,
+} from '@/components/ui/pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+import * as React from 'react';
 
 interface PaginationProps {
     pageIndex: number;
@@ -59,27 +53,31 @@ export const Pagination: React.FC<PaginationProps> = ({
     const endEntry = Math.min((pageIndex + 1) * pageSize, totalItems);
 
     return (
-        <UIPagination className={cn("flex flex-col lg:flex-row items-center justify-between gap-4", className)}>
-            <div className="text-sm text-muted-foreground w-full lg:w-auto text-center lg:text-left">
+        <UIPagination className={cn('flex flex-col items-center justify-between gap-4 lg:flex-row', className)}>
+            <div className="text-muted-foreground w-full text-center text-sm lg:w-auto lg:text-left">
                 {totalItems > 0 ? (
                     <>
-                        Showing <span className="font-medium text-foreground">{startEntry}</span> to <span className="font-medium text-foreground">{endEntry}</span> of <span className="font-medium text-foreground">{totalItems}</span> entries
+                        Showing <span className="text-foreground font-medium">{startEntry}</span> to{' '}
+                        <span className="text-foreground font-medium">{endEntry}</span> of{' '}
+                        <span className="text-foreground font-medium">{totalItems}</span> entries
                     </>
                 ) : (
                     <>No entries to show</>
                 )}
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full lg:w-auto">
+            <div className="flex w-full flex-col items-center gap-3 sm:flex-row sm:gap-4 lg:w-auto">
                 {onPageSizeChange && (
-                    <div className="flex items-center gap-2 order-2 sm:order-1">
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page</span>
-                        <Select value={String(pageSize)} onValueChange={v => onPageSizeChange(Number(v))}>
-                            <SelectTrigger className="h-8 w-[70px] border rounded px-2 focus:ring-ring focus:border-ring bg-background">
+                    <div className="order-2 flex items-center gap-2 sm:order-1">
+                        <span className="text-muted-foreground text-sm whitespace-nowrap">Rows per page</span>
+                        <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
+                            <SelectTrigger className="focus:ring-ring focus:border-ring bg-background h-8 w-[70px] rounded border px-2">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {pageSizeOptions.map(size => (
-                                    <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+                                {pageSizeOptions.map((size) => (
+                                    <SelectItem key={size} value={String(size)}>
+                                        {size}
+                                    </SelectItem>
                                 ))}
                                 <SelectItem value="9999">All</SelectItem>
                             </SelectContent>
@@ -110,7 +108,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                                     <PaginationLink
                                         isActive={isCurrentPage}
                                         onClick={() => onPageChange(pageNumber - 1)}
-                                        aria-current={isCurrentPage ? "page" : undefined}
+                                        aria-current={isCurrentPage ? 'page' : undefined}
                                     >
                                         {pageNumber}
                                     </PaginationLink>
@@ -122,7 +120,10 @@ export const Pagination: React.FC<PaginationProps> = ({
                                 onClick={() => onPageChange(pageIndex + 1)}
                                 aria-disabled={pageIndex >= pageCount - 1}
                                 tabIndex={pageIndex >= pageCount - 1 ? -1 : 0}
-                                style={{ pointerEvents: pageIndex >= pageCount - 1 ? 'none' : undefined, opacity: pageIndex >= pageCount - 1 ? 0.5 : 1 }}
+                                style={{
+                                    pointerEvents: pageIndex >= pageCount - 1 ? 'none' : undefined,
+                                    opacity: pageIndex >= pageCount - 1 ? 0.5 : 1,
+                                }}
                             />
                         </PaginationItem>
                     </PaginationContent>

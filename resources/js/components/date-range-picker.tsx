@@ -1,12 +1,12 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import InputError from "@/components/input-error";
-import { format } from "date-fns";
-import { Label } from "@/components/ui/label";
-import { DateRange } from "react-day-picker";
-import { ChevronDownIcon } from "lucide-react";
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { ChevronDownIcon } from 'lucide-react';
+import React from 'react';
+import { DateRange } from 'react-day-picker';
 
 interface DateRangePickerProps {
     label?: string;
@@ -20,14 +20,14 @@ interface DateRangePickerProps {
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({
-    label = "Date Range",
+    label = 'Date Range',
     value,
     onChange,
     error,
     required = false,
-    inputLabelClassName = "",
-    buttonClassName = "",
-    popoverClassName = "",
+    inputLabelClassName = '',
+    buttonClassName = '',
+    popoverClassName = '',
 }) => (
     <div className="flex flex-col gap-1">
         {label && (
@@ -42,22 +42,19 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         )}
         <Popover>
             <PopoverTrigger asChild>
-                <Button
-                    variant="outline"
-                    className={`w-full justify-between text-left font-normal h-9 px-3 py-2 ${buttonClassName}`}
-                >
+                <Button variant="outline" className={`h-9 w-full justify-between px-3 py-2 text-left font-normal ${buttonClassName}`}>
                     {value?.from ? (
                         value.to ? (
                             <>
-                                {format(value.from, "LLL dd, y")} - {format(value.to, "LLL dd, y")}
+                                {format(value.from, 'LLL dd, y')} - {format(value.to, 'LLL dd, y')}
                             </>
                         ) : (
-                            format(value.from, "LLL dd, y")
+                            format(value.from, 'LLL dd, y')
                         )
                     ) : (
                         <span>Pick a date range</span>
                     )}
-                    <ChevronDownIcon className="ml-2 h-4 w-4 text-muted-foreground" />
+                    <ChevronDownIcon className="text-muted-foreground ml-2 h-4 w-4" />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className={`w-auto p-0 ${popoverClassName}`} align="start">

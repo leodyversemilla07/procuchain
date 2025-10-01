@@ -1,20 +1,18 @@
-import { useState, useCallback, useMemo } from 'react';
-import { Head, usePage, router } from '@inertiajs/react';
-import { usePoll } from '@inertiajs/react';
-import { formatDistanceToNow, format } from 'date-fns';
-import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bell, CheckCheck, Clock, AlertCircle, RotateCw, Check, Filter, ExternalLink, X } from 'lucide-react';
-import { toast } from "sonner";
+import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
-import { BreadcrumbItem } from '@/types';
-import { User } from '@/types';
+import { BreadcrumbItem, User } from '@/types';
+import { Head, router, usePage, usePoll } from '@inertiajs/react';
+import { format, formatDistanceToNow } from 'date-fns';
+import { AlertCircle, Bell, Check, CheckCheck, Clock, ExternalLink, Filter, RotateCw, X } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Notification {
     id: string;
@@ -94,8 +92,8 @@ export default function Notifications() {
     const [refreshing, setRefreshing] = useState(false);
 
     const filterNotifications = useCallback((notifications: Notification[], filterType: FilterType) => {
-        if (filterType === 'read') return notifications.filter(n => n.read_at !== null);
-        if (filterType === 'unread') return notifications.filter(n => n.read_at === null);
+        if (filterType === 'read') return notifications.filter((n) => n.read_at !== null);
+        if (filterType === 'unread') return notifications.filter((n) => n.read_at === null);
         return notifications;
     }, []);
 
@@ -114,19 +112,27 @@ export default function Notifications() {
     }, []);
 
     const handleMarkAsRead = useCallback(async (id: string) => {
-        router.post(`/notifications/${id}/mark-as-read`, {}, {
-            preserveScroll: true,
-            onSuccess: () => toast.success('Notification marked as read'),
-            onError: () => toast.error('Failed to mark notification as read'),
-        });
+        router.post(
+            `/notifications/${id}/mark-as-read`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Notification marked as read'),
+                onError: () => toast.error('Failed to mark notification as read'),
+            },
+        );
     }, []);
 
     const handleMarkAllAsRead = useCallback(async () => {
-        router.post('/notifications/mark-all-as-read', {}, {
-            preserveScroll: true,
-            onSuccess: () => toast.success('All notifications marked as read'),
-            onError: () => toast.error('Failed to mark all notifications as read'),
-        });
+        router.post(
+            '/notifications/mark-all-as-read',
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('All notifications marked as read'),
+                onError: () => toast.error('Failed to mark all notifications as read'),
+            },
+        );
     }, []);
 
     const handleRefresh = useCallback(() => {
@@ -137,10 +143,7 @@ export default function Notifications() {
         });
     }, []);
 
-    const pageNumbers = useMemo(() =>
-        Array.from({ length: totalPages }, (_, i) => i + 1),
-        [totalPages]
-    );
+    const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, i) => i + 1), [totalPages]);
 
     // Loading state will be handled by Inertia's processing state
     const loading = false;
@@ -148,13 +151,13 @@ export default function Notifications() {
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'success':
-                return <CheckCheck className="h-5 w-5 text-primary" />;
+                return <CheckCheck className="text-primary h-5 w-5" />;
             case 'warning':
-                return <AlertCircle className="h-5 w-5 text-destructive" />;
+                return <AlertCircle className="text-destructive h-5 w-5" />;
             case 'info':
-                return <Clock className="h-5 w-5 text-secondary-foreground" />;
+                return <Clock className="text-secondary-foreground h-5 w-5" />;
             default:
-                return <Bell className="h-5 w-5 text-muted-foreground" />;
+                return <Bell className="text-muted-foreground h-5 w-5" />;
         }
     };
 
@@ -177,13 +180,13 @@ export default function Notifications() {
     };
 
     const EmptyState = () => (
-        <div className="flex items-center justify-center min-h-[400px] w-full">
+        <div className="flex min-h-[400px] w-full items-center justify-center">
             <div className="text-center">
-                <div className="rounded-full bg-muted/10 p-3 mb-4 mx-auto w-fit">
-                    <Bell className="h-6 w-6 text-muted-foreground" />
+                <div className="bg-muted/10 mx-auto mb-4 w-fit rounded-full p-3">
+                    <Bell className="text-muted-foreground h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-medium text-foreground mb-1">No notifications</h3>
-                <p className="text-sm text-muted-foreground/70">You're all caught up!</p>
+                <h3 className="text-foreground mb-1 text-lg font-medium">No notifications</h3>
+                <p className="text-muted-foreground/70 text-sm">You're all caught up!</p>
             </div>
         </div>
     );
@@ -223,21 +226,19 @@ export default function Notifications() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Notifications" />
-            <div className="flex flex-col h-full">
+            <div className="flex h-full flex-col">
                 {/* Header Section */}
-                <div className="border-b bg-card">
-                    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="bg-card border-b">
+                    <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="space-y-1">
-                                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Notifications</h1>
-                                <p className="text-xs sm:text-sm text-muted-foreground">
-                                    Stay updated with your procurement activities and updates
-                                </p>
+                                <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Notifications</h1>
+                                <p className="text-muted-foreground text-xs sm:text-sm">Stay updated with your procurement activities and updates</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                 <Select value={filter} onValueChange={handleFilterChange}>
                                     <SelectTrigger className="w-[120px] sm:w-[140px]">
-                                        <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+                                        <Filter className="text-muted-foreground mr-2 h-4 w-4" />
                                         <SelectValue placeholder="Filter">
                                             {filter === 'all' ? 'All' : filter === 'read' ? 'Read' : 'Unread'}
                                         </SelectValue>
@@ -252,10 +253,7 @@ export default function Notifications() {
                                     variant="outline"
                                     size="icon"
                                     onClick={handleRefresh}
-                                    className={cn(
-                                        "text-muted-foreground hover:text-foreground transition-all",
-                                        refreshing && "animate-spin"
-                                    )}
+                                    className={cn('text-muted-foreground hover:text-foreground transition-all', refreshing && 'animate-spin')}
                                 >
                                     <RotateCw className="h-4 w-4" />
                                 </Button>
@@ -275,19 +273,19 @@ export default function Notifications() {
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+                <div className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
                     <div className="flex flex-col gap-4 sm:gap-6">
                         {/* Stats Section */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                             <Card>
                                 <CardContent className="p-4 sm:p-6">
                                     <div className="flex items-center gap-3 sm:gap-4">
-                                        <div className="rounded-full bg-primary/10 p-2 sm:p-3">
-                                            <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                                        <div className="bg-primary/10 rounded-full p-2 sm:p-3">
+                                            <Bell className="text-primary h-5 w-5 sm:h-6 sm:w-6" />
                                         </div>
                                         <div>
-                                            <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Notifications</p>
-                                            <p className="text-xl sm:text-2xl font-bold">{filteredNotifications.length}</p>
+                                            <p className="text-muted-foreground text-xs font-medium sm:text-sm">Total Notifications</p>
+                                            <p className="text-xl font-bold sm:text-2xl">{filteredNotifications.length}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -296,11 +294,11 @@ export default function Notifications() {
                                 <CardContent className="p-4 sm:p-6">
                                     <div className="flex items-center gap-3 sm:gap-4">
                                         <div className="rounded-full bg-yellow-500/10 p-2 sm:p-3">
-                                            <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
+                                            <AlertCircle className="h-5 w-5 text-yellow-500 sm:h-6 sm:w-6" />
                                         </div>
                                         <div>
-                                            <p className="text-xs sm:text-sm font-medium text-muted-foreground">Unread</p>
-                                            <p className="text-xl sm:text-2xl font-bold">{unread_count}</p>
+                                            <p className="text-muted-foreground text-xs font-medium sm:text-sm">Unread</p>
+                                            <p className="text-xl font-bold sm:text-2xl">{unread_count}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -309,11 +307,11 @@ export default function Notifications() {
                                 <CardContent className="p-4 sm:p-6">
                                     <div className="flex items-center gap-3 sm:gap-4">
                                         <div className="rounded-full bg-green-500/10 p-2 sm:p-3">
-                                            <CheckCheck className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
+                                            <CheckCheck className="h-5 w-5 text-green-500 sm:h-6 sm:w-6" />
                                         </div>
                                         <div>
-                                            <p className="text-xs sm:text-sm font-medium text-muted-foreground">Read</p>
-                                            <p className="text-xl sm:text-2xl font-bold">{filteredNotifications.length - unread_count}</p>
+                                            <p className="text-muted-foreground text-xs font-medium sm:text-sm">Read</p>
+                                            <p className="text-xl font-bold sm:text-2xl">{filteredNotifications.length - unread_count}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -322,17 +320,17 @@ export default function Notifications() {
 
                         {/* Notifications List */}
                         <Card className="overflow-hidden">
-                            <CardHeader className="bg-card border-b px-4 sm:px-6 py-3 sm:py-4">
+                            <CardHeader className="bg-card border-b px-4 py-3 sm:px-6 sm:py-4">
                                 <CardTitle className="text-base sm:text-lg">All Notifications</CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
                                 {loading ? (
-                                    <div className="divide-y divide-border">
+                                    <div className="divide-border divide-y">
                                         <div className="space-y-4 p-4">
                                             {[...Array(3)].map((_, i) => (
                                                 <div key={i} className="flex items-start gap-4">
-                                                    <Skeleton className="h-8 w-8 sm:h-10 sm:w-10 rounded-full" />
-                                                    <div className="space-y-2 flex-1">
+                                                    <Skeleton className="h-8 w-8 rounded-full sm:h-10 sm:w-10" />
+                                                    <div className="flex-1 space-y-2">
                                                         <Skeleton className="h-4 w-[60%]" />
                                                         <Skeleton className="h-3 w-[80%]" />
                                                         <Skeleton className="h-3 w-[40%]" />
@@ -344,44 +342,42 @@ export default function Notifications() {
                                 ) : paginatedNotifications.length === 0 ? (
                                     <EmptyState />
                                 ) : (
-                                    <div className="divide-y divide-border">
+                                    <div className="divide-border divide-y">
                                         {paginatedNotifications.map((notification: Notification) => (
                                             <div
                                                 key={notification.id}
                                                 className={cn(
-                                                    "p-4 sm:p-6 flex items-start gap-3 sm:gap-4 transition-all relative group cursor-pointer",
-                                                    !notification.read_at && "bg-primary/5 hover:bg-primary/10",
-                                                    notification.read_at && "hover:bg-muted/5"
+                                                    'group relative flex cursor-pointer items-start gap-3 p-4 transition-all sm:gap-4 sm:p-6',
+                                                    !notification.read_at && 'bg-primary/5 hover:bg-primary/10',
+                                                    notification.read_at && 'hover:bg-muted/5',
                                                 )}
                                                 onClick={() => handleNotificationClick(notification)}
                                             >
-                                                <div className="flex-shrink-0">
-                                                    {getNotificationIcon(notification.type)}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                                                <div className="flex-shrink-0">{getNotificationIcon(notification.type)}</div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                                                         <div className="flex-1">
-                                                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                                <h3 className="font-medium text-foreground text-sm sm:text-base">
+                                                            <div className="mb-2 flex flex-wrap items-center gap-2">
+                                                                <h3 className="text-foreground text-sm font-medium sm:text-base">
                                                                     {notification.data.procurement_title}
                                                                 </h3>
                                                                 {getStatusBadge(getNotificationStatus(notification))}
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <p className="text-xs sm:text-sm text-muted-foreground">
+                                                                <p className="text-muted-foreground text-xs sm:text-sm">
                                                                     Stage: {notification.data.stage_identifier} - {notification.data.action_type}
                                                                 </p>
                                                                 {notification.data.transition_message && (
-                                                                    <p className="text-xs sm:text-sm text-muted-foreground/80 line-clamp-2">
+                                                                    <p className="text-muted-foreground/80 line-clamp-2 text-xs sm:text-sm">
                                                                         {notification.data.transition_message}
                                                                     </p>
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        <div className="flex flex-col items-start sm:items-end gap-2">
+                                                        <div className="flex flex-col items-start gap-2 sm:items-end">
                                                             <HoverCard>
                                                                 <HoverCardTrigger asChild>
-                                                                    <time className="text-xs text-muted-foreground/70 whitespace-nowrap cursor-help">
+                                                                    <time className="text-muted-foreground/70 cursor-help text-xs whitespace-nowrap">
                                                                         {formatDistance(notification.created_at)}
                                                                     </time>
                                                                 </HoverCardTrigger>
@@ -393,13 +389,13 @@ export default function Notifications() {
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
-                                                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                    className="opacity-0 transition-opacity group-hover:opacity-100"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         handleMarkAsRead(notification.id);
                                                                     }}
                                                                 >
-                                                                    <Check className="w-4 h-4 mr-1" />
+                                                                    <Check className="mr-1 h-4 w-4" />
                                                                     Mark as read
                                                                 </Button>
                                                             )}
@@ -413,22 +409,28 @@ export default function Notifications() {
 
                                 {/* Pagination */}
                                 {totalPages > 1 && (
-                                    <div className="flex items-center justify-center gap-2 py-3 sm:py-4 border-t border-border bg-card/50">
+                                    <div className="border-border bg-card/50 flex items-center justify-center gap-2 border-t py-3 sm:py-4">
                                         <div className="flex flex-wrap gap-1">
                                             {pageNumbers.map((pageNum) => (
                                                 <Button
                                                     key={pageNum}
-                                                    variant={pageNum === currentPage ? "default" : "outline"}
+                                                    variant={pageNum === currentPage ? 'default' : 'outline'}
                                                     size="sm"
                                                     className={cn(
-                                                        "w-7 h-7 sm:w-8 sm:h-8 p-0",
-                                                        pageNum === currentPage && "bg-primary text-primary-foreground hover:bg-primary/90",
-                                                        pageNum !== currentPage && "text-muted-foreground hover:text-foreground"
+                                                        'h-7 w-7 p-0 sm:h-8 sm:w-8',
+                                                        pageNum === currentPage && 'bg-primary text-primary-foreground hover:bg-primary/90',
+                                                        pageNum !== currentPage && 'text-muted-foreground hover:text-foreground',
                                                     )}
-                                                    onClick={() => router.get(window.location.pathname, { page: pageNum }, { 
-                                                        preserveState: true,
-                                                        preserveScroll: true 
-                                                    })}
+                                                    onClick={() =>
+                                                        router.get(
+                                                            window.location.pathname,
+                                                            { page: pageNum },
+                                                            {
+                                                                preserveState: true,
+                                                                preserveScroll: true,
+                                                            },
+                                                        )
+                                                    }
                                                 >
                                                     {pageNum}
                                                 </Button>
@@ -444,40 +446,33 @@ export default function Notifications() {
 
             {/* Notification Details Sheet */}
             <Sheet open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0">
-                    <div className="sticky top-0 z-10 bg-background border-b">
+                <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-lg">
+                    <div className="bg-background sticky top-0 z-10 border-b">
                         <div className="flex items-center justify-between p-6">
                             <div className="space-y-1">
-                                <SheetTitle className="text-xl font-semibold">
-                                    {selectedNotification?.data.title}
-                                </SheetTitle>
-                                <SheetDescription className="text-sm text-muted-foreground">
+                                <SheetTitle className="text-xl font-semibold">{selectedNotification?.data.title}</SheetTitle>
+                                <SheetDescription className="text-muted-foreground text-sm">
                                     {formatDate(selectedNotification?.created_at)}
                                 </SheetDescription>
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => setIsDialogOpen(false)}
-                            >
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsDialogOpen(false)}>
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
                     </div>
 
-                    <div className="p-6 space-y-8">
+                    <div className="space-y-8 p-6">
                         {/* Status Badge */}
                         <div className="flex items-center gap-2">
                             {getNotificationIcon(selectedNotification?.type || '')}
-                            {getStatusBadge(getNotificationStatus(selectedNotification || {} as Notification))}
+                            {getStatusBadge(getNotificationStatus(selectedNotification || ({} as Notification)))}
                         </div>
 
                         {/* Procurement Details */}
                         <div className="space-y-4">
                             <div className="flex items-center gap-2">
-                                <h4 className="font-medium text-sm">Procurement Details</h4>
-                                <div className="h-px flex-1 bg-border" />
+                                <h4 className="text-sm font-medium">Procurement Details</h4>
+                                <div className="bg-border h-px flex-1" />
                             </div>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div className="space-y-1">
@@ -506,30 +501,26 @@ export default function Notifications() {
                         {/* Timeline */}
                         <div className="space-y-4">
                             <div className="flex items-center gap-2">
-                                <h4 className="font-medium text-sm">Timeline</h4>
-                                <div className="h-px flex-1 bg-border" />
+                                <h4 className="text-sm font-medium">Timeline</h4>
+                                <div className="bg-border h-px flex-1" />
                             </div>
                             <div className="space-y-3">
                                 <div className="flex items-start gap-3">
                                     <div className="mt-1">
-                                        <div className="h-2 w-2 rounded-full bg-primary" />
+                                        <div className="bg-primary h-2 w-2 rounded-full" />
                                     </div>
                                     <div className="space-y-1">
                                         <div className="text-sm font-medium">Created</div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {formatDate(selectedNotification?.created_at)}
-                                        </div>
+                                        <div className="text-muted-foreground text-sm">{formatDate(selectedNotification?.created_at)}</div>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="mt-1">
-                                        <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+                                        <div className="bg-muted-foreground h-2 w-2 rounded-full" />
                                     </div>
                                     <div className="space-y-1">
                                         <div className="text-sm font-medium">Updated</div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {formatDate(selectedNotification?.updated_at)}
-                                        </div>
+                                        <div className="text-muted-foreground text-sm">{formatDate(selectedNotification?.updated_at)}</div>
                                     </div>
                                 </div>
                                 {selectedNotification?.read_at && (
@@ -539,9 +530,7 @@ export default function Notifications() {
                                         </div>
                                         <div className="space-y-1">
                                             <div className="text-sm font-medium">Read</div>
-                                            <div className="text-sm text-muted-foreground">
-                                                {formatDate(selectedNotification?.read_at)}
-                                            </div>
+                                            <div className="text-muted-foreground text-sm">{formatDate(selectedNotification?.read_at)}</div>
                                         </div>
                                     </div>
                                 )}
@@ -552,25 +541,19 @@ export default function Notifications() {
                         {selectedNotification?.data.transition_message && (
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2">
-                                    <h4 className="font-medium text-sm">Message</h4>
-                                    <div className="h-px flex-1 bg-border" />
+                                    <h4 className="text-sm font-medium">Message</h4>
+                                    <div className="bg-border h-px flex-1" />
                                 </div>
-                                <div className="rounded-lg border bg-card p-4">
-                                    <p className="text-sm text-muted-foreground">
-                                        {selectedNotification.data.transition_message}
-                                    </p>
+                                <div className="bg-card rounded-lg border p-4">
+                                    <p className="text-muted-foreground text-sm">{selectedNotification.data.transition_message}</p>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    <div className="sticky bottom-0 z-10 bg-background border-t p-6">
+                    <div className="bg-background sticky bottom-0 z-10 border-t p-6">
                         <div className="flex gap-3">
-                            <Button
-                                variant="outline"
-                                className="flex-1"
-                                onClick={() => setIsDialogOpen(false)}
-                            >
+                            <Button variant="outline" className="flex-1" onClick={() => setIsDialogOpen(false)}>
                                 Close
                             </Button>
                             <Button
@@ -582,7 +565,7 @@ export default function Notifications() {
                                     }
                                 }}
                             >
-                                <ExternalLink className="w-4 h-4 mr-2" />
+                                <ExternalLink className="mr-2 h-4 w-4" />
                                 View Procurement
                             </Button>
                         </div>
