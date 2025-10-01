@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { type BreadcrumbItem } from '@/types';
-import { Head, usePage, router } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Mail } from 'lucide-react';
-import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { type BreadcrumbItem } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import { Mail } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -31,18 +31,22 @@ export default function EmailNotification() {
     const handleToggle = async (enabled: boolean) => {
         setIsLoading(true);
         try {
-            await router.patch('/settings/email-notification', {
-                email_notifications_enabled: enabled,
-            }, {
-                onSuccess: () => {
-                    setEmailNotificationsEnabled(enabled);
-                    toast.success(enabled ? 'Email notifications enabled' : 'Email notifications disabled');
+            await router.patch(
+                '/settings/email-notification',
+                {
+                    email_notifications_enabled: enabled,
                 },
-                onError: () => {
-                    toast.error('Failed to update email notification settings');
+                {
+                    onSuccess: () => {
+                        setEmailNotificationsEnabled(enabled);
+                        toast.success(enabled ? 'Email notifications enabled' : 'Email notifications disabled');
+                    },
+                    onError: () => {
+                        toast.error('Failed to update email notification settings');
+                    },
+                    onFinish: () => setIsLoading(false),
                 },
-                onFinish: () => setIsLoading(false),
-            });
+            );
         } catch {
             toast.error('Failed to update email notification settings');
             setIsLoading(false);
@@ -56,9 +60,7 @@ export default function EmailNotification() {
                 <div className="space-y-6">
                     <div>
                         <h2 className="text-2xl font-bold tracking-tight">Email Notifications</h2>
-                        <p className="text-muted-foreground">
-                            Manage your email notification preferences.
-                        </p>
+                        <p className="text-muted-foreground">Manage your email notification preferences.</p>
                     </div>
 
                     <Card>
@@ -67,9 +69,7 @@ export default function EmailNotification() {
                                 <Mail className={`h-5 w-5 ${emailNotificationsEnabled ? '' : 'opacity-50'}`} />
                                 Email Notifications
                             </CardTitle>
-                            <CardDescription>
-                                Receive email notifications for important updates and activities.
-                            </CardDescription>
+                            <CardDescription>Receive email notifications for important updates and activities.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between">
@@ -77,7 +77,7 @@ export default function EmailNotification() {
                                     <Label htmlFor="email-notifications" className="text-base">
                                         Enable email notifications
                                     </Label>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                         You'll receive emails about procurement updates, account changes, and other important notifications.
                                     </p>
                                 </div>

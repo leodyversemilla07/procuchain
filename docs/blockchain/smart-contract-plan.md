@@ -2,6 +2,19 @@
 
 This document outlines the smart-contract-style enforcement that can be implemented on top of the existing MultiChain integration. MultiChain does not execute Turing-complete contracts, but its **libraries** and **stream filters** allow us to enforce business rules directly on-chain. The goal is to publish reusable JavaScript helpers and attach filters to the relevant streams so that invalid transactions are rejected before they are committed.
 
+## MultiChain Smart Contract Model
+
+MultiChain approaches smart contracts as deterministic validation rather than general-purpose computation. Instead of executing arbitrary bytecode on every node, MultiChain stores rules as JavaScript **Smart Filters** that run inside a sandboxed V8 engine whenever a transaction or stream item is processed.[^1] Filters can only accept or reject data, which keeps consensus fast while still enforcing business logic close to the ledger.
+
+The platform exposes a small set of building blocks for composing richer behaviour:[^2][^3]
+
+- **Smart Filters** (`txfilter`, `streamfilter`): Deterministic validators that inspect transaction inputs/outputs or stream items before they are committed. They can call helper callbacks such as `getfiltertransaction()`, `getfilterstreamitem()`, `getvariablevalue()`, and stream query helpers.
+- **Libraries**: On-chain JavaScript modules whose functions can be imported into filters via `options.libraries`. Libraries support immutable, instant-update, or admin-approved update modes, enabling controlled rollouts of shared logic.
+- **Variables**: Shared JSON blobs stored on-chain, readable from filters and writable by authorised addresses. We use them to store configuration like allowed document types, size thresholds, or role mappings.
+- **Permissions & Approvals**: Deployment requires the `create` permission; activating filters or library updates relies on admin consensus via `approvefrom`. Per-stream, per-variable, and per-library permissions gate who may publish or update.
+
+Implementation in ProcuChain layers domain-specific validation on these primitives: we publish reusable helpers as libraries, encapsulate rule parameters in variables, and attach filters to the relevant streams so every node enforces the same workflow.
+
 ## Guiding Principles
 
 - **Re-use existing streams**: `procurement.documents`, `procurement.status`, `procurement.events`, and configuration variables already contain the data we need.
@@ -119,3 +132,9 @@ Modify `App\Console\Commands\SmartContractSetup` to:
 3. Modify Laravel jobs/services to surface filter rejection errors to the UI/tests.
 4. Add Pest tests covering deployment logic and representative rejection scenarios.
 5. Prepare demo scripts showing successful vs. rejected transactions for the capstone defense.
+
+## References
+
+[^1]: Gideon Greenspan, “Smart contracts: The good, the bad and the lazy,” MultiChain Blog (2015) – <https://www.multichain.com/blog/2015/11/smart-contracts-good-bad-lazy/>.
+[^2]: Gideon Greenspan, “MultiChain 2.1: Variables and Libraries,” MultiChain Blog (2020) – <https://www.multichain.com/blog/2020/10/multichain-2-1-variables-libraries/>.
+[^3]: MultiChain, “JSON-RPC API commands,” Developer Documentation – <https://www.multichain.com/developers/json-rpc-api/>.

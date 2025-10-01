@@ -1,7 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const LoadingSkeleton = () => (
-    <div className="space-y-4 mt-0">
+    <div className="mt-0 space-y-4">
         <div className="flex justify-between">
             <Skeleton className="h-10 w-[250px] dark:bg-gray-800" />
             <Skeleton className="h-10 w-[120px] dark:bg-gray-800" />

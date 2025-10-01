@@ -1,9 +1,9 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { FileUp, X, FileText } from 'lucide-react';
 import InputError from '@/components/input-error';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { FileText, FileUp, X } from 'lucide-react';
+import React from 'react';
 
 interface FileUploadAreaProps {
     label: string;
@@ -50,14 +50,15 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
             ) : null}
         </Label>
         <div
-            className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 min-h-[220px] flex flex-col justify-center ${isDragging
-                ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
-                : file
-                    ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
-                    : error
+            className={`relative flex min-h-[220px] flex-col justify-center rounded-lg border-2 border-dashed p-6 transition-all duration-200 ${
+                isDragging
+                    ? 'border-primary bg-primary/5 scale-[1.01] shadow-md'
+                    : file
+                      ? 'border-green-500/50 bg-green-50 dark:bg-green-900/20'
+                      : error
                         ? 'border-destructive/50 bg-destructive/5 dark:bg-destructive/10'
                         : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
-                } cursor-pointer group`}
+            } group cursor-pointer`}
             onDragEnter={onDragEnter}
             onDragLeave={onDragLeave}
             onDragOver={onDragOver}
@@ -66,54 +67,44 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
         >
             {!file ? (
                 <div className="flex flex-col items-center justify-center text-center">
-                    <div className="rounded-full bg-muted p-3 mb-3 group-hover:bg-primary/10 transition-colors">
-                        <FileUp className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <div className="bg-muted group-hover:bg-primary/10 mb-3 rounded-full p-3 transition-colors">
+                        <FileUp className="text-muted-foreground group-hover:text-primary h-6 w-6 transition-colors" />
                     </div>
-                    <p className="font-medium text-muted-foreground mb-2 group-hover:text-foreground transition-colors">
+                    <p className="text-muted-foreground group-hover:text-foreground mb-2 font-medium transition-colors">
                         Drag and drop your file here
                     </p>
-                    <p className="text-sm text-muted-foreground/70 mb-5">
-                        Only PDF files are supported
-                    </p>
+                    <p className="text-muted-foreground/70 mb-5 text-sm">Only PDF files are supported</p>
                     <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         className="group-hover:bg-primary/5 transition-colors"
-                        onClick={e => {
+                        onClick={(e) => {
                             e.stopPropagation();
                             document.getElementById(inputId)?.click();
                         }}
                     >
                         Browse Files
                     </Button>
-                    <Input
-                        id={inputId}
-                        type="file"
-                        accept={accept}
-                        className="hidden"
-                        onChange={onFileChange}
-                    />
+                    <Input id={inputId} type="file" accept={accept} className="hidden" onChange={onFileChange} />
                 </div>
             ) : (
                 <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                        <div className="rounded-full bg-primary/10 p-3 mr-4">
-                            <FileText className="h-6 w-6 text-primary" />
+                        <div className="bg-primary/10 mr-4 rounded-full p-3">
+                            <FileText className="text-primary h-6 w-6" />
                         </div>
                         <div>
                             <p className="font-medium">{file.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                                {(file.size / 1024).toFixed(2)} KB • PDF
-                            </p>
+                            <p className="text-muted-foreground text-sm">{(file.size / 1024).toFixed(2)} KB • PDF</p>
                         </div>
                     </div>
                     <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="rounded-full transition-colors self-end sm:self-auto flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-destructive/60 focus:ring-offset-2 hover:bg-destructive hover:text-white dark:hover:bg-destructive dark:hover:text-white cursor-pointer"
-                        onClick={e => {
+                        className="focus:ring-destructive/60 hover:bg-destructive dark:hover:bg-destructive flex-shrink-0 cursor-pointer self-end rounded-full transition-colors hover:text-white focus:ring-2 focus:ring-offset-2 focus:outline-none sm:self-auto dark:hover:text-white"
+                        onClick={(e) => {
                             e.stopPropagation();
                             onRemove();
                         }}

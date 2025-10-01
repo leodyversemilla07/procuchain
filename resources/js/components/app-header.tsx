@@ -23,7 +23,7 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Dashboard',
                     url: '/bac-secretariat/dashboard',
                     icon: LayoutGrid,
-                }
+                },
             ];
         case 'bac_chairman':
             return [
@@ -31,7 +31,7 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Dashboard',
                     url: '/bac-chairman/dashboard',
                     icon: LayoutGrid,
-                }
+                },
             ];
         case 'hope':
             return [
@@ -39,7 +39,7 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Dashboard',
                     url: '/hope/dashboard',
                     icon: LayoutGrid,
-                }
+                },
             ];
         case 'admin':
             return [
@@ -47,7 +47,7 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Dashboard',
                     url: '/admin/dashboard',
                     icon: LayoutGrid,
-                }
+                },
             ];
         default:
             return [];

@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Table2, Upload, Bell, Users, Shield, ShieldOff } from 'lucide-react';
+import { Bell, LayoutGrid, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getNavItemsByRole = (role: string): NavItem[] => {
@@ -25,7 +25,7 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Procurement Initiation',
                     url: '/bac-secretariat/procurement/procurement-initiation',
                     icon: Upload,
-                }
+                },
             ];
         case 'bac_chairman':
             return [
@@ -38,7 +38,7 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Procurement List',
                     url: '/bac-chairman/procurements-list',
                     icon: Table2,
-                }
+                },
             ];
         case 'hope':
             return [
@@ -51,7 +51,7 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Procurement List',
                     url: '/hope/procurements-list',
                     icon: Table2,
-                }
+                },
             ];
         case 'admin':
             return [
@@ -79,7 +79,7 @@ const getNavItemsByRole = (role: string): NavItem[] => {
                     title: 'Login Logs',
                     url: '/admin/login-logs',
                     icon: Shield,
-                }
+                },
             ];
         default:
             return [];
@@ -93,7 +93,7 @@ const getFooterNavItemsByRole = (role: string): NavItem[] => {
                 title: 'Notifications',
                 url: '/notifications',
                 icon: Bell,
-            }
+            },
         ];
     }
     return [];

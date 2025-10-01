@@ -98,13 +98,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                         <div className="grid gap-2">
                             <Label htmlFor="role">Role</Label>
 
-                            <Input
-                                id="role"
-                                value={getRoleName(auth.user.role)}
-                                className="mt-1 block w-full bg-muted"
-                                readOnly
-                                disabled
-                            />
+                            <Input id="role" value={getRoleName(auth.user.role)} className="bg-muted mt-1 block w-full" readOnly disabled />
                         </div>
 
                         <div className="grid gap-2">
@@ -113,7 +107,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                             <Input
                                 id="blockchain_address"
                                 value={auth.user.blockchain_address}
-                                className="mt-1 block w-full bg-muted font-mono"
+                                className="bg-muted mt-1 block w-full font-mono"
                                 readOnly
                                 disabled
                             />

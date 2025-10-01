@@ -1,19 +1,7 @@
-import React, { useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,35 +10,32 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
-    useReactTable,
+    flexRender,
     getCoreRowModel,
+    getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
-    getFilteredRowModel,
-    flexRender,
+    useReactTable,
     type ColumnDef,
-    type SortingState,
     type ColumnFiltersState,
-    type VisibilityState,
     type RowSelectionState,
+    type SortingState,
+    type VisibilityState,
 } from '@tanstack/react-table';
-import {
-    Download,
-    Edit,
-    MoreHorizontal,
-    Plus,
-    QrCode,
-    Trash2,
-    Users,
-} from 'lucide-react';
+import { Download, Edit, MoreHorizontal, Plus, QrCode, Trash2, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 // Dialog Components
-import CreateUserDialog from '@/components/admin/create-user-dialog';
-import EditUserDialog from '@/components/admin/edit-user-dialog';
-import DeleteUserDialog from '@/components/admin/delete-user-dialog';
 import BulkDeleteDialog from '@/components/admin/bulk-delete-dialog';
+import CreateUserDialog from '@/components/admin/create-user-dialog';
+import DeleteUserDialog from '@/components/admin/delete-user-dialog';
+import EditUserDialog from '@/components/admin/edit-user-dialog';
 import { Pagination } from '@/components/pagination';
 
 interface User {
@@ -192,7 +177,7 @@ export default function AdminUserManagement() {
         const selectedRows = table.getFilteredSelectedRowModel().rows;
         if (selectedRows.length === 0) return;
 
-        const userIds = selectedRows.map(row => row.original.id);
+        const userIds = selectedRows.map((row) => row.original.id);
 
         router.delete('/admin/users', {
             data: { user_ids: userIds },
@@ -262,26 +247,24 @@ export default function AdminUserManagement() {
             return;
         }
 
-        const csvData = selectedRows.map(row => {
+        const csvData = selectedRows.map((row) => {
             const user = row.original;
 
             const formatDateForCSV = (dateValue: string | undefined) => {
-                if (dateValue === null || dateValue === undefined || dateValue === '' ||
-                    dateValue === 'null' || dateValue === 'undefined') {
+                if (dateValue === null || dateValue === undefined || dateValue === '' || dateValue === 'null' || dateValue === 'undefined') {
                     return 'No date';
                 }
 
                 const date = new Date(dateValue);
                 const isValidDate = !isNaN(date.getTime());
 
-                return isValidDate ?
-                    date.toLocaleDateString('en-US',
-                        {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        }
-                    ) : 'Invalid date';
+                return isValidDate
+                    ? date.toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                      })
+                    : 'Invalid date';
             };
 
             return {
@@ -296,7 +279,7 @@ export default function AdminUserManagement() {
                 'Backup Codes Count': user.backup_codes ? user.backup_codes.length.toString() : '0',
                 'Backup Codes Generated': user.backup_codes_generated_at ? formatDateForCSV(user.backup_codes_generated_at) : 'Not generated',
                 'Created Date': formatDateForCSV(user.created_at),
-                'Updated Date': formatDateForCSV(user.updated_at)
+                'Updated Date': formatDateForCSV(user.updated_at),
             };
         });
 
@@ -304,9 +287,7 @@ export default function AdminUserManagement() {
         const headers = Object.keys(csvData[0]);
         const csvContent = [
             headers.join(','),
-            ...csvData.map(row =>
-                headers.map(header => `"${row[header as keyof typeof row]}"`).join(',')
-            )
+            ...csvData.map((row) => headers.map((header) => `"${row[header as keyof typeof row]}"`).join(',')),
         ].join('\n');
 
         // Create and download file
@@ -326,62 +307,47 @@ export default function AdminUserManagement() {
     // Define columns for the data table
     const columns: ColumnDef<User>[] = [
         {
-            id: "select",
+            id: 'select',
             header: ({ table }) => (
                 <Checkbox
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
+                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
                     onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
                     aria-label="Select all"
                 />
             ),
             cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
+                <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />
             ),
             enableSorting: false,
             enableHiding: false,
         },
         {
-            accessorKey: "name",
-            header: "Name",
-            cell: ({ row }) => (
-                <div className="font-medium">{row.getValue("name")}</div>
-            ),
+            accessorKey: 'name',
+            header: 'Name',
+            cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
         },
         {
-            accessorKey: "email",
-            header: "Email",
-            cell: ({ row }) => (
-                <div className="text-muted-foreground">{row.getValue("email")}</div>
-            ),
+            accessorKey: 'email',
+            header: 'Email',
+            cell: ({ row }) => <div className="text-muted-foreground">{row.getValue('email')}</div>,
         },
         {
-            accessorKey: "role",
-            header: "Role",
+            accessorKey: 'role',
+            header: 'Role',
             cell: ({ row }) => {
-                const role = row.getValue("role") as string;
-                return (
-                    <Badge className={`${getRoleBadgeColor(role)} px-3 py-1 text-xs font-medium`}>
-                        {getRoleDisplayName(role)}
-                    </Badge>
-                );
+                const role = row.getValue('role') as string;
+                return <Badge className={`${getRoleBadgeColor(role)} px-3 py-1 text-xs font-medium`}>{getRoleDisplayName(role)}</Badge>;
             },
         },
         {
-            accessorKey: "blockchain_address",
-            header: "Blockchain Address",
+            accessorKey: 'blockchain_address',
+            header: 'Blockchain Address',
             cell: ({ row }) => {
-                const address = row.getValue("blockchain_address") as string;
+                const address = row.getValue('blockchain_address') as string;
                 return (
-                    <div className="text-muted-foreground text-sm font-mono">
+                    <div className="text-muted-foreground font-mono text-sm">
                         {address ? (
-                            <span className="truncate max-w-[200px] block" title={address}>
+                            <span className="block max-w-[200px] truncate" title={address}>
                                 {address}
                             </span>
                         ) : (
@@ -392,20 +358,20 @@ export default function AdminUserManagement() {
             },
         },
         {
-            accessorKey: "email_verified_at",
-            header: "Email Verified",
+            accessorKey: 'email_verified_at',
+            header: 'Email Verified',
             cell: ({ row }) => {
-                const verifiedAt = row.getValue("email_verified_at") as string;
+                const verifiedAt = row.getValue('email_verified_at') as string;
                 return (
                     <div className="text-muted-foreground text-sm">
                         {verifiedAt ? (
                             <div className="flex items-center">
-                                <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-2 py-1 text-xs border border-green-200 dark:border-green-800/30">
+                                <Badge className="border border-green-200 bg-green-100 px-2 py-1 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
                                     Verified
                                 </Badge>
                             </div>
                         ) : (
-                            <Badge className="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 px-2 py-1 text-xs border border-yellow-200 dark:border-yellow-800/30">
+                            <Badge className="border border-yellow-200 bg-yellow-100 px-2 py-1 text-xs text-yellow-800 dark:border-yellow-800/30 dark:bg-yellow-900/20 dark:text-yellow-200">
                                 Pending
                             </Badge>
                         )}
@@ -414,8 +380,8 @@ export default function AdminUserManagement() {
             },
         },
         {
-            accessorKey: "mfa_enabled",
-            header: "MFA Status",
+            accessorKey: 'mfa_enabled',
+            header: 'MFA Status',
             cell: ({ row }) => {
                 const user = row.original;
                 const mfaEnabled = user.mfa_enabled;
@@ -425,18 +391,18 @@ export default function AdminUserManagement() {
                     <div className="flex items-center space-x-2">
                         {mfaEnabled ? (
                             <div className="flex items-center space-x-2">
-                                <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-2 py-1 text-xs border border-green-200 dark:border-green-800/30">
+                                <Badge className="border border-green-200 bg-green-100 px-2 py-1 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
                                     <QrCode className="mr-1 h-3 w-3" />
                                     Enabled
                                 </Badge>
                                 {backupCodesCount > 0 && (
-                                    <span className="text-xs text-muted-foreground" title={`${backupCodesCount} backup codes remaining`}>
+                                    <span className="text-muted-foreground text-xs" title={`${backupCodesCount} backup codes remaining`}>
                                         ({backupCodesCount} codes)
                                     </span>
                                 )}
                             </div>
                         ) : (
-                            <Badge className="bg-gray-100 dark:bg-gray-800/50 text-gray-800 dark:text-gray-300 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700/50">
+                            <Badge className="border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-800 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-300">
                                 Disabled
                             </Badge>
                         )}
@@ -445,10 +411,10 @@ export default function AdminUserManagement() {
             },
         },
         {
-            accessorKey: "created_at",
-            header: "Created",
+            accessorKey: 'created_at',
+            header: 'Created',
             cell: ({ row }) => {
-                const dateValue = row.getValue("created_at") as string;
+                const dateValue = row.getValue('created_at') as string;
 
                 if (!dateValue || dateValue === '' || dateValue === 'null' || dateValue === 'undefined') {
                     return (
@@ -467,7 +433,7 @@ export default function AdminUserManagement() {
                             date.toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'short',
-                                day: 'numeric'
+                                day: 'numeric',
                             })
                         ) : (
                             <span className="text-muted-foreground/50" title={`Invalid date: ${dateValue}`}>
@@ -479,13 +445,12 @@ export default function AdminUserManagement() {
             },
         },
         {
-            accessorKey: "updated_at",
-            header: "Updated",
+            accessorKey: 'updated_at',
+            header: 'Updated',
             cell: ({ row }) => {
-                const dateValue = row.getValue("updated_at") as string;
+                const dateValue = row.getValue('updated_at') as string;
 
-                if (dateValue === null || dateValue === undefined || dateValue === '' ||
-                    dateValue === 'null' || dateValue === 'undefined') {
+                if (dateValue === null || dateValue === undefined || dateValue === '' || dateValue === 'null' || dateValue === 'undefined') {
                     return (
                         <div className="text-muted-foreground text-sm">
                             <span className="text-muted-foreground/50">No update date</span>
@@ -502,17 +467,19 @@ export default function AdminUserManagement() {
                             date.toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'short',
-                                day: 'numeric'
+                                day: 'numeric',
                             })
                         ) : (
-                            <span className="text-muted-foreground/50" title={`Invalid date: ${dateValue}`}>Invalid date</span>
+                            <span className="text-muted-foreground/50" title={`Invalid date: ${dateValue}`}>
+                                Invalid date
+                            </span>
                         )}
                     </div>
                 );
             },
         },
         {
-            id: "actions",
+            id: 'actions',
             enableHiding: false,
             cell: ({ row }) => {
                 const user = row.original;
@@ -535,7 +502,7 @@ export default function AdminUserManagement() {
                                     } catch (error) {
                                         toast.error('Failed to copy email', {
                                             description: String(error),
-                                            duration: 5000
+                                            duration: 5000,
                                         });
                                     }
                                 }}
@@ -547,10 +514,7 @@ export default function AdminUserManagement() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit user
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onClick={() => handleDeleteUser(user)}
-                                className="text-destructive hover:text-destructive"
-                            >
+                            <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-destructive hover:text-destructive">
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete user
                             </DropdownMenuItem>
@@ -590,12 +554,12 @@ export default function AdminUserManagement() {
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <Users className="h-6 w-6 text-primary" />
+                                <div className="bg-primary/10 rounded-lg p-2">
+                                    <Users className="text-primary h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-foreground">User Management</h1>
-                                    <p className="text-muted-foreground text-sm mt-1">Manage system users and their roles</p>
+                                    <h1 className="text-foreground text-2xl font-bold">User Management</h1>
+                                    <p className="text-muted-foreground mt-1 text-sm">Manage system users and their roles</p>
                                 </div>
                             </div>
 
@@ -611,22 +575,20 @@ export default function AdminUserManagement() {
                 <div className="flex-1">
                     <div className="pb-6">
                         {/* Search and Filter */}
-                        <div className="flex items-center space-x-2 mt-6">
+                        <div className="mt-6 flex items-center space-x-2">
                             <Input
                                 placeholder="Search users..."
-                                value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-                                onChange={(event) =>
-                                    table.getColumn("name")?.setFilterValue(event.target.value)
-                                }
-                                className="max-w-sm h-9"
+                                value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+                                onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
+                                className="h-9 max-w-sm"
                             />
                         </div>
 
                         {/* Bulk Actions Bar */}
                         {table.getFilteredSelectedRowModel().rows.length > 0 && (
-                            <div className="flex items-center justify-between p-4 mt-4 bg-accent/50 dark:bg-accent/20 border border-accent dark:border-accent/40 rounded-lg">
+                            <div className="bg-accent/50 dark:bg-accent/20 border-accent dark:border-accent/40 mt-4 flex items-center justify-between rounded-lg border p-4">
                                 <div className="flex items-center space-x-2">
-                                    <span className="text-sm font-medium text-accent-foreground dark:text-accent-foreground">
+                                    <span className="text-accent-foreground dark:text-accent-foreground text-sm font-medium">
                                         {table.getFilteredSelectedRowModel().rows.length} user(s) selected
                                     </span>
                                 </div>
@@ -635,25 +597,20 @@ export default function AdminUserManagement() {
                                         variant="outline"
                                         size="sm"
                                         onClick={exportSelectedToCSV}
-                                        className="h-8 border-primary/20 dark:border-primary/30 text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/20"
+                                        className="border-primary/20 dark:border-primary/30 text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 h-8"
                                     >
-                                        <Download className="h-4 w-4 mr-2" />
+                                        <Download className="mr-2 h-4 w-4" />
                                         Export to CSV
                                     </Button>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={handleBulkDelete}
-                                        className="h-8"
-                                    >
-                                        <Trash2 className="h-4 w-4 mr-2" />
+                                    <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="h-8">
+                                        <Trash2 className="mr-2 h-4 w-4" />
                                         Delete Selected
                                     </Button>
                                     <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => table.toggleAllPageRowsSelected(false)}
-                                        className="h-8 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
+                                        className="text-muted-foreground hover:bg-muted hover:text-muted-foreground h-8"
                                     >
                                         Clear Selection
                                     </Button>
@@ -664,10 +621,10 @@ export default function AdminUserManagement() {
 
                     <div className="px-0 pb-6">
                         {users.length === 0 ? (
-                            <div className="text-center py-16">
-                                <Users className="h-16 w-16 text-muted-foreground/30 dark:text-muted-foreground/20 mx-auto mb-4" />
+                            <div className="py-16 text-center">
+                                <Users className="text-muted-foreground/30 dark:text-muted-foreground/20 mx-auto mb-4 h-16 w-16" />
                                 <p className="text-muted-foreground text-lg font-medium">No users found</p>
-                                <p className="text-muted-foreground/70 dark:text-muted-foreground/60 text-sm mt-2">
+                                <p className="text-muted-foreground/70 dark:text-muted-foreground/60 mt-2 text-sm">
                                     Click "Add User" to create your first user
                                 </p>
                             </div>
@@ -684,10 +641,7 @@ export default function AdminUserManagement() {
                                                             <TableHead key={header.id}>
                                                                 {header.isPlaceholder
                                                                     ? null
-                                                                    : flexRender(
-                                                                        header.column.columnDef.header,
-                                                                        header.getContext()
-                                                                    )}
+                                                                    : flexRender(header.column.columnDef.header, header.getContext())}
                                                             </TableHead>
                                                         );
                                                     })}
@@ -697,26 +651,17 @@ export default function AdminUserManagement() {
                                         <TableBody>
                                             {table.getRowModel().rows?.length ? (
                                                 table.getRowModel().rows.map((row) => (
-                                                    <TableRow
-                                                        key={row.id}
-                                                        data-state={row.getIsSelected() && "selected"}
-                                                    >
+                                                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                                                         {row.getVisibleCells().map((cell) => (
                                                             <TableCell key={cell.id}>
-                                                                {flexRender(
-                                                                    cell.column.columnDef.cell,
-                                                                    cell.getContext()
-                                                                )}
+                                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                                             </TableCell>
                                                         ))}
                                                     </TableRow>
                                                 ))
                                             ) : (
                                                 <TableRow>
-                                                    <TableCell
-                                                        colSpan={columns.length}
-                                                        className="h-24 text-center"
-                                                    >
+                                                    <TableCell colSpan={columns.length} className="h-24 text-center">
                                                         No results.
                                                     </TableCell>
                                                 </TableRow>
@@ -761,17 +706,12 @@ export default function AdminUserManagement() {
                     getRoleDisplayName={getRoleDisplayName}
                 />
 
-                <DeleteUserDialog
-                    open={isDeleteDialogOpen}
-                    onOpenChange={setIsDeleteDialogOpen}
-                    user={userToDelete}
-                    onConfirm={confirmDeleteUser}
-                />
+                <DeleteUserDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen} user={userToDelete} onConfirm={confirmDeleteUser} />
 
                 <BulkDeleteDialog
                     open={isBulkDeleteDialogOpen}
                     onOpenChange={setIsBulkDeleteDialogOpen}
-                    selectedUsers={table.getFilteredSelectedRowModel().rows.map(row => row.original)}
+                    selectedUsers={table.getFilteredSelectedRowModel().rows.map((row) => row.original)}
                     onConfirm={confirmBulkDelete}
                 />
             </div>

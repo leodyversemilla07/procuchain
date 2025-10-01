@@ -1,53 +1,37 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Head, usePage } from '@inertiajs/react';
-import { format } from 'date-fns';
-import { DateRange } from 'react-day-picker';
-import { cn } from '@/lib/utils';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, usePage } from '@inertiajs/react';
+import { format } from 'date-fns';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/components/ui/table';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
-import {
+    Activity,
     AlertTriangle,
     Calendar as CalendarIcon,
+    ChevronDown,
     Clock,
+    Filter,
     Globe,
+    MapPin,
     Monitor,
+    QrCode,
     Search,
     Shield,
     Smartphone,
     Tablet,
     User,
-    MapPin, Activity,
     X,
-    Filter,
-    ChevronDown,
-    QrCode
 } from 'lucide-react';
-import { Pagination } from '@/components/pagination';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { DateRange } from 'react-day-picker';
 
 interface LoginLog {
     id: number;
@@ -156,64 +140,68 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     }, [searchTerm]);
 
     // Enhanced filtering function
-    const filterLogs = useCallback((logs: LoginLog[]) => {
-        return logs.filter(log => {
-            // Filter out the current logged-in admin user's entries
-            const isNotCurrentUser = !log.user || log.user.id !== auth.user.id;
+    const filterLogs = useCallback(
+        (logs: LoginLog[]) => {
+            return logs.filter((log) => {
+                // Filter out the current logged-in admin user's entries
+                const isNotCurrentUser = !log.user || log.user.id !== auth.user.id;
 
-            // Text search
-            const matchesSearch = !debouncedSearchTerm ||
-                log.user?.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                log.user?.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                log.ip_address.includes(debouncedSearchTerm) ||
-                log.location?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                log.browser?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                log.platform?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+                // Text search
+                const matchesSearch =
+                    !debouncedSearchTerm ||
+                    log.user?.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                    log.user?.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                    log.ip_address.includes(debouncedSearchTerm) ||
+                    log.location?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                    log.browser?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                    log.platform?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
-            // Role filter
-            const matchesRole = selectedRole === 'all' || log.user?.role === selectedRole;
+                // Role filter
+                const matchesRole = selectedRole === 'all' || log.user?.role === selectedRole;
 
-            // Status filter
-            const matchesStatus = selectedStatus === 'all' ||
-                (selectedStatus === 'success' && log.successful) ||
-                (selectedStatus === 'failed' && !log.successful);
+                // Status filter
+                const matchesStatus =
+                    selectedStatus === 'all' || (selectedStatus === 'success' && log.successful) || (selectedStatus === 'failed' && !log.successful);
 
-            // Device type filter
-            const matchesDeviceType = selectedDeviceType === 'all' || log.device_type === selectedDeviceType;
+                // Device type filter
+                const matchesDeviceType = selectedDeviceType === 'all' || log.device_type === selectedDeviceType;
 
-            // Browser filter
-            const matchesBrowser = selectedBrowser === 'all' || log.browser === selectedBrowser;
+                // Browser filter
+                const matchesBrowser = selectedBrowser === 'all' || log.browser === selectedBrowser;
 
-            // Date range filter
-            const matchesDateRange = !dateRange?.from || !dateRange?.to || (() => {
-                const loginDate = new Date(log.login_at);
-                return loginDate >= dateRange.from! && loginDate <= dateRange.to!;
-            })();
+                // Date range filter
+                const matchesDateRange =
+                    !dateRange?.from ||
+                    !dateRange?.to ||
+                    (() => {
+                        const loginDate = new Date(log.login_at);
+                        return loginDate >= dateRange.from! && loginDate <= dateRange.to!;
+                    })();
 
-            return isNotCurrentUser && matchesSearch && matchesRole && matchesStatus && matchesDeviceType && matchesBrowser && matchesDateRange;
-        });
-    }, [debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, dateRange, auth.user.id]);
+                return isNotCurrentUser && matchesSearch && matchesRole && matchesStatus && matchesDeviceType && matchesBrowser && matchesDateRange;
+            });
+        },
+        [debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, dateRange, auth.user.id],
+    );
 
     // Sort and filter recent logins (latest first)
     const filteredAndSortedRecentLogins = useMemo(() => {
-        return filterLogs(recentLogins)
-            .sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
+        return filterLogs(recentLogins).sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
     }, [recentLogins, filterLogs]);
 
     // Sort and filter suspicious activities (latest first)
     const filteredAndSortedSuspiciousActivities = useMemo(() => {
-        return filterLogs(suspiciousActivities)
-            .sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
+        return filterLogs(suspiciousActivities).sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
     }, [suspiciousActivities, filterLogs]);
 
     // Merge, sort, and paginate combined logs
     type CombinedLog = LoginLog & { category: 'recent' | 'suspicious' };
     const combinedFilteredAndSortedLogs: CombinedLog[] = useMemo(() => {
-        const recentTagged = filteredAndSortedRecentLogins.map(l => ({ ...l, category: 'recent' as const }));
-        const suspiciousTagged = filteredAndSortedSuspiciousActivities.map(l => ({ ...l, category: 'suspicious' as const }));
+        const recentTagged = filteredAndSortedRecentLogins.map((l) => ({ ...l, category: 'recent' as const }));
+        const suspiciousTagged = filteredAndSortedSuspiciousActivities.map((l) => ({ ...l, category: 'suspicious' as const }));
         let merged: CombinedLog[] = [...recentTagged, ...suspiciousTagged];
         if (selectedCategory !== 'all') {
-            merged = merged.filter(l => l.category === selectedCategory);
+            merged = merged.filter((l) => l.category === selectedCategory);
         }
         return merged.sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
     }, [filteredAndSortedRecentLogins, filteredAndSortedSuspiciousActivities, selectedCategory]);
@@ -279,7 +267,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     // Get unique values for filter options
     const getUniqueRoles = useMemo(() => {
         const roles = new Set<string>();
-        [...recentLogins, ...suspiciousActivities].forEach(log => {
+        [...recentLogins, ...suspiciousActivities].forEach((log) => {
             if (log.user?.role) roles.add(log.user.role);
         });
         return Array.from(roles).sort();
@@ -287,7 +275,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
     const getUniqueBrowsers = useMemo(() => {
         const browsers = new Set<string>();
-        [...recentLogins, ...suspiciousActivities].forEach(log => {
+        [...recentLogins, ...suspiciousActivities].forEach((log) => {
             if (log.browser) browsers.add(log.browser);
         });
         return Array.from(browsers).sort();
@@ -295,7 +283,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
     const getUniqueDeviceTypes = useMemo(() => {
         const deviceTypes = new Set<string>();
-        [...recentLogins, ...suspiciousActivities].forEach(log => {
+        [...recentLogins, ...suspiciousActivities].forEach((log) => {
             if (log.device_type) deviceTypes.add(log.device_type);
         });
         return Array.from(deviceTypes).sort();
@@ -303,14 +291,16 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
     // Check if any filters are active
     const hasActiveFilters = useMemo(() => {
-        return debouncedSearchTerm !== '' ||
+        return (
+            debouncedSearchTerm !== '' ||
             selectedRole !== 'all' ||
             selectedStatus !== 'all' ||
             selectedDeviceType !== 'all' ||
             selectedBrowser !== 'all' ||
             selectedCategory !== 'all' ||
             dateRange?.from ||
-            dateRange?.to;
+            dateRange?.to
+        );
     }, [debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, selectedCategory, dateRange]);
 
     // Helper function to highlight search terms
@@ -322,10 +312,12 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
         return parts.map((part, index) =>
             regex.test(part) ? (
-                <span key={index} className="bg-yellow-200 dark:bg-yellow-800 px-0.5 rounded">
+                <span key={index} className="rounded bg-yellow-200 px-0.5 dark:bg-yellow-800">
                     {part}
                 </span>
-            ) : part
+            ) : (
+                part
+            ),
         );
     };
 
@@ -342,19 +334,19 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     };
 
     const getRoleBadge = (role?: string) => {
-        if (!role) return <span className="text-xs text-muted-foreground">-</span>;
+        if (!role) return <span className="text-muted-foreground text-xs">-</span>;
 
         // Role-specific styling for better visual hierarchy
         const roleVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-            'admin': 'destructive',
-            'super_admin': 'destructive',
-            'bac_secretariat': 'default',
-            'bac_chairperson': 'default',
-            'bac_member': 'secondary',
-            'bac_technical_working_group': 'secondary',
-            'procurement_officer': 'outline',
-            'end_user': 'outline',
-            'supplier': 'outline'
+            admin: 'destructive',
+            super_admin: 'destructive',
+            bac_secretariat: 'default',
+            bac_chairperson: 'default',
+            bac_member: 'secondary',
+            bac_technical_working_group: 'secondary',
+            procurement_officer: 'outline',
+            end_user: 'outline',
+            supplier: 'outline',
         };
 
         const variant = roleVariants[role.toLowerCase()] || 'secondary';
@@ -368,11 +360,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     };
 
     const getStatusBadge = (successful: boolean) => {
-        return (
-            <Badge variant={successful ? 'default' : 'destructive'}>
-                {successful ? 'Success' : 'Failed'}
-            </Badge>
-        );
+        return <Badge variant={successful ? 'default' : 'destructive'}>{successful ? 'Success' : 'Failed'}</Badge>;
     };
 
     const formatDateTime = (dateString: string) => {
@@ -416,14 +404,12 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <Shield className="h-6 w-6 text-primary" />
+                                <div className="bg-primary/10 rounded-lg p-2">
+                                    <Shield className="text-primary h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-foreground">Login Logs</h1>
-                                    <p className="text-muted-foreground text-sm mt-1">
-                                        Monitor user login activities and security events
-                                    </p>
+                                    <h1 className="text-foreground text-2xl font-bold">Login Logs</h1>
+                                    <p className="text-muted-foreground mt-1 text-sm">Monitor user login activities and security events</p>
                                 </div>
                             </div>
                         </div>
@@ -435,7 +421,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Logins</CardTitle>
-                            <Activity className="h-4 w-4 text-muted-foreground" />
+                            <Activity className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{statistics.total_logins?.toLocaleString() || 0}</div>
@@ -445,21 +431,18 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-                            <Shield className="h-4 w-4 text-muted-foreground" />
+                            <Shield className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {statistics.total_logins > 0
-                                    ? Math.round((statistics.successful_logins / statistics.total_logins) * 100)
-                                    : 0
-                                }%
+                                {statistics.total_logins > 0 ? Math.round((statistics.successful_logins / statistics.total_logins) * 100) : 0}%
                             </div>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Today's Logins</CardTitle>
-                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                            <CalendarIcon className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{statistics.today_logins || 0}</div>
@@ -469,7 +452,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Unique Users</CardTitle>
-                            <User className="h-4 w-4 text-muted-foreground" />
+                            <User className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{statistics.unique_users || 0}</div>
@@ -480,21 +463,21 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                 {/* Enhanced Search and Filter Section */}
                 <div className="space-y-4">
                     {/* Main Search Bar */}
-                    <div className="flex flex-col sm:flex-row gap-4 w-full sm:items-center">
+                    <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center">
                         <div className="relative w-full sm:max-w-xl">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
                             <Input
                                 placeholder="Search by name, email, IP address, location, browser..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-10"
+                                className="w-full pr-10 pl-10"
                             />
                             {searchTerm && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                                    className="absolute top-1/2 right-2 h-6 w-6 -translate-y-1/2 transform p-0"
                                 >
                                     <X className="h-4 w-4" />
                                 </Button>
@@ -502,23 +485,15 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                         </div>
 
                         <div className="flex gap-2 sm:ml-auto">
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                className="whitespace-nowrap"
-                            >
-                                <Filter className="h-4 w-4 mr-2" />
+                            <Button variant="outline" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className="whitespace-nowrap">
+                                <Filter className="mr-2 h-4 w-4" />
                                 Filters
-                                <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+                                <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
                             </Button>
 
                             {hasActiveFilters && (
-                                <Button
-                                    variant="outline"
-                                    onClick={clearAllFilters}
-                                    className="whitespace-nowrap"
-                                >
-                                    <X className="h-4 w-4 mr-2" />
+                                <Button variant="outline" onClick={clearAllFilters} className="whitespace-nowrap">
+                                    <X className="mr-2 h-4 w-4" />
                                     Clear All
                                 </Button>
                             )}
@@ -532,7 +507,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                             size="sm"
                             onClick={() => setSelectedCategory(selectedCategory === 'suspicious' ? 'all' : 'suspicious')}
                         >
-                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            <AlertTriangle className="mr-1 h-3 w-3" />
                             Suspicious Only
                         </Button>
                         <Button
@@ -547,7 +522,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                             size="sm"
                             onClick={() => setSelectedStatus(selectedStatus === 'failed' ? 'all' : 'failed')}
                         >
-                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            <AlertTriangle className="mr-1 h-3 w-3" />
                             Failed Logins
                         </Button>
                         <Button
@@ -555,7 +530,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                             size="sm"
                             onClick={() => setSelectedRole(selectedRole === 'admin' ? 'all' : 'admin')}
                         >
-                            <Shield className="h-3 w-3 mr-1" />
+                            <Shield className="mr-1 h-3 w-3" />
                             Admin Users
                         </Button>
                         <Button
@@ -563,7 +538,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                             size="sm"
                             onClick={() => setSelectedDeviceType(selectedDeviceType === 'mobile' ? 'all' : 'mobile')}
                         >
-                            <Smartphone className="h-3 w-3 mr-1" />
+                            <Smartphone className="mr-1 h-3 w-3" />
                             Mobile Devices
                         </Button>
                         <Button
@@ -576,7 +551,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 setDateRange({ from: startOfDay, to: endOfDay });
                             }}
                         >
-                            <CalendarIcon className="h-3 w-3 mr-1" />
+                            <CalendarIcon className="mr-1 h-3 w-3" />
                             Today
                         </Button>
                         <Button
@@ -588,17 +563,17 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 setDateRange({ from: weekAgo, to: today });
                             }}
                         >
-                            <Clock className="h-3 w-3 mr-1" />
+                            <Clock className="mr-1 h-3 w-3" />
                             Last 7 Days
                         </Button>
                     </div>
 
                     {/* Advanced Filters */}
                     {showAdvancedFilters && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 p-4 bg-muted/30 rounded-lg border">
+                        <div className="bg-muted/30 grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                             {/* Category Filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Category</label>
+                                <label className="text-muted-foreground text-sm font-medium">Category</label>
                                 <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as 'all' | 'recent' | 'suspicious')}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue placeholder="All categories" />
@@ -612,14 +587,14 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                             </div>
                             {/* Role Filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Role</label>
+                                <label className="text-muted-foreground text-sm font-medium">Role</label>
                                 <Select value={selectedRole} onValueChange={setSelectedRole}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue placeholder="All roles" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Roles</SelectItem>
-                                        {getUniqueRoles.map(role => (
+                                        {getUniqueRoles.map((role) => (
                                             <SelectItem key={role} value={role}>
                                                 {role.replace('_', ' ').toUpperCase()}
                                             </SelectItem>
@@ -630,7 +605,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                             {/* Status Filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Status</label>
+                                <label className="text-muted-foreground text-sm font-medium">Status</label>
                                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue placeholder="All statuses" />
@@ -645,14 +620,14 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                             {/* Device Type Filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Device</label>
+                                <label className="text-muted-foreground text-sm font-medium">Device</label>
                                 <Select value={selectedDeviceType} onValueChange={setSelectedDeviceType}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue placeholder="All devices" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Devices</SelectItem>
-                                        {getUniqueDeviceTypes.map(deviceType => (
+                                        {getUniqueDeviceTypes.map((deviceType) => (
                                             <SelectItem key={deviceType} value={deviceType}>
                                                 {deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}
                                             </SelectItem>
@@ -663,14 +638,14 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                             {/* Browser Filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Browser</label>
+                                <label className="text-muted-foreground text-sm font-medium">Browser</label>
                                 <Select value={selectedBrowser} onValueChange={setSelectedBrowser}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue placeholder="All browsers" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Browsers</SelectItem>
-                                        {getUniqueBrowsers.map(browser => (
+                                        {getUniqueBrowsers.map((browser) => (
                                             <SelectItem key={browser} value={browser}>
                                                 {browser}
                                             </SelectItem>
@@ -681,15 +656,12 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                             {/* Date Range Filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Date Range</label>
+                                <label className="text-muted-foreground text-sm font-medium">Date Range</label>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
-                                            className={cn(
-                                                'h-9 w-full justify-start text-left font-normal',
-                                                !dateRange && 'text-muted-foreground'
-                                            )}
+                                            className={cn('h-9 w-full justify-start text-left font-normal', !dateRange && 'text-muted-foreground')}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4" />
                                             {dateRange?.from ? (
@@ -719,36 +691,16 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                                 {/* Quick Date Presets */}
                                 <div className="flex flex-wrap gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 px-2 text-xs"
-                                        onClick={() => setDateRangePreset('today')}
-                                    >
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDateRangePreset('today')}>
                                         Today
                                     </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 px-2 text-xs"
-                                        onClick={() => setDateRangePreset('last7days')}
-                                    >
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDateRangePreset('last7days')}>
                                         Last 7 Days
                                     </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 px-2 text-xs"
-                                        onClick={() => setDateRangePreset('last30days')}
-                                    >
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDateRangePreset('last30days')}>
                                         Last 30 Days
                                     </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 px-2 text-xs"
-                                        onClick={() => setDateRangePreset('thisMonth')}
-                                    >
+                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDateRangePreset('thisMonth')}>
                                         This Month
                                     </Button>
                                 </div>
@@ -762,63 +714,43 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                             {selectedCategory !== 'all' && (
                                 <Badge variant="secondary" className="flex items-center gap-1">
                                     Category: {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
-                                    <X
-                                        className="h-3 w-3 cursor-pointer"
-                                        onClick={() => setSelectedCategory('all')}
-                                    />
+                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCategory('all')} />
                                 </Badge>
                             )}
                             {debouncedSearchTerm && (
                                 <Badge variant="secondary" className="flex items-center gap-1">
                                     Search: "{debouncedSearchTerm}"
-                                    <X
-                                        className="h-3 w-3 cursor-pointer"
-                                        onClick={() => setSearchTerm('')}
-                                    />
+                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSearchTerm('')} />
                                 </Badge>
                             )}
                             {selectedRole !== 'all' && (
                                 <Badge variant="secondary" className="flex items-center gap-1">
                                     Role: {selectedRole.replace('_', ' ').toUpperCase()}
-                                    <X
-                                        className="h-3 w-3 cursor-pointer"
-                                        onClick={() => setSelectedRole('all')}
-                                    />
+                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedRole('all')} />
                                 </Badge>
                             )}
                             {selectedStatus !== 'all' && (
                                 <Badge variant="secondary" className="flex items-center gap-1">
                                     Status: {selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
-                                    <X
-                                        className="h-3 w-3 cursor-pointer"
-                                        onClick={() => setSelectedStatus('all')}
-                                    />
+                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedStatus('all')} />
                                 </Badge>
                             )}
                             {selectedDeviceType !== 'all' && (
                                 <Badge variant="secondary" className="flex items-center gap-1">
                                     Device: {selectedDeviceType.charAt(0).toUpperCase() + selectedDeviceType.slice(1)}
-                                    <X
-                                        className="h-3 w-3 cursor-pointer"
-                                        onClick={() => setSelectedDeviceType('all')}
-                                    />
+                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedDeviceType('all')} />
                                 </Badge>
                             )}
                             {selectedBrowser !== 'all' && (
                                 <Badge variant="secondary" className="flex items-center gap-1">
                                     Browser: {selectedBrowser}
-                                    <X
-                                        className="h-3 w-3 cursor-pointer"
-                                        onClick={() => setSelectedBrowser('all')}
-                                    />
+                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedBrowser('all')} />
                                 </Badge>
-                            )}                                    {(dateRange?.from || dateRange?.to) && (
+                            )}{' '}
+                            {(dateRange?.from || dateRange?.to) && (
                                 <Badge variant="secondary" className="flex items-center gap-1">
                                     Date: {dateRange.from?.toLocaleDateString()} - {dateRange.to?.toLocaleDateString()}
-                                    <X
-                                        className="h-3 w-3 cursor-pointer"
-                                        onClick={() => setDateRange(undefined)}
-                                    />
+                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setDateRange(undefined)} />
                                 </Badge>
                             )}
                         </div>
@@ -826,13 +758,19 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                     {/* Search Results Summary */}
                     {hasActiveFilters && (
-                        <div className="text-sm text-muted-foreground">
-                            {selectedCategory === 'all'
-                                ? (
-                                    <>Found {filteredAndSortedRecentLogins.length} recent login{filteredAndSortedRecentLogins.length !== 1 ? 's' : ''} and {filteredAndSortedSuspiciousActivities.length} suspicious activit{filteredAndSortedSuspiciousActivities.length !== 1 ? 'ies' : 'y'}</>
-                                ) : (
-                                    <>Showing {combinedFilteredAndSortedLogs.length} {selectedCategory} record{combinedFilteredAndSortedLogs.length !== 1 ? 's' : ''}</>
-                                )}
+                        <div className="text-muted-foreground text-sm">
+                            {selectedCategory === 'all' ? (
+                                <>
+                                    Found {filteredAndSortedRecentLogins.length} recent login{filteredAndSortedRecentLogins.length !== 1 ? 's' : ''}{' '}
+                                    and {filteredAndSortedSuspiciousActivities.length} suspicious activit
+                                    {filteredAndSortedSuspiciousActivities.length !== 1 ? 'ies' : 'y'}
+                                </>
+                            ) : (
+                                <>
+                                    Showing {combinedFilteredAndSortedLogs.length} {selectedCategory} record
+                                    {combinedFilteredAndSortedLogs.length !== 1 ? 's' : ''}
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
@@ -840,13 +778,13 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                 {/* Login Logs - Unified Table */}
                 <div className="flex-1 space-y-6">
                     <div className="pb-2">
-                        <h2 className="text-lg md:text-xl font-semibold">All Login Activities</h2>
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        <h2 className="text-lg font-semibold md:text-xl">All Login Activities</h2>
+                        <p className="text-muted-foreground mt-2 text-sm">
                             Combined recent logins and suspicious attempts ({combinedFilteredAndSortedLogs.length} total)
                         </p>
                     </div>
                     <div className="px-0 pb-0">
-                        <div className="rounded-md border overflow-hidden">
+                        <div className="overflow-hidden rounded-md border">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -865,14 +803,19 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 <TableBody>
                                     {paginatedCombinedLogs.length > 0 ? (
                                         paginatedCombinedLogs.map((log) => (
-                                            <TableRow key={`${log.category}-${log.id}`} className={log.category === 'suspicious' ? 'bg-destructive/5' : undefined}>
+                                            <TableRow
+                                                key={`${log.category}-${log.id}`}
+                                                className={log.category === 'suspicious' ? 'bg-destructive/5' : undefined}
+                                            >
                                                 <TableCell className="pl-6">
                                                     {log.category === 'suspicious' ? (
                                                         <Badge variant="destructive" className="flex items-center gap-1 text-xs">
                                                             <AlertTriangle className="h-3 w-3" /> Suspicious
                                                         </Badge>
                                                     ) : (
-                                                        <Badge variant="secondary" className="text-xs">Recent</Badge>
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            Recent
+                                                        </Badge>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
@@ -880,40 +823,40 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         <div className="font-medium">
                                                             {highlightSearchTerm(log.user?.name || 'Unknown User', debouncedSearchTerm)}
                                                         </div>
-                                                        <div className="text-sm text-muted-foreground">
+                                                        <div className="text-muted-foreground text-sm">
                                                             {highlightSearchTerm(log.user?.email || 'Unknown Email', debouncedSearchTerm)}
                                                         </div>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>
-                                                    {getRoleBadge(log.user?.role)}
-                                                </TableCell>
+                                                <TableCell>{getRoleBadge(log.user?.role)}</TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center space-x-1">
                                                         {log.user?.mfa_enabled ? (
-                                                            <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 px-2 py-1 text-xs border border-green-200 dark:border-green-800/30">
+                                                            <Badge className="border border-green-200 bg-green-100 px-2 py-1 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
                                                                 <QrCode className="mr-1 h-3 w-3" />
                                                                 Enabled
                                                             </Badge>
                                                         ) : (
-                                                            <Badge className="bg-gray-100 dark:bg-gray-800/50 text-gray-800 dark:text-gray-300 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700/50">
+                                                            <Badge className="border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-800 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-300">
                                                                 Disabled
                                                             </Badge>
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>
-                                                    {getStatusBadge(log.successful)}
-                                                </TableCell>
+                                                <TableCell>{getStatusBadge(log.successful)}</TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center space-x-2">
-                                                        <Globe className="h-4 w-4 text-muted-foreground" />
-                                                        <span className="font-mono text-sm">{highlightSearchTerm(log.ip_address, debouncedSearchTerm)}</span>
+                                                        <Globe className="text-muted-foreground h-4 w-4" />
+                                                        <span className="font-mono text-sm">
+                                                            {highlightSearchTerm(log.ip_address, debouncedSearchTerm)}
+                                                        </span>
                                                     </div>
                                                     {log.location && (
-                                                        <div className="flex items-center space-x-1 mt-1">
-                                                            <MapPin className="h-3 w-3 text-muted-foreground" />
-                                                            <span className="text-xs text-muted-foreground">{highlightSearchTerm(log.location, debouncedSearchTerm)}</span>
+                                                        <div className="mt-1 flex items-center space-x-1">
+                                                            <MapPin className="text-muted-foreground h-3 w-3" />
+                                                            <span className="text-muted-foreground text-xs">
+                                                                {highlightSearchTerm(log.location, debouncedSearchTerm)}
+                                                            </span>
                                                         </div>
                                                     )}
                                                 </TableCell>
@@ -923,17 +866,21 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         <div className="space-y-1">
                                                             <div className="text-sm">{log.device_type || 'Unknown'}</div>
                                                             {log.platform && (
-                                                                <div className="text-xs text-muted-foreground">{highlightSearchTerm(log.platform, debouncedSearchTerm)}</div>
+                                                                <div className="text-muted-foreground text-xs">
+                                                                    {highlightSearchTerm(log.platform, debouncedSearchTerm)}
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="text-sm">{highlightSearchTerm(log.browser || 'Unknown', debouncedSearchTerm)}</div>
+                                                    <div className="text-sm">
+                                                        {highlightSearchTerm(log.browser || 'Unknown', debouncedSearchTerm)}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell className="pr-6">
                                                     <div className="flex items-center space-x-2">
-                                                        <Clock className="h-4 w-4 text-muted-foreground" />
+                                                        <Clock className="text-muted-foreground h-4 w-4" />
                                                         <span className="text-sm">{formatDateTime(log.login_at)}</span>
                                                     </div>
                                                 </TableCell>
@@ -943,14 +890,14 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                             {getSessionDuration(log.login_at, log.logout_at)}
                                                         </Badge>
                                                     ) : (
-                                                        <span className="text-sm text-muted-foreground">-</span>
+                                                        <span className="text-muted-foreground text-sm">-</span>
                                                     )}
                                                 </TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                                            <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
                                                 {searchTerm ? 'No activities match your search.' : 'No activities found.'}
                                             </TableCell>
                                         </TableRow>
@@ -964,8 +911,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 pageSize={pageSize}
                                 pageCount={totalCombinedPages}
                                 totalItems={combinedFilteredAndSortedLogs.length}
-                                onPageChange={i => setCombinedPage(i + 1)}
-                                onPageSizeChange={size => {
+                                onPageChange={(i) => setCombinedPage(i + 1)}
+                                onPageSizeChange={(size) => {
                                     setPageSize(size);
                                     setCombinedPage(1);
                                 }}

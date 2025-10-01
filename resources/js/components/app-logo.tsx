@@ -8,7 +8,7 @@ export default function AppLogo() {
             </div>
             <div className="ml-1 grid flex-1 text-left text-sm">
                 <span className="mb-0.5 truncate leading-none font-semibold">ProcuChain</span>
-                <span className="truncate text-xs text-muted-foreground">BAC Document Management</span>
+                <span className="text-muted-foreground truncate text-xs">BAC Document Management</span>
             </div>
         </div>
     );

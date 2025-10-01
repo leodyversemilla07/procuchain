@@ -1,27 +1,26 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Head, useForm, router } from '@inertiajs/react';
 
-import { type BreadcrumbItem } from '@/types';
-import { cn } from '@/lib/utils';
 import { useMultiFileDrop } from '@/hooks/use-file-drop';
+import { cn } from '@/lib/utils';
+import { type BreadcrumbItem } from '@/types';
 
 import AppLayout from '@/layouts/app-layout';
 
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { InputWithLabel } from '@/components/input-with-label';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 import DatePicker from '@/components/date-picker';
-import PeopleInput from '@/components/people-input';
-import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
-import ProcurementId from '@/components/procurement-id';
+import FileUploadArea from '@/components/file-upload-area';
 import MunicipalOfficeSelect from '@/components/municipal-office-select';
+import PeopleInput from '@/components/people-input';
+import ProcurementId from '@/components/procurement-id';
 
 import { FileText, Plus, X } from 'lucide-react';
-import { SmartContractValidationResult } from '@/types/smart-contracts';
 
 interface FileMetadata {
     document_type: string;
@@ -56,28 +55,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function ProcurementInitiationForm({ formState }: HeaderProps) {
     const [dates, setDates] = useState<Record<number, Date | undefined>>({});
 
-    // Smart contract validation states for multiple files
-    const [fileValidations, setFileValidations] = useState<(SmartContractValidationResult | null)[]>([null]);
-
-    const {
-        data,
-        setData,
-        post,
-        processing,
-        errors,
-        reset,
-        clearErrors,
-        transform
-    } = useForm<UseFormData>({
+    const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm<UseFormData>({
         procurement_id: '',
         procurement_title: '',
         files: [null],
-        metadata: [{
-            document_type: '',
-            submission_date: new Date(),
-            municipal_offices: '',
-            signatories: []
-        }]
+        metadata: [
+            {
+                document_type: '',
+                submission_date: new Date(),
+                municipal_offices: '',
+                signatories: [],
+            },
+        ],
     });
 
     const parseDate = (dateStr: string): Date | undefined => {
@@ -87,24 +76,24 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             const date = new Date(dateStr);
             return !isNaN(date.getTime()) ? date : undefined;
         } catch (e) {
-            console.error("Error parsing date:", e);
+            console.error('Error parsing date:', e);
             return undefined;
         }
     };
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {
-            toast.error("File too large", { description: "Maximum file size is 10MB" });
+            toast.error('File too large', { description: 'Maximum file size is 10MB' });
             return false;
         }
 
         if (file.type && file.type !== 'application/pdf') {
-            toast.error("Invalid file type", { description: `File "${file.name}" does not appear to be a PDF. Detected type: ${file.type}.` });
+            toast.error('Invalid file type', { description: `File "${file.name}" does not appear to be a PDF. Detected type: ${file.type}.` });
             return false;
         }
 
         if (!file.type && !file.name.toLowerCase().endsWith('.pdf')) {
-            toast.error("Invalid file type", { description: `File "${file.name}" is not recognized as a PDF and has no .pdf extension.` });
+            toast.error('Invalid file type', { description: `File "${file.name}" is not recognized as a PDF and has no .pdf extension.` });
             return false;
         }
 
@@ -120,22 +109,22 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             }
             // If field is submission_date, ensure value is a Date
             if (field === 'submission_date') {
-                updated[index] = { ...updated[index], [field]: value instanceof Date ? value : (value ? new Date(value as string) : new Date()) };
+                updated[index] = { ...updated[index], [field]: value instanceof Date ? value : value ? new Date(value as string) : new Date() };
             } else {
                 updated[index] = { ...updated[index], [field]: value };
             }
             setData('metadata', updated);
         },
-        [data.metadata, setData, clearErrors]
+        [data.metadata, setData, clearErrors],
     );
 
     const handleDateChange = useCallback(
         (index: number, date: Date | undefined) => {
             clearErrors();
-            setDates(prev => ({ ...prev, [index]: date }));
+            setDates((prev) => ({ ...prev, [index]: date }));
             handleMetadataChange(index, 'submission_date', date || new Date());
         },
-        [handleMetadataChange, clearErrors]
+        [handleMetadataChange, clearErrors],
     );
 
     const handleFileChange = useCallback(
@@ -161,13 +150,13 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                 }
             }
         },
-        [data.files, data.metadata, validateFile, setData, clearErrors]
+        [data.files, data.metadata, validateFile, setData, clearErrors],
     );
 
     const validateDocuments = useCallback(() => {
         const files = Array.isArray(data.files) ? data.files : [];
         const meta = Array.isArray(data.metadata) ? data.metadata : [];
-        if (files.length === 0 || files.some(f => f === null)) {
+        if (files.length === 0 || files.some((f) => f === null)) {
             return false;
         }
         const allRequiredMetadataPresent = files.every((file, index) => {
@@ -181,26 +170,25 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         const files = Array.isArray(data.files) ? [...data.files, null] : [];
         const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
         const last = meta.length - 1;
-        const copy = last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: new Date(), municipal_offices: '', signatories: [] };
+        const copy =
+            last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: new Date(), municipal_offices: '', signatories: [] };
         meta.push({ ...copy, document_type: '', submission_date: new Date(), signatories: [] });
         setData('files', files);
         setData('metadata', meta);
-        setDates(d => last >= 0 ? { ...d, [last + 1]: new Date() } : { 0: new Date() });
-        setFileValidations([...fileValidations, null]);
-    }, [data.files, data.metadata, setData, fileValidations]);
+        setDates((d) => (last >= 0 ? { ...d, [last + 1]: new Date() } : { 0: new Date() }));
+    }, [data.files, data.metadata, setData]);
 
-    const removeFile = useCallback((index: number) => {
-        const files = Array.isArray(data.files) ? [...data.files] : [];
-        files.splice(index, 1);
-        const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
-        meta.splice(index, 1);
-        setData('files', files);
-        setData('metadata', meta);
-
-        const updatedValidations = [...fileValidations];
-        updatedValidations.splice(index, 1);
-        setFileValidations(updatedValidations);
-    }, [data.files, data.metadata, setData, fileValidations]);
+    const removeFile = useCallback(
+        (index: number) => {
+            const files = Array.isArray(data.files) ? [...data.files] : [];
+            files.splice(index, 1);
+            const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
+            meta.splice(index, 1);
+            setData('files', files);
+            setData('metadata', meta);
+        },
+        [data.files, data.metadata, setData],
+    );
 
     const handleFieldChange = (field: keyof UseFormData, value: string): void => {
         clearErrors(field);
@@ -219,66 +207,63 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         return isBasicValid && areDocumentsValid;
     }, [data.procurement_id, data.procurement_title, validateDocuments]);
 
-    const onSubmit = useCallback((e: React.FormEvent) => {
-        e.preventDefault();
-        if (!validateForm()) {
-            toast.error("Please complete all required fields", {
-                description: "Fill in all required fields and upload necessary documents before submitting."
-            });
-            return;
-        }
-        const submissionToast = toast.loading("Submitting Procurement...");
-
-        transform((formData) => ({
-            ...formData,
-            metadata: Array.isArray(formData.metadata)
-                ? formData.metadata.map(m => ({
-                    ...m,
-                    submission_date: m.submission_date instanceof Date ? format(m.submission_date, 'yyyy-MM-dd') : m.submission_date
-                }))
-                : formData.metadata
-        }));
-
-        post('/bac-secretariat/publish-procurement-initiation', {
-            onSuccess: () => {
-                toast.success("Procurement successfully submitted", {
-                    id: submissionToast,
+    const onSubmit = useCallback(
+        (e: React.FormEvent) => {
+            e.preventDefault();
+            if (!validateForm()) {
+                toast.error('Please complete all required fields', {
+                    description: 'Fill in all required fields and upload necessary documents before submitting.',
                 });
-                reset();
-                // Navigate to the procurement list with a success message
-                setTimeout(() => {
-                    router.visit('/bac-secretariat/procurements-list', {
-                        preserveState: false,
-                        replace: true
+                return;
+            }
+            const submissionToast = toast.loading('Submitting Procurement...');
+
+            transform((formData) => ({
+                ...formData,
+                metadata: Array.isArray(formData.metadata)
+                    ? formData.metadata.map((m) => ({
+                          ...m,
+                          submission_date: m.submission_date instanceof Date ? format(m.submission_date, 'yyyy-MM-dd') : m.submission_date,
+                      }))
+                    : formData.metadata,
+            }));
+
+            post('/bac-secretariat/publish-procurement-initiation', {
+                onSuccess: () => {
+                    toast.success('Procurement successfully submitted', {
+                        id: submissionToast,
                     });
-                }, 1500);
-            },
-            onError: (formErrors: Record<string, string>) => {
-                toast.error("Failed to submit", {
-                    id: submissionToast,
-                    description: Object.values(formErrors)[0]
-                });
-            },
-            onFinish: () => {
-                // Cleanup any temporary states
-                setFileValidations(prev => prev.map(() => null));
-            },
-            forceFormData: true,
-            preserveScroll: true,
-            preserveState: true
-        });
-    }, [validateForm, transform, post, reset]);
-
-    const hasError = useCallback((field: string) => {
-        return Object.keys(errors).some(error => error === field || error.startsWith(`${field}.`));
-    }, [errors]);
-
-    const fileIndices = useMemo(
-        () => Array.isArray(data.files)
-            ? Array.from({ length: data.files.length }, (_, i) => i)
-            : [],
-        [data.files]
+                    reset();
+                    // Navigate to the procurement list with a success message
+                    setTimeout(() => {
+                        router.visit('/bac-secretariat/procurements-list', {
+                            preserveState: false,
+                            replace: true,
+                        });
+                    }, 1500);
+                },
+                onError: (formErrors: Record<string, string>) => {
+                    toast.error('Failed to submit', {
+                        id: submissionToast,
+                        description: Object.values(formErrors)[0],
+                    });
+                },
+                forceFormData: true,
+                preserveScroll: true,
+                preserveState: true,
+            });
+        },
+        [validateForm, transform, post, reset],
     );
+
+    const hasError = useCallback(
+        (field: string) => {
+            return Object.keys(errors).some((error) => error === field || error.startsWith(`${field}.`));
+        },
+        [errors],
+    );
+
+    const fileIndices = useMemo(() => (Array.isArray(data.files) ? Array.from({ length: data.files.length }, (_, i) => i) : []), [data.files]);
 
     useEffect(() => {
         try {
@@ -299,19 +284,15 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             });
             setDates(newDates);
         } catch (e) {
-            console.error("Error setting dates:", e);
+            console.error('Error setting dates:', e);
         }
     }, [data.metadata]);
 
-    const fileDropHandlers = useMultiFileDrop(
-        fileIndices,
-        validateFile,
-        (index, file) => {
-            const newFiles = [...data.files];
-            newFiles[index] = file;
-            setData('files', newFiles);
-        }
-    );
+    const fileDropHandlers = useMultiFileDrop(fileIndices, validateFile, (index, file) => {
+        const newFiles = [...data.files];
+        newFiles[index] = file;
+        setData('files', newFiles);
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -323,29 +304,27 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <FileText className="h-6 w-6 text-primary" />
+                                <div className="bg-primary/10 rounded-lg p-2">
+                                    <FileText className="text-primary h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-foreground">New Procurement</h1>
-                                    <p className="text-muted-foreground text-sm mt-1">
+                                    <h1 className="text-foreground text-2xl font-bold">New Procurement</h1>
+                                    <p className="text-muted-foreground mt-1 text-sm">
                                         Start your procurement process by providing necessary details.
                                     </p>
                                 </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <Badge
-                                    className="bg-primary/10 hover:bg-primary/20 text-primary text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 rounded-md font-medium transition-colors duration-200"
-                                >
+                                <Badge className="bg-primary/10 hover:bg-primary/20 text-primary rounded-md px-2 py-1 text-xs font-medium transition-colors duration-200 md:px-3 md:py-1.5 md:text-sm">
                                     Procurement Initiation
                                 </Badge>
                                 {formState?.reference && (
-                                    <Badge className="text-xs md:text-sm bg-chart-1/10 text-chart-1 dark:bg-chart-1/20 dark:text-chart-1 px-2 py-1 md:px-3 md:py-1.5 rounded-md">
+                                    <Badge className="bg-chart-1/10 text-chart-1 dark:bg-chart-1/20 dark:text-chart-1 rounded-md px-2 py-1 text-xs md:px-3 md:py-1.5 md:text-sm">
                                         {formState.reference}
                                     </Badge>
                                 )}
                                 {formState?.isComplete && (
-                                    <Badge className="text-xs md:text-sm bg-chart-2/10 hover:bg-chart-2/20 text-chart-2 dark:bg-chart-2/20 dark:text-chart-2 px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-200">
+                                    <Badge className="bg-chart-2/10 hover:bg-chart-2/20 text-chart-2 dark:bg-chart-2/20 dark:text-chart-2 rounded-md px-2 py-1 text-xs transition-colors duration-200 md:px-3 md:py-1.5 md:text-sm">
                                         Complete
                                     </Badge>
                                 )}
@@ -355,26 +334,26 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                 </Card>
 
                 <div className="mt-2 sm:mt-0">
-                    <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 animate-fadeIn">
+                    <div className="mt-4 space-y-4 sm:mt-6 sm:space-y-6">
+                        <div className="animate-fadeIn grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-3">
                             {/* Left Column - Procurement Details */}
                             <div className="space-y-4 sm:space-y-6">
                                 {/* Procurement ID */}
-                                <Card className="p-4 sm:p-6 border-sidebar-border shadow-sm transition-all duration-200 hover:shadow-md overflow-hidden relative">
+                                <Card className="border-sidebar-border relative overflow-hidden p-4 shadow-sm transition-all duration-200 hover:shadow-md sm:p-6">
                                     <div className="space-y-4 sm:space-y-5">
                                         <div>
                                             <ProcurementId
                                                 prNumber="PR"
-                                                serial1={(data.procurement_id.split('-')[2] || '')}
-                                                onSerial1Change={val => {
+                                                serial1={data.procurement_id.split('-')[2] || ''}
+                                                onSerial1Change={(val) => {
                                                     // Always construct as PR-<year>-<serial1>-<serial2>
                                                     const parts = data.procurement_id.split('-');
                                                     const year = new Date().getFullYear().toString();
                                                     const serial2 = parts[3] || '';
                                                     setData('procurement_id', `PR-${year}-${val}-${serial2}`);
                                                 }}
-                                                serial2={(data.procurement_id.split('-')[3] || '')}
-                                                onSerial2Change={val => {
+                                                serial2={data.procurement_id.split('-')[3] || ''}
+                                                onSerial2Change={(val) => {
                                                     const parts = data.procurement_id.split('-');
                                                     const year = new Date().getFullYear().toString();
                                                     const serial1 = parts[2] || '';
@@ -383,7 +362,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                 error={hasError('procurement_id') ? errors.procurement_id : ''}
                                                 required
                                             />
-                                            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
+                                            <p className="text-muted-foreground mt-1.5 text-xs sm:mt-2 sm:text-sm">
                                                 The procurement ID is a unique identifier for this procurement process.
                                             </p>
                                         </div>
@@ -398,87 +377,98 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                 required
                                                 type="text"
                                                 value={data.procurement_title}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange('procurement_title', e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                    handleFieldChange('procurement_title', e.target.value)
+                                                }
                                                 onFocus={() => clearErrors('procurement_title')}
                                                 placeholder="Enter a descriptive title for this procurement"
-                                                className={`transition-all duration-200 ${hasError('procurement_title')
-                                                    ? 'border-destructive ring-1 ring-destructive/30'
-                                                    : 'border-input focus:border-primary'}`}
+                                                className={`transition-all duration-200 ${
+                                                    hasError('procurement_title')
+                                                        ? 'border-destructive ring-destructive/30 ring-1'
+                                                        : 'border-input focus:border-primary'
+                                                }`}
                                                 aria-invalid={hasError('procurement_title')}
                                                 error={hasError('procurement_title') ? errors.procurement_title : ''}
                                                 errorClassName="mt-1.5 sm:mt-2"
                                             />
-                                            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
+                                            <p className="text-muted-foreground mt-1.5 text-xs sm:mt-2 sm:text-sm">
                                                 The procurement title should clearly describe what is being procured.
                                             </p>
                                         </div>
 
-                                        <div className="p-3 sm:p-4 rounded-lg border transition-colors duration-200 bg-accent/10 dark:bg-accent/20 border-accent-foreground/50 dark:border-accent-foreground/70">
-                                            <p className="text-xs sm:text-sm text-accent-foreground dark:text-accent-foreground/80">
-                                                <span className="font-medium">Example:</span> "Supply and Delivery of Office Equipment for the Municipal Hall"
+                                        <div className="bg-accent/10 dark:bg-accent/20 border-accent-foreground/50 dark:border-accent-foreground/70 rounded-lg border p-3 transition-colors duration-200 sm:p-4">
+                                            <p className="text-accent-foreground dark:text-accent-foreground/80 text-xs sm:text-sm">
+                                                <span className="font-medium">Example:</span> "Supply and Delivery of Office Equipment for the
+                                                Municipal Hall"
                                             </p>
                                         </div>
                                     </div>
                                 </Card>
 
                                 {/* Preview Card */}
-                                {(data.procurement_id || data.procurement_title || data.files.some(f => f !== null)) && (
-                                    <Card className="p-4 sm:p-6 border-sidebar-border shadow-sm transition-all duration-200 hover:shadow-md bg-muted/30 dark:bg-muted/10">
+                                {(data.procurement_id || data.procurement_title || data.files.some((f) => f !== null)) && (
+                                    <Card className="border-sidebar-border bg-muted/30 dark:bg-muted/10 p-4 shadow-sm transition-all duration-200 hover:shadow-md sm:p-6">
                                         <CardHeader className="px-0 pt-0 pb-4">
                                             <div className="flex items-center gap-2">
-                                                <h3 className="font-semibold text-sm text-muted-foreground">Procurement Preview</h3>
+                                                <h3 className="text-muted-foreground text-sm font-semibold">Procurement Preview</h3>
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="px-0 pb-0 space-y-4">
+                                        <CardContent className="space-y-4 px-0 pb-0">
                                             {/* Procurement ID Preview */}
                                             {data.procurement_id && (
                                                 <div className="space-y-1">
-                                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Procurement ID</p>
-                                                    <p className="font-mono text-sm font-semibold text-foreground">{data.procurement_id}</p>
+                                                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                                        Procurement ID
+                                                    </p>
+                                                    <p className="text-foreground font-mono text-sm font-semibold">{data.procurement_id}</p>
                                                 </div>
                                             )}
 
                                             {/* Procurement Title Preview */}
                                             {data.procurement_title && (
                                                 <div className="space-y-1">
-                                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title</p>
-                                                    <p className="text-sm text-foreground">{data.procurement_title}</p>
+                                                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Title</p>
+                                                    <p className="text-foreground text-sm">{data.procurement_title}</p>
                                                 </div>
                                             )}
 
                                             {/* Files Preview */}
-                                            {data.files.some(f => f !== null) && (
+                                            {data.files.some((f) => f !== null) && (
                                                 <div className="space-y-2">
-                                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                                        Documents ({data.files.filter(f => f !== null).length})
+                                                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                                        Documents ({data.files.filter((f) => f !== null).length})
                                                     </p>
                                                     <div className="space-y-2">
                                                         {data.files.map((file, index) => {
                                                             if (!file) return null;
                                                             const metadata = data.metadata[index];
                                                             return (
-                                                                <div key={index} className="flex items-start gap-3 p-2 rounded border bg-background/50">
-                                                                    <FileText className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                                                                <div
+                                                                    key={index}
+                                                                    className="bg-background/50 flex items-start gap-3 rounded border p-2"
+                                                                >
+                                                                    <FileText className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
                                                                     <div className="min-w-0 flex-1 space-y-1">
-                                                                        <p className="text-xs font-medium text-foreground truncate" title={file.name}>
+                                                                        <p className="text-foreground truncate text-xs font-medium" title={file.name}>
                                                                             {file.name}
                                                                         </p>
-                                                                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                                                        <div className="text-muted-foreground flex flex-wrap gap-2 text-xs">
                                                                             <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                                                                             {metadata?.document_type && (
-                                                                                <Badge variant="secondary" className="h-4 text-[10px] px-1">
+                                                                                <Badge variant="secondary" className="h-4 px-1 text-[10px]">
                                                                                     {metadata.document_type}
                                                                                 </Badge>
                                                                             )}
                                                                             {metadata?.municipal_offices && (
-                                                                                <Badge variant="outline" className="h-4 text-[10px] px-1">
+                                                                                <Badge variant="outline" className="h-4 px-1 text-[10px]">
                                                                                     {metadata.municipal_offices}
                                                                                 </Badge>
                                                                             )}
                                                                         </div>
                                                                         {metadata?.signatories && metadata.signatories.length > 0 && (
-                                                                            <p className="text-xs text-muted-foreground">
-                                                                                {metadata.signatories.length} signator{metadata.signatories.length === 1 ? 'y' : 'ies'}
+                                                                            <p className="text-muted-foreground text-xs">
+                                                                                {metadata.signatories.length} signator
+                                                                                {metadata.signatories.length === 1 ? 'y' : 'ies'}
                                                                             </p>
                                                                         )}
                                                                     </div>
@@ -494,7 +484,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                             </div>
 
                             {/* Right Column - Documents */}
-                            <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+                            <div className="space-y-6 sm:space-y-8 lg:col-span-2">
                                 {fileIndices.map((index, i) => {
                                     const file = data.files[index];
                                     const meta = data.metadata[index];
@@ -505,19 +495,22 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                         <Card
                                             key={index}
                                             className={cn(
-                                                "border-sidebar-border transition-all duration-200",
+                                                'border-sidebar-border transition-all duration-200',
                                                 hasError(`files.${index}`) || hasError(`metadata.${index}`)
-                                                    ? 'ring-2 ring-destructive/30 border-destructive'
-                                                    : 'shadow-sm hover:shadow-md'
+                                                    ? 'ring-destructive/30 border-destructive ring-2'
+                                                    : 'shadow-sm hover:shadow-md',
                                             )}
                                         >
                                             <CardHeader className="bg-popover">
-                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
                                                     <div className="flex items-center gap-2 sm:gap-3">
-                                                        <FileText className="h-4 sm:h-5 w-4 sm:w-5 text-primary" />
-                                                        <h3 className="font-medium text-base sm:text-lg">Document {index + 1}</h3>
+                                                        <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                                        <h3 className="text-base font-medium sm:text-lg">Document {index + 1}</h3>
                                                         {file && (
-                                                            <Badge variant="outline" className="hidden sm:inline-flex bg-chart-1/10 text-chart-1 border-chart-1/50">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="bg-chart-1/10 text-chart-1 border-chart-1/50 hidden sm:inline-flex"
+                                                            >
                                                                 File Selected
                                                             </Badge>
                                                         )}
@@ -530,7 +523,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                             onClick={() => removeFile(index)}
                                                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                         >
-                                                            <X className="h-4 w-4 mr-1 sm:mr-0" />
+                                                            <X className="mr-1 h-4 w-4 sm:mr-0" />
                                                             <span className="sm:sr-only">Remove Document</span>
                                                         </Button>
                                                     )}
@@ -540,10 +533,14 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                             <CardContent>
                                                 <div className="space-y-4 sm:space-y-6">
                                                     {/* File Upload - Full Width */}
-                                                    <SmartContractFileUploadArea
+                                                    <FileUploadArea
                                                         label="Document File"
                                                         file={file}
-                                                        error={hasError(`files.${index}`) ? (errors as Record<string, string>)[`files.${index}`] : undefined}
+                                                        error={
+                                                            hasError(`files.${index}`)
+                                                                ? (errors as Record<string, string>)[`files.${index}`]
+                                                                : undefined
+                                                        }
                                                         isDragging={drop.isDragging}
                                                         onFileChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange(e, index)}
                                                         onDragEnter={drop.handleDragEnter}
@@ -558,29 +555,10 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                         }}
                                                         inputId={`file-${index}`}
                                                         required
-                                                        documentType="Purchase Request"
-                                                        stage="Procurement Initiation"
-                                                        procurementId={data.procurement_id || `temp-${Date.now()}`}
-                                                        enableSmartValidation={true}
-                                                        showValidationDetails={true}
-                                                        onValidationComplete={(result) => {
-                                                            const updatedValidations = [...fileValidations];
-                                                            updatedValidations[index] = result;
-                                                            setFileValidations(updatedValidations);
-                                                            if (!result.compliant) {
-                                                                toast.error('Document validation failed', {
-                                                                    description: 'Please review the validation details and fix any issues.'
-                                                                });
-                                                            } else {
-                                                                toast.success('Document validation passed', {
-                                                                    description: 'All validation checks passed successfully.'
-                                                                });
-                                                            }
-                                                        }}
                                                     />
 
                                                     {/* Metadata Fields - 2 Column Grid */}
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                                    <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
                                                         {/* Document Type */}
                                                         <div>
                                                             <InputWithLabel
@@ -589,19 +567,26 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                                 required
                                                                 type="text"
                                                                 value={meta?.document_type || ''}
-                                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleMetadataChange(index, 'document_type', e.target.value)}
+                                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                                                    handleMetadataChange(index, 'document_type', e.target.value)
+                                                                }
                                                                 placeholder="Enter document type"
                                                                 className={cn(
-                                                                    "transition-all duration-200",
+                                                                    'transition-all duration-200',
                                                                     hasError(`metadata.${index}.document_type`)
-                                                                        ? 'border-destructive ring-1 ring-destructive/30'
-                                                                        : 'border-input focus:border-primary'
+                                                                        ? 'border-destructive ring-destructive/30 ring-1'
+                                                                        : 'border-input focus:border-primary',
                                                                 )}
-                                                                error={hasError(`metadata.${index}.document_type`) ? (errors as Record<string, string>)[`metadata.${index}.document_type`] : undefined}
+                                                                error={
+                                                                    hasError(`metadata.${index}.document_type`)
+                                                                        ? (errors as Record<string, string>)[`metadata.${index}.document_type`]
+                                                                        : undefined
+                                                                }
                                                                 errorClassName="mt-1.5 sm:mt-2"
                                                             />
-                                                            <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
-                                                                Enter the type of document being uploaded (e.g., Project Proposal, Technical Requirements)
+                                                            <p className="text-muted-foreground mt-2 text-xs sm:text-sm">
+                                                                Enter the type of document being uploaded (e.g., Project Proposal, Technical
+                                                                Requirements)
                                                             </p>
                                                         </div>
 
@@ -625,7 +610,11 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                                 label="Municipal Offices"
                                                                 value={meta?.municipal_offices || ''}
                                                                 onValueChange={(value) => handleMetadataChange(index, 'municipal_offices', value)}
-                                                                error={hasError(`metadata.${index}.municipal_offices`) ? (errors as Record<string, string>)[`metadata.${index}.municipal_offices`] : undefined}
+                                                                error={
+                                                                    hasError(`metadata.${index}.municipal_offices`)
+                                                                        ? (errors as Record<string, string>)[`metadata.${index}.municipal_offices`]
+                                                                        : undefined
+                                                                }
                                                                 required
                                                             />
                                                         </div>
@@ -634,15 +623,23 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                         <div>
                                                             <PeopleInput
                                                                 label="Signatories"
-                                                                value={Array.isArray(meta?.signatories)
-                                                                    ? meta.signatories.map(s => ({ name: s.name, affiliation: s.position }))
-                                                                    : []}
-                                                                onChange={peopleArr => handleMetadataChange(
-                                                                    index,
-                                                                    'signatories',
-                                                                    peopleArr.map(p => ({ name: p.name, position: p.affiliation }))
-                                                                )}
-                                                                error={hasError(`metadata.${index}.signatories`) ? (errors as Record<string, string>)[`metadata.${index}.signatories`] : undefined}
+                                                                value={
+                                                                    Array.isArray(meta?.signatories)
+                                                                        ? meta.signatories.map((s) => ({ name: s.name, affiliation: s.position }))
+                                                                        : []
+                                                                }
+                                                                onChange={(peopleArr) =>
+                                                                    handleMetadataChange(
+                                                                        index,
+                                                                        'signatories',
+                                                                        peopleArr.map((p) => ({ name: p.name, position: p.affiliation })),
+                                                                    )
+                                                                }
+                                                                error={
+                                                                    hasError(`metadata.${index}.signatories`)
+                                                                        ? (errors as Record<string, string>)[`metadata.${index}.signatories`]
+                                                                        : undefined
+                                                                }
                                                                 required
                                                                 affiliationType="position"
                                                                 namePlaceholder="Enter signatory name"
@@ -660,7 +657,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                         type="button"
                                         variant="outline"
                                         onClick={addFile}
-                                        className="flex items-center gap-2 px-4 sm:px-8 py-4 sm:py-6 border-dashed hover:bg-primary/5 transition-colors duration-200 w-full sm:w-auto"
+                                        className="hover:bg-primary/5 flex w-full items-center gap-2 border-dashed px-4 py-4 transition-colors duration-200 sm:w-auto sm:px-8 sm:py-6"
                                     >
                                         <Plus className="h-4 w-4" />
                                         <span>Add Another Document</span>
@@ -669,13 +666,8 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                             </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 order-3">
-                            <Button
-                                type="submit"
-                                onClick={onSubmit}
-                                disabled={processing}
-                                className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
-                            >
+                        <div className="order-3 flex flex-col items-stretch justify-end gap-2 sm:flex-row sm:items-center sm:gap-3">
+                            <Button type="submit" onClick={onSubmit} disabled={processing} className="w-full gap-2 text-xs sm:w-auto sm:text-sm">
                                 {processing ? 'Submitting...' : 'Submit Procurement'}
                             </Button>
                         </div>

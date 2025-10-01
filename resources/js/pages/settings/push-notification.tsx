@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
-import { type BreadcrumbItem } from '@/types';
-import { Head, usePage, router } from '@inertiajs/react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Bell, BellOff, BellRing, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { type BreadcrumbItem } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import { AlertCircle, Bell, BellOff, BellRing, CheckCircle2, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -36,27 +36,27 @@ export default function PushNotification() {
 
     // Check if push notifications are supported
     useEffect(() => {
-        const supported =
-            'serviceWorker' in navigator &&
-            'PushManager' in window &&
-            'Notification' in window;
+        const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
         setIsSupported(supported);
         if (supported) setPermission(Notification.permission);
     }, []);
 
     // Check current subscription status
-    const checkSubscriptionStatus = useCallback(async (reg?: ServiceWorkerRegistration) => {
-        const swRegistration = reg || registration;
-        if (!swRegistration) return;
+    const checkSubscriptionStatus = useCallback(
+        async (reg?: ServiceWorkerRegistration) => {
+            const swRegistration = reg || registration;
+            if (!swRegistration) return;
 
-        try {
-            const subscription = await swRegistration.pushManager.getSubscription();
-            setIsSubscribed(!!subscription);
-        } catch (e) {
-            console.error('Error checking subscription status:', e);
-        }
-    }, [registration]);
+            try {
+                const subscription = await swRegistration.pushManager.getSubscription();
+                setIsSubscribed(!!subscription);
+            } catch (e) {
+                console.error('Error checking subscription status:', e);
+            }
+        },
+        [registration],
+    );
 
     // Register service worker
     useEffect(() => {
@@ -154,18 +154,22 @@ export default function PushNotification() {
             // Send subscription to server using Inertia
             console.log('[Push] Subscribing with endpoint', subscription.endpoint);
             await new Promise<void>((resolve, reject) => {
-                router.post('/settings/push/subscribe', {
-                    endpoint: subscription.endpoint,
-                    keys: {
-                        p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
-                        auth: arrayBufferToBase64(subscription.getKey('auth')!),
+                router.post(
+                    '/settings/push/subscribe',
+                    {
+                        endpoint: subscription.endpoint,
+                        keys: {
+                            p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
+                            auth: arrayBufferToBase64(subscription.getKey('auth')!),
+                        },
                     },
-                }, {
-                    onSuccess: () => resolve(),
-                    onError: (errors) => reject(new Error(Object.values(errors).flat().join(', '))),
-                    preserveState: true,
-                    preserveScroll: true,
-                });
+                    {
+                        onSuccess: () => resolve(),
+                        onError: (errors) => reject(new Error(Object.values(errors).flat().join(', '))),
+                        preserveState: true,
+                        preserveScroll: true,
+                    },
+                );
             });
 
             setIsSubscribed(true);
@@ -253,18 +257,17 @@ export default function PushNotification() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <BellOff className="w-5 h-5" />
+                                <BellOff className="h-5 w-5" />
                                 Push Notifications
                             </CardTitle>
-                            <CardDescription>
-                                Get real-time notifications about procurement updates
-                            </CardDescription>
+                            <CardDescription>Get real-time notifications about procurement updates</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Alert>
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertDescription>
-                                    Push notifications are not supported in your browser. Please use a modern browser like Chrome, Firefox, Safari, or Edge.
+                                    Push notifications are not supported in your browser. Please use a modern browser like Chrome, Firefox, Safari, or
+                                    Edge.
                                 </AlertDescription>
                             </Alert>
                         </CardContent>
@@ -273,19 +276,19 @@ export default function PushNotification() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <BellRing className="w-5 h-5" />
+                                <BellRing className="h-5 w-5" />
                                 Push Notifications
                             </CardTitle>
-                            <CardDescription>
-                                Get real-time notifications about procurement updates and important system events
-                            </CardDescription>
+                            <CardDescription>Get real-time notifications about procurement updates and important system events</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium">Permission Status:</span>
                                     {permission === 'granted' ? (
-                                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">Granted</Badge>
+                                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
+                                            Granted
+                                        </Badge>
                                     ) : permission === 'denied' ? (
                                         <Badge variant="destructive">Denied</Badge>
                                     ) : permission === 'default' ? (
@@ -299,12 +302,12 @@ export default function PushNotification() {
                                     <span className="text-sm font-medium">Subscription Status:</span>
                                     {isSubscribed ? (
                                         <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
-                                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                                            <CheckCircle2 className="mr-1 h-3 w-3" />
                                             Subscribed
                                         </Badge>
                                     ) : (
                                         <Badge variant="secondary">
-                                            <BellOff className="w-3 h-3 mr-1" />
+                                            <BellOff className="mr-1 h-3 w-3" />
                                             Not Subscribed
                                         </Badge>
                                     )}
@@ -316,12 +319,7 @@ export default function PushNotification() {
                                     <AlertCircle className="h-4 w-4" />
                                     <AlertDescription className="flex items-center justify-between">
                                         <span>Notification permission is required to receive push notifications.</span>
-                                        <Button
-                                            size="sm"
-                                            type="button"
-                                            onClick={handleRequestPermission}
-                                            disabled={isLoading}
-                                        >
+                                        <Button size="sm" type="button" onClick={handleRequestPermission} disabled={isLoading}>
                                             Enable
                                         </Button>
                                     </AlertDescription>
@@ -337,20 +335,15 @@ export default function PushNotification() {
 
                             <div className="flex flex-col gap-2">
                                 {permission === 'granted' && !isSubscribed && (
-                                    <Button
-                                        type="button"
-                                        onClick={handleSubscribe}
-                                        disabled={isLoading}
-                                        className="w-full"
-                                    >
+                                    <Button type="button" onClick={handleSubscribe} disabled={isLoading} className="w-full">
                                         {isLoading ? (
                                             <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                                 Subscribing...
                                             </>
                                         ) : (
                                             <>
-                                                <Bell className="w-4 h-4 mr-2" />
+                                                <Bell className="mr-2 h-4 w-4" />
                                                 Enable Push Notifications
                                             </>
                                         )}
@@ -359,38 +352,23 @@ export default function PushNotification() {
 
                                 {isSubscribed && (
                                     <div className="flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            type="button"
-                                            onClick={handleUnsubscribe}
-                                            disabled={isLoading}
-                                            className="flex-1"
-                                        >
-                                            {isLoading ? (
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            ) : (
-                                                <BellOff className="w-4 h-4 mr-2" />
-                                            )}
+                                        <Button variant="outline" type="button" onClick={handleUnsubscribe} disabled={isLoading} className="flex-1">
+                                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellOff className="mr-2 h-4 w-4" />}
                                             Disable
                                         </Button>
                                     </div>
                                 )}
 
                                 {permission === 'default' && (
-                                    <Button
-                                        type="button"
-                                        onClick={handleRequestPermission}
-                                        disabled={isLoading}
-                                        className="w-full"
-                                    >
+                                    <Button type="button" onClick={handleRequestPermission} disabled={isLoading} className="w-full">
                                         {isLoading ? (
                                             <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                                 Requesting...
                                             </>
                                         ) : (
                                             <>
-                                                <Bell className="w-4 h-4 mr-2" />
+                                                <Bell className="mr-2 h-4 w-4" />
                                                 Request Permission
                                             </>
                                         )}
@@ -399,8 +377,8 @@ export default function PushNotification() {
                             </div>
 
                             <div className="bg-muted/50 rounded-lg p-3">
-                                <h4 className="text-sm font-medium mb-2">What you'll receive notifications for:</h4>
-                                <ul className="text-xs text-muted-foreground space-y-1">
+                                <h4 className="mb-2 text-sm font-medium">What you'll receive notifications for:</h4>
+                                <ul className="text-muted-foreground space-y-1 text-xs">
                                     <li>• Procurement stage updates and transitions</li>
                                     <li>• Document uploads and validations</li>
                                     <li>• Important system alerts and deadlines</li>
@@ -409,9 +387,9 @@ export default function PushNotification() {
                             </div>
 
                             {isSubscribed && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-3 dark:bg-green-950 dark:border-green-800">
+                                <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950">
                                     <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
-                                        <CheckCircle2 className="w-4 h-4" />
+                                        <CheckCircle2 className="h-4 w-4" />
                                         <span className="text-sm font-medium">
                                             You're all set! You'll receive push notifications for important updates.
                                         </span>
@@ -428,7 +406,7 @@ export default function PushNotification() {
 
 // Utility functions (moved from hook)
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);

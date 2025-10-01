@@ -1,27 +1,31 @@
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { Button } from "@/components/ui/button";
-import { useEffect, useState, useMemo } from 'react';
-import { toast } from "sonner";
-import { PlusIcon, Bell, ArrowRight, Clock, FileText, ActivityIcon, CheckCircle, FileIcon, CheckIcon, FileUpIcon, EyeIcon, FileTextIcon, ExternalLinkIcon, } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid,
-    PieChart, Pie,
-} from 'recharts';
-import {
-    ChartConfig,
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-    ChartLegend,
-    ChartLegendContent,
-} from '@/components/ui/chart';
-import type { User, SharedData } from "@/types";
+import type { SharedData, User } from '@/types';
 import { Stage, Status } from '@/types/blockchain';
+import { Head, Link, usePage } from '@inertiajs/react';
+import {
+    ActivityIcon,
+    ArrowRight,
+    Bell,
+    CheckCircle,
+    CheckIcon,
+    Clock,
+    ExternalLinkIcon,
+    EyeIcon,
+    FileIcon,
+    FileText,
+    FileTextIcon,
+    FileUpIcon,
+    PlusIcon,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis } from 'recharts';
+import { toast } from 'sonner';
 
 const ACTION_ICON_MAP = {
     upload: FileUpIcon,
@@ -39,9 +43,7 @@ const ACTION_ICON_MAP = {
 } as const;
 
 const getActionIcon = (action: string) => {
-    const IconComponent = Object.entries(ACTION_ICON_MAP).find(
-        ([key]) => action.toLowerCase().includes(key)
-    )?.[1] || ActivityIcon;
+    const IconComponent = Object.entries(ACTION_ICON_MAP).find(([key]) => action.toLowerCase().includes(key))?.[1] || ActivityIcon;
 
     return IconComponent;
 };
@@ -94,17 +96,24 @@ const breadcrumbs = [
 
 export default function BACSecretariatDashboard() {
     const pageProps = usePage<DashboardProps>().props;
-    const { recentProcurements = [], procurementDistribution = [], recentActivities = [], priorityActions, stats, error } = pageProps as DashboardProps;
+    const {
+        recentProcurements = [],
+        procurementDistribution = [],
+        recentActivities = [],
+        priorityActions,
+        stats,
+        error,
+    } = pageProps as DashboardProps;
     const { auth } = pageProps as unknown as { auth: { user: User } };
     const userRole = auth.user?.role;
 
     // State for procurement distribution chart
-    const [activeChart, setActiveChart] = useState<"stage" | "status">("stage");
+    const [activeChart, setActiveChart] = useState<'stage' | 'status'>('stage');
 
     // Calculate distribution from procurementDistribution data (separate from recent procurements)
     const stageDistribution = useMemo(() => {
         const distribution: Record<string, number> = {};
-        procurementDistribution.forEach(procurement => {
+        procurementDistribution.forEach((procurement) => {
             const stage = procurement.stage;
             distribution[stage] = (distribution[stage] || 0) + 1;
         });
@@ -113,7 +122,7 @@ export default function BACSecretariatDashboard() {
 
     const statusDistribution = useMemo(() => {
         const distribution: Record<string, number> = {};
-        procurementDistribution.forEach(procurement => {
+        procurementDistribution.forEach((procurement) => {
             const status = procurement.status;
             distribution[status] = (distribution[status] || 0) + 1;
         });
@@ -124,8 +133,8 @@ export default function BACSecretariatDashboard() {
     const stageChartConfig: ChartConfig = useMemo(() => {
         const config: ChartConfig = {
             count: {
-                label: "Count",
-                color: "var(--chart-1)",
+                label: 'Count',
+                color: 'var(--chart-1)',
             },
         };
 
@@ -139,11 +148,11 @@ export default function BACSecretariatDashboard() {
             });
         } else {
             // Fallback static config
-            config.stage1 = { label: "Stage 1", color: "var(--chart-1)" };
-            config.stage2 = { label: "Stage 2", color: "var(--chart-2)" };
-            config.stage3 = { label: "Stage 3", color: "var(--chart-3)" };
-            config.stage4 = { label: "Stage 4", color: "var(--chart-4)" };
-            config.stage5 = { label: "Stage 5", color: "var(--chart-5)" };
+            config.stage1 = { label: 'Stage 1', color: 'var(--chart-1)' };
+            config.stage2 = { label: 'Stage 2', color: 'var(--chart-2)' };
+            config.stage3 = { label: 'Stage 3', color: 'var(--chart-3)' };
+            config.stage4 = { label: 'Stage 4', color: 'var(--chart-4)' };
+            config.stage5 = { label: 'Stage 5', color: 'var(--chart-5)' };
         }
 
         return config;
@@ -151,7 +160,7 @@ export default function BACSecretariatDashboard() {
 
     useEffect(() => {
         if (error) {
-            toast.error("Error loading dashboard", {
+            toast.error('Error loading dashboard', {
                 description: error,
                 duration: 5000,
             });
@@ -174,7 +183,7 @@ export default function BACSecretariatDashboard() {
             day: 'numeric',
             year: 'numeric',
             hour: 'numeric',
-            minute: '2-digit'
+            minute: '2-digit',
         });
     };
 
@@ -182,34 +191,34 @@ export default function BACSecretariatDashboard() {
     const renderStatsCards = () => {
         const allCards = [
             {
-                label: "Ongoing Projects",
+                label: 'Ongoing Projects',
                 value: stats?.ongoingProjects || 0,
                 icon: FileText,
-                colors: "text-primary bg-primary/10"
+                colors: 'text-primary bg-primary/10',
             },
             {
-                label: "Pending Actions",
+                label: 'Pending Actions',
                 value: stats?.pendingActions || 0,
                 icon: Bell,
-                colors: "text-secondary bg-secondary/10",
-                roles: ['bac_secretariat']
+                colors: 'text-secondary bg-secondary/10',
+                roles: ['bac_secretariat'],
             },
             {
-                label: "Completed Biddings",
+                label: 'Completed Biddings',
                 value: stats?.completedBiddings || 0,
                 icon: CheckCircle,
-                colors: "text-primary bg-primary/10"
+                colors: 'text-primary bg-primary/10',
             },
             {
-                label: "Total Documents",
+                label: 'Total Documents',
                 value: stats?.totalDocuments || 0,
                 icon: FileIcon,
-                colors: "text-muted-foreground bg-muted/10"
-            }
+                colors: 'text-muted-foreground bg-muted/10',
+            },
         ];
 
-        const cardsToShow = allCards.filter(card => !card.roles || card.roles.includes(userRole));
-        const gridColsClass = cardsToShow.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3";
+        const cardsToShow = allCards.filter((card) => !card.roles || card.roles.includes(userRole));
+        const gridColsClass = cardsToShow.length === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3';
 
         return (
             <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsClass} gap-4`}>
@@ -220,10 +229,10 @@ export default function BACSecretariatDashboard() {
                             <CardContent className="p-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm font-medium text-muted-foreground">{card.label}</p>
+                                        <p className="text-muted-foreground text-sm font-medium">{card.label}</p>
                                         <p className="text-2xl font-bold">{card.value}</p>
                                     </div>
-                                    <div className={`p-2 rounded-full ${card.colors}`}>
+                                    <div className={`rounded-full p-2 ${card.colors}`}>
                                         <IconComponent className="h-5 w-5" />
                                     </div>
                                 </div>
@@ -239,8 +248,8 @@ export default function BACSecretariatDashboard() {
         if ((priorityActions as PriorityAction[]).length === 0) {
             return (
                 <Card className="shadow-sm">
-                    <CardContent className="p-4 text-center py-8">
-                        <CheckIcon className="mx-auto h-8 w-8 text-primary mb-2" />
+                    <CardContent className="p-4 py-8 text-center">
+                        <CheckIcon className="text-primary mx-auto mb-2 h-8 w-8" />
                         <p>No pending actions</p>
                     </CardContent>
                 </Card>
@@ -250,11 +259,11 @@ export default function BACSecretariatDashboard() {
         return (
             <div className="space-y-4">
                 {(priorityActions as PriorityAction[]).map((action: PriorityAction, index: number) => (
-                    <Card key={index} className="border-l-4 border-l-primary shadow-sm">
+                    <Card key={index} className="border-l-primary border-l-4 shadow-sm">
                         <CardContent className="p-4">
                             <h3 className="font-medium">{action.action}</h3>
-                            <p className="text-sm text-muted-foreground my-2">For: {action.id}</p>
-                            <Button variant="secondary" size="sm" asChild className="w-full mt-2">
+                            <p className="text-muted-foreground my-2 text-sm">For: {action.id}</p>
+                            <Button variant="secondary" size="sm" asChild className="mt-2 w-full">
                                 <Link href={action.route}>Take Action</Link>
                             </Button>
                         </CardContent>
@@ -267,19 +276,15 @@ export default function BACSecretariatDashboard() {
     const renderRecentActivities = () => {
         if (recentActivities.length === 0) {
             return (
-                <div className="text-center py-8">
-                    <Clock className="mx-auto h-8 w-8 text-muted-foreground opacity-20 mb-2" />
+                <div className="py-8 text-center">
+                    <Clock className="text-muted-foreground mx-auto mb-2 h-8 w-8 opacity-20" />
                     <p>No recent activities found</p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                        Activities will appear here when procurement actions are taken.<br />
+                    <p className="text-muted-foreground mt-2 text-xs">
+                        Activities will appear here when procurement actions are taken.
+                        <br />
                         Try refreshing if you've recently performed actions.
                     </p>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-4"
-                        onClick={() => window.location.reload()}
-                    >
+                    <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
                         Refresh Data
                     </Button>
                 </div>
@@ -292,40 +297,27 @@ export default function BACSecretariatDashboard() {
                     const ActionIcon = getActionIcon(activity.action);
 
                     return (
-                        <div key={index} className={`${index < recentActivities.length - 1 ? "border-b pb-3" : ""}`}>
+                        <div key={index} className={`${index < recentActivities.length - 1 ? 'border-b pb-3' : ''}`}>
                             <div className="flex items-center justify-between">
                                 <Link
                                     href={`/bac-secretariat/procurements-list/${activity.id}`}
-                                    className="font-medium text-primary hover:underline text-sm max-w-[70%] truncate"
+                                    className="text-primary max-w-[70%] truncate text-sm font-medium hover:underline"
                                 >
                                     {activity.title || `Procurement #${activity.id}`}
                                 </Link>
-                                <span className="text-xs text-muted-foreground">
-                                    {formatRelativeDate(activity.date)}
-                                </span>
+                                <span className="text-muted-foreground text-xs">{formatRelativeDate(activity.date)}</span>
                             </div>
                             <div className="mt-1.5 flex items-center justify-between">
                                 <div className="flex items-center">
-                                    <Badge
-                                        variant="secondary"
-                                        className="text-xs mr-2 flex items-center gap-1"
-                                    >
+                                    <Badge variant="secondary" className="mr-2 flex items-center gap-1 text-xs">
                                         <ActionIcon className="h-3.5 w-3.5" />
                                         <span>{activity.action}</span>
                                     </Badge>
-                                    {activity.stage && (
-                                        <span className="text-xs text-muted-foreground ml-1">
-                                            in {activity.stage} stage
-                                        </span>
-                                    )}
+                                    {activity.stage && <span className="text-muted-foreground ml-1 text-xs">in {activity.stage} stage</span>}
                                 </div>
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-muted-foreground text-xs">
                                     by {activity.user}
-                                    {activity.user_role && (
-                                        <span className="ml-1 text-muted-foreground/70">
-                                            ({activity.user_role})
-                                        </span>
-                                    )}
+                                    {activity.user_role && <span className="text-muted-foreground/70 ml-1">({activity.user_role})</span>}
                                 </span>
                             </div>
                         </div>
@@ -339,18 +331,18 @@ export default function BACSecretariatDashboard() {
         // Chart configuration
         const chartConfig: ChartConfig = {
             count: {
-                label: "Count",
-                color: "var(--chart-1)",
+                label: 'Count',
+                color: 'var(--chart-1)',
             },
         };
 
-        const data = activeChart === "stage" ? stageDistribution : statusDistribution;
+        const data = activeChart === 'stage' ? stageDistribution : statusDistribution;
 
         if (procurementDistribution.length === 0) {
             return (
                 <Card className="shadow-sm">
                     <CardContent className="p-6 text-center">
-                        <FileText className="mx-auto h-8 w-8 text-muted-foreground opacity-20 mb-2" />
+                        <FileText className="text-muted-foreground mx-auto mb-2 h-8 w-8 opacity-20" />
                         <p className="text-muted-foreground">No procurement data available for distribution</p>
                     </CardContent>
                 </Card>
@@ -362,14 +354,12 @@ export default function BACSecretariatDashboard() {
                 <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
                     <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 sm:!py-0">
                         <CardTitle>Procurement Distribution</CardTitle>
-                        <CardDescription>
-                            Distribution of procurements across stages and statuses
-                        </CardDescription>
+                        <CardDescription>Distribution of procurements across stages and statuses</CardDescription>
                     </div>
                     <div className="flex">
-                        {["stage", "status"].map((key) => {
-                            const chart = key as "stage" | "status";
-                            const chartData = chart === "stage" ? stageDistribution : statusDistribution;
+                        {['stage', 'status'].map((key) => {
+                            const chart = key as 'stage' | 'status';
+                            const chartData = chart === 'stage' ? stageDistribution : statusDistribution;
                             const chartTotal = Object.values(chartData).reduce((sum, count) => sum + count, 0);
 
                             return (
@@ -379,27 +369,20 @@ export default function BACSecretariatDashboard() {
                                     className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
                                     onClick={() => setActiveChart(chart)}
                                 >
-                                    <span className="text-muted-foreground text-xs capitalize">
-                                        {chart} Distribution
-                                    </span>
-                                    <span className="text-lg leading-none font-bold sm:text-3xl">
-                                        {chartTotal.toLocaleString()}
-                                    </span>
+                                    <span className="text-muted-foreground text-xs capitalize">{chart} Distribution</span>
+                                    <span className="text-lg leading-none font-bold sm:text-3xl">{chartTotal.toLocaleString()}</span>
                                 </button>
                             );
                         })}
                     </div>
                 </CardHeader>
                 <CardContent className="px-2 sm:p-6">
-                    <ChartContainer
-                        config={chartConfig}
-                        className="aspect-auto h-[300px] w-full"
-                    >
+                    <ChartContainer config={chartConfig} className="aspect-auto h-[300px] w-full">
                         <BarChart
                             accessibilityLayer
                             data={Object.entries(data).map(([key, count]) => ({
                                 name: key,
-                                count: count
+                                count: count,
                             }))}
                             margin={{
                                 left: 12,
@@ -412,7 +395,7 @@ export default function BACSecretariatDashboard() {
                                 tickLine={false}
                                 axisLine={false}
                                 tickMargin={8}
-                                tickFormatter={(value) => value.length > 15 ? `${value.slice(0, 15)}...` : value}
+                                tickFormatter={(value) => (value.length > 15 ? `${value.slice(0, 15)}...` : value)}
                             />
                             <YAxis />
                             <ChartTooltip
@@ -424,11 +407,7 @@ export default function BACSecretariatDashboard() {
                                     />
                                 }
                             />
-                            <Bar
-                                dataKey="count"
-                                fill={`var(--color-count)`}
-                                radius={4}
-                            />
+                            <Bar dataKey="count" fill={`var(--color-count)`} radius={4} />
                         </BarChart>
                     </ChartContainer>
                 </CardContent>
@@ -441,7 +420,7 @@ export default function BACSecretariatDashboard() {
             return (
                 <Card className="shadow-sm">
                     <CardContent className="p-6 text-center">
-                        <FileText className="mx-auto h-8 w-8 text-muted-foreground opacity-20 mb-2" />
+                        <FileText className="text-muted-foreground mx-auto mb-2 h-8 w-8 opacity-20" />
                         <p className="text-muted-foreground">No stage data available</p>
                     </CardContent>
                 </Card>
@@ -455,10 +434,7 @@ export default function BACSecretariatDashboard() {
                     <CardDescription>Distribution of procurements across stages</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 pb-0">
-                    <ChartContainer
-                        config={stageChartConfig}
-                        className="mx-auto aspect-square"
-                    >
+                    <ChartContainer config={stageChartConfig} className="mx-auto aspect-square">
                         <PieChart>
                             <ChartTooltip
                                 content={({ active, payload }) => {
@@ -471,11 +447,10 @@ export default function BACSecretariatDashboard() {
                                             <div className="border-border/50 bg-background rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
                                                 <div className="font-medium">{data.stage}</div>
                                                 <div className="flex items-center gap-2">
-                                                    <div
-                                                        className="h-2.5 w-2.5 rounded-full"
-                                                        style={{ backgroundColor: data.fill }}
-                                                    />
-                                                    <span>{data.count} ({percentage}%)</span>
+                                                    <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: data.fill }} />
+                                                    <span>
+                                                        {data.count} ({percentage}%)
+                                                    </span>
                                                 </div>
                                             </div>
                                         );
@@ -487,25 +462,21 @@ export default function BACSecretariatDashboard() {
                                 data={Object.entries(stageDistribution).map(([stage, count], index) => ({
                                     stage: stage,
                                     count: count,
-                                    fill: `var(--chart-${(index % 5) + 1})`
+                                    fill: `var(--chart-${(index % 5) + 1})`,
                                 }))}
                                 dataKey="count"
                                 nameKey="stage"
                             />
                             <ChartLegend
                                 content={<ChartLegendContent nameKey="stage" />}
-                                className="-translate-y-2 flex flex-wrap justify-center gap-4 [&>*]:flex [&>*]:items-center"
+                                className="flex -translate-y-2 flex-wrap justify-center gap-4 [&>*]:flex [&>*]:items-center"
                             />
                         </PieChart>
                     </ChartContainer>
                 </CardContent>
                 <CardFooter className="flex-col gap-2 text-sm">
-                    <div className="flex items-center gap-2 leading-none font-medium">
-                        Stage distribution overview
-                    </div>
-                    <div className="text-muted-foreground leading-none">
-                        Showing current distribution across procurement stages
-                    </div>
+                    <div className="flex items-center gap-2 leading-none font-medium">Stage distribution overview</div>
+                    <div className="text-muted-foreground leading-none">Showing current distribution across procurement stages</div>
                 </CardFooter>
             </Card>
         );
@@ -521,34 +492,25 @@ export default function BACSecretariatDashboard() {
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <ActivityIcon className="h-6 w-6 text-primary" />
+                                <div className="bg-primary/10 rounded-lg p-2">
+                                    <ActivityIcon className="text-primary h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-foreground">Bids and Awards Committee Secretariat Dashboard</h1>
-                                    <p className="text-muted-foreground text-sm mt-1">
-                                        Overview of procurement activities and tasks
-                                    </p>
+                                    <h1 className="text-foreground text-2xl font-bold">Bids and Awards Committee Secretariat Dashboard</h1>
+                                    <p className="text-muted-foreground mt-1 text-sm">Overview of procurement activities and tasks</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    asChild
-                                >
+                                <Button variant="secondary" size="sm" asChild>
                                     <Link href="/bac-secretariat/procurements-list">
-                                        <FileUpIcon className="h-4 w-4 mr-2" />
+                                        <FileUpIcon className="mr-2 h-4 w-4" />
                                         Procurements List
                                     </Link>
                                 </Button>
 
-                                <Button
-                                    asChild
-                                    size="sm"
-                                >
+                                <Button asChild size="sm">
                                     <Link href="/bac-secretariat/procurement/procurement-initiation">
-                                        <PlusIcon className="h-4 w-4 mr-2" />
+                                        <PlusIcon className="mr-2 h-4 w-4" />
                                         New Procurement
                                     </Link>
                                 </Button>
@@ -564,20 +526,18 @@ export default function BACSecretariatDashboard() {
                 {renderProcurementDistribution()}
 
                 {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     {/* Left Column */}
                     <div className="space-y-6">
                         {/* Priority Actions */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-base md:text-lg font-semibold flex items-center">
-                                    <Bell className="h-4 w-4 md:h-5 md:w-5 mr-2 text-primary" />
+                                <CardTitle className="flex items-center text-base font-semibold md:text-lg">
+                                    <Bell className="text-primary mr-2 h-4 w-4 md:h-5 md:w-5" />
                                     Priority Actions
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                {renderPriorityActions()}
-                            </CardContent>
+                            <CardContent>{renderPriorityActions()}</CardContent>
                         </Card>
                     </div>
 
@@ -586,17 +546,18 @@ export default function BACSecretariatDashboard() {
                         {/* Recent Activities moved here */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-base md:text-lg font-semibold flex items-center">
-                                    <Clock className="h-4 w-4 md:h-5 md:w-5 mr-2 text-primary" />
+                                <CardTitle className="flex items-center text-base font-semibold md:text-lg">
+                                    <Clock className="text-primary mr-2 h-4 w-4 md:h-5 md:w-5" />
                                     Recent Activities {recentActivities.length > 0 && `(${recentActivities.length})`}
                                 </CardTitle>
-                                <Link href="/bac-secretariat/procurements-list" className="text-xs md:text-sm text-primary hover:underline flex items-center shrink-0 ml-2">
-                                    View all <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
+                                <Link
+                                    href="/bac-secretariat/procurements-list"
+                                    className="text-primary ml-2 flex shrink-0 items-center text-xs hover:underline md:text-sm"
+                                >
+                                    View all <ArrowRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
                                 </Link>
                             </CardHeader>
-                            <CardContent>
-                                {renderRecentActivities()}
-                            </CardContent>
+                            <CardContent>{renderRecentActivities()}</CardContent>
                         </Card>
                     </div>
 
@@ -610,12 +571,15 @@ export default function BACSecretariatDashboard() {
                 {/* Recent Procurements Section */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-base md:text-lg font-semibold flex items-center">
-                            <FileText className="h-4 w-4 md:h-5 md:w-5 mr-2 text-primary" />
+                        <CardTitle className="flex items-center text-base font-semibold md:text-lg">
+                            <FileText className="text-primary mr-2 h-4 w-4 md:h-5 md:w-5" />
                             Recent Procurements
                         </CardTitle>
-                        <Link href="/bac-secretariat/procurements-list" className="text-xs md:text-sm text-primary hover:underline flex items-center shrink-0 ml-2">
-                            View all <ArrowRight className="h-3 w-3 md:h-4 md:w-4 ml-1" />
+                        <Link
+                            href="/bac-secretariat/procurements-list"
+                            className="text-primary ml-2 flex shrink-0 items-center text-xs hover:underline md:text-sm"
+                        >
+                            View all <ArrowRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
                         </Link>
                     </CardHeader>
                     <CardContent>
@@ -632,7 +596,7 @@ export default function BACSecretariatDashboard() {
                                 </TableHeader>
                                 <TableBody>
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8">
+                                        <TableCell colSpan={5} className="py-8 text-center">
                                             No procurement data available
                                         </TableCell>
                                     </TableRow>
@@ -650,31 +614,22 @@ export default function BACSecretariatDashboard() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {recentProcurements.map(procurement => (
+                                    {recentProcurements.map((procurement) => (
                                         <TableRow key={procurement.id}>
                                             <TableCell className="font-medium">{procurement.id}</TableCell>
                                             <TableCell className="max-w-[140px] truncate" title={procurement.title}>
                                                 {procurement.title}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge>
-                                                    {procurement.stage}
-                                                </Badge>
+                                                <Badge>{procurement.stage}</Badge>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="secondary">
-                                                    {procurement.status}
-                                                </Badge>
+                                                <Badge variant="secondary">{procurement.status}</Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            asChild
-                                                            className="h-8 px-2"
-                                                        >
+                                                        <Button variant="ghost" size="sm" asChild className="h-8 px-2">
                                                             <Link href={`/bac-secretariat/procurements-list/${procurement.id}`}>
                                                                 <EyeIcon className="h-4 w-4" />
                                                             </Link>

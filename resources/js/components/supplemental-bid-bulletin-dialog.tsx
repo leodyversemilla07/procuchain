@@ -1,18 +1,11 @@
-import React from 'react';
-import { useForm } from '@inertiajs/react';
-import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import React from 'react';
+import { toast } from 'sonner';
 
 interface SupplementalBidDialogProps {
     open: boolean;
@@ -28,13 +21,7 @@ interface PageProps {
     errors?: Record<string, string>;
 }
 
-export function SupplementalBidBulletinDialog({
-    open,
-    onOpenChange,
-    procurementId,
-    procurementTitle,
-    onComplete
-}: SupplementalBidDialogProps) {
+export function SupplementalBidBulletinDialog({ open, onOpenChange, procurementId, procurementTitle, onComplete }: SupplementalBidDialogProps) {
     const form = useForm({
         procurement_id: procurementId,
         procurement_title: procurementTitle,
@@ -45,24 +32,21 @@ export function SupplementalBidBulletinDialog({
         onOpenChange(false);
 
         const message = form.data.supplemental_bid_needed
-            ? "You will now proceed to upload supplemental bid bulletin documents."
-            : "The supplemental bid bulletin stage has been skipped.";
+            ? 'You will now proceed to upload supplemental bid bulletin documents.'
+            : 'The supplemental bid bulletin stage has been skipped.';
 
-        toast.success("Decision submitted successfully!", { description: message });
+        toast.success('Decision submitted successfully!', { description: message });
 
         if (onComplete && response?.props?.success) {
-            onComplete(
-                response.props.nextStage,
-                form.data.supplemental_bid_needed
-            );
+            onComplete(response.props.nextStage, form.data.supplemental_bid_needed);
         }
 
         form.reset();
     };
 
     const handleError = (errors: Record<string, string>) => {
-        toast.error("Failed to submit decision", {
-            description: Object.values(errors)[0] || "Please try again or contact support if the problem persists."
+        toast.error('Failed to submit decision', {
+            description: Object.values(errors)[0] || 'Please try again or contact support if the problem persists.',
         });
     };
 
@@ -80,7 +64,7 @@ export function SupplementalBidBulletinDialog({
             preserveScroll: true,
             preserveState: true,
             onSuccess: handleSuccess,
-            onError: handleError
+            onError: handleError,
         });
     };
 
@@ -96,63 +80,58 @@ export function SupplementalBidBulletinDialog({
             }}
         >
             <DialogContent
-                className="w-[90%] sm:max-w-[500px] md:max-w-[600px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto"
+                className="max-h-[90vh] w-[90%] overflow-y-auto p-4 sm:max-w-[500px] sm:p-6 md:max-w-[600px]"
                 onOpenAutoFocus={(e) => e.preventDefault()}
             >
                 <DialogHeader className="space-y-2 sm:space-y-3">
-                    <DialogTitle className="text-xl sm:text-2xl font-semibold tracking-tight">
-                        Supplemental Bid Bulletin Decision
-                    </DialogTitle>
-                    <DialogDescription className="text-sm sm:text-base leading-relaxed">
+                    <DialogTitle className="text-xl font-semibold tracking-tight sm:text-2xl">Supplemental Bid Bulletin Decision</DialogTitle>
+                    <DialogDescription className="text-sm leading-relaxed sm:text-base">
                         Please indicate whether a supplemental bid bulletin is needed for this procurement:
                     </DialogDescription>
                     <div className="mt-2">
-                        <span className="block font-medium text-gray-700 dark:text-gray-300 text-sm sm:text-base">
-                            Title: {procurementTitle}
-                        </span>
-                        <span className="block text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            ID: {procurementId}
-                        </span>
+                        <span className="block text-sm font-medium text-gray-700 sm:text-base dark:text-gray-300">Title: {procurementTitle}</span>
+                        <span className="mt-1 block text-xs text-gray-500 sm:text-sm dark:text-gray-400">ID: {procurementId}</span>
                     </div>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="mt-4 sm:mt-6">
                     <div className="space-y-4 sm:space-y-6">
                         <div className="space-y-3 sm:space-y-4">
-                            <Label className="text-sm sm:text-base font-medium">
-                                Is a supplemental bid bulletin needed?
-                            </Label>
+                            <Label className="text-sm font-medium sm:text-base">Is a supplemental bid bulletin needed?</Label>
                             <RadioGroup
                                 value={form.data.supplemental_bid_needed === undefined ? undefined : form.data.supplemental_bid_needed.toString()}
                                 onValueChange={handleSelectionChange}
-                                className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-2"
+                                className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2 sm:gap-4"
                                 aria-label="Supplemental bid bulletin status"
                             >
-                                <Label htmlFor="supplemental-yes" className="w-full m-0">
-                                    <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors min-h-[48px]">
+                                <Label htmlFor="supplemental-yes" className="m-0 w-full">
+                                    <div className="flex min-h-[48px] cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                                         <RadioGroupItem value="true" id="supplemental-yes" />
                                         <span className="cursor-pointer">Yes</span>
                                     </div>
                                 </Label>
-                                <Label htmlFor="supplemental-no" className="w-full m-0">
-                                    <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors min-h-[48px]">
+                                <Label htmlFor="supplemental-no" className="m-0 w-full">
+                                    <div className="flex min-h-[48px] cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                                         <RadioGroupItem value="false" id="supplemental-no" />
                                         <span className="cursor-pointer">No</span>
                                     </div>
                                 </Label>
                             </RadioGroup>
                             {form.errors.supplemental_bid_needed && (
-                                <p className="text-red-500 text-sm mt-2" id="supplemental-error" aria-live="polite">
+                                <p className="mt-2 text-sm text-red-500" id="supplemental-error" aria-live="polite">
                                     {form.errors.supplemental_bid_needed}
                                 </p>
                             )}
                         </div>
 
                         {form.data.supplemental_bid_needed !== undefined && (
-                            <div className={`p-3 sm:p-4 rounded-lg text-sm sm:text-base ${form.data.supplemental_bid_needed
-                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                                : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
-                                }`}>
+                            <div
+                                className={`rounded-lg p-3 text-sm sm:p-4 sm:text-base ${
+                                    form.data.supplemental_bid_needed
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                                        : 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
+                                }`}
+                            >
                                 {form.data.supplemental_bid_needed ? (
                                     <p>You'll be directed to upload supplemental bid bulletin documents.</p>
                                 ) : (
@@ -162,27 +141,25 @@ export function SupplementalBidBulletinDialog({
                         )}
                     </div>
 
-                    <DialogFooter className="mt-6 sm:mt-8 flex-col sm:flex-row sm:justify-end gap-4">
+                    <DialogFooter className="mt-6 flex-col gap-4 sm:mt-8 sm:flex-row sm:justify-end">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => onOpenChange(false)}
-                            className="w-full sm:w-auto min-h-[44px] text-sm sm:text-base"
+                            className="min-h-[44px] w-full text-sm sm:w-auto sm:text-base"
                             disabled={form.processing}
                         >
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={form.processing}
-                            className="w-full sm:w-auto min-h-[44px] text-sm sm:text-base"
-                        >
+                        <Button type="submit" disabled={form.processing} className="min-h-[44px] w-full text-sm sm:w-auto sm:text-base">
                             {form.processing ? (
                                 <span className="flex items-center gap-2">
                                     <LoaderCircle className="h-4 w-4 animate-spin" />
                                     Processing...
                                 </span>
-                            ) : "Submit Decision"}
+                            ) : (
+                                'Submit Decision'
+                            )}
                         </Button>
                     </DialogFooter>
                 </form>

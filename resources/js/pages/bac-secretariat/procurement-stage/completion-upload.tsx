@@ -1,20 +1,17 @@
-import React, { useState } from 'react';
+import DatePicker from '@/components/date-picker';
+import FileUploadArea from '@/components/file-upload-area';
+import InputError from '@/components/input-error';
+import { TextareaWithLabel } from '@/components/textarea-with-label';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useFileDrop } from '@/hooks/use-file-drop';
+import AppLayout from '@/layouts/app-layout';
+import { BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { toast } from "sonner";
-import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
-import { CalendarIcon, FileText, Upload, AlertCircle, CheckCircle } from 'lucide-react';
-import {
-    Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
-} from "@/components/ui/card";
-import { TextareaWithLabel } from '@/components/textarea-with-label';
-import InputError from '@/components/input-error';
-import { BreadcrumbItem } from '@/types';
-import SmartContractFileUploadArea from '@/components/smart-contract-file-upload-area';
-import { useFileDrop } from '@/hooks/use-file-drop';
-import DatePicker from '@/components/date-picker';
-import { SmartContractValidationResult } from '@/types/smart-contracts';
+import { AlertCircle, CalendarIcon, CheckCircle, FileText, Upload } from 'lucide-react';
+import React from 'react';
+import { toast } from 'sonner';
 
 // Helper for type-safe error access
 function getFieldError<T extends object>(errors: T, field: keyof T): string | undefined {
@@ -40,10 +37,6 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
         completion_notes: '',
     });
 
-  // Smart contract validation states - used in onValidationComplete callback
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [documentValidation, setDocumentValidation] = useState<SmartContractValidationResult | null>(null);
-
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
         { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
@@ -66,23 +59,23 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
             ...formData,
             completion_date: formData.completion_date ? format(formData.completion_date, 'yyyy-MM-dd') : '',
         }));
-        
+
         post('/bac-secretariat/upload-completion-documents', {
             preserveScroll: true,
             preserveState: true,
             forceFormData: true,
             onSuccess: () => {
-                toast.success("Certificate of Completion uploaded successfully!", {
-                    description: "Completion document has been submitted."
+                toast.success('Certificate of Completion uploaded successfully!', {
+                    description: 'Completion document has been submitted.',
                 });
                 reset();
                 clearErrors();
             },
             onError: () => {
-                toast.error("Failed to upload Certificate of Completion", {
-                    description: 'Please check the form for errors.'
+                toast.error('Failed to upload Certificate of Completion', {
+                    description: 'Please check the form for errors.',
                 });
-            }
+            },
         });
     };
 
@@ -117,32 +110,30 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Upload Certificate of Completion" />
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 bg-gradient-to-b from-background to-muted/20">
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-6 rounded-xl bg-gradient-to-b p-6">
                 <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-primary">
+                    <div className="text-primary flex items-center gap-2">
                         <CheckCircle className="h-6 w-6" />
                         <h1 className="text-2xl font-bold">Certificate of Completion</h1>
                     </div>
                     <p className="text-muted-foreground max-w-3xl">
                         Upload the Certificate of Completion document for procurement
-                        <span className="font-medium text-foreground"> #{procurement.id}</span>:
-                        <span className="font-medium text-foreground italic"> {procurement.title}</span>
+                        <span className="text-foreground font-medium"> #{procurement.id}</span>:
+                        <span className="text-foreground font-medium italic"> {procurement.title}</span>
                     </p>
                 </div>
                 <form onSubmit={onSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
-                            <CardHeader className="pb-4 space-y-1">
-                                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                                    <FileText className="h-5 w-5 text-primary" />
+                            <CardHeader className="space-y-1 pb-4">
+                                <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+                                    <FileText className="text-primary h-5 w-5" />
                                     Required Document
                                 </CardTitle>
-                                <CardDescription>
-                                    Please upload the Certificate of Completion in PDF format
-                                </CardDescription>
+                                <CardDescription>Please upload the Certificate of Completion in PDF format</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-8">
-                                <SmartContractFileUploadArea
+                                <FileUploadArea
                                     label="Certificate of Completion Document"
                                     file={data.completion_file}
                                     error={getFieldError(errors, 'completion_file')}
@@ -155,52 +146,29 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
                                     onRemove={() => setData('completion_file', null)}
                                     inputId="completion-file-input"
                                     required={true}
-                                    documentType="Certificate of Completion"
-                                    stage="Completion"
-                                    procurementId={procurement.id}
-                                    enableSmartValidation={true}
-                                    showValidationDetails={true}
-                                    onValidationComplete={(result) => {
-                                        setDocumentValidation(result);
-                                        if (!result.compliant) {
-                                            toast.error('Document validation failed', {
-                                                description: 'Please review the validation details and fix any issues.'
-                                            });
-                                        } else {
-                                            toast.success('Document validation passed', {
-                                                description: 'All validation checks passed successfully.'
-                                            });
-                                        }
-                                    }}
                                 />
-                                {getFieldError(errors, 'completion_file') && (
-                                    <InputError message={getFieldError(errors, 'completion_file')} />
-                                )}
+                                {getFieldError(errors, 'completion_file') && <InputError message={getFieldError(errors, 'completion_file')} />}
                             </CardContent>
                         </Card>
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md h-fit">
-                            <CardHeader className="pb-4 space-y-1">
-                                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                                    <CalendarIcon className="h-5 w-5 text-primary" />
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border h-fit shadow-md">
+                            <CardHeader className="space-y-1 pb-4">
+                                <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+                                    <CalendarIcon className="text-primary h-5 w-5" />
                                     Completion Details
                                 </CardTitle>
-                                <CardDescription>
-                                    Provide information about the Completion
-                                </CardDescription>
+                                <CardDescription>Provide information about the Completion</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <DatePicker
                                     label="Completion Date"
                                     value={data.completion_date instanceof Date ? data.completion_date : new Date(data.completion_date)}
-                                    onChange={date => {
+                                    onChange={(date) => {
                                         if (date) setData('completion_date', date);
                                     }}
                                     error={getFieldError(errors, 'completion_date')}
                                     required
                                 />
-                                {getFieldError(errors, 'completion_date') && (
-                                    <InputError message={getFieldError(errors, 'completion_date')} />
-                                )}
+                                {getFieldError(errors, 'completion_date') && <InputError message={getFieldError(errors, 'completion_date')} />}
                                 <div className="space-y-2">
                                     <TextareaWithLabel
                                         label="Notes"
@@ -212,18 +180,21 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
                                         error={getFieldError(errors, 'completion_notes')}
                                         errorClassName="mt-1.5 sm:mt-2"
                                     />
-                                    {getFieldError(errors, 'completion_notes') && <InputError message={getFieldError(errors, 'completion_notes')} />} {/* Renamed key */}
+                                    {getFieldError(errors, 'completion_notes') && <InputError message={getFieldError(errors, 'completion_notes')} />}{' '}
+                                    {/* Renamed key */}
                                 </div>
                             </CardContent>
-                            <CardFooter className="pt-4 border-t flex flex-col gap-3">
+                            <CardFooter className="flex flex-col gap-3 border-t pt-4">
                                 <Button
                                     type="submit"
-                                    disabled={processing || !data.completion_file || (data.completion_file && data.completion_file.size > 10 * 1024 * 1024)}
-                                    className="w-full flex items-center gap-2 h-11"
+                                    disabled={
+                                        processing || !data.completion_file || (data.completion_file && data.completion_file.size > 10 * 1024 * 1024)
+                                    }
+                                    className="flex h-11 w-full items-center gap-2"
                                 >
                                     {processing ? (
                                         <div className="flex items-center gap-2">
-                                            <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                                             Processing...
                                         </div>
                                     ) : (
@@ -238,7 +209,7 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
                                     variant="outline"
                                     onClick={() => window.history.back()}
                                     disabled={processing}
-                                    className="w-full h-10"
+                                    className="h-10 w-full"
                                 >
                                     Cancel
                                 </Button>
@@ -250,12 +221,10 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
                     <Card className="border-destructive/50 bg-destructive/5 dark:bg-destructive/10 shadow-md">
                         <CardContent className="p-4">
                             <div className="flex items-start">
-                                <AlertCircle className="h-5 w-5 text-destructive mt-0.5 mr-3" />
+                                <AlertCircle className="text-destructive mt-0.5 mr-3 h-5 w-5" />
                                 <div>
-                                    <h4 className="text-sm font-medium text-destructive">
-                                        Please fix the following errors:
-                                    </h4>
-                                    <ul className="list-disc list-inside mt-2 text-sm text-destructive/90 space-y-1">
+                                    <h4 className="text-destructive text-sm font-medium">Please fix the following errors:</h4>
+                                    <ul className="text-destructive/90 mt-2 list-inside list-disc space-y-1 text-sm">
                                         {Object.entries(errors).map(([field, message]) => (
                                             <li key={field}>{message}</li>
                                         ))}
@@ -265,7 +234,7 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
                         </CardContent>
                     </Card>
                 )}
-        </div>
-    </AppLayout>
+            </div>
+        </AppLayout>
     );
 }

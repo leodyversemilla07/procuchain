@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
 import { ProcurementListItem } from '@/types/blockchain';
+import { useEffect, useState } from 'react';
 
 interface UseProcurementListProps {
     initialProcurements: ProcurementListItem[];
     initialError?: string;
 }
 
-export const useProcurementList = ({ initialProcurements, initialError }: UseProcurementListProps) => {    
+export const useProcurementList = ({ initialProcurements, initialError }: UseProcurementListProps) => {
     const [procurements, setProcurements] = useState<ProcurementListItem[]>(initialProcurements || []);
     const [selectedRows, setSelectedRows] = useState<ProcurementListItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -17,8 +17,8 @@ export const useProcurementList = ({ initialProcurements, initialError }: UsePro
     const [selectedProcurement, setSelectedProcurement] = useState<{
         id: string;
         title: string;
-    }>({ id: '', title: '' });    
-    
+    }>({ id: '', title: '' });
+
     useEffect(() => {
         if (initialError) {
             console.error('Backend error:', initialError);
