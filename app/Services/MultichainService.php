@@ -436,9 +436,15 @@ class MultichainService
             }
 
             // Create stream with proper options handling
-            $result = $this->handleRequest(
-                fn (): mixed => $this->mc->create('stream', $streamName, $options, $details)
-            );
+            $result = $this->handleRequest(function () use ($streamName, $options, $details): mixed {
+                if (empty($details)) {
+                    return $this->mc->create('stream', $streamName, $options);
+                }
+
+                $detailPayload = is_array($details) ? (object) $details : $details;
+
+                return $this->mc->create('stream', $streamName, $options, $detailPayload);
+            });
 
             // Wait for stream to be created and subscribe with retries
             $maxRetries = 3;

@@ -1,0 +1,17 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": false,
+        "outDir": "./storage/framework/cache/ts-tests",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "types": ["node"],
+        "target": "ES2020",
+        "rewriteRelativeImportExtensions": true
+    },
+    "include": [
+        "resources/js/lib/csv.ts",
+        "resources/js/types/**/*.ts",
+        "tests/js/**/*.ts"
+    ]
+}

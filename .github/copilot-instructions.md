@@ -13,11 +13,16 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/framework (LARAVEL) - v12
 - laravel/prompts (PROMPTS) - v0
 - tightenco/ziggy (ZIGGY) - v2
+- laravel/mcp (MCP) - v0
 - laravel/pint (PINT) - v1
+- laravel/sail (SAIL) - v1
 - pestphp/pest (PEST) - v3
+- phpunit/phpunit (PHPUNIT) - v11
 - @inertiajs/react (INERTIA) - v2
 - react (REACT) - v19
 - tailwindcss (TAILWINDCSS) - v4
+- eslint (ESLINT) - v9
+- prettier (PRETTIER) - v3
 
 
 ## Conventions
@@ -67,7 +72,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - You must use this tool to search for Laravel-ecosystem documentation before falling back to other approaches.
 - Search the documentation before making code changes to ensure we are taking the correct approach.
 - Use multiple, broad, simple, topic based queries to start. For example: `['rate limiting', 'routing rate limiting', 'routing']`.
-- Do not add package names to queries, package information is already shared. Use `test resource table`, not `filament 4 test resource table`.
+- Do not add package names to queries - package information is already shared. For example, use `test resource table`, not `filament 4 test resource table`.
 
 ### Available Search Syntax
 - You can and should pass multiple queries at once. The most relevant results will be returned first.
@@ -79,12 +84,45 @@ This application is a Laravel application and its main Laravel ecosystems packag
 5. Multiple Queries - queries=["authentication", "middleware"] - ANY of these terms
 
 
+=== php rules ===
+
+## PHP
+
+- Always use curly braces for control structures, even if it has one line.
+
+### Constructors
+- Use PHP 8 constructor property promotion in `__construct()`.
+    - <code-snippet>public function __construct(public GitHub $github) { }</code-snippet>
+- Do not allow empty `__construct()` methods with zero parameters.
+
+### Type Declarations
+- Always use explicit return type declarations for methods and functions.
+- Use appropriate PHP type hints for method parameters.
+
+<code-snippet name="Explicit Return Types and Method Params" lang="php">
+protected function isAccessible(User $user, ?string $path = null): bool
+{
+    ...
+}
+</code-snippet>
+
+## Comments
+- Prefer PHPDoc blocks over comments. Never use comments within the code itself unless there is something _very_ complex going on.
+
+## PHPDoc Blocks
+- Add useful array shape type definitions for arrays when appropriate.
+
+## Enums
+- Typically, keys in an Enum should be TitleCase. For example: `FavoritePerson`, `BestLake`, `Monthly`.
+
+
 === inertia-laravel/core rules ===
 
 ## Inertia Core
 
 - Inertia.js components should be placed in the `resources/js/Pages` directory unless specified differently in the JS bundler (vite.config.js).
 - Use `Inertia::render()` for server-side routing instead of traditional Blade views.
+- Use `search-docs` for accurate guidance on all things Inertia.
 
 <code-snippet lang="php" name="Inertia::render Example">
 // routes/web.php example
@@ -111,6 +149,9 @@ Route::get('/users', function () {
 
 ### Deferred Props & Empty States
 - When using deferred props on the frontend, you should add a nice empty state with pulsing / animated skeleton.
+
+### Inertia Form General Guidance
+- Build forms using the `useForm` helper. Use the code examples and `search-docs` tool with a query of `useForm helper` for guidance.
 
 
 === laravel/core rules ===
@@ -249,53 +290,44 @@ it('has emails', function (string $email) {
 
 - Use `router.visit()` or `<Link>` for navigation instead of traditional links.
 
-<code-snippet lang="react" name="Inertia Client Navigation">
-    import { Link } from '@inertiajs/react'
+<code-snippet name="Inertia Client Navigation" lang="react">
 
-    <Link href="/">Home</Link>
+import { Link } from '@inertiajs/react'
+<Link href="/">Home</Link>
+
 </code-snippet>
 
-- For form handling, use `router.post` and related methods. Do not use regular forms.
 
-<code-snippet lang="react" name="Inertia React Form Example">
-import { useState } from 'react'
-import { router } from '@inertiajs/react'
+=== inertia-react/v2/forms rules ===
 
-export default function Edit() {
-    const [values, setValues] = useState({
-        first_name: "",
-        last_name: "",
-        email: "",
-    })
+## Inertia + React Forms
 
-    function handleChange(e) {
-        const key = e.target.id;
-        const value = e.target.value
+<code-snippet name="Inertia React useForm Example" lang="react">
 
-        setValues(values => ({
-            ...values,
-            [key]: value,
-        }))
-    }
+import { useForm } from '@inertiajs/react'
 
-    function handleSubmit(e) {
-        e.preventDefault()
+const { data, setData, post, processing, errors } = useForm({
+    email: '',
+    password: '',
+    remember: false,
+})
 
-        router.post('/users', values)
-    }
-
-    return (
-    <form onSubmit={handleSubmit}>
-        <label htmlFor="first_name">First name:</label>
-        <input id="first_name" value={values.first_name} onChange={handleChange} />
-        <label htmlFor="last_name">Last name:</label>
-        <input id="last_name" value={values.last_name} onChange={handleChange} />
-        <label htmlFor="email">Email:</label>
-        <input id="email" value={values.email} onChange={handleChange} />
-        <button type="submit">Submit</button>
-    </form>
-    )
+function submit(e) {
+    e.preventDefault()
+    post('/login')
 }
+
+return (
+<form onSubmit={submit}>
+    <input type="text" value={data.email} onChange={e => setData('email', e.target.value)} />
+    {errors.email && <div>{errors.email}</div>}
+    <input type="password" value={data.password} onChange={e => setData('password', e.target.value)} />
+    {errors.password && <div>{errors.password}</div>}
+    <input type="checkbox" checked={data.remember} onChange={e => setData('remember', e.target.checked)} /> Remember Me
+    <button type="submit" disabled={processing}>Login</button>
+</form>
+)
+
 </code-snippet>
 
 
@@ -332,7 +364,7 @@ export default function Edit() {
 - `corePlugins` is not supported in Tailwind v4.
 - In Tailwind v4, you import Tailwind using a regular CSS `@import` statement, not using the `@tailwind` directives used in v3:
 
-<code-snippet name="Tailwind v4 Import Tailwind Diff" lang="diff"
+<code-snippet name="Tailwind v4 Import Tailwind Diff" lang="diff">
    - @tailwind base;
    - @tailwind components;
    - @tailwind utilities;
