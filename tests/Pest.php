@@ -72,6 +72,7 @@ function createLockedUser(array $attributes = []): App\Models\User
         'lock_expires_at' => now()->addMinutes(30),
         'failed_login_attempts' => 3,
         'locked_reason' => 'Multiple failed login attempts',
+        'email_notifications_enabled' => true,
     ], $attributes));
 }
 
