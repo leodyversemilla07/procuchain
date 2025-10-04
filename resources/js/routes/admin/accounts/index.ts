@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\AdminController::locked
- * @see app/Http/Controllers/AdminController.php:727
+ * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 export const locked = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ locked.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::locked
- * @see app/Http/Controllers/AdminController.php:727
+ * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 locked.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ locked.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::locked
- * @see app/Http/Controllers/AdminController.php:727
+ * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 locked.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ locked.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AdminController::locked
- * @see app/Http/Controllers/AdminController.php:727
+ * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 locked.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ locked.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AdminController::unlock
- * @see app/Http/Controllers/AdminController.php:772
+ * @see app/Http/Controllers/AdminController.php:771
  * @route '/admin/accounts/{user}/unlock'
  */
 export const unlock = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -59,7 +59,7 @@ unlock.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::unlock
- * @see app/Http/Controllers/AdminController.php:772
+ * @see app/Http/Controllers/AdminController.php:771
  * @route '/admin/accounts/{user}/unlock'
  */
 unlock.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -92,7 +92,7 @@ unlock.url = (args: { user: number | { id: number } } | [user: number | { id: nu
 
 /**
 * @see \App\Http\Controllers\AdminController::unlock
- * @see app/Http/Controllers/AdminController.php:772
+ * @see app/Http/Controllers/AdminController.php:771
  * @route '/admin/accounts/{user}/unlock'
  */
 unlock.post = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -102,7 +102,7 @@ unlock.post = (args: { user: number | { id: number } } | [user: number | { id: n
 
 /**
 * @see \App\Http\Controllers\AdminController::lock
- * @see app/Http/Controllers/AdminController.php:831
+ * @see app/Http/Controllers/AdminController.php:830
  * @route '/admin/accounts/{user}/lock'
  */
 export const lock = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -117,7 +117,7 @@ lock.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::lock
- * @see app/Http/Controllers/AdminController.php:831
+ * @see app/Http/Controllers/AdminController.php:830
  * @route '/admin/accounts/{user}/lock'
  */
 lock.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -150,7 +150,7 @@ lock.url = (args: { user: number | { id: number } } | [user: number | { id: numb
 
 /**
 * @see \App\Http\Controllers\AdminController::lock
- * @see app/Http/Controllers/AdminController.php:831
+ * @see app/Http/Controllers/AdminController.php:830
  * @route '/admin/accounts/{user}/lock'
  */
 lock.post = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -160,7 +160,7 @@ lock.post = (args: { user: number | { id: number } } | [user: number | { id: num
 
 /**
 * @see \App\Http\Controllers\AdminController::resetAttempts
- * @see app/Http/Controllers/AdminController.php:886
+ * @see app/Http/Controllers/AdminController.php:885
  * @route '/admin/accounts/{user}/reset-attempts'
  */
 export const resetAttempts = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -175,7 +175,7 @@ resetAttempts.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::resetAttempts
- * @see app/Http/Controllers/AdminController.php:886
+ * @see app/Http/Controllers/AdminController.php:885
  * @route '/admin/accounts/{user}/reset-attempts'
  */
 resetAttempts.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -208,7 +208,7 @@ resetAttempts.url = (args: { user: number | { id: number } } | [user: number | {
 
 /**
 * @see \App\Http\Controllers\AdminController::resetAttempts
- * @see app/Http/Controllers/AdminController.php:886
+ * @see app/Http/Controllers/AdminController.php:885
  * @route '/admin/accounts/{user}/reset-attempts'
  */
 resetAttempts.post = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({

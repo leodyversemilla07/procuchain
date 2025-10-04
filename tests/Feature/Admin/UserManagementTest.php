@@ -6,10 +6,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    // Create an admin user for testing
+    // Create an admin user for testing with 2FA enabled
     $this->admin = User::factory()->create([
         'role' => 'admin',
         'email' => 'admin@test.com',
+        'two_factor_secret' => encrypt('test-secret'),
+        'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
+        'two_factor_confirmed_at' => now(),
     ]);
 });
 

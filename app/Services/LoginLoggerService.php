@@ -11,19 +11,19 @@ class LoginLoggerService
 {
     public function getRecentLogins(int $limit = 50): \Illuminate\Support\Collection
     {
-        return \App\Models\UserLoginLog::recentLogins($limit);
+        return UserLoginLog::recentLogins($limit);
     }
 
     public function getLoginStatistics(): array
     {
-        return \App\Models\UserLoginLog::getLoginStats();
+        return UserLoginLog::getLoginStats();
     }
 
     public function getSuspiciousActivities(): \Illuminate\Support\Collection
     {
         $recentTime = now()->subHours(24);
 
-        return \App\Models\UserLoginLog::where('login_at', '>=', $recentTime)
+        return UserLoginLog::where('login_at', '>=', $recentTime)
             ->where(function ($query) use ($recentTime) {
                 $query->where('successful', false)
                     ->orWhereRaw('ip_address IN (

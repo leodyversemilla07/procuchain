@@ -1,5 +1,5 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
-import confirmD7e05fEaca14 from './confirm'
+import confirmD7e05f from './confirm'
 /**
 * @see \Laravel\Fortify\Http\Controllers\ConfirmablePasswordController::confirm
  * @see vendor/laravel/fortify/src/Http/Controllers/ConfirmablePasswordController.php:40
@@ -37,49 +37,6 @@ confirm.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 * @see \Laravel\Fortify\Http\Controllers\ConfirmablePasswordController::confirm
  * @see vendor/laravel/fortify/src/Http/Controllers/ConfirmablePasswordController.php:40
  * @route '/user/confirm-password'
- */
-confirm.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
-    url: confirm.url(options),
-    method: 'head',
-})
-
-/**
-* @see \App\Http\Controllers\Auth\ConfirmablePasswordController::confirm
- * @see app/Http/Controllers/Auth/ConfirmablePasswordController.php:17
- * @route '/confirm-password'
- */
-export const confirm = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
-    url: confirm.url(options),
-    method: 'get',
-})
-
-confirm.definition = {
-    methods: ["get","head"],
-    url: '/confirm-password',
-} satisfies RouteDefinition<["get","head"]>
-
-/**
-* @see \App\Http\Controllers\Auth\ConfirmablePasswordController::confirm
- * @see app/Http/Controllers/Auth/ConfirmablePasswordController.php:17
- * @route '/confirm-password'
- */
-confirm.url = (options?: RouteQueryOptions) => {
-    return confirm.definition.url + queryParams(options)
-}
-
-/**
-* @see \App\Http\Controllers\Auth\ConfirmablePasswordController::confirm
- * @see app/Http/Controllers/Auth/ConfirmablePasswordController.php:17
- * @route '/confirm-password'
- */
-confirm.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
-    url: confirm.url(options),
-    method: 'get',
-})
-/**
-* @see \App\Http\Controllers\Auth\ConfirmablePasswordController::confirm
- * @see app/Http/Controllers/Auth/ConfirmablePasswordController.php:17
- * @route '/confirm-password'
  */
 confirm.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: confirm.url(options),
@@ -345,7 +302,7 @@ edit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     method: 'head',
 })
 const password = {
-    confirm: Object.assign(confirm, confirmD7e05fEaca14),
+    confirm: Object.assign(confirm, confirmD7e05f),
 confirmation: Object.assign(confirmation, confirmation),
 request: Object.assign(request, request),
 email: Object.assign(email, email),
