@@ -1,662 +1,702 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { applyUrlDefaults, queryParams, type RouteDefinition, type RouteQueryOptions } from './../../../../wayfinder';
 /**
-* @see \App\Http\Controllers\AdminController::index
+ * @see \App\Http\Controllers\AdminController::index
  * @see app/Http/Controllers/AdminController.php:67
  * @route '/admin/dashboard'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(options),
     method: 'get',
-})
+});
 
 index.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/admin/dashboard',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::index
+ * @see \App\Http\Controllers\AdminController::index
  * @see app/Http/Controllers/AdminController.php:67
  * @route '/admin/dashboard'
  */
 index.url = (options?: RouteQueryOptions) => {
-    return index.definition.url + queryParams(options)
-}
+    return index.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::index
+ * @see \App\Http\Controllers\AdminController::index
  * @see app/Http/Controllers/AdminController.php:67
  * @route '/admin/dashboard'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(options),
     method: 'get',
-})
+});
 /**
-* @see \App\Http\Controllers\AdminController::index
+ * @see \App\Http\Controllers\AdminController::index
  * @see app/Http/Controllers/AdminController.php:67
  * @route '/admin/dashboard'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::users
+ * @see \App\Http\Controllers\AdminController::users
  * @see app/Http/Controllers/AdminController.php:405
  * @route '/admin/users'
  */
 export const users = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: users.url(options),
     method: 'get',
-})
+});
 
 users.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/admin/users',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::users
+ * @see \App\Http\Controllers\AdminController::users
  * @see app/Http/Controllers/AdminController.php:405
  * @route '/admin/users'
  */
 users.url = (options?: RouteQueryOptions) => {
-    return users.definition.url + queryParams(options)
-}
+    return users.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::users
+ * @see \App\Http\Controllers\AdminController::users
  * @see app/Http/Controllers/AdminController.php:405
  * @route '/admin/users'
  */
 users.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: users.url(options),
     method: 'get',
-})
+});
 /**
-* @see \App\Http\Controllers\AdminController::users
+ * @see \App\Http\Controllers\AdminController::users
  * @see app/Http/Controllers/AdminController.php:405
  * @route '/admin/users'
  */
 users.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: users.url(options),
     method: 'head',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::storeUser
+ * @see \App\Http\Controllers\AdminController::storeUser
  * @see app/Http/Controllers/AdminController.php:444
  * @route '/admin/users'
  */
 export const storeUser = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: storeUser.url(options),
     method: 'post',
-})
+});
 
 storeUser.definition = {
-    methods: ["post"],
+    methods: ['post'],
     url: '/admin/users',
-} satisfies RouteDefinition<["post"]>
+} satisfies RouteDefinition<['post']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::storeUser
+ * @see \App\Http\Controllers\AdminController::storeUser
  * @see app/Http/Controllers/AdminController.php:444
  * @route '/admin/users'
  */
 storeUser.url = (options?: RouteQueryOptions) => {
-    return storeUser.definition.url + queryParams(options)
-}
+    return storeUser.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::storeUser
+ * @see \App\Http\Controllers\AdminController::storeUser
  * @see app/Http/Controllers/AdminController.php:444
  * @route '/admin/users'
  */
 storeUser.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: storeUser.url(options),
     method: 'post',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::updateUser
+ * @see \App\Http\Controllers\AdminController::updateUser
  * @see app/Http/Controllers/AdminController.php:482
  * @route '/admin/users/{user}'
  */
-export const updateUser = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const updateUser = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+): RouteDefinition<'put'> => ({
     url: updateUser.url(args, options),
     method: 'put',
-})
+});
 
 updateUser.definition = {
-    methods: ["put"],
+    methods: ['put'],
     url: '/admin/users/{user}',
-} satisfies RouteDefinition<["put"]>
+} satisfies RouteDefinition<['put']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::updateUser
+ * @see \App\Http\Controllers\AdminController::updateUser
  * @see app/Http/Controllers/AdminController.php:482
  * @route '/admin/users/{user}'
  */
-updateUser.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+updateUser.url = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+) => {
     if (typeof args === 'string' || typeof args === 'number') {
-        args = { user: args }
+        args = { user: args };
     }
 
-            if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
-            args = { user: args.id }
-        }
-    
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { user: args.id };
+    }
+
     if (Array.isArray(args)) {
         args = {
-                    user: args[0],
-                }
+            user: args[0],
+        };
     }
 
-    args = applyUrlDefaults(args)
+    args = applyUrlDefaults(args);
 
     const parsedArgs = {
-                        user: typeof args.user === 'object'
-                ? args.user.id
-                : args.user,
-                }
+        user: typeof args.user === 'object' ? args.user.id : args.user,
+    };
 
-    return updateUser.definition.url
-            .replace('{user}', parsedArgs.user.toString())
-            .replace(/\/+$/, '') + queryParams(options)
-}
+    return updateUser.definition.url.replace('{user}', parsedArgs.user.toString()).replace(/\/+$/, '') + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::updateUser
+ * @see \App\Http\Controllers\AdminController::updateUser
  * @see app/Http/Controllers/AdminController.php:482
  * @route '/admin/users/{user}'
  */
-updateUser.put = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+updateUser.put = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+): RouteDefinition<'put'> => ({
     url: updateUser.url(args, options),
     method: 'put',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::destroyUser
+ * @see \App\Http\Controllers\AdminController::destroyUser
  * @see app/Http/Controllers/AdminController.php:526
  * @route '/admin/users/{user}'
  */
-export const destroyUser = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+export const destroyUser = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+): RouteDefinition<'delete'> => ({
     url: destroyUser.url(args, options),
     method: 'delete',
-})
+});
 
 destroyUser.definition = {
-    methods: ["delete"],
+    methods: ['delete'],
     url: '/admin/users/{user}',
-} satisfies RouteDefinition<["delete"]>
+} satisfies RouteDefinition<['delete']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::destroyUser
+ * @see \App\Http\Controllers\AdminController::destroyUser
  * @see app/Http/Controllers/AdminController.php:526
  * @route '/admin/users/{user}'
  */
-destroyUser.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+destroyUser.url = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+) => {
     if (typeof args === 'string' || typeof args === 'number') {
-        args = { user: args }
+        args = { user: args };
     }
 
-            if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
-            args = { user: args.id }
-        }
-    
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { user: args.id };
+    }
+
     if (Array.isArray(args)) {
         args = {
-                    user: args[0],
-                }
+            user: args[0],
+        };
     }
 
-    args = applyUrlDefaults(args)
+    args = applyUrlDefaults(args);
 
     const parsedArgs = {
-                        user: typeof args.user === 'object'
-                ? args.user.id
-                : args.user,
-                }
+        user: typeof args.user === 'object' ? args.user.id : args.user,
+    };
 
-    return destroyUser.definition.url
-            .replace('{user}', parsedArgs.user.toString())
-            .replace(/\/+$/, '') + queryParams(options)
-}
+    return destroyUser.definition.url.replace('{user}', parsedArgs.user.toString()).replace(/\/+$/, '') + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::destroyUser
+ * @see \App\Http\Controllers\AdminController::destroyUser
  * @see app/Http/Controllers/AdminController.php:526
  * @route '/admin/users/{user}'
  */
-destroyUser.delete = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+destroyUser.delete = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+): RouteDefinition<'delete'> => ({
     url: destroyUser.url(args, options),
     method: 'delete',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::bulkDeleteUsers
+ * @see \App\Http\Controllers\AdminController::bulkDeleteUsers
  * @see app/Http/Controllers/AdminController.php:556
  * @route '/admin/users'
  */
 export const bulkDeleteUsers = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: bulkDeleteUsers.url(options),
     method: 'delete',
-})
+});
 
 bulkDeleteUsers.definition = {
-    methods: ["delete"],
+    methods: ['delete'],
     url: '/admin/users',
-} satisfies RouteDefinition<["delete"]>
+} satisfies RouteDefinition<['delete']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::bulkDeleteUsers
+ * @see \App\Http\Controllers\AdminController::bulkDeleteUsers
  * @see app/Http/Controllers/AdminController.php:556
  * @route '/admin/users'
  */
 bulkDeleteUsers.url = (options?: RouteQueryOptions) => {
-    return bulkDeleteUsers.definition.url + queryParams(options)
-}
+    return bulkDeleteUsers.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::bulkDeleteUsers
+ * @see \App\Http\Controllers\AdminController::bulkDeleteUsers
  * @see app/Http/Controllers/AdminController.php:556
  * @route '/admin/users'
  */
 bulkDeleteUsers.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: bulkDeleteUsers.url(options),
     method: 'delete',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::loginLogs
+ * @see \App\Http\Controllers\AdminController::loginLogs
  * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 export const loginLogs = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: loginLogs.url(options),
     method: 'get',
-})
+});
 
 loginLogs.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/admin/login-logs',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::loginLogs
+ * @see \App\Http\Controllers\AdminController::loginLogs
  * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 loginLogs.url = (options?: RouteQueryOptions) => {
-    return loginLogs.definition.url + queryParams(options)
-}
+    return loginLogs.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::loginLogs
+ * @see \App\Http\Controllers\AdminController::loginLogs
  * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 loginLogs.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: loginLogs.url(options),
     method: 'get',
-})
+});
 /**
-* @see \App\Http\Controllers\AdminController::loginLogs
+ * @see \App\Http\Controllers\AdminController::loginLogs
  * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 loginLogs.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: loginLogs.url(options),
     method: 'head',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::recentLogins
+ * @see \App\Http\Controllers\AdminController::recentLogins
  * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 export const recentLogins = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: recentLogins.url(options),
     method: 'get',
-})
+});
 
 recentLogins.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/admin/login-logs/recent',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::recentLogins
+ * @see \App\Http\Controllers\AdminController::recentLogins
  * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 recentLogins.url = (options?: RouteQueryOptions) => {
-    return recentLogins.definition.url + queryParams(options)
-}
+    return recentLogins.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::recentLogins
+ * @see \App\Http\Controllers\AdminController::recentLogins
  * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 recentLogins.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: recentLogins.url(options),
     method: 'get',
-})
+});
 /**
-* @see \App\Http\Controllers\AdminController::recentLogins
+ * @see \App\Http\Controllers\AdminController::recentLogins
  * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 recentLogins.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: recentLogins.url(options),
     method: 'head',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::loginStatistics
+ * @see \App\Http\Controllers\AdminController::loginStatistics
  * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 export const loginStatistics = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: loginStatistics.url(options),
     method: 'get',
-})
+});
 
 loginStatistics.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/admin/login-logs/statistics',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::loginStatistics
+ * @see \App\Http\Controllers\AdminController::loginStatistics
  * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 loginStatistics.url = (options?: RouteQueryOptions) => {
-    return loginStatistics.definition.url + queryParams(options)
-}
+    return loginStatistics.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::loginStatistics
+ * @see \App\Http\Controllers\AdminController::loginStatistics
  * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 loginStatistics.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: loginStatistics.url(options),
     method: 'get',
-})
+});
 /**
-* @see \App\Http\Controllers\AdminController::loginStatistics
+ * @see \App\Http\Controllers\AdminController::loginStatistics
  * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 loginStatistics.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: loginStatistics.url(options),
     method: 'head',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::suspiciousActivities
+ * @see \App\Http\Controllers\AdminController::suspiciousActivities
  * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 export const suspiciousActivities = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: suspiciousActivities.url(options),
     method: 'get',
-})
+});
 
 suspiciousActivities.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/admin/login-logs/suspicious',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::suspiciousActivities
+ * @see \App\Http\Controllers\AdminController::suspiciousActivities
  * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 suspiciousActivities.url = (options?: RouteQueryOptions) => {
-    return suspiciousActivities.definition.url + queryParams(options)
-}
+    return suspiciousActivities.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::suspiciousActivities
+ * @see \App\Http\Controllers\AdminController::suspiciousActivities
  * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 suspiciousActivities.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: suspiciousActivities.url(options),
     method: 'get',
-})
+});
 /**
-* @see \App\Http\Controllers\AdminController::suspiciousActivities
+ * @see \App\Http\Controllers\AdminController::suspiciousActivities
  * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 suspiciousActivities.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: suspiciousActivities.url(options),
     method: 'head',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::lockedAccounts
+ * @see \App\Http\Controllers\AdminController::lockedAccounts
  * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 export const lockedAccounts = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: lockedAccounts.url(options),
     method: 'get',
-})
+});
 
 lockedAccounts.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/admin/accounts/locked',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::lockedAccounts
+ * @see \App\Http\Controllers\AdminController::lockedAccounts
  * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 lockedAccounts.url = (options?: RouteQueryOptions) => {
-    return lockedAccounts.definition.url + queryParams(options)
-}
+    return lockedAccounts.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::lockedAccounts
+ * @see \App\Http\Controllers\AdminController::lockedAccounts
  * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 lockedAccounts.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: lockedAccounts.url(options),
     method: 'get',
-})
+});
 /**
-* @see \App\Http\Controllers\AdminController::lockedAccounts
+ * @see \App\Http\Controllers\AdminController::lockedAccounts
  * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 lockedAccounts.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: lockedAccounts.url(options),
     method: 'head',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::unlockAccount
+ * @see \App\Http\Controllers\AdminController::unlockAccount
  * @see app/Http/Controllers/AdminController.php:771
  * @route '/admin/accounts/{user}/unlock'
  */
-export const unlockAccount = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const unlockAccount = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+): RouteDefinition<'post'> => ({
     url: unlockAccount.url(args, options),
     method: 'post',
-})
+});
 
 unlockAccount.definition = {
-    methods: ["post"],
+    methods: ['post'],
     url: '/admin/accounts/{user}/unlock',
-} satisfies RouteDefinition<["post"]>
+} satisfies RouteDefinition<['post']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::unlockAccount
+ * @see \App\Http\Controllers\AdminController::unlockAccount
  * @see app/Http/Controllers/AdminController.php:771
  * @route '/admin/accounts/{user}/unlock'
  */
-unlockAccount.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+unlockAccount.url = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+) => {
     if (typeof args === 'string' || typeof args === 'number') {
-        args = { user: args }
+        args = { user: args };
     }
 
-            if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
-            args = { user: args.id }
-        }
-    
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { user: args.id };
+    }
+
     if (Array.isArray(args)) {
         args = {
-                    user: args[0],
-                }
+            user: args[0],
+        };
     }
 
-    args = applyUrlDefaults(args)
+    args = applyUrlDefaults(args);
 
     const parsedArgs = {
-                        user: typeof args.user === 'object'
-                ? args.user.id
-                : args.user,
-                }
+        user: typeof args.user === 'object' ? args.user.id : args.user,
+    };
 
-    return unlockAccount.definition.url
-            .replace('{user}', parsedArgs.user.toString())
-            .replace(/\/+$/, '') + queryParams(options)
-}
+    return unlockAccount.definition.url.replace('{user}', parsedArgs.user.toString()).replace(/\/+$/, '') + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::unlockAccount
+ * @see \App\Http\Controllers\AdminController::unlockAccount
  * @see app/Http/Controllers/AdminController.php:771
  * @route '/admin/accounts/{user}/unlock'
  */
-unlockAccount.post = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+unlockAccount.post = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+): RouteDefinition<'post'> => ({
     url: unlockAccount.url(args, options),
     method: 'post',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::lockAccount
+ * @see \App\Http\Controllers\AdminController::lockAccount
  * @see app/Http/Controllers/AdminController.php:830
  * @route '/admin/accounts/{user}/lock'
  */
-export const lockAccount = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const lockAccount = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+): RouteDefinition<'post'> => ({
     url: lockAccount.url(args, options),
     method: 'post',
-})
+});
 
 lockAccount.definition = {
-    methods: ["post"],
+    methods: ['post'],
     url: '/admin/accounts/{user}/lock',
-} satisfies RouteDefinition<["post"]>
+} satisfies RouteDefinition<['post']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::lockAccount
+ * @see \App\Http\Controllers\AdminController::lockAccount
  * @see app/Http/Controllers/AdminController.php:830
  * @route '/admin/accounts/{user}/lock'
  */
-lockAccount.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+lockAccount.url = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+) => {
     if (typeof args === 'string' || typeof args === 'number') {
-        args = { user: args }
+        args = { user: args };
     }
 
-            if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
-            args = { user: args.id }
-        }
-    
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { user: args.id };
+    }
+
     if (Array.isArray(args)) {
         args = {
-                    user: args[0],
-                }
+            user: args[0],
+        };
     }
 
-    args = applyUrlDefaults(args)
+    args = applyUrlDefaults(args);
 
     const parsedArgs = {
-                        user: typeof args.user === 'object'
-                ? args.user.id
-                : args.user,
-                }
+        user: typeof args.user === 'object' ? args.user.id : args.user,
+    };
 
-    return lockAccount.definition.url
-            .replace('{user}', parsedArgs.user.toString())
-            .replace(/\/+$/, '') + queryParams(options)
-}
+    return lockAccount.definition.url.replace('{user}', parsedArgs.user.toString()).replace(/\/+$/, '') + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::lockAccount
+ * @see \App\Http\Controllers\AdminController::lockAccount
  * @see app/Http/Controllers/AdminController.php:830
  * @route '/admin/accounts/{user}/lock'
  */
-lockAccount.post = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+lockAccount.post = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+): RouteDefinition<'post'> => ({
     url: lockAccount.url(args, options),
     method: 'post',
-})
+});
 
 /**
-* @see \App\Http\Controllers\AdminController::resetFailedAttempts
+ * @see \App\Http\Controllers\AdminController::resetFailedAttempts
  * @see app/Http/Controllers/AdminController.php:885
  * @route '/admin/accounts/{user}/reset-attempts'
  */
-export const resetFailedAttempts = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const resetFailedAttempts = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+): RouteDefinition<'post'> => ({
     url: resetFailedAttempts.url(args, options),
     method: 'post',
-})
+});
 
 resetFailedAttempts.definition = {
-    methods: ["post"],
+    methods: ['post'],
     url: '/admin/accounts/{user}/reset-attempts',
-} satisfies RouteDefinition<["post"]>
+} satisfies RouteDefinition<['post']>;
 
 /**
-* @see \App\Http\Controllers\AdminController::resetFailedAttempts
+ * @see \App\Http\Controllers\AdminController::resetFailedAttempts
  * @see app/Http/Controllers/AdminController.php:885
  * @route '/admin/accounts/{user}/reset-attempts'
  */
-resetFailedAttempts.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+resetFailedAttempts.url = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+) => {
     if (typeof args === 'string' || typeof args === 'number') {
-        args = { user: args }
+        args = { user: args };
     }
 
-            if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
-            args = { user: args.id }
-        }
-    
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { user: args.id };
+    }
+
     if (Array.isArray(args)) {
         args = {
-                    user: args[0],
-                }
+            user: args[0],
+        };
     }
 
-    args = applyUrlDefaults(args)
+    args = applyUrlDefaults(args);
 
     const parsedArgs = {
-                        user: typeof args.user === 'object'
-                ? args.user.id
-                : args.user,
-                }
+        user: typeof args.user === 'object' ? args.user.id : args.user,
+    };
 
-    return resetFailedAttempts.definition.url
-            .replace('{user}', parsedArgs.user.toString())
-            .replace(/\/+$/, '') + queryParams(options)
-}
+    return resetFailedAttempts.definition.url.replace('{user}', parsedArgs.user.toString()).replace(/\/+$/, '') + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\AdminController::resetFailedAttempts
+ * @see \App\Http\Controllers\AdminController::resetFailedAttempts
  * @see app/Http/Controllers/AdminController.php:885
  * @route '/admin/accounts/{user}/reset-attempts'
  */
-resetFailedAttempts.post = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+resetFailedAttempts.post = (
+    args: { user: number | { id: number } } | [user: number | { id: number }] | number | { id: number },
+    options?: RouteQueryOptions,
+): RouteDefinition<'post'> => ({
     url: resetFailedAttempts.url(args, options),
     method: 'post',
-})
-const AdminController = { index, users, storeUser, updateUser, destroyUser, bulkDeleteUsers, loginLogs, recentLogins, loginStatistics, suspiciousActivities, lockedAccounts, unlockAccount, lockAccount, resetFailedAttempts }
+});
+const AdminController = {
+    index,
+    users,
+    storeUser,
+    updateUser,
+    destroyUser,
+    bulkDeleteUsers,
+    loginLogs,
+    recentLogins,
+    loginStatistics,
+    suspiciousActivities,
+    lockedAccounts,
+    unlockAccount,
+    lockAccount,
+    resetFailedAttempts,
+};
 
-export default AdminController
+export default AdminController;

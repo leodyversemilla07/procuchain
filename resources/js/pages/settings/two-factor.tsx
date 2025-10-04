@@ -24,20 +24,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function TwoFactor({
-    requiresConfirmation = false,
-    twoFactorEnabled = false,
-}: TwoFactorProps) {
-    const {
-        qrCodeSvg,
-        hasSetupData,
-        manualSetupKey,
-        clearSetupData,
-        fetchSetupData,
-        recoveryCodesList,
-        fetchRecoveryCodes,
-        errors,
-    } = useTwoFactorAuth();
+export default function TwoFactor({ requiresConfirmation = false, twoFactorEnabled = false }: TwoFactorProps) {
+    const { qrCodeSvg, hasSetupData, manualSetupKey, clearSetupData, fetchSetupData, recoveryCodesList, fetchRecoveryCodes, errors } =
+        useTwoFactorAuth();
     const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
 
     return (
@@ -45,34 +34,21 @@ export default function TwoFactor({
             <Head title="Two-Factor Authentication" />
             <SettingsLayout>
                 <div className="space-y-6">
-                    <HeadingSmall
-                        title="Two-Factor Authentication"
-                        description="Manage your two-factor authentication settings"
-                    />
+                    <HeadingSmall title="Two-Factor Authentication" description="Manage your two-factor authentication settings" />
                     {twoFactorEnabled ? (
                         <div className="flex flex-col items-start justify-start space-y-4">
                             <Badge variant="default">Enabled</Badge>
                             <p className="text-muted-foreground">
-                                With two-factor authentication enabled, you will
-                                be prompted for a secure, random pin during
-                                login, which you can retrieve from the
-                                TOTP-supported application on your phone.
+                                With two-factor authentication enabled, you will be prompted for a secure, random pin during login, which you can
+                                retrieve from the TOTP-supported application on your phone.
                             </p>
 
-                            <TwoFactorRecoveryCodes
-                                recoveryCodesList={recoveryCodesList}
-                                fetchRecoveryCodes={fetchRecoveryCodes}
-                                errors={errors}
-                            />
+                            <TwoFactorRecoveryCodes recoveryCodesList={recoveryCodesList} fetchRecoveryCodes={fetchRecoveryCodes} errors={errors} />
 
                             <div className="relative inline">
                                 <Form action={disable()}>
                                     {({ processing }) => (
-                                        <Button
-                                            variant="destructive"
-                                            type="submit"
-                                            disabled={processing}
-                                        >
+                                        <Button variant="destructive" type="submit" disabled={processing}>
                                             <ShieldBan /> Disable 2FA
                                         </Button>
                                     )}
@@ -83,32 +59,20 @@ export default function TwoFactor({
                         <div className="flex flex-col items-start justify-start space-y-4">
                             <Badge variant="destructive">Disabled</Badge>
                             <p className="text-muted-foreground">
-                                When you enable two-factor authentication, you
-                                will be prompted for a secure pin during login.
-                                This pin can be retrieved from a TOTP-supported
-                                application on your phone.
+                                When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be
+                                retrieved from a TOTP-supported application on your phone.
                             </p>
 
                             <div>
                                 {hasSetupData ? (
-                                    <Button
-                                        onClick={() => setShowSetupModal(true)}
-                                    >
+                                    <Button onClick={() => setShowSetupModal(true)}>
                                         <ShieldCheck />
                                         Continue Setup
                                     </Button>
                                 ) : (
-                                    <Form
-                                        action={enable()}
-                                        onSuccess={() =>
-                                            setShowSetupModal(true)
-                                        }
-                                    >
+                                    <Form action={enable()} onSuccess={() => setShowSetupModal(true)}>
                                         {({ processing }) => (
-                                            <Button
-                                                type="submit"
-                                                disabled={processing}
-                                            >
+                                            <Button type="submit" disabled={processing}>
                                                 <ShieldCheck />
                                                 Enable 2FA
                                             </Button>

@@ -63,9 +63,7 @@ export default function TwoFactorChallenge() {
                                 placeholder="123456"
                                 maxLength={6}
                             />
-                            <p className="text-muted-foreground text-sm">
-                                Please enter the 6-digit code from your authenticator app.
-                            </p>
+                            <p className="text-muted-foreground text-sm">Please enter the 6-digit code from your authenticator app.</p>
                             <InputError message={errors.code} />
                         </div>
                     </TabsContent>
@@ -83,9 +81,7 @@ export default function TwoFactorChallenge() {
                                 onChange={(e) => setData('recovery_code', e.target.value)}
                                 placeholder="xxxxx-xxxxx"
                             />
-                            <p className="text-muted-foreground text-sm">
-                                Please enter one of your emergency recovery codes.
-                            </p>
+                            <p className="text-muted-foreground text-sm">Please enter one of your emergency recovery codes.</p>
                             <InputError message={errors.recovery_code} />
                         </div>
                     </TabsContent>

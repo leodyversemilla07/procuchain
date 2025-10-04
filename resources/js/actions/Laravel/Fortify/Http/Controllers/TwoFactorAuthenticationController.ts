@@ -1,71 +1,71 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../wayfinder'
+import { queryParams, type RouteDefinition, type RouteQueryOptions } from './../../../../../wayfinder';
 /**
-* @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::store
+ * @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::store
  * @see vendor/laravel/fortify/src/Http/Controllers/TwoFactorAuthenticationController.php:21
  * @route '/settings/two-factor-authentication'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
-})
+});
 
 store.definition = {
-    methods: ["post"],
+    methods: ['post'],
     url: '/settings/two-factor-authentication',
-} satisfies RouteDefinition<["post"]>
+} satisfies RouteDefinition<['post']>;
 
 /**
-* @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::store
+ * @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::store
  * @see vendor/laravel/fortify/src/Http/Controllers/TwoFactorAuthenticationController.php:21
  * @route '/settings/two-factor-authentication'
  */
 store.url = (options?: RouteQueryOptions) => {
-    return store.definition.url + queryParams(options)
-}
+    return store.definition.url + queryParams(options);
+};
 
 /**
-* @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::store
+ * @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::store
  * @see vendor/laravel/fortify/src/Http/Controllers/TwoFactorAuthenticationController.php:21
  * @route '/settings/two-factor-authentication'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
-})
+});
 
 /**
-* @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::destroy
+ * @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::destroy
  * @see vendor/laravel/fortify/src/Http/Controllers/TwoFactorAuthenticationController.php:35
  * @route '/settings/two-factor-authentication'
  */
 export const destroy = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(options),
     method: 'delete',
-})
+});
 
 destroy.definition = {
-    methods: ["delete"],
+    methods: ['delete'],
     url: '/settings/two-factor-authentication',
-} satisfies RouteDefinition<["delete"]>
+} satisfies RouteDefinition<['delete']>;
 
 /**
-* @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::destroy
+ * @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::destroy
  * @see vendor/laravel/fortify/src/Http/Controllers/TwoFactorAuthenticationController.php:35
  * @route '/settings/two-factor-authentication'
  */
 destroy.url = (options?: RouteQueryOptions) => {
-    return destroy.definition.url + queryParams(options)
-}
+    return destroy.definition.url + queryParams(options);
+};
 
 /**
-* @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::destroy
+ * @see \Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController::destroy
  * @see vendor/laravel/fortify/src/Http/Controllers/TwoFactorAuthenticationController.php:35
  * @route '/settings/two-factor-authentication'
  */
 destroy.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(options),
     method: 'delete',
-})
-const TwoFactorAuthenticationController = { store, destroy }
+});
+const TwoFactorAuthenticationController = { store, destroy };
 
-export default TwoFactorAuthenticationController
+export default TwoFactorAuthenticationController;

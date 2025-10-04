@@ -1,12 +1,12 @@
+import HeadingSmall from '@/components/heading-small';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { AlertCircle, Bell, BellOff, BellRing, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, Bell, BellOff, CheckCircle2, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -251,77 +251,37 @@ export default function PushNotification() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Push Notification Settings" />
+            <Head title="Push notification settings" />
             <SettingsLayout>
-                {!isSupported ? (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <BellOff className="h-5 w-5" />
-                                Push Notifications
-                            </CardTitle>
-                            <CardDescription>Get real-time notifications about procurement updates</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Alert>
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertDescription>
-                                    Push notifications are not supported in your browser. Please use a modern browser like Chrome, Firefox, Safari, or
-                                    Edge.
-                                </AlertDescription>
-                            </Alert>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <BellRing className="h-5 w-5" />
-                                Push Notifications
-                            </CardTitle>
-                            <CardDescription>Get real-time notifications about procurement updates and important system events</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">Permission Status:</span>
-                                    {permission === 'granted' ? (
-                                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
-                                            Granted
-                                        </Badge>
-                                    ) : permission === 'denied' ? (
-                                        <Badge variant="destructive">Denied</Badge>
-                                    ) : permission === 'default' ? (
-                                        <Badge variant="secondary">Not Requested</Badge>
-                                    ) : (
-                                        <Badge variant="outline">Unknown</Badge>
-                                    )}
-                                </div>
+                <div className="space-y-6">
+                    <HeadingSmall title="Push notifications" description="Manage your push notification preferences" />
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">Subscription Status:</span>
-                                    {isSubscribed ? (
-                                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
-                                            <CheckCircle2 className="mr-1 h-3 w-3" />
-                                            Subscribed
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="secondary">
-                                            <BellOff className="mr-1 h-3 w-3" />
-                                            Not Subscribed
-                                        </Badge>
-                                    )}
-                                </div>
+                    {!isSupported ? (
+                        <div className="flex flex-col items-start justify-start space-y-4">
+                            <Badge variant="destructive">Not Supported</Badge>
+                            <p className="text-muted-foreground">
+                                Push notifications are not supported in your browser. Please use a modern browser like Chrome, Firefox, Safari, or
+                                Edge.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-start justify-start space-y-4">
+                            <div className="flex items-center gap-2">
+                                {isSubscribed ? <Badge variant="default">Enabled</Badge> : <Badge variant="destructive">Disabled</Badge>}
                             </div>
+
+                            <p className="text-muted-foreground">
+                                {isSubscribed
+                                    ? "You'll receive push notifications for procurement updates, document changes, and important system events."
+                                    : 'Enable push notifications to receive real-time updates about procurement activities, document validations, and important alerts directly in your browser.'}
+                            </p>
 
                             {showPermissionAlert && (
                                 <Alert>
                                     <AlertCircle className="h-4 w-4" />
-                                    <AlertDescription className="flex items-center justify-between">
-                                        <span>Notification permission is required to receive push notifications.</span>
-                                        <Button size="sm" type="button" onClick={handleRequestPermission} disabled={isLoading}>
-                                            Enable
-                                        </Button>
+                                    <AlertDescription>
+                                        Notification permission is currently denied. Please enable notifications in your browser settings to receive
+                                        push notifications.
                                     </AlertDescription>
                                 </Alert>
                             )}
@@ -333,72 +293,98 @@ export default function PushNotification() {
                                 </Alert>
                             )}
 
-                            <div className="flex flex-col gap-2">
-                                {permission === 'granted' && !isSubscribed && (
-                                    <Button type="button" onClick={handleSubscribe} disabled={isLoading} className="w-full">
-                                        {isLoading ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Subscribing...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Bell className="mr-2 h-4 w-4" />
-                                                Enable Push Notifications
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
+                            <div className="w-full space-y-3 rounded-lg border p-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">Permission Status</span>
+                                    {permission === 'granted' ? (
+                                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
+                                            Granted
+                                        </Badge>
+                                    ) : permission === 'denied' ? (
+                                        <Badge variant="destructive">Denied</Badge>
+                                    ) : (
+                                        <Badge variant="secondary">Not Requested</Badge>
+                                    )}
+                                </div>
 
-                                {isSubscribed && (
-                                    <div className="flex gap-2">
-                                        <Button variant="outline" type="button" onClick={handleUnsubscribe} disabled={isLoading} className="flex-1">
-                                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellOff className="mr-2 h-4 w-4" />}
-                                            Disable
-                                        </Button>
-                                    </div>
-                                )}
-
-                                {permission === 'default' && (
-                                    <Button type="button" onClick={handleRequestPermission} disabled={isLoading} className="w-full">
-                                        {isLoading ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Requesting...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Bell className="mr-2 h-4 w-4" />
-                                                Request Permission
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">Subscription Status</span>
+                                    {isSubscribed ? (
+                                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
+                                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                                            Active
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="secondary">
+                                            <BellOff className="mr-1 h-3 w-3" />
+                                            Inactive
+                                        </Badge>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="bg-muted/50 rounded-lg p-3">
-                                <h4 className="mb-2 text-sm font-medium">What you'll receive notifications for:</h4>
-                                <ul className="text-muted-foreground space-y-1 text-xs">
-                                    <li>• Procurement stage updates and transitions</li>
-                                    <li>• Document uploads and validations</li>
-                                    <li>• Important system alerts and deadlines</li>
-                                    <li>• Status changes requiring your attention</li>
-                                </ul>
-                            </div>
+                            {permission === 'default' && (
+                                <Button type="button" onClick={handleRequestPermission} disabled={isLoading}>
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="animate-spin" />
+                                            Requesting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Bell />
+                                            Request Permission
+                                        </>
+                                    )}
+                                </Button>
+                            )}
+
+                            {permission === 'granted' && !isSubscribed && (
+                                <Button type="button" onClick={handleSubscribe} disabled={isLoading}>
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="animate-spin" />
+                                            Subscribing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Bell />
+                                            Enable Push Notifications
+                                        </>
+                                    )}
+                                </Button>
+                            )}
 
                             {isSubscribed && (
-                                <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950">
-                                    <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
-                                        <CheckCircle2 className="h-4 w-4" />
-                                        <span className="text-sm font-medium">
-                                            You're all set! You'll receive push notifications for important updates.
-                                        </span>
-                                    </div>
+                                <Button variant="destructive" type="button" onClick={handleUnsubscribe} disabled={isLoading}>
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="animate-spin" />
+                                            Disabling...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <BellOff />
+                                            Disable Push Notifications
+                                        </>
+                                    )}
+                                </Button>
+                            )}
+
+                            {isSubscribed && (
+                                <div className="bg-muted/50 w-full rounded-lg p-3">
+                                    <h4 className="mb-2 text-sm font-medium">What you'll receive notifications for:</h4>
+                                    <ul className="text-muted-foreground space-y-1 text-sm">
+                                        <li>• Procurement stage updates and transitions</li>
+                                        <li>• Document uploads and validations</li>
+                                        <li>• Important system alerts and deadlines</li>
+                                        <li>• Status changes requiring your attention</li>
+                                    </ul>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
-                )}
+                        </div>
+                    )}
+                </div>
             </SettingsLayout>
         </AppLayout>
     );

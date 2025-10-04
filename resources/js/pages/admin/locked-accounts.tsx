@@ -246,7 +246,7 @@ export default function AdminLockedAccounts() {
                                     <TableRow>
                                         <TableHead>User</TableHead>
                                         <TableHead>Role</TableHead>
-                                        <TableHead>MFA Status</TableHead>
+                                        <TableHead>2FA Status</TableHead>
                                         <TableHead>Lock Status</TableHead>
                                         <TableHead>Failed Attempts</TableHead>
                                         <TableHead>Locked At</TableHead>
@@ -275,7 +275,7 @@ export default function AdminLockedAccounts() {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center space-x-1">
-                                                    {user.mfa_enabled ? (
+                                                    {user.two_factor_enabled ? (
                                                         <Badge className="bg-success/10 dark:bg-success/20 text-success dark:text-success-foreground border-success/50 dark:border-success/30 border px-2 py-1 text-xs">
                                                             <QrCode className="mr-1 h-3 w-3" />
                                                             Enabled
