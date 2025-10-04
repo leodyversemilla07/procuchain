@@ -1,16 +1,18 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '@/components/ui/item';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from '@/components/ui/empty';
 import AppLayout from '@/layouts/app-layout';
+import { HeroCard } from '@/components/hero-card';
+import { StatsGrid, type StatsGridItem } from '@/components/stats-grid';
 import { cn } from '@/lib/utils';
 import { BreadcrumbItem, User } from '@/types';
 import { Head, router, usePage, usePoll } from '@inertiajs/react';
-import { format, formatDistanceToNow } from 'date-fns';
-import { AlertCircle, Bell, Check, CheckCheck, Clock, ExternalLink, Filter, RotateCw, X } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, RotateCw } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -86,8 +88,6 @@ export default function Notifications() {
     // Use polling to keep notifications updated
     usePoll(30000); // Poll every 30 seconds
 
-    const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [filter, setFilter] = useState<FilterType>('all');
     const [refreshing, setRefreshing] = useState(false);
 
@@ -179,399 +179,214 @@ export default function Notifications() {
         }
     };
 
-    const EmptyState = () => (
-        <div className="flex min-h-[400px] w-full items-center justify-center">
-            <div className="text-center">
-                <div className="bg-muted/10 mx-auto mb-4 w-fit rounded-full p-3">
-                    <Bell className="text-muted-foreground h-6 w-6" />
-                </div>
-                <h3 className="text-foreground mb-1 text-lg font-medium">No notifications</h3>
-                <p className="text-muted-foreground/70 text-sm">You're all caught up!</p>
-            </div>
-        </div>
-    );
-
-    const handleNotificationClick = (notification: Notification) => {
-        setSelectedNotification(notification);
-        setIsDialogOpen(true);
+    const handleNotificationClick = useCallback((notification: Notification) => {
+        // Mark as read if not already read
         if (!notification.read_at) {
             handleMarkAsRead(notification.id);
         }
-    };
+        // Navigate directly to the procurement
+        router.visit(`/${userRole?.replace('_', '-')}/procurements-list/${notification.data.procurement_id}`);
+    }, [userRole, handleMarkAsRead]);
 
-    const formatDate = (dateString: string | null | undefined) => {
-        if (!dateString) return 'N/A';
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Invalid Date';
-            return format(date, 'PPPp');
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return 'Invalid Date';
-        }
-    };
+    const statsItems: StatsGridItem[] = [
+        {
+            id: 'total',
+            label: 'Total Notifications',
+            value: filteredNotifications.length,
+            icon: Bell,
+            iconClassName: 'bg-primary/10 text-primary',
+        },
+        {
+            id: 'unread',
+            label: 'Unread',
+            value: unread_count,
+            icon: AlertCircle,
+            iconClassName: 'bg-yellow-500/10 text-yellow-500',
+        },
+        {
+            id: 'read',
+            label: 'Read',
+            value: filteredNotifications.length - unread_count,
+            icon: CheckCheck,
+            iconClassName: 'bg-green-500/10 text-green-500',
+        },
+    ];
 
-    const formatDistance = (dateString: string | null | undefined) => {
-        if (!dateString) return 'N/A';
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Invalid Date';
-            return formatDistanceToNow(date, { addSuffix: true });
-        } catch (error) {
-            console.error('Error formatting date distance:', error);
-            return 'Invalid Date';
-        }
-    };
+    const actions = (
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <Select value={filter} onValueChange={handleFilterChange}>
+                <SelectTrigger className="w-[120px] sm:w-[140px]">
+                    <Filter className="text-muted-foreground mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Filter">
+                        {filter === 'all' ? 'All' : filter === 'read' ? 'Read' : 'Unread'}
+                    </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="unread">Unread</SelectItem>
+                    <SelectItem value="read">Read</SelectItem>
+                </SelectContent>
+            </Select>
+            <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefresh}
+                className={cn('text-muted-foreground hover:text-foreground transition-all', refreshing && 'animate-spin')}
+            >
+                <RotateCw className="h-4 w-4" />
+            </Button>
+            {paginatedNotifications.some((n: Notification) => !n.read_at) && (
+                <Button
+                    onClick={handleMarkAllAsRead}
+                    variant="outline"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground"
+                >
+                    Mark all as read
+                </Button>
+            )}
+        </div>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Notifications" />
-            <div className="flex h-full flex-col">
-                {/* Header Section */}
-                <div className="bg-card border-b">
-                    <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="space-y-1">
-                                <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Notifications</h1>
-                                <p className="text-muted-foreground text-xs sm:text-sm">Stay updated with your procurement activities and updates</p>
+            <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
+                <HeroCard
+                    icon={Bell}
+                    title="Notifications"
+                    description="Stay updated with your procurement activities and updates"
+                    actions={actions}
+                />
+
+                {/* Stats Section */}
+                <StatsGrid items={statsItems} userRole={userRole} />
+
+                {/* Notifications List */}
+                <Card className="overflow-hidden">
+                    <CardContent className="p-0">
+                        {loading ? (
+                            <div className="divide-border divide-y">
+                                <div className="space-y-4 p-4">
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} className="flex items-start gap-4">
+                                            <Skeleton className="h-8 w-8 rounded-full sm:h-10 sm:w-10" />
+                                            <div className="flex-1 space-y-2">
+                                                <Skeleton className="h-4 w-[60%]" />
+                                                <Skeleton className="h-3 w-[80%]" />
+                                                <Skeleton className="h-3 w-[40%]" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                                <Select value={filter} onValueChange={handleFilterChange}>
-                                    <SelectTrigger className="w-[120px] sm:w-[140px]">
-                                        <Filter className="text-muted-foreground mr-2 h-4 w-4" />
-                                        <SelectValue placeholder="Filter">
-                                            {filter === 'all' ? 'All' : filter === 'read' ? 'Read' : 'Unread'}
-                                        </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        <SelectItem value="unread">Unread</SelectItem>
-                                        <SelectItem value="read">Read</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={handleRefresh}
-                                    className={cn('text-muted-foreground hover:text-foreground transition-all', refreshing && 'animate-spin')}
-                                >
-                                    <RotateCw className="h-4 w-4" />
-                                </Button>
-                                {paginatedNotifications.some((n: Notification) => !n.read_at) && (
-                                    <Button
-                                        onClick={handleMarkAllAsRead}
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-muted-foreground hover:text-foreground"
+                        ) : paginatedNotifications.length === 0 ? (
+                            <Empty>
+                                <EmptyHeader>
+                                    <EmptyMedia variant="icon">
+                                        <Bell className="h-6 w-6" />
+                                    </EmptyMedia>
+                                    <EmptyTitle>No notifications</EmptyTitle>
+                                    <EmptyDescription>You're all caught up!</EmptyDescription>
+                                </EmptyHeader>
+                            </Empty>
+                        ) : (
+                            <div className="divide-border divide-y">
+                                {paginatedNotifications.map((notification: Notification) => (
+                                    <Item
+                                        key={notification.id}
+                                        className={cn(
+                                            'group relative cursor-pointer transition-all p-4 sm:p-6 border-0',
+                                            !notification.read_at && 'bg-primary/5 hover:bg-primary/10',
+                                            notification.read_at && 'hover:bg-muted/5',
+                                        )}
+                                        onClick={() => handleNotificationClick(notification)}
                                     >
-                                        Mark all as read
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content */}
-                <div className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-                    <div className="flex flex-col gap-4 sm:gap-6">
-                        {/* Stats Section */}
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-                            <Card>
-                                <CardContent className="p-4 sm:p-6">
-                                    <div className="flex items-center gap-3 sm:gap-4">
-                                        <div className="bg-primary/10 rounded-full p-2 sm:p-3">
-                                            <Bell className="text-primary h-5 w-5 sm:h-6 sm:w-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-muted-foreground text-xs font-medium sm:text-sm">Total Notifications</p>
-                                            <p className="text-xl font-bold sm:text-2xl">{filteredNotifications.length}</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="p-4 sm:p-6">
-                                    <div className="flex items-center gap-3 sm:gap-4">
-                                        <div className="rounded-full bg-yellow-500/10 p-2 sm:p-3">
-                                            <AlertCircle className="h-5 w-5 text-yellow-500 sm:h-6 sm:w-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-muted-foreground text-xs font-medium sm:text-sm">Unread</p>
-                                            <p className="text-xl font-bold sm:text-2xl">{unread_count}</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardContent className="p-4 sm:p-6">
-                                    <div className="flex items-center gap-3 sm:gap-4">
-                                        <div className="rounded-full bg-green-500/10 p-2 sm:p-3">
-                                            <CheckCheck className="h-5 w-5 text-green-500 sm:h-6 sm:w-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-muted-foreground text-xs font-medium sm:text-sm">Read</p>
-                                            <p className="text-xl font-bold sm:text-2xl">{filteredNotifications.length - unread_count}</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Notifications List */}
-                        <Card className="overflow-hidden">
-                            <CardHeader className="bg-card border-b px-4 py-3 sm:px-6 sm:py-4">
-                                <CardTitle className="text-base sm:text-lg">All Notifications</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                {loading ? (
-                                    <div className="divide-border divide-y">
-                                        <div className="space-y-4 p-4">
-                                            {[...Array(3)].map((_, i) => (
-                                                <div key={i} className="flex items-start gap-4">
-                                                    <Skeleton className="h-8 w-8 rounded-full sm:h-10 sm:w-10" />
-                                                    <div className="flex-1 space-y-2">
-                                                        <Skeleton className="h-4 w-[60%]" />
-                                                        <Skeleton className="h-3 w-[80%]" />
-                                                        <Skeleton className="h-3 w-[40%]" />
+                                        <ItemMedia>
+                                            {getNotificationIcon(notification.type)}
+                                        </ItemMedia>
+                                        <ItemContent>
+                                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                                                <div className="flex-1">
+                                                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                                                        <ItemTitle className="text-sm font-medium sm:text-base">
+                                                            {notification.data.procurement_title}
+                                                        </ItemTitle>
+                                                        {getStatusBadge(getNotificationStatus(notification))}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <ItemDescription>
+                                                            Stage: {notification.data.stage_identifier} - {notification.data.action_type}
+                                                        </ItemDescription>
+                                                        {notification.data.transition_message && (
+                                                            <p className="text-muted-foreground/80 line-clamp-2 text-xs sm:text-sm">
+                                                                {notification.data.transition_message}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ) : paginatedNotifications.length === 0 ? (
-                                    <EmptyState />
-                                ) : (
-                                    <div className="divide-border divide-y">
-                                        {paginatedNotifications.map((notification: Notification) => (
-                                            <div
-                                                key={notification.id}
-                                                className={cn(
-                                                    'group relative flex cursor-pointer items-start gap-3 p-4 transition-all sm:gap-4 sm:p-6',
-                                                    !notification.read_at && 'bg-primary/5 hover:bg-primary/10',
-                                                    notification.read_at && 'hover:bg-muted/5',
-                                                )}
-                                                onClick={() => handleNotificationClick(notification)}
-                                            >
-                                                <div className="flex-shrink-0">{getNotificationIcon(notification.type)}</div>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                                                        <div className="flex-1">
-                                                            <div className="mb-2 flex flex-wrap items-center gap-2">
-                                                                <h3 className="text-foreground text-sm font-medium sm:text-base">
-                                                                    {notification.data.procurement_title}
-                                                                </h3>
-                                                                {getStatusBadge(getNotificationStatus(notification))}
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-muted-foreground text-xs sm:text-sm">
-                                                                    Stage: {notification.data.stage_identifier} - {notification.data.action_type}
-                                                                </p>
-                                                                {notification.data.transition_message && (
-                                                                    <p className="text-muted-foreground/80 line-clamp-2 text-xs sm:text-sm">
-                                                                        {notification.data.transition_message}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex flex-col items-start gap-2 sm:items-end">
-                                                            <HoverCard>
-                                                                <HoverCardTrigger asChild>
-                                                                    <time className="text-muted-foreground/70 cursor-help text-xs whitespace-nowrap">
-                                                                        {formatDistance(notification.created_at)}
-                                                                    </time>
-                                                                </HoverCardTrigger>
-                                                                <HoverCardContent className="w-fit">
-                                                                    {formatDate(notification.created_at)}
-                                                                </HoverCardContent>
-                                                            </HoverCard>
-                                                            {!notification.read_at && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="opacity-0 transition-opacity group-hover:opacity-100"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleMarkAsRead(notification.id);
-                                                                    }}
-                                                                >
-                                                                    <Check className="mr-1 h-4 w-4" />
-                                                                    Mark as read
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </div>
+                                                <div className="flex flex-col items-start gap-2 sm:items-end">
+                                                    <time className="text-muted-foreground/70 text-xs whitespace-nowrap">
+                                                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                                                    </time>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Pagination */}
-                                {totalPages > 1 && (
-                                    <div className="border-border bg-card/50 flex items-center justify-center gap-2 border-t py-3 sm:py-4">
-                                        <div className="flex flex-wrap gap-1">
-                                            {pageNumbers.map((pageNum) => (
+                                        </ItemContent>
+                                        <ItemActions>
+                                            {!notification.read_at && (
                                                 <Button
-                                                    key={pageNum}
-                                                    variant={pageNum === currentPage ? 'default' : 'outline'}
+                                                    variant="ghost"
                                                     size="sm"
-                                                    className={cn(
-                                                        'h-7 w-7 p-0 sm:h-8 sm:w-8',
-                                                        pageNum === currentPage && 'bg-primary text-primary-foreground hover:bg-primary/90',
-                                                        pageNum !== currentPage && 'text-muted-foreground hover:text-foreground',
-                                                    )}
-                                                    onClick={() =>
-                                                        router.get(
-                                                            window.location.pathname,
-                                                            { page: pageNum },
-                                                            {
-                                                                preserveState: true,
-                                                                preserveScroll: true,
-                                                            },
-                                                        )
-                                                    }
+                                                    className="opacity-0 transition-opacity group-hover:opacity-100"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleMarkAsRead(notification.id);
+                                                    }}
                                                 >
-                                                    {pageNum}
+                                                    <Check className="mr-1 h-4 w-4" />
+                                                    Mark as read
                                                 </Button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </div>
-
-            {/* Notification Details Sheet */}
-            <Sheet open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-lg">
-                    <div className="bg-background sticky top-0 z-10 border-b">
-                        <div className="flex items-center justify-between p-6">
-                            <div className="space-y-1">
-                                <SheetTitle className="text-xl font-semibold">{selectedNotification?.data.title}</SheetTitle>
-                                <SheetDescription className="text-muted-foreground text-sm">
-                                    {formatDate(selectedNotification?.created_at)}
-                                </SheetDescription>
+                                            )}
+                                        </ItemActions>
+                                    </Item>
+                                ))}
                             </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsDialogOpen(false)}>
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
+                        )}
 
-                    <div className="space-y-8 p-6">
-                        {/* Status Badge */}
-                        <div className="flex items-center gap-2">
-                            {getNotificationIcon(selectedNotification?.type || '')}
-                            {getStatusBadge(getNotificationStatus(selectedNotification || ({} as Notification)))}
-                        </div>
-
-                        {/* Procurement Details */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <h4 className="text-sm font-medium">Procurement Details</h4>
-                                <div className="bg-border h-px flex-1" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div className="space-y-1">
-                                    <div className="text-muted-foreground">Procurement ID</div>
-                                    <div className="font-medium">{selectedNotification?.data.procurement_id}</div>
-                                </div>
-                                <div className="space-y-1">
-                                    <div className="text-muted-foreground">Title</div>
-                                    <div className="font-medium">{selectedNotification?.data.procurement_title}</div>
-                                </div>
-                                <div className="space-y-1">
-                                    <div className="text-muted-foreground">Stage</div>
-                                    <div className="font-medium">{selectedNotification?.data.stage_identifier}</div>
-                                </div>
-                                <div className="space-y-1">
-                                    <div className="text-muted-foreground">Status</div>
-                                    <div className="font-medium">{selectedNotification?.data.current_status}</div>
-                                </div>
-                                <div className="space-y-1">
-                                    <div className="text-muted-foreground">Action</div>
-                                    <div className="font-medium">{selectedNotification?.data.action_type}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Timeline */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <h4 className="text-sm font-medium">Timeline</h4>
-                                <div className="bg-border h-px flex-1" />
-                            </div>
-                            <div className="space-y-3">
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1">
-                                        <div className="bg-primary h-2 w-2 rounded-full" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm font-medium">Created</div>
-                                        <div className="text-muted-foreground text-sm">{formatDate(selectedNotification?.created_at)}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1">
-                                        <div className="bg-muted-foreground h-2 w-2 rounded-full" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm font-medium">Updated</div>
-                                        <div className="text-muted-foreground text-sm">{formatDate(selectedNotification?.updated_at)}</div>
-                                    </div>
-                                </div>
-                                {selectedNotification?.read_at && (
-                                    <div className="flex items-start gap-3">
-                                        <div className="mt-1">
-                                            <div className="h-2 w-2 rounded-full bg-green-500" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <div className="text-sm font-medium">Read</div>
-                                            <div className="text-muted-foreground text-sm">{formatDate(selectedNotification?.read_at)}</div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Message */}
-                        {selectedNotification?.data.transition_message && (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <h4 className="text-sm font-medium">Message</h4>
-                                    <div className="bg-border h-px flex-1" />
-                                </div>
-                                <div className="bg-card rounded-lg border p-4">
-                                    <p className="text-muted-foreground text-sm">{selectedNotification.data.transition_message}</p>
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="border-border bg-card/50 flex items-center justify-center gap-2 border-t py-3 sm:py-4">
+                                <div className="flex flex-wrap gap-1">
+                                    {pageNumbers.map((pageNum) => (
+                                        <Button
+                                            key={pageNum}
+                                            variant={pageNum === currentPage ? 'default' : 'outline'}
+                                            size="sm"
+                                            className={cn(
+                                                'h-7 w-7 p-0 sm:h-8 sm:w-8',
+                                                pageNum === currentPage && 'bg-primary text-primary-foreground hover:bg-primary/90',
+                                                pageNum !== currentPage && 'text-muted-foreground hover:text-foreground',
+                                            )}
+                                            onClick={() =>
+                                                router.get(
+                                                    window.location.pathname,
+                                                    { page: pageNum },
+                                                    {
+                                                        preserveState: true,
+                                                        preserveScroll: true,
+                                                    },
+                                                )
+                                            }
+                                        >
+                                            {pageNum}
+                                        </Button>
+                                    ))}
                                 </div>
                             </div>
                         )}
-                    </div>
-
-                    <div className="bg-background sticky bottom-0 z-10 border-t p-6">
-                        <div className="flex gap-3">
-                            <Button variant="outline" className="flex-1" onClick={() => setIsDialogOpen(false)}>
-                                Close
-                            </Button>
-                            <Button
-                                variant="default"
-                                className="flex-1"
-                                onClick={() => {
-                                    if (selectedNotification?.data.procurement_id) {
-                                        router.visit(`/${userRole?.replace('_', '-')}/procurements-list/${selectedNotification.data.procurement_id}`);
-                                    }
-                                }}
-                            >
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                                View Procurement
-                            </Button>
-                        </div>
-                    </div>
-                </SheetContent>
-            </Sheet>
+                    </CardContent>
+                </Card>
+            </div>
         </AppLayout>
     );
 }

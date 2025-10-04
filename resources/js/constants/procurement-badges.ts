@@ -1,4 +1,3 @@
-import { createElement, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
     AlertCircle,
@@ -15,6 +14,7 @@ import {
     Monitor,
     PlayCircle,
 } from 'lucide-react';
+import { createElement, type ReactNode } from 'react';
 
 import { Stage, Status } from '@/types/blockchain';
 

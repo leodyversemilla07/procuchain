@@ -1,8 +1,8 @@
-import { HeroCard } from '@/components/hero-card';
 import { ProcurementDistributionCard } from '@/components/dashboard/procurement-distribution-card';
 import { RecentActivitiesList } from '@/components/dashboard/recent-activities-list';
 import { RecentProcurementsTable } from '@/components/dashboard/recent-procurements-table';
 import { StageDistributionCard } from '@/components/dashboard/stage-distribution-card';
+import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
@@ -12,10 +12,10 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText, Shield, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Badge } from '@/components/ui/badge';
-import { Line, LineChart, CartesianGrid, XAxis } from 'recharts';
+import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
 
 export type TimeRangeKey = '7_days' | '30_days' | '90_days' | '1_year';
 
@@ -256,11 +256,7 @@ export default function AdminDashboard() {
             <Head title="Admin Dashboard" />
 
             <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
-                <HeroCard
-                    icon={Shield}
-                    title="Admin Dashboard"
-                    description="System-wide overview and administrative controls"
-                />
+                <HeroCard icon={Shield} title="Admin Dashboard" description="System-wide overview and administrative controls" />
 
                 <StatsGrid items={statsItems} />
 

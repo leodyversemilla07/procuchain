@@ -1,5 +1,4 @@
-import InputError from '@/components/input-error';
-import { Label } from '@/components/ui/label';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { MUNICIPAL_OFFICES } from '@/types/blockchain';
@@ -36,16 +35,16 @@ const MunicipalOfficeSelect: React.FC<MunicipalOfficeSelectProps> = ({
     const selectId = id ?? generatedId;
 
     return (
-        <div className="flex flex-col gap-1">
+        <Field>
             {label && (
-                <Label htmlFor={selectId} className={labelClassName}>
+                <FieldLabel htmlFor={selectId} className={labelClassName}>
                     {label}
-                    {required ? (
+                    {required && (
                         <span className="text-destructive ml-1 align-super text-xs" aria-label="required">
                             *
                         </span>
-                    ) : null}
-                </Label>
+                    )}
+                </FieldLabel>
             )}
 
             <Select value={value} onValueChange={onValueChange} disabled={disabled}>
@@ -70,10 +69,9 @@ const MunicipalOfficeSelect: React.FC<MunicipalOfficeSelectProps> = ({
                 </SelectContent>
             </Select>
 
-            {error && <InputError message={error} className="mt-1" />}
-
-            {helperText && !error && <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{helperText}</p>}
-        </div>
+            {helperText && !error && <FieldDescription>{helperText}</FieldDescription>}
+            {error && <FieldError>{error}</FieldError>}
+        </Field>
     );
 };
 

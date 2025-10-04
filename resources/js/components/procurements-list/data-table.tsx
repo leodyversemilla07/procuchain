@@ -17,7 +17,6 @@ import {
 import { ArrowDownIcon, ArrowUpDown, ArrowUpIcon, CalendarIcon, FileIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { Pagination } from '@/components/pagination';
 import { LoadingSkeleton } from '@/components/procurements-list/loading-skeleton';
@@ -26,10 +25,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getStageBadgeIcon, getStageBadgeStyle, getStatusBadgeIcon, getStatusBadgeStyle } from '@/constants/procurement-badges';
-import { cn } from '@/lib/utils';
 import { exportProcurementsToCSV } from '@/lib/csv';
+import { cn } from '@/lib/utils';
 import { SharedData } from '@/types';
 import { ProcurementListItem, Stage, Status } from '@/types/blockchain';
 
@@ -55,7 +55,6 @@ function useIsTruncated<T extends HTMLElement>(ref: React.RefObject<T | null>, d
     }, [ref, depKey]);
     return isTruncated;
 }
-
 
 interface DataTableCheckboxProps {
     checked: boolean | 'indeterminate';
@@ -151,7 +150,6 @@ export const BadgeCell = <T extends string>({ value, getStyle, icon }: { value: 
     );
 };
 
-
 export const StageCell = ({ stage }: { stage: Stage }) => (
     <BadgeCell<Stage> value={stage} getStyle={getStageBadgeStyle} icon={getStageBadgeIcon(stage)} />
 );
@@ -181,10 +179,10 @@ export const LastUpdatedCell = ({ date }: { date: string }) => {
     const formattedDate = new Date(date);
     const displayDate = !isNaN(formattedDate.getTime())
         ? formattedDate.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        })
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+          })
         : date;
     return (
         <div className="flex items-center gap-1.5">
@@ -210,20 +208,15 @@ export function DataTableCheckbox({ checked, onCheckedChange, disabled = false, 
 
 export function DataTableColumnHeader<TData, TValue>({ column, title, className }: DataTableColumnHeaderProps<TData, TValue>) {
     if (!column.getCanSort()) {
-        return <div className={cn('text-xs font-medium uppercase tracking-wide text-muted-foreground', className)}>{title}</div>;
+        return <div className={cn('text-muted-foreground text-xs font-medium tracking-wide uppercase', className)}>{title}</div>;
     }
 
     const isSorted = column.getIsSorted();
 
     return (
         <div className={cn('flex items-center space-x-2', className)}>
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</div>
-            <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => column.toggleSorting(isSorted === 'asc')}
-                className="h-8 w-8 p-0"
-            >
+            <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{title}</div>
+            <Button variant="ghost" size="sm" onClick={() => column.toggleSorting(isSorted === 'asc')} className="h-8 w-8 p-0">
                 {isSorted === 'desc' ? (
                     <ArrowDownIcon className="h-4 w-4" />
                 ) : isSorted === 'asc' ? (
@@ -314,16 +307,35 @@ export function ProcurementsDataTable({ columns, data, loading, error, userRole,
         const description = hasSearch
             ? 'Try adjusting your search or filters to find the procurements you need.'
             : userRole === 'bac_secretariat'
-                ? 'Create your first procurement record to start tracking progress across every stage.'
-                : 'Once procurements are created, they will appear here with full stage tracking.';
+              ? 'Create your first procurement record to start tracking progress across every stage.'
+              : 'Once procurements are created, they will appear here with full stage tracking.';
 
         return (
             <Card className="overflow-hidden">
                 <CardContent className="flex justify-center px-6 py-12">
-                    <EmptyState
-                        title={title}
-                        description={description}
-                    />
+                    <Empty>
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                {/* You can use any icon here, e.g. Lucide Inbox */}
+                                <svg
+                                    width="32"
+                                    height="32"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="lucide lucide-inbox text-muted-foreground h-8 w-8"
+                                >
+                                    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+                                    <path d="M5.45 5.11A2 2 0 0 1 7.17 4h9.66a2 2 0 0 1 1.72 1.11l3.1 6.2A2 2 0 0 1 22 12v5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5c0-.28.06-.56.18-.81Z" />
+                                </svg>
+                            </EmptyMedia>
+                        </EmptyHeader>
+                        <EmptyTitle>{title}</EmptyTitle>
+                        <EmptyDescription>{description}</EmptyDescription>
+                    </Empty>
                 </CardContent>
             </Card>
         );

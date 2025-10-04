@@ -9,16 +9,17 @@ import { type BreadcrumbItem } from '@/types';
 
 import AppLayout from '@/layouts/app-layout';
 
-import { InputWithLabel } from '@/components/input-with-label';
+import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 
 import DatePicker from '@/components/date-picker';
 import FileUploadArea from '@/components/file-upload-area';
 import MunicipalOfficeSelect from '@/components/municipal-office-select';
 import PeopleInput from '@/components/people-input';
-import ProcurementId from '@/components/procurement-id';
 
 import { FileText, Plus, X } from 'lucide-react';
 
@@ -299,39 +300,29 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             <Head title="Initiate Procurement" />
 
             <div className="w-full space-y-4 p-4 md:p-6 lg:p-8" role="main" aria-labelledby="page-title">
-                {/* Header Section (redesigned to match procurements-list) */}
-                <Card>
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-primary/10 rounded-lg p-2">
-                                    <FileText className="text-primary h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h1 className="text-foreground text-2xl font-bold">New Procurement</h1>
-                                    <p className="text-muted-foreground mt-1 text-sm">
-                                        Start your procurement process by providing necessary details.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Badge className="bg-primary/10 hover:bg-primary/20 text-primary rounded-md px-2 py-1 text-xs font-medium transition-colors duration-200 md:px-3 md:py-1.5 md:text-sm">
-                                    Procurement Initiation
+                {/* Header Section */}
+                <HeroCard
+                    icon={FileText}
+                    title="New Procurement"
+                    description="Start your procurement process by providing necessary details."
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge className="bg-primary/10 hover:bg-primary/20 text-primary rounded-md px-2 py-1 text-xs font-medium transition-colors duration-200 md:px-3 md:py-1.5 md:text-sm">
+                                Procurement Initiation
+                            </Badge>
+                            {formState?.reference && (
+                                <Badge className="bg-chart-1/10 text-chart-1 dark:bg-chart-1/20 dark:text-chart-1 rounded-md px-2 py-1 text-xs md:px-3 md:py-1.5 md:text-sm">
+                                    {formState.reference}
                                 </Badge>
-                                {formState?.reference && (
-                                    <Badge className="bg-chart-1/10 text-chart-1 dark:bg-chart-1/20 dark:text-chart-1 rounded-md px-2 py-1 text-xs md:px-3 md:py-1.5 md:text-sm">
-                                        {formState.reference}
-                                    </Badge>
-                                )}
-                                {formState?.isComplete && (
-                                    <Badge className="bg-chart-2/10 hover:bg-chart-2/20 text-chart-2 dark:bg-chart-2/20 dark:text-chart-2 rounded-md px-2 py-1 text-xs transition-colors duration-200 md:px-3 md:py-1.5 md:text-sm">
-                                        Complete
-                                    </Badge>
-                                )}
-                            </div>
+                            )}
+                            {formState?.isComplete && (
+                                <Badge className="bg-chart-2/10 hover:bg-chart-2/20 text-chart-2 dark:bg-chart-2/20 dark:text-chart-2 rounded-md px-2 py-1 text-xs transition-colors duration-200 md:px-3 md:py-1.5 md:text-sm">
+                                    Complete
+                                </Badge>
+                            )}
                         </div>
-                    </CardContent>
-                </Card>
+                    }
+                />
 
                 <div className="mt-2 sm:mt-0">
                     <div className="mt-4 space-y-4 sm:mt-6 sm:space-y-6">
@@ -341,40 +332,81 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                 {/* Procurement ID */}
                                 <Card className="border-sidebar-border relative overflow-hidden p-4 shadow-sm transition-all duration-200 hover:shadow-md sm:p-6">
                                     <div className="space-y-4 sm:space-y-5">
-                                        <div>
-                                            <ProcurementId
-                                                prNumber="PR"
-                                                serial1={data.procurement_id.split('-')[2] || ''}
-                                                onSerial1Change={(val) => {
-                                                    // Always construct as PR-<year>-<serial1>-<serial2>
-                                                    const parts = data.procurement_id.split('-');
-                                                    const year = new Date().getFullYear().toString();
-                                                    const serial2 = parts[3] || '';
-                                                    setData('procurement_id', `PR-${year}-${val}-${serial2}`);
-                                                }}
-                                                serial2={data.procurement_id.split('-')[3] || ''}
-                                                onSerial2Change={(val) => {
-                                                    const parts = data.procurement_id.split('-');
-                                                    const year = new Date().getFullYear().toString();
-                                                    const serial1 = parts[2] || '';
-                                                    setData('procurement_id', `PR-${year}-${serial1}-${val}`);
-                                                }}
-                                                error={hasError('procurement_id') ? errors.procurement_id : ''}
-                                                required
-                                            />
-                                            <p className="text-muted-foreground mt-1.5 text-xs sm:mt-2 sm:text-sm">
+                                        <Field>
+                                            <FieldLabel htmlFor="pr-number">
+                                                Procurement ID
+                                                <span className="text-destructive ml-1 align-super text-xs" aria-label="required">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-4">
+                                                <Input
+                                                    id="pr-number"
+                                                    type="text"
+                                                    value="PR"
+                                                    readOnly
+                                                    className="border-border text-foreground w-full text-center"
+                                                    required
+                                                />
+                                                <Input
+                                                    id="pr-year"
+                                                    type="text"
+                                                    value={String(new Date().getFullYear())}
+                                                    readOnly
+                                                    className="border-border text-foreground w-full text-center"
+                                                    required
+                                                />
+                                                <Input
+                                                    id="pr-serial1"
+                                                    type="text"
+                                                    value={data.procurement_id.split('-')[2] || ''}
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                                        const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                                        const parts = data.procurement_id.split('-');
+                                                        const year = new Date().getFullYear().toString();
+                                                        const serial2 = parts[3] || '';
+                                                        setData('procurement_id', `PR-${year}-${val}-${serial2}`);
+                                                    }}
+                                                    className="border-border text-foreground w-full text-center"
+                                                    maxLength={4}
+                                                    placeholder="0001"
+                                                    required
+                                                />
+                                                <Input
+                                                    id="pr-serial2"
+                                                    type="text"
+                                                    value={data.procurement_id.split('-')[3] || ''}
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                                        const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                                        const parts = data.procurement_id.split('-');
+                                                        const year = new Date().getFullYear().toString();
+                                                        const serial1 = parts[2] || '';
+                                                        setData('procurement_id', `PR-${year}-${serial1}-${val}`);
+                                                    }}
+                                                    className="border-border text-foreground w-full text-center"
+                                                    maxLength={4}
+                                                    placeholder="0001"
+                                                    required
+                                                />
+                                            </div>
+                                            <FieldDescription>
                                                 The procurement ID is a unique identifier for this procurement process.
-                                            </p>
-                                        </div>
+                                            </FieldDescription>
+                                            {hasError('procurement_id') && <FieldError>{errors.procurement_id}</FieldError>}
+                                        </Field>
                                     </div>
 
                                     {/* Procurement Title */}
                                     <div className="space-y-4 sm:space-y-5">
-                                        <div>
-                                            <InputWithLabel
+                                        <Field>
+                                            <FieldLabel htmlFor="procurement_title">
+                                                Procurement Title
+                                                <span className="text-destructive ml-1 align-super text-xs" aria-label="required">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <Input
                                                 id="procurement_title"
-                                                label="Procurement Title"
-                                                required
                                                 type="text"
                                                 value={data.procurement_title}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -382,19 +414,18 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                 }
                                                 onFocus={() => clearErrors('procurement_title')}
                                                 placeholder="Enter a descriptive title for this procurement"
-                                                className={`transition-all duration-200 ${
+                                                className={cn(
+                                                    'transition-all duration-200',
                                                     hasError('procurement_title')
                                                         ? 'border-destructive ring-destructive/30 ring-1'
-                                                        : 'border-input focus:border-primary'
-                                                }`}
+                                                        : 'border-input focus:border-primary',
+                                                )}
                                                 aria-invalid={hasError('procurement_title')}
-                                                error={hasError('procurement_title') ? errors.procurement_title : ''}
-                                                errorClassName="mt-1.5 sm:mt-2"
+                                                required
                                             />
-                                            <p className="text-muted-foreground mt-1.5 text-xs sm:mt-2 sm:text-sm">
-                                                The procurement title should clearly describe what is being procured.
-                                            </p>
-                                        </div>
+                                            <FieldDescription>The procurement title should clearly describe what is being procured.</FieldDescription>
+                                            {hasError('procurement_title') && <FieldError>{errors.procurement_title}</FieldError>}
+                                        </Field>
 
                                         <div className="bg-accent/10 dark:bg-accent/20 border-accent-foreground/50 dark:border-accent-foreground/70 rounded-lg border p-3 transition-colors duration-200 sm:p-4">
                                             <p className="text-accent-foreground dark:text-accent-foreground/80 text-xs sm:text-sm">
@@ -560,11 +591,15 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                     {/* Metadata Fields - 2 Column Grid */}
                                                     <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
                                                         {/* Document Type */}
-                                                        <div>
-                                                            <InputWithLabel
+                                                        <Field>
+                                                            <FieldLabel htmlFor={`document-type-${index}`}>
+                                                                Document Type
+                                                                <span className="text-destructive ml-1 align-super text-xs" aria-label="required">
+                                                                    *
+                                                                </span>
+                                                            </FieldLabel>
+                                                            <Input
                                                                 id={`document-type-${index}`}
-                                                                label="Document Type"
-                                                                required
                                                                 type="text"
                                                                 value={meta?.document_type || ''}
                                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -577,74 +612,67 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                                         ? 'border-destructive ring-destructive/30 ring-1'
                                                                         : 'border-input focus:border-primary',
                                                                 )}
-                                                                error={
-                                                                    hasError(`metadata.${index}.document_type`)
-                                                                        ? (errors as Record<string, string>)[`metadata.${index}.document_type`]
-                                                                        : undefined
-                                                                }
-                                                                errorClassName="mt-1.5 sm:mt-2"
+                                                                required
                                                             />
-                                                            <p className="text-muted-foreground mt-2 text-xs sm:text-sm">
+                                                            <FieldDescription>
                                                                 Enter the type of document being uploaded (e.g., Project Proposal, Technical
                                                                 Requirements)
-                                                            </p>
-                                                        </div>
+                                                            </FieldDescription>
+                                                            {hasError(`metadata.${index}.document_type`) && (
+                                                                <FieldError>
+                                                                    {(errors as Record<string, string>)[`metadata.${index}.document_type`]}
+                                                                </FieldError>
+                                                            )}
+                                                        </Field>
 
                                                         {/* Submission Date */}
-                                                        <div>
-                                                            <div className="relative">
-                                                                <DatePicker
-                                                                    label="Submission Date"
-                                                                    value={date}
-                                                                    onChange={(newDate: Date | undefined) => handleDateChange(index, newDate)}
-                                                                    error={(errors as Record<string, string>)[`metadata.${index}.submission_date`]}
-                                                                    required
-                                                                />
-                                                            </div>
-                                                        </div>
+                                                        <DatePicker
+                                                            id={`submission-date-${index}`}
+                                                            label="Submission Date"
+                                                            value={date}
+                                                            onChange={(newDate: Date | undefined) => handleDateChange(index, newDate)}
+                                                            error={(errors as Record<string, string>)[`metadata.${index}.submission_date`]}
+                                                            required
+                                                        />
 
                                                         {/* Municipal Offices */}
-                                                        <div>
-                                                            <MunicipalOfficeSelect
-                                                                id={`municipal-offices-${index}`}
-                                                                label="Municipal Offices"
-                                                                value={meta?.municipal_offices || ''}
-                                                                onValueChange={(value) => handleMetadataChange(index, 'municipal_offices', value)}
-                                                                error={
-                                                                    hasError(`metadata.${index}.municipal_offices`)
-                                                                        ? (errors as Record<string, string>)[`metadata.${index}.municipal_offices`]
-                                                                        : undefined
-                                                                }
-                                                                required
-                                                            />
-                                                        </div>
+                                                        <MunicipalOfficeSelect
+                                                            id={`municipal-offices-${index}`}
+                                                            label="Municipal Offices"
+                                                            value={meta?.municipal_offices || ''}
+                                                            onValueChange={(value) => handleMetadataChange(index, 'municipal_offices', value)}
+                                                            error={
+                                                                hasError(`metadata.${index}.municipal_offices`)
+                                                                    ? (errors as Record<string, string>)[`metadata.${index}.municipal_offices`]
+                                                                    : undefined
+                                                            }
+                                                            required
+                                                        />
 
-                                                        {/* Signatories - Takes remaining space */}
-                                                        <div>
-                                                            <PeopleInput
-                                                                label="Signatories"
-                                                                value={
-                                                                    Array.isArray(meta?.signatories)
-                                                                        ? meta.signatories.map((s) => ({ name: s.name, affiliation: s.position }))
-                                                                        : []
-                                                                }
-                                                                onChange={(peopleArr) =>
-                                                                    handleMetadataChange(
-                                                                        index,
-                                                                        'signatories',
-                                                                        peopleArr.map((p) => ({ name: p.name, position: p.affiliation })),
-                                                                    )
-                                                                }
-                                                                error={
-                                                                    hasError(`metadata.${index}.signatories`)
-                                                                        ? (errors as Record<string, string>)[`metadata.${index}.signatories`]
-                                                                        : undefined
-                                                                }
-                                                                required
-                                                                affiliationType="position"
-                                                                namePlaceholder="Enter signatory name"
-                                                            />
-                                                        </div>
+                                                        {/* Signatories */}
+                                                        <PeopleInput
+                                                            label="Signatories"
+                                                            value={
+                                                                Array.isArray(meta?.signatories)
+                                                                    ? meta.signatories.map((s) => ({ name: s.name, affiliation: s.position }))
+                                                                    : []
+                                                            }
+                                                            onChange={(peopleArr) =>
+                                                                handleMetadataChange(
+                                                                    index,
+                                                                    'signatories',
+                                                                    peopleArr.map((p) => ({ name: p.name, position: p.affiliation })),
+                                                                )
+                                                            }
+                                                            error={
+                                                                hasError(`metadata.${index}.signatories`)
+                                                                    ? (errors as Record<string, string>)[`metadata.${index}.signatories`]
+                                                                    : undefined
+                                                            }
+                                                            required
+                                                            affiliationType="position"
+                                                            namePlaceholder="Enter signatory name"
+                                                        />
                                                     </div>
                                                 </div>
                                             </CardContent>

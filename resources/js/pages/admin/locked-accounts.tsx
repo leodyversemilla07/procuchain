@@ -1,4 +1,6 @@
+import { HeroCard } from '@/components/hero-card';
 import { Pagination } from '@/components/pagination';
+import { StatsGrid } from '@/components/stats-grid';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -11,7 +13,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -20,6 +22,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { User, type BreadcrumbItem } from '@/types';
@@ -169,82 +172,75 @@ export default function AdminLockedAccounts() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Locked Accounts - Admin" />
-            <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="flex h-full flex-1 flex-col gap-6 p-6 md:p-8">
                 {/* Header Section */}
-                <Card>
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-primary/10 rounded-lg p-2">
-                                    <Shield className="text-primary h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h1 className="text-foreground text-2xl font-bold">Locked Accounts</h1>
-                                    <p className="text-muted-foreground mt-1 text-sm">
-                                        Manage user accounts that have been locked due to security reasons
-                                    </p>
-                                </div>
-                            </div>
-                            <Button onClick={refreshPage} disabled={isLoading} variant="outline" className="flex items-center space-x-2">
-                                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                                <span>Refresh</span>
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                <HeroCard
+                    icon={Shield}
+                    title="Locked Accounts"
+                    description="Manage user accounts that have been locked due to security reasons"
+                    actions={
+                        <Button onClick={refreshPage} disabled={isLoading} variant="outline" className="flex items-center gap-2">
+                            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                            <span>Refresh</span>
+                        </Button>
+                    }
+                />
+
                 {/* Error Display */}
                 {flash.error && (
                     <Card className="border-destructive/50 bg-destructive/10">
                         <CardContent className="p-4">
-                            <div className="text-destructive flex items-center space-x-2">
+                            <div className="text-destructive flex items-center gap-2">
                                 <AlertTriangle className="h-5 w-5" />
                                 <span>{flash.error}</span>
                             </div>
                         </CardContent>
                     </Card>
                 )}
+
                 {/* Statistics Cards */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Locked Accounts</CardTitle>
-                            <ShieldOff className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{lockedAccounts.length}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Currently Locked</CardTitle>
-                            <AlertTriangle className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{lockedAccounts.filter((user) => user.is_currently_locked).length}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Failed Attempts</CardTitle>
-                            <Clock className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {lockedAccounts.reduce((sum, user) => sum + (user.failed_login_attempts || 0), 0)}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <StatsGrid
+                    items={[
+                        {
+                            label: 'Total Locked Accounts',
+                            value: lockedAccounts.length,
+                            icon: ShieldOff,
+                            iconClassName: 'bg-destructive/10 text-destructive',
+                        },
+                        {
+                            label: 'Currently Locked',
+                            value: lockedAccounts.filter((user) => user.is_currently_locked).length,
+                            icon: AlertTriangle,
+                            iconClassName: 'bg-warning/10 text-warning',
+                        },
+                        {
+                            label: 'Total Failed Attempts',
+                            value: lockedAccounts.reduce((sum, user) => sum + (user.failed_login_attempts || 0), 0),
+                            icon: Clock,
+                            iconClassName: 'bg-muted/50 text-muted-foreground',
+                        },
+                    ]}
+                />
+
+                {/* Locked Accounts Table */}
                 {/* Locked Accounts Table */}
                 {lockedAccounts.length === 0 ? (
-                    <div className="py-8 text-center">
-                        <Shield className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-                        <h3 className="mb-2 text-lg font-medium">No Locked Accounts</h3>
-                        <p className="text-muted-foreground">There are currently no locked user accounts in the system.</p>
-                    </div>
+                    <Card>
+                        <CardContent className="flex justify-center px-6 py-12">
+                            <Empty>
+                                <EmptyHeader>
+                                    <EmptyMedia variant="icon">
+                                        <Shield className="h-8 w-8" />
+                                    </EmptyMedia>
+                                </EmptyHeader>
+                                <EmptyTitle>No Locked Accounts</EmptyTitle>
+                                <EmptyDescription>There are currently no locked user accounts in the system.</EmptyDescription>
+                            </Empty>
+                        </CardContent>
+                    </Card>
                 ) : (
-                    <>
-                        <div className="overflow-x-auto rounded-md border">
+                    <Card>
+                        <CardContent className="p-0">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -352,8 +348,8 @@ export default function AdminLockedAccounts() {
                                     ))}
                                 </TableBody>
                             </Table>
-                        </div>
-                        <div className="mt-4">
+                        </CardContent>
+                        <CardFooter className="justify-end border-t px-6 py-5">
                             <Pagination
                                 pageIndex={pageIndex}
                                 pageSize={pageSize}
@@ -365,8 +361,8 @@ export default function AdminLockedAccounts() {
                                     setPageIndex(0);
                                 }}
                             />
-                        </div>
-                    </>
+                        </CardFooter>
+                    </Card>
                 )}
             </div>
             {/* Unlock Account Dialog */}

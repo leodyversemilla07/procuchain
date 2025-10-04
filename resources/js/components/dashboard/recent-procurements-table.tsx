@@ -1,16 +1,16 @@
-import { EmptyState } from '@/components/empty-state';
-import { ErrorState } from '@/components/error-state';
 import type { ErrorStateProps } from '@/components/error-state';
+import { ErrorState } from '@/components/error-state';
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import type { LucideIcon } from 'lucide-react';
-import { ArrowRight, EyeIcon, FileText } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import type { VariantProps } from 'class-variance-authority';
+import type { LucideIcon } from 'lucide-react';
+import { ArrowRight, EyeIcon, FileText } from 'lucide-react';
 
 type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
 
@@ -80,9 +80,18 @@ export const RecentProcurementsTable = ({
                 {errorState ? (
                     <ErrorState {...errorState} />
                 ) : !hasProcurements ? (
-                    <div className="flex flex-col items-center">
-                        <EmptyState icon={emptyStateIcon} title={emptyStateTitle} description={emptyStateDescription} />
-                    </div>
+                    <Empty>
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                {(() => {
+                                    const Icon = emptyStateIcon;
+                                    return <Icon className="h-8 w-8" />;
+                                })()}
+                            </EmptyMedia>
+                        </EmptyHeader>
+                        <EmptyTitle>{emptyStateTitle}</EmptyTitle>
+                        <EmptyDescription>{emptyStateDescription}</EmptyDescription>
+                    </Empty>
                 ) : (
                     <Table>
                         <TableHeader>

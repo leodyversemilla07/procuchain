@@ -1,22 +1,12 @@
-import { EmptyState } from '@/components/empty-state';
-import { ErrorState } from '@/components/error-state';
 import type { ErrorStateProps } from '@/components/error-state';
+import { ErrorState } from '@/components/error-state';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { formatRelativeDate } from '@/lib/utils';
-import type { LucideIcon } from 'lucide-react';
-import {
-    ActivityIcon,
-    ArrowRight,
-    CheckCircle,
-    CheckIcon,
-    ExternalLinkIcon,
-    FileTextIcon,
-    FileUpIcon,
-    PlusIcon,
-} from 'lucide-react';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { cn, formatRelativeDate } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
+import type { LucideIcon } from 'lucide-react';
+import { ActivityIcon, ArrowRight, CheckCircle, CheckIcon, ExternalLinkIcon, FileTextIcon, FileUpIcon, PlusIcon } from 'lucide-react';
 import { Fragment } from 'react';
 
 const DEFAULT_ACTION_ICON_MAP: Record<string, LucideIcon> = {
@@ -104,9 +94,18 @@ export const RecentActivitiesList = ({
                 {errorState ? (
                     <ErrorState {...errorState} />
                 ) : !hasActivities ? (
-                    <div className="flex flex-col items-center">
-                        <EmptyState icon={emptyStateIcon} title={emptyStateTitle} description={emptyStateDescription} />
-                    </div>
+                    <Empty>
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                {(() => {
+                                    const Icon = emptyStateIcon;
+                                    return <Icon className="h-8 w-8" />;
+                                })()}
+                            </EmptyMedia>
+                        </EmptyHeader>
+                        <EmptyTitle>{emptyStateTitle}</EmptyTitle>
+                        <EmptyDescription>{emptyStateDescription}</EmptyDescription>
+                    </Empty>
                 ) : (
                     <div className="space-y-3">
                         {activities.map((activity, index) => {

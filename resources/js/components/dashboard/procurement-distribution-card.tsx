@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import type { ChartConfig } from '@/components/ui/chart';
-import { EmptyState } from '@/components/empty-state';
-import { ErrorState } from '@/components/error-state';
 import type { ErrorStateProps } from '@/components/error-state';
+import { ErrorState } from '@/components/error-state';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { ChartConfig } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import { FileText } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 export interface ProcurementDistributionItem {
@@ -82,14 +82,19 @@ export const ProcurementDistributionCard = ({
     }
 
     if (data.length === 0 || totalForActiveView === 0) {
+        const Icon = emptyStateIcon ?? FileText;
         return (
             <Card className={cn('shadow-sm', className)}>
                 <CardContent className="p-6">
-                    <EmptyState
-                        icon={emptyStateIcon ?? FileText}
-                        title={emptyStateTitle}
-                        description={emptyStateDescription}
-                    />
+                    <Empty>
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <Icon className="h-8 w-8" />
+                            </EmptyMedia>
+                        </EmptyHeader>
+                        <EmptyTitle>{emptyStateTitle}</EmptyTitle>
+                        <EmptyDescription>{emptyStateDescription}</EmptyDescription>
+                    </Empty>
                 </CardContent>
             </Card>
         );
@@ -149,9 +154,7 @@ export const ProcurementDistributionCard = ({
                                 <ChartTooltipContent
                                     className="w-[200px]"
                                     nameKey="count"
-                                    labelFormatter={(value) =>
-                                        `${activeView.charAt(0).toUpperCase() + activeView.slice(1)}: ${value}`
-                                    }
+                                    labelFormatter={(value) => `${activeView.charAt(0).toUpperCase() + activeView.slice(1)}: ${value}`}
                                 />
                             }
                         />

@@ -1,11 +1,11 @@
-import { EmptyState } from '@/components/empty-state';
-import { ErrorState } from '@/components/error-state';
 import type { ErrorStateProps } from '@/components/error-state';
+import { ErrorState } from '@/components/error-state';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Link } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import { CheckIcon } from 'lucide-react';
-import { Link } from '@inertiajs/react';
 
 export interface PriorityActionItem {
     id: string;
@@ -22,7 +22,7 @@ export interface PriorityActionsStackProps {
     errorState?: ErrorStateProps;
 }
 
-const DEFAULT_EMPTY_TITLE = "No pending actions";
+const DEFAULT_EMPTY_TITLE = 'No pending actions';
 const DEFAULT_EMPTY_DESCRIPTION = "You're all caught up. We'll notify you when there's something that needs attention.";
 const DEFAULT_ACTION_LABEL = 'Take Action';
 
@@ -39,7 +39,18 @@ export const PriorityActionsStack = ({
     }
 
     if (!actions || actions.length === 0) {
-        return <EmptyState icon={emptyStateIcon} title={emptyStateTitle} description={emptyStateDescription} />;
+        const Icon = emptyStateIcon;
+        return (
+            <Empty>
+                <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                        <Icon className="h-8 w-8" />
+                    </EmptyMedia>
+                </EmptyHeader>
+                <EmptyTitle>{emptyStateTitle}</EmptyTitle>
+                <EmptyDescription>{emptyStateDescription}</EmptyDescription>
+            </Empty>
+        );
     }
 
     return (

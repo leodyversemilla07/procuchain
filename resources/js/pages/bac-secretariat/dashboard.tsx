@@ -1,9 +1,9 @@
-import { HeroCard } from '@/components/hero-card';
 import { PriorityActionsStack } from '@/components/dashboard/priority-actions-stack';
 import { ProcurementDistributionCard } from '@/components/dashboard/procurement-distribution-card';
 import { RecentActivitiesList } from '@/components/dashboard/recent-activities-list';
 import { RecentProcurementsTable } from '@/components/dashboard/recent-procurements-table';
 import { StageDistributionCard } from '@/components/dashboard/stage-distribution-card';
+import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -128,10 +128,7 @@ export default function BACSecretariatDashboard() {
         }, {});
     }, [procurementDistribution]);
 
-    const priorityActionItems = useMemo(
-        () => priorityActions.map(({ id, action, route }) => ({ id, action, route })),
-        [priorityActions],
-    );
+    const priorityActionItems = useMemo(() => priorityActions.map(({ id, action, route }) => ({ id, action, route })), [priorityActions]);
 
     const recentActivityItems = useMemo(
         () =>
@@ -213,10 +210,7 @@ export default function BACSecretariatDashboard() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <PriorityActionsStack
-                                actions={priorityActionItems}
-                                errorState={buildErrorState('Unable to load priority actions')}
-                            />
+                            <PriorityActionsStack actions={priorityActionItems} errorState={buildErrorState('Unable to load priority actions')} />
                         </CardContent>
                     </Card>
 

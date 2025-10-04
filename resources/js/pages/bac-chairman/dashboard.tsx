@@ -1,8 +1,8 @@
-import { HeroCard } from '@/components/hero-card';
 import { ProcurementDistributionCard } from '@/components/dashboard/procurement-distribution-card';
 import { RecentActivitiesList } from '@/components/dashboard/recent-activities-list';
 import { RecentProcurementsTable } from '@/components/dashboard/recent-procurements-table';
 import { StageDistributionCard } from '@/components/dashboard/stage-distribution-card';
+import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, SharedData } from '@/types';
