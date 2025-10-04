@@ -1,67 +1,73 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { applyUrlDefaults, queryParams, type RouteDefinition, type RouteQueryOptions } from './../../../wayfinder';
 /**
-* @see \App\Http\Controllers\DocumentViewController::download
+ * @see \App\Http\Controllers\DocumentViewController::download
  * @see app/Http/Controllers/DocumentViewController.php:32
  * @route '/secure-file/{fileKey}'
  */
-export const download = (args: { fileKey: string | number } | [fileKey: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const download = (
+    args: { fileKey: string | number } | [fileKey: string | number] | string | number,
+    options?: RouteQueryOptions,
+): RouteDefinition<'get'> => ({
     url: download.url(args, options),
     method: 'get',
-})
+});
 
 download.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/secure-file/{fileKey}',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\DocumentViewController::download
+ * @see \App\Http\Controllers\DocumentViewController::download
  * @see app/Http/Controllers/DocumentViewController.php:32
  * @route '/secure-file/{fileKey}'
  */
-download.url = (args: { fileKey: string | number } | [fileKey: string | number ] | string | number, options?: RouteQueryOptions) => {
+download.url = (args: { fileKey: string | number } | [fileKey: string | number] | string | number, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
-        args = { fileKey: args }
+        args = { fileKey: args };
     }
 
-    
     if (Array.isArray(args)) {
         args = {
-                    fileKey: args[0],
-                }
+            fileKey: args[0],
+        };
     }
 
-    args = applyUrlDefaults(args)
+    args = applyUrlDefaults(args);
 
     const parsedArgs = {
-                        fileKey: args.fileKey,
-                }
+        fileKey: args.fileKey,
+    };
 
-    return download.definition.url
-            .replace('{fileKey}', parsedArgs.fileKey.toString())
-            .replace(/\/+$/, '') + queryParams(options)
-}
+    return download.definition.url.replace('{fileKey}', parsedArgs.fileKey.toString()).replace(/\/+$/, '') + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\DocumentViewController::download
+ * @see \App\Http\Controllers\DocumentViewController::download
  * @see app/Http/Controllers/DocumentViewController.php:32
  * @route '/secure-file/{fileKey}'
  */
-download.get = (args: { fileKey: string | number } | [fileKey: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+download.get = (
+    args: { fileKey: string | number } | [fileKey: string | number] | string | number,
+    options?: RouteQueryOptions,
+): RouteDefinition<'get'> => ({
     url: download.url(args, options),
     method: 'get',
-})
+});
 /**
-* @see \App\Http\Controllers\DocumentViewController::download
+ * @see \App\Http\Controllers\DocumentViewController::download
  * @see app/Http/Controllers/DocumentViewController.php:32
  * @route '/secure-file/{fileKey}'
  */
-download.head = (args: { fileKey: string | number } | [fileKey: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+download.head = (
+    args: { fileKey: string | number } | [fileKey: string | number] | string | number,
+    options?: RouteQueryOptions,
+): RouteDefinition<'head'> => ({
     url: download.url(args, options),
     method: 'head',
-})
+});
 const file = {
     download: Object.assign(download, download),
-}
+};
 
-export default file
+export default file;

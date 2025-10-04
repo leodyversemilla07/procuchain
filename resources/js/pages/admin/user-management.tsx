@@ -47,8 +47,8 @@ interface User {
     role: string;
     blockchain_address?: string;
     email_verified_at?: string;
-    mfa_enabled?: boolean;
-    mfa_enabled_at?: string;
+    two_factor_enabled?: boolean;
+    two_factor_confirmed_at?: string;
     backup_codes?: string[];
     backup_codes_generated_at?: string;
     created_at: string;
@@ -276,8 +276,8 @@ export default function AdminUserManagement() {
                 'Blockchain Address': user.blockchain_address || 'Not set',
                 'Email Verified': user.email_verified_at ? 'Yes' : 'No',
                 'Email Verified Date': user.email_verified_at ? formatDateForCSV(user.email_verified_at) : 'Not verified',
-                'MFA Status': user.mfa_enabled ? 'Enabled' : 'Disabled',
-                'MFA Enabled Date': user.mfa_enabled_at ? formatDateForCSV(user.mfa_enabled_at) : 'Not enabled',
+                '2FA Status': user.two_factor_enabled ? 'Enabled' : 'Disabled',
+                '2FA Enabled Date': user.two_factor_confirmed_at ? formatDateForCSV(user.two_factor_confirmed_at) : 'Not enabled',
                 'Backup Codes Count': user.backup_codes ? user.backup_codes.length.toString() : '0',
                 'Backup Codes Generated': user.backup_codes_generated_at ? formatDateForCSV(user.backup_codes_generated_at) : 'Not generated',
                 'Created Date': formatDateForCSV(user.created_at),
@@ -382,16 +382,16 @@ export default function AdminUserManagement() {
             },
         },
         {
-            accessorKey: 'mfa_enabled',
-            header: 'MFA Status',
+            accessorKey: 'two_factor_enabled',
+            header: '2FA Status',
             cell: ({ row }) => {
                 const user = row.original;
-                const mfaEnabled = user.mfa_enabled;
+                const twoFactorEnabled = user.two_factor_enabled;
                 const backupCodesCount = user.backup_codes ? user.backup_codes.length : 0;
 
                 return (
                     <div className="flex items-center space-x-2">
-                        {mfaEnabled ? (
+                        {twoFactorEnabled ? (
                             <div className="flex items-center space-x-2">
                                 <Badge className="border border-green-200 bg-green-100 px-2 py-1 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
                                     <QrCode className="mr-1 h-3 w-3" />

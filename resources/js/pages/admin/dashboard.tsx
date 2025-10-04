@@ -53,7 +53,7 @@ export interface SecurityMetrics {
     security_score: number;
     failed_login_rate: number;
     suspicious_ip_count: number;
-    mfa_adoption_rate: number;
+    two_factor_adoption_rate: number;
 }
 
 export interface UserActivityAnalytics {

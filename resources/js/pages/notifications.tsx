@@ -1,13 +1,13 @@
+import { HeroCard } from '@/components/hero-card';
+import { StatsGrid, type StatsGridItem } from '@/components/stats-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '@/components/ui/item';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from '@/components/ui/empty';
 import AppLayout from '@/layouts/app-layout';
-import { HeroCard } from '@/components/hero-card';
-import { StatsGrid, type StatsGridItem } from '@/components/stats-grid';
 import { cn } from '@/lib/utils';
 import { BreadcrumbItem, User } from '@/types';
 import { Head, router, usePage, usePoll } from '@inertiajs/react';
@@ -179,14 +179,17 @@ export default function Notifications() {
         }
     };
 
-    const handleNotificationClick = useCallback((notification: Notification) => {
-        // Mark as read if not already read
-        if (!notification.read_at) {
-            handleMarkAsRead(notification.id);
-        }
-        // Navigate directly to the procurement
-        router.visit(`/${userRole?.replace('_', '-')}/procurements-list/${notification.data.procurement_id}`);
-    }, [userRole, handleMarkAsRead]);
+    const handleNotificationClick = useCallback(
+        (notification: Notification) => {
+            // Mark as read if not already read
+            if (!notification.read_at) {
+                handleMarkAsRead(notification.id);
+            }
+            // Navigate directly to the procurement
+            router.visit(`/${userRole?.replace('_', '-')}/procurements-list/${notification.data.procurement_id}`);
+        },
+        [userRole, handleMarkAsRead],
+    );
 
     const statsItems: StatsGridItem[] = [
         {
@@ -217,9 +220,7 @@ export default function Notifications() {
             <Select value={filter} onValueChange={handleFilterChange}>
                 <SelectTrigger className="w-[120px] sm:w-[140px]">
                     <Filter className="text-muted-foreground mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Filter">
-                        {filter === 'all' ? 'All' : filter === 'read' ? 'Read' : 'Unread'}
-                    </SelectValue>
+                    <SelectValue placeholder="Filter">{filter === 'all' ? 'All' : filter === 'read' ? 'Read' : 'Unread'}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All</SelectItem>
@@ -236,12 +237,7 @@ export default function Notifications() {
                 <RotateCw className="h-4 w-4" />
             </Button>
             {paginatedNotifications.some((n: Notification) => !n.read_at) && (
-                <Button
-                    onClick={handleMarkAllAsRead}
-                    variant="outline"
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground"
-                >
+                <Button onClick={handleMarkAllAsRead} variant="outline" size="sm" className="text-muted-foreground hover:text-foreground">
                     Mark all as read
                 </Button>
             )}
@@ -296,15 +292,13 @@ export default function Notifications() {
                                     <Item
                                         key={notification.id}
                                         className={cn(
-                                            'group relative cursor-pointer transition-all p-4 sm:p-6 border-0',
+                                            'group relative cursor-pointer border-0 p-4 transition-all sm:p-6',
                                             !notification.read_at && 'bg-primary/5 hover:bg-primary/10',
                                             notification.read_at && 'hover:bg-muted/5',
                                         )}
                                         onClick={() => handleNotificationClick(notification)}
                                     >
-                                        <ItemMedia>
-                                            {getNotificationIcon(notification.type)}
-                                        </ItemMedia>
+                                        <ItemMedia>{getNotificationIcon(notification.type)}</ItemMedia>
                                         <ItemContent>
                                             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                                                 <div className="flex-1">

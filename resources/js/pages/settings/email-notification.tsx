@@ -1,11 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import HeadingSmall from '@/components/heading-small';
+import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Mail } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -58,38 +58,36 @@ export default function EmailNotification() {
             <Head title="Email notification settings" />
             <SettingsLayout>
                 <div className="space-y-6">
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight">Email Notifications</h2>
-                        <p className="text-muted-foreground">Manage your email notification preferences.</p>
-                    </div>
+                    <HeadingSmall title="Email notifications" description="Manage your email notification preferences" />
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Mail className={`h-5 w-5 ${emailNotificationsEnabled ? '' : 'opacity-50'}`} />
-                                Email Notifications
-                            </CardTitle>
-                            <CardDescription>Receive email notifications for important updates and activities.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="email-notifications" className="text-base">
-                                        Enable email notifications
-                                    </Label>
-                                    <p className="text-muted-foreground text-sm">
-                                        You'll receive emails about procurement updates, account changes, and other important notifications.
-                                    </p>
-                                </div>
-                                <Switch
-                                    id="email-notifications"
-                                    checked={emailNotificationsEnabled}
-                                    onCheckedChange={handleToggle}
-                                    disabled={isLoading}
-                                />
+                    <div className="flex flex-col items-start justify-start space-y-4">
+                        <Badge variant={emailNotificationsEnabled ? 'default' : 'destructive'}>
+                            {emailNotificationsEnabled ? 'Enabled' : 'Disabled'}
+                        </Badge>
+
+                        <p className="text-muted-foreground">
+                            {emailNotificationsEnabled
+                                ? "You'll receive emails about procurement updates, account changes, and other important notifications."
+                                : 'Email notifications are currently disabled. Enable them to receive updates about procurement activities and important account changes.'}
+                        </p>
+
+                        <div className="flex w-full items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <Label htmlFor="email-notifications" className="text-base">
+                                    Enable email notifications
+                                </Label>
+                                <p className="text-muted-foreground text-sm">
+                                    Receive notifications for procurement updates, document changes, and system alerts
+                                </p>
                             </div>
-                        </CardContent>
-                    </Card>
+                            <Switch
+                                id="email-notifications"
+                                checked={emailNotificationsEnabled}
+                                onCheckedChange={handleToggle}
+                                disabled={isLoading}
+                            />
+                        </div>
+                    </div>
                 </div>
             </SettingsLayout>
         </AppLayout>

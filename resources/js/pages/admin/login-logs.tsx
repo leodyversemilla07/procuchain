@@ -44,8 +44,8 @@ interface LoginLog {
         name: string;
         email: string;
         role: string;
-        mfa_enabled?: boolean;
-        mfa_enabled_at?: string;
+        two_factor_enabled?: boolean;
+        two_factor_confirmed_at?: string;
     };
     ip_address: string;
     user_agent?: string;
@@ -655,7 +655,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                         <TableHead className="pl-6">Category</TableHead>
                                         <TableHead>User/Email</TableHead>
                                         <TableHead>Role</TableHead>
-                                        <TableHead>MFA</TableHead>
+                                        <TableHead>2FA</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>IP Address</TableHead>
                                         <TableHead>Device</TableHead>
@@ -695,7 +695,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                 <TableCell>{getRoleBadge(log.user?.role)}</TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center space-x-1">
-                                                        {log.user?.mfa_enabled ? (
+                                                        {log.user?.two_factor_enabled ? (
                                                             <Badge className="border border-green-200 bg-green-100 px-2 py-1 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
                                                                 <QrCode className="mr-1 h-3 w-3" />
                                                                 Enabled

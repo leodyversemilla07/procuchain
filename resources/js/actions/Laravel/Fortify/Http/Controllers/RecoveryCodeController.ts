@@ -1,80 +1,80 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../wayfinder'
+import { queryParams, type RouteDefinition, type RouteQueryOptions } from './../../../../../wayfinder';
 /**
-* @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::index
+ * @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::index
  * @see vendor/laravel/fortify/src/Http/Controllers/RecoveryCodeController.php:19
  * @route '/settings/two-factor-recovery-codes'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(options),
     method: 'get',
-})
+});
 
 index.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/settings/two-factor-recovery-codes',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::index
+ * @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::index
  * @see vendor/laravel/fortify/src/Http/Controllers/RecoveryCodeController.php:19
  * @route '/settings/two-factor-recovery-codes'
  */
 index.url = (options?: RouteQueryOptions) => {
-    return index.definition.url + queryParams(options)
-}
+    return index.definition.url + queryParams(options);
+};
 
 /**
-* @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::index
+ * @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::index
  * @see vendor/laravel/fortify/src/Http/Controllers/RecoveryCodeController.php:19
  * @route '/settings/two-factor-recovery-codes'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(options),
     method: 'get',
-})
+});
 /**
-* @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::index
+ * @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::index
  * @see vendor/laravel/fortify/src/Http/Controllers/RecoveryCodeController.php:19
  * @route '/settings/two-factor-recovery-codes'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
-})
+});
 
 /**
-* @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::store
+ * @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::store
  * @see vendor/laravel/fortify/src/Http/Controllers/RecoveryCodeController.php:38
  * @route '/settings/two-factor-recovery-codes'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
-})
+});
 
 store.definition = {
-    methods: ["post"],
+    methods: ['post'],
     url: '/settings/two-factor-recovery-codes',
-} satisfies RouteDefinition<["post"]>
+} satisfies RouteDefinition<['post']>;
 
 /**
-* @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::store
+ * @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::store
  * @see vendor/laravel/fortify/src/Http/Controllers/RecoveryCodeController.php:38
  * @route '/settings/two-factor-recovery-codes'
  */
 store.url = (options?: RouteQueryOptions) => {
-    return store.definition.url + queryParams(options)
-}
+    return store.definition.url + queryParams(options);
+};
 
 /**
-* @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::store
+ * @see \Laravel\Fortify\Http\Controllers\RecoveryCodeController::store
  * @see vendor/laravel/fortify/src/Http/Controllers/RecoveryCodeController.php:38
  * @route '/settings/two-factor-recovery-codes'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
-})
-const RecoveryCodeController = { index, store }
+});
+const RecoveryCodeController = { index, store };
 
-export default RecoveryCodeController
+export default RecoveryCodeController;

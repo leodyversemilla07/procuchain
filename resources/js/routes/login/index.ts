@@ -1,39 +1,39 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../wayfinder'
+import { queryParams, type RouteDefinition, type RouteQueryOptions } from './../../wayfinder';
 /**
-* @see \App\Http\Controllers\Auth\AuthenticatedSessionController::store
+ * @see \App\Http\Controllers\Auth\AuthenticatedSessionController::store
  * @see app/Http/Controllers/Auth/AuthenticatedSessionController.php:32
  * @route '/login'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
-})
+});
 
 store.definition = {
-    methods: ["post"],
+    methods: ['post'],
     url: '/login',
-} satisfies RouteDefinition<["post"]>
+} satisfies RouteDefinition<['post']>;
 
 /**
-* @see \App\Http\Controllers\Auth\AuthenticatedSessionController::store
+ * @see \App\Http\Controllers\Auth\AuthenticatedSessionController::store
  * @see app/Http/Controllers/Auth/AuthenticatedSessionController.php:32
  * @route '/login'
  */
 store.url = (options?: RouteQueryOptions) => {
-    return store.definition.url + queryParams(options)
-}
+    return store.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\Auth\AuthenticatedSessionController::store
+ * @see \App\Http\Controllers\Auth\AuthenticatedSessionController::store
  * @see app/Http/Controllers/Auth/AuthenticatedSessionController.php:32
  * @route '/login'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
-})
+});
 const login = {
     store: Object.assign(store, store),
-}
+};
 
-export default login
+export default login;

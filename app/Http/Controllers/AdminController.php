@@ -735,8 +735,8 @@ class AdminController extends BaseController
                     'name' => $userData['name'],
                     'email' => $userData['email'],
                     'role' => $userData['role'],
-                    'mfa_enabled' => $userData['mfa_enabled'],
-                    'mfa_enabled_at' => $userData['mfa_enabled_at']?->format('Y-m-d H:i:s'),
+                    'two_factor_enabled' => $userData['two_factor_enabled'],
+                    'two_factor_confirmed_at' => $userData['two_factor_confirmed_at']?->format('Y-m-d H:i:s'),
                     'account_locked' => true, // All users from getLockedAccounts are locked
                     'locked_at' => $userData['locked_at']?->format('Y-m-d H:i:s'),
                     'lock_expires_at' => $userData['lock_expires_at']?->format('Y-m-d H:i:s'),

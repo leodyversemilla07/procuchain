@@ -1,67 +1,67 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { applyUrlDefaults, queryParams, type RouteDefinition, type RouteQueryOptions } from './../../../wayfinder';
 /**
-* @see \App\Http\Controllers\ViewProcurementsController::show
+ * @see \App\Http\Controllers\ViewProcurementsController::show
  * @see app/Http/Controllers/ViewProcurementsController.php:203
  * @route '/bac-chairman/procurements-list/{id}'
  */
-export const show = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (
+    args: { id: string | number } | [id: string | number] | string | number,
+    options?: RouteQueryOptions,
+): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
-})
+});
 
 show.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/bac-chairman/procurements-list/{id}',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\ViewProcurementsController::show
+ * @see \App\Http\Controllers\ViewProcurementsController::show
  * @see app/Http/Controllers/ViewProcurementsController.php:203
  * @route '/bac-chairman/procurements-list/{id}'
  */
-show.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
+show.url = (args: { id: string | number } | [id: string | number] | string | number, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
-        args = { id: args }
+        args = { id: args };
     }
 
-    
     if (Array.isArray(args)) {
         args = {
-                    id: args[0],
-                }
+            id: args[0],
+        };
     }
 
-    args = applyUrlDefaults(args)
+    args = applyUrlDefaults(args);
 
     const parsedArgs = {
-                        id: args.id,
-                }
+        id: args.id,
+    };
 
-    return show.definition.url
-            .replace('{id}', parsedArgs.id.toString())
-            .replace(/\/+$/, '') + queryParams(options)
-}
+    return show.definition.url.replace('{id}', parsedArgs.id.toString()).replace(/\/+$/, '') + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\ViewProcurementsController::show
+ * @see \App\Http\Controllers\ViewProcurementsController::show
  * @see app/Http/Controllers/ViewProcurementsController.php:203
  * @route '/bac-chairman/procurements-list/{id}'
  */
-show.get = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { id: string | number } | [id: string | number] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
-})
+});
 /**
-* @see \App\Http\Controllers\ViewProcurementsController::show
+ * @see \App\Http\Controllers\ViewProcurementsController::show
  * @see app/Http/Controllers/ViewProcurementsController.php:203
  * @route '/bac-chairman/procurements-list/{id}'
  */
-show.head = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { id: string | number } | [id: string | number] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
-})
+});
 const procurements = {
     show: Object.assign(show, show),
-}
+};
 
-export default procurements
+export default procurements;

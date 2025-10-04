@@ -2,17 +2,17 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { notifications as notificationsPage } from '@/routes';
 import { dashboard as adminDashboard, loginLogs as adminLoginLogs, users as adminUsers } from '@/routes/admin';
 import { locked as adminAccountsLocked } from '@/routes/admin/accounts';
 import { index as adminProcurementsList } from '@/routes/admin/procurements-list';
 import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
 import { index as bacChairmanProcurementsList } from '@/routes/bac-chairman/procurements-list';
 import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
-import { index as bacSecretariatProcurementsList } from '@/routes/bac-secretariat/procurements-list';
 import { procurementInitiation as bacSecretariatProcurementInitiation } from '@/routes/bac-secretariat/procurement';
+import { index as bacSecretariatProcurementsList } from '@/routes/bac-secretariat/procurements-list';
 import { dashboard as hopeDashboard } from '@/routes/hope';
 import { index as hopeProcurementsList } from '@/routes/hope/procurements-list';
-import { notifications as notificationsPage } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { Bell, LayoutGrid, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
@@ -128,12 +128,12 @@ const getRoleUrl = (role: string): string => {
 export function AppSidebar() {
     const page = usePage<SharedData>();
     const { auth } = page.props;
-    
+
     // Handle case when user is not authenticated
     if (!auth?.user) {
         return null;
     }
-    
+
     const mainNavItems = getNavItemsByRole(auth.user.role);
     const footerNavItems = getFooterNavItemsByRole(auth.user.role);
 
