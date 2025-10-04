@@ -1,57 +1,88 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Laravel\Fortify\Features;
 
-describe('Authentication', function () {
-    test('login screen can be rendered', function () {
-        $response = $this->get('/login');
+test('login screen can be rendered', function () {
+    $response = $this->get(route('login'));
 
-        expect($response)->toBeSuccessfulResponse();
-    });
+    $response->assertStatus(200);
+});
 
-    describe('Login Process', function () {
-        it('redirects users to correct dashboard based on role', function (string $role, string $expectedRedirectRoute) {
-            $user = createUserWithRole($role);
+test('users can authenticate using the login screen', function (string $role, string $expectedRoute) {
+    $user = createUserWithRole($role);
 
-            $response = $this->post('/login', [
-                'email' => $user->email,
-                'password' => 'password',
-            ]);
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
 
-            $this->assertAuthenticated();
-            $response->assertRedirectToRoute($expectedRedirectRoute);
-        })->with([
-            ['bac_secretariat', 'bac-secretariat.dashboard'],
-            ['bac_chairman', 'bac-chairman.dashboard'],
-            ['hope', 'hope.dashboard'],
-            ['admin', 'admin.dashboard'],
-        ]);
+    $this->assertAuthenticated();
+    $response->assertRedirect(route($expectedRoute, absolute: false));
+})->with([
+    ['bac_secretariat', 'bac-secretariat.dashboard'],
+    ['bac_chairman', 'bac-chairman.dashboard'],
+    ['hope', 'hope.dashboard'],
+    ['admin', 'admin.dashboard'],
+]);
 
-        it('fails authentication with invalid password', function () {
-            $user = User::factory()->create();
+test('users with two factor enabled are redirected to two factor challenge', function () {
+    if (! Features::canManageTwoFactorAuthentication()) {
+        $this->markTestSkipped('Two-factor authentication is not enabled.');
+    }
 
-            $this->post('/login', [
-                'email' => $user->email,
-                'password' => 'wrong-password',
-            ]);
+    $user = User::factory()->create();
 
-            $this->assertGuest();
-        });
-    });
+    $user->forceFill([
+        'two_factor_secret' => encrypt('test-secret'),
+        'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
+        'two_factor_confirmed_at' => now(),
+    ])->save();
 
-    describe('Logout Process', function () {
-        it('allows authenticated users to logout', function () {
-            $user = User::factory()->create();
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
 
-            // Authenticate the user
-            $this->actingAs($user);
-            $this->assertAuthenticated();
+    $response->assertRedirect(route('two-factor.login'));
+    $response->assertSessionHas('login.id', $user->id);
+    $this->assertGuest();
+});
 
-            // Test logout functionality
-            Auth::logout();
+test('users can not authenticate with invalid password', function () {
+    $user = User::factory()->create();
 
-            $this->assertGuest();
-        });
-    });
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'wrong-password',
+    ]);
+
+    $this->assertGuest();
+});
+
+test('users can logout', function () {
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)->post(route('logout'));
+
+    $this->assertGuest();
+    $response->assertRedirect(route('home'));
+});
+
+test('users are rate limited', function () {
+    $user = User::factory()->create();
+
+    RateLimiter::increment(implode('|', [$user->email, '127.0.0.1']), amount: 10);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'wrong-password',
+    ]);
+
+    $response->assertSessionHasErrors('email');
+
+    $errors = session('errors');
+
+    $this->assertStringContainsString('Too many login attempts', $errors->first('email'));
 });

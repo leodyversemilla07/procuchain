@@ -2,22 +2,21 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Mail\AccountUnlockedMail;
-use Illuminate\Auth\Passwords\CanResetPassword;
-use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
-class User extends Authenticatable implements CanResetPasswordContract
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use CanResetPassword, HasFactory, HasPushSubscriptions, Notifiable;
+    use HasFactory, HasPushSubscriptions, Notifiable, TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -36,11 +35,6 @@ class User extends Authenticatable implements CanResetPasswordContract
         'failed_login_attempts',
         'last_failed_login_at',
         'locked_reason',
-        'google2fa_secret',
-        'mfa_enabled',
-        'mfa_enabled_at',
-        'backup_codes',
-        'backup_codes_generated_at',
         'email_notifications_enabled',
     ];
 
@@ -69,10 +63,6 @@ class User extends Authenticatable implements CanResetPasswordContract
             'locked_at' => 'datetime',
             'lock_expires_at' => 'datetime',
             'last_failed_login_at' => 'datetime',
-            'mfa_enabled' => 'boolean',
-            'mfa_enabled_at' => 'datetime',
-            'backup_codes' => 'array',
-            'backup_codes_generated_at' => 'datetime',
             'email_notifications_enabled' => 'boolean',
         ];
     }
@@ -269,38 +259,5 @@ class User extends Authenticatable implements CanResetPasswordContract
         ]);
 
         return $codes;
-    }
-
-    /**
-     * Verify a backup code
-     */
-    public function verifyBackupCode(string $code): bool
-    {
-        if (! $this->backup_codes) {
-            return false;
-        }
-
-        $hashedCode = hash('sha256', strtoupper($code));
-
-        $codes = $this->backup_codes;
-        $key = array_search($hashedCode, $codes);
-
-        if ($key !== false) {
-            // Remove the used backup code
-            unset($codes[$key]);
-            $this->update(['backup_codes' => array_values($codes)]);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Get remaining backup codes count
-     */
-    public function getRemainingBackupCodesCount(): int
-    {
-        return $this->backup_codes ? count($this->backup_codes) : 0;
     }
 }

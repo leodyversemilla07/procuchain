@@ -11,7 +11,10 @@ test('password can be updated', function () {
     $response = $this
         ->actingAs($user)
         ->from('/settings/password')
-        ->withSession(['_token' => 'test-token'])
+        ->withSession([
+            '_token' => 'test-token',
+            'mfa_verified_'.$user->id => true,
+        ])
         ->put('/settings/password', [
             'current_password' => 'password',
             'password' => 'new-password',
@@ -32,7 +35,10 @@ test('correct password must be provided to update password', function () {
     $response = $this
         ->actingAs($user)
         ->from('/settings/password')
-        ->withSession(['_token' => 'test-token'])
+        ->withSession([
+            '_token' => 'test-token',
+            'mfa_verified_'.$user->id => true,
+        ])
         ->put('/settings/password', [
             'current_password' => 'wrong-password',
             'password' => 'new-password',

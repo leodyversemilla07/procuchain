@@ -2,6 +2,12 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { edit as editAppearance } from '@/routes/appearance';
+import { edit as editEmailNotification } from '@/routes/email-notification';
+import { edit as editPassword } from '@/routes/password';
+import { edit } from '@/routes/profile';
+import { edit as editPushNotification } from '@/routes/push-notification';
+import { show } from '@/routes/two-factor';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import { type PropsWithChildren } from 'react';
@@ -9,32 +15,32 @@ import { type PropsWithChildren } from 'react';
 const sidebarNavItems: NavItem[] = [
     {
         title: 'Profile',
-        url: '/settings/profile',
+        href: edit(),
         icon: null,
     },
     {
         title: 'Password',
-        url: '/settings/password',
+        href: editPassword(),
         icon: null,
     },
     {
-        title: 'Multi-Factor Auth',
-        url: '/settings/mfa',
+        title: 'Two-Factor Auth',
+        href: show(),
         icon: null,
     },
     {
         title: 'Push Notifications',
-        url: '/settings/push-notification',
+        href: editPushNotification(),
         icon: null,
     },
     {
         title: 'Email Notifications',
-        url: '/settings/email-notification',
+        href: editEmailNotification(),
         icon: null,
     },
     {
         title: 'Appearance',
-        url: '/settings/appearance',
+        href: editAppearance(),
         icon: null,
     },
 ];
@@ -56,15 +62,15 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                     <nav className="flex flex-col space-y-1 space-x-0">
                         {sidebarNavItems.map((item) => (
                             <Button
-                                key={item.url}
+                                key={item.href}
                                 size="sm"
                                 variant="ghost"
                                 asChild
                                 className={cn('w-full justify-start', {
-                                    'bg-muted': currentPath === item.url,
+                                    'bg-muted': currentPath === item.href,
                                 })}
                             >
-                                <Link href={item.url} prefetch>
+                                <Link href={item.href} prefetch>
                                     {item.title}
                                 </Link>
                             </Button>
