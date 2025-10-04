@@ -1,8 +1,11 @@
+import { HeroCard } from '@/components/hero-card';
 import { Pagination } from '@/components/pagination';
+import { StatsGrid } from '@/components/stats-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -398,199 +401,111 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Login Logs - Admin" />
 
-            <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="flex h-full flex-1 flex-col gap-6 p-6 md:p-8">
                 {/* Header Section */}
-                <Card>
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-primary/10 rounded-lg p-2">
-                                    <Shield className="text-primary h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h1 className="text-foreground text-2xl font-bold">Login Logs</h1>
-                                    <p className="text-muted-foreground mt-1 text-sm">Monitor user login activities and security events</p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <HeroCard icon={Shield} title="Login Logs" description="Monitor user login activities and security events" />
 
                 {/* Statistics Cards */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Logins</CardTitle>
-                            <Activity className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{statistics.total_logins?.toLocaleString() || 0}</div>
-                        </CardContent>
-                    </Card>
+                <StatsGrid
+                    items={[
+                        {
+                            label: 'Total Logins',
+                            value: statistics.total_logins?.toLocaleString() || '0',
+                            icon: Activity,
+                            iconClassName: 'text-blue-600 dark:text-blue-400',
+                        },
+                        {
+                            label: 'Success Rate',
+                            value:
+                                statistics.total_logins > 0 ? `${Math.round((statistics.successful_logins / statistics.total_logins) * 100)}%` : '0%',
+                            icon: Shield,
+                            iconClassName: 'text-green-600 dark:text-green-400',
+                        },
+                        {
+                            label: "Today's Logins",
+                            value: statistics.today_logins?.toString() || '0',
+                            icon: CalendarIcon,
+                            iconClassName: 'text-purple-600 dark:text-purple-400',
+                        },
+                        {
+                            label: 'Unique Users',
+                            value: statistics.unique_users?.toString() || '0',
+                            icon: User,
+                            iconClassName: 'text-orange-600 dark:text-orange-400',
+                        },
+                    ]}
+                />
 
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-                            <Shield className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {statistics.total_logins > 0 ? Math.round((statistics.successful_logins / statistics.total_logins) * 100) : 0}%
+                {/* Search and Filter Section */}
+                <Card>
+                    <CardContent className="space-y-4 p-6">
+                        {/* Search Bar and Main Actions */}
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                            <div className="relative flex-1">
+                                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                                <Input
+                                    placeholder="Search by name, email, IP, location..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10"
+                                />
+                                {searchTerm && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute top-1/2 right-2 h-6 w-6 -translate-y-1/2 p-0"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                )}
                             </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Today's Logins</CardTitle>
-                            <CalendarIcon className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{statistics.today_logins || 0}</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Unique Users</CardTitle>
-                            <User className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{statistics.unique_users || 0}</div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Enhanced Search and Filter Section */}
-                <div className="space-y-4">
-                    {/* Main Search Bar */}
-                    <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center">
-                        <div className="relative w-full sm:max-w-xl">
-                            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
-                            <Input
-                                placeholder="Search by name, email, IP address, location, browser..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pr-10 pl-10"
-                            />
-                            {searchTerm && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setSearchTerm('')}
-                                    className="absolute top-1/2 right-2 h-6 w-6 -translate-y-1/2 transform p-0"
-                                >
-                                    <X className="h-4 w-4" />
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className="whitespace-nowrap">
+                                    <Filter className="mr-2 h-4 w-4" />
+                                    Filters
+                                    <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
                                 </Button>
-                            )}
+                                {hasActiveFilters && (
+                                    <Button variant="outline" onClick={clearAllFilters}>
+                                        <X className="mr-2 h-4 w-4" />
+                                        Clear
+                                    </Button>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="flex gap-2 sm:ml-auto">
-                            <Button variant="outline" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className="whitespace-nowrap">
-                                <Filter className="mr-2 h-4 w-4" />
-                                Filters
-                                <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
-                            </Button>
-
-                            {hasActiveFilters && (
-                                <Button variant="outline" onClick={clearAllFilters} className="whitespace-nowrap">
-                                    <X className="mr-2 h-4 w-4" />
-                                    Clear All
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Quick Filter Presets */}
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            variant={selectedCategory === 'suspicious' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setSelectedCategory(selectedCategory === 'suspicious' ? 'all' : 'suspicious')}
-                        >
-                            <AlertTriangle className="mr-1 h-3 w-3" />
-                            Suspicious Only
-                        </Button>
-                        <Button
-                            variant={selectedCategory === 'recent' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setSelectedCategory(selectedCategory === 'recent' ? 'all' : 'recent')}
-                        >
-                            Recent Only
-                        </Button>
-                        <Button
-                            variant={selectedStatus === 'failed' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setSelectedStatus(selectedStatus === 'failed' ? 'all' : 'failed')}
-                        >
-                            <AlertTriangle className="mr-1 h-3 w-3" />
-                            Failed Logins
-                        </Button>
-                        <Button
-                            variant={selectedRole === 'admin' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setSelectedRole(selectedRole === 'admin' ? 'all' : 'admin')}
-                        >
-                            <Shield className="mr-1 h-3 w-3" />
-                            Admin Users
-                        </Button>
-                        <Button
-                            variant={selectedDeviceType === 'mobile' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setSelectedDeviceType(selectedDeviceType === 'mobile' ? 'all' : 'mobile')}
-                        >
-                            <Smartphone className="mr-1 h-3 w-3" />
-                            Mobile Devices
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                                const today = new Date();
-                                const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-                                const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-                                setDateRange({ from: startOfDay, to: endOfDay });
-                            }}
-                        >
-                            <CalendarIcon className="mr-1 h-3 w-3" />
-                            Today
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                                const today = new Date();
-                                const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-                                setDateRange({ from: weekAgo, to: today });
-                            }}
-                        >
-                            <Clock className="mr-1 h-3 w-3" />
-                            Last 7 Days
-                        </Button>
-                    </div>
-
-                    {/* Advanced Filters */}
-                    {showAdvancedFilters && (
-                        <div className="bg-muted/30 grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                            {/* Category Filter */}
-                            <div className="space-y-2">
-                                <label className="text-muted-foreground text-sm font-medium">Category</label>
+                        {/* Filter Options */}
+                        {showAdvancedFilters && (
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {/* Category Filter */}
                                 <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as 'all' | 'recent' | 'suspicious')}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="All categories" />
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Category" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
+                                        <SelectItem value="all">All Categories</SelectItem>
                                         <SelectItem value="recent">Recent</SelectItem>
                                         <SelectItem value="suspicious">Suspicious</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            {/* Role Filter */}
-                            <div className="space-y-2">
-                                <label className="text-muted-foreground text-sm font-medium">Role</label>
+
+                                {/* Status Filter */}
+                                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Statuses</SelectItem>
+                                        <SelectItem value="success">Success</SelectItem>
+                                        <SelectItem value="failed">Failed</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                {/* Role Filter */}
                                 <Select value={selectedRole} onValueChange={setSelectedRole}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="All roles" />
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Role" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Roles</SelectItem>
@@ -601,29 +516,11 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            </div>
 
-                            {/* Status Filter */}
-                            <div className="space-y-2">
-                                <label className="text-muted-foreground text-sm font-medium">Status</label>
-                                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="All statuses" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Statuses</SelectItem>
-                                        <SelectItem value="success">Success</SelectItem>
-                                        <SelectItem value="failed">Failed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Device Type Filter */}
-                            <div className="space-y-2">
-                                <label className="text-muted-foreground text-sm font-medium">Device</label>
+                                {/* Device Type Filter */}
                                 <Select value={selectedDeviceType} onValueChange={setSelectedDeviceType}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="All devices" />
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Device" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Devices</SelectItem>
@@ -634,14 +531,11 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            </div>
 
-                            {/* Browser Filter */}
-                            <div className="space-y-2">
-                                <label className="text-muted-foreground text-sm font-medium">Browser</label>
+                                {/* Browser Filter */}
                                 <Select value={selectedBrowser} onValueChange={setSelectedBrowser}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="All browsers" />
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Browser" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Browsers</SelectItem>
@@ -652,32 +546,42 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            </div>
 
-                            {/* Date Range Filter */}
-                            <div className="space-y-2">
-                                <label className="text-muted-foreground text-sm font-medium">Date Range</label>
+                                {/* Date Range Filter */}
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
-                                            className={cn('h-9 w-full justify-start text-left font-normal', !dateRange && 'text-muted-foreground')}
+                                            className={cn('justify-start text-left font-normal', !dateRange && 'text-muted-foreground')}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4" />
                                             {dateRange?.from ? (
                                                 dateRange.to ? (
                                                     <>
-                                                        {format(dateRange.from, 'LLL dd, y')} - {format(dateRange.to, 'LLL dd, y')}
+                                                        {format(dateRange.from, 'MMM dd')} - {format(dateRange.to, 'MMM dd')}
                                                     </>
                                                 ) : (
-                                                    format(dateRange.from, 'LLL dd, y')
+                                                    format(dateRange.from, 'MMM dd, y')
                                                 )
                                             ) : (
-                                                <span>Pick a date range</span>
+                                                <span>Date Range</span>
                                             )}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
+                                        <div className="border-b p-3">
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button variant="ghost" size="sm" onClick={() => setDateRangePreset('today')}>
+                                                    Today
+                                                </Button>
+                                                <Button variant="ghost" size="sm" onClick={() => setDateRangePreset('last7days')}>
+                                                    Last 7 Days
+                                                </Button>
+                                                <Button variant="ghost" size="sm" onClick={() => setDateRangePreset('last30days')}>
+                                                    Last 30 Days
+                                                </Button>
+                                            </div>
+                                        </div>
                                         <Calendar
                                             initialFocus
                                             mode="range"
@@ -688,103 +592,63 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                         />
                                     </PopoverContent>
                                 </Popover>
-
-                                {/* Quick Date Presets */}
-                                <div className="flex flex-wrap gap-1">
-                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDateRangePreset('today')}>
-                                        Today
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDateRangePreset('last7days')}>
-                                        Last 7 Days
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDateRangePreset('last30days')}>
-                                        Last 30 Days
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDateRangePreset('thisMonth')}>
-                                        This Month
-                                    </Button>
-                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Active Filters Display */}
-                    {hasActiveFilters && (
-                        <div className="flex flex-wrap gap-2">
-                            {selectedCategory !== 'all' && (
-                                <Badge variant="secondary" className="flex items-center gap-1">
-                                    Category: {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
-                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCategory('all')} />
-                                </Badge>
-                            )}
-                            {debouncedSearchTerm && (
-                                <Badge variant="secondary" className="flex items-center gap-1">
-                                    Search: "{debouncedSearchTerm}"
-                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSearchTerm('')} />
-                                </Badge>
-                            )}
-                            {selectedRole !== 'all' && (
-                                <Badge variant="secondary" className="flex items-center gap-1">
-                                    Role: {selectedRole.replace('_', ' ').toUpperCase()}
-                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedRole('all')} />
-                                </Badge>
-                            )}
-                            {selectedStatus !== 'all' && (
-                                <Badge variant="secondary" className="flex items-center gap-1">
-                                    Status: {selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
-                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedStatus('all')} />
-                                </Badge>
-                            )}
-                            {selectedDeviceType !== 'all' && (
-                                <Badge variant="secondary" className="flex items-center gap-1">
-                                    Device: {selectedDeviceType.charAt(0).toUpperCase() + selectedDeviceType.slice(1)}
-                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedDeviceType('all')} />
-                                </Badge>
-                            )}
-                            {selectedBrowser !== 'all' && (
-                                <Badge variant="secondary" className="flex items-center gap-1">
-                                    Browser: {selectedBrowser}
-                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedBrowser('all')} />
-                                </Badge>
-                            )}{' '}
-                            {(dateRange?.from || dateRange?.to) && (
-                                <Badge variant="secondary" className="flex items-center gap-1">
-                                    Date: {dateRange.from?.toLocaleDateString()} - {dateRange.to?.toLocaleDateString()}
-                                    <X className="h-3 w-3 cursor-pointer" onClick={() => setDateRange(undefined)} />
-                                </Badge>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Search Results Summary */}
-                    {hasActiveFilters && (
-                        <div className="text-muted-foreground text-sm">
-                            {selectedCategory === 'all' ? (
-                                <>
-                                    Found {filteredAndSortedRecentLogins.length} recent login{filteredAndSortedRecentLogins.length !== 1 ? 's' : ''}{' '}
-                                    and {filteredAndSortedSuspiciousActivities.length} suspicious activit
-                                    {filteredAndSortedSuspiciousActivities.length !== 1 ? 'ies' : 'y'}
-                                </>
-                            ) : (
-                                <>
-                                    Showing {combinedFilteredAndSortedLogs.length} {selectedCategory} record
-                                    {combinedFilteredAndSortedLogs.length !== 1 ? 's' : ''}
-                                </>
-                            )}
-                        </div>
-                    )}
-                </div>
+                        {/* Active Filters Display */}
+                        {hasActiveFilters && (
+                            <div className="flex flex-wrap gap-2">
+                                {selectedCategory !== 'all' && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCategory('all')} />
+                                    </Badge>
+                                )}
+                                {debouncedSearchTerm && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        "{debouncedSearchTerm}"
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => setSearchTerm('')} />
+                                    </Badge>
+                                )}
+                                {selectedRole !== 'all' && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        {selectedRole.replace('_', ' ').toUpperCase()}
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedRole('all')} />
+                                    </Badge>
+                                )}
+                                {selectedStatus !== 'all' && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        {selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedStatus('all')} />
+                                    </Badge>
+                                )}
+                                {selectedDeviceType !== 'all' && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        {selectedDeviceType.charAt(0).toUpperCase() + selectedDeviceType.slice(1)}
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedDeviceType('all')} />
+                                    </Badge>
+                                )}
+                                {selectedBrowser !== 'all' && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        {selectedBrowser}
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedBrowser('all')} />
+                                    </Badge>
+                                )}
+                                {(dateRange?.from || dateRange?.to) && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        {dateRange.from?.toLocaleDateString()} - {dateRange.to?.toLocaleDateString()}
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => setDateRange(undefined)} />
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Login Logs - Unified Table */}
-                <div className="flex-1 space-y-6">
-                    <div className="pb-2">
-                        <h2 className="text-lg font-semibold md:text-xl">All Login Activities</h2>
-                        <p className="text-muted-foreground mt-2 text-sm">
-                            Combined recent logins and suspicious attempts ({combinedFilteredAndSortedLogs.length} total)
-                        </p>
-                    </div>
-                    <div className="px-0 pb-0">
-                        <div className="overflow-hidden rounded-md border">
+                <div className="flex-1">
+                    <Card>
+                        <CardContent className="p-0">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -897,28 +761,42 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
-                                                {searchTerm ? 'No activities match your search.' : 'No activities found.'}
+                                            <TableCell colSpan={10} className="h-96">
+                                                <Empty>
+                                                    <EmptyHeader>
+                                                        <EmptyMedia variant="icon">
+                                                            <Shield className="h-6 w-6" />
+                                                        </EmptyMedia>
+                                                        <EmptyTitle>No login activities found</EmptyTitle>
+                                                        <EmptyDescription>
+                                                            {hasActiveFilters
+                                                                ? 'No activities match your current filters. Try adjusting your search criteria.'
+                                                                : 'No login activities have been recorded yet.'}
+                                                        </EmptyDescription>
+                                                    </EmptyHeader>
+                                                </Empty>
                                             </TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
                             </Table>
-                        </div>
-                        <div className="mt-4 px-6">
-                            <Pagination
-                                pageIndex={combinedPage - 1}
-                                pageSize={pageSize}
-                                pageCount={totalCombinedPages}
-                                totalItems={combinedFilteredAndSortedLogs.length}
-                                onPageChange={(i) => setCombinedPage(i + 1)}
-                                onPageSizeChange={(size) => {
-                                    setPageSize(size);
-                                    setCombinedPage(1);
-                                }}
-                            />
-                        </div>
-                    </div>
+                        </CardContent>
+                        {paginatedCombinedLogs.length > 0 && (
+                            <CardFooter className="justify-end">
+                                <Pagination
+                                    pageIndex={combinedPage - 1}
+                                    pageSize={pageSize}
+                                    pageCount={totalCombinedPages}
+                                    totalItems={combinedFilteredAndSortedLogs.length}
+                                    onPageChange={(i) => setCombinedPage(i + 1)}
+                                    onPageSizeChange={(size) => {
+                                        setPageSize(size);
+                                        setCombinedPage(1);
+                                    }}
+                                />
+                            </CardFooter>
+                        )}
+                    </Card>
                 </div>
             </div>
         </AppLayout>

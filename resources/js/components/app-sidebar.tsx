@@ -117,6 +117,12 @@ const getRoleUrl = (role: string): string => {
 export function AppSidebar() {
     const page = usePage<SharedData>();
     const { auth } = page.props;
+    
+    // Handle case when user is not authenticated
+    if (!auth?.user) {
+        return null;
+    }
+    
     const mainNavItems = getNavItemsByRole(auth.user.role);
     const footerNavItems = getFooterNavItemsByRole(auth.user.role);
 

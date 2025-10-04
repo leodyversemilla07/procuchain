@@ -1,6 +1,5 @@
-import InputError from '@/components/input-error';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import React from 'react';
 
 interface ProcurementIdFieldProps {
@@ -12,6 +11,7 @@ interface ProcurementIdFieldProps {
     error?: string;
     className?: string;
     required?: boolean;
+    description?: string;
 }
 
 const currentYear = new Date().getFullYear();
@@ -25,60 +25,59 @@ export const ProcurementId: React.FC<ProcurementIdFieldProps> = ({
     error,
     className = '',
     required = false,
+    description,
 }) => {
-    // Match InputWithLabel's label design: label + required star, flex-col gap-1
     return (
-        <div className={`flex flex-col gap-1 ${className}`}>
-            <Label htmlFor="pr-number" className="">
+        <Field className={className}>
+            <FieldLabel htmlFor="pr-number">
                 Procurement ID
-                {required ? (
+                {required && (
                     <span className="text-destructive ml-1 align-super text-xs" aria-label="required">
                         *
                     </span>
-                ) : null}
-            </Label>
-            <div className="flex w-full flex-col gap-2">
-                <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-4">
-                    <Input
-                        id="pr-number"
-                        type="text"
-                        value={prNumber || 'PR'}
-                        readOnly
-                        className="border-border text-foreground w-full text-center"
-                        required={required}
-                    />
-                    <Input
-                        id="pr-year"
-                        type="text"
-                        value={String(currentYear)}
-                        readOnly
-                        className="border-border text-foreground w-full text-center"
-                        required={required}
-                    />
-                    <Input
-                        id="pr-serial1"
-                        type="text"
-                        value={serial1}
-                        onChange={(e) => onSerial1Change(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                        className="border-border text-foreground w-full text-center"
-                        maxLength={4}
-                        placeholder="0001"
-                        required={required}
-                    />
-                    <Input
-                        id="pr-serial2"
-                        type="text"
-                        value={serial2}
-                        onChange={(e) => onSerial2Change(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                        className="border-border text-foreground w-full text-center"
-                        maxLength={4}
-                        placeholder="0001"
-                        required={required}
-                    />
-                </div>
-                {error && <InputError message={error} className="ml-2" />}
+                )}
+            </FieldLabel>
+            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-4">
+                <Input
+                    id="pr-number"
+                    type="text"
+                    value={prNumber || 'PR'}
+                    readOnly
+                    className="border-border text-foreground w-full text-center"
+                    required={required}
+                />
+                <Input
+                    id="pr-year"
+                    type="text"
+                    value={String(currentYear)}
+                    readOnly
+                    className="border-border text-foreground w-full text-center"
+                    required={required}
+                />
+                <Input
+                    id="pr-serial1"
+                    type="text"
+                    value={serial1}
+                    onChange={(e) => onSerial1Change(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="border-border text-foreground w-full text-center"
+                    maxLength={4}
+                    placeholder="0001"
+                    required={required}
+                />
+                <Input
+                    id="pr-serial2"
+                    type="text"
+                    value={serial2}
+                    onChange={(e) => onSerial2Change(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="border-border text-foreground w-full text-center"
+                    maxLength={4}
+                    placeholder="0001"
+                    required={required}
+                />
             </div>
-        </div>
+            {description && <FieldDescription>{description}</FieldDescription>}
+            {error && <FieldError>{error}</FieldError>}
+        </Field>
     );
 };
 

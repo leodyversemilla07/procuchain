@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
+import type { ErrorStateProps } from '@/components/error-state';
+import { ErrorState } from '@/components/error-state';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from '@/components/ui/chart';
-import { EmptyState } from '@/components/empty-state';
-import { ErrorState } from '@/components/error-state';
-import type { ErrorStateProps } from '@/components/error-state';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import { FileText } from 'lucide-react';
+import { useMemo } from 'react';
 import { Pie, PieChart } from 'recharts';
 
 export interface StageDistributionItem {
@@ -58,10 +58,7 @@ export const StageDistributionCard = ({
 }: StageDistributionCardProps) => {
     const normalizedDistribution = normalizeDistribution(stageDistribution, data);
 
-    const totalCount = useMemo(
-        () => normalizedDistribution.reduce((sum, item) => sum + item.count, 0),
-        [normalizedDistribution],
-    );
+    const totalCount = useMemo(() => normalizedDistribution.reduce((sum, item) => sum + item.count, 0), [normalizedDistribution]);
 
     const stageChartConfig = useMemo(() => {
         const baseConfig = {
@@ -97,14 +94,19 @@ export const StageDistributionCard = ({
     }
 
     if (totalCount === 0) {
+        const Icon = emptyStateIcon ?? FileText;
         return (
             <Card className={cn('shadow-sm', className)}>
                 <CardContent className="p-6">
-                    <EmptyState
-                        icon={emptyStateIcon ?? FileText}
-                        title={emptyStateTitle}
-                        description={emptyStateDescription}
-                    />
+                    <Empty>
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <Icon className="h-8 w-8" />
+                            </EmptyMedia>
+                        </EmptyHeader>
+                        <EmptyTitle>{emptyStateTitle}</EmptyTitle>
+                        <EmptyDescription>{emptyStateDescription}</EmptyDescription>
+                    </Empty>
                 </CardContent>
             </Card>
         );

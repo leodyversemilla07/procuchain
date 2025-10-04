@@ -14,16 +14,7 @@ import {
 import type { ProcurementListItem } from '@/types/blockchain';
 
 import { ActionButtons } from './action-buttons';
-import {
-    DataTableCheckbox,
-    DataTableColumnHeader,
-    DocumentCountCell,
-    IdCell,
-    LastUpdatedCell,
-    StageCell,
-    StatusCell,
-    TitleCell,
-} from './data-table';
+import { DataTableCheckbox, DataTableColumnHeader, DocumentCountCell, IdCell, LastUpdatedCell, StageCell, StatusCell, TitleCell } from './data-table';
 
 export interface ColumnsProps {
     onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;

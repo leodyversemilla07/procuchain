@@ -1,8 +1,7 @@
-import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Plus, Users, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
@@ -67,16 +66,16 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
     };
 
     return (
-        <div className="flex flex-col gap-1">
+        <Field>
             {label && (
-                <Label className={labelClassName}>
+                <FieldLabel className={labelClassName}>
                     {label}
-                    {required ? (
+                    {required && (
                         <span className="text-destructive ml-1 align-super text-xs" aria-label="required">
                             *
                         </span>
-                    ) : null}
-                </Label>
+                    )}
+                </FieldLabel>
             )}
             <div className="space-y-3">
                 <div className="flex gap-2">
@@ -133,8 +132,8 @@ const PeopleInput: React.FC<PeopleInputProps> = ({
                     ))}
                 </div>
             </div>
-            {error && <InputError message={error} className={errorClassName} />}
-        </div>
+            {error && <FieldError className={errorClassName}>{error}</FieldError>}
+        </Field>
     );
 };
 

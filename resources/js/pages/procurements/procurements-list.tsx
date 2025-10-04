@@ -3,15 +3,12 @@ import { Activity, Archive, Clock, FileText, Plus } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { HeroCard } from '@/components/hero-card';
-import { StatsGrid, type StatsGridItem } from '@/components/stats-grid';
-import { createColumns } from '@/components/procurements-list/columns';
-import { ProcurementsDataTable } from '@/components/procurements-list/data-table';
-import {
-    ProcurementFiltersToolbar,
-    type ProcurementFilterOption,
-} from '@/components/procurements-list/procurement-filters-toolbar';
 import { PreBidConferenceDialog } from '@/components/pre-bid-conference-dialog';
 import { PreProcurementDialog } from '@/components/pre-procurement-conference-dialog';
+import { createColumns } from '@/components/procurements-list/columns';
+import { ProcurementsDataTable } from '@/components/procurements-list/data-table';
+import { ProcurementFiltersToolbar, type ProcurementFilterOption } from '@/components/procurements-list/procurement-filters-toolbar';
+import { StatsGrid, type StatsGridItem } from '@/components/stats-grid';
 import { SupplementalBidBulletinDialog } from '@/components/supplemental-bid-bulletin-dialog';
 import { Button } from '@/components/ui/button';
 import { useProcurementList } from '@/hooks/use-procurement-list';
@@ -68,14 +65,7 @@ interface ProcurementStatsSummaryProps {
     className?: string;
 }
 
-const ProcurementStatsSummary = ({
-    total,
-    inProgress,
-    completed,
-    documentTotal,
-    userRole,
-    className,
-}: ProcurementStatsSummaryProps) => {
+const ProcurementStatsSummary = ({ total, inProgress, completed, documentTotal, userRole, className }: ProcurementStatsSummaryProps) => {
     const items: StatsGridItem[] = [
         {
             id: 'total-procurements',

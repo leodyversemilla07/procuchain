@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     DropdownMenu,
@@ -10,6 +10,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -36,6 +37,7 @@ import BulkDeleteDialog from '@/components/admin/bulk-delete-dialog';
 import CreateUserDialog from '@/components/admin/create-user-dialog';
 import DeleteUserDialog from '@/components/admin/delete-user-dialog';
 import EditUserDialog from '@/components/admin/edit-user-dialog';
+import { HeroCard } from '@/components/hero-card';
 import { Pagination } from '@/components/pagination';
 
 interface User {
@@ -548,141 +550,134 @@ export default function AdminUserManagement() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="User Management" />
-            <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="flex h-full flex-1 flex-col gap-6 p-6 md:p-8">
                 {/* Header Section */}
-                <Card>
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-primary/10 rounded-lg p-2">
-                                    <Users className="text-primary h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h1 className="text-foreground text-2xl font-bold">User Management</h1>
-                                    <p className="text-muted-foreground mt-1 text-sm">Manage system users and their roles</p>
-                                </div>
-                            </div>
-
-                            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-                                <Plus className="h-4 w-4" />
-                                Add User
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                <HeroCard
+                    icon={Users}
+                    title="User Management"
+                    description="Manage system users and their roles"
+                    actions={
+                        <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            Add User
+                        </Button>
+                    }
+                />
 
                 {/* Data Table Section */}
-                <div className="flex-1">
-                    <div className="pb-6">
-                        {/* Search and Filter */}
-                        <div className="mt-6 flex items-center space-x-2">
-                            <Input
-                                placeholder="Search users..."
-                                value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-                                onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
-                                className="h-9 max-w-sm"
-                            />
+                <div className="flex-1 space-y-4">
+                    {/* Search and Filter */}
+                    <div className="flex items-center gap-2">
+                        <Input
+                            placeholder="Search users..."
+                            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+                            onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
+                            className="h-10 max-w-sm"
+                        />
+                    </div>
+
+                    {/* Bulk Actions Bar */}
+                    {table.getFilteredSelectedRowModel().rows.length > 0 && (
+                        <div className="bg-accent/50 dark:bg-accent/20 border-accent dark:border-accent/40 flex items-center justify-between rounded-lg border px-4 py-3">
+                            <div className="flex items-center gap-2">
+                                <span className="text-accent-foreground dark:text-accent-foreground text-sm font-medium">
+                                    {table.getFilteredSelectedRowModel().rows.length} user(s) selected
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={exportSelectedToCSV}
+                                    className="border-primary/20 dark:border-primary/30 text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 h-8"
+                                >
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Export to CSV
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="h-8">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Selected
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => table.toggleAllPageRowsSelected(false)}
+                                    className="text-muted-foreground hover:bg-muted hover:text-muted-foreground h-8"
+                                >
+                                    Clear Selection
+                                </Button>
+                            </div>
                         </div>
+                    )}
 
-                        {/* Bulk Actions Bar */}
-                        {table.getFilteredSelectedRowModel().rows.length > 0 && (
-                            <div className="bg-accent/50 dark:bg-accent/20 border-accent dark:border-accent/40 mt-4 flex items-center justify-between rounded-lg border p-4">
-                                <div className="flex items-center space-x-2">
-                                    <span className="text-accent-foreground dark:text-accent-foreground text-sm font-medium">
-                                        {table.getFilteredSelectedRowModel().rows.length} user(s) selected
-                                    </span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={exportSelectedToCSV}
-                                        className="border-primary/20 dark:border-primary/30 text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 h-8"
-                                    >
-                                        <Download className="mr-2 h-4 w-4" />
-                                        Export to CSV
-                                    </Button>
-                                    <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="h-8">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Selected
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => table.toggleAllPageRowsSelected(false)}
-                                        className="text-muted-foreground hover:bg-muted hover:text-muted-foreground h-8"
-                                    >
-                                        Clear Selection
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="px-0 pb-6">
-                        {users.length === 0 ? (
-                            <div className="py-16 text-center">
-                                <Users className="text-muted-foreground/30 dark:text-muted-foreground/20 mx-auto mb-4 h-16 w-16" />
-                                <p className="text-muted-foreground text-lg font-medium">No users found</p>
-                                <p className="text-muted-foreground/70 dark:text-muted-foreground/60 mt-2 text-sm">
-                                    Click "Add User" to create your first user
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                {/* Data Table */}
-                                <div className="rounded-md border">
-                                    <Table>
-                                        <TableHeader>
-                                            {table.getHeaderGroups().map((headerGroup) => (
-                                                <TableRow key={headerGroup.id}>
-                                                    {headerGroup.headers.map((header) => {
-                                                        return (
-                                                            <TableHead key={header.id}>
-                                                                {header.isPlaceholder
-                                                                    ? null
-                                                                    : flexRender(header.column.columnDef.header, header.getContext())}
-                                                            </TableHead>
-                                                        );
-                                                    })}
+                    {/* Table and Empty State */}
+                    {users.length === 0 ? (
+                        <Card>
+                            <CardContent className="flex justify-center px-6 py-12">
+                                <Empty>
+                                    <EmptyHeader>
+                                        <EmptyMedia variant="icon">
+                                            <Users className="h-8 w-8" />
+                                        </EmptyMedia>
+                                    </EmptyHeader>
+                                    <EmptyTitle>No users found</EmptyTitle>
+                                    <EmptyDescription>Click "Add User" to create your first user</EmptyDescription>
+                                </Empty>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <Card>
+                            <CardContent className="p-0">
+                                <Table>
+                                    <TableHeader>
+                                        {table.getHeaderGroups().map((headerGroup) => (
+                                            <TableRow key={headerGroup.id}>
+                                                {headerGroup.headers.map((header) => {
+                                                    return (
+                                                        <TableHead key={header.id}>
+                                                            {header.isPlaceholder
+                                                                ? null
+                                                                : flexRender(header.column.columnDef.header, header.getContext())}
+                                                        </TableHead>
+                                                    );
+                                                })}
+                                            </TableRow>
+                                        ))}
+                                    </TableHeader>
+                                    <TableBody>
+                                        {table.getRowModel().rows?.length ? (
+                                            table.getRowModel().rows.map((row) => (
+                                                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                                                    {row.getVisibleCells().map((cell) => (
+                                                        <TableCell key={cell.id}>
+                                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                                        </TableCell>
+                                                    ))}
                                                 </TableRow>
-                                            ))}
-                                        </TableHeader>
-                                        <TableBody>
-                                            {table.getRowModel().rows?.length ? (
-                                                table.getRowModel().rows.map((row) => (
-                                                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                                                        {row.getVisibleCells().map((cell) => (
-                                                            <TableCell key={cell.id}>
-                                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                                            </TableCell>
-                                                        ))}
-                                                    </TableRow>
-                                                ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={columns.length} className="h-24 text-center">
-                                                        No results.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                                {/* Pagination */}
-                                <div className="mt-4">
-                                    <Pagination
-                                        pageIndex={table.getState().pagination.pageIndex}
-                                        pageSize={table.getState().pagination.pageSize}
-                                        pageCount={table.getPageCount()}
-                                        totalItems={table.getFilteredRowModel().rows.length}
-                                        onPageChange={table.setPageIndex}
-                                        onPageSizeChange={table.setPageSize}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={columns.length} className="h-24 text-center">
+                                                    No results.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                            {/* Pagination */}
+                            <CardFooter className="justify-end">
+                                <Pagination
+                                    pageIndex={table.getState().pagination.pageIndex}
+                                    pageSize={table.getState().pagination.pageSize}
+                                    pageCount={table.getPageCount()}
+                                    totalItems={table.getFilteredRowModel().rows.length}
+                                    onPageChange={table.setPageIndex}
+                                    onPageSizeChange={table.setPageSize}
+                                />
+                            </CardFooter>
+                        </Card>
+                    )}
                 </div>
 
                 {/* Dialog Components */}

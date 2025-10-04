@@ -39,10 +39,10 @@ export const StatsGrid = ({ items, userRole, className, gridClassName }: StatsGr
     const columnClassName = gridClassName
         ? gridClassName
         : visibleItems.length >= 4
-            ? 'md:grid-cols-4'
-            : visibleItems.length === 3
-              ? 'md:grid-cols-3'
-              : 'md:grid-cols-2';
+          ? 'md:grid-cols-4'
+          : visibleItems.length === 3
+            ? 'md:grid-cols-3'
+            : 'md:grid-cols-2';
 
     return (
         <div className={cn('grid grid-cols-1 gap-4 sm:grid-cols-2', columnClassName, className)}>
