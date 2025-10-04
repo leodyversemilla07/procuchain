@@ -404,7 +404,7 @@ class AdminController extends BaseController
      */
     public function users(): Response
     {
-        $users = User::select('id', 'name', 'email', 'role', 'blockchain_address', 'email_verified_at', 'remember_token', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'mfa_enabled', 'mfa_enabled_at', 'backup_codes', 'backup_codes_generated_at')
+        $users = User::select('id', 'name', 'email', 'role', 'blockchain_address', 'email_verified_at', 'remember_token', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at')
             ->where('id', '!=', Auth::id())
             ->orderBy('created_at', 'desc')
             ->get()
@@ -417,10 +417,9 @@ class AdminController extends BaseController
                     'blockchain_address' => $user->blockchain_address,
                     'email_verified_at' => $user->email_verified_at?->format('Y-m-d H:i:s'),
                     'remember_token' => $user->remember_token,
-                    'mfa_enabled' => $user->mfa_enabled,
-                    'mfa_enabled_at' => $user->mfa_enabled_at?->format('Y-m-d H:i:s'),
-                    'backup_codes' => $user->backup_codes,
-                    'backup_codes_generated_at' => $user->backup_codes_generated_at?->format('Y-m-d H:i:s'),
+                    'two_factor_secret' => $user->two_factor_secret,
+                    'two_factor_recovery_codes' => $user->two_factor_recovery_codes ? json_decode($user->two_factor_recovery_codes, true) : null,
+                    'two_factor_confirmed_at' => $user->two_factor_confirmed_at?->format('Y-m-d H:i:s'),
                     'created_at' => $user->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $user->updated_at?->format('Y-m-d H:i:s'),
                     'account_locked' => $user->account_locked,

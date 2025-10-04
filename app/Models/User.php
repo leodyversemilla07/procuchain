@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Mail\AccountUnlockedMail;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+// use Illuminate\Contracts\Auth\MustVerifyEmail; --- IGNORE ---
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Mail;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasPushSubscriptions, Notifiable, TwoFactorAuthenticatable;
@@ -36,6 +36,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_failed_login_at',
         'locked_reason',
         'email_notifications_enabled',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
     ];
 
     /**
@@ -64,6 +67,9 @@ class User extends Authenticatable implements MustVerifyEmail
             'lock_expires_at' => 'datetime',
             'last_failed_login_at' => 'datetime',
             'email_notifications_enabled' => 'boolean',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 
@@ -233,31 +239,5 @@ class User extends Authenticatable implements MustVerifyEmail
 
         // Calculate remaining minutes (from now to lock expiration)
         return (int) ceil(now()->diffInMinutes($this->lock_expires_at, false));
-    }
-
-    /**
-     * Check if MFA is enabled for this user
-     */
-    public function hasMfaEnabled(): bool
-    {
-        return $this->mfa_enabled && ! empty($this->google2fa_secret);
-    }
-
-    /**
-     * Generate backup codes for MFA
-     */
-    public function generateBackupCodes(): array
-    {
-        $codes = [];
-        for ($i = 0; $i < 8; $i++) {
-            $codes[] = strtoupper(bin2hex(random_bytes(4)));
-        }
-
-        $this->update([
-            'backup_codes' => array_map('hash', array_fill(0, count($codes), 'sha256'), $codes),
-            'backup_codes_generated_at' => now(),
-        ]);
-
-        return $codes;
     }
 }

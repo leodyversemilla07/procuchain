@@ -25,11 +25,9 @@ return new class extends Migration
             $table->integer('failed_login_attempts')->default(0);
             $table->timestamp('last_failed_login_at')->nullable();
             $table->string('locked_reason')->nullable();
-            $table->string('google2fa_secret')->nullable();
-            $table->boolean('mfa_enabled')->default(false);
-            $table->timestamp('mfa_enabled_at')->nullable();
-            $table->json('backup_codes')->nullable();
-            $table->timestamp('backup_codes_generated_at')->nullable();
+            $table->text('two_factor_secret')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable();
+            $table->timestamp('two_factor_confirmed_at')->nullable();
             $table->boolean('email_notifications_enabled')->default(true);
             $table->rememberToken();
             $table->timestamps();

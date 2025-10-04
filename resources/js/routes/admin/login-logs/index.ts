@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\AdminController::recent
- * @see app/Http/Controllers/AdminController.php:651
+ * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 export const recent = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ recent.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::recent
- * @see app/Http/Controllers/AdminController.php:651
+ * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 recent.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ recent.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::recent
- * @see app/Http/Controllers/AdminController.php:651
+ * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 recent.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ recent.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AdminController::recent
- * @see app/Http/Controllers/AdminController.php:651
+ * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 recent.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ recent.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AdminController::statistics
- * @see app/Http/Controllers/AdminController.php:677
+ * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 export const statistics = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -59,7 +59,7 @@ statistics.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::statistics
- * @see app/Http/Controllers/AdminController.php:677
+ * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 statistics.url = (options?: RouteQueryOptions) => {
@@ -68,7 +68,7 @@ statistics.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::statistics
- * @see app/Http/Controllers/AdminController.php:677
+ * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 statistics.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -77,7 +77,7 @@ statistics.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AdminController::statistics
- * @see app/Http/Controllers/AdminController.php:677
+ * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 statistics.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -87,7 +87,7 @@ statistics.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AdminController::suspicious
- * @see app/Http/Controllers/AdminController.php:702
+ * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 export const suspicious = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -102,7 +102,7 @@ suspicious.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::suspicious
- * @see app/Http/Controllers/AdminController.php:702
+ * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 suspicious.url = (options?: RouteQueryOptions) => {
@@ -111,7 +111,7 @@ suspicious.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::suspicious
- * @see app/Http/Controllers/AdminController.php:702
+ * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 suspicious.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -120,7 +120,7 @@ suspicious.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AdminController::suspicious
- * @see app/Http/Controllers/AdminController.php:702
+ * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 suspicious.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({

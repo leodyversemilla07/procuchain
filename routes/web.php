@@ -28,9 +28,9 @@ Route::inertia('/contact', 'contact')
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
 
-    Route::middleware(['role:bac_secretariat', 'mfa'])->group(function () {
+    Route::middleware(['role:bac_secretariat'])->group(function () {
         Route::get('/bac-secretariat/dashboard', [BacSecretariatController::class, 'dashboard'])
             ->name('bac-secretariat.dashboard');
 
@@ -134,7 +134,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('bac-secretariat.upload-completion-documents');
     });
 
-    Route::middleware(['role:bac_chairman', 'mfa'])->group(function () {
+    Route::middleware(['role:bac_chairman'])->group(function () {
         Route::get('bac-chairman/dashboard', [BacChairmanController::class, 'index'])
             ->name('bac-chairman.dashboard');
 
@@ -145,7 +145,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('bac-chairman.procurements.show');
     });
 
-    Route::middleware(['role:hope', 'mfa'])->group(function () {
+    Route::middleware(['role:hope'])->group(function () {
         Route::get('hope/dashboard', [HopeController::class, 'index'])
             ->name('hope.dashboard');
 
@@ -156,7 +156,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('hope.procurements.show');
     });
 
-    Route::middleware(['role:admin', 'mfa'])->group(function () {
+    Route::middleware(['role:admin'])->group(function () {
         Route::get('admin/dashboard', [AdminController::class, 'index'])
             ->name('admin.dashboard');
 

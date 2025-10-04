@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 | Authentication Routes
 |--------------------------------------------------------------------------
 |
-| Using existing custom authentication with LoginLoggerService, MFA,
+| Using existing custom authentication with LoginLoggerService
 | and account locking. Fortify is available for password resets and
 | email verification if needed.
 |
@@ -40,6 +40,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    // Email verification routes
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 
@@ -51,6 +52,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:6,1')
         ->name('verification.send');
 
+    // Logout - users should be able to log out
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 });

@@ -121,6 +121,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Fortify Route Paths
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify custom paths for Fortify routes. This allows you to
+    | customize the URL structure of authentication-related routes to better
+    | fit your application's needs.
+    |
+    */
+
+    'paths' => [
+        'two-factor' => [
+            'login' => null,
+            'enable' => 'settings/two-factor-authentication',
+            'confirm' => 'settings/confirmed-two-factor-authentication',
+            'disable' => 'settings/two-factor-authentication',
+            'qr-code' => 'settings/two-factor-qr-code',
+            'secret-key' => 'settings/two-factor-secret-key',
+            'recovery-codes' => 'settings/two-factor-recovery-codes',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Register View Routes
     |--------------------------------------------------------------------------
     |
@@ -155,7 +178,7 @@ return [
         // Features::updatePasswords(),
         Features::twoFactorAuthentication([
             'confirm' => true,
-            'confirmPassword' => true,
+            'confirmPassword' => false,
             // 'window' => 0,
         ]),
     ],

@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\AdminController::store
- * @see app/Http/Controllers/AdminController.php:445
+ * @see app/Http/Controllers/AdminController.php:444
  * @route '/admin/users'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::store
- * @see app/Http/Controllers/AdminController.php:445
+ * @see app/Http/Controllers/AdminController.php:444
  * @route '/admin/users'
  */
 store.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::store
- * @see app/Http/Controllers/AdminController.php:445
+ * @see app/Http/Controllers/AdminController.php:444
  * @route '/admin/users'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\AdminController::update
- * @see app/Http/Controllers/AdminController.php:483
+ * @see app/Http/Controllers/AdminController.php:482
  * @route '/admin/users/{user}'
  */
 export const update = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -50,7 +50,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::update
- * @see app/Http/Controllers/AdminController.php:483
+ * @see app/Http/Controllers/AdminController.php:482
  * @route '/admin/users/{user}'
  */
 update.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -83,7 +83,7 @@ update.url = (args: { user: number | { id: number } } | [user: number | { id: nu
 
 /**
 * @see \App\Http\Controllers\AdminController::update
- * @see app/Http/Controllers/AdminController.php:483
+ * @see app/Http/Controllers/AdminController.php:482
  * @route '/admin/users/{user}'
  */
 update.put = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -93,7 +93,7 @@ update.put = (args: { user: number | { id: number } } | [user: number | { id: nu
 
 /**
 * @see \App\Http\Controllers\AdminController::destroy
- * @see app/Http/Controllers/AdminController.php:527
+ * @see app/Http/Controllers/AdminController.php:526
  * @route '/admin/users/{user}'
  */
 export const destroy = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -108,7 +108,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::destroy
- * @see app/Http/Controllers/AdminController.php:527
+ * @see app/Http/Controllers/AdminController.php:526
  * @route '/admin/users/{user}'
  */
 destroy.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -141,7 +141,7 @@ destroy.url = (args: { user: number | { id: number } } | [user: number | { id: n
 
 /**
 * @see \App\Http\Controllers\AdminController::destroy
- * @see app/Http/Controllers/AdminController.php:527
+ * @see app/Http/Controllers/AdminController.php:526
  * @route '/admin/users/{user}'
  */
 destroy.delete = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -151,7 +151,7 @@ destroy.delete = (args: { user: number | { id: number } } | [user: number | { id
 
 /**
 * @see \App\Http\Controllers\AdminController::bulkDelete
- * @see app/Http/Controllers/AdminController.php:557
+ * @see app/Http/Controllers/AdminController.php:556
  * @route '/admin/users'
  */
 export const bulkDelete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -166,7 +166,7 @@ bulkDelete.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::bulkDelete
- * @see app/Http/Controllers/AdminController.php:557
+ * @see app/Http/Controllers/AdminController.php:556
  * @route '/admin/users'
  */
 bulkDelete.url = (options?: RouteQueryOptions) => {
@@ -175,7 +175,7 @@ bulkDelete.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::bulkDelete
- * @see app/Http/Controllers/AdminController.php:557
+ * @see app/Http/Controllers/AdminController.php:556
  * @route '/admin/users'
  */
 bulkDelete.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({

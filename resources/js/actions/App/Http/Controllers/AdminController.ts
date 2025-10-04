@@ -87,7 +87,7 @@ users.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AdminController::storeUser
- * @see app/Http/Controllers/AdminController.php:445
+ * @see app/Http/Controllers/AdminController.php:444
  * @route '/admin/users'
  */
 export const storeUser = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -102,7 +102,7 @@ storeUser.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::storeUser
- * @see app/Http/Controllers/AdminController.php:445
+ * @see app/Http/Controllers/AdminController.php:444
  * @route '/admin/users'
  */
 storeUser.url = (options?: RouteQueryOptions) => {
@@ -111,7 +111,7 @@ storeUser.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::storeUser
- * @see app/Http/Controllers/AdminController.php:445
+ * @see app/Http/Controllers/AdminController.php:444
  * @route '/admin/users'
  */
 storeUser.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -121,7 +121,7 @@ storeUser.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\AdminController::updateUser
- * @see app/Http/Controllers/AdminController.php:483
+ * @see app/Http/Controllers/AdminController.php:482
  * @route '/admin/users/{user}'
  */
 export const updateUser = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -136,7 +136,7 @@ updateUser.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::updateUser
- * @see app/Http/Controllers/AdminController.php:483
+ * @see app/Http/Controllers/AdminController.php:482
  * @route '/admin/users/{user}'
  */
 updateUser.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -169,7 +169,7 @@ updateUser.url = (args: { user: number | { id: number } } | [user: number | { id
 
 /**
 * @see \App\Http\Controllers\AdminController::updateUser
- * @see app/Http/Controllers/AdminController.php:483
+ * @see app/Http/Controllers/AdminController.php:482
  * @route '/admin/users/{user}'
  */
 updateUser.put = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -179,7 +179,7 @@ updateUser.put = (args: { user: number | { id: number } } | [user: number | { id
 
 /**
 * @see \App\Http\Controllers\AdminController::destroyUser
- * @see app/Http/Controllers/AdminController.php:527
+ * @see app/Http/Controllers/AdminController.php:526
  * @route '/admin/users/{user}'
  */
 export const destroyUser = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -194,7 +194,7 @@ destroyUser.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::destroyUser
- * @see app/Http/Controllers/AdminController.php:527
+ * @see app/Http/Controllers/AdminController.php:526
  * @route '/admin/users/{user}'
  */
 destroyUser.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -227,7 +227,7 @@ destroyUser.url = (args: { user: number | { id: number } } | [user: number | { i
 
 /**
 * @see \App\Http\Controllers\AdminController::destroyUser
- * @see app/Http/Controllers/AdminController.php:527
+ * @see app/Http/Controllers/AdminController.php:526
  * @route '/admin/users/{user}'
  */
 destroyUser.delete = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -237,7 +237,7 @@ destroyUser.delete = (args: { user: number | { id: number } } | [user: number | 
 
 /**
 * @see \App\Http\Controllers\AdminController::bulkDeleteUsers
- * @see app/Http/Controllers/AdminController.php:557
+ * @see app/Http/Controllers/AdminController.php:556
  * @route '/admin/users'
  */
 export const bulkDeleteUsers = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -252,7 +252,7 @@ bulkDeleteUsers.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::bulkDeleteUsers
- * @see app/Http/Controllers/AdminController.php:557
+ * @see app/Http/Controllers/AdminController.php:556
  * @route '/admin/users'
  */
 bulkDeleteUsers.url = (options?: RouteQueryOptions) => {
@@ -261,7 +261,7 @@ bulkDeleteUsers.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::bulkDeleteUsers
- * @see app/Http/Controllers/AdminController.php:557
+ * @see app/Http/Controllers/AdminController.php:556
  * @route '/admin/users'
  */
 bulkDeleteUsers.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -271,7 +271,7 @@ bulkDeleteUsers.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'
 
 /**
 * @see \App\Http\Controllers\AdminController::loginLogs
- * @see app/Http/Controllers/AdminController.php:621
+ * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 export const loginLogs = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -286,7 +286,7 @@ loginLogs.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::loginLogs
- * @see app/Http/Controllers/AdminController.php:621
+ * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 loginLogs.url = (options?: RouteQueryOptions) => {
@@ -295,7 +295,7 @@ loginLogs.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::loginLogs
- * @see app/Http/Controllers/AdminController.php:621
+ * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 loginLogs.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -304,7 +304,7 @@ loginLogs.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AdminController::loginLogs
- * @see app/Http/Controllers/AdminController.php:621
+ * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 loginLogs.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -314,7 +314,7 @@ loginLogs.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AdminController::recentLogins
- * @see app/Http/Controllers/AdminController.php:651
+ * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 export const recentLogins = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -329,7 +329,7 @@ recentLogins.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::recentLogins
- * @see app/Http/Controllers/AdminController.php:651
+ * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 recentLogins.url = (options?: RouteQueryOptions) => {
@@ -338,7 +338,7 @@ recentLogins.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::recentLogins
- * @see app/Http/Controllers/AdminController.php:651
+ * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 recentLogins.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -347,7 +347,7 @@ recentLogins.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AdminController::recentLogins
- * @see app/Http/Controllers/AdminController.php:651
+ * @see app/Http/Controllers/AdminController.php:650
  * @route '/admin/login-logs/recent'
  */
 recentLogins.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -357,7 +357,7 @@ recentLogins.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AdminController::loginStatistics
- * @see app/Http/Controllers/AdminController.php:677
+ * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 export const loginStatistics = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -372,7 +372,7 @@ loginStatistics.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::loginStatistics
- * @see app/Http/Controllers/AdminController.php:677
+ * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 loginStatistics.url = (options?: RouteQueryOptions) => {
@@ -381,7 +381,7 @@ loginStatistics.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::loginStatistics
- * @see app/Http/Controllers/AdminController.php:677
+ * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 loginStatistics.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -390,7 +390,7 @@ loginStatistics.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => (
 })
 /**
 * @see \App\Http\Controllers\AdminController::loginStatistics
- * @see app/Http/Controllers/AdminController.php:677
+ * @see app/Http/Controllers/AdminController.php:676
  * @route '/admin/login-logs/statistics'
  */
 loginStatistics.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -400,7 +400,7 @@ loginStatistics.head = (options?: RouteQueryOptions): RouteDefinition<'head'> =>
 
 /**
 * @see \App\Http\Controllers\AdminController::suspiciousActivities
- * @see app/Http/Controllers/AdminController.php:702
+ * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 export const suspiciousActivities = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -415,7 +415,7 @@ suspiciousActivities.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::suspiciousActivities
- * @see app/Http/Controllers/AdminController.php:702
+ * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 suspiciousActivities.url = (options?: RouteQueryOptions) => {
@@ -424,7 +424,7 @@ suspiciousActivities.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::suspiciousActivities
- * @see app/Http/Controllers/AdminController.php:702
+ * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 suspiciousActivities.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -433,7 +433,7 @@ suspiciousActivities.get = (options?: RouteQueryOptions): RouteDefinition<'get'>
 })
 /**
 * @see \App\Http\Controllers\AdminController::suspiciousActivities
- * @see app/Http/Controllers/AdminController.php:702
+ * @see app/Http/Controllers/AdminController.php:701
  * @route '/admin/login-logs/suspicious'
  */
 suspiciousActivities.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -443,7 +443,7 @@ suspiciousActivities.head = (options?: RouteQueryOptions): RouteDefinition<'head
 
 /**
 * @see \App\Http\Controllers\AdminController::lockedAccounts
- * @see app/Http/Controllers/AdminController.php:727
+ * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 export const lockedAccounts = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -458,7 +458,7 @@ lockedAccounts.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::lockedAccounts
- * @see app/Http/Controllers/AdminController.php:727
+ * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 lockedAccounts.url = (options?: RouteQueryOptions) => {
@@ -467,7 +467,7 @@ lockedAccounts.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::lockedAccounts
- * @see app/Http/Controllers/AdminController.php:727
+ * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 lockedAccounts.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -476,7 +476,7 @@ lockedAccounts.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AdminController::lockedAccounts
- * @see app/Http/Controllers/AdminController.php:727
+ * @see app/Http/Controllers/AdminController.php:726
  * @route '/admin/accounts/locked'
  */
 lockedAccounts.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -486,7 +486,7 @@ lockedAccounts.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => 
 
 /**
 * @see \App\Http\Controllers\AdminController::unlockAccount
- * @see app/Http/Controllers/AdminController.php:772
+ * @see app/Http/Controllers/AdminController.php:771
  * @route '/admin/accounts/{user}/unlock'
  */
 export const unlockAccount = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -501,7 +501,7 @@ unlockAccount.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::unlockAccount
- * @see app/Http/Controllers/AdminController.php:772
+ * @see app/Http/Controllers/AdminController.php:771
  * @route '/admin/accounts/{user}/unlock'
  */
 unlockAccount.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -534,7 +534,7 @@ unlockAccount.url = (args: { user: number | { id: number } } | [user: number | {
 
 /**
 * @see \App\Http\Controllers\AdminController::unlockAccount
- * @see app/Http/Controllers/AdminController.php:772
+ * @see app/Http/Controllers/AdminController.php:771
  * @route '/admin/accounts/{user}/unlock'
  */
 unlockAccount.post = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -544,7 +544,7 @@ unlockAccount.post = (args: { user: number | { id: number } } | [user: number | 
 
 /**
 * @see \App\Http\Controllers\AdminController::lockAccount
- * @see app/Http/Controllers/AdminController.php:831
+ * @see app/Http/Controllers/AdminController.php:830
  * @route '/admin/accounts/{user}/lock'
  */
 export const lockAccount = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -559,7 +559,7 @@ lockAccount.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::lockAccount
- * @see app/Http/Controllers/AdminController.php:831
+ * @see app/Http/Controllers/AdminController.php:830
  * @route '/admin/accounts/{user}/lock'
  */
 lockAccount.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -592,7 +592,7 @@ lockAccount.url = (args: { user: number | { id: number } } | [user: number | { i
 
 /**
 * @see \App\Http\Controllers\AdminController::lockAccount
- * @see app/Http/Controllers/AdminController.php:831
+ * @see app/Http/Controllers/AdminController.php:830
  * @route '/admin/accounts/{user}/lock'
  */
 lockAccount.post = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -602,7 +602,7 @@ lockAccount.post = (args: { user: number | { id: number } } | [user: number | { 
 
 /**
 * @see \App\Http\Controllers\AdminController::resetFailedAttempts
- * @see app/Http/Controllers/AdminController.php:886
+ * @see app/Http/Controllers/AdminController.php:885
  * @route '/admin/accounts/{user}/reset-attempts'
  */
 export const resetFailedAttempts = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -617,7 +617,7 @@ resetFailedAttempts.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::resetFailedAttempts
- * @see app/Http/Controllers/AdminController.php:886
+ * @see app/Http/Controllers/AdminController.php:885
  * @route '/admin/accounts/{user}/reset-attempts'
  */
 resetFailedAttempts.url = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -650,7 +650,7 @@ resetFailedAttempts.url = (args: { user: number | { id: number } } | [user: numb
 
 /**
 * @see \App\Http\Controllers\AdminController::resetFailedAttempts
- * @see app/Http/Controllers/AdminController.php:886
+ * @see app/Http/Controllers/AdminController.php:885
  * @route '/admin/accounts/{user}/reset-attempts'
  */
 resetFailedAttempts.post = (args: { user: number | { id: number } } | [user: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({

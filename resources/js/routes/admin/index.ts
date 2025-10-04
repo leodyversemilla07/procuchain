@@ -92,7 +92,7 @@ users.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AdminController::loginLogs
- * @see app/Http/Controllers/AdminController.php:621
+ * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 export const loginLogs = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -107,7 +107,7 @@ loginLogs.definition = {
 
 /**
 * @see \App\Http\Controllers\AdminController::loginLogs
- * @see app/Http/Controllers/AdminController.php:621
+ * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 loginLogs.url = (options?: RouteQueryOptions) => {
@@ -116,7 +116,7 @@ loginLogs.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AdminController::loginLogs
- * @see app/Http/Controllers/AdminController.php:621
+ * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 loginLogs.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -125,7 +125,7 @@ loginLogs.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AdminController::loginLogs
- * @see app/Http/Controllers/AdminController.php:621
+ * @see app/Http/Controllers/AdminController.php:620
  * @route '/admin/login-logs'
  */
 loginLogs.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
