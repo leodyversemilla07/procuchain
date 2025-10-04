@@ -69,20 +69,24 @@ function TwoFactorSetupStep({
                 <AlertError errors={errors} />
             ) : (
                 <>
-                    <div className="mx-auto flex max-w-md overflow-hidden">
-                        <div className="mx-auto aspect-square w-64 rounded-lg border border-border">
-                            <div className="z-10 flex h-full w-full items-center justify-center p-5">
+                    <div className="mx-auto flex max-w-md flex-col items-center space-y-3 overflow-hidden">
+                        <div className="mx-auto aspect-square w-80 rounded-lg border-2 border-border bg-white p-2 shadow-sm dark:bg-white">
+                            <div className="z-10 flex h-full w-full items-center justify-center">
                                 {qrCodeSvg ? (
                                     <div
+                                        className="h-full w-full [&>svg]:h-full [&>svg]:w-full"
                                         dangerouslySetInnerHTML={{
                                             __html: qrCodeSvg,
                                         }}
                                     />
                                 ) : (
-                                    <Loader2 className="flex size-4 animate-spin" />
+                                    <Loader2 className="flex size-8 animate-spin text-gray-400" />
                                 )}
                             </div>
                         </div>
+                        <p className="text-center text-sm text-muted-foreground">
+                            Scan this QR code with Microsoft Authenticator or any authenticator app
+                        </p>
                     </div>
 
                     <div className="flex w-full space-x-5">
@@ -93,8 +97,8 @@ function TwoFactorSetupStep({
 
                     <div className="relative flex w-full items-center justify-center">
                         <div className="absolute inset-0 top-1/2 h-px w-full bg-border" />
-                        <span className="relative bg-card px-2 py-1">
-                            or, enter the code manually
+                        <span className="relative bg-card px-2 py-1 text-sm">
+                            Can&apos;t scan? Enter the code manually
                         </span>
                     </div>
 
@@ -146,7 +150,7 @@ function TwoFactorVerificationStep({
 
     return (
         <Form
-            {...confirm.form()}
+            action={confirm()}
             onSuccess={() => onClose()}
             resetOnError
             resetOnSuccess
@@ -253,7 +257,7 @@ export default function TwoFactorSetupModal({
             return {
                 title: 'Two-Factor Authentication Enabled',
                 description:
-                    'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
+                    'Two-factor authentication is now enabled. Scan the QR code with your authenticator app or enter the setup key manually.',
                 buttonText: 'Close',
             };
         }
@@ -270,7 +274,7 @@ export default function TwoFactorSetupModal({
         return {
             title: 'Enable Two-Factor Authentication',
             description:
-                'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
+                'Add extra security to your account by scanning the QR code with Microsoft Authenticator, Google Authenticator, or any TOTP authenticator app',
             buttonText: 'Continue',
         };
     }, [twoFactorEnabled, showVerificationStep]);
