@@ -36,9 +36,11 @@ class LoginRequest extends FormRequest
     /**
      * Attempt to authenticate the request's credentials.
      *
+     * @return \App\Models\User
+     *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function authenticate(): void
+    public function authenticate()
     {
         $this->ensureIsNotRateLimited();
         $this->ensureAccountNotLocked();
@@ -47,9 +49,8 @@ class LoginRequest extends FormRequest
             'email' => $this['email'],
             'password' => $this['password'],
         ];
-        $remember = (bool) ($this['remember'] ?? false);
 
-        if (! Auth::attempt($credentials, $remember)) {
+        if (! Auth::validate($credentials)) {
             RateLimiter::hit($this->throttleKey());
 
             // Log failed login attempt
@@ -62,18 +63,12 @@ class LoginRequest extends FormRequest
             throw $exception;
         }
 
-        // Check if user has MFA enabled
-        $user = Auth::user();
-        if ($user && $user->hasMfaEnabled()) {
-            // Store user info for MFA verification and logout temporarily
-            session(['mfa_user_id' => $user->id, 'remember_user' => $remember]);
-            Auth::logout();
-
-            // Don't clear rate limiter yet - will be cleared after MFA verification
-            return;
-        }
+        // Get the user instance
+        $user = Auth::getProvider()->retrieveByCredentials($credentials);
 
         RateLimiter::clear($this->throttleKey());
+
+        return $user;
     }
 
     /**

@@ -14,12 +14,13 @@
         "inertiajs/inertia-laravel": "^2.0",
         "jenssegers/agent": "^2.6",
         "laravel-notification-channels/webpush": "^10.2",
+        "laravel/fortify": "^1.31",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
+        "laravel/wayfinder": "^0.1.12",
         "league/flysystem-aws-s3-v3": "^3.29",
         "pragmarx/google2fa-laravel": "^2.3",
         "predis/predis": "^3.2",
-        "simplesoftwareio/simple-qrcode": "^4.2",
         "tightenco/ziggy": "^2.4"
     },
     "require-dev": {
@@ -49,7 +50,8 @@
     "scripts": {
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php artisan wayfinder:generate --ansi"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
@@ -74,7 +76,9 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "laravel/fortify"
+            ]
         }
     },
     "config": {

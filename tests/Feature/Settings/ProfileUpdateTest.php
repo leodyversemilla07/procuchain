@@ -9,6 +9,7 @@ test('profile page is displayed', function () {
 
     $response = $this
         ->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->get('/settings/profile');
 
     $response->assertOk();
@@ -19,7 +20,10 @@ test('profile information can be updated', function () {
 
     $response = $this
         ->actingAs($user)
-        ->withSession(['_token' => 'test-token'])
+        ->withSession([
+            '_token' => 'test-token',
+            'auth.password_confirmed_at' => time(),
+        ])
         ->patch('/settings/profile', [
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -42,7 +46,10 @@ test('email verification status is unchanged when the email address is unchanged
 
     $response = $this
         ->actingAs($user)
-        ->withSession(['_token' => 'test-token'])
+        ->withSession([
+            '_token' => 'test-token',
+            'auth.password_confirmed_at' => time(),
+        ])
         ->patch('/settings/profile', [
             'name' => 'Test User',
             'email' => $user->email,
@@ -61,7 +68,10 @@ test('user can delete their account', function () {
 
     $response = $this
         ->actingAs($user)
-        ->withSession(['_token' => 'test-token'])
+        ->withSession([
+            '_token' => 'test-token',
+            'auth.password_confirmed_at' => time(),
+        ])
         ->delete('/settings/profile', [
             'password' => 'password',
             '_token' => 'test-token',
@@ -81,7 +91,10 @@ test('correct password must be provided to delete account', function () {
     $response = $this
         ->actingAs($user)
         ->from('/settings/profile')
-        ->withSession(['_token' => 'test-token'])
+        ->withSession([
+            '_token' => 'test-token',
+            'auth.password_confirmed_at' => time(),
+        ])
         ->delete('/settings/profile', [
             'password' => 'wrong-password',
             '_token' => 'test-token',

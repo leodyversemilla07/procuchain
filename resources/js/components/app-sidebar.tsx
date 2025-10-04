@@ -2,6 +2,17 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { dashboard as adminDashboard, loginLogs as adminLoginLogs, users as adminUsers } from '@/routes/admin';
+import { locked as adminAccountsLocked } from '@/routes/admin/accounts';
+import { index as adminProcurementsList } from '@/routes/admin/procurements-list';
+import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
+import { index as bacChairmanProcurementsList } from '@/routes/bac-chairman/procurements-list';
+import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
+import { index as bacSecretariatProcurementsList } from '@/routes/bac-secretariat/procurements-list';
+import { procurementInitiation as bacSecretariatProcurementInitiation } from '@/routes/bac-secretariat/procurement';
+import { dashboard as hopeDashboard } from '@/routes/hope';
+import { index as hopeProcurementsList } from '@/routes/hope/procurements-list';
+import { notifications as notificationsPage } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { Bell, LayoutGrid, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
@@ -13,17 +24,17 @@ const getNavItemsByRole = (role: string): NavItem[] => {
             return [
                 {
                     title: 'Dashboard',
-                    url: '/bac-secretariat/dashboard',
+                    href: bacSecretariatDashboard.url(),
                     icon: LayoutGrid,
                 },
                 {
                     title: 'Procurement List',
-                    url: '/bac-secretariat/procurements-list',
+                    href: bacSecretariatProcurementsList.url(),
                     icon: Table2,
                 },
                 {
                     title: 'Procurement Initiation',
-                    url: '/bac-secretariat/procurement/procurement-initiation',
+                    href: bacSecretariatProcurementInitiation.url(),
                     icon: Upload,
                 },
             ];
@@ -31,12 +42,12 @@ const getNavItemsByRole = (role: string): NavItem[] => {
             return [
                 {
                     title: 'Dashboard',
-                    url: '/bac-chairman/dashboard',
+                    href: bacChairmanDashboard.url(),
                     icon: LayoutGrid,
                 },
                 {
                     title: 'Procurement List',
-                    url: '/bac-chairman/procurements-list',
+                    href: bacChairmanProcurementsList.url(),
                     icon: Table2,
                 },
             ];
@@ -44,12 +55,12 @@ const getNavItemsByRole = (role: string): NavItem[] => {
             return [
                 {
                     title: 'Dashboard',
-                    url: '/hope/dashboard',
+                    href: hopeDashboard.url(),
                     icon: LayoutGrid,
                 },
                 {
                     title: 'Procurement List',
-                    url: '/hope/procurements-list',
+                    href: hopeProcurementsList.url(),
                     icon: Table2,
                 },
             ];
@@ -57,27 +68,27 @@ const getNavItemsByRole = (role: string): NavItem[] => {
             return [
                 {
                     title: 'Dashboard',
-                    url: '/admin/dashboard',
+                    href: adminDashboard.url(),
                     icon: LayoutGrid,
                 },
                 {
                     title: 'Procurement List',
-                    url: '/admin/procurements-list',
+                    href: adminProcurementsList.url(),
                     icon: Table2,
                 },
                 {
                     title: 'User Management',
-                    url: '/admin/users',
+                    href: adminUsers.url(),
                     icon: Users,
                 },
                 {
                     title: 'Locked Accounts',
-                    url: '/admin/accounts/locked',
+                    href: adminAccountsLocked.url(),
                     icon: ShieldOff,
                 },
                 {
                     title: 'Login Logs',
-                    url: '/admin/login-logs',
+                    href: adminLoginLogs.url(),
                     icon: Shield,
                 },
             ];
@@ -91,7 +102,7 @@ const getFooterNavItemsByRole = (role: string): NavItem[] => {
         return [
             {
                 title: 'Notifications',
-                url: '/notifications',
+                href: notificationsPage.url(),
                 icon: Bell,
             },
         ];
@@ -102,13 +113,13 @@ const getFooterNavItemsByRole = (role: string): NavItem[] => {
 const getRoleUrl = (role: string): string => {
     switch (role) {
         case 'bac_secretariat':
-            return '/bac-secretariat/dashboard';
+            return bacSecretariatDashboard.url();
         case 'bac_chairman':
-            return '/bac-chairman/dashboard';
+            return bacChairmanDashboard.url();
         case 'hope':
-            return '/hope/dashboard';
+            return hopeDashboard.url();
         case 'admin':
-            return '/admin/dashboard';
+            return adminDashboard.url();
         default:
             return '/';
     }
