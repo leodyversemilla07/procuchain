@@ -418,7 +418,7 @@ class LoginTrackingService
     {
         return User::where('account_locked', true)
             ->whereNotNull('locked_at')
-            ->with('loginLogs')
+            ->with(['loginLogs', 'roles'])
             ->orderBy('locked_at', 'desc')
             ->get()
             ->map(function ($user) {
@@ -426,7 +426,7 @@ class LoginTrackingService
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $user->role,
+                    'role' => $user->roles->first()?->name ?? null,
                     'two_factor_secret' => $user->two_factor_secret,
                     'two_factor_recovery_codes' => $user->two_factor_recovery_codes ? json_decode($user->two_factor_recovery_codes, true) : null,
                     'two_factor_confirmed_at' => $user->two_factor_confirmed_at,

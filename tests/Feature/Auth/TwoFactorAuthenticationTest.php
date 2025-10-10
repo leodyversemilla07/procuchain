@@ -113,3 +113,4 @@ test('two factor settings page returns forbidden response when two factor is dis
         ->get(route('two-factor.show'))
         ->assertForbidden();
 });
+

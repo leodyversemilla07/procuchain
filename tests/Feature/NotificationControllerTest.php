@@ -5,6 +5,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -12,7 +13,9 @@ use function Pest\Laravel\get;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->user = User::factory()->create(['role' => 'bac_chairman']);
+    Role::firstOrCreate(['name' => 'bac_chairman', 'guard_name' => 'web', 'guard_name' => 'web']);
+    $this->user = User::factory()->create();
+    $this->user->assignRole('bac_chairman');
 });
 
 test('user can view notifications page with data', function () {
@@ -74,7 +77,9 @@ test('user can mark a notification as read via form submission', function () {
 
 test('user cannot mark another users notification as read', function () {
     actingAs($this->user);
-    $otherUser = User::factory()->create(['role' => 'hope']);
+    Role::firstOrCreate(['name' => 'hope', 'guard_name' => 'web', 'guard_name' => 'web']);
+    $otherUser = User::factory()->create();
+    $otherUser->assignRole('hope');
 
     $notification = DatabaseNotification::create([
         'id' => Str::uuid(),
@@ -117,3 +122,4 @@ test('user can mark all notifications as read via form submission', function () 
     expect($this->user->unreadNotifications()->count())
         ->toBe(0, 'All notifications should be marked as read');
 });
+

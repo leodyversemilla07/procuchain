@@ -9,17 +9,21 @@
 1. [Overview](#overview)
 2. [Features](#features)
 3. [Technology Stack](#technology-stack)
-4. [Architecture Snapshot](#architecture-snapshot)
-5. [Installation](#installation)
-6. [Configuration](#configuration)
-7. [MultiChain Setup](#multichain-setup)
-8. [Testing](#testing)
-9. [Running & Development](#running--development)
-10. [Production Deployment](#production-deployment)
-11. [Security Notes](#security)
-12. [Troubleshooting](#troubleshooting)
-13. [License](#license)
-14. [Contact](#contact)
+4. [Requirements](#requirements)
+5. [Architecture Snapshot](#architecture-snapshot)
+6. [Installation](#installation)
+7. [Configuration](#configuration)
+8. [MultiChain Setup](#multichain-setup)
+9. [Entry Points](#entry-points)
+10. [Running & Development](#running--development)
+11. [Scripts](#scripts)
+12. [Testing](#testing)
+13. [Production Deployment](#production-deployment)
+14. [Project Structure](#project-structure)
+15. [Security](#security)
+16. [Troubleshooting](#troubleshooting)
+17. [License](#license)
+18. [Contact](#contact)
 
 ---
 
@@ -57,6 +61,16 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 - **Development**:
     - Hot module replacement with Vite
     - Database-driven development stack
+
+## Requirements
+
+- PHP 8.2 or higher
+- Composer
+- Node.js and npm
+- MySQL 8 (or compatible)
+- MultiChain node accessible via RPC (for blockchain features)
+- SMTP service (for email notifications)
+- Optional: AWS S3–compatible storage (e.g., DigitalOcean Spaces) for file storage
 
 ## Architecture Snapshot
 
@@ -258,6 +272,16 @@ Environment variables (core subset):
 
 After running `php artisan multichain:setup`, the role addresses will be automatically generated and added to your `.env` file. Keep this file secure as it contains the blockchain addresses and sensitive credentials.
 
+## Entry Points
+
+- Frontend CSS: resources/css/app.css
+- Frontend App (SPA): resources/js/app.tsx
+- Server-Side Rendering (SSR): resources/js/ssr.tsx
+- Public web root: public/
+- Laravel entry (HTTP): public/index.php via web server (Apache/Nginx) or php artisan serve
+
+Vite is configured in vite.config.ts with laravel-vite-plugin to handle both client and SSR builds.
+
 ## Testing
 
 The project uses [Pest](https://pestphp.com/) for expressive tests.
@@ -300,6 +324,29 @@ Format code (Laravel Pint):
 vendor/bin/pint
 ```
 
+## Scripts
+
+Composer scripts:
+- composer run dev — Runs PHP server, queue listener, and Vite dev server concurrently.
+- composer run dev:ssr — Builds SSR and starts PHP server, queue listener, logs (pail), and Inertia SSR server.
+
+NPM scripts:
+- npm run dev — Start Vite dev server.
+- npm run build — Build client and SSR bundles.
+- npm run build:ssr — Build SSR (also builds client).
+- npm run ssr — Run the SSR entry directly with Node (resources/js/ssr.tsx).
+- npm run types — Type-check TypeScript.
+- npm run lint — Lint with ESLint (auto-fix).
+- npm run format — Format with Prettier.
+- npm run format:check — Check formatting with Prettier.
+
+Procfile (for platforms like Heroku):
+- web: php artisan inertia:start-ssr & heroku-php-apache2 public/
+- worker: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+
+Docker (database only):
+- docker-compose up -d — Starts MySQL 8.4 and phpMyAdmin (mapped to ports 3307 and 8081).
+
 ## Production Deployment
 
 1. Install dependencies (`composer install --no-dev --optimize-autoloader`, `npm ci && npm run build`).
@@ -329,14 +376,37 @@ For subsequent deployments, re-run the setup command to ensure streams exist and
 | `.env` file not updated                   | File permissions issue                         | Check file is writable                                    |
 | Connection check passes but setup fails   | Permission or stream creation issues           | Check MultiChain node logs for detailed error messages    |
 
-## Security
-
 ## Usage
 
 1. Access the system through your web browser
 2. Login with authorized credentials
 3. Follow the intuitive interface to manage documents
 4. Track and verify documents using blockchain features
+
+## Project Structure
+
+Project root snapshot:
+
+- app/ — Laravel application code (Controllers, Models, Services, Jobs, Console, etc.)
+- bootstrap/ — Framework bootstrap files
+- config/ — Application configuration (includes multichain.php)
+- database/ — Migrations, seeders, factories
+- public/ — Web root (index.php, built assets)
+- resources/
+  - css/app.css — Main stylesheet (Tailwind)
+  - js/app.tsx — React SPA entry (Inertia)
+  - js/ssr.tsx — SSR entry for Inertia
+  - views/ — Blade templates (if any)
+- routes/ — web.php, api.php route definitions
+- scripts/ — Project scripts/utilities
+- tests/ — Pest/PHPUnit tests
+- vendor/ — Composer dependencies
+- node_modules/ — Node dependencies
+- vite.config.ts — Vite configuration (client + SSR)
+- package.json — Frontend dependencies and scripts
+- composer.json — PHP dependencies and composer scripts
+- docker-compose.yml — Local DB and phpMyAdmin services
+- Procfile — Process definitions for deployment (e.g., Heroku)
 
 ## Security
 

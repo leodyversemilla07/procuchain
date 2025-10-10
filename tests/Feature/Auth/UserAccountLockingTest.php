@@ -131,3 +131,4 @@ test('unlockAccount does not send email if already unlocked', function () {
 
     Mail::assertNotSent(AccountUnlockedMail::class);
 });
+

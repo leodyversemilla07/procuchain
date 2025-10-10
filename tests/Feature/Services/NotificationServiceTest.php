@@ -82,13 +82,18 @@ describe('NotificationService', function () {
 
         it('logs warning when no eligible users found', function () {
             // Remove all users with eligible roles
-            User::whereIn('role', ['bac_chairman', 'hope', 'admin'])->delete();
+            User::whereHas('roles', function ($query) {
+                $query->whereIn('name', ['bac_chairman', 'hope', 'admin']);
+            })->delete();
 
             Log::shouldReceive('warning')
                 ->once()
                 ->with('No BAC Chairman, HOPE, or Admin users found to notify for procurement update', [
                     'procurement_id' => 'PROC-003',
                 ]);
+
+            // Also expect the Log::info call that would happen if users were found
+            Log::shouldReceive('info')->never();
 
             $this->notificationService->notifyStageUpdate(
                 'PROC-003',
@@ -103,6 +108,13 @@ describe('NotificationService', function () {
         });
 
         it('does not send notifications to bac_secretariat role', function () {
+            Log::shouldReceive('info')
+                ->once()
+                ->withArgs(function ($message, $context) {
+                    return str_contains($message, 'Procurement stage update notification sent') &&
+                        $context['procurement_id'] === 'PROC-004';
+                });
+
             $this->notificationService->notifyStageUpdate(
                 'PROC-004',
                 'Test Procurement 4',
@@ -120,3 +132,4 @@ describe('NotificationService', function () {
         });
     });
 });
+

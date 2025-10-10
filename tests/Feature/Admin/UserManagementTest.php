@@ -2,18 +2,20 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Create an admin user for testing with 2FA enabled
+    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
     $this->admin = User::factory()->create([
-        'role' => 'admin',
         'email' => 'admin@test.com',
         'two_factor_secret' => encrypt('test-secret'),
         'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
         'two_factor_confirmed_at' => now(),
     ]);
+    $this->admin->assignRole('admin');
 });
 
 test('admin can access user management page', function () {
@@ -30,6 +32,9 @@ test('admin can access user management page', function () {
 });
 
 test('admin can create new user', function () {
+    // Create the role first
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+
     $userData = [
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -48,15 +53,20 @@ test('admin can create new user', function () {
     $this->assertDatabaseHas('users', [
         'name' => 'Test User',
         'email' => 'test@example.com',
-        'role' => 'bac_secretariat',
     ]);
+
+    $user = User::where('email', 'test@example.com')->first();
+    expect($user->hasRole('bac_secretariat'))->toBeTrue();
 });
 
 test('admin can update existing user', function () {
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'bac_chairman', 'guard_name' => 'web']);
+
     $user = User::factory()->create([
-        'role' => 'bac_secretariat',
         'email' => 'original@example.com',
     ]);
+    $user->assignRole('bac_secretariat');
 
     $updateData = [
         'name' => 'Updated Name',
@@ -75,14 +85,17 @@ test('admin can update existing user', function () {
         'id' => $user->id,
         'name' => 'Updated Name',
         'email' => 'updated@example.com',
-        'role' => 'bac_chairman',
     ]);
+
+    $user->refresh();
+    expect($user->hasRole('bac_chairman'))->toBeTrue();
+    expect($user->hasRole('bac_secretariat'))->toBeFalse();
 });
 
 test('admin can delete user', function () {
-    $user = User::factory()->create([
-        'role' => 'bac_secretariat',
-    ]);
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+    $user = User::factory()->create();
+    $user->assignRole('bac_secretariat');
 
     $response = $this->actingAs($this->admin)
         ->delete("/admin/users/{$user->id}");
@@ -108,9 +121,9 @@ test('admin cannot delete own account', function () {
 });
 
 test('non admin cannot access user management', function () {
-    $user = User::factory()->create([
-        'role' => 'bac_secretariat',
-    ]);
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+    $user = User::factory()->create();
+    $user->assignRole('bac_secretariat');
 
     $response = $this->actingAs($user)
         ->get('/admin/users');
@@ -123,3 +136,4 @@ test('guest cannot access user management', function () {
 
     $response->assertRedirect('/login');
 });
+

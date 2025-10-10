@@ -110,7 +110,7 @@ class AdminController extends BaseController
                 try {
                     $cacheKey = 'user_activity_analytics_'.md5(serialize([
                         'time_range' => '30_days',
-                        'role' => Auth::user()->role,
+                        'role' => Auth::user()->roles->first()?->name ?? 'no_role',
                     ]));
 
                     return Cache::remember($cacheKey, now()->addMinutes(10), function () {
@@ -130,7 +130,7 @@ class AdminController extends BaseController
                                 'error' => $e->getMessage(),
                                 'options' => [
                                     'time_range' => '30_days',
-                                    'role' => Auth::user()->role,
+                                    'role' => Auth::user()->roles->first()?->name ?? 'no_role',
                                 ],
                             ]);
 
@@ -404,7 +404,7 @@ class AdminController extends BaseController
      */
     public function users(): Response
     {
-        $users = User::select('id', 'name', 'email', 'role', 'blockchain_address', 'email_verified_at', 'remember_token', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at')
+        $users = User::select('id', 'name', 'email', 'blockchain_address', 'email_verified_at', 'remember_token', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at')
             ->where('id', '!=', Auth::id())
             ->orderBy('created_at', 'desc')
             ->get()
@@ -413,7 +413,7 @@ class AdminController extends BaseController
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $user->role,
+                    'role' => $user->roles->first()?->name ?? null,
                     'blockchain_address' => $user->blockchain_address,
                     'email_verified_at' => $user->email_verified_at?->format('Y-m-d H:i:s'),
                     'remember_token' => $user->remember_token,
@@ -454,15 +454,18 @@ class AdminController extends BaseController
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'role' => $validated['role'],
                 'password' => Hash::make($validated['password']),
                 'blockchain_address' => ! empty($validated['blockchain_address']) ? $validated['blockchain_address'] : null,
             ]);
+
+            // Assign role using Spatie Permission
+            $user->assignRole($validated['role']);
+
             Log::info('Admin created new user', [
                 'admin_id' => Auth::id(),
                 'created_user_id' => $user->id,
                 'user_email' => $user->email,
-                'user_role' => $user->role,
+                'user_role' => $validated['role'],
             ]);
 
             return redirect()->back()->with('success', 'User created successfully.');
@@ -492,7 +495,6 @@ class AdminController extends BaseController
             $updateData = [
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'role' => $validated['role'],
                 'blockchain_address' => ! empty($validated['blockchain_address']) ? $validated['blockchain_address'] : null,
             ];
 
@@ -501,11 +503,15 @@ class AdminController extends BaseController
             }
 
             $user->update($updateData);
+
+            // Sync role using Spatie Permission - remove old roles and assign new one
+            $user->syncRoles([$validated['role']]);
+
             Log::info('Admin updated user', [
                 'admin_id' => Auth::id(),
                 'updated_user_id' => $user->id,
                 'user_email' => $user->email,
-                'user_role' => $user->role,
+                'user_role' => $validated['role'],
             ]);
 
             return redirect()->back()->with('success', 'User updated successfully.');
@@ -574,7 +580,7 @@ class AdminController extends BaseController
             }
 
             // Get user details for logging before deletion
-            $usersToDelete = User::whereIn('id', $userIds)->get(['id', 'email', 'name', 'role']);
+            $usersToDelete = User::whereIn('id', $userIds)->with('roles')->get(['id', 'email', 'name']);
 
             if ($usersToDelete->isEmpty()) {
                 return redirect()->back()->withErrors(['error' => 'No valid users found for deletion.']);
@@ -592,7 +598,7 @@ class AdminController extends BaseController
                             'id' => $user->id,
                             'email' => $user->email,
                             'name' => $user->name,
-                            'role' => $user->role,
+                            'role' => $user->roles->first()?->name ?? null,
                         ];
                     })->toArray(),
                     'total_deleted' => count($userIds),

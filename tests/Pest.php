@@ -61,7 +61,13 @@ expect()->extend('toBeSuccessfulResponse', function () {
 
 function createUserWithRole(string $role, array $attributes = []): App\Models\User
 {
-    return App\Models\User::factory()->create(array_merge(['role' => $role], $attributes));
+    // Create role if it doesn't exist
+    \Spatie\Permission\Models\Role::firstOrCreate(['name' => $role, 'guard_name' => 'web', 'guard_name' => 'web']);
+    
+    $user = App\Models\User::factory()->create($attributes);
+    $user->assignRole($role);
+    
+    return $user;
 }
 
 function createLockedUser(array $attributes = []): App\Models\User
@@ -86,3 +92,4 @@ function setPrivate(object $object, string $property, mixed $value): void
     $prop->setAccessible(true);
     $prop->setValue($object, $value);
 }
+

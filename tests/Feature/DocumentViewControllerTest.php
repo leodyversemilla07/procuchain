@@ -4,6 +4,7 @@ use App\Models\DocumentView;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -12,9 +13,9 @@ uses(RefreshDatabase::class);
 
 it('can view documents through the application', function () {
     /** @var User $user */
-    $user = User::factory()->createOne([
-        'role' => 'admin',
-    ]);
+    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web', 'guard_name' => 'web']);
+    $user = User::factory()->createOne();
+    $user->assignRole('admin');
     actingAs($user);
 
     // Create a document view record for testing data
@@ -45,9 +46,9 @@ it('requires authentication for PDF viewer access', function () {
 
 it('requires proper role for PDF viewer access', function () {
     /** @var User $user */
-    $user = User::factory()->createOne([
-        'role' => 'hope', // Valid role but let's test middleware
-    ]);
+    Role::firstOrCreate(['name' => 'hope', 'guard_name' => 'web', 'guard_name' => 'web']);
+    $user = User::factory()->createOne();
+    $user->assignRole('hope'); // Valid role but let's test middleware
     actingAs($user);
 
     DocumentView::factory()->create([
@@ -63,3 +64,4 @@ it('requires proper role for PDF viewer access', function () {
     // Should succeed for valid roles
     $response->assertSuccessful();
 });
+

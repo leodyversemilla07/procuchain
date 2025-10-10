@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
@@ -14,39 +15,43 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Create BAC Secretariat user
-        User::create([
+        Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+        $bacSecretariat = User::create([
             'name' => 'Leodyver Semilla',
             'email' => 'admin@example.com',
-            'role' => 'bac_secretariat',
             'blockchain_address' => config('multichain.addresses.bac_secretariat'),
             'password' => Hash::make('Leodyver07'),
         ]);
+        $bacSecretariat->assignRole('bac_secretariat');
 
         // Create BAC Chairman user
-        User::create([
+        Role::firstOrCreate(['name' => 'bac_chairman', 'guard_name' => 'web']);
+        $bacChairman = User::create([
             'name' => 'Lunar Spectre',
             'email' => 'lunarspectre00@gmail.com',
-            'role' => 'bac_chairman',
             'blockchain_address' => config('multichain.addresses.bac_chairman'),
             'password' => Hash::make('LunarSpectre00'),
         ]);
+        $bacChairman->assignRole('bac_chairman');
 
         // Create HOPE user
-        User::create([
+        Role::firstOrCreate(['name' => 'hope', 'guard_name' => 'web']);
+        $hope = User::create([
             'name' => 'Leif Sage Semilla',
             'email' => 'leifsagesemilla@gmail.com',
-            'role' => 'hope',
             'blockchain_address' => config('multichain.addresses.hope'),
             'password' => Hash::make('LeifSage07'),
         ]);
+        $hope->assignRole('hope');
 
         // Create Admin user
-        User::create([
+        Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $admin = User::create([
             'name' => 'LeoBriel Zilvrak',
             'email' => 'leobrielzilvrak@gmail.com',
-            'role' => 'admin',
             'blockchain_address' => config('multichain.addresses.admin'),
             'password' => Hash::make('LeoBriel07'),
         ]);
+        $admin->assignRole('admin');
     }
 }

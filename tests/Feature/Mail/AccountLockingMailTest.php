@@ -167,3 +167,4 @@ test('account unlocked email can be built without errors', function () {
     expect($mail->unlockReason)->toBe($unlockReason);
     expect($mail->wasAutoUnlocked)->toBe($wasAutoUnlocked);
 });
+

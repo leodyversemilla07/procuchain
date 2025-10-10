@@ -69,7 +69,7 @@ class AccountLockoutService
     {
         return User::where('account_locked', true)
             ->whereNotNull('locked_at')
-            ->with('loginLogs')
+            ->with(['loginLogs', 'roles'])
             ->orderBy('locked_at', 'desc')
             ->get()
             ->map(function ($user) {
@@ -77,7 +77,7 @@ class AccountLockoutService
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $user->role,
+                    'role' => $user->roles->first()?->name ?? null,
                     'two_factor_enabled' => $user->hasEnabledTwoFactorAuthentication(),
                     'two_factor_confirmed_at' => $user->two_factor_confirmed_at,
                     'locked_at' => $user->locked_at,
