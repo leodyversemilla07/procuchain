@@ -55,7 +55,6 @@ class ViewProcurementsController extends BaseController
     private function setupMiddleware(): void
     {
         $this->middleware('auth');
-        $this->middleware('role:bac_chairman,bac_secretariat,hope,admin');
     }
 
     /**

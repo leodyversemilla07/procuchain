@@ -18,12 +18,22 @@ abstract class Controller
             return '/';
         }
 
-        return match ($user->role) {
-            'bac_secretariat' => route('bac-secretariat.dashboard'),
-            'bac_chairman' => route('bac-chairman.dashboard'),
-            'hope' => route('hope.dashboard'),
-            'admin' => route('admin.dashboard'),
-            default => '/',
-        };
+        if ($user->hasRole('bac_secretariat')) {
+            return route('bac-secretariat.dashboard');
+        }
+
+        if ($user->hasRole('bac_chairman')) {
+            return route('bac-chairman.dashboard');
+        }
+
+        if ($user->hasRole('hope')) {
+            return route('hope.dashboard');
+        }
+
+        if ($user->hasRole('admin')) {
+            return route('admin.dashboard');
+        }
+
+        return '/';
     }
 }

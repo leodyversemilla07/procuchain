@@ -2,11 +2,12 @@
 
 use App\Enums\UserRoleEnums;
 use App\Models\User;
+use Spatie\Permission\Models\Role;
 
 it('allows users to enable two factor authentication', function () {
-    $user = User::factory()->create([
-        'role' => UserRoleEnums::ADMIN,
-    ]);
+    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web', 'guard_name' => 'web']);
+    $user = User::factory()->create();
+    $user->assignRole(UserRoleEnums::ADMIN->value);
 
     $response = $this->actingAs($user)->post('/settings/two-factor-authentication');
 
@@ -19,9 +20,9 @@ it('allows users to enable two factor authentication', function () {
 });
 
 it('allows two factor authentication to be disabled', function () {
-    $user = User::factory()->create([
-        'role' => UserRoleEnums::ADMIN,
-    ]);
+    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web', 'guard_name' => 'web']);
+    $user = User::factory()->create();
+    $user->assignRole(UserRoleEnums::ADMIN->value);
 
     // Enable 2FA
     $this->actingAs($user)->post('/settings/two-factor-authentication');
@@ -48,9 +49,9 @@ it('requires authentication to enable two factor', function () {
 });
 
 it('allows qr code to be retrieved', function () {
-    $user = User::factory()->create([
-        'role' => UserRoleEnums::ADMIN,
-    ]);
+    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web']);
+    $user = User::factory()->create();
+    $user->assignRole(UserRoleEnums::ADMIN->value);
 
     // Enable 2FA first
     $this->actingAs($user)->post('/settings/two-factor-authentication');
@@ -65,9 +66,9 @@ it('allows qr code to be retrieved', function () {
 });
 
 it('allows recovery codes to be retrieved', function () {
-    $user = User::factory()->create([
-        'role' => UserRoleEnums::ADMIN,
-    ]);
+    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web']);
+    $user = User::factory()->create();
+    $user->assignRole(UserRoleEnums::ADMIN->value);
 
     // Enable 2FA first
     $this->actingAs($user)->post('/settings/two-factor-authentication');
@@ -82,9 +83,9 @@ it('allows recovery codes to be retrieved', function () {
 });
 
 it('allows recovery codes to be regenerated', function () {
-    $user = User::factory()->create([
-        'role' => UserRoleEnums::ADMIN,
-    ]);
+    Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web']);
+    $user = User::factory()->create();
+    $user->assignRole(UserRoleEnums::ADMIN->value);
 
     // Enable 2FA first
     $this->actingAs($user)->post('/settings/two-factor-authentication');
@@ -101,3 +102,4 @@ it('allows recovery codes to be regenerated', function () {
 
     expect($user->two_factor_recovery_codes)->not->toEqual($originalCodes);
 });
+

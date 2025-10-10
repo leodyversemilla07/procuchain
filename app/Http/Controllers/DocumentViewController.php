@@ -22,7 +22,7 @@ class DocumentViewController extends BaseController
     public function __construct(MultichainService $multichainService)
     {
         $this->middleware('auth');
-        $this->middleware('role:bac_chairman,bac_secretariat,hope,admin');
+        $this->middleware('role:bac_chairman|bac_secretariat|hope|admin');
         $this->multichainService = $multichainService;
     }
 
@@ -581,8 +581,11 @@ class DocumentViewController extends BaseController
 
         $viewsByRole = DocumentView::where('file_key', $fileKey)
             ->join('users', 'document_views.user_id', '=', 'users.id')
-            ->selectRaw('users.role, COUNT(*) as view_count')
-            ->groupBy('users.role')
+            ->join('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('model_has_roles.model_type', '=', 'App\\Models\\User')
+            ->selectRaw('roles.name as role, COUNT(DISTINCT document_views.id) as view_count')
+            ->groupBy('roles.name')
             ->get()
             ->mapWithKeys(function ($item) {
                 return [$item->role => $item->view_count];

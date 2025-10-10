@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -17,8 +18,9 @@ test('complete account locking flow works with email notifications', function ()
         'email' => 'user@example.com',
         'name' => 'Test User',
         'password' => Hash::make('password'),
-        'role' => 'bac_secretariat',
     ]);
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+    $user->assignRole('bac_secretariat');
 
     // Attempt login with wrong password 3 times
     for ($i = 1; $i <= 3; $i++) {
@@ -64,11 +66,11 @@ test('complete account locking flow works with email notifications', function ()
 
 test('admin can view locked accounts', function () {
     // Create admin user
+    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
     $admin = User::factory()->create([
-        'role' => 'admin',
         'email' => 'admin@example.com',
     ]);
-
+    $admin->assignRole('admin');
     // Create locked user
     $lockedUser = User::factory()->create([
         'email' => 'locked@example.com',
@@ -101,11 +103,11 @@ test('admin can unlock user account via API', function () {
     Mail::fake();
 
     // Create admin user
+    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
     $admin = User::factory()->create([
-        'role' => 'admin',
         'email' => 'admin@example.com',
     ]);
-
+    $admin->assignRole('admin');
     // Create locked user
     $lockedUser = User::factory()->create([
         'email' => 'locked@example.com',
@@ -147,11 +149,11 @@ test('admin can lock user account via API', function () {
     Mail::fake();
 
     // Create admin user
+    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
     $admin = User::factory()->create([
-        'role' => 'admin',
         'email' => 'admin@example.com',
     ]);
-
+    $admin->assignRole('admin');
     // Create regular user
     $user = User::factory()->create([
         'email' => 'user@example.com',
@@ -188,20 +190,20 @@ test('admin can lock user account via API', function () {
 });
 
 test('non-admin cannot access locked accounts page', function () {
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
     $user = User::factory()->create([
-        'role' => 'bac_secretariat',
-    ]);
-
+        ]);
+    $user->assignRole('bac_secretariat');
     $this->actingAs($user);
     $response = $this->get('/admin/accounts/locked');
     $response->assertStatus(403);
 });
 
 test('non-admin cannot unlock accounts', function () {
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
     $user = User::factory()->create([
-        'role' => 'bac_secretariat',
-    ]);
-
+        ]);
+    $user->assignRole('bac_secretariat');
     $lockedUser = User::factory()->create([
         'account_locked' => true,
     ]);
@@ -234,17 +236,17 @@ test('locked user cannot login even with correct credentials', function () {
 test('user can login after account is automatically unlocked', function () {
     Mail::fake();
 
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
     $user = User::factory()->create([
         'email' => 'user@example.com',
         'password' => Hash::make('password'),
-        'role' => 'bac_secretariat',
         'account_locked' => true,
         'locked_at' => now()->subMinutes(35),
         'lock_expires_at' => now()->subMinutes(5), // Expired 5 minutes ago
         'failed_login_attempts' => 3,
         'locked_reason' => 'Multiple failed login attempts',
     ]);
-
+    $user->assignRole('bac_secretariat');
     $response = $this->post('/login', [
         'email' => $user->email,
         'password' => 'password',
@@ -261,3 +263,5 @@ test('user can login after account is automatically unlocked', function () {
                $mail->wasAutoUnlocked === true;
     });
 });
+
+

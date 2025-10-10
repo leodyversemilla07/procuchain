@@ -86,3 +86,4 @@ test('users are rate limited', function () {
 
     $this->assertStringContainsString('Too many login attempts', $errors->first('email'));
 });
+

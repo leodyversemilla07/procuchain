@@ -7,6 +7,8 @@
 /storage/*.key
 /storage/pail
 /vendor
+/resources/js/routes
+/resources/js/actions
 .env
 .env.backup
 .env.production

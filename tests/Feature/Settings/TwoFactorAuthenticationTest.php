@@ -50,3 +50,4 @@ test('two factor settings page shows correct status when enabled', function () {
         ->where('twoFactorEnabled', true)
     );
 });
+

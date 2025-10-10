@@ -13,7 +13,7 @@ class BidOpeningDocumentsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return Auth::check() && Auth::user()->role === UserRoleEnums::BAC_SECRETARIAT->value;
+        return Auth::check() && Auth::user()->hasRole(UserRoleEnums::BAC_SECRETARIAT->value);
     }
 
     /**
@@ -50,3 +50,4 @@ class BidOpeningDocumentsRequest extends FormRequest
         ];
     }
 }
+

@@ -4,18 +4,19 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
+use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
-    $this->user = User::factory()->create([
-        'role' => 'bac_secretariat',
-    ]);
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web', 'guard_name' => 'web']);
+    $this->user = User::factory()->create();
+    $this->user->assignRole('bac_secretariat');
     $this->actingAs($this->user);
 
     // Fake notifications and events to avoid real side effects
     Notification::fake();
     Event::fake();
     // Optionally, mock blockchain and document upload services if needed
-    // You can use Laravel's container to bind mocks if required
+    // You can use Laravel's container to bind mocks if needed
 });
 
 describe('ProcurementController Feature', function () {
@@ -479,3 +480,4 @@ describe('ProcurementController Feature', function () {
         );
     });
 });
+

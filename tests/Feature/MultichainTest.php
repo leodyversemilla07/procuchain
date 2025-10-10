@@ -196,3 +196,4 @@ it('fails with final message on connection failure', function () {
     expect(fn () => $service->getInfo())
         ->toThrow(Exception::class, 'Failed to connect to MultiChain node after 1 attempts');
 });
+

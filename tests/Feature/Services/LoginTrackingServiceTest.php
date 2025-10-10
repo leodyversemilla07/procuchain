@@ -192,3 +192,4 @@ test('sets correct lock expiration time', function () {
         $afterLock->addMinutes(30)->addSeconds(5)
     );
 });
+
