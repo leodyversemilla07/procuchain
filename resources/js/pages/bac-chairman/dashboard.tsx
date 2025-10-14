@@ -10,6 +10,9 @@ import { Stage, Status } from '@/types/blockchain';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';
+import { dashboard } from '@/routes/bac-chairman';
+import { index as procurementsListIndex } from '@/routes/bac-chairman/procurements-list';
+import { show as procurementsShow } from '@/routes/bac-chairman/procurements';
 
 interface DashboardStats {
     ongoingProjects: number;
@@ -44,7 +47,7 @@ interface DashboardProps extends SharedData {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Bids and Awards Committee Chairman Dashboard',
-        href: route('bac-chairman.dashboard'),
+        href: dashboard.url(),
     },
 ];
 
@@ -126,7 +129,7 @@ export default function BACChairmanDashboard() {
     const heroActions = (
         <div className="flex items-center gap-4">
             <Link
-                href={route('bac-chairman.procurements-list.index')}
+                href={procurementsListIndex.url()}
                 className="bg-secondary text-secondary-foreground hover:bg-secondary/90 inline-flex items-center rounded-md px-3 py-2 text-sm font-medium"
             >
                 View Procurements
@@ -170,14 +173,14 @@ export default function BACChairmanDashboard() {
                         icon={Clock}
                         activities={recentActivityItems}
                         getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
-                        viewAllHref={recentActivityItems.length > 0 ? route('bac-chairman.procurements-list.index') : undefined}
+                        viewAllHref={recentActivityItems.length > 0 ? procurementsListIndex.url() : undefined}
                         errorState={buildErrorState('Unable to load recent activities')}
                     />
 
                     <RecentProcurementsTable
                         procurements={recentProcurementItems}
-                        getViewProcurementHref={(procurement) => route('bac-chairman.procurements.show', { id: procurement.id })}
-                        viewAllHref={recentProcurementItems.length > 0 ? route('bac-chairman.procurements-list.index') : undefined}
+                        getViewProcurementHref={(procurement) => procurementsShow.url({ id: procurement.id })}
+                        viewAllHref={recentProcurementItems.length > 0 ? procurementsListIndex.url() : undefined}
                         errorState={buildErrorState('Unable to load recent procurements')}
                     />
                 </div>

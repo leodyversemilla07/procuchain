@@ -1,22 +1,17 @@
-import { Head, useForm } from '@inertiajs/react';
-import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
-import { FormEventHandler, useState } from 'react';
+import { Form, Head } from '@inertiajs/react';
+import { Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
 
-import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { getDeviceInfo } from '@/lib/device-detection';
-
-type LoginForm = {
-    email: string;
-    password: string;
-    remember: boolean;
-    device_info?: string;
-};
+import { store } from '@/routes/login';
+import { request } from '@/routes/password';
 
 interface LoginProps {
     status?: string;
@@ -24,102 +19,85 @@ interface LoginProps {
 }
 
 export default function Login({ status, canResetPassword }: LoginProps) {
-    const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
-        email: '',
-        password: '',
-        remember: false,
-        device_info: '',
-    });
     const [showPassword, setShowPassword] = useState(false);
-
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-
-        // Include enhanced device detection information
-        const deviceInfo = getDeviceInfo();
-        setData('device_info', JSON.stringify(deviceInfo));
-
-        post(route('login'), {
-            onFinish: () => reset('password'),
-        });
-    };
 
     return (
         <AuthLayout title="Log in to your account" description="Enter your email and password below to log in">
             <Head title="Log in" />
 
-            <form className="flex flex-col gap-6" onSubmit={submit}>
-                <div className="grid gap-6">
-                    <div className="grid gap-2">
-                        <Label htmlFor="email">Email address</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            required
-                            autoFocus
-                            tabIndex={1}
-                            autoComplete="email"
-                            value={data.email}
-                            onChange={(e) => setData('email', e.target.value)}
-                            placeholder="email@example.com"
-                        />
-                        <InputError message={errors.email} />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <div className="flex items-center">
-                            <Label htmlFor="password">Password</Label>
-                            {canResetPassword && (
-                                <TextLink href={route('password.request')} className="ml-auto text-sm" tabIndex={5}>
-                                    Forgot password?
-                                </TextLink>
-                            )}
-                        </div>
-                        <div className="relative">
+            <Form
+                action={store()}
+                className="flex flex-col gap-6"
+                transform={(data) => ({
+                    ...data,
+                    device_info: JSON.stringify(getDeviceInfo()),
+                })}
+            >
+                {({ errors, processing }) => (
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor="email">Email address</FieldLabel>
                             <Input
-                                id="password"
-                                type={showPassword ? 'text' : 'password'}
+                                id="email"
+                                name="email"
+                                type="email"
                                 required
-                                tabIndex={2}
-                                autoComplete="current-password"
-                                value={data.password}
-                                onChange={(e) => setData('password', e.target.value)}
-                                placeholder="Password"
+                                autoFocus
+                                tabIndex={1}
+                                autoComplete="email"
+                                placeholder="email@example.com"
                             />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute top-1/2 right-3 -translate-y-1/2"
-                                tabIndex={3}
-                                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                            >
-                                {showPassword ? (
-                                    <EyeOff className="text-muted-foreground h-4 w-4" />
-                                ) : (
-                                    <Eye className="text-muted-foreground h-4 w-4" />
+                            <FieldError>{errors.email}</FieldError>
+                        </Field>
+
+                        <Field>
+                            <div className="flex items-center">
+                                <FieldLabel htmlFor="password">Password</FieldLabel>
+                                {canResetPassword && (
+                                    <TextLink href={request.url()} className="ml-auto text-sm" tabIndex={5}>
+                                        Forgot password?
+                                    </TextLink>
                                 )}
-                            </button>
-                        </div>
-                        <InputError message={errors.password} />
-                    </div>
+                            </div>
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    required
+                                    tabIndex={2}
+                                    autoComplete="current-password"
+                                    placeholder="Password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute top-1/2 right-3 -translate-y-1/2"
+                                    tabIndex={3}
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="text-muted-foreground h-4 w-4" />
+                                    ) : (
+                                        <Eye className="text-muted-foreground h-4 w-4" />
+                                    )}
+                                </button>
+                            </div>
+                            <FieldError>{errors.password}</FieldError>
+                        </Field>
 
-                    <div className="flex items-center space-x-3">
-                        <Checkbox
-                            id="remember"
-                            name="remember"
-                            checked={data.remember}
-                            onClick={() => setData('remember', !data.remember)}
-                            tabIndex={4}
-                        />
-                        <Label htmlFor="remember">Remember me</Label>
-                    </div>
+                        <Field orientation="horizontal">
+                            <Checkbox id="remember" name="remember" tabIndex={4} />
+                            <FieldLabel htmlFor="remember">Remember me</FieldLabel>
+                        </Field>
 
-                    <Button type="submit" className="mt-4 w-full" tabIndex={5} disabled={processing}>
-                        {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Log in
-                    </Button>
-                </div>
-            </form>
+                        <Button type="submit" className="mt-4 w-full" tabIndex={5} disabled={processing}>
+                            {processing && <Spinner />}
+                            Log in
+                        </Button>
+                    </FieldGroup>
+                )}
+            </Form>
 
             {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>}
         </AuthLayout>

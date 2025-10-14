@@ -3,6 +3,17 @@ import type { Config } from 'ziggy-js';
 
 export interface Auth {
     user: User | null;
+    roles: string[];
+    permissions: string[];
+    can: {
+        manageProcurement: boolean;
+        approveProcurement: boolean;
+        manageDocuments: boolean;
+        viewDocuments: boolean;
+        manageStages: boolean;
+        accessBlockchain: boolean;
+        manageUsers: boolean;
+    };
 }
 
 export interface BreadcrumbItem {

@@ -10,6 +10,9 @@ import { Stage, Status } from '@/types/blockchain';
 import { Head, router, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';
+import { dashboard } from '@/routes/hope';
+import { index as procurementsListIndex } from '@/routes/hope/procurements-list';
+import { show as procurementsShow } from '@/routes/hope/procurements';
 
 interface DashboardStats {
     ongoingProjects: number;
@@ -44,7 +47,7 @@ interface DashboardProps extends SharedData {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Head of Procuring Entity Dashboard',
-        href: route('hope.dashboard'),
+        href: dashboard.url(),
     },
 ];
 
@@ -167,15 +170,15 @@ export default function HOPEDashboard() {
                         icon={Clock}
                         activities={recentActivityItems}
                         getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
-                        viewAllHref={recentActivityItems.length > 0 ? route('hope.procurements-list.index') : undefined}
+                        viewAllHref={recentActivityItems.length > 0 ? procurementsListIndex.url() : undefined}
                         errorState={buildErrorState('Unable to load recent activities')}
                     />
 
                     <RecentProcurementsTable
                         className="lg:col-span-1"
                         procurements={recentProcurementItems}
-                        getViewProcurementHref={(procurement) => route('hope.procurements.show', { id: procurement.id })}
-                        viewAllHref={recentProcurementItems.length > 0 ? route('hope.procurements-list.index') : undefined}
+                        getViewProcurementHref={(procurement) => procurementsShow.url({ id: procurement.id })}
+                        viewAllHref={recentProcurementItems.length > 0 ? procurementsListIndex.url() : undefined}
                         errorState={buildErrorState('Unable to load recent procurements')}
                     />
                 </div>

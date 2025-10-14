@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { usePermissions } from '@/hooks/use-permissions';
 import AppLayout from '@/layouts/app-layout';
 import { User, type BreadcrumbItem } from '@/types';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
@@ -31,6 +32,8 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { AlertTriangle, Clock, MoreHorizontal, QrCode, RefreshCw, RotateCcw, Shield, ShieldOff, Unlock, User as UserIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { dashboard } from '@/routes/admin';
+import { locked } from '@/routes/admin/accounts';
 
 interface PageProps extends InertiaPageProps {
     lockedAccounts: User[];
@@ -45,16 +48,17 @@ interface PageProps extends InertiaPageProps {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Admin Dashboard',
-        href: route('admin.dashboard'),
+        href: dashboard.url(),
     },
     {
         title: 'Locked Accounts',
-        href: route('admin.accounts.locked'),
+        href: locked.url(),
     },
 ];
 
 export default function AdminLockedAccounts() {
     const { lockedAccounts, flash } = usePage<PageProps>().props;
+    const { hasPermission } = usePermissions();
     const [isUnlockDialogOpen, setIsUnlockDialogOpen] = useState(false);
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -331,16 +335,18 @@ export default function AdminLockedAccounts() {
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
-                                                        {user.is_currently_locked && (
+                                                        {user.is_currently_locked && hasPermission('manage users') && (
                                                             <DropdownMenuItem onClick={() => handleUnlockAccount(user)} className="text-success">
                                                                 <Unlock className="mr-2 h-4 w-4" />
                                                                 Unlock Account
                                                             </DropdownMenuItem>
                                                         )}
-                                                        <DropdownMenuItem onClick={() => handleResetAttempts(user)}>
-                                                            <RotateCcw className="mr-2 h-4 w-4" />
-                                                            Reset Attempts
-                                                        </DropdownMenuItem>
+                                                        {hasPermission('manage users') && (
+                                                            <DropdownMenuItem onClick={() => handleResetAttempts(user)}>
+                                                                <RotateCcw className="mr-2 h-4 w-4" />
+                                                                Reset Attempts
+                                                            </DropdownMenuItem>
+                                                        )}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
