@@ -1,15 +1,18 @@
 import { Link } from '@inertiajs/react';
 import { Mail } from 'lucide-react';
 import AppLogoIcon from './app-logo-icon';
+import { home, about, team, contact } from '@/routes';
+import { policy } from '@/routes/privacy';
+import { service } from '@/routes/terms';
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();
 
     const navigationLinks = [
-        { name: 'Home', href: route('home') },
-        { name: 'About', href: route('about') },
-        { name: 'Team', href: route('team') },
-        { name: 'Contact', href: route('contact') },
+        { name: 'Home', href: home.url() },
+        { name: 'About', href: about.url() },
+        { name: 'Team', href: team.url() },
+        { name: 'Contact', href: contact.url() },
     ];
     return (
         <footer className="bg-background border-border border-t">
@@ -44,7 +47,7 @@ export default function Footer() {
                         <p className="text-muted-foreground text-center text-sm sm:text-left">© {currentYear} ProcuChain</p>
                         <div className="flex space-x-6">
                             <a
-                                href={route('privacy.policy')}
+                                href={policy.url()}
                                 className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -52,7 +55,7 @@ export default function Footer() {
                                 Privacy
                             </a>
                             <a
-                                href={route('terms.service')}
+                                href={service.url()}
                                 className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                                 target="_blank"
                                 rel="noopener noreferrer"

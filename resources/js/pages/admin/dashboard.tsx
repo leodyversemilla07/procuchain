@@ -13,6 +13,9 @@ import { CheckCircle, Clock, FileIcon, FileText, Shield, Users } from 'lucide-re
 import { useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { dashboard } from '@/routes/admin';
+import { index as procurementsListIndex } from '@/routes/admin/procurements-list';
+import { show as procurementsShow } from '@/routes/admin/procurements';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
@@ -123,7 +126,7 @@ const formatValue = (value: number, type: 'currency' | 'number' | 'percentage' =
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Admin Dashboard',
-        href: route('admin.dashboard'),
+        href: dashboard.url(),
     },
 ];
 
@@ -282,15 +285,15 @@ export default function AdminDashboard() {
                         icon={Clock}
                         activities={recentActivityItems}
                         getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
-                        viewAllHref={recentActivityItems.length > 0 ? route('admin.procurements-list.index') : undefined}
+                        viewAllHref={recentActivityItems.length > 0 ? procurementsListIndex.url() : undefined}
                         errorState={buildErrorState('Unable to load system activities')}
                     />
 
                     <RecentProcurementsTable
                         className="lg:col-span-2"
                         procurements={recentProcurementItems}
-                        getViewProcurementHref={(procurement) => route('admin.procurements.show', { id: procurement.id })}
-                        viewAllHref={recentProcurementItems.length > 0 ? route('admin.procurements-list.index') : undefined}
+                        getViewProcurementHref={(procurement) => procurementsShow.url({ id: procurement.id })}
+                        viewAllHref={recentProcurementItems.length > 0 ? procurementsListIndex.url() : undefined}
                         errorState={buildErrorState('Unable to load recent procurements')}
                     />
                 </div>

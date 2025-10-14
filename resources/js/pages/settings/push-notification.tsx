@@ -36,10 +36,29 @@ export default function PushNotification() {
 
     // Check if push notifications are supported
     useEffect(() => {
-        const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+        const checkSupport = () => {
+            // Check for all required APIs
+            const hasServiceWorker = 'serviceWorker' in navigator;
+            const hasPushManager = 'PushManager' in window;
+            const hasNotification = 'Notification' in window;
 
-        setIsSupported(supported);
-        if (supported) setPermission(Notification.permission);
+            console.log('Push notification support check:', {
+                hasServiceWorker,
+                hasPushManager,
+                hasNotification,
+                isSecureContext: window.isSecureContext,
+                protocol: window.location.protocol,
+            });
+
+            const supported = hasServiceWorker && hasPushManager && hasNotification;
+
+            setIsSupported(supported);
+            if (supported && 'Notification' in window) {
+                setPermission(Notification.permission);
+            }
+        };
+
+        checkSupport();
     }, []);
 
     // Check current subscription status
@@ -60,17 +79,22 @@ export default function PushNotification() {
 
     // Register service worker
     useEffect(() => {
-        if (!isSupported) return;
+        if (!isSupported) {
+            console.log('Push notifications not supported, skipping service worker registration');
+            return;
+        }
 
         const registerServiceWorker = async () => {
             try {
+                console.log('Attempting to register service worker at /sw.js');
                 const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-                console.log('Service Worker registered:', reg);
+                console.log('Service Worker registered successfully:', reg);
                 setRegistration(reg);
-                checkSubscriptionStatus(reg);
+                await checkSubscriptionStatus(reg);
             } catch (e) {
                 console.error('Service Worker registration failed:', e);
-                setError('Failed to register service worker');
+                const errorMessage = e instanceof Error ? e.message : 'Failed to register service worker';
+                setError(`Service Worker Error: ${errorMessage}`);
             }
         };
 
@@ -259,21 +283,48 @@ export default function PushNotification() {
                     {!isSupported ? (
                         <div className="flex flex-col items-start justify-start space-y-4">
                             <Badge variant="destructive">Not Supported</Badge>
-                            <p className="text-muted-foreground">
-                                Push notifications are not supported in your browser. Please use a modern browser like Chrome, Firefox, Safari, or
-                                Edge.
-                            </p>
+                            <div className="space-y-2">
+                                <p className="text-muted-foreground">Push notifications are not supported in your current environment.</p>
+                                {typeof window !== 'undefined' && !window.isSecureContext && window.location.protocol === 'http:' && (
+                                    <Alert>
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertDescription>
+                                            <strong>HTTPS Required:</strong> Push notifications require a secure connection (HTTPS). Your site is
+                                            currently running on HTTP. Please use HTTPS or access via localhost/127.0.0.1 for testing.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                                {typeof window !== 'undefined' && window.isSecureContext && (
+                                    <Alert>
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertDescription>
+                                            Your browser may not support push notifications. Please use a modern browser like Chrome, Firefox, Safari,
+                                            or Edge.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <div className="flex flex-col items-start justify-start space-y-4">
                             <div className="flex items-center gap-2">
-                                {isSubscribed ? <Badge variant="default">Enabled</Badge> : <Badge variant="destructive">Disabled</Badge>}
+                                {isSubscribed ? (
+                                    <Badge variant="default">Enabled</Badge>
+                                ) : permission === 'granted' ? (
+                                    <Badge variant="secondary">Ready to Enable</Badge>
+                                ) : permission === 'denied' ? (
+                                    <Badge variant="destructive">Permission Denied</Badge>
+                                ) : (
+                                    <Badge variant="outline">Not Configured</Badge>
+                                )}
                             </div>
 
                             <p className="text-muted-foreground">
                                 {isSubscribed
                                     ? "You'll receive push notifications for procurement updates, document changes, and important system events."
-                                    : 'Enable push notifications to receive real-time updates about procurement activities, document validations, and important alerts directly in your browser.'}
+                                    : permission === 'granted'
+                                        ? 'Click the button below to start receiving push notifications for procurement activities, document validations, and important alerts.'
+                                        : 'Enable push notifications to receive real-time updates about procurement activities, document validations, and important alerts directly in your browser.'}
                             </p>
 
                             {showPermissionAlert && (
@@ -372,15 +423,20 @@ export default function PushNotification() {
                             )}
 
                             {isSubscribed && (
-                                <div className="bg-muted/50 w-full rounded-lg p-3">
-                                    <h4 className="mb-2 text-sm font-medium">What you'll receive notifications for:</h4>
-                                    <ul className="text-muted-foreground space-y-1 text-sm">
-                                        <li>• Procurement stage updates and transitions</li>
-                                        <li>• Document uploads and validations</li>
-                                        <li>• Important system alerts and deadlines</li>
-                                        <li>• Status changes requiring your attention</li>
-                                    </ul>
-                                </div>
+                                <Alert>
+                                    <Bell className="h-4 w-4" />
+                                    <AlertDescription>
+                                        <div className="space-y-2">
+                                            <p className="font-medium">What you'll receive notifications for:</p>
+                                            <ul className="marker:text-muted-foreground ml-4 list-disc space-y-1.5 text-sm">
+                                                <li>Procurement stage updates and transitions</li>
+                                                <li>Document uploads and validations</li>
+                                                <li>Important system alerts and deadlines</li>
+                                                <li>Status changes requiring your attention</li>
+                                            </ul>
+                                        </div>
+                                    </AlertDescription>
+                                </Alert>
                             )}
                         </div>
                     )}

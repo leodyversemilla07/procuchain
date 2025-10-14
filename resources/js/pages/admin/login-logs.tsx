@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DateRange } from 'react-day-picker';
+import { dashboard, loginLogs } from '@/routes/admin';
 
 interface LoginLog {
     id: number;
@@ -77,11 +78,11 @@ interface Props {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Admin Dashboard',
-        href: route('admin.dashboard'),
+        href: dashboard.url(),
     },
     {
         title: 'Login Logs',
-        href: route('admin.login-logs'),
+        href: loginLogs.url(),
     },
 ];
 
@@ -147,7 +148,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
         (logs: LoginLog[]) => {
             return logs.filter((log) => {
                 // Filter out the current logged-in admin user's entries
-                const isNotCurrentUser = !log.user || log.user.id !== auth.user.id;
+                const isNotCurrentUser = !log.user || !auth.user || log.user.id !== auth.user.id;
 
                 // Text search
                 const matchesSearch =
@@ -184,7 +185,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                 return isNotCurrentUser && matchesSearch && matchesRole && matchesStatus && matchesDeviceType && matchesBrowser && matchesDateRange;
             });
         },
-        [debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, dateRange, auth.user.id],
+        [debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, dateRange, auth.user],
     );
 
     // Sort and filter recent logins (latest first)

@@ -2,6 +2,7 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { usePermissions } from '@/hooks/use-permissions';
 import { notifications as notificationsPage } from '@/routes';
 import { dashboard as adminDashboard, loginLogs as adminLoginLogs, users as adminUsers } from '@/routes/admin';
 import { locked as adminAccountsLocked } from '@/routes/admin/accounts';
@@ -18,83 +19,112 @@ import { Link, usePage } from '@inertiajs/react';
 import { Bell, LayoutGrid, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
-const getNavItemsByRole = (role: string): NavItem[] => {
+const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermissions>): NavItem[] => {
+    const { can, hasPermission } = permissions;
+
+    const items: NavItem[] = [];
+
+    // Dashboard - role-based
     switch (role) {
-        case 'bac_secretariat':
-            return [
-                {
-                    title: 'Dashboard',
-                    href: bacSecretariatDashboard.url(),
-                    icon: LayoutGrid,
-                },
-                {
-                    title: 'Procurement List',
-                    href: bacSecretariatProcurementsList.url(),
-                    icon: Table2,
-                },
-                {
-                    title: 'Procurement Initiation',
-                    href: bacSecretariatProcurementInitiation.url(),
-                    icon: Upload,
-                },
-            ];
-        case 'bac_chairman':
-            return [
-                {
-                    title: 'Dashboard',
-                    href: bacChairmanDashboard.url(),
-                    icon: LayoutGrid,
-                },
-                {
-                    title: 'Procurement List',
-                    href: bacChairmanProcurementsList.url(),
-                    icon: Table2,
-                },
-            ];
-        case 'hope':
-            return [
-                {
-                    title: 'Dashboard',
-                    href: hopeDashboard.url(),
-                    icon: LayoutGrid,
-                },
-                {
-                    title: 'Procurement List',
-                    href: hopeProcurementsList.url(),
-                    icon: Table2,
-                },
-            ];
         case 'admin':
-            return [
-                {
+            if (hasPermission('view admin dashboard')) {
+                items.push({
                     title: 'Dashboard',
                     href: adminDashboard.url(),
                     icon: LayoutGrid,
-                },
-                {
-                    title: 'Procurement List',
-                    href: adminProcurementsList.url(),
-                    icon: Table2,
-                },
-                {
-                    title: 'User Management',
-                    href: adminUsers.url(),
-                    icon: Users,
-                },
-                {
-                    title: 'Locked Accounts',
-                    href: adminAccountsLocked.url(),
-                    icon: ShieldOff,
-                },
-                {
-                    title: 'Login Logs',
-                    href: adminLoginLogs.url(),
-                    icon: Shield,
-                },
-            ];
-        default:
-            return [];
+                });
+            }
+            break;
+        case 'bac_secretariat':
+            if (hasPermission('view bac-secretariat dashboard')) {
+                items.push({
+                    title: 'Dashboard',
+                    href: bacSecretariatDashboard.url(),
+                    icon: LayoutGrid,
+                });
+            }
+            break;
+        case 'bac_chairman':
+            if (hasPermission('view bac-chairman dashboard')) {
+                items.push({
+                    title: 'Dashboard',
+                    href: bacChairmanDashboard.url(),
+                    icon: LayoutGrid,
+                });
+            }
+            break;
+        case 'hope':
+            if (hasPermission('view hope dashboard')) {
+                items.push({
+                    title: 'Dashboard',
+                    href: hopeDashboard.url(),
+                    icon: LayoutGrid,
+                });
+            }
+            break;
     }
+
+    // Procurement List - available to all roles with view procurement permission
+    if (hasPermission('view procurement')) {
+        let procurementListUrl = '';
+        switch (role) {
+            case 'admin':
+                procurementListUrl = adminProcurementsList.url();
+                break;
+            case 'bac_secretariat':
+                procurementListUrl = bacSecretariatProcurementsList.url();
+                break;
+            case 'bac_chairman':
+                procurementListUrl = bacChairmanProcurementsList.url();
+                break;
+            case 'hope':
+                procurementListUrl = hopeProcurementsList.url();
+                break;
+        }
+
+        if (procurementListUrl) {
+            items.push({
+                title: 'Procurement List',
+                href: procurementListUrl,
+                icon: Table2,
+            });
+        }
+    }
+
+    // Procurement Initiation - only for BAC Secretariat with permission
+    if (role === 'bac_secretariat' && can.manageProcurement) {
+        items.push({
+            title: 'Procurement Initiation',
+            href: bacSecretariatProcurementInitiation.url(),
+            icon: Upload,
+        });
+    }
+
+    // User Management - only for admins with permission
+    if (can.manageUsers) {
+        items.push({
+            title: 'User Management',
+            href: adminUsers.url(),
+            icon: Users,
+        });
+    }
+
+    // Locked Accounts - only for admins
+    if (role === 'admin') {
+        items.push({
+            title: 'Locked Accounts',
+            href: adminAccountsLocked.url(),
+            icon: ShieldOff,
+        });
+
+        items.push({
+            title: 'Login Logs',
+            href: adminLoginLogs.url(),
+            icon: Shield,
+        });
+    }
+
+    return items;
 };
 
 const getFooterNavItemsByRole = (role: string): NavItem[] => {
@@ -128,14 +158,18 @@ const getRoleUrl = (role: string): string => {
 export function AppSidebar() {
     const page = usePage<SharedData>();
     const { auth } = page.props;
+    const permissions = usePermissions();
 
     // Handle case when user is not authenticated
     if (!auth?.user) {
         return null;
     }
 
-    const mainNavItems = getNavItemsByRole(auth.user.role);
-    const footerNavItems = getFooterNavItemsByRole(auth.user.role);
+    // Get primary role from Spatie roles array
+    const primaryRole = auth.roles?.[0] || '';
+
+    const mainNavItems = getNavItemsByRole(primaryRole, permissions);
+    const footerNavItems = getFooterNavItemsByRole(primaryRole);
 
     return (
         <Sidebar collapsible="icon" variant="sidebar">
@@ -143,7 +177,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={getRoleUrl(auth.user.role)} prefetch>
+                            <Link href={getRoleUrl(primaryRole)} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

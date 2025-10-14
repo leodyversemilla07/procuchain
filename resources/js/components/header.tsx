@@ -6,6 +6,12 @@ import axios from 'axios';
 import { Loader2, Menu, Monitor, Moon, Search, Sun, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import AppLogoIcon from './app-logo-icon';
+import { home, about, team, contact, login, search as searchRoute } from '@/routes';
+import { dashboard as hopeDashboard } from '@/routes/hope';
+import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
+import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
+import { dashboard as adminDashboard } from '@/routes/admin';
+import { suggestions as searchSuggestions } from '@/routes/search';
 
 interface Suggestion {
     id: string | number;
@@ -17,15 +23,15 @@ interface Suggestion {
 function getDashboardRouteByRole(role: string): string {
     switch (role) {
         case 'hope':
-            return route('hope.dashboard');
+            return hopeDashboard.url();
         case 'bac_secretariat':
-            return route('bac-secretariat.dashboard');
+            return bacSecretariatDashboard.url();
         case 'bac_chairman':
-            return route('bac-chairman.dashboard');
+            return bacChairmanDashboard.url();
         case 'admin':
-            return route('admin.dashboard');
+            return adminDashboard.url();
         default:
-            return route('home');
+            return home.url();
     }
 }
 
@@ -89,7 +95,7 @@ export default function Header() {
         if (debouncedSearchQuery.trim().length > 1) {
             setIsSuggestionsLoading(true);
             axios
-                .get(route('search.suggestions'), { params: { query: debouncedSearchQuery } })
+                .get(searchSuggestions.url(), { params: { query: debouncedSearchQuery } })
                 .then((response) => {
                     setSuggestions(response.data.suggestions || []);
                     setIsSuggestionsVisible(true);
@@ -152,7 +158,7 @@ export default function Header() {
         }
 
         router.get(
-            route('search'),
+            searchRoute.url(),
             { query: searchQuery },
             {
                 preserveState: true,
@@ -242,7 +248,7 @@ export default function Header() {
                 }`}
             >
                 <div className="mx-auto flex h-[52px] max-w-7xl items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8">
-                    <Link href={route('home')} className="group flex flex-shrink-0 items-center space-x-3" aria-label="ProcuChain Home">
+                    <Link href={home.url()} className="group flex flex-shrink-0 items-center space-x-3" aria-label="ProcuChain Home">
                         <div className="h-8 w-8 transform overflow-hidden rounded-xl transition-transform duration-200 group-hover:scale-105 sm:h-10 sm:w-10">
                             <AppLogoIcon className="h-full w-full object-cover" />
                         </div>
@@ -250,16 +256,16 @@ export default function Header() {
                     </Link>
                     <nav className="hidden flex-grow items-center justify-center lg:flex" role="navigation" aria-label="Main navigation">
                         <div className="flex items-center space-x-6 md:space-x-8">
-                            <NavLink href={route('home')} active={route().current('home')}>
+                            <NavLink href={home.url()} active={route().current('home')}>
                                 Home
                             </NavLink>
-                            <NavLink href={route('about')} active={route().current('about')}>
+                            <NavLink href={about.url()} active={route().current('about')}>
                                 About
                             </NavLink>
-                            <NavLink href={route('team')} active={route().current('team')}>
+                            <NavLink href={team.url()} active={route().current('team')}>
                                 Team
                             </NavLink>
-                            <NavLink href={route('contact')} active={route().current('contact')}>
+                            <NavLink href={contact.url()} active={route().current('contact')}>
                                 Contact
                             </NavLink>
                         </div>
@@ -349,7 +355,7 @@ export default function Header() {
                                 </Link>
                             ) : (
                                 <Link
-                                    href={route('login')}
+                                    href={login.url()}
                                     className="text-primary-foreground bg-primary hover:bg-primary/90 focus:ring-ring rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-200 focus:ring-1 focus:outline-none"
                                 >
                                     Sign In
@@ -460,7 +466,7 @@ export default function Header() {
                     style={{ backgroundColor: 'var(--background, #ffffff)' }}
                 >
                     <div className="border-border flex items-center justify-between border-b p-3 sm:p-4 md:p-6 lg:p-8">
-                        <Link href={route('home')} className="flex items-center space-x-3" onClick={resetSearchState}>
+                        <Link href={home.url()} className="flex items-center space-x-3" onClick={resetSearchState}>
                             <div className="h-8 w-8 overflow-hidden rounded-xl sm:h-10 sm:w-10">
                                 <AppLogoIcon className="h-full w-full object-cover" />
                             </div>
@@ -487,16 +493,16 @@ export default function Header() {
                         </div>
                     </div>
                     <nav className="mt-6 space-y-4 px-3 sm:px-4 md:px-6 lg:px-8" role="navigation" aria-label="Mobile navigation">
-                        <MobileNavLink href={route('home')} active={route().current('home')} onClick={resetSearchState}>
+                        <MobileNavLink href={home.url()} active={route().current('home')} onClick={resetSearchState}>
                             Home
                         </MobileNavLink>
-                        <MobileNavLink href={route('about')} active={route().current('about')} onClick={resetSearchState}>
+                        <MobileNavLink href={about.url()} active={route().current('about')} onClick={resetSearchState}>
                             About
                         </MobileNavLink>
-                        <MobileNavLink href={route('team')} active={route().current('team')} onClick={resetSearchState}>
+                        <MobileNavLink href={team.url()} active={route().current('team')} onClick={resetSearchState}>
                             Team
                         </MobileNavLink>
-                        <MobileNavLink href={route('contact')} active={route().current('contact')} onClick={resetSearchState}>
+                        <MobileNavLink href={contact.url()} active={route().current('contact')} onClick={resetSearchState}>
                             Contact
                         </MobileNavLink>
                     </nav>
@@ -512,7 +518,7 @@ export default function Header() {
                             </Link>
                         ) : (
                             <Link
-                                href={route('login')}
+                                href={login.url()}
                                 onClick={resetSearchState}
                                 className="text-primary-foreground bg-primary hover:bg-primary/90 focus:ring-ring block w-full rounded-md py-2.5 text-center font-medium transition-colors duration-200 focus:ring-1 focus:outline-none sm:py-3"
                             >

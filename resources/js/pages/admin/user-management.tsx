@@ -1,3 +1,4 @@
+import { Can } from '@/components/auth/can';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import {
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { usePermissions } from '@/hooks/use-permissions';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, usePage } from '@inertiajs/react';
 import {
@@ -39,6 +41,7 @@ import DeleteUserDialog from '@/components/admin/delete-user-dialog';
 import EditUserDialog from '@/components/admin/edit-user-dialog';
 import { HeroCard } from '@/components/hero-card';
 import { Pagination } from '@/components/pagination';
+import { dashboard, users as usersRoute } from '@/routes/admin';
 
 interface User {
     id: number;
@@ -69,17 +72,18 @@ interface PageProps {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Admin Dashboard',
-        href: route('admin.dashboard'),
+        href: dashboard.url(),
     },
     {
         title: 'Users',
-        href: route('admin.users'),
+        href: usersRoute.url(),
     },
 ];
 
 export default function AdminUserManagement() {
     const page = usePage<PageProps>();
     const { users, roles } = page.props;
+    const { hasPermission } = usePermissions();
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -512,14 +516,18 @@ export default function AdminUserManagement() {
                                 Copy email
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openEditModal(user)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit user
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-destructive hover:text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete user
-                            </DropdownMenuItem>
+                            {hasPermission('edit users') && (
+                                <DropdownMenuItem onClick={() => openEditModal(user)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit user
+                                </DropdownMenuItem>
+                            )}
+                            {hasPermission('delete users') && (
+                                <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-destructive hover:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete user
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 );
@@ -557,10 +565,12 @@ export default function AdminUserManagement() {
                     title="User Management"
                     description="Manage system users and their roles"
                     actions={
-                        <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Add User
-                        </Button>
+                        <Can permission="create users">
+                            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                Add User
+                            </Button>
+                        </Can>
                     }
                 />
 
@@ -594,10 +604,12 @@ export default function AdminUserManagement() {
                                     <Download className="mr-2 h-4 w-4" />
                                     Export to CSV
                                 </Button>
-                                <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="h-8">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Selected
-                                </Button>
+                                {hasPermission('delete users') && (
+                                    <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="h-8">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Selected
+                                    </Button>
+                                )}
                                 <Button
                                     variant="ghost"
                                     size="sm"

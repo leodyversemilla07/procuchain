@@ -2,6 +2,7 @@ import { Head, Link, router, usePage, usePoll } from '@inertiajs/react';
 import { Activity, Archive, Clock, FileText, Plus } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { Can } from '@/components/auth/can';
 import { HeroCard } from '@/components/hero-card';
 import { PreBidConferenceDialog } from '@/components/pre-bid-conference-dialog';
 import { PreProcurementDialog } from '@/components/pre-procurement-conference-dialog';
@@ -272,14 +273,14 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                     title="Procurement List"
                     description="View and manage procurement items across all stages"
                     actions={
-                        userRole === 'bac_secretariat' ? (
+                        <Can permission="create procurement">
                             <Button asChild>
                                 <Link href="/bac-secretariat/procurement/procurement-initiation" className="flex items-center gap-2">
                                     <Plus className="h-4 w-4" />
                                     <span>New Procurement</span>
                                 </Link>
                             </Button>
-                        ) : null
+                        </Can>
                     }
                 />
 

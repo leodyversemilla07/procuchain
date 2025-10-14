@@ -45,6 +45,17 @@ class HandleInertiaRequests extends Middleware
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user(),
+                'roles' => $request->user() ? $request->user()->getRoleNames()->toArray() : [],
+                'permissions' => $request->user() ? $request->user()->getAllPermissions()->pluck('name')->toArray() : [],
+                'can' => [
+                    'manageProcurement' => $request->user()?->canManageProcurement() ?? false,
+                    'approveProcurement' => $request->user()?->canApproveProcurement() ?? false,
+                    'manageDocuments' => $request->user()?->canManageDocuments() ?? false,
+                    'viewDocuments' => $request->user()?->canViewDocuments() ?? false,
+                    'manageStages' => $request->user()?->canManageStages() ?? false,
+                    'accessBlockchain' => $request->user()?->canAccessBlockchain() ?? false,
+                    'manageUsers' => $request->user()?->canManageUsers() ?? false,
+                ],
             ],
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),

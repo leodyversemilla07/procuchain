@@ -52,6 +52,15 @@ class User extends Authenticatable
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var list<string>
+     */
+    protected $appends = [
+        'role',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      *
@@ -71,6 +80,16 @@ class User extends Authenticatable
             'two_factor_recovery_codes' => 'encrypted',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the user's role attribute.
+     */
+    protected function role(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn (): ?string => $this->getPrimaryRole(),
+        );
     }
 
     /**
@@ -239,5 +258,185 @@ class User extends Authenticatable
 
         // Calculate remaining minutes (from now to lock expiration)
         return (int) ceil(now()->diffInMinutes($this->lock_expires_at, false));
+    }
+
+    /**
+     * Check if user is an admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Check if user is a BAC Secretariat member
+     */
+    public function isBacSecretariat(): bool
+    {
+        return $this->hasRole('bac_secretariat');
+    }
+
+    /**
+     * Check if user is the BAC Chairman
+     */
+    public function isBacChairman(): bool
+    {
+        return $this->hasRole('bac_chairman');
+    }
+
+    /**
+     * Check if user is the HOPE (Head of Procuring Entity)
+     */
+    public function isHope(): bool
+    {
+        return $this->hasRole('hope');
+    }
+
+    /**
+     * Check if user can manage procurement
+     */
+    public function canManageProcurement(): bool
+    {
+        return $this->hasAnyPermission([
+            'create procurement',
+            'edit procurement',
+            'delete procurement',
+        ]);
+    }
+
+    /**
+     * Check if user can approve procurement
+     */
+    public function canApproveProcurement(): bool
+    {
+        return $this->hasPermissionTo('approve procurement');
+    }
+
+    /**
+     * Check if user can manage documents
+     */
+    public function canManageDocuments(): bool
+    {
+        return $this->hasAnyPermission([
+            'upload documents',
+            'delete documents',
+        ]);
+    }
+
+    /**
+     * Check if user can view documents
+     */
+    public function canViewDocuments(): bool
+    {
+        return $this->hasPermissionTo('view documents');
+    }
+
+    /**
+     * Check if user can manage stages
+     */
+    public function canManageStages(): bool
+    {
+        return $this->hasAnyPermission([
+            'manage procurement initiation',
+            'manage pre-procurement conference',
+            'manage bidding documents',
+            'manage pre-bid conference',
+            'manage supplemental bid bulletin',
+            'manage bid opening',
+            'manage bid evaluation',
+            'manage post-qualification',
+            'manage bac resolution',
+            'manage notice of award',
+            'manage performance bond contract po',
+            'manage notice to proceed',
+            'manage monitoring',
+            'manage completion',
+        ]);
+    }
+
+    /**
+     * Check if user can access blockchain features
+     */
+    public function canAccessBlockchain(): bool
+    {
+        return $this->hasAnyPermission([
+            'view blockchain transactions',
+            'publish to blockchain',
+        ]);
+    }
+
+    /**
+     * Check if user can manage users
+     */
+    public function canManageUsers(): bool
+    {
+        return $this->hasAnyPermission([
+            'manage users',
+            'create users',
+            'edit users',
+            'delete users',
+            'assign roles',
+        ]);
+    }
+
+    /**
+     * Get all assigned role names
+     */
+    public function getAssignedRoles(): array
+    {
+        return $this->getRoleNames()->toArray();
+    }
+
+    /**
+     * Get all permission names for this user
+     */
+    public function getAllowedPermissions(): array
+    {
+        return $this->getAllPermissions()->pluck('name')->toArray();
+    }
+
+    /**
+     * Get user's primary role (first assigned role)
+     */
+    public function getPrimaryRole(): ?string
+    {
+        return $this->roles->first()?->name;
+    }
+
+    /**
+     * Check if user has dashboard access
+     */
+    public function hasDashboardAccess(): bool
+    {
+        return $this->hasAnyPermission([
+            'view admin dashboard',
+            'view bac-secretariat dashboard',
+            'view bac-chairman dashboard',
+            'view hope dashboard',
+        ]);
+    }
+
+    /**
+     * Get the appropriate dashboard route for the user
+     */
+    public function getDashboardRoute(): string
+    {
+        if ($this->isAdmin()) {
+            return 'admin.dashboard';
+        }
+
+        if ($this->isBacSecretariat()) {
+            return 'bac-secretariat.dashboard';
+        }
+
+        if ($this->isBacChairman()) {
+            return 'bac-chairman.dashboard';
+        }
+
+        if ($this->isHope()) {
+            return 'hope.dashboard';
+        }
+
+        return 'dashboard';
     }
 }
