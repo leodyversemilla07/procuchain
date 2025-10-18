@@ -87,7 +87,7 @@ describe('HandleStageTransitionJob', function () {
                 ->shouldReceive('logEvent')
                 ->once();
 
-            Log::shouldReceive('info')->once();
+            Log::shouldReceive('info')->twice(); // Two info logs: processing start and success
 
             $job = new HandleStageTransitionJob(
                 $this->procurementId,
@@ -169,6 +169,10 @@ describe('HandleStageTransitionJob', function () {
                     'from_stage' => $this->fromStage,
                     'to_stage' => $this->toStage,
                 ])
+                ->once();
+
+            Log::shouldReceive('info')
+                ->with('Status transition published successfully', \Mockery::any())
                 ->once();
 
             $job = new HandleStageTransitionJob(
@@ -273,4 +277,3 @@ describe('HandleStageTransitionJob', function () {
         });
     });
 });
-

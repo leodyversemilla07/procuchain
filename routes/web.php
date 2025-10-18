@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BacChairmanController;
 use App\Http\Controllers\BacSecretariatController;
+use App\Http\Controllers\DocumentCorrectionController;
 use App\Http\Controllers\DocumentViewController;
 use App\Http\Controllers\HopeController;
 use App\Http\Controllers\NotificationController;
@@ -96,6 +97,24 @@ Route::middleware(['auth'])->group(function () {
 
         Route::post('/bac-secretariat/upload-pre-bid-conference-documents', [ProcurementController::class, 'uploadPreBidConferenceDocuments'])
             ->name('bac-secretariat.upload-pre-bid-conference-documents');
+
+        // Blockchain status polling endpoint
+        Route::get('/procurements/{id}/blockchain-status', [ProcurementController::class, 'getBlockchainStatus'])
+            ->name('procurements.blockchain-status');
+
+        // Blockchain publishing status page (blocking UI)
+        Route::get('/blockchain/publishing-status/{id}', function (string $id) {
+            $procurement = \App\Models\Procurement::findOrFail($id);
+
+            return Inertia::render('blockchain-publishing-status', [
+                'procurement' => [
+                    'id' => $procurement->id,
+                    'title' => $procurement->title,
+                ],
+                'stage' => request('stage', 'Document Upload'),
+                'returnUrl' => request('return_url'),
+            ]);
+        })->name('blockchain.publishing-status');
 
         Route::post('/bac-secretariat/publish-supplemental-bid-bulletin-decision', [ProcurementController::class, 'publishSupplementalBidBulletinDecision'])
             ->name('bac-secretariat.publish-supplemental-bid-bulletin-decision');
@@ -217,6 +236,29 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/pdf-viewer/{fileKey}', [DocumentViewController::class, 'showPdfViewer'])
         ->where('fileKey', '.*')
         ->name('pdf.viewer');
+
+    // Document Correction routes (admin/BAC only)
+    Route::middleware(['role:admin,bac_chairman,bac_secretariat'])->group(function () {
+        Route::post('/documents/{document}/correct', [DocumentCorrectionController::class, 'correctDocument'])
+            ->name('documents.correct');
+        Route::get('/procurements/{procurement}/corrections', [DocumentCorrectionController::class, 'getCorrectionHistory'])
+            ->name('procurements.corrections');
+        Route::get('/corrections/check/{txid}', [DocumentCorrectionController::class, 'checkCorrection'])
+            ->name('corrections.check');
+    });
+
+    // Document Corrections Page (view for all authenticated users)
+    Route::get('/procurements/{id}/corrections', [DocumentCorrectionController::class, 'showCorrectionsPage'])
+        ->name('procurements.corrections.page');
+
+    // Blockchain Health Dashboard (admin only)
+    Route::get('/admin/blockchain-health', [\App\Http\Controllers\BlockchainHealthController::class, 'index'])
+        ->middleware('role:Admin')
+        ->name('admin.blockchain.health');
+
+    Route::post('/admin/blockchain-health/reset', [\App\Http\Controllers\BlockchainHealthController::class, 'reset'])
+        ->middleware('role:Admin')
+        ->name('admin.blockchain.health.reset');
 });
 
 Route::get('/privacy.pdf', function () {

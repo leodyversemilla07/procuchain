@@ -1,14 +1,11 @@
 <?php
 
 use App\Models\User;
-use Spatie\Permission\Models\Role;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-beforeEach(function (): void {
-    // Create test roles if they don't exist
-    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
-    Role::firstOrCreate(['name' => 'bac_chairman', 'guard_name' => 'web']);
-});
+uses(RefreshDatabase::class);
+
+// Roles are auto-seeded by TestCase.php for all tests using RefreshDatabase
 
 it('returns the primary role as role attribute', function (): void {
     $user = User::factory()->create();

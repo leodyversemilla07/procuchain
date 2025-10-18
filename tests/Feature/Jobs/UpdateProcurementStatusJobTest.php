@@ -75,7 +75,7 @@ describe('UpdateProcurementStatusJob', function () {
                     \Mockery::type('array')
                 );
 
-            Log::shouldReceive('info')->once();
+            Log::shouldReceive('info')->twice(); // Before and after publish
 
             $job = new UpdateProcurementStatusJob(
                 $this->procurementId,
@@ -148,6 +148,10 @@ describe('UpdateProcurementStatusJob', function () {
                 ])
                 ->once();
 
+            Log::shouldReceive('info')
+                ->with('Procurement status updated successfully', \Mockery::type('array'))
+                ->once();
+
             $job = new UpdateProcurementStatusJob(
                 $this->procurementId,
                 $this->procurementTitle,
@@ -180,7 +184,8 @@ describe('UpdateProcurementStatusJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Procurement ID and title are required');
         });
 
         it('logs error when procurement title is empty', function () {
@@ -201,7 +206,8 @@ describe('UpdateProcurementStatusJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Procurement ID and title are required');
         });
 
         it('logs error when status is empty', function () {
@@ -222,7 +228,8 @@ describe('UpdateProcurementStatusJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Status and stage are required');
         });
 
         it('logs error when stage is empty', function () {
@@ -243,7 +250,8 @@ describe('UpdateProcurementStatusJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Status and stage are required');
         });
 
         it('logs error when user address is invalid', function () {
@@ -269,7 +277,8 @@ describe('UpdateProcurementStatusJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Invalid blockchain address');
         });
     });
 
@@ -304,9 +313,9 @@ describe('UpdateProcurementStatusJob', function () {
                 $this->timestamp
             );
 
-            // Job catches exception and logs it, doesn't rethrow
-            $job->handle($this->multichainService, $this->streamKeyService);
+            // Job catches exception, logs it, then rethrows
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Blockchain connection failed');
         });
     });
 });
-

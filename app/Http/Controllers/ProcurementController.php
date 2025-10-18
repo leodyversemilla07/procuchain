@@ -362,9 +362,12 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+            // Redirect to blockchain publishing status page (blocking UI)
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Procurement Initiation',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -495,15 +498,12 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            if (! empty($result['nextPhase'])) {
-                return redirect()
-                    ->route('bac-secretariat.procurements-list.index')
-                    ->with(['success' => true, 'message' => $result['message'], 'nextPhase' => $result['nextPhase']]);
-            }
-
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+            // Redirect to blockchain publishing status page (blocking UI)
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Pre-Procurement Conference Decision',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -601,9 +601,12 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with(['success' => true, 'message' => $result['message']]);
+            // Redirect to blockchain publishing status page (blocking UI)
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Pre-Procurement Conference Documents',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -692,9 +695,12 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            // Redirect to blockchain publishing status page (blocking UI)
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Pre-Bid Conference Decision',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -792,9 +798,12 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            // Redirect to blockchain publishing status page (blocking UI)
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Pre-Bid Conference Documents',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -884,9 +893,12 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            // Redirect to blockchain publishing status page (blocking UI)
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Supplemental Bid Bulletin Decision',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -985,9 +997,12 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            // Redirect to blockchain publishing status page (blocking UI)
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Supplemental Bid Bulletin',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1078,9 +1093,12 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            // Redirect to blockchain publishing status page (blocking UI)
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Bidding Documents',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1195,9 +1213,12 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            // Redirect to blockchain publishing status page (blocking UI)
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Bid Opening Documents',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1296,9 +1317,11 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Bid Evaluation Documents',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1439,9 +1462,11 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Post Qualification Documents',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1525,9 +1550,11 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'BAC Resolution',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1625,9 +1652,11 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Notice of Award',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1789,9 +1818,11 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Performance Bond, Contract & PO',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1887,9 +1918,11 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Notice to Proceed',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -1976,9 +2009,11 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Monitoring Documents',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
@@ -2061,11 +2096,51 @@ class ProcurementController extends BaseController
         }
 
         if ($result['success']) {
-            return redirect()
-                ->route('bac-secretariat.procurements-list.index')
-                ->with('success', $result['message']);
+            return redirect()->route('blockchain.publishing-status', [
+                'id' => $data['procurementId'],
+                'stage' => 'Completion Documents',
+                'return_url' => route('bac-secretariat.procurements.show', $data['procurementId']),
+            ]);
         }
 
         return redirect()->back()->withErrors(['error' => $result['message']]);
+    }
+
+    /**
+     * Get blockchain publication status for procurement documents
+     */
+    public function getBlockchainStatus(string $id): \Illuminate\Http\JsonResponse
+    {
+        $documents = \App\Models\ProcurementDocument::where('procurement_id', $id)
+            ->latest('created_at')
+            ->limit(50) // Recent documents
+            ->get(['id', 'file_name', 'blockchain_status', 'blockchain_error', 'blockchain_txid', 'blockchain_status_updated_at', 'created_at']);
+
+        $summary = [
+            'pending' => $documents->where('blockchain_status', 'pending')->count(),
+            'confirmed' => $documents->where('blockchain_status', 'confirmed')->count(),
+            'failed' => $documents->where('blockchain_status', 'failed')->count(),
+            'total' => $documents->count(),
+        ];
+
+        // Determine overall status
+        $allConfirmed = $summary['pending'] === 0 && $summary['failed'] === 0 && $summary['total'] > 0;
+        $hasFailed = $summary['failed'] > 0;
+        $status = $allConfirmed ? 'confirmed' : ($hasFailed ? 'failed' : 'pending');
+
+        return response()->json([
+            'status' => $status,
+            'summary' => $summary,
+            'documents' => $documents->map(function ($doc) {
+                return [
+                    'id' => $doc->id,
+                    'file_name' => $doc->file_name,
+                    'blockchain_status' => $doc->blockchain_status,
+                    'blockchain_error' => $doc->blockchain_error,
+                    'blockchain_txid' => $doc->blockchain_txid,
+                    'updated_at' => $doc->blockchain_status_updated_at?->diffForHumans() ?? $doc->created_at->diffForHumans(),
+                ];
+            }),
+        ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\StreamEnums;
+use App\Notifications\BlockchainJobFailedNotification;
 use App\Services\BlockchainEventLoggerService;
 use App\Services\BlockchainOrchestratorService;
 use App\Services\MultichainService;
@@ -14,10 +15,26 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class PublishProcurementDocumentsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    /**
+     * The number of times the job may be attempted.
+     */
+    public $tries = 5;
+
+    /**
+     * The maximum number of seconds the job can run.
+     */
+    public $timeout = 120;
+
+    /**
+     * The number of seconds to wait before retrying the job.
+     */
+    public $backoff = [30, 60, 120, 300, 600];
 
     protected $procurementId;
 
@@ -121,7 +138,41 @@ class PublishProcurementDocumentsJob implements ShouldQueue
                 'first_document_item' => $documentItems[0] ?? null,
             ]);
 
-            $multiChain->publishMultiFrom($this->userAddress, StreamEnums::DOCUMENTS->value, $documentItems);
+            try {
+                // Publish to blockchain and capture the transaction ID
+                $txid = $multiChain->publishMultiFrom($this->userAddress, StreamEnums::DOCUMENTS->value, $documentItems);
+
+                Log::info('Documents published to blockchain successfully', [
+                    'procurement_id' => $this->procurementId,
+                    'document_count' => count($this->metadataArray),
+                    'blockchain_txid' => $txid,
+                ]);
+
+                // Mark documents as confirmed in database with the actual blockchain txid
+                $this->markDocumentsAsConfirmed($txid);
+            } catch (\Exception $publishException) {
+                // Check if this is a smart filter rejection
+                if ($this->isFilterRejection($publishException->getMessage())) {
+                    Log::error('Smart filter rejected document publication', [
+                        'procurement_id' => $this->procurementId,
+                        'filter_error' => $publishException->getMessage(),
+                        'documents' => $this->metadataArray,
+                    ]);
+
+                    // Re-throw with clearer message
+                    throw new \Exception(
+                        'Document validation failed on blockchain: '.$publishException->getMessage(),
+                        0,
+                        $publishException
+                    );
+                }
+
+                // Mark documents as failed in database
+                $this->markDocumentsAsFailed($publishException->getMessage());
+
+                // Other blockchain errors
+                throw $publishException;
+            }
 
             $statusUpdaterService->updateStatus($this->procurementId, $this->procurementTitle, $this->status, $this->state, $this->userAddress, $timestamp);
 
@@ -149,7 +200,105 @@ class PublishProcurementDocumentsJob implements ShouldQueue
                 'userAddress' => $this->userAddress,
                 'trace' => $e->getTraceAsString(),
             ]);
+
+            // Mark documents as failed
+            $this->markDocumentsAsFailed($e->getMessage());
+
             // Optionally: retry, notify, etc.
+            throw $e; // Re-throw to mark job as failed
         }
+    }
+
+    /**
+     * Mark procurement documents as confirmed in blockchain
+     */
+    private function markDocumentsAsConfirmed(string $txid): void
+    {
+        \App\Models\ProcurementDocument::where('procurement_id', $this->procurementId)
+            ->update([
+                'blockchain_status' => 'confirmed',
+                'blockchain_status_updated_at' => now(),
+                'blockchain_txid' => $txid,
+                'blockchain_error' => null,
+            ]);
+
+        Log::info('Marked documents as blockchain confirmed', [
+            'procurement_id' => $this->procurementId,
+            'txid' => $txid,
+        ]);
+    }
+
+    /**
+     * Mark procurement documents as failed in blockchain
+     */
+    private function markDocumentsAsFailed(string $errorMessage): void
+    {
+        \App\Models\ProcurementDocument::where('procurement_id', $this->procurementId)
+            ->update([
+                'blockchain_status' => 'failed',
+                'blockchain_status_updated_at' => now(),
+                'blockchain_error' => $errorMessage,
+                'blockchain_retry_count' => \DB::raw('blockchain_retry_count + 1'),
+            ]);
+
+        Log::warning('Marked documents as blockchain failed', [
+            'procurement_id' => $this->procurementId,
+            'error' => $errorMessage,
+        ]);
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('PublishProcurementDocumentsJob permanently failed', [
+            'procurement_id' => $this->procurementId,
+            'procurement_title' => $this->procurementTitle,
+            'exception' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString(),
+        ]);
+
+        // Notify administrators about the failure
+        $adminUsers = \App\Models\User::whereHas('roles', function ($query) {
+            $query->where('name', 'Admin');
+        })->get();
+
+        if ($adminUsers->isNotEmpty()) {
+            Notification::send($adminUsers, new BlockchainJobFailedNotification(
+                jobName: 'Publish Procurement Documents',
+                procurementId: $this->procurementId,
+                procurementTitle: $this->procurementTitle,
+                errorMessage: $exception->getMessage(),
+                attemptNumber: $this->attempts()
+            ));
+        }
+    }
+
+    /**
+     * Check if exception message indicates a smart filter rejection
+     */
+    private function isFilterRejection(string $message): bool
+    {
+        $filterKeywords = [
+            'Invalid document hash',
+            'Missing required field',
+            'Invalid file size',
+            'Invalid document_type',
+            'Stage mismatch',
+            'Invalid blockchain address',
+            'Invalid timestamp',
+            'too short',
+            'too long',
+            'File size exceeds',
+        ];
+
+        foreach ($filterKeywords as $keyword) {
+            if (str_contains($message, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

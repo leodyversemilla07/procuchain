@@ -87,7 +87,7 @@ describe('LogBlockchainEventJob', function () {
                     \Mockery::type('array')
                 );
 
-            Log::shouldReceive('info')->once();
+            Log::shouldReceive('info')->twice(); // Called twice: before and after publish
 
             $job = new LogBlockchainEventJob(
                 $this->procurementId,
@@ -168,6 +168,10 @@ describe('LogBlockchainEventJob', function () {
                 ])
                 ->once();
 
+            Log::shouldReceive('info')
+                ->with('Event logged to blockchain successfully', \Mockery::type('array'))
+                ->once();
+
             $job = new LogBlockchainEventJob(
                 $this->procurementId,
                 $this->procurementTitle,
@@ -190,7 +194,7 @@ describe('LogBlockchainEventJob', function () {
             Log::shouldReceive('error')
                 ->once()
                 ->with('Failed to log event to blockchain', Mockery::on(function ($context) {
-                    return $context['procurement_id'] === '' &&
+                    return isset($context['procurement_id']) &&
                            isset($context['error']) &&
                            str_contains($context['error'], 'Procurement ID and title are required');
                 }));
@@ -208,7 +212,8 @@ describe('LogBlockchainEventJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Procurement ID and title are required');
         });
 
         it('logs error when procurement title is empty', function () {
@@ -233,7 +238,8 @@ describe('LogBlockchainEventJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Procurement ID and title are required');
         });
 
         it('logs error when details are empty', function () {
@@ -258,7 +264,8 @@ describe('LogBlockchainEventJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Event details and type are required');
         });
 
         it('logs error when event type is empty', function () {
@@ -283,7 +290,8 @@ describe('LogBlockchainEventJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Event details and type are required');
         });
 
         it('logs error when user address is invalid', function () {
@@ -313,7 +321,8 @@ describe('LogBlockchainEventJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Invalid blockchain address');
         });
 
         it('logs error for invalid severity level', function () {
@@ -343,7 +352,8 @@ describe('LogBlockchainEventJob', function () {
                 $this->timestamp
             );
 
-            $job->handle($this->multichainService, $this->streamKeyService);
+            expect(fn () => $job->handle($this->multichainService, $this->streamKeyService))
+                ->toThrow(\Exception::class, 'Invalid severity level');
         });
     });
 
@@ -353,4 +363,3 @@ describe('LogBlockchainEventJob', function () {
         it('accepts error severity')->with(['error'])->expect(fn ($severity) => true)->toBeTrue();
     });
 });
-

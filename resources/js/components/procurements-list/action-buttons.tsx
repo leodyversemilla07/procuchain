@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { SharedData } from '@/types';
 import { ProcurementListItem, Stage, Status } from '@/types/blockchain';
 import { Link, usePage } from '@inertiajs/react';
-import { BarChart4Icon, Edit2Icon, EyeIcon, UploadCloudIcon } from 'lucide-react';
+import { BarChart4Icon, Edit2Icon, EyeIcon, UploadCloudIcon, AlertCircle } from 'lucide-react';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
@@ -217,14 +217,20 @@ export const ActionButtons = ({
         onOpenSupplementalBidBulletinDialog,
     });
 
-    // Always include View Details action
+    // Always include View Details and View Corrections actions
     const viewDetailsConfig = {
         icon: <EyeIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
         tooltipText: 'View Details',
         href: `procurements-list/${id}`,
     };
 
-    const allConfigs = [viewDetailsConfig, ...(isBacSecretariat ? buttonConfigs : [])];
+    const viewCorrectionsConfig = {
+        icon: <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />,
+        tooltipText: 'View Corrections',
+        href: `/procurements/${id}/corrections`,
+    };
+
+    const allConfigs = [viewDetailsConfig, viewCorrectionsConfig, ...(isBacSecretariat ? buttonConfigs : [])];
 
     return (
         <>

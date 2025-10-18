@@ -7,12 +7,9 @@ use Spatie\Permission\Models\Permission;
 
 uses(RefreshDatabase::class);
 
-describe('Spatie Laravel Permission Integration', function (): void {
-    beforeEach(function (): void {
-        // Seed roles and permissions
-        $this->artisan('db:seed', ['--class' => 'RoleAndPermissionSeeder']);
-    });
+// Permissions and roles are automatically seeded by TestCase::setUp()
 
+describe('Spatie Laravel Permission Integration', function (): void {
     describe('Role Assignment', function (): void {
         it('can assign admin role to user', function (): void {
             $user = User::factory()->create();
