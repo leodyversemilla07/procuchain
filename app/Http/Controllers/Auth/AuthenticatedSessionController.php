@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Services\LoginLoggerService;
+use App\Services\LoginService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,7 +47,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         // Log successful login
-        app(LoginLoggerService::class)->logLogin($user, $request);
+        app(LoginService::class)->logLogin($user, $request);
 
         // Redirect to appropriate dashboard based on user role
         return redirect()->intended($this->redirectToDashboard($user));
@@ -62,7 +62,7 @@ class AuthenticatedSessionController extends Controller
 
         // Log logout before destroying session
         if ($user) {
-            app(LoginLoggerService::class)->logLogout($user);
+            app(LoginService::class)->logLogout($user);
         }
 
         Auth::guard('web')->logout();
