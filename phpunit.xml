@@ -3,7 +3,9 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         cacheDirectory=".phpunit.cache"
 >
+
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
@@ -34,4 +36,5 @@
         <env name="REDIS_PORT" value="6379"/>
         <ini name="memory_limit" value="512M"/>
     </php>
+
 </phpunit>
