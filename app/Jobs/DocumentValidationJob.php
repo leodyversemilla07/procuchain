@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Notifications\BlockchainJobFailedNotification;
 use App\Services\SmartContractService;
 use Exception;
 use Illuminate\Bus\Queueable;
@@ -10,10 +11,26 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class DocumentValidationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    /**
+     * The number of times the job may be attempted.
+     */
+    public $tries = 5;
+
+    /**
+     * The maximum number of seconds the job can run.
+     */
+    public $timeout = 120;
+
+    /**
+     * The number of seconds to wait before retrying the job.
+     */
+    public $backoff = [30, 60, 120, 300, 600];
 
     public function __construct(
         private string $operation,
@@ -143,13 +160,29 @@ class DocumentValidationJob implements ShouldQueue
     /**
      * Handle job failure
      */
-    public function failed(Exception $exception): void
+    public function failed(\Throwable $exception): void
     {
         Log::error('Document validation job failed permanently', [
             'operation' => $this->operation,
             'procurement_id' => $this->procurementId,
             'user_address' => $this->userAddress,
             'error' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString(),
         ]);
+
+        // Notify administrators about the failure
+        $adminUsers = \App\Models\User::whereHas('roles', function ($query) {
+            $query->where('name', 'Admin');
+        })->get();
+
+        if ($adminUsers->isNotEmpty()) {
+            Notification::send($adminUsers, new BlockchainJobFailedNotification(
+                jobName: 'Document Validation',
+                procurementId: $this->procurementId,
+                procurementTitle: 'N/A',
+                errorMessage: $exception->getMessage(),
+                attemptNumber: $this->attempts()
+            ));
+        }
     }
 }

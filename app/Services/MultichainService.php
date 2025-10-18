@@ -977,9 +977,28 @@ class MultichainService
         return $this->handleRequest(fn (): mixed => $this->mc->create('txfilter', $name, $params, $code));
     }
 
-    public function createStreamFilter(string $name, array $params, string $code): mixed
+    public function createStreamFilter(string $name, object|array $params, string $code): mixed
     {
-        return $this->handleRequest(fn (): mixed => $this->mc->create('streamfilter', $name, $params, $code));
+        $restrictions = is_array($params) ? (object) $params : $params;
+
+        return $this->handleRequest(fn (): mixed => $this->mc->create('streamfilter', $name, $restrictions, $code));
+    }
+
+    public function approveFrom(string $fromAddress, string $entityName, object|array|bool $approve): mixed
+    {
+        // Convert boolean to object format expected by MultiChain
+        if (is_bool($approve)) {
+            $approve = (object) ['approve' => $approve];
+        } elseif (is_array($approve)) {
+            $approve = (object) $approve;
+        }
+
+        return $this->handleRequest(fn (): mixed => $this->mc->approvefrom($fromAddress, $entityName, $approve));
+    }
+
+    public function getFilterCode(string $filterName): mixed
+    {
+        return $this->handleRequest(fn (): mixed => $this->mc->getfiltercode($filterName));
     }
 
     /********************************/
@@ -1010,9 +1029,11 @@ class MultichainService
     /*  Libraries */
     /********************************/
 
-    public function createLibrary(string $name, array $params, string $code): mixed
+    public function createLibrary(string $name, object|array $params, string $code): mixed
     {
-        return $this->handleRequest(fn (): mixed => $this->mc->create('library', $name, $params, $code));
+        $restrictions = is_array($params) ? (object) $params : $params;
+
+        return $this->handleRequest(fn (): mixed => $this->mc->create('library', $name, $restrictions, $code));
     }
 
     public function getLibraryCode(string $libraryName, string $updateName = ''): mixed

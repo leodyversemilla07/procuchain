@@ -6,21 +6,19 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
 
-beforeEach(function () {
-    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web', 'guard_name' => 'web']);
-    $this->user = User::factory()->create();
-    $this->user->assignRole('bac_secretariat');
-    $this->actingAs($this->user);
-
-    // Fake notifications and events to avoid real side effects
-    Notification::fake();
-    Event::fake();
-    // Optionally, mock blockchain and document upload services if needed
-    // You can use Laravel's container to bind mocks if needed
-});
-
 describe('ProcurementController Feature', function () {
     uses(RefreshDatabase::class);
+
+    beforeEach(function () {
+        Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+        $this->user = User::factory()->create();
+        $this->user->assignRole('bac_secretariat');
+        $this->actingAs($this->user);
+
+        // Fake notifications and events to avoid real side effects
+        Notification::fake();
+        Event::fake();
+    });
 
     test('showProcurementInitiation returns ok', function () {
         $response = $this->get(route('bac-secretariat.procurement.procurement-initiation'));
@@ -155,11 +153,13 @@ describe('ProcurementController Feature', function () {
             'conference_held' => true,
         ];
         $response = $this->post(route('bac-secretariat.publish-pre-procurement-conference-decision'), $payload);
-        // Accept either redirect to expected route or full home URL (on MultiChain error), or 500 error
+
+        // Should redirect to publishing status page or procurements list, or return 500 error
+        $location = $response->headers->get('Location');
         $this->assertTrue(
-            $response->isRedirect(route('bac-secretariat.procurements-list.index')) ||
-                $response->headers->get('Location') === 'http://127.0.0.1:8000' ||
-                $response->status() === 500
+            ($response->isRedirect() && (str_contains($location, 'publishing-status') || str_contains($location, 'procurements-list'))) ||
+            $response->status() === 500,
+            "Expected redirect to publishing-status or procurements-list, or 500 error. Got status: {$response->status()}, Location: {$location}"
         );
     });
 
@@ -175,10 +175,13 @@ describe('ProcurementController Feature', function () {
             'conference_held' => true,
         ];
         $response = $this->post(route('bac-secretariat.publish-pre-bid-conference-decision'), $payload);
+
+        // Should redirect to publishing status page or procurements list, or return 500 error
+        $location = $response->headers->get('Location');
         $this->assertTrue(
-            $response->isRedirect(route('bac-secretariat.procurements-list.index')) ||
-                $response->headers->get('Location') === 'http://127.0.0.1:8000' ||
-                $response->status() === 500
+            ($response->isRedirect() && (str_contains($location, 'publishing-status') || str_contains($location, 'procurements-list'))) ||
+            $response->status() === 500,
+            "Expected redirect to publishing-status or procurements-list, or 500 error. Got status: {$response->status()}, Location: {$location}"
         );
     });
 
@@ -202,10 +205,13 @@ describe('ProcurementController Feature', function () {
             'attendance_file' => $attendance,
         ];
         $response = $this->post(route('bac-secretariat.upload-pre-bid-conference-documents'), $payload);
+
+        // Should redirect to publishing status page or procurements list, or return 500 error
+        $location = $response->headers->get('Location');
         $this->assertTrue(
-            $response->isRedirect(route('bac-secretariat.procurements-list.index')) ||
-                $response->headers->get('Location') === 'http://127.0.0.1:8000' ||
-                $response->status() === 500
+            ($response->isRedirect() && (str_contains($location, 'publishing-status') || str_contains($location, 'procurements-list'))) ||
+            $response->status() === 500,
+            "Expected redirect to publishing-status or procurements-list, or 500 error. Got status: {$response->status()}, Location: {$location}"
         );
     });
 
@@ -221,10 +227,13 @@ describe('ProcurementController Feature', function () {
             'supplemental_bid_needed' => true,
         ];
         $response = $this->post(route('bac-secretariat.publish-supplemental-bid-bulletin-decision'), $payload);
+
+        // Should redirect to publishing status page or procurements list, or return 500 error
+        $location = $response->headers->get('Location');
         $this->assertTrue(
-            $response->isRedirect(route('bac-secretariat.procurements-list.index')) ||
-                $response->headers->get('Location') === 'http://127.0.0.1:8000' ||
-                $response->status() === 500
+            ($response->isRedirect() && (str_contains($location, 'publishing-status') || str_contains($location, 'procurements-list'))) ||
+            $response->status() === 500,
+            "Expected redirect to publishing-status or procurements-list, or 500 error. Got status: {$response->status()}, Location: {$location}"
         );
     });
 
@@ -244,10 +253,13 @@ describe('ProcurementController Feature', function () {
             'bulletin_file' => $file,
         ];
         $response = $this->post(route('bac-secretariat.upload-supplemental-bid-bulletin-documents'), $payload);
+
+        // Should redirect to publishing status page or procurements list, or return 500 error
+        $location = $response->headers->get('Location');
         $this->assertTrue(
-            $response->isRedirect(route('bac-secretariat.procurements-list.index')) ||
-                $response->headers->get('Location') === 'http://127.0.0.1:8000' ||
-                $response->status() === 500
+            ($response->isRedirect() && (str_contains($location, 'publishing-status') || str_contains($location, 'procurements-list'))) ||
+            $response->status() === 500,
+            "Expected redirect to publishing-status or procurements-list, or 500 error. Got status: {$response->status()}, Location: {$location}"
         );
     });
 
@@ -473,11 +485,13 @@ describe('ProcurementController Feature', function () {
             'attendance_file' => $attendance,
         ];
         $response = $this->post(route('bac-secretariat.upload-pre-procurement-conference-documents'), $payload);
+
+        // Should redirect to publishing status page or procurements list, or return 500 error
+        $location = $response->headers->get('Location');
         $this->assertTrue(
-            $response->isRedirect(route('bac-secretariat.procurements-list.index')) ||
-                $response->headers->get('Location') === 'http://127.0.0.1:8000' ||
-                $response->status() === 500
+            ($response->isRedirect() && (str_contains($location, 'publishing-status') || str_contains($location, 'procurements-list'))) ||
+            $response->status() === 500,
+            "Expected redirect to publishing-status or procurements-list, or 500 error. Got status: {$response->status()}, Location: {$location}"
         );
     });
 });
-

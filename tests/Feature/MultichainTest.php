@@ -3,11 +3,9 @@
 use App\Enums\StreamEnums;
 use App\Libraries\MultichainClient;
 use App\Services\MultichainService;
-use Exception;
-use Mockery;
 
 beforeEach(function () {
-    $this->mock = Mockery::mock(MultichainService::class);
+    $this->mock = \Mockery::mock(MultichainService::class);
 });
 
 it('can connect to multichain', function () {
@@ -196,4 +194,3 @@ it('fails with final message on connection failure', function () {
     expect(fn () => $service->getInfo())
         ->toThrow(Exception::class, 'Failed to connect to MultiChain node after 1 attempts');
 });
-

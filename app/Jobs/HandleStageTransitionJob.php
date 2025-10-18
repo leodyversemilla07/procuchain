@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\StreamEnums;
+use App\Notifications\BlockchainJobFailedNotification;
 use App\Services\BlockchainEventLoggerService;
 use App\Services\MultichainService;
 use App\Services\StreamKeyService;
@@ -12,10 +13,26 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class HandleStageTransitionJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    /**
+     * The number of times the job may be attempted.
+     */
+    public $tries = 5;
+
+    /**
+     * The maximum number of seconds the job can run.
+     */
+    public $timeout = 120;
+
+    /**
+     * The number of seconds to wait before retrying the job.
+     */
+    public $backoff = [30, 60, 120, 300, 600];
 
     protected $procurementId;
 
@@ -93,7 +110,39 @@ class HandleStageTransitionJob implements ShouldQueue
                 ],
             ];
 
-            $multiChain->publishFrom($this->userAddress, StreamEnums::STATUS->value, $streamKey, $statusData);
+            try {
+                // Publish to blockchain and capture the transaction ID
+                $txid = $multiChain->publishFrom($this->userAddress, StreamEnums::STATUS->value, $streamKey, $statusData);
+
+                Log::info('Status transition published successfully', [
+                    'procurement_id' => $this->procurementId,
+                    'from' => "{$this->fromStage}:{$this->fromStatus}",
+                    'to' => "{$this->toStage}:{$this->toStatus}",
+                    'blockchain_txid' => $txid,
+                ]);
+            } catch (\Exception $publishException) {
+                // Check if this is a smart filter rejection
+                if ($this->isFilterRejection($publishException->getMessage())) {
+                    Log::error('Smart filter rejected status transition', [
+                        'procurement_id' => $this->procurementId,
+                        'filter_error' => $publishException->getMessage(),
+                        'from_status' => $this->fromStatus,
+                        'to_status' => $this->toStatus,
+                        'from_stage' => $this->fromStage,
+                        'to_stage' => $this->toStage,
+                    ]);
+
+                    // Re-throw with clearer message
+                    throw new \Exception(
+                        'Status transition validation failed on blockchain: '.$publishException->getMessage(),
+                        0,
+                        $publishException
+                    );
+                }
+
+                // Other blockchain errors
+                throw $publishException;
+            }
 
             $eventLoggerService->logEvent(
                 $this->procurementId,
@@ -114,5 +163,62 @@ class HandleStageTransitionJob implements ShouldQueue
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('HandleStageTransitionJob permanently failed', [
+            'procurement_id' => $this->procurementId,
+            'procurement_title' => $this->procurementTitle,
+            'from_status' => $this->fromStatus,
+            'to_status' => $this->toStatus,
+            'from_stage' => $this->fromStage,
+            'to_stage' => $this->toStage,
+            'exception' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString(),
+        ]);
+
+        // Notify administrators about the failure
+        $adminUsers = \App\Models\User::whereHas('roles', function ($query) {
+            $query->where('name', 'Admin');
+        })->get();
+
+        if ($adminUsers->isNotEmpty()) {
+            Notification::send($adminUsers, new BlockchainJobFailedNotification(
+                jobName: 'Handle Stage Transition',
+                procurementId: $this->procurementId,
+                procurementTitle: $this->procurementTitle,
+                errorMessage: $exception->getMessage(),
+                attemptNumber: $this->attempts()
+            ));
+        }
+    }
+
+    /**
+     * Check if exception message indicates a smart filter rejection
+     */
+    private function isFilterRejection(string $message): bool
+    {
+        $filterKeywords = [
+            'Invalid status',
+            'Invalid stage',
+            'Missing required field',
+            'not valid for stage',
+            'Invalid blockchain address',
+            'Invalid timestamp',
+            'too short',
+            'too long',
+        ];
+
+        foreach ($filterKeywords as $keyword) {
+            if (str_contains($message, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

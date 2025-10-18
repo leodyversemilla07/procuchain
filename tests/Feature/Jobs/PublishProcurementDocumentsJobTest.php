@@ -226,6 +226,9 @@ describe('PublishProcurementDocumentsJob', function () {
                            str_contains($context['error'], 'Procurement ID and title are required');
                 }));
 
+            // markDocumentsAsFailed() logs a warning
+            Log::shouldReceive('warning')->once();
+
             $job = new PublishProcurementDocumentsJob(
                 '', // Empty procurement ID
                 $this->procurementTitle,
@@ -235,12 +238,12 @@ describe('PublishProcurementDocumentsJob', function () {
                 $this->userAddress
             );
 
-            $job->handle(
+            expect(fn () => $job->handle(
                 $this->multichainService,
                 $this->streamKeyService,
                 $this->statusUpdaterService,
                 $this->eventLoggerService
-            );
+            ))->toThrow(\Exception::class, 'Procurement ID and title are required');
         });
 
         it('logs error when procurement title is empty', function () {
@@ -248,10 +251,12 @@ describe('PublishProcurementDocumentsJob', function () {
                 ->once()
                 ->with('Failed to publish procurement documents asynchronously', Mockery::on(function ($context) {
                     return $context['procurementId'] === $this->procurementId &&
-                           $context['procurementTitle'] === '' &&
                            isset($context['error']) &&
                            str_contains($context['error'], 'Procurement ID and title are required');
                 }));
+
+            // markDocumentsAsFailed() logs a warning
+            Log::shouldReceive('warning')->once();
 
             $job = new PublishProcurementDocumentsJob(
                 $this->procurementId,
@@ -262,12 +267,12 @@ describe('PublishProcurementDocumentsJob', function () {
                 $this->userAddress
             );
 
-            $job->handle(
+            expect(fn () => $job->handle(
                 $this->multichainService,
                 $this->streamKeyService,
                 $this->statusUpdaterService,
                 $this->eventLoggerService
-            );
+            ))->toThrow(\Exception::class, 'Procurement ID and title are required');
         });
 
         it('logs error when metadata array is empty', function () {
@@ -279,6 +284,9 @@ describe('PublishProcurementDocumentsJob', function () {
                            str_contains($context['error'], 'Document metadata array cannot be empty');
                 }));
 
+            // markDocumentsAsFailed() logs a warning
+            Log::shouldReceive('warning')->once();
+
             $job = new PublishProcurementDocumentsJob(
                 $this->procurementId,
                 $this->procurementTitle,
@@ -288,12 +296,12 @@ describe('PublishProcurementDocumentsJob', function () {
                 $this->userAddress
             );
 
-            $job->handle(
+            expect(fn () => $job->handle(
                 $this->multichainService,
                 $this->streamKeyService,
                 $this->statusUpdaterService,
                 $this->eventLoggerService
-            );
+            ))->toThrow(\Exception::class, 'Document metadata array cannot be empty');
         });
 
         it('logs error when user address is invalid', function () {
@@ -310,6 +318,9 @@ describe('PublishProcurementDocumentsJob', function () {
                            str_contains($context['error'], 'Invalid blockchain address');
                 }));
 
+            // markDocumentsAsFailed() logs a warning
+            Log::shouldReceive('warning')->once();
+
             $job = new PublishProcurementDocumentsJob(
                 $this->procurementId,
                 $this->procurementTitle,
@@ -319,12 +330,12 @@ describe('PublishProcurementDocumentsJob', function () {
                 $this->userAddress
             );
 
-            $job->handle(
+            expect(fn () => $job->handle(
                 $this->multichainService,
                 $this->streamKeyService,
                 $this->statusUpdaterService,
                 $this->eventLoggerService
-            );
+            ))->toThrow(\Exception::class, 'Invalid blockchain address');
         });
 
         it('logs error when document metadata is missing required fields', function () {
@@ -354,6 +365,9 @@ describe('PublishProcurementDocumentsJob', function () {
                            str_contains($context['error'], 'Missing required metadata field');
                 }));
 
+            // markDocumentsAsFailed() logs a warning
+            Log::shouldReceive('warning')->once();
+
             $job = new PublishProcurementDocumentsJob(
                 $this->procurementId,
                 $this->procurementTitle,
@@ -363,12 +377,12 @@ describe('PublishProcurementDocumentsJob', function () {
                 $this->userAddress
             );
 
-            $job->handle(
+            expect(fn () => $job->handle(
                 $this->multichainService,
                 $this->streamKeyService,
                 $this->statusUpdaterService,
                 $this->eventLoggerService
-            );
+            ))->toThrow(\Exception::class, 'Missing required metadata field');
         });
     });
 
@@ -422,4 +436,3 @@ describe('PublishProcurementDocumentsJob', function () {
         });
     });
 });
-
