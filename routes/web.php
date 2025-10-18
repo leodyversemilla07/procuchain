@@ -271,4 +271,8 @@ Route::get('/terms.pdf', function () {
 
 require __DIR__.'/auth.php';
 require __DIR__.'/settings.php';
-require __DIR__.'/file-uploads-ui-preview.php'; // Include the file uploads UI preview routes
+
+// Load file upload UI preview routes only in local/development environments
+if (app()->environment(['local', 'development'])) {
+    require __DIR__.'/file-uploads-ui-preview.php';
+}
