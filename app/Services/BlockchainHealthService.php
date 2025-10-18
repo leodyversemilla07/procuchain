@@ -178,7 +178,7 @@ class BlockchainHealthService
             'circuit_breaker' => [
                 'is_open' => $this->isCircuitOpen(),
                 'failures' => $circuitState['failures'] ?? 0,
-                'recovery_time' => $circuitState['recovery_time']
+                'recovery_time' => isset($circuitState['recovery_time']) && $circuitState['recovery_time']
                     ? date('Y-m-d H:i:s', $circuitState['recovery_time'])
                     : null,
             ],
