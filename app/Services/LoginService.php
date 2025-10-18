@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Jenssegers\Agent\Agent;
 
-class LoginTrackingService
+class LoginService
 {
     protected Agent $agent;
 

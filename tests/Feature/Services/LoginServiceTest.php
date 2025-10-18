@@ -2,7 +2,7 @@
 
 use App\Mail\AccountLockedMail;
 use App\Models\User;
-use App\Services\LoginTrackingService;
+use App\Services\LoginService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Mail;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->loginTrackingService = new LoginTrackingService;
+    $this->loginTrackingService = new LoginService;
 });
 
 test('sends account locked email when account is locked after failed attempts', function () {
@@ -192,4 +192,3 @@ test('sets correct lock expiration time', function () {
         $afterLock->addMinutes(30)->addSeconds(5)
     );
 });
-

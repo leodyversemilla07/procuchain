@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Services\AccountLockoutService;
 use App\Services\AdminAnalyticsService;
 use App\Services\DashboardService;
-use App\Services\LoginLoggerService;
+use App\Services\LoginService;
 use App\Services\MultichainService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -24,7 +24,7 @@ class AdminController extends BaseController
     use AdminDashboard;
 
     public function __construct(
-        private LoginLoggerService $loginLogger,
+        private LoginService $loginLogger,
         private AccountLockoutService $accountLockout,
         private MultichainService $multiChain,
         private DashboardService $dashboardService,

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
-use App\Services\LoginTrackingService;
+use App\Services\LoginService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -54,7 +54,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             // Log failed login attempt
-            app(LoginTrackingService::class)->logFailedLogin($this['email'], $this);
+            app(LoginService::class)->logFailedLogin($this['email'], $this);
 
             $exception = ValidationException::withMessages([
                 'email' => __('auth.failed'),
@@ -78,7 +78,7 @@ class LoginRequest extends FormRequest
      */
     protected function ensureAccountNotLocked(): void
     {
-        $loginTracker = app(LoginTrackingService::class);
+        $loginTracker = app(LoginService::class);
 
         if ($loginTracker->isAccountLocked($this['email'])) {
             // Get user to check lock details
