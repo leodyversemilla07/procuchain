@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { createElement, type ReactNode } from 'react';
 
-import { Stage, Status } from '@/types/blockchain';
+import { Stage, Status } from '@/types';
 
 const buildIcon = (Icon: LucideIcon, extraClassName?: string): ReactNode =>
     createElement(Icon, { className: extraClassName ? `h-3 w-3 ${extraClassName}` : 'h-3 w-3' });

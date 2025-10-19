@@ -2,15 +2,18 @@ import { PriorityActionsStack } from '@/components/dashboard/priority-actions-st
 import { ProcurementDistributionCard } from '@/components/dashboard/procurement-distribution-card';
 import { RecentActivitiesList } from '@/components/dashboard/recent-activities-list';
 import { RecentProcurementsTable } from '@/components/dashboard/recent-procurements-table';
+import { CardListSkeleton, ChartSkeleton, PriorityActionsSkeleton, TableSkeleton } from '@/components/dashboard/skeleton-loaders';
 import { StageDistributionCard } from '@/components/dashboard/stage-distribution-card';
 import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
+import { procurementInitiation } from '@/routes/bac-secretariat/procurement';
+import { index as procurementsListIndex } from '@/routes/bac-secretariat/procurements-list';
 import type { SharedData, User } from '@/types';
-import { Stage, Status } from '@/types/blockchain';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Stage, Status } from '@/types';
+import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import { ActivityIcon, Bell, CheckCircle, Clock, FileIcon, FileText, FileUpIcon, PlusIcon } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -158,13 +161,13 @@ export default function BACSecretariatDashboard() {
     const heroActions = (
         <div className="flex items-center gap-4">
             <Button variant="secondary" size="sm" asChild>
-                <Link href="/bac-secretariat/procurements-list">
+                <Link href={procurementsListIndex.url()} prefetch>
                     <FileUpIcon className="mr-2 h-4 w-4" />
                     Procurements List
                 </Link>
             </Button>
             <Button size="sm" asChild>
-                <Link href="/bac-secretariat/procurement/procurement-initiation">
+                <Link href={procurementInitiation.url()} prefetch>
                     <PlusIcon className="mr-2 h-4 w-4" />
                     New Procurement
                 </Link>
@@ -187,51 +190,76 @@ export default function BACSecretariatDashboard() {
                 <StatsGrid items={statsItems} userRole={userRole} />
 
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-                    <ProcurementDistributionCard
-                        className="xl:col-span-3"
-                        data={procurementDistribution}
-                        title="Procurement Distribution"
-                        description="Distribution of procurements across stages and statuses"
-                        errorState={buildErrorState('Unable to load procurement distribution')}
-                    />
-                    <StageDistributionCard
-                        className="xl:col-span-2"
-                        stageDistribution={stageDistribution}
-                        errorState={buildErrorState('Unable to load stage distribution')}
-                    />
+                    <Deferred data="procurementDistribution" fallback={<ChartSkeleton />}>
+                        <ProcurementDistributionCard
+                            className="xl:col-span-3"
+                            data={procurementDistribution}
+                            title="Procurement Distribution"
+                            description="Distribution of procurements across stages and statuses"
+                            errorState={buildErrorState('Unable to load procurement distribution')}
+                        />
+                    </Deferred>
+                    <Deferred data="procurementDistribution" fallback={<ChartSkeleton />}>
+                        <StageDistributionCard
+                            className="xl:col-span-2"
+                            stageDistribution={stageDistribution}
+                            errorState={buildErrorState('Unable to load stage distribution')}
+                        />
+                    </Deferred>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <Card className="shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="flex items-center text-base font-semibold md:text-lg">
-                                <Bell className="text-primary mr-2 h-4 w-4 md:h-5 md:w-5" />
-                                Priority Actions
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <PriorityActionsStack actions={priorityActionItems} errorState={buildErrorState('Unable to load priority actions')} />
-                        </CardContent>
-                    </Card>
+                    <Deferred
+                        data="priorityActions"
+                        fallback={
+                            <Card className="shadow-sm">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="flex items-center text-base font-semibold md:text-lg">
+                                        <Bell className="text-primary mr-2 h-4 w-4 md:h-5 md:w-5" />
+                                        Priority Actions
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <PriorityActionsSkeleton />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <Card className="shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="flex items-center text-base font-semibold md:text-lg">
+                                    <Bell className="text-primary mr-2 h-4 w-4 md:h-5 md:w-5" />
+                                    Priority Actions
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <PriorityActionsStack actions={priorityActionItems} errorState={buildErrorState('Unable to load priority actions')} />
+                            </CardContent>
+                        </Card>
+                    </Deferred>
 
-                    <RecentActivitiesList
-                        className="lg:col-span-2"
-                        title="Recent Activities"
-                        icon={Clock}
-                        activities={recentActivityItems}
-                        getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
-                        viewAllHref={recentActivityItems.length > 0 ? '/bac-secretariat/procurements-list' : undefined}
-                        showUserRole
-                        errorState={buildErrorState('Unable to load recent activities')}
-                    />
+                    <Deferred data="recentActivities" fallback={<CardListSkeleton />}>
+                        <RecentActivitiesList
+                            className="lg:col-span-2"
+                            title="Recent Activities"
+                            icon={Clock}
+                            activities={recentActivityItems}
+                            getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
+                            viewAllHref={recentActivityItems.length > 0 ? '/bac-secretariat/procurements-list' : undefined}
+                            showUserRole
+                            errorState={buildErrorState('Unable to load recent activities')}
+                        />
+                    </Deferred>
                 </div>
 
-                <RecentProcurementsTable
-                    procurements={recentProcurementItems}
-                    getViewProcurementHref={(procurement) => `/bac-secretariat/procurements-list/${procurement.id}`}
-                    viewAllHref={recentProcurementItems.length > 0 ? '/bac-secretariat/procurements-list' : undefined}
-                    errorState={buildErrorState('Unable to load recent procurements')}
-                />
+                <Deferred data="recentProcurements" fallback={<TableSkeleton />}>
+                    <RecentProcurementsTable
+                        procurements={recentProcurementItems}
+                        getViewProcurementHref={(procurement) => `/bac-secretariat/procurements-list/${procurement.id}`}
+                        viewAllHref={recentProcurementItems.length > 0 ? '/bac-secretariat/procurements-list' : undefined}
+                        errorState={buildErrorState('Unable to load recent procurements')}
+                    />
+                </Deferred>
             </div>
         </AppLayout>
     );

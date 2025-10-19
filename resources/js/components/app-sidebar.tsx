@@ -4,9 +4,12 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { usePermissions } from '@/hooks/use-permissions';
 import { notifications as notificationsPage } from '@/routes';
-import { dashboard as adminDashboard, loginLogs as adminLoginLogs, users as adminUsers } from '@/routes/admin';
+import { dashboard as adminDashboard } from '@/routes/admin';
 import { locked as adminAccountsLocked } from '@/routes/admin/accounts';
+import adminBlockchain from '@/routes/admin/blockchain';
+import adminLoginLogs from '@/routes/admin/login-logs';
 import { index as adminProcurementsList } from '@/routes/admin/procurements-list';
+import adminUsers from '@/routes/admin/users';
 import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
 import { index as bacChairmanProcurementsList } from '@/routes/bac-chairman/procurements-list';
 import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
@@ -16,7 +19,7 @@ import { dashboard as hopeDashboard } from '@/routes/hope';
 import { index as hopeProcurementsList } from '@/routes/hope/procurements-list';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, LayoutGrid, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
+import { Bell, Blocks, LayoutGrid, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermissions>): NavItem[] => {
@@ -104,7 +107,7 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
     if (can.manageUsers) {
         items.push({
             title: 'User Management',
-            href: adminUsers.url(),
+            href: adminUsers.index.url(),
             icon: Users,
         });
     }
@@ -119,8 +122,14 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
 
         items.push({
             title: 'Login Logs',
-            href: adminLoginLogs.url(),
+            href: adminLoginLogs.index.url(),
             icon: Shield,
+        });
+
+        items.push({
+            title: 'Blockchain Explorer',
+            href: adminBlockchain.explorer.index.url(),
+            icon: Blocks,
         });
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\BlockchainHealthService;
+use App\Services\BlockchainMonitoringService;
 use App\Services\MultichainService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -14,10 +14,10 @@ beforeEach(function () {
     Log::spy();
 
     $this->multichainService = mock(MultichainService::class);
-    $this->service = new BlockchainHealthService($this->multichainService);
+    $this->service = new BlockchainMonitoringService($this->multichainService);
 });
 
-describe('BlockchainHealthService', function () {
+describe('BlockchainMonitoringService', function () {
     describe('isHealthy', function () {
         test('it returns true when blockchain is responsive', function () {
             $this->multichainService

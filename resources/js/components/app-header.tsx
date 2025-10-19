@@ -88,6 +88,25 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
     }
 
     const mainNavItems = getNavItemsByRole(auth.user.role);
+
+    // Get the dashboard URL based on user role
+    const getDashboardUrl = () => {
+        if (!auth.user) return '/';
+
+        switch (auth.user.role) {
+            case 'admin':
+                return adminDashboard.url();
+            case 'bac_chairman':
+                return bacChairmanDashboard.url();
+            case 'bac_secretariat':
+                return bacSecretariatDashboard.url();
+            case 'hope':
+                return hopeDashboard.url();
+            default:
+                return '/';
+        }
+    };
+
     return (
         <>
             <div className="border-sidebar-border/80 border-b">
@@ -136,7 +155,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                         </Sheet>
                     </div>
 
-                    <Link href="/dashboard" prefetch className="flex items-center space-x-2">
+                    <Link href={getDashboardUrl()} prefetch className="flex items-center space-x-2">
                         <AppLogo />
                     </Link>
 

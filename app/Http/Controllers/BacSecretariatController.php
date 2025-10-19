@@ -41,19 +41,19 @@ class BacSecretariatController extends BaseDashboardController
 
     protected function getAdditionalDashboardData($procurementsByKey, string $roleName): array
     {
-        // Cache priority actions
-        $priorityActions = Cache::remember(
-            \App\Services\DashboardCacheKeys::priorityActions($roleName),
-            now()->addMinutes(config('dashboard.cache_ttl.priority_actions')),
-            function () use ($procurementsByKey) {
-                $allPriorityActions = $this->getPriorityActions($procurementsByKey);
-
-                return array_slice($allPriorityActions, 0, config('dashboard.display_limits.priority_actions'));
-            }
-        );
-
+        // Defer priority actions - they're heavy and can load after initial render
         return [
-            'priorityActions' => $priorityActions,
+            'priorityActions' => \Inertia\Inertia::defer(function () use ($procurementsByKey, $roleName) {
+                return Cache::remember(
+                    \App\Services\DashboardCacheKeys::priorityActions($roleName),
+                    now()->addMinutes(config('dashboard.cache_ttl.priority_actions')),
+                    function () use ($procurementsByKey) {
+                        $allPriorityActions = $this->getPriorityActions($procurementsByKey);
+
+                        return array_slice($allPriorityActions, 0, config('dashboard.display_limits.priority_actions'));
+                    }
+                );
+            }),
         ];
     }
 

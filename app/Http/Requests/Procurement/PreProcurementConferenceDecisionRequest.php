@@ -30,4 +30,3 @@ class PreProcurementConferenceDecisionRequest extends FormRequest
         ];
     }
 }
-

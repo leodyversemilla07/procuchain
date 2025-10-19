@@ -30,4 +30,3 @@ class PreBidConferenceDecisionRequest extends FormRequest
         ];
     }
 }
-

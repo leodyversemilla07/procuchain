@@ -2,6 +2,7 @@ import Footer from '@/components/footer';
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { about, login } from '@/routes';
 import { Head, Link } from '@inertiajs/react';
 import { Database, FileText, Lock, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -96,10 +97,10 @@ export default function Home() {
                                         {/* CTA Buttons */}
                                         <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
                                             <Button size="lg" className="shadow-lg hover:shadow-xl" asChild>
-                                                <Link href="/login">Get Started</Link>
+                                                <Link href={login.url()}>Get Started</Link>
                                             </Button>
                                             <Button variant="outline" size="lg" asChild>
-                                                <Link href="/about">Learn More</Link>
+                                                <Link href={about.url()}>Learn More</Link>
                                             </Button>
                                         </div>
                                     </div>

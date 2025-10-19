@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
+import { dashboard } from '@/routes/admin';
+import loginLogs from '@/routes/admin/login-logs';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { format } from 'date-fns';
@@ -35,7 +37,6 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DateRange } from 'react-day-picker';
-import { dashboard, loginLogs } from '@/routes/admin';
 
 interface LoginLog {
     id: number;
@@ -82,7 +83,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Login Logs',
-        href: loginLogs.url(),
+        href: loginLogs.index.url(),
     },
 ];
 

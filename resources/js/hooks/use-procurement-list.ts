@@ -1,4 +1,4 @@
-import { ProcurementListItem } from '@/types/blockchain';
+import { ProcurementListItem } from '@/types';
 import { useEffect, useState } from 'react';
 
 interface UseProcurementListProps {

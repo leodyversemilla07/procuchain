@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Head } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
 import { DocumentCorrectionAlert } from '@/components/documents/document-correction-alert';
 import { DocumentCorrectionDialog } from '@/components/documents/document-correction-dialog';
 import { CorrectionHistoryDialog } from '@/components/documents/document-correction-history';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, History, AlertCircle } from 'lucide-react';
+import AppLayout from '@/layouts/app-layout';
+import { Head } from '@inertiajs/react';
+import { AlertCircle, FileText, History } from 'lucide-react';
+import { useState } from 'react';
 
 interface ProcurementDocument {
     id: number;
@@ -50,9 +50,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
     const [historyDocumentHash, setHistoryDocumentHash] = useState<string | undefined>(undefined);
 
     // Check if user can correct documents
-    const canCorrectDocuments = auth.user.roles.some((role) =>
-        ['admin', 'bac_chairman', 'bac_secretariat'].includes(role)
-    );
+    const canCorrectDocuments = auth.user.roles.some((role) => ['admin', 'bac_chairman', 'bac_secretariat'].includes(role));
 
     // Handle clicking "Correct Document" on a specific document
     const handleCorrectDocument = (document: ProcurementDocument) => {
@@ -76,13 +74,12 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
         <AppLayout>
             <Head title={`Correct Documents - ${procurement.title}`} />
 
-            <div className="container mx-auto py-8 px-4">
+            <div className="container mx-auto px-4 py-8">
                 {/* Page Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">{procurement.title}</h1>
+                    <h1 className="mb-2 text-3xl font-bold">{procurement.title}</h1>
                     <p className="text-muted-foreground">
-                        Reference: {procurement.reference_number} • Status: {procurement.status} • Stage:{' '}
-                        {procurement.stage}
+                        Reference: {procurement.reference_number} • Status: {procurement.status} • Stage: {procurement.stage}
                     </p>
                 </div>
 
@@ -90,15 +87,12 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                 <Card className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20">
                     <CardContent className="pt-6">
                         <div className="flex gap-3">
-                            <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
                             <div className="text-sm">
-                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                                    About Document Corrections
-                                </p>
+                                <p className="mb-1 font-semibold text-blue-900 dark:text-blue-100">About Document Corrections</p>
                                 <p className="text-blue-800 dark:text-blue-200">
-                                    You can correct document mistakes while maintaining blockchain immutability. Both
-                                    the original and correction records remain permanently on the blockchain for a
-                                    complete audit trail.
+                                    You can correct document mistakes while maintaining blockchain immutability. Both the original and correction
+                                    records remain permanently on the blockchain for a complete audit trail.
                                 </p>
                             </div>
                         </div>
@@ -111,9 +105,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle>Procurement Documents</CardTitle>
-                                <CardDescription>
-                                    {procurement.documents.length} document(s) uploaded
-                                </CardDescription>
+                                <CardDescription>{procurement.documents.length} document(s) uploaded</CardDescription>
                             </div>
                             <Button variant="outline" onClick={handleViewAllCorrections} className="gap-2">
                                 <History className="h-4 w-4" />
@@ -123,14 +115,14 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                     </CardHeader>
                     <CardContent>
                         {procurement.documents.length === 0 ? (
-                            <div className="text-center py-12">
-                                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                            <div className="py-12 text-center">
+                                <FileText className="text-muted-foreground mx-auto mb-3 h-12 w-12" />
                                 <p className="text-muted-foreground">No documents uploaded yet</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 {procurement.documents.map((document) => (
-                                    <div key={document.id} className="border rounded-lg p-4">
+                                    <div key={document.id} className="rounded-lg border p-4">
                                         {/* Correction Alert (if document is corrected) */}
                                         {document.is_corrected && (
                                             <div className="mb-4">
@@ -147,8 +139,8 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                                         {/* Document Info */}
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <FileText className="h-5 w-5 text-muted-foreground" />
+                                                <div className="mb-2 flex items-center gap-2">
+                                                    <FileText className="text-muted-foreground h-5 w-5" />
                                                     <h3 className="font-semibold">{document.file_name}</h3>
                                                     <Badge variant="outline">{document.document_type}</Badge>
                                                     {document.is_corrected && (
@@ -159,7 +151,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                                                     )}
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                                                <div className="text-muted-foreground grid grid-cols-2 gap-4 text-sm">
                                                     <div>
                                                         <strong>File Size:</strong> {(document.file_size / 1024 / 1024).toFixed(2)} MB
                                                     </div>
@@ -173,16 +165,14 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                                                     {document.blockchain_txid && (
                                                         <div className="col-span-2">
                                                             <strong>Blockchain TXID:</strong>{' '}
-                                                            <span className="font-mono text-xs">
-                                                                {document.blockchain_txid.substring(0, 32)}...
-                                                            </span>
+                                                            <span className="font-mono text-xs">{document.blockchain_txid.substring(0, 32)}...</span>
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
 
                                             {/* Action Buttons */}
-                                            <div className="flex gap-2 ml-4">
+                                            <div className="ml-4 flex gap-2">
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -217,14 +207,12 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                     <Card className="mt-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20">
                         <CardContent className="pt-6">
                             <div className="flex gap-3">
-                                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                                 <div className="text-sm">
-                                    <p className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                                        Limited Permissions
-                                    </p>
+                                    <p className="mb-1 font-semibold text-amber-900 dark:text-amber-100">Limited Permissions</p>
                                     <p className="text-amber-800 dark:text-amber-200">
-                                        Only administrators and BAC members can submit document corrections. You can
-                                        view correction history but cannot submit corrections.
+                                        Only administrators and BAC members can submit document corrections. You can view correction history but
+                                        cannot submit corrections.
                                     </p>
                                 </div>
                             </div>

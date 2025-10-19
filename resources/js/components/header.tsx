@@ -1,4 +1,10 @@
 import { useAppearance } from '@/hooks/use-appearance';
+import { about, contact, home, login, search as searchRoute, team } from '@/routes';
+import { dashboard as adminDashboard } from '@/routes/admin';
+import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
+import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
+import { dashboard as hopeDashboard } from '@/routes/hope';
+import { suggestions as searchSuggestions } from '@/routes/search';
 import { type SharedData } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useDebounce } from '@uidotdev/usehooks';
@@ -6,12 +12,6 @@ import axios from 'axios';
 import { Loader2, Menu, Monitor, Moon, Search, Sun, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import AppLogoIcon from './app-logo-icon';
-import { home, about, team, contact, login, search as searchRoute } from '@/routes';
-import { dashboard as hopeDashboard } from '@/routes/hope';
-import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
-import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
-import { dashboard as adminDashboard } from '@/routes/admin';
-import { suggestions as searchSuggestions } from '@/routes/search';
 
 interface Suggestion {
     id: string | number;
@@ -36,7 +36,8 @@ function getDashboardRouteByRole(role: string): string {
 }
 
 export default function Header() {
-    const { auth } = usePage<SharedData>().props;
+    const page = usePage<SharedData>();
+    const { auth } = page.props;
     const { appearance, updateAppearance } = useAppearance();
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -47,6 +48,11 @@ export default function Header() {
     const [isMobileSearchExpanded, setIsMobileSearchExpanded] = useState(false);
     const [activeIndex, setActiveIndex] = useState(-1);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Helper to check if a route is currently active
+    const isRouteActive = (routeUrl: string): boolean => {
+        return page.url === routeUrl || page.url.startsWith(routeUrl + '?');
+    };
 
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -256,16 +262,16 @@ export default function Header() {
                     </Link>
                     <nav className="hidden flex-grow items-center justify-center lg:flex" role="navigation" aria-label="Main navigation">
                         <div className="flex items-center space-x-6 md:space-x-8">
-                            <NavLink href={home.url()} active={route().current('home')}>
+                            <NavLink href={home.url()} active={isRouteActive(home.url())}>
                                 Home
                             </NavLink>
-                            <NavLink href={about.url()} active={route().current('about')}>
+                            <NavLink href={about.url()} active={isRouteActive(about.url())}>
                                 About
                             </NavLink>
-                            <NavLink href={team.url()} active={route().current('team')}>
+                            <NavLink href={team.url()} active={isRouteActive(team.url())}>
                                 Team
                             </NavLink>
-                            <NavLink href={contact.url()} active={route().current('contact')}>
+                            <NavLink href={contact.url()} active={isRouteActive(contact.url())}>
                                 Contact
                             </NavLink>
                         </div>
@@ -493,16 +499,16 @@ export default function Header() {
                         </div>
                     </div>
                     <nav className="mt-6 space-y-4 px-3 sm:px-4 md:px-6 lg:px-8" role="navigation" aria-label="Mobile navigation">
-                        <MobileNavLink href={home.url()} active={route().current('home')} onClick={resetSearchState}>
+                        <MobileNavLink href={home.url()} active={isRouteActive(home.url())} onClick={resetSearchState}>
                             Home
                         </MobileNavLink>
-                        <MobileNavLink href={about.url()} active={route().current('about')} onClick={resetSearchState}>
+                        <MobileNavLink href={about.url()} active={isRouteActive(about.url())} onClick={resetSearchState}>
                             About
                         </MobileNavLink>
-                        <MobileNavLink href={team.url()} active={route().current('team')} onClick={resetSearchState}>
+                        <MobileNavLink href={team.url()} active={isRouteActive(team.url())} onClick={resetSearchState}>
                             Team
                         </MobileNavLink>
-                        <MobileNavLink href={contact.url()} active={route().current('contact')} onClick={resetSearchState}>
+                        <MobileNavLink href={contact.url()} active={isRouteActive(contact.url())} onClick={resetSearchState}>
                             Contact
                         </MobileNavLink>
                     </nav>

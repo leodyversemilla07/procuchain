@@ -45,4 +45,3 @@ class MonitoringDocumentRequest extends FormRequest
         ];
     }
 }
-

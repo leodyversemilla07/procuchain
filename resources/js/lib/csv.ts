@@ -1,4 +1,4 @@
-import type { ProcurementListItem } from '@/types/blockchain';
+import type { ProcurementListItem } from '@/types';
 import { toast } from 'sonner';
 
 type CSVValue = string | number | null | undefined;

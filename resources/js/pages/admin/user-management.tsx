@@ -41,7 +41,8 @@ import DeleteUserDialog from '@/components/admin/delete-user-dialog';
 import EditUserDialog from '@/components/admin/edit-user-dialog';
 import { HeroCard } from '@/components/hero-card';
 import { Pagination } from '@/components/pagination';
-import { dashboard, users as usersRoute } from '@/routes/admin';
+import { dashboard } from '@/routes/admin';
+import users from '@/routes/admin/users';
 
 interface User {
     id: number;
@@ -76,7 +77,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Users',
-        href: usersRoute.url(),
+        href: users.index.url(),
     },
 ];
 

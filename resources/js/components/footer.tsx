@@ -1,9 +1,9 @@
+import { about, contact, home, team } from '@/routes';
+import { policy } from '@/routes/privacy';
+import { service } from '@/routes/terms';
 import { Link } from '@inertiajs/react';
 import { Mail } from 'lucide-react';
 import AppLogoIcon from './app-logo-icon';
-import { home, about, team, contact } from '@/routes';
-import { policy } from '@/routes/privacy';
-import { service } from '@/routes/terms';
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();

@@ -13,7 +13,7 @@ import { BreadcrumbItem, User } from '@/types';
 import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, RotateCw } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface Notification {
@@ -91,6 +91,16 @@ export default function Notifications() {
     const [filter, setFilter] = useState<FilterType>('all');
     const [refreshing, setRefreshing] = useState(false);
 
+    // Optimistic state management
+    const [optimisticNotifications, setOptimisticNotifications] = useState<Notification[]>(initialNotifications);
+    const [optimisticUnreadCount, setOptimisticUnreadCount] = useState(unread_count);
+
+    // Sync optimistic state with server data when it changes
+    useEffect(() => {
+        setOptimisticNotifications(initialNotifications);
+        setOptimisticUnreadCount(unread_count);
+    }, [initialNotifications, unread_count]);
+
     const filterNotifications = useCallback((notifications: Notification[], filterType: FilterType) => {
         if (filterType === 'read') return notifications.filter((n) => n.read_at !== null);
         if (filterType === 'unread') return notifications.filter((n) => n.read_at === null);
@@ -98,8 +108,8 @@ export default function Notifications() {
     }, []);
 
     const filteredNotifications = useMemo(() => {
-        return filterNotifications(initialNotifications, filter);
-    }, [initialNotifications, filter, filterNotifications]);
+        return filterNotifications(optimisticNotifications, filter);
+    }, [optimisticNotifications, filter, filterNotifications]);
 
     const currentPage = initialPagination.current_page;
     const totalPages = Math.max(1, Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE));
@@ -111,29 +121,65 @@ export default function Notifications() {
         setFilter(newFilter);
     }, []);
 
-    const handleMarkAsRead = useCallback(async (id: string) => {
-        router.post(
-            `/notifications/${id}/mark-as-read`,
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () => toast.success('Notification marked as read'),
-                onError: () => toast.error('Failed to mark notification as read'),
-            },
-        );
-    }, []);
+    const handleMarkAsRead = useCallback(
+        async (id: string) => {
+            // Store previous state for rollback
+            const previousNotifications = [...optimisticNotifications];
+            const previousUnreadCount = optimisticUnreadCount;
+
+            // Optimistically update UI immediately
+            setOptimisticNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)));
+            setOptimisticUnreadCount((prev) => Math.max(0, prev - 1));
+
+            // Make the actual request
+            router.post(
+                `/notifications/${id}/mark-as-read`,
+                {},
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        toast.success('Notification marked as read');
+                    },
+                    onError: () => {
+                        // Rollback on error
+                        setOptimisticNotifications(previousNotifications);
+                        setOptimisticUnreadCount(previousUnreadCount);
+                        toast.error('Failed to mark notification as read');
+                    },
+                },
+            );
+        },
+        [optimisticNotifications, optimisticUnreadCount],
+    );
 
     const handleMarkAllAsRead = useCallback(async () => {
+        // Store previous state for rollback
+        const previousNotifications = [...optimisticNotifications];
+        const previousUnreadCount = optimisticUnreadCount;
+
+        // Optimistically update all notifications immediately
+        const timestamp = new Date().toISOString();
+        setOptimisticNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at || timestamp })));
+        setOptimisticUnreadCount(0);
+
+        // Make the actual request
         router.post(
             '/notifications/mark-all-as-read',
             {},
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('All notifications marked as read'),
-                onError: () => toast.error('Failed to mark all notifications as read'),
+                onSuccess: () => {
+                    toast.success('All notifications marked as read');
+                },
+                onError: () => {
+                    // Rollback on error
+                    setOptimisticNotifications(previousNotifications);
+                    setOptimisticUnreadCount(previousUnreadCount);
+                    toast.error('Failed to mark all notifications as read');
+                },
             },
         );
-    }, []);
+    }, [optimisticNotifications, optimisticUnreadCount]);
 
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
@@ -202,14 +248,14 @@ export default function Notifications() {
         {
             id: 'unread',
             label: 'Unread',
-            value: unread_count,
+            value: optimisticUnreadCount,
             icon: AlertCircle,
             iconClassName: 'bg-yellow-500/10 text-yellow-500',
         },
         {
             id: 'read',
             label: 'Read',
-            value: filteredNotifications.length - unread_count,
+            value: filteredNotifications.length - optimisticUnreadCount,
             icon: CheckCheck,
             iconClassName: 'bg-green-500/10 text-green-500',
         },

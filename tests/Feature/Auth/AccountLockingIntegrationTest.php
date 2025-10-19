@@ -192,7 +192,7 @@ test('admin can lock user account via API', function () {
 test('non-admin cannot access locked accounts page', function () {
     Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
     $user = User::factory()->create([
-        ]);
+    ]);
     $user->assignRole('bac_secretariat');
     $this->actingAs($user);
     $response = $this->get('/admin/accounts/locked');
@@ -202,7 +202,7 @@ test('non-admin cannot access locked accounts page', function () {
 test('non-admin cannot unlock accounts', function () {
     Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
     $user = User::factory()->create([
-        ]);
+    ]);
     $user->assignRole('bac_secretariat');
     $lockedUser = User::factory()->create([
         'account_locked' => true,
@@ -263,5 +263,3 @@ test('user can login after account is automatically unlocked', function () {
                $mail->wasAutoUnlocked === true;
     });
 });
-
-

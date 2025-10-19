@@ -102,4 +102,3 @@ it('allows recovery codes to be regenerated', function () {
 
     expect($user->two_factor_recovery_codes)->not->toEqual($originalCodes);
 });
-
