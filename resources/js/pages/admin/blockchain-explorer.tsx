@@ -2,6 +2,7 @@ import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -577,7 +578,18 @@ export default function BlockchainExplorer({
                                         </TableBody>
                                     </Table>
                                 ) : (
-                                    <div className="text-muted-foreground py-8 text-center">No connected peers found</div>
+                                    <Empty>
+                                        <EmptyHeader>
+                                            <EmptyMedia variant="icon">
+                                                <Users />
+                                            </EmptyMedia>
+                                            <EmptyTitle>No Connected Peers</EmptyTitle>
+                                            <EmptyDescription>
+                                                There are currently no peers connected to the blockchain network. This may be
+                                                temporary during network synchronization.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
                                 )}
                             </CardContent>
                         </Card>
@@ -786,8 +798,19 @@ export default function BlockchainExplorer({
                             </div>
                         ) : (
                             <Card>
-                                <CardContent className="py-8 text-center">
-                                    <p className="text-muted-foreground">Health monitoring data is not available</p>
+                                <CardContent>
+                                    <Empty>
+                                        <EmptyHeader>
+                                            <EmptyMedia variant="icon">
+                                                <Shield />
+                                            </EmptyMedia>
+                                            <EmptyTitle>Health Data Unavailable</EmptyTitle>
+                                            <EmptyDescription>
+                                                Health monitoring data is currently not available. Please check your blockchain
+                                                connection and try refreshing the page.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
                                 </CardContent>
                             </Card>
                         )}
