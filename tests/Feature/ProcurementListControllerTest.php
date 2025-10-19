@@ -17,7 +17,7 @@ beforeEach(function () {
     $this->user->assignRole('bac_secretariat');
 });
 
-describe('ViewProcurementsController', function () {
+describe('ProcurementListController', function () {
     describe('indexProcurementsList', function () {
         it('returns procurements list page for bac secretariat', function () {
             actingAs($this->user);

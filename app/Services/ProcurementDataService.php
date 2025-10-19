@@ -1,120 +1,45 @@
 <?php
 
 declare(strict_types=1);
-/**
- * @phpstan-ignore-file
- *
- * @psalm-suppress TooManyArguments
- *
- * @noinspection Generic.StringHeavyFunctionArguments
- */
 
-namespace App\Http\Controllers;
+namespace App\Services;
 
 use App\Enums\StreamEnums;
 use App\Models\User;
-use App\Services\MultichainService;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
-use Inertia\Response;
 
-class ViewProcurementsController extends BaseController
+/**
+ * Service for fetching and processing procurement data from blockchain
+ */
+class ProcurementDataService
 {
-    /**
-     * @var MultichainService
-     */
-    private $multichainService;
+    private MultichainService $multichainService;
 
     /**
      * @var array<string, string>
      */
-    private array $userCache = []; // Corrected type hint
+    private array $userCache = [];
 
     private const STATUS_PAGE_SIZE = 1000;
 
     private const DOCUMENT_PAGE_SIZE = 10000;
 
-    // Caching removed
-
-    /**
-     * Constructor
-     */
     public function __construct(MultichainService $multichainService)
     {
         $this->multichainService = $multichainService;
-        $this->setupMiddleware();
     }
 
     /**
-     * Set up controller middleware
-     */
-    private function setupMiddleware(): void
-    {
-        $this->middleware('auth');
-    }
-
-    /**
-     * Preload user names for batch user lookup
-     */
-    private function preloadUserNames(Collection $items): void
-    {
-        $addresses = $items->pluck('data.json.user_address')->unique()->filter()->all(); // Added ->all()
-        if (empty($addresses)) {
-            return; // Avoid query if no addresses
-        }
-        $names = User::whereIn('blockchain_address', $addresses)
-            ->pluck('name', 'blockchain_address')
-            ->all();
-        $this->userCache = $names;
-    }
-
-    /**
-     * Get username from blockchain address
-     */
-    private function getUserName(string $address): string
-    {
-        return $this->userCache[$address] ?? 'Unknown';
-    }
-
-    /**
-     * Display a listing of procurements
-     */
-    public function indexProcurementsList(): Response
-    {
-        try {
-            Log::info('Fetching procurements list');
-            $procurements = $this->fetchAndProcessProcurements();
-
-            Log::info('Successfully retrieved procurements list', [
-                'count' => count($procurements),
-            ]);
-
-            return Inertia::render('procurements/procurements-list', [
-                'procurements' => $procurements,
-            ]);
-        } catch (Exception $e) { // Corrected catch block placement
-            Log::error('Failed to retrieve procurements list', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return Inertia::render('procurements/procurements-list', [
-                'procurements' => [],
-                'error' => 'Unable to connect to the blockchain node right now. Please try again shortly.',
-            ]);
-        }
-    }
-
-    /**
-     * Fetch and process procurements data (optimized: batch fetch, in-memory aggregation)
+     * Fetch and process all procurements for listing page
+     *
+     * @return array<int, array<string, mixed>>
      *
      * @throws Exception
      */
-    private function fetchAndProcessProcurements(): array
+    public function fetchAndProcessProcurements(): array
     {
         Log::info('fetchAndProcessProcurements: Fetching status items from MultiChain');
         $statusItems = $this->multichainService->listStreamItems(
@@ -124,10 +49,12 @@ class ViewProcurementsController extends BaseController
             0,
             false
         );
+
         if ($statusItems === null) {
             Log::error('fetchAndProcessProcurements: Failed to retrieve status stream items');
             throw new Exception('Failed to retrieve status stream items');
         }
+
         Log::info('fetchAndProcessProcurements: Retrieved status items', ['count' => count($statusItems)]);
 
         Log::info('fetchAndProcessProcurements: Fetching document items from MultiChain');
@@ -138,10 +65,12 @@ class ViewProcurementsController extends BaseController
             0,
             false
         );
+
         if ($documentItems === null) {
             Log::error('fetchAndProcessProcurements: Failed to retrieve document stream items');
             throw new Exception('Failed to retrieve document stream items');
         }
+
         Log::info('fetchAndProcessProcurements: Retrieved document items', ['count' => count($documentItems)]);
 
         // Preload user names
@@ -197,85 +126,11 @@ class ViewProcurementsController extends BaseController
     }
 
     /**
-     * Display the specified procurement
-     */
-    public function showProcurement(string $procurementId): Response
-    {
-        try {
-            $this->validateProcurementId($procurementId);
-
-            Log::info('Fetching procurement details', ['procurement_id' => $procurementId]);
-
-            // Directly compute procurement details (caching removed)
-            $statusItems = $this->fetchStatusItems($procurementId);
-            $currentStatus = $statusItems->first();
-
-            if (! $currentStatus) {
-                return $this->renderNotFound();
-            }
-
-            $documents = $this->fetchAndProcessAllDocuments($procurementId);
-            $events = $this->fetchAndProcessEvents($procurementId);
-
-            $this->preloadUserNames(collect($events));
-
-            /** @phpstan-ignore-next-line Excess number of function arguments */
-            $procurementData = $this->buildProcurementData(
-                $procurementId,
-                $currentStatus,
-                $documents,
-                $events,
-                $statusItems
-            );
-
-            // Handle case where procurement was not found inside the cache closure
-            if ($procurementData === null) {
-                Log::warning('Procurement details not found after cache check', ['procurement_id' => $procurementId]);
-
-                return $this->renderNotFound();
-            }
-
-            Log::info('Successfully retrieved procurement details', [
-                'procurement_id' => $procurementId,
-            ]);
-
-            // dd($procurementData); // Debugging line, remove in production
-
-            return Inertia::render('procurements/show-procurement', [
-                'procurement' => $procurementData,
-                'now' => now()->toIso8601String(),
-            ]);
-        } catch (Exception $e) {
-            Log::error('Failed to retrieve procurement details', [
-                'procurement_id' => $procurementId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return Inertia::render('procurements/show-procurement', [
-                'error' => 'Failed to retrieve procurement details. Please try again later.',
-            ]);
-        }
-    }
-
-    /**
-     * Validate the procurement ID
+     * Fetch status items for a specific procurement
      *
      * @throws Exception
      */
-    private function validateProcurementId(?string $procurementId): void
-    {
-        if (empty($procurementId)) {
-            throw new Exception('Procurement ID is required');
-        }
-    }
-
-    /**
-     * Fetch and process status items
-     *
-     * @throws Exception
-     */
-    private function fetchStatusItems(string $procurementId): Collection
+    public function fetchStatusItems(string $procurementId): Collection
     {
         $statusStreamItems = $this->multichainService->listStreamItems(
             StreamEnums::STATUS->value,
@@ -301,7 +156,7 @@ class ViewProcurementsController extends BaseController
                 return [
                     'stage' => $data['stage'] ?? '',
                     'current_status' => $data['current_status'] ?? '',
-                    'status' => $data['current_status'] ?? '', // Added this to match the frontend expectation
+                    'status' => $data['current_status'] ?? '',
                     'timestamp' => $data['timestamp'] ?? '',
                     'procurement_id' => $data['procurement_id'] ?? '',
                     'procurement_title' => $data['procurement_title'] ?? '',
@@ -312,40 +167,37 @@ class ViewProcurementsController extends BaseController
     }
 
     /**
-     * Fetch and process documents using procurement ID (more robust)
+     * Fetch and process all documents for a specific procurement
      *
-     * @throws Exception // Added exception type hint
+     * @return array<int, array<string, mixed>>
+     *
+     * @throws Exception
      */
-    private function fetchAndProcessAllDocuments(string $procurementId): array // Removed $procurementTitles parameter
+    public function fetchAndProcessAllDocuments(string $procurementId): array
     {
-        // Fetch all document items first
         $allDocumentItems = $this->multichainService->listStreamItems(
             StreamEnums::DOCUMENTS->value,
-            true, // Verbose
-            self::DOCUMENT_PAGE_SIZE, // Use the defined page size
-            0, // Start from the beginning
-            false // Don't fetch local order
+            true,
+            self::DOCUMENT_PAGE_SIZE,
+            0,
+            false
         );
 
         if ($allDocumentItems === null) {
-            // Consider throwing an exception or returning an empty array based on desired error handling
             Log::warning('Failed to retrieve any document stream items.', ['procurement_id' => $procurementId]);
 
-            // throw new Exception('Failed to retrieve document stream items'); // Option 1: Throw
-            return []; // Option 2: Return empty
+            return [];
         }
 
-        $totalFetched = count($allDocumentItems); // Log total fetched
+        $totalFetched = count($allDocumentItems);
 
-        // Filter documents by procurement_id in PHP
         $filteredItems = collect($allDocumentItems)
             ->filter(function ($item) use ($procurementId) {
-                // Check if the necessary keys exist before accessing them
                 return isset($item['data']['json']['procurement_id']) &&
                     $item['data']['json']['procurement_id'] === $procurementId;
             });
 
-        $totalAfterFilter = $filteredItems->count(); // Log count after filtering
+        $totalAfterFilter = $filteredItems->count();
 
         Log::debug('Document Fetching Stats', [
             'procurement_id' => $procurementId,
@@ -353,39 +205,38 @@ class ViewProcurementsController extends BaseController
             'total_after_filtering_by_id' => $totalAfterFilter,
         ]);
 
-        // Continue mapping and sorting
         return $filteredItems
             ->map(function ($item) {
-                $data = $item['data']['json'] ?? []; // Ensure data exists
+                $data = $item['data']['json'] ?? [];
                 $fileKey = $data['file_key'] ?? '';
 
-                // Generate secure download URL instead of temporary URL
                 $secureUrl = ! empty($fileKey) ? route('secure.file.download', ['fileKey' => $fileKey]) : '';
 
-                // Construct the document array structure
                 return [
                     'file_key' => $fileKey,
                     'document_type' => $data['document_type'] ?? '',
-                    'spaces_url' => $secureUrl, // Use secure URL instead of temporary URL
+                    'spaces_url' => $secureUrl,
                     'hash' => $data['hash'] ?? '',
                     'file_size' => $data['file_size'] ?? null,
                     'stage' => $data['stage'] ?? '',
                     'stage_metadata' => $data['stage_metadata'] ?? null,
-                    'procurement_id' => $data['procurement_id'] ?? '', // Keep procurement_id
-                    'procurement_title' => $data['procurement_title'] ?? '', // Keep procurement_title
+                    'procurement_id' => $data['procurement_id'] ?? '',
+                    'procurement_title' => $data['procurement_title'] ?? '',
                     'user_address' => $data['user_address'] ?? '',
                     'timestamp' => $data['timestamp'] ?? '',
                 ];
             })
-            ->sortByDesc('timestamp') // Sort by timestamp descending
-            ->values() // Reset keys
-            ->toArray(); // Convert to array
+            ->sortByDesc('timestamp')
+            ->values()
+            ->toArray();
     }
 
     /**
-     * Fetch and process events
+     * Fetch and process events for a specific procurement
+     *
+     * @return array<int, array<string, mixed>>
      */
-    private function fetchAndProcessEvents(string $procurementId): array
+    public function fetchAndProcessEvents(string $procurementId): array
     {
         $events = $this->multichainService->listStreamItems(
             StreamEnums::EVENTS->value
@@ -420,8 +271,13 @@ class ViewProcurementsController extends BaseController
 
     /**
      * Build procurement data structure
+     *
+     * @param  array<string, mixed>  $currentStatus
+     * @param  array<int, array<string, mixed>>  $documents
+     * @param  array<int, array<string, mixed>>  $events
+     * @return array<string, mixed>
      */
-    private function buildProcurementData(
+    public function buildProcurementData(
         string $procurementId,
         array $currentStatus,
         array $documents,
@@ -430,7 +286,7 @@ class ViewProcurementsController extends BaseController
     ): array {
         return [
             'id' => $procurementId,
-            'title' => $currentStatus['procurement_title'] ?? 'N/A', // Added null check
+            'title' => $currentStatus['procurement_title'] ?? 'N/A',
             'status' => $currentStatus,
             'documents' => $documents,
             'events' => $events,
@@ -439,12 +295,27 @@ class ViewProcurementsController extends BaseController
     }
 
     /**
-     * Render not found response
+     * Preload user names for batch user lookup
      */
-    private function renderNotFound(): Response
+    public function preloadUserNames(Collection $items): void
     {
-        return Inertia::render('procurements/show-procurement', [
-            'error' => 'Procurement not found',
-        ]);
+        $addresses = $items->pluck('data.json.user_address')->unique()->filter()->all();
+        if (empty($addresses)) {
+            return;
+        }
+
+        $names = User::whereIn('blockchain_address', $addresses)
+            ->pluck('name', 'blockchain_address')
+            ->all();
+
+        $this->userCache = $names;
+    }
+
+    /**
+     * Get username from blockchain address
+     */
+    public function getUserName(string $address): string
+    {
+        return $this->userCache[$address] ?? 'Unknown';
     }
 }
