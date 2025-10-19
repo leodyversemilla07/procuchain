@@ -11,8 +11,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\ProcurementDocument;
 use App\Services\ProcurementDataService;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -144,6 +146,47 @@ class ProcurementListController extends BaseController
     {
         return Inertia::render('procurements/show-procurement', [
             'error' => 'Procurement not found',
+        ]);
+    }
+
+    /**
+     * Get blockchain publication status for procurement documents
+     *
+     * This endpoint is polled by the blockchain-publishing-status page
+     * to provide real-time feedback on document publication progress.
+     */
+    public function getBlockchainStatus(string $id): JsonResponse
+    {
+        $documents = ProcurementDocument::where('procurement_id', $id)
+            ->latest('created_at')
+            ->limit(50) // Recent documents
+            ->get(['id', 'file_name', 'blockchain_status', 'blockchain_error', 'blockchain_txid', 'blockchain_status_updated_at', 'created_at']);
+
+        $summary = [
+            'pending' => $documents->where('blockchain_status', 'pending')->count(),
+            'confirmed' => $documents->where('blockchain_status', 'confirmed')->count(),
+            'failed' => $documents->where('blockchain_status', 'failed')->count(),
+            'total' => $documents->count(),
+        ];
+
+        // Determine overall status
+        $allConfirmed = $summary['pending'] === 0 && $summary['failed'] === 0 && $summary['total'] > 0;
+        $hasFailed = $summary['failed'] > 0;
+        $status = $allConfirmed ? 'confirmed' : ($hasFailed ? 'failed' : 'pending');
+
+        return response()->json([
+            'status' => $status,
+            'summary' => $summary,
+            'documents' => $documents->map(function ($doc) {
+                return [
+                    'id' => $doc->id,
+                    'file_name' => $doc->file_name,
+                    'blockchain_status' => $doc->blockchain_status,
+                    'blockchain_error' => $doc->blockchain_error,
+                    'blockchain_txid' => $doc->blockchain_txid,
+                    'updated_at' => $doc->blockchain_status_updated_at?->diffForHumans() ?? $doc->created_at->diffForHumans(),
+                ];
+            }),
         ]);
     }
 }

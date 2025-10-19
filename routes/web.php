@@ -74,6 +74,10 @@ Route::middleware(['auth'])->group(function () {
         ->where('fileKey', '.*')
         ->name('pdf.viewer');
 
+    // Blockchain Status Polling (All Authenticated Users)
+    Route::get('/procurements/{id}/blockchain-status', [ProcurementListController::class, 'getBlockchainStatus'])
+        ->name('procurements.blockchain-status');
+
     // Document Corrections - View Only (All Authenticated Users)
     Route::get('/procurements/{id}/corrections', [DocumentCorrectionController::class, 'showCorrectionsPage'])
         ->name('procurements.corrections.page');
@@ -176,10 +180,6 @@ Route::middleware(['auth'])->group(function () {
             ->name('monitoring-upload');
         Route::get('/completion-upload/{id}', [ProcurementController::class, 'showCompletionUpload'])
             ->name('completion-upload');
-
-        // Blockchain Status Polling
-        Route::get('/procurements/{id}/blockchain-status', [ProcurementController::class, 'getBlockchainStatus'])
-            ->name('procurements.blockchain-status');
 
         // Blockchain Publishing Status Page
         Route::get('/blockchain/publishing-status/{id}', function (string $id) {

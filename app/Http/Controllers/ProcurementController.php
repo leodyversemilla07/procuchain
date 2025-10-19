@@ -811,42 +811,4 @@ class ProcurementController extends BaseController
             'Completion Documents'
         );
     }
-
-    /**
-     * Get blockchain publication status for procurement documents
-     */
-    public function getBlockchainStatus(string $id): \Illuminate\Http\JsonResponse
-    {
-        $documents = \App\Models\ProcurementDocument::where('procurement_id', $id)
-            ->latest('created_at')
-            ->limit(50) // Recent documents
-            ->get(['id', 'file_name', 'blockchain_status', 'blockchain_error', 'blockchain_txid', 'blockchain_status_updated_at', 'created_at']);
-
-        $summary = [
-            'pending' => $documents->where('blockchain_status', 'pending')->count(),
-            'confirmed' => $documents->where('blockchain_status', 'confirmed')->count(),
-            'failed' => $documents->where('blockchain_status', 'failed')->count(),
-            'total' => $documents->count(),
-        ];
-
-        // Determine overall status
-        $allConfirmed = $summary['pending'] === 0 && $summary['failed'] === 0 && $summary['total'] > 0;
-        $hasFailed = $summary['failed'] > 0;
-        $status = $allConfirmed ? 'confirmed' : ($hasFailed ? 'failed' : 'pending');
-
-        return response()->json([
-            'status' => $status,
-            'summary' => $summary,
-            'documents' => $documents->map(function ($doc) {
-                return [
-                    'id' => $doc->id,
-                    'file_name' => $doc->file_name,
-                    'blockchain_status' => $doc->blockchain_status,
-                    'blockchain_error' => $doc->blockchain_error,
-                    'blockchain_txid' => $doc->blockchain_txid,
-                    'updated_at' => $doc->blockchain_status_updated_at?->diffForHumans() ?? $doc->created_at->diffForHumans(),
-                ];
-            }),
-        ]);
-    }
 }
