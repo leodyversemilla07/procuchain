@@ -103,4 +103,54 @@ describe('SearchController', function () {
                 ->assertOk();
         });
     });
+
+    describe('role-based procurement routing', function () {
+        it('supports admin role for procurement search', function () {
+            Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+            $adminUser = User::factory()->create();
+            $adminUser->assignRole('admin');
+
+            actingAs($adminUser);
+
+            get(route('search', ['q' => 'procurement']))
+                ->assertOk()
+                ->assertInertia(fn ($page) => $page->component('search/index'));
+        });
+
+        it('supports bac_chairman role for procurement search', function () {
+            Role::firstOrCreate(['name' => 'bac_chairman', 'guard_name' => 'web']);
+            $chairmanUser = User::factory()->create();
+            $chairmanUser->assignRole('bac_chairman');
+
+            actingAs($chairmanUser);
+
+            get(route('search', ['q' => 'procurement']))
+                ->assertOk()
+                ->assertInertia(fn ($page) => $page->component('search/index'));
+        });
+
+        it('supports hope role for procurement search', function () {
+            Role::firstOrCreate(['name' => 'hope', 'guard_name' => 'web']);
+            $hopeUser = User::factory()->create();
+            $hopeUser->assignRole('hope');
+
+            actingAs($hopeUser);
+
+            get(route('search', ['q' => 'procurement']))
+                ->assertOk()
+                ->assertInertia(fn ($page) => $page->component('search/index'));
+        });
+
+        it('supports admin role for procurement suggestions', function () {
+            Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+            $adminUser = User::factory()->create();
+            $adminUser->assignRole('admin');
+
+            actingAs($adminUser);
+
+            get(route('search.suggestions', ['q' => 'test']))
+                ->assertOk()
+                ->assertJsonStructure();
+        });
+    });
 });

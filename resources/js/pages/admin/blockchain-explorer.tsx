@@ -260,7 +260,7 @@ export default function BlockchainExplorer({
                             <CardContent>
                                 <div className="text-2xl font-bold">{overview.blocks.toLocaleString()}</div>
                                 <p className="text-muted-foreground mt-1 text-xs">
-                                    {overview.chain} v{overview.protocol}
+                                    {overview.chain} | {overview.protocol}
                                 </p>
                             </CardContent>
                         </Card>
