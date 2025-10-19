@@ -8,6 +8,7 @@ use App\Services\MultichainService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -68,6 +69,23 @@ class SearchController extends Controller
         ],
     ];
 
+    /**
+     * Get the role-based procurement route name for the given user role.
+     *
+     * @param  string  $userRole  The role of the user (e.g., 'admin', 'bac_chairman', 'hope', 'bac_secretariat')
+     * @return string|null The route name or null if no matching route exists
+     */
+    private function getRoleBasedProcurementRoute(string $userRole): ?string
+    {
+        return match ($userRole) {
+            'admin' => 'admin.procurements.show',
+            'bac_secretariat' => 'bac-secretariat.procurements.show',
+            'bac_chairman' => 'bac-chairman.procurements.show',
+            'hope' => 'hope.procurements.show',
+            default => null,
+        };
+    }
+
     public function index(Request $request, MultichainService $multichainService): Response
     {
         $query = $request->input('query', '');
@@ -117,7 +135,11 @@ class SearchController extends Controller
 
                     try {
                         Log::info('SearchController: Calling listStreamItems for status stream.');
-                        $statusItems = $multichainService->listStreamItems(StreamEnums::STATUS->value, true, 10000, 0, false);
+                        $statusItems = Cache::remember(
+                            'search_status_items',
+                            now()->addMinutes(5),
+                            fn () => $multichainService->listStreamItems(StreamEnums::STATUS->value, true, 10000, 0, false)
+                        );
                         Log::info('SearchController: listStreamItems call completed.', ['response_type' => gettype($statusItems)]);
 
                         if (! is_array($statusItems)) {
@@ -175,12 +197,7 @@ class SearchController extends Controller
                                 $procIdLower = Str::lower((string) $procurementId);
 
                                 if (Str::contains($procTitleLower, $searchQueryLower) || Str::contains($procIdLower, $searchQueryLower)) {
-                                    $routeName = match ($userRole) {
-                                        'bac_secretariat' => 'bac-secretariat.procurements.show',
-                                        'bac_chairman' => 'bac-chairman.procurements.show',
-                                        'hope' => 'hope.procurements.show',
-                                        default => null,
-                                    };
+                                    $routeName = $this->getRoleBasedProcurementRoute($userRole);
 
                                     if ($routeName) {
                                         if (app('router')->has($routeName)) {
@@ -282,7 +299,11 @@ class SearchController extends Controller
                 $statusItems = null;
 
                 try {
-                    $statusItems = $multichainService->listStreamItems(StreamEnums::STATUS->value, true, 500, 0, false);
+                    $statusItems = Cache::remember(
+                        'search_suggestions_status_items',
+                        now()->addMinutes(5),
+                        fn () => $multichainService->listStreamItems(StreamEnums::STATUS->value, true, 500, 0, false)
+                    );
 
                     if (is_array($statusItems)) {
                         $latestStatuses = collect($statusItems)
@@ -302,12 +323,7 @@ class SearchController extends Controller
                             $procIdLower = Str::lower((string) $procurementId);
 
                             if (Str::contains($procTitleLower, $searchQueryLower) || Str::contains($procIdLower, $searchQueryLower)) {
-                                $routeName = match ($userRole) {
-                                    'bac_secretariat' => 'bac-secretariat.procurements.show',
-                                    'bac_chairman' => 'bac-chairman.procurements.show',
-                                    'hope' => 'hope.procurements.show',
-                                    default => null,
-                                };
+                                $routeName = $this->getRoleBasedProcurementRoute($userRole);
 
                                 if ($routeName && app('router')->has($routeName)) {
                                     $suggestions[] = [
