@@ -88,8 +88,9 @@ describe('NotificationService', function () {
 
             Log::shouldReceive('warning')
                 ->once()
-                ->with('No BAC Chairman, HOPE, or Admin users found to notify for procurement update', [
+                ->with('No users found with specified roles to notify for procurement update', [
                     'procurement_id' => 'PROC-003',
+                    'roles' => ['bac_chairman', 'hope', 'admin'],
                 ]);
 
             // Also expect the Log::info call that would happen if users were found
@@ -128,6 +129,93 @@ describe('NotificationService', function () {
             Notification::assertNotSentTo(
                 $this->bacSecretariat,
                 ProcurementStageNotification::class
+            );
+        });
+
+        it('can notify custom roles when specified', function () {
+            Log::shouldReceive('info')
+                ->once()
+                ->withArgs(function ($message, $context) {
+                    return str_contains($message, 'Procurement stage update notification sent') &&
+                        $context['procurement_id'] === 'PROC-005' &&
+                        $context['roles_notified'] === ['bac_secretariat', 'admin'] &&
+                        $context['recipients_count'] === 2;
+                });
+
+            $this->notificationService->notifyStageUpdate(
+                procurementId: 'PROC-005',
+                procurementTitle: 'Test Procurement 5',
+                stageIdentifier: 'Bidding',
+                currentStatus: 'pending',
+                timestamp: now()->toDateTimeString(),
+                actionType: 'uploaded',
+                documentCount: 0,
+                stageTransition: false,
+                nextStage: '',
+                rolesToNotify: ['bac_secretariat', 'admin']
+            );
+
+            Notification::assertSentTo(
+                [$this->bacSecretariat, $this->admin],
+                ProcurementStageNotification::class
+            );
+
+            Notification::assertNotSentTo(
+                [$this->bacChairman, $this->hope],
+                ProcurementStageNotification::class
+            );
+        });
+
+        it('can notify only a single role', function () {
+            Log::shouldReceive('info')
+                ->once()
+                ->withArgs(function ($message, $context) {
+                    return str_contains($message, 'Procurement stage update notification sent') &&
+                        $context['roles_notified'] === ['hope'] &&
+                        $context['recipients_count'] === 1;
+                });
+
+            $this->notificationService->notifyStageUpdate(
+                procurementId: 'PROC-006',
+                procurementTitle: 'Test Procurement 6',
+                stageIdentifier: 'Bidding',
+                currentStatus: 'pending',
+                timestamp: now()->toDateTimeString(),
+                actionType: 'uploaded',
+                documentCount: 0,
+                stageTransition: false,
+                nextStage: '',
+                rolesToNotify: ['hope']
+            );
+
+            Notification::assertSentTo(
+                [$this->hope],
+                ProcurementStageNotification::class
+            );
+
+            Notification::assertNotSentTo(
+                [$this->bacChairman, $this->admin, $this->bacSecretariat],
+                ProcurementStageNotification::class
+            );
+        });
+
+        it('logs roles in notification log entry', function () {
+            Log::shouldReceive('info')
+                ->once()
+                ->withArgs(function ($message, $context) {
+                    return str_contains($message, 'Procurement stage update notification sent') &&
+                        isset($context['roles_notified']) &&
+                        $context['roles_notified'] === ['bac_chairman', 'hope', 'admin'];
+                });
+
+            $this->notificationService->notifyStageUpdate(
+                'PROC-007',
+                'Test Procurement 7',
+                'Bidding',
+                'pending',
+                now()->toDateTimeString(),
+                'uploaded',
+                0
             );
         });
     });
