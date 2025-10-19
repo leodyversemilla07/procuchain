@@ -2,21 +2,28 @@ import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
 import blockchain from '@/routes/admin/blockchain';
 import { PageProps } from '@inertiajs/core';
 import { Head, router } from '@inertiajs/react';
+import { formatDistanceToNow } from 'date-fns';
 import {
     Activity,
     AlertCircle,
     Blocks,
     CheckCircle,
+    ChevronRight,
     Database,
+    Loader2,
     Network,
     RefreshCw,
     Search,
@@ -26,7 +33,8 @@ import {
     Wallet,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface BlockchainOverview {
     chain: string;
@@ -120,9 +128,32 @@ export default function BlockchainExplorer({
 }: BlockchainExplorerProps & { auth: PageProps['auth'] }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTab, setSelectedTab] = useState('overview');
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [autoRefresh, setAutoRefresh] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
 
     const isHealthy = health?.status === 'healthy';
     const isCircuitOpen = health?.circuit_breaker?.is_open ?? false;
+
+    // Auto-refresh functionality
+    useEffect(() => {
+        if (!autoRefresh) return;
+
+        const interval = setInterval(() => {
+            router.reload({
+                only: ['overview', 'latestBlocks', 'streams', 'addresses', 'peers', 'health'],
+                onFinish: () => {
+                    toast.success('Data refreshed', {
+                        description: 'Blockchain data has been updated',
+                        duration: 2000,
+                    });
+                },
+            });
+        }, 30000); // 30 seconds
+
+        return () => clearInterval(interval);
+    }, [autoRefresh]);
 
     // Format timestamp to human-readable date (following MultiChain Explorer pattern)
     const formatDate = (timestamp: number) => {
@@ -152,29 +183,49 @@ export default function BlockchainExplorer({
     };
 
     const handleSearch = () => {
-        if (!searchQuery.trim()) return;
+        if (!searchQuery.trim()) {
+            toast.error('Please enter a search query');
+            return;
+        }
 
+        setIsSearching(true);
         router.get(
             route('admin.blockchain.explorer.search'),
             { query: searchQuery },
             {
                 preserveState: true,
                 onSuccess: () => {
-                    // Search completed successfully
+                    toast.success('Search completed');
+                    setIsSearching(false);
+                },
+                onError: () => {
+                    toast.error('Search failed', {
+                        description: 'Unable to complete the search. Please try again.',
+                    });
+                    setIsSearching(false);
                 },
             },
         );
     };
 
     const handleResetCircuitBreaker = () => {
-        if (confirm('Are you sure you want to reset the circuit breaker? This will allow blockchain requests to resume immediately.')) {
+        if (
+            confirm(
+                'Are you sure you want to reset the circuit breaker? This will allow blockchain requests to resume immediately.',
+            )
+        ) {
             router.post(
                 route('admin.blockchain.explorer.reset'),
                 {},
                 {
-                    preserveScroll: true,
                     onSuccess: () => {
+                        toast.success('Circuit breaker reset', {
+                            description: 'Blockchain requests will now resume normally',
+                        });
                         router.reload({ only: ['health'] });
+                    },
+                    onError: () => {
+                        toast.error('Failed to reset circuit breaker');
                     },
                 },
             );
@@ -182,7 +233,25 @@ export default function BlockchainExplorer({
     };
 
     const handleRefresh = () => {
-        router.reload();
+        setIsRefreshing(true);
+        router.reload({
+            onFinish: () => {
+                setIsRefreshing(false);
+                toast.success('Data refreshed');
+            },
+        });
+    };
+
+    const toggleBlockExpansion = (hash: string) => {
+        setExpandedBlocks((prev) => {
+            const next = new Set(prev);
+            if (next.has(hash)) {
+                next.delete(hash);
+            } else {
+                next.add(hash);
+            }
+            return next;
+        });
     };
 
     if (error) {
@@ -218,16 +287,58 @@ export default function BlockchainExplorer({
         >
             <Head title="Blockchain Explorer" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6 md:p-8">
+                {/* Network Status Indicator */}
+                <Card className="border-emerald-500/20 bg-emerald-500/5">
+                    <CardContent className="flex items-center gap-3 py-3">
+                        <div className="relative">
+                            <div className="bg-emerald-500 h-3 w-3 rounded-full" />
+                            <div className="bg-emerald-500 absolute inset-0 h-3 w-3 animate-ping rounded-full opacity-75" />
+                        </div>
+                        <div className="flex flex-1 items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium">Network Status: Online</p>
+                                <p className="text-muted-foreground text-xs">
+                                    {overview?.connections || 0} active connections • Last updated{' '}
+                                    {overview?.blocks
+                                        ? formatDistanceToNow(new Date(), { addSuffix: true })
+                                        : 'N/A'}
+                                </p>
+                            </div>
+                            {autoRefresh && (
+                                <Badge variant="secondary" className="ml-auto">
+                                    Auto-refresh enabled
+                                </Badge>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Hero Card Header */}
                 <HeroCard
                     icon={Blocks}
                     title="Blockchain Explorer"
                     description="Browse blocks, transactions, streams, addresses and network peers on the ProcuChain blockchain network"
                     actions={
-                        <Button onClick={handleRefresh} variant="outline">
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Refresh
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing}>
+                                <RefreshCw className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')} />
+                                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                            </Button>
+                            <Button
+                                onClick={() => setAutoRefresh(!autoRefresh)}
+                                variant={autoRefresh ? 'default' : 'outline'}
+                                size="default"
+                            >
+                                {autoRefresh ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Auto-refresh On
+                                    </>
+                                ) : (
+                                    'Enable Auto-refresh'
+                                )}
+                            </Button>
+                        </div>
                     }
                 />
 
@@ -243,69 +354,164 @@ export default function BlockchainExplorer({
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                     className="pl-9"
+                                    disabled={isSearching}
                                 />
                             </div>
-                            <Button onClick={handleSearch}>Search</Button>
+                            <Button onClick={handleSearch} disabled={isSearching}>
+                                {isSearching ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Searching...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Search className="mr-2 h-4 w-4" />
+                                        Search
+                                    </>
+                                )}
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Overview Stats */}
-                {overview && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Chain Height</CardTitle>
-                                <TrendingUp className="text-muted-foreground h-4 w-4" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{overview.blocks.toLocaleString()}</div>
-                                <p className="text-muted-foreground mt-1 text-xs">
-                                    {overview.chain} | {overview.protocol}
-                                </p>
-                            </CardContent>
-                        </Card>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Chain Height</CardTitle>
+                            <TrendingUp className="text-muted-foreground h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                            {isRefreshing || !overview ? (
+                                <>
+                                    <Skeleton className="mb-2 h-8 w-24" />
+                                    <Skeleton className="h-3 w-32" />
+                                </>
+                            ) : (
+                                <>
+                                    <div className="text-2xl font-bold">{overview.blocks.toLocaleString()}</div>
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        {overview.chain} | {overview.protocol}
+                                    </p>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
 
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Connections</CardTitle>
-                                <Network className="text-muted-foreground h-4 w-4" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{overview.connections}</div>
-                                <p className="text-muted-foreground mt-1 text-xs">Active peers</p>
-                            </CardContent>
-                        </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Connections</CardTitle>
+                            <Network className="text-muted-foreground h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                            {isRefreshing || !overview ? (
+                                <>
+                                    <Skeleton className="mb-2 h-8 w-16" />
+                                    <Skeleton className="h-3 w-24" />
+                                </>
+                            ) : (
+                                <>
+                                    <div className="text-2xl font-bold">{overview.connections}</div>
+                                    <p className="text-muted-foreground mt-1 text-xs">Active peers</p>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
 
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Streams</CardTitle>
-                                <Database className="text-muted-foreground h-4 w-4" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{streams.length}</div>
-                                <p className="text-muted-foreground mt-1 text-xs">
-                                    {streams.filter((s: StreamInfo) => s.subscribed).length} subscribed
-                                </p>
-                            </CardContent>
-                        </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Streams</CardTitle>
+                            <Database className="text-muted-foreground h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                            {isRefreshing || !overview ? (
+                                <>
+                                    <Skeleton className="mb-2 h-8 w-16" />
+                                    <Skeleton className="h-3 w-28" />
+                                </>
+                            ) : (
+                                <>
+                                    <div className="text-2xl font-bold">{streams.length}</div>
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        {streams.filter((s: StreamInfo) => s.subscribed).length} subscribed
+                                    </p>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
 
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Wallet Addresses</CardTitle>
-                                <Wallet className="text-muted-foreground h-4 w-4" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{addresses.length}</div>
-                                <p className="text-muted-foreground mt-1 text-xs">Managed addresses</p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Wallet Addresses</CardTitle>
+                            <Wallet className="text-muted-foreground h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                            {isRefreshing || !overview ? (
+                                <>
+                                    <Skeleton className="mb-2 h-8 w-16" />
+                                    <Skeleton className="h-3 w-32" />
+                                </>
+                            ) : (
+                                <>
+                                    <div className="text-2xl font-bold">{addresses.length}</div>
+                                    <p className="text-muted-foreground mt-1 text-xs">Managed addresses</p>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* Main Content Tabs */}
                 <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1">
-                    <TabsList className="grid w-full grid-cols-6">
+                    {/* Mobile Tab Navigation - Dropdown */}
+                    <div className="mb-4 md:hidden">
+                        <Select value={selectedTab} onValueChange={setSelectedTab}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select a tab" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="overview">
+                                    <div className="flex items-center">
+                                        <Activity className="mr-2 h-4 w-4" />
+                                        Overview
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="blocks">
+                                    <div className="flex items-center">
+                                        <Blocks className="mr-2 h-4 w-4" />
+                                        Blocks
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="streams">
+                                    <div className="flex items-center">
+                                        <Database className="mr-2 h-4 w-4" />
+                                        Streams
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="addresses">
+                                    <div className="flex items-center">
+                                        <Wallet className="mr-2 h-4 w-4" />
+                                        Addresses
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="peers">
+                                    <div className="flex items-center">
+                                        <Users className="mr-2 h-4 w-4" />
+                                        Peers
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="health">
+                                    <div className="flex items-center">
+                                        <Shield className="mr-2 h-4 w-4" />
+                                        Health
+                                    </div>
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Desktop Tab Navigation - Tab List */}
+                    <TabsList className="hidden w-full grid-cols-6 md:grid">
                         <TabsTrigger value="overview">
                             <Activity className="mr-2 h-4 w-4" />
                             Overview
@@ -448,6 +654,7 @@ export default function BlockchainExplorer({
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
+                                            <TableHead className="w-12"></TableHead>
                                             <TableHead>Height</TableHead>
                                             <TableHead>Hash</TableHead>
                                             <TableHead>Miner</TableHead>
@@ -458,14 +665,81 @@ export default function BlockchainExplorer({
                                     </TableHeader>
                                     <TableBody>
                                         {latestBlocks.map((block: BlockInfo) => (
-                                            <TableRow key={block.hash}>
-                                                <TableCell className="font-medium">{block.height}</TableCell>
-                                                <TableCell className="font-mono text-xs">{truncateHash(block.hash, 16)}</TableCell>
-                                                <TableCell className="font-mono text-xs">{truncateHash(block.miner, 16)}</TableCell>
-                                                <TableCell>{block.tx_count}</TableCell>
-                                                <TableCell>{formatBytes(block.size)}</TableCell>
-                                                <TableCell className="text-muted-foreground text-xs">{formatDate(block.time)}</TableCell>
-                                            </TableRow>
+                                            <React.Fragment key={block.hash}>
+                                                <TableRow
+                                                    className="cursor-pointer hover:bg-muted/50"
+                                                    onClick={() => toggleBlockExpansion(block.hash)}
+                                                >
+                                                    <TableCell>
+                                                        <ChevronRight
+                                                            className={cn(
+                                                                'text-muted-foreground h-4 w-4 transition-transform',
+                                                                expandedBlocks.has(block.hash) && 'rotate-90',
+                                                            )}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="font-medium">{block.height}</TableCell>
+                                                    <TableCell className="font-mono text-xs">
+                                                        {truncateHash(block.hash, 16)}
+                                                    </TableCell>
+                                                    <TableCell className="font-mono text-xs">
+                                                        {truncateHash(block.miner, 16)}
+                                                    </TableCell>
+                                                    <TableCell>{block.tx_count}</TableCell>
+                                                    <TableCell>{formatBytes(block.size)}</TableCell>
+                                                    <TableCell className="text-muted-foreground text-xs">
+                                                        <div className="flex flex-col gap-1">
+                                                            <span>{formatDate(block.time)}</span>
+                                                            <span className="text-muted-foreground text-xs">
+                                                                ({formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true })})
+                                                            </span>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                                {expandedBlocks.has(block.hash) && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={7} className="bg-muted/20">
+                                                            <Collapsible open={expandedBlocks.has(block.hash)}>
+                                                                <CollapsibleContent className="px-4 py-3">
+                                                                    <div className="space-y-2">
+                                                                        <p className="text-sm font-medium">Block Details</p>
+                                                                        <div className="grid gap-2 text-sm">
+                                                                            <div className="flex gap-2">
+                                                                                <span className="text-muted-foreground font-medium">
+                                                                                    Full Hash:
+                                                                                </span>
+                                                                                <span className="font-mono break-all">
+                                                                                    {block.hash}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex gap-2">
+                                                                                <span className="text-muted-foreground font-medium">
+                                                                                    Miner Address:
+                                                                                </span>
+                                                                                <span className="font-mono break-all">
+                                                                                    {block.miner}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex gap-2">
+                                                                                <span className="text-muted-foreground font-medium">
+                                                                                    Block Size:
+                                                                                </span>
+                                                                                <span>{formatBytes(block.size)}</span>
+                                                                            </div>
+                                                                            <div className="flex gap-2">
+                                                                                <span className="text-muted-foreground font-medium">
+                                                                                    Transaction Count:
+                                                                                </span>
+                                                                                <span>{block.tx_count} transactions</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </CollapsibleContent>
+                                                            </Collapsible>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </React.Fragment>
                                         ))}
                                     </TableBody>
                                 </Table>
@@ -481,33 +755,47 @@ export default function BlockchainExplorer({
                                 <CardDescription>Data streams configured on the blockchain</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Stream Name</TableHead>
-                                            <TableHead>Items</TableHead>
-                                            <TableHead>Keys</TableHead>
-                                            <TableHead>Publishers</TableHead>
-                                            <TableHead>Status</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {streams.map((stream: StreamInfo) => (
-                                            <TableRow key={stream.name}>
-                                                <TableCell className="font-medium">{stream.name}</TableCell>
-                                                <TableCell>{stream.items.toLocaleString()}</TableCell>
-                                                <TableCell>{stream.keys.toLocaleString()}</TableCell>
-                                                <TableCell>{stream.publishers}</TableCell>
-                                                <TableCell>
-                                                    <div className="flex gap-2">
-                                                        {stream.subscribed && <Badge variant="default">Subscribed</Badge>}
-                                                        {stream.synchronized && <Badge variant="secondary">Synced</Badge>}
-                                                    </div>
-                                                </TableCell>
+                                {streams.length === 0 ? (
+                                    <Empty>
+                                        <EmptyHeader>
+                                            <EmptyMedia variant="icon">
+                                                <Database />
+                                            </EmptyMedia>
+                                            <EmptyTitle>No Streams Found</EmptyTitle>
+                                            <EmptyDescription>
+                                                There are no blockchain streams configured yet. Create your first stream to start storing data.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                ) : (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Stream Name</TableHead>
+                                                <TableHead>Items</TableHead>
+                                                <TableHead>Keys</TableHead>
+                                                <TableHead>Publishers</TableHead>
+                                                <TableHead>Status</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {streams.map((stream: StreamInfo) => (
+                                                <TableRow key={stream.name}>
+                                                    <TableCell className="font-medium">{stream.name}</TableCell>
+                                                    <TableCell>{stream.items.toLocaleString()}</TableCell>
+                                                    <TableCell>{stream.keys.toLocaleString()}</TableCell>
+                                                    <TableCell>{stream.publishers}</TableCell>
+                                                    <TableCell>
+                                                        <div className="flex gap-2">
+                                                            {stream.subscribed && <Badge variant="default">Subscribed</Badge>}
+                                                            {stream.synchronized && <Badge variant="secondary">Synced</Badge>}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -520,22 +808,36 @@ export default function BlockchainExplorer({
                                 <CardDescription>Blockchain addresses managed by this node</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Address</TableHead>
-                                            <TableHead>Status</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {addresses.map((address: AddressInfo) => (
-                                            <TableRow key={address.address}>
-                                                <TableCell className="font-mono text-sm">{address.address}</TableCell>
-                                                <TableCell>{address.ismine && <Badge variant="default">Mine</Badge>}</TableCell>
+                                {addresses.length === 0 ? (
+                                    <Empty>
+                                        <EmptyHeader>
+                                            <EmptyMedia variant="icon">
+                                                <Wallet />
+                                            </EmptyMedia>
+                                            <EmptyTitle>No Wallet Addresses</EmptyTitle>
+                                            <EmptyDescription>
+                                                There are no wallet addresses configured for this node. Create a new address to start managing blockchain transactions.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                ) : (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Address</TableHead>
+                                                <TableHead>Status</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {addresses.map((address: AddressInfo) => (
+                                                <TableRow key={address.address}>
+                                                    <TableCell className="font-mono text-sm">{address.address}</TableCell>
+                                                    <TableCell>{address.ismine && <Badge variant="default">Mine</Badge>}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
