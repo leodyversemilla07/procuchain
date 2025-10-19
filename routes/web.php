@@ -1,15 +1,19 @@
 <?php
 
+use App\Http\Controllers\AccountLockoutController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BacChairmanController;
 use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\BlockchainExplorerController;
 use App\Http\Controllers\DocumentCorrectionController;
-use App\Http\Controllers\DocumentViewController;
+use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\HopeController;
+use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PdfViewerController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ViewProcurementsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -61,12 +65,12 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Secure File Downloads (All Authenticated Users)
-    Route::get('/secure-file/{fileKey}', [DocumentViewController::class, 'downloadFile'])
+    Route::get('/secure-file/{fileKey}', [DocumentDownloadController::class, 'downloadFile'])
         ->where('fileKey', '.*')
         ->name('secure.file.download');
 
     // PDF Viewer (All Authenticated Users)
-    Route::get('/pdf-viewer/{fileKey}', [DocumentViewController::class, 'showPdfViewer'])
+    Route::get('/pdf-viewer/{fileKey}', [PdfViewerController::class, 'showPdfViewer'])
         ->where('fileKey', '.*')
         ->name('pdf.viewer');
 
@@ -244,27 +248,27 @@ Route::middleware(['auth'])->group(function () {
 
         // User Management
         Route::prefix('users')->name('users.')->group(function () {
-            Route::get('/', [AdminController::class, 'users'])->name('index');
-            Route::post('/', [AdminController::class, 'storeUser'])->name('store');
-            Route::put('/{user}', [AdminController::class, 'updateUser'])->name('update');
-            Route::delete('/{user}', [AdminController::class, 'destroyUser'])->name('destroy');
-            Route::delete('/', [AdminController::class, 'bulkDeleteUsers'])->name('bulk-delete');
+            Route::get('/', [UserManagementController::class, 'index'])->name('index');
+            Route::post('/', [UserManagementController::class, 'store'])->name('store');
+            Route::put('/{user}', [UserManagementController::class, 'update'])->name('update');
+            Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
+            Route::delete('/', [UserManagementController::class, 'bulkDelete'])->name('bulk-delete');
         });
 
         // Login Tracking & Monitoring
         Route::prefix('login-logs')->name('login-logs.')->group(function () {
-            Route::get('/', [AdminController::class, 'loginLogs'])->name('index');
-            Route::get('/recent', [AdminController::class, 'recentLogins'])->name('recent');
-            Route::get('/statistics', [AdminController::class, 'loginStatistics'])->name('statistics');
-            Route::get('/suspicious', [AdminController::class, 'suspiciousActivities'])->name('suspicious');
+            Route::get('/', [LoginLogController::class, 'index'])->name('index');
+            Route::get('/recent', [LoginLogController::class, 'recent'])->name('recent');
+            Route::get('/statistics', [LoginLogController::class, 'statistics'])->name('statistics');
+            Route::get('/suspicious', [LoginLogController::class, 'suspicious'])->name('suspicious');
         });
 
         // Account Management & Security
         Route::prefix('accounts')->name('accounts.')->group(function () {
-            Route::get('/locked', [AdminController::class, 'lockedAccounts'])->name('locked');
-            Route::post('/{user}/unlock', [AdminController::class, 'unlockAccount'])->name('unlock');
-            Route::post('/{user}/lock', [AdminController::class, 'lockAccount'])->name('lock');
-            Route::post('/{user}/reset-attempts', [AdminController::class, 'resetFailedAttempts'])->name('reset-attempts');
+            Route::get('/locked', [AccountLockoutController::class, 'index'])->name('locked');
+            Route::post('/{user}/unlock', [AccountLockoutController::class, 'unlock'])->name('unlock');
+            Route::post('/{user}/lock', [AccountLockoutController::class, 'lock'])->name('lock');
+            Route::post('/{user}/reset-attempts', [AccountLockoutController::class, 'resetAttempts'])->name('reset-attempts');
         });
 
         // Blockchain Explorer (includes health monitoring)
