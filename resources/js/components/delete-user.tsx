@@ -13,7 +13,15 @@ import { destroy } from '@/routes/profile';
 
 export default function DeleteUser() {
     const passwordInput = useRef<HTMLInputElement>(null);
-    const { data, setData, delete: deleteRequest, processing, reset, errors, clearErrors } = useForm<Required<{ password: string }>>({ password: '' });
+    const {
+        data,
+        setData,
+        delete: deleteRequest,
+        processing,
+        reset,
+        errors,
+        clearErrors,
+    } = useForm<Required<{ password: string }>>({ password: '' });
 
     const deleteUser: FormEventHandler = (e) => {
         e.preventDefault();

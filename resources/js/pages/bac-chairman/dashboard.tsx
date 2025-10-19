@@ -5,14 +5,14 @@ import { StageDistributionCard } from '@/components/dashboard/stage-distribution
 import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
 import AppLayout from '@/layouts/app-layout';
+import { dashboard } from '@/routes/bac-chairman';
+import { show as procurementsShow } from '@/routes/bac-chairman/procurements';
+import { index as procurementsListIndex } from '@/routes/bac-chairman/procurements-list';
 import type { BreadcrumbItem, SharedData } from '@/types';
-import { Stage, Status } from '@/types/blockchain';
+import { Stage, Status } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';
-import { dashboard } from '@/routes/bac-chairman';
-import { index as procurementsListIndex } from '@/routes/bac-chairman/procurements-list';
-import { show as procurementsShow } from '@/routes/bac-chairman/procurements';
 
 interface DashboardStats {
     ongoingProjects: number;

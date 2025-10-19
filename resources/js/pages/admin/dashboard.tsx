@@ -5,19 +5,18 @@ import { StageDistributionCard } from '@/components/dashboard/stage-distribution
 import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Stage, Status } from '@/types/blockchain';
+import { Stage, Status, type BreadcrumbItem, type SharedData } from '@/types';
 import { PageProps } from '@inertiajs/core';
 import { Head, router, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText, Shield, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { dashboard } from '@/routes/admin';
-import { index as procurementsListIndex } from '@/routes/admin/procurements-list';
-import { show as procurementsShow } from '@/routes/admin/procurements';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { dashboard } from '@/routes/admin';
+import { show as procurementsShow } from '@/routes/admin/procurements';
+import { index as procurementsListIndex } from '@/routes/admin/procurements-list';
 import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
 
 export type TimeRangeKey = '7_days' | '30_days' | '90_days' | '1_year';

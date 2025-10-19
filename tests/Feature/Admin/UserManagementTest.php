@@ -136,4 +136,3 @@ test('guest cannot access user management', function () {
 
     $response->assertRedirect('/login');
 });
-

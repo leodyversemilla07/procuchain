@@ -14,8 +14,8 @@ import { SupplementalBidBulletinDialog } from '@/components/supplemental-bid-bul
 import { Button } from '@/components/ui/button';
 import { useProcurementList } from '@/hooks/use-procurement-list';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem, SharedData } from '@/types';
-import { ProcurementListItem, Status } from '@/types/blockchain';
+import { procurementInitiation } from '@/routes/bac-secretariat/procurement';
+import { BreadcrumbItem, ProcurementListItem, SharedData, Status } from '@/types';
 import { toast } from 'sonner';
 
 interface ShowProps {
@@ -275,7 +275,7 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                     actions={
                         <Can permission="create procurement">
                             <Button asChild>
-                                <Link href="/bac-secretariat/procurement/procurement-initiation" className="flex items-center gap-2">
+                                <Link href={procurementInitiation.url()} className="flex items-center gap-2">
                                     <Plus className="h-4 w-4" />
                                     <span>New Procurement</span>
                                 </Link>

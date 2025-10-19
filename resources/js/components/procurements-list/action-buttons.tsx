@@ -1,9 +1,8 @@
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { SharedData } from '@/types';
-import { ProcurementListItem, Stage, Status } from '@/types/blockchain';
+import { ProcurementListItem, SharedData, Stage, Status } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BarChart4Icon, Edit2Icon, EyeIcon, UploadCloudIcon, AlertCircle } from 'lucide-react';
+import { AlertCircle, BarChart4Icon, Edit2Icon, EyeIcon, UploadCloudIcon } from 'lucide-react';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;

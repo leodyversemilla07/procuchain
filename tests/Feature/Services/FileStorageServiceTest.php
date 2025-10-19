@@ -156,4 +156,3 @@ describe('FileStorageService', function () {
         })->toEndWith('.jpg');
     });
 });
-

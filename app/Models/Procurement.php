@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 class Procurement extends Model
 {
     use HasFactory;
+
     /**
      * Primary key type (non-integer string ID like PR-2025-0001-0001)
      */

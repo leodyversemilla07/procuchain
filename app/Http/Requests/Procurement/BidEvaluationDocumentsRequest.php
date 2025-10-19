@@ -55,4 +55,3 @@ class BidEvaluationDocumentsRequest extends FormRequest
         ];
     }
 }
-

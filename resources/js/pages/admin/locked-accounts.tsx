@@ -26,14 +26,14 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePermissions } from '@/hooks/use-permissions';
 import AppLayout from '@/layouts/app-layout';
+import { dashboard } from '@/routes/admin';
+import { locked } from '@/routes/admin/accounts';
 import { User, type BreadcrumbItem } from '@/types';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import { Head, router, usePage } from '@inertiajs/react';
 import { AlertTriangle, Clock, MoreHorizontal, QrCode, RefreshCw, RotateCcw, Shield, ShieldOff, Unlock, User as UserIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { dashboard } from '@/routes/admin';
-import { locked } from '@/routes/admin/accounts';
 
 interface PageProps extends InertiaPageProps {
     lockedAccounts: User[];

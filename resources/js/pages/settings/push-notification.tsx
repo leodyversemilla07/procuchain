@@ -323,8 +323,8 @@ export default function PushNotification() {
                                 {isSubscribed
                                     ? "You'll receive push notifications for procurement updates, document changes, and important system events."
                                     : permission === 'granted'
-                                        ? 'Click the button below to start receiving push notifications for procurement activities, document validations, and important alerts.'
-                                        : 'Enable push notifications to receive real-time updates about procurement activities, document validations, and important alerts directly in your browser.'}
+                                      ? 'Click the button below to start receiving push notifications for procurement activities, document validations, and important alerts.'
+                                      : 'Enable push notifications to receive real-time updates about procurement activities, document validations, and important alerts directly in your browser.'}
                             </p>
 
                             {showPermissionAlert && (

@@ -64,4 +64,3 @@ it('requires proper role for PDF viewer access', function () {
     // Should succeed for valid roles
     $response->assertSuccessful();
 });
-

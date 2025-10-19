@@ -103,4 +103,3 @@ test('password confirmation redirects to admin dashboard', function () {
 
     $response->assertRedirect(route('admin.dashboard'));
 });
-

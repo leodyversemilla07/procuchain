@@ -45,4 +45,3 @@ class CompletionDocumentsRequest extends FormRequest
         ];
     }
 }
-

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import bacSecretariatProcurements from '@/routes/bac-secretariat/procurements';
 
 interface BlockchainPublishingStatusPageProps {
     procurement: {
@@ -94,7 +95,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
 
         const pollStatus = async () => {
             try {
-                const response = await fetch(`/procurements/${procurement.id}/blockchain-status`);
+                const response = await fetch(bacSecretariatProcurements.blockchainStatus.url(procurement.id));
                 const data: StatusResponse = await response.json();
 
                 setStatus(data.status);
@@ -109,7 +110,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
                 if (attempts >= MAX_ATTEMPTS) {
                     setIsPolling(false);
                     toast.warning('Blockchain publishing is taking longer than expected', {
-                        description: 'You can continue waiting or check the blockchain health status.',
+                        description: 'You can continue waiting or check the blockchain explorer for more details.',
                     });
                 }
             } catch (error) {
@@ -156,7 +157,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
     };
 
     const handleCheckHealth = () => {
-        router.visit('/admin/blockchain-health');
+        router.visit('/admin/blockchain-explorer');
     };
 
     const progress = summary.total > 0 ? Math.round((summary.confirmed / summary.total) * 100) : 0;
@@ -263,9 +264,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
                                                             <span className="text-foreground truncate text-sm font-medium">{doc.file_name}</span>
                                                             <XCircle className="text-destructive h-4 w-4 shrink-0" />
                                                         </div>
-                                                        {doc.blockchain_error && (
-                                                            <p className="text-destructive text-xs">{doc.blockchain_error}</p>
-                                                        )}
+                                                        {doc.blockchain_error && <p className="text-destructive text-xs">{doc.blockchain_error}</p>}
                                                     </div>
                                                 ))}
                                         </div>
@@ -302,9 +301,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
                                         <Loader2 className="text-primary h-12 w-12 animate-spin" />
                                     )}
                                 </div>
-                                <CardTitle className="text-2xl">
-                                    {hasTimedOut ? 'Taking Longer Than Expected' : 'Publishing to Blockchain'}
-                                </CardTitle>
+                                <CardTitle className="text-2xl">{hasTimedOut ? 'Taking Longer Than Expected' : 'Publishing to Blockchain'}</CardTitle>
                                 <CardDescription className="text-base">
                                     {hasTimedOut
                                         ? 'The blockchain operation is still in progress. You can continue waiting or check the system health.'

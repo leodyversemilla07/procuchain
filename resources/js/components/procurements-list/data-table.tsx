@@ -30,8 +30,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { getStageBadgeIcon, getStageBadgeStyle, getStatusBadgeIcon, getStatusBadgeStyle } from '@/constants/procurement-badges';
 import { exportProcurementsToCSV } from '@/lib/csv';
 import { cn } from '@/lib/utils';
-import { SharedData } from '@/types';
-import { ProcurementListItem, Stage, Status } from '@/types/blockchain';
+import { ProcurementListItem, SharedData, Stage, Status } from '@/types';
 
 // Local hook: detect horizontal truncation efficiently
 function useIsTruncated<T extends HTMLElement>(ref: React.RefObject<T | null>, depKey?: unknown) {

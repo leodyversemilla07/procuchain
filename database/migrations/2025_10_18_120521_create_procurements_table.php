@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('document_count')->default(0); // count of associated documents
             $table->timestamp('last_updated')->nullable(); // last update timestamp
             $table->string('blockchain_txid')->nullable()->comment('Blockchain transaction ID');
-            
+
             // Blockchain status tracking fields
             $table->enum('blockchain_status', ['pending', 'confirmed', 'failed'])
                 ->default('pending')
@@ -34,9 +34,9 @@ return new class extends Migration
             $table->unsignedTinyInteger('blockchain_retry_count')
                 ->default(0)
                 ->comment('Number of times blockchain publication was retried');
-            
+
             $table->timestamps();
-            
+
             // Indexes for better performance
             $table->index('current_status');
             $table->index('stage');

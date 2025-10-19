@@ -243,4 +243,3 @@ describe('ProcurementStageTransitionService', function () {
         });
     });
 });
-

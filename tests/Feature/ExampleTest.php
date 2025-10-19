@@ -7,4 +7,3 @@ describe('Example Features', function () {
         expect($response)->toBeSuccessfulResponse();
     });
 });
-

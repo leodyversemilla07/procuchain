@@ -44,4 +44,3 @@ class NoticeToProceedDocumentRequest extends FormRequest
         ];
     }
 }
-

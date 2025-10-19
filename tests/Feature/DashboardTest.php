@@ -90,4 +90,3 @@ test('users cannot access dashboards for other roles', function () {
     $this->get(route('bac-chairman.dashboard'))->assertForbidden();
     $this->get(route('hope.dashboard'))->assertForbidden();
 });
-

@@ -124,4 +124,3 @@ it('can dispatch a procurement stage notification to the authenticated user', fu
 
     Notification::assertSentTo($user, ProcurementStageNotification::class);
 });
-

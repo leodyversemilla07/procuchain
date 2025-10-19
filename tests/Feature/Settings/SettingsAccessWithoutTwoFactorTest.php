@@ -22,4 +22,3 @@ it('allows users without 2fa to access settings pages', function () {
     // User should be able to navigate between settings pages freely
     expect($user->hasEnabledTwoFactorAuthentication())->toBeFalse();
 });
-

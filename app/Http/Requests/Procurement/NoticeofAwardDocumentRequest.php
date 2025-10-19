@@ -52,4 +52,3 @@ class NoticeOfAwardDocumentRequest extends FormRequest
         ];
     }
 }
-

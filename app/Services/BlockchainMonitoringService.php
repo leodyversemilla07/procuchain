@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Blockchain Health Monitoring Service
+ * Blockchain Monitoring Service
  *
  * Provides health checks and status monitoring for the blockchain connection.
  * Implements circuit breaker pattern to prevent hammering a dead blockchain node.
  * Used by BlockchainExplorerController to display health metrics.
  */
-class BlockchainHealthService
+class BlockchainMonitoringService
 {
     private const CIRCUIT_BREAKER_KEY = 'blockchain:circuit_breaker';
 

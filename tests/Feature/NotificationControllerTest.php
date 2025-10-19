@@ -122,4 +122,3 @@ test('user can mark all notifications as read via form submission', function () 
     expect($this->user->unreadNotifications()->count())
         ->toBe(0, 'All notifications should be marked as read');
 });
-

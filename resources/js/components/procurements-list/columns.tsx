@@ -11,7 +11,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { ProcurementListItem } from '@/types/blockchain';
+import type { ProcurementListItem } from '@/types';
 
 import { ActionButtons } from './action-buttons';
 import { DataTableCheckbox, DataTableColumnHeader, DocumentCountCell, IdCell, LastUpdatedCell, StageCell, StatusCell, TitleCell } from './data-table';

@@ -64,10 +64,12 @@ abstract class BaseDashboardController extends Controller
             );
 
             $dashboardData = array_merge([
-                'recentProcurements' => $this->dashboardService->getRecentProcurements($procurementsByKey),
-                'procurementDistribution' => $procurementDistribution,
-                'recentActivities' => $recentActivities,
+                // Immediate data - loads first for fast initial render
                 'stats' => $stats,
+                // Deferred data - loads after initial render
+                'recentProcurements' => Inertia::defer(fn () => $this->dashboardService->getRecentProcurements($procurementsByKey)),
+                'procurementDistribution' => Inertia::defer(fn () => $procurementDistribution),
+                'recentActivities' => Inertia::defer(fn () => $recentActivities),
             ], $this->getAdditionalDashboardData($procurementsByKey, $roleName));
 
             Log::info("Successfully retrieved {$roleLabel} Dashboard data");

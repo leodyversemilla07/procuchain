@@ -54,4 +54,3 @@ class BacResolutionDocumentRequest extends FormRequest
         ];
     }
 }
-

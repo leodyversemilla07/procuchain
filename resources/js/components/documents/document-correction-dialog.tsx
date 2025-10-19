@@ -1,19 +1,13 @@
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
+import { correct } from '@/routes/documents';
+import { router } from '@inertiajs/react';
 import { AlertTriangle, FileText, Upload } from 'lucide-react';
 import { useState } from 'react';
-import { router } from '@inertiajs/react';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface DocumentCorrectionDialogProps {
     open: boolean;
@@ -59,7 +53,7 @@ export function DocumentCorrectionDialog({
             formData.append('corrected_file', correctedFile);
         }
 
-        router.post(route('documents.correct', documentId), formData, {
+        router.post(correct.url(documentId), formData, {
             preserveScroll: true,
             onSuccess: () => {
                 setCorrectionReason('');
@@ -97,8 +91,7 @@ export function DocumentCorrectionDialog({
                         Correct Document
                     </DialogTitle>
                     <DialogDescription>
-                        Submit a correction for this document. The original will remain on the blockchain for
-                        audit trail purposes.
+                        Submit a correction for this document. The original will remain on the blockchain for audit trail purposes.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -112,22 +105,18 @@ export function DocumentCorrectionDialog({
                                 setCorrectionType(value as 'replace' | 'invalidate');
                             }}
                         >
-                            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent">
+                            <div className="hover:bg-accent flex items-center space-x-2 rounded-lg border p-3">
                                 <RadioGroupItem value="replace" id="replace" />
                                 <Label htmlFor="replace" className="flex-1 cursor-pointer">
                                     <div className="font-semibold">Replace Document</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        Upload a corrected version of the document
-                                    </div>
+                                    <div className="text-muted-foreground text-sm">Upload a corrected version of the document</div>
                                 </Label>
                             </div>
-                            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent">
+                            <div className="hover:bg-accent flex items-center space-x-2 rounded-lg border p-3">
                                 <RadioGroupItem value="invalidate" id="invalidate" />
                                 <Label htmlFor="invalidate" className="flex-1 cursor-pointer">
                                     <div className="font-semibold">Invalidate Document</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        Mark the document as invalid without replacement
-                                    </div>
+                                    <div className="text-muted-foreground text-sm">Mark the document as invalid without replacement</div>
                                 </Label>
                             </div>
                         </RadioGroup>
@@ -146,9 +135,7 @@ export function DocumentCorrectionDialog({
                             rows={4}
                             className={errors.correction_reason ? 'border-destructive' : ''}
                         />
-                        {errors.correction_reason && (
-                            <p className="text-sm text-destructive">{errors.correction_reason}</p>
-                        )}
+                        {errors.correction_reason && <p className="text-destructive text-sm">{errors.correction_reason}</p>}
                     </div>
 
                     {/* File Upload (only for replacement) */}
@@ -157,7 +144,7 @@ export function DocumentCorrectionDialog({
                             <Label htmlFor="corrected_file">
                                 Corrected Document <span className="text-destructive">*</span>
                             </Label>
-                            <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-accent transition-colors">
+                            <div className="hover:bg-accent rounded-lg border-2 border-dashed p-6 text-center transition-colors">
                                 <input
                                     type="file"
                                     id="corrected_file"
@@ -166,20 +153,12 @@ export function DocumentCorrectionDialog({
                                     accept=".pdf,.doc,.docx,.xls,.xlsx"
                                 />
                                 <Label htmlFor="corrected_file" className="cursor-pointer">
-                                    <Upload className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-                                    <p className="text-sm font-medium">
-                                        {correctedFile
-                                            ? correctedFile.name
-                                            : 'Click to upload corrected document'}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        PDF, DOC, DOCX, XLS, XLSX (max 10MB)
-                                    </p>
+                                    <Upload className="text-muted-foreground mx-auto mb-2 h-10 w-10" />
+                                    <p className="text-sm font-medium">{correctedFile ? correctedFile.name : 'Click to upload corrected document'}</p>
+                                    <p className="text-muted-foreground mt-1 text-xs">PDF, DOC, DOCX, XLS, XLSX (max 10MB)</p>
                                 </Label>
                             </div>
-                            {errors.corrected_file && (
-                                <p className="text-sm text-destructive">{errors.corrected_file}</p>
-                            )}
+                            {errors.corrected_file && <p className="text-destructive text-sm">{errors.corrected_file}</p>}
                         </div>
                     )}
 
@@ -187,25 +166,24 @@ export function DocumentCorrectionDialog({
                     <Alert>
                         <FileText className="h-4 w-4" />
                         <AlertDescription className="text-sm">
-                            <strong>Blockchain Immutability:</strong> The original document and this correction
-                            will both be permanently recorded on the blockchain. This maintains a complete audit
-                            trail while allowing you to correct mistakes.
+                            <strong>Blockchain Immutability:</strong> The original document and this correction will both be permanently recorded on
+                            the blockchain. This maintains a complete audit trail while allowing you to correct mistakes.
                         </AlertDescription>
                     </Alert>
 
                     {/* Document Info */}
-                    <div className="bg-muted p-4 rounded-lg space-y-1 text-sm">
+                    <div className="bg-muted space-y-1 rounded-lg p-4 text-sm">
                         <div>
                             <strong>Procurement:</strong> {procurementTitle}
                         </div>
                         <div>
                             <strong>Original Hash:</strong>
-                            <span className="font-mono ml-2 text-xs">{originalDocumentHash.substring(0, 32)}...</span>
+                            <span className="ml-2 font-mono text-xs">{originalDocumentHash.substring(0, 32)}...</span>
                         </div>
                         {originalTxid && (
                             <div>
                                 <strong>Original TXID:</strong>
-                                <span className="font-mono ml-2 text-xs">{originalTxid.substring(0, 32)}...</span>
+                                <span className="ml-2 font-mono text-xs">{originalTxid.substring(0, 32)}...</span>
                             </div>
                         )}
                     </div>
@@ -214,14 +192,7 @@ export function DocumentCorrectionDialog({
                         <Button type="button" variant="outline" onClick={handleCancel} disabled={processing}>
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={
-                                processing ||
-                                !correctionReason ||
-                                (correctionType === 'replace' && !correctedFile)
-                            }
-                        >
+                        <Button type="submit" disabled={processing || !correctionReason || (correctionType === 'replace' && !correctedFile)}>
                             {processing ? 'Submitting...' : 'Submit Correction'}
                         </Button>
                     </DialogFooter>

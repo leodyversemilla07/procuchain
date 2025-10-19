@@ -1,7 +1,7 @@
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { MUNICIPAL_OFFICES } from '@/types/blockchain';
+import { MUNICIPAL_OFFICES } from '@/types';
 import React from 'react';
 
 interface MunicipalOfficeSelectProps {
