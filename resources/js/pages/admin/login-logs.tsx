@@ -4,18 +4,28 @@ import { StatsGrid } from '@/components/stats-grid';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes/admin';
 import loginLogs from '@/routes/admin/login-logs';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { format } from 'date-fns';
 import {
     Activity,
@@ -23,20 +33,28 @@ import {
     Calendar as CalendarIcon,
     ChevronDown,
     Clock,
+    Download,
+    Eye,
     Filter,
     Globe,
+    Loader2,
     MapPin,
     Monitor,
+    MoreVertical,
     QrCode,
+    RefreshCw,
     Search,
+    ShieldBan,
     Shield,
     Smartphone,
     Tablet,
+    TrendingUp,
     User,
     X,
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DateRange } from 'react-day-picker';
+import { toast } from 'sonner';
 
 interface LoginLog {
     id: number;
@@ -107,6 +125,13 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<'all' | 'recent' | 'suspicious'>('all');
 
+    // New state for enhancements
+    const [isLoading, setIsLoading] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [autoRefresh, setAutoRefresh] = useState(false);
+    const [selectedLogs, setSelectedLogs] = useState<Set<number>>(new Set());
+    const [isExporting, setIsExporting] = useState(false);
+
     // Initialize selectedCategory from URL query on mount
     useEffect(() => {
         try {
@@ -119,6 +144,27 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
             // ignore parsing issues
         }
     }, []);
+
+    // Auto-refresh functionality
+    useEffect(() => {
+        if (!autoRefresh) return;
+
+        const interval = setInterval(() => {
+            setIsRefreshing(true);
+            router.reload({
+                only: ['recentLogins', 'statistics', 'suspiciousActivities'],
+                onFinish: () => {
+                    setIsRefreshing(false);
+                    toast.success('Data refreshed', {
+                        description: 'Login logs updated successfully',
+                        duration: 2000,
+                    });
+                },
+            });
+        }, 30000); // 30 seconds
+
+        return () => clearInterval(interval);
+    }, [autoRefresh]);
 
     // Persist selectedCategory to URL query (without reload)
     useEffect(() => {
@@ -139,10 +185,15 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
+            setIsLoading(false);
         }, 300);
 
+        if (searchTerm !== debouncedSearchTerm) {
+            setIsLoading(true);
+        }
+
         return () => clearTimeout(timer);
-    }, [searchTerm]);
+    }, [searchTerm, debouncedSearchTerm]);
 
     // Enhanced filtering function
     const filterLogs = useCallback(
@@ -223,6 +274,95 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     React.useEffect(() => {
         setCombinedPage(1);
     }, [debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, dateRange, selectedCategory]);
+
+    // Export to CSV functionality
+    const exportToCSV = useCallback(
+        (logsToExport?: LoginLog[]) => {
+            setIsExporting(true);
+            try {
+                const logs = logsToExport || (selectedLogs.size > 0 ? combinedFilteredAndSortedLogs.filter((l) => selectedLogs.has(l.id)) : combinedFilteredAndSortedLogs);
+
+                if (logs.length === 0) {
+                    toast.error('No data to export');
+                    return;
+                }
+
+                const headers = ['Date/Time', 'User', 'Email', 'Role', '2FA', 'Status', 'IP Address', 'Location', 'Device', 'Browser', 'Platform', 'Session Duration'];
+
+                const rows = logs.map((log) => [
+                    formatDateTime(log.login_at),
+                    log.user?.name || 'Unknown',
+                    log.user?.email || 'Unknown',
+                    log.user?.role || '-',
+                    log.user?.two_factor_enabled ? 'Enabled' : 'Disabled',
+                    log.successful ? 'Success' : 'Failed',
+                    log.ip_address,
+                    log.location || '-',
+                    log.device_type || 'Unknown',
+                    log.browser || 'Unknown',
+                    log.platform || '-',
+                    getSessionDuration(log.login_at, log.logout_at),
+                ]);
+
+                const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `login-logs-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.csv`;
+                link.click();
+
+                toast.success('Export successful', {
+                    description: `Exported ${logs.length} login log${logs.length !== 1 ? 's' : ''}`,
+                });
+
+                // Clear selection after export
+                setSelectedLogs(new Set());
+            } catch (error) {
+                toast.error('Export failed', {
+                    description: 'An error occurred while exporting data',
+                });
+                console.error('Export error:', error);
+            } finally {
+                setIsExporting(false);
+            }
+        },
+        [combinedFilteredAndSortedLogs, selectedLogs],
+    );
+
+    // Refresh data manually
+    const handleRefresh = useCallback(() => {
+        setIsRefreshing(true);
+        router.reload({
+            only: ['recentLogins', 'statistics', 'suspiciousActivities'],
+            onFinish: () => {
+                setIsRefreshing(false);
+                toast.success('Data refreshed');
+            },
+        });
+    }, []);
+
+    // Toggle select all
+    const toggleSelectAll = useCallback(() => {
+        if (selectedLogs.size === paginatedCombinedLogs.length) {
+            setSelectedLogs(new Set());
+        } else {
+            setSelectedLogs(new Set(paginatedCombinedLogs.map((l) => l.id)));
+        }
+    }, [paginatedCombinedLogs, selectedLogs]);
+
+    // Toggle individual log selection
+    const toggleLogSelection = useCallback((logId: number) => {
+        setSelectedLogs((prev) => {
+            const next = new Set(prev);
+            if (next.has(logId)) {
+                next.delete(logId);
+            } else {
+                next.add(logId);
+            }
+            return next;
+        });
+    }, []);
 
     // Clear all filters
     const clearAllFilters = useCallback(() => {
@@ -405,7 +545,45 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
             <div className="flex h-full flex-1 flex-col gap-6 p-6 md:p-8">
                 {/* Header Section */}
-                <HeroCard icon={Shield} title="Login Logs" description="Monitor user login activities and security events" />
+                <HeroCard
+                    icon={Shield}
+                    title="Login Logs"
+                    description="Monitor user login activities and security events"
+                    actions={
+                        <div className="flex gap-2">
+                            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} size="default">
+                                <RefreshCw className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')} />
+                                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                            </Button>
+                            <Button onClick={() => setAutoRefresh(!autoRefresh)} variant={autoRefresh ? 'default' : 'outline'} size="default">
+                                {autoRefresh ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Auto-refresh On
+                                    </>
+                                ) : (
+                                    <>
+                                        <Clock className="mr-2 h-4 w-4" />
+                                        Enable Auto-refresh
+                                    </>
+                                )}
+                            </Button>
+                            <Button onClick={() => exportToCSV()} variant="outline" disabled={isExporting || combinedFilteredAndSortedLogs.length === 0}>
+                                {isExporting ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Exporting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Export CSV
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    }
+                />
 
                 {/* Statistics Cards */}
                 <StatsGrid
@@ -644,17 +822,196 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 )}
                             </div>
                         )}
+
+                        {/* Bulk Actions Bar */}
+                        {selectedLogs.size > 0 && (
+                            <div className="flex items-center justify-between rounded-lg border bg-muted/50 p-3">
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="default">{selectedLogs.size} selected</Badge>
+                                    <Button variant="ghost" size="sm" onClick={() => setSelectedLogs(new Set())}>
+                                        Clear selection
+                                    </Button>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => exportToCSV()}
+                                        disabled={isExporting}
+                                    >
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Export Selected
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Login Activity Trend */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5" />
+                            Login Activity Trend
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <div className="space-y-2">
+                                <p className="text-muted-foreground text-sm">This Week</p>
+                                <div className="flex items-baseline gap-2">
+                                    <p className="text-2xl font-bold">{statistics.this_week_logins?.toLocaleString() || '0'}</p>
+                                    <Badge variant="secondary" className="text-xs">
+                                        Logins
+                                    </Badge>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-muted-foreground text-sm">This Month</p>
+                                <div className="flex items-baseline gap-2">
+                                    <p className="text-2xl font-bold">{statistics.this_month_logins?.toLocaleString() || '0'}</p>
+                                    <Badge variant="secondary" className="text-xs">
+                                        Logins
+                                    </Badge>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-muted-foreground text-sm">Success Rate</p>
+                                <div className="flex items-baseline gap-2">
+                                    <p className="text-2xl font-bold">
+                                        {statistics.total_logins > 0
+                                            ? `${Math.round((statistics.successful_logins / statistics.total_logins) * 100)}%`
+                                            : '0%'}
+                                    </p>
+                                    <Badge variant={statistics.total_logins > 0 && (statistics.successful_logins / statistics.total_logins) >= 0.9 ? 'default' : 'destructive'} className="text-xs">
+                                        {statistics.total_logins > 0 && (statistics.successful_logins / statistics.total_logins) >= 0.9 ? 'Healthy' : 'Review'}
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 
                 {/* Login Logs - Unified Table */}
                 <div className="flex-1">
                     <Card>
-                        <CardContent className="p-0">
+                        {/* Mobile Card View */}
+                        <div className="md:hidden">
+                            <CardContent className="space-y-4 p-4">
+                                {isLoading || isRefreshing ? (
+                                    Array.from({ length: 3 }).map((_, index) => (
+                                        <Card key={`mobile-skeleton-${index}`}>
+                                            <CardContent className="space-y-3 p-4">
+                                                <div className="flex items-center justify-between">
+                                                    <Skeleton className="h-6 w-24" />
+                                                    <Skeleton className="h-6 w-16" />
+                                                </div>
+                                                <Skeleton className="h-4 w-full" />
+                                                <Skeleton className="h-4 w-3/4" />
+                                                <div className="flex gap-2">
+                                                    <Skeleton className="h-6 w-20" />
+                                                    <Skeleton className="h-6 w-20" />
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))
+                                ) : paginatedCombinedLogs.length > 0 ? (
+                                    paginatedCombinedLogs.map((log) => (
+                                        <Card key={`mobile-${log.category}-${log.id}`} className={log.category === 'suspicious' ? 'border-destructive/50' : undefined}>
+                                            <CardContent className="space-y-3 p-4">
+                                                <div className="flex items-center justify-between">
+                                                    {log.category === 'suspicious' ? (
+                                                        <Badge variant="destructive" className="flex items-center gap-1 text-xs">
+                                                            <AlertTriangle className="h-3 w-3" /> Suspicious
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            Recent
+                                                        </Badge>
+                                                    )}
+                                                    {getStatusBadge(log.successful)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium">{log.user?.name || 'Unknown User'}</p>
+                                                    <p className="text-muted-foreground text-sm">{log.user?.email || 'Unknown Email'}</p>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                                    <div>
+                                                        <p className="text-muted-foreground text-xs">IP Address</p>
+                                                        <p className="font-mono">{log.ip_address}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-muted-foreground text-xs">Device</p>
+                                                        <div className="flex items-center gap-1">
+                                                            {getDeviceIcon(log.device_type)}
+                                                            <span>{log.device_type || 'Unknown'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-muted-foreground text-xs">{formatDateTime(log.login_at)}</span>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                <MoreVertical className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    toast.info('View Details', { description: `Login #${log.id}` });
+                                                                }}
+                                                            >
+                                                                <Eye className="mr-2 h-4 w-4" />
+                                                                View Details
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(log.ip_address);
+                                                                    toast.success('IP copied');
+                                                                }}
+                                                            >
+                                                                <Globe className="mr-2 h-4 w-4" />
+                                                                Copy IP
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <Empty>
+                                        <EmptyHeader>
+                                            <EmptyMedia variant="icon">
+                                                <Shield className="h-6 w-6" />
+                                            </EmptyMedia>
+                                            <EmptyTitle>No login activities found</EmptyTitle>
+                                            <EmptyDescription>
+                                                {hasActiveFilters
+                                                    ? 'No activities match your current filters.'
+                                                    : 'No login activities have been recorded yet.'}
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                )}
+                            </CardContent>
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <CardContent className="hidden p-0 md:block">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="pl-6">Category</TableHead>
+                                        <TableHead className="w-12 pl-6">
+                                            <Checkbox
+                                                checked={selectedLogs.size === paginatedCombinedLogs.length && paginatedCombinedLogs.length > 0}
+                                                onCheckedChange={toggleSelectAll}
+                                                aria-label="Select all"
+                                            />
+                                        </TableHead>
+                                        <TableHead>Category</TableHead>
                                         <TableHead>User/Email</TableHead>
                                         <TableHead>Role</TableHead>
                                         <TableHead>2FA</TableHead>
@@ -662,18 +1019,71 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                         <TableHead>IP Address</TableHead>
                                         <TableHead>Device</TableHead>
                                         <TableHead>Browser</TableHead>
-                                        <TableHead className="pr-6">Time</TableHead>
-                                        <TableHead className="pr-6">Session</TableHead>
+                                        <TableHead>Time</TableHead>
+                                        <TableHead>Session</TableHead>
+                                        <TableHead className="w-12 pr-6">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {paginatedCombinedLogs.length > 0 ? (
+                                    {isLoading || isRefreshing ? (
+                                        // Loading skeleton
+                                        Array.from({ length: 5 }).map((_, index) => (
+                                            <TableRow key={`skeleton-${index}`}>
+                                                <TableCell className="pl-6">
+                                                    <Skeleton className="h-4 w-4" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Skeleton className="h-6 w-20" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="space-y-2">
+                                                        <Skeleton className="h-4 w-32" />
+                                                        <Skeleton className="h-3 w-40" />
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Skeleton className="h-6 w-24" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Skeleton className="h-6 w-20" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Skeleton className="h-6 w-16" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Skeleton className="h-4 w-28" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Skeleton className="h-4 w-20" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Skeleton className="h-4 w-24" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Skeleton className="h-4 w-32" />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Skeleton className="h-6 w-16" />
+                                                </TableCell>
+                                                <TableCell className="pr-6">
+                                                    <Skeleton className="h-8 w-8" />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : paginatedCombinedLogs.length > 0 ? (
                                         paginatedCombinedLogs.map((log) => (
                                             <TableRow
                                                 key={`${log.category}-${log.id}`}
                                                 className={log.category === 'suspicious' ? 'bg-destructive/5' : undefined}
                                             >
                                                 <TableCell className="pl-6">
+                                                    <Checkbox
+                                                        checked={selectedLogs.has(log.id)}
+                                                        onCheckedChange={() => toggleLogSelection(log.id)}
+                                                        aria-label={`Select log ${log.id}`}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
                                                     {log.category === 'suspicious' ? (
                                                         <Badge variant="destructive" className="flex items-center gap-1 text-xs">
                                                             <AlertTriangle className="h-3 w-3" /> Suspicious
@@ -750,7 +1160,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         <span className="text-sm">{formatDateTime(log.login_at)}</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="pr-6">
+                                                <TableCell>
                                                     {log.category === 'recent' ? (
                                                         <Badge variant={log.logout_at ? 'secondary' : 'default'}>
                                                             {getSessionDuration(log.login_at, log.logout_at)}
@@ -759,11 +1169,62 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         <span className="text-muted-foreground text-sm">-</span>
                                                     )}
                                                 </TableCell>
+                                                <TableCell className="pr-6">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                <MoreVertical className="h-4 w-4" />
+                                                                <span className="sr-only">Open menu</span>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    toast.info('View Details', {
+                                                                        description: `Viewing details for login #${log.id}`,
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <Eye className="mr-2 h-4 w-4" />
+                                                                View Details
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(log.ip_address);
+                                                                    toast.success('IP Address copied', {
+                                                                        description: log.ip_address,
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <Globe className="mr-2 h-4 w-4" />
+                                                                Copy IP Address
+                                                            </DropdownMenuItem>
+                                                            {log.category === 'suspicious' && (
+                                                                <>
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem
+                                                                        className="text-destructive focus:text-destructive"
+                                                                        onClick={() => {
+                                                                            toast.warning('Block IP', {
+                                                                                description: `This would block ${log.ip_address}`,
+                                                                            });
+                                                                        }}
+                                                                    >
+                                                                        <ShieldBan className="mr-2 h-4 w-4" />
+                                                                        Block IP Address
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={10} className="h-96">
+                                            <TableCell colSpan={12} className="h-96">
                                                 <Empty>
                                                     <EmptyHeader>
                                                         <EmptyMedia variant="icon">
