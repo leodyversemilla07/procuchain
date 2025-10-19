@@ -54,4 +54,12 @@ class Procurement extends Model
             'blockchain_retry_count' => 'integer',
         ];
     }
+
+    /**
+     * Get the documents for the procurement.
+     */
+    public function documents(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ProcurementDocument::class, 'procurement_id', 'id');
+    }
 }
