@@ -9,6 +9,20 @@ use Illuminate\Support\Facades\Notification;
 
 class NotificationService
 {
+    /**
+     * Notify users about procurement stage updates.
+     *
+     * @param  string  $procurementId  The procurement ID
+     * @param  string  $procurementTitle  The procurement title
+     * @param  string  $stageIdentifier  The stage identifier
+     * @param  string  $currentStatus  The current status
+     * @param  string  $timestamp  The timestamp
+     * @param  string  $actionType  The action type
+     * @param  int  $documentCount  The document count
+     * @param  bool  $stageTransition  Whether this is a stage transition
+     * @param  string  $nextStage  The next stage (if transitioning)
+     * @param  array  $rolesToNotify  Roles to notify (defaults to bac_chairman, hope, admin)
+     */
     public function notifyStageUpdate(
         string $procurementId,
         string $procurementTitle,
@@ -16,17 +30,21 @@ class NotificationService
         string $currentStatus,
         string $timestamp,
         string $actionType,
-        int $documentCount = 0, // Add documentCount parameter with a default value
+        int $documentCount = 0,
         bool $stageTransition = false,
-        string $nextStage = ''
+        string $nextStage = '',
+        array $rolesToNotify = ['bac_chairman', 'hope', 'admin']
     ): void {
-        $usersToNotify = User::whereHas('roles', function ($query) {
-            $query->whereIn('name', ['bac_chairman', 'hope', 'admin']);
+        // Use Spatie's whereHas helper to query users with specific roles
+        // Note: We can't use User::role() directly due to conflict with role attribute accessor
+        $usersToNotify = User::whereHas('roles', function ($query) use ($rolesToNotify) {
+            $query->whereIn('name', $rolesToNotify);
         })->get();
 
         if ($usersToNotify->isEmpty()) {
-            Log::warning('No BAC Chairman, HOPE, or Admin users found to notify for procurement update', [
+            Log::warning('No users found with specified roles to notify for procurement update', [
                 'procurement_id' => $procurementId,
+                'roles' => $rolesToNotify,
             ]);
 
             return;
@@ -52,6 +70,7 @@ class NotificationService
             'procurement_id' => $procurementId,
             'stage' => $stageIdentifier,
             'next_stage' => $stageTransition ? $nextStage : 'none',
+            'roles_notified' => $rolesToNotify,
             'recipients_count' => $usersToNotify->count(),
         ]);
     }

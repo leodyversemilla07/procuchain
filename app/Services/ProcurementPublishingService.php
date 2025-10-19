@@ -59,13 +59,13 @@ class ProcurementPublishingService
 
             // Send notifications
             $this->notificationService->notifyStageUpdate(
-                $procurementId,
-                $procurementTitle,
-                $stage->getDisplayName(),
-                $status->getDisplayName(),
-                $timestamp,
-                count($metadataArray),
-                true
+                procurementId: $procurementId,
+                procurementTitle: $procurementTitle,
+                stageIdentifier: $stage->getDisplayName(),
+                currentStatus: $status->getDisplayName(),
+                timestamp: $timestamp,
+                actionType: 'uploaded',
+                documentCount: count($metadataArray)
             );
 
             // Redirect to status page
@@ -138,14 +138,15 @@ class ProcurementPublishingService
 
             // Send notifications
             $this->notificationService->notifyStageUpdate(
-                $procurementId,
-                $procurementTitle,
-                $currentStage->getDisplayName(),
-                $currentStatus->getDisplayName(),
-                $timestamp,
-                'completed',
-                true,
-                $nextStage->getDisplayName()
+                procurementId: $procurementId,
+                procurementTitle: $procurementTitle,
+                stageIdentifier: $currentStage->getDisplayName(),
+                currentStatus: $currentStatus->getDisplayName(),
+                timestamp: $timestamp,
+                actionType: 'completed',
+                documentCount: count($metadataArray),
+                stageTransition: true,
+                nextStage: $nextStage->getDisplayName()
             );
 
             return redirect()->route('blockchain.publishing-status', [
@@ -196,14 +197,15 @@ class ProcurementPublishingService
 
             // Send notifications
             $this->notificationService->notifyStageUpdate(
-                $procurementId,
-                $procurementTitle,
-                $currentStage->getDisplayName(),
-                $toStatus->getDisplayName(),
-                $timestamp,
-                $reason,
-                true,
-                $nextStage->getDisplayName()
+                procurementId: $procurementId,
+                procurementTitle: $procurementTitle,
+                stageIdentifier: $currentStage->getDisplayName(),
+                currentStatus: $toStatus->getDisplayName(),
+                timestamp: $timestamp,
+                actionType: $reason,
+                documentCount: 0,
+                stageTransition: true,
+                nextStage: $nextStage->getDisplayName()
             );
 
             return redirect()->route('blockchain.publishing-status', [
@@ -263,13 +265,13 @@ class ProcurementPublishingService
 
             // Send notifications
             $this->notificationService->notifyStageUpdate(
-                $procurementId,
-                $procurementTitle,
-                $stage->getDisplayName(),
-                $status->getDisplayName(),
-                $timestamp,
-                $details,
-                true
+                procurementId: $procurementId,
+                procurementTitle: $procurementTitle,
+                stageIdentifier: $stage->getDisplayName(),
+                currentStatus: $status->getDisplayName(),
+                timestamp: $timestamp,
+                actionType: $details,
+                documentCount: 0
             );
 
             return redirect()->route('blockchain.publishing-status', [
