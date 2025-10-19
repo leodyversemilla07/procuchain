@@ -131,12 +131,16 @@ class PublishDocumentCorrectionJob implements ShouldQueue
 
             // Log blockchain event
             $eventLoggerService->logEvent(
-                procurementId: $this->procurementId,
-                procurementTitle: $this->procurementTitle,
-                eventType: 'document_corrected',
-                details: "Document corrected: {$this->correctionReason}",
-                userAddress: $this->userAddress,
-                severity: 'warning'
+                $this->procurementId,
+                $this->procurementTitle,
+                'correction',
+                "Document corrected: {$this->correctionReason}",
+                1,
+                $this->userAddress,
+                'document_corrected',
+                'correction',
+                'warning',
+                now()->toIso8601String()
             );
         } catch (Exception $e) {
             Log::error('Failed to publish document correction', [
