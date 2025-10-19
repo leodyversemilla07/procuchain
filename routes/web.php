@@ -12,9 +12,9 @@ use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PdfViewerController;
 use App\Http\Controllers\ProcurementController;
+use App\Http\Controllers\ProcurementListController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UserManagementController;
-use App\Http\Controllers\ViewProcurementsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -137,9 +137,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [BacSecretariatController::class, 'dashboard'])->name('dashboard');
 
         // Procurement List Views
-        Route::get('/procurements-list', [ViewProcurementsController::class, 'indexProcurementsList'])
+        Route::get('/procurements-list', [ProcurementListController::class, 'indexProcurementsList'])
             ->name('procurements-list.index');
-        Route::get('/procurements-list/{id}', [ViewProcurementsController::class, 'showProcurement'])
+        Route::get('/procurements-list/{id}', [ProcurementListController::class, 'showProcurement'])
             ->name('procurements.show');
 
         // Procurement Stage Upload Forms
@@ -207,9 +207,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [BacChairmanController::class, 'index'])->name('dashboard');
 
         // Procurement List Views
-        Route::get('/procurements-list', [ViewProcurementsController::class, 'indexProcurementsList'])
+        Route::get('/procurements-list', [ProcurementListController::class, 'indexProcurementsList'])
             ->name('procurements-list.index');
-        Route::get('/procurements-list/{id}', [ViewProcurementsController::class, 'showProcurement'])
+        Route::get('/procurements-list/{id}', [ProcurementListController::class, 'showProcurement'])
             ->name('procurements.show');
     });
 
@@ -224,9 +224,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [HopeController::class, 'index'])->name('dashboard');
 
         // Procurement List Views
-        Route::get('/procurements-list', [ViewProcurementsController::class, 'indexProcurementsList'])
+        Route::get('/procurements-list', [ProcurementListController::class, 'indexProcurementsList'])
             ->name('procurements-list.index');
-        Route::get('/procurements-list/{id}', [ViewProcurementsController::class, 'showProcurement'])
+        Route::get('/procurements-list/{id}', [ProcurementListController::class, 'showProcurement'])
             ->name('procurements.show');
     });
 
@@ -241,9 +241,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
 
         // Procurement List Views
-        Route::get('/procurements-list', [ViewProcurementsController::class, 'indexProcurementsList'])
+        Route::get('/procurements-list', [ProcurementListController::class, 'indexProcurementsList'])
             ->name('procurements-list.index');
-        Route::get('/procurements-list/{id}', [ViewProcurementsController::class, 'showProcurement'])
+        Route::get('/procurements-list/{id}', [ProcurementListController::class, 'showProcurement'])
             ->name('procurements.show');
 
         // User Management
