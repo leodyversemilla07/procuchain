@@ -7,6 +7,7 @@ use App\Services\MultichainService;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,59 +25,69 @@ class BlockchainExplorerController extends Controller
     public function index(Request $request): Response
     {
         try {
-            // Get blockchain info
-            $blockchainInfo = $this->multichainService->getBlockchainInfo();
-            $networkInfo = $this->multichainService->getNetworkInfo();
-            $nodeInfo = $this->multichainService->getInfo();
-            $peerInfo = $this->multichainService->getPeerInfo();
+            // Cache blockchain info for 30 seconds to prevent repeated RPC calls
+            $blockchainInfo = Cache::remember('blockchain:info', 30, fn () => $this->multichainService->getBlockchainInfo());
+            $networkInfo = Cache::remember('blockchain:network_info', 30, fn () => $this->multichainService->getNetworkInfo());
+            $nodeInfo = Cache::remember('blockchain:node_info', 30, fn () => $this->multichainService->getInfo());
+            $peerInfo = Cache::remember('blockchain:peer_info', 30, fn () => $this->multichainService->getPeerInfo());
 
-            // Get latest blocks (last 10)
-            $latestBlocks = [];
+            // Get latest blocks (last 10) - cache for 15 seconds as new blocks arrive
             $currentHeight = $blockchainInfo['blocks'];
-            for ($i = 0; $i < min(10, $currentHeight + 1); $i++) {
-                try {
-                    $block = $this->multichainService->getBlock($currentHeight - $i, 1);
-                    $latestBlocks[] = [
-                        'height' => $block['height'],
-                        'hash' => $block['hash'],
-                        'time' => $block['time'],
-                        'miner' => $block['miner'] ?? 'Unknown',
-                        'tx_count' => count($block['tx'] ?? []),
-                        'size' => $block['size'] ?? 0,
-                    ];
-                } catch (Exception $e) {
-                    Log::warning('Failed to fetch block at height '.($currentHeight - $i), [
-                        'error' => $e->getMessage(),
-                    ]);
+            $latestBlocks = Cache::remember("blockchain:latest_blocks:{$currentHeight}", 15, function () use ($currentHeight) {
+                $blocks = [];
+                for ($i = 0; $i < min(10, $currentHeight + 1); $i++) {
+                    try {
+                        $block = $this->multichainService->getBlock($currentHeight - $i, 1);
+                        $blocks[] = [
+                            'height' => $block['height'],
+                            'hash' => $block['hash'],
+                            'time' => $block['time'],
+                            'miner' => $block['miner'] ?? 'Unknown',
+                            'tx_count' => count($block['tx'] ?? []),
+                            'size' => $block['size'] ?? 0,
+                        ];
+                    } catch (Exception $e) {
+                        Log::warning('Failed to fetch block at height '.($currentHeight - $i), [
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
-            }
 
-            // Get streams
-            $streams = $this->multichainService->listStreams('*', true, 1000, 0);
-            // Filter out system streams and re-index array
-            $streams = array_values(array_filter($streams, fn ($stream) => $stream['name'] !== 'root'));
-            $streamsList = array_map(function ($stream) {
-                return [
-                    'name' => $stream['name'],
-                    'createtxid' => $stream['createtxid'] ?? null,
-                    'streamref' => $stream['streamref'] ?? null,
-                    'items' => $stream['items'] ?? 0,
-                    'confirmed' => $stream['confirmed'] ?? 0,
-                    'keys' => $stream['keys'] ?? 0,
-                    'publishers' => $stream['publishers'] ?? 0,
-                    'subscribed' => $stream['subscribed'] ?? false,
-                    'synchronized' => $stream['synchronized'] ?? false,
-                ];
-            }, $streams);
+                return $blocks;
+            });
 
-            // Get addresses
-            $addresses = $this->multichainService->getAddresses();
-            $addressesList = array_map(function ($address) {
-                return [
-                    'address' => $address,
-                    'ismine' => true,
-                ];
-            }, $addresses);
+            // Get streams - cache for 60 seconds (streams don't change often)
+            $streamsList = Cache::remember('blockchain:streams', 60, function () {
+                $streams = $this->multichainService->listStreams('*', true, 1000, 0);
+                // Filter out system streams and re-index array
+                $streams = array_values(array_filter($streams, fn ($stream) => $stream['name'] !== 'root'));
+
+                return array_map(function ($stream) {
+                    return [
+                        'name' => $stream['name'],
+                        'createtxid' => $stream['createtxid'] ?? null,
+                        'streamref' => $stream['streamref'] ?? null,
+                        'items' => $stream['items'] ?? 0,
+                        'confirmed' => $stream['confirmed'] ?? 0,
+                        'keys' => $stream['keys'] ?? 0,
+                        'publishers' => $stream['publishers'] ?? 0,
+                        'subscribed' => $stream['subscribed'] ?? false,
+                        'synchronized' => $stream['synchronized'] ?? false,
+                    ];
+                }, $streams);
+            });
+
+            // Get addresses - cache for 60 seconds (addresses don't change often)
+            $addressesList = Cache::remember('blockchain:addresses', 60, function () {
+                $addresses = $this->multichainService->getAddresses();
+
+                return array_map(function ($address) {
+                    return [
+                        'address' => $address,
+                        'ismine' => true,
+                    ];
+                }, $addresses);
+            });
 
             // Get health status
             $health = $this->healthService->getHealthStatus();
