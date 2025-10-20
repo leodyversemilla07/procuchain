@@ -1,7 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -130,8 +129,8 @@ export default function UserLoginHistoryDialog({ open, onOpenChange, userId, use
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-5xl gap-0 p-0">
-                <DialogHeader className="border-b px-6 py-6 pb-4">
+            <DialogContent className="max-h-[90vh] max-w-[95vw] md:max-w-6xl lg:max-w-7xl gap-0 p-0 flex flex-col overflow-hidden">
+                <DialogHeader className="border-b px-6 py-4 shrink-0">
                     <div className="flex items-center space-x-3">
                         <div className="bg-primary/10 dark:bg-primary/20 flex h-10 w-10 items-center justify-center rounded-lg">
                             <History className="text-primary h-5 w-5" />
@@ -145,44 +144,44 @@ export default function UserLoginHistoryDialog({ open, onOpenChange, userId, use
                     </div>
                 </DialogHeader>
 
-                <div className="px-6 py-4">
+                <div className="px-6 py-4 shrink-0">
                     {/* Statistics */}
-                    <div className="mb-4 grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="bg-muted/50 rounded-lg p-3">
                             <div className="flex items-center gap-2">
                                 <Activity className="text-primary h-4 w-4" />
                                 <span className="text-muted-foreground text-xs">Total Logins</span>
                             </div>
-                            <p className="mt-1 text-2xl font-bold">{stats.total}</p>
+                            <p className="mt-1 text-xl md:text-2xl font-bold">{stats.total}</p>
                         </div>
                         <div className="bg-muted/50 rounded-lg p-3">
                             <div className="flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                                 <span className="text-muted-foreground text-xs">Successful</span>
                             </div>
-                            <p className="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">{stats.successful}</p>
+                            <p className="mt-1 text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">{stats.successful}</p>
                         </div>
                         <div className="bg-muted/50 rounded-lg p-3">
                             <div className="flex items-center gap-2">
                                 <XCircle className="h-4 w-4 text-destructive" />
                                 <span className="text-muted-foreground text-xs">Failed</span>
                             </div>
-                            <p className="mt-1 text-2xl font-bold text-destructive">{stats.failed}</p>
+                            <p className="mt-1 text-xl md:text-2xl font-bold text-destructive">{stats.failed}</p>
                         </div>
                         <div className="bg-muted/50 rounded-lg p-3">
                             <div className="flex items-center gap-2">
                                 <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                                 <span className="text-muted-foreground text-xs">Success Rate</span>
                             </div>
-                            <p className="mt-1 text-2xl font-bold">{stats.successRate}%</p>
+                            <p className="mt-1 text-xl md:text-2xl font-bold">{stats.successRate}%</p>
                         </div>
                     </div>
                 </div>
 
-                <ScrollArea className="max-h-[500px]">
-                    <div className="px-6 pb-6">
+                <div className="flex-1 overflow-hidden px-6">
+                    <div className="h-full overflow-auto pb-4">
                         {isLoading ? (
-                            <div className="space-y-2">
+                            <div className="space-y-2 pt-2">
                                 {Array.from({ length: 5 }).map((_, i) => (
                                     <div key={i} className="flex items-center space-x-4">
                                         <Skeleton className="h-12 w-12 rounded" />
@@ -200,72 +199,74 @@ export default function UserLoginHistoryDialog({ open, onOpenChange, userId, use
                                 <p className="text-muted-foreground text-sm">This user has no recorded login activity yet.</p>
                             </div>
                         ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Date & Time</TableHead>
-                                        <TableHead>Device</TableHead>
-                                        <TableHead>Location</TableHead>
-                                        <TableHead>Session</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {loginLogs.map((log) => {
-                                        const DeviceIcon = getDeviceIcon(log.device_type);
-                                        return (
-                                            <TableRow key={log.id}>
-                                                <TableCell>
-                                                    <Badge variant={log.successful ? 'default' : 'destructive'}>
-                                                        {log.successful ? 'Success' : 'Failed'}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-2">
-                                                        <Clock className="text-muted-foreground h-4 w-4" />
-                                                        <span className="text-sm">{formatDateTime(log.login_at)}</span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-2">
-                                                        <DeviceIcon className="text-muted-foreground h-4 w-4" />
+                            <div className="rounded-md border overflow-x-auto mt-2">
+                                <Table className="w-full">
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="whitespace-nowrap">Status</TableHead>
+                                            <TableHead className="whitespace-nowrap">Date & Time</TableHead>
+                                            <TableHead className="whitespace-nowrap">Device</TableHead>
+                                            <TableHead className="whitespace-nowrap">Location</TableHead>
+                                            <TableHead className="whitespace-nowrap">Session</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {loginLogs.map((log) => {
+                                            const DeviceIcon = getDeviceIcon(log.device_type);
+                                            return (
+                                                <TableRow key={log.id}>
+                                                    <TableCell>
+                                                        <Badge variant={log.successful ? 'default' : 'destructive'} className="whitespace-nowrap">
+                                                            {log.successful ? 'Success' : 'Failed'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center space-x-2">
+                                                            <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
+                                                            <span className="text-sm whitespace-nowrap">{formatDateTime(log.login_at)}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center space-x-2">
+                                                            <DeviceIcon className="text-muted-foreground h-4 w-4 shrink-0" />
+                                                            <div className="space-y-1 min-w-0">
+                                                                <div className="text-sm capitalize whitespace-nowrap">{log.device_type || 'Unknown'}</div>
+                                                                {log.browser && (
+                                                                    <div className="text-muted-foreground text-xs">{log.browser}</div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
                                                         <div className="space-y-1">
-                                                            <div className="text-sm capitalize">{log.device_type || 'Unknown'}</div>
-                                                            {log.browser && (
-                                                                <div className="text-muted-foreground text-xs">{log.browser}</div>
+                                                            <div className="flex items-center space-x-2">
+                                                                <Globe className="text-muted-foreground h-4 w-4 shrink-0" />
+                                                                <span className="font-mono text-sm whitespace-nowrap">{log.ip_address}</span>
+                                                            </div>
+                                                            {log.location && (
+                                                                <div className="flex items-center space-x-1">
+                                                                    <MapPin className="text-muted-foreground h-3 w-3 shrink-0" />
+                                                                    <span className="text-muted-foreground text-xs">{log.location}</span>
+                                                                </div>
                                                             )}
                                                         </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="space-y-1">
-                                                        <div className="flex items-center space-x-2">
-                                                            <Globe className="text-muted-foreground h-4 w-4" />
-                                                            <span className="font-mono text-sm">{log.ip_address}</span>
-                                                        </div>
-                                                        {log.location && (
-                                                            <div className="flex items-center space-x-1">
-                                                                <MapPin className="text-muted-foreground h-3 w-3" />
-                                                                <span className="text-muted-foreground text-xs">{log.location}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant={log.logout_at ? 'secondary' : 'default'}>
-                                                        {getSessionDuration(log.login_at, log.logout_at)}
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={log.logout_at ? 'secondary' : 'default'} className="whitespace-nowrap">
+                                                            {getSessionDuration(log.login_at, log.logout_at)}
+                                                        </Badge>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
                         )}
                     </div>
-                </ScrollArea>
+                </div>
 
-                <div className="flex justify-end border-t px-6 py-4">
+                <div className="flex justify-end border-t px-6 py-3 shrink-0">
                     <Button onClick={() => onOpenChange(false)} variant="outline">
                         Close
                     </Button>
