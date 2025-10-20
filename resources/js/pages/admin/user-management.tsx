@@ -1261,7 +1261,11 @@ export default function AdminUserManagement() {
                     onConfirm={confirmBulkDelete}
                 />
 
-                <UserDetailsDialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen} user={selectedUser} />
+                <UserDetailsDialog 
+                    open={isDetailsDialogOpen} 
+                    onOpenChange={setIsDetailsDialogOpen} 
+                    user={selectedUser ? { ...selectedUser } : null} 
+                />
 
                 <UserLoginHistoryDialog
                     open={isLoginHistoryDialogOpen}
