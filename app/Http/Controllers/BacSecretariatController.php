@@ -44,7 +44,8 @@ class BacSecretariatController extends BaseDashboardController
         // Defer priority actions - they're heavy and can load after initial render
         return [
             'priorityActions' => \Inertia\Inertia::defer(function () use ($procurementsByKey, $roleName) {
-                return Cache::remember(
+                // Use database cache for potentially large priority actions list
+                return Cache::store('database')->remember(
                     \App\Services\DashboardCacheKeys::priorityActions($roleName),
                     now()->addMinutes(config('dashboard.cache_ttl.priority_actions')),
                     function () use ($procurementsByKey) {
@@ -66,7 +67,7 @@ class BacSecretariatController extends BaseDashboardController
 
     protected function getDashboardStats($procurementsByKey, int $pendingActions): array
     {
-        // Get all priority actions count
+        // Get all priority actions count - small data, can use default cache
         $allPriorityActionsCount = Cache::remember(
             \App\Services\DashboardCacheKeys::priorityActionsCount($this->getRoleName()),
             now()->addMinutes(config('dashboard.cache_ttl.priority_actions')),

@@ -47,7 +47,8 @@ class AdminController extends BaseDashboardController
      */
     protected function getAdditionalDashboardData($procurementsByKey, string $roleName): array
     {
-        $userActivityAnalytics = Cache::remember(
+        // Use database cache for analytics data (can be large with 30 days of data)
+        $userActivityAnalytics = Cache::store('database')->remember(
             DashboardCacheKeys::userActivityAnalytics($roleName),
             now()->addMinutes(config('dashboard.cache_ttl.user_analytics')),
             fn () => $this->analyticsService->getUserActivityAnalytics('30_days', null)
