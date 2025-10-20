@@ -36,6 +36,21 @@ return Application::configure(basePath: dirname(__DIR__))
             ->hourly()
             ->withoutOverlapping()
             ->runInBackground();
+
+        // Clean up old cache and session data to optimize database storage
+        $schedule->command('cache:cleanup --hours=24')
+            ->daily();
+
+        // Clean up old cache tags
+        $schedule->command('cache:prune-stale-tags')
+            ->hourly();
+
+        // Monitor Redis memory usage (important for 30MB free tier)
+        $schedule->command('redis:monitor-memory --warn-threshold=80')
+            ->everyThirtyMinutes()
+            ->onFailure(function () {
+                Log::warning('Redis memory usage exceeded 80% threshold');
+            });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

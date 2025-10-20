@@ -21,6 +21,8 @@
         "league/flysystem-aws-s3-v3": "^3.29",
         "pragmarx/google2fa-laravel": "^2.3",
         "predis/predis": "^3.2",
+        "resend/resend-laravel": "^0.23.0",
+        "resend/resend-php": "*",
         "spatie/laravel-permission": "^6.21",
         "tightenco/ziggy": "^2.4"
     },

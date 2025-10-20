@@ -135,7 +135,8 @@ class SearchController extends Controller
 
                     try {
                         Log::info('SearchController: Calling listStreamItems for status stream.');
-                        $statusItems = Cache::remember(
+                        // Use database cache for large blockchain data (10000 items)
+                        $statusItems = Cache::store('database')->remember(
                             'search_status_items',
                             now()->addMinutes(5),
                             fn () => $multichainService->listStreamItems(StreamEnums::STATUS->value, true, 10000, 0, false)
@@ -299,7 +300,8 @@ class SearchController extends Controller
                 $statusItems = null;
 
                 try {
-                    $statusItems = Cache::remember(
+                    // Use database cache for blockchain data
+                    $statusItems = Cache::store('database')->remember(
                         'search_suggestions_status_items',
                         now()->addMinutes(5),
                         fn () => $multichainService->listStreamItems(StreamEnums::STATUS->value, true, 500, 0, false)
