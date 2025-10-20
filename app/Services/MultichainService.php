@@ -360,6 +360,25 @@ class MultichainService
     /*  Stream Management */
     /********************************/
 
+    private function waitForStreamAvailability(string $streamName, int $maxRetries = 3): bool
+    {
+        for ($i = 1; $i <= $maxRetries; $i++) {
+            try {
+                $streamInfo = $this->getStreamInfo($streamName);
+                if (! empty($streamInfo)) {
+                    return true;
+                }
+            } catch (Exception $e) {
+                Log::warning("Attempt $i: Waiting for stream $streamName to be available: ".$e->getMessage());
+                if ($i < $maxRetries) {
+                    sleep(5);
+                }
+            }
+        }
+
+        return false;
+    }
+
     public function createStream(string $streamName, array|bool $options = true, array $details = []): mixed
     {
         try {
