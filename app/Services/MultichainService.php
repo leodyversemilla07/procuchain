@@ -63,10 +63,8 @@ class MultichainService
 
         while ($attempts < $this->maxRetries) {
             try {
-                // Try to validate connection first
-                if ($attempts === 0) {
-                    $this->validateConnection();
-                }
+                // Skip validation check - let the actual RPC call validate the connection
+                // This prevents double timeout issues (validation + actual call)
 
                 $result = $operation();
                 if (! $this->mc->success()) {
