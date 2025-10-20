@@ -229,4 +229,119 @@ class AccountLockoutController extends Controller
             return back()->with('error', 'Failed to reset failed attempts');
         }
     }
+
+    /**
+     * Bulk unlock multiple user accounts
+     */
+    public function bulkUnlock(Request $request)
+    {
+        $validated = $request->validate([
+            'account_ids' => 'required|array|min:1',
+            'account_ids.*' => 'required|integer|exists:users,id',
+        ]);
+
+        try {
+            $accountIds = $validated['account_ids'];
+            $currentUserId = Auth::id();
+            $successCount = 0;
+            $failedAccounts = [];
+
+            foreach ($accountIds as $userId) {
+                // Prevent admin from unlocking their own account (though they shouldn't be locked)
+                if ($userId === $currentUserId) {
+                    continue;
+                }
+
+                $user = User::find($userId);
+                if ($user && $user->isAccountLocked()) {
+                    $result = $this->accountLockout->unlockAccount($user, 'Bulk unlocked by administrator');
+                    if ($result) {
+                        $successCount++;
+                    } else {
+                        $failedAccounts[] = $user->email;
+                    }
+                }
+            }
+
+            Log::info('Admin performed bulk account unlock', [
+                'admin_id' => $currentUserId,
+                'total_requested' => count($accountIds),
+                'success_count' => $successCount,
+                'failed_accounts' => $failedAccounts,
+            ]);
+
+            if ($successCount > 0) {
+                $message = $successCount === 1
+                    ? 'Successfully unlocked 1 account'
+                    : "Successfully unlocked {$successCount} accounts";
+
+                return back()->with('success', $message);
+            } else {
+                return back()->with('error', 'Failed to unlock any accounts');
+            }
+        } catch (Exception $e) {
+            Log::error('Failed to bulk unlock accounts', [
+                'admin_id' => Auth::id(),
+                'account_ids' => $validated['account_ids'] ?? [],
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to unlock accounts. Please try again.');
+        }
+    }
+
+    /**
+     * Bulk reset failed login attempts for multiple users
+     */
+    public function bulkResetAttempts(Request $request)
+    {
+        $validated = $request->validate([
+            'account_ids' => 'required|array|min:1',
+            'account_ids.*' => 'required|integer|exists:users,id',
+        ]);
+
+        try {
+            $accountIds = $validated['account_ids'];
+            $currentUserId = Auth::id();
+            $successCount = 0;
+            $failedAccounts = [];
+
+            foreach ($accountIds as $userId) {
+                $user = User::find($userId);
+                if ($user && $user->failed_login_attempts > 0) {
+                    $result = $this->accountLockout->resetFailedAttempts($user);
+                    if ($result) {
+                        $successCount++;
+                    } else {
+                        $failedAccounts[] = $user->email;
+                    }
+                }
+            }
+
+            Log::info('Admin performed bulk reset of failed login attempts', [
+                'admin_id' => $currentUserId,
+                'total_requested' => count($accountIds),
+                'success_count' => $successCount,
+                'failed_accounts' => $failedAccounts,
+            ]);
+
+            if ($successCount > 0) {
+                $message = $successCount === 1
+                    ? 'Successfully reset attempts for 1 account'
+                    : "Successfully reset attempts for {$successCount} accounts";
+
+                return back()->with('success', $message);
+            } else {
+                return back()->with('warning', 'No accounts had failed attempts to reset');
+            }
+        } catch (Exception $e) {
+            Log::error('Failed to bulk reset login attempts', [
+                'admin_id' => Auth::id(),
+                'account_ids' => $validated['account_ids'] ?? [],
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to reset login attempts. Please try again.');
+        }
+    }
 }

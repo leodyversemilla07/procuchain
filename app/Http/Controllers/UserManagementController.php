@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,6 +21,7 @@ class UserManagementController extends Controller
     public function index(): Response
     {
         $users = User::select('id', 'name', 'email', 'blockchain_address', 'email_verified_at', 'remember_token', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at')
+            ->with('roles:id,name')
             ->where('id', '!=', Auth::id())
             ->orderBy('created_at', 'desc')
             ->get()
@@ -29,11 +31,15 @@ class UserManagementController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->roles->first()?->name ?? null,
+                    'roles' => $user->roles->map(function ($role) {
+                        return ['id' => $role->id, 'name' => $role->name];
+                    })->toArray(),
                     'blockchain_address' => $user->blockchain_address,
                     'email_verified_at' => $user->email_verified_at?->format('Y-m-d H:i:s'),
                     'remember_token' => $user->remember_token,
+                    'two_factor_enabled' => ! empty($user->two_factor_secret),
                     'two_factor_secret' => $user->two_factor_secret,
-                    'two_factor_recovery_codes' => $user->two_factor_recovery_codes ? json_decode($user->two_factor_recovery_codes, true) : null,
+                    'two_factor_recovery_codes' => $user->two_factor_recovery_codes,
                     'two_factor_confirmed_at' => $user->two_factor_confirmed_at?->format('Y-m-d H:i:s'),
                     'created_at' => $user->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $user->updated_at?->format('Y-m-d H:i:s'),
@@ -232,6 +238,60 @@ class UserManagementController extends Controller
             ]);
 
             return redirect()->back()->withErrors(['error' => 'Failed to delete users. Please try again.']);
+        }
+    }
+
+    /**
+     * Send password reset link to a user
+     */
+    public function resetPassword(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        try {
+            // Prevent admin from resetting their own password via admin panel
+            if ($user->id === Auth::id()) {
+                return redirect()->back()->withErrors(['error' => 'You cannot reset your own password from here. Please use the profile settings.']);
+            }
+
+            // Send password reset link
+            $status = Password::sendResetLink(
+                ['email' => $user->email]
+            );
+
+            if ($status === Password::RESET_LINK_SENT) {
+                // Log the password reset action
+                Log::info('Admin initiated password reset for user', [
+                    'admin_id' => Auth::id(),
+                    'admin_email' => Auth::user()->email,
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'reason' => $validated['reason'],
+                    'timestamp' => now()->toDateTimeString(),
+                ]);
+
+                return redirect()->back()->with('success', "Password reset link sent to {$user->email}");
+            } else {
+                Log::warning('Failed to send password reset link', [
+                    'admin_id' => Auth::id(),
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'status' => $status,
+                ]);
+
+                return redirect()->back()->withErrors(['error' => 'Failed to send password reset link. Please try again.']);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error sending password reset link', [
+                'admin_id' => Auth::id(),
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()->withErrors(['error' => 'An error occurred while sending the reset link.']);
         }
     }
 }
