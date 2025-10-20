@@ -22,11 +22,11 @@ class MultichainService
         $isConsole = app()->runningInConsole();
         $this->maxRetries = $isConsole
             ? (int) config('multichain.max_retries', 3)
-            : (int) config('multichain.web_max_retries', 2);
+            : (int) config('multichain.web_max_retries', 1); // Reduced from 2 to 1 for faster failures
 
         $this->timeout = $isConsole
             ? (int) config('multichain.connection_timeout', 30)
-            : (int) config('multichain.web_connection_timeout', 12);
+            : (int) config('multichain.web_connection_timeout', 5); // Reduced from 12 to 5 seconds
         $this->initializeClient();
     }
 
