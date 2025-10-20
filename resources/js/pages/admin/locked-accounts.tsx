@@ -1,3 +1,5 @@
+import UserDetailsDialog from '@/components/admin/user-details-dialog';
+import UserLoginHistoryDialog from '@/components/admin/user-login-history-dialog';
 import { HeroCard } from '@/components/hero-card';
 import { Pagination } from '@/components/pagination';
 import { StatsGrid } from '@/components/stats-grid';
@@ -82,6 +84,8 @@ export default function AdminLockedAccounts() {
     const { hasPermission } = usePermissions();
     const [isUnlockDialogOpen, setIsUnlockDialogOpen] = useState(false);
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+    const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+    const [isLoginHistoryDialogOpen, setIsLoginHistoryDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [isLoading] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -216,7 +220,23 @@ export default function AdminLockedAccounts() {
             toast.warning('No accounts selected');
             return;
         }
-        toast.info(`Bulk unlock ${selectedAccounts.size} account(s) - Feature coming soon`);
+
+        const accountIds = Array.from(selectedAccounts);
+        router.post(
+            '/admin/accounts/bulk-unlock',
+            { account_ids: accountIds },
+            {
+                onSuccess: () => {
+                    setSelectedAccounts(new Set());
+                    toast.success(`Successfully unlocked ${accountIds.length} account(s)`);
+                },
+                onError: (errors) => {
+                    console.error('Bulk unlock errors:', errors);
+                    toast.error('Failed to unlock some accounts');
+                },
+                preserveScroll: true,
+            },
+        );
     };
 
     const handleBulkResetAttempts = () => {
@@ -224,7 +244,23 @@ export default function AdminLockedAccounts() {
             toast.warning('No accounts selected');
             return;
         }
-        toast.info(`Bulk reset ${selectedAccounts.size} account(s) - Feature coming soon`);
+
+        const accountIds = Array.from(selectedAccounts);
+        router.post(
+            '/admin/accounts/bulk-reset-attempts',
+            { account_ids: accountIds },
+            {
+                onSuccess: () => {
+                    setSelectedAccounts(new Set());
+                    toast.success(`Successfully reset attempts for ${accountIds.length} account(s)`);
+                },
+                onError: (errors) => {
+                    console.error('Bulk reset attempts errors:', errors);
+                    toast.error('Failed to reset some accounts');
+                },
+                preserveScroll: true,
+            },
+        );
     };
 
     const handleUnlockAccount = (user: User) => {
@@ -653,11 +689,21 @@ export default function AdminLockedAccounts() {
                                                                 <Copy className="mr-2 h-4 w-4" />
                                                                 Copy Email
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => toast.info('View profile - Feature coming soon')}>
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    setSelectedUser(user);
+                                                                    setIsProfileDialogOpen(true);
+                                                                }}
+                                                            >
                                                                 <ExternalLink className="mr-2 h-4 w-4" />
                                                                 View Profile
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => toast.info('View login history - Feature coming soon')}>
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    setSelectedUser(user);
+                                                                    setIsLoginHistoryDialogOpen(true);
+                                                                }}
+                                                            >
                                                                 <History className="mr-2 h-4 w-4" />
                                                                 Login History
                                                             </DropdownMenuItem>
@@ -765,11 +811,21 @@ export default function AdminLockedAccounts() {
                                                                 <Copy className="mr-2 h-4 w-4" />
                                                                 Copy Email
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => toast.info('View profile - Feature coming soon')}>
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    setSelectedUser(user);
+                                                                    setIsProfileDialogOpen(true);
+                                                                }}
+                                                            >
                                                                 <ExternalLink className="mr-2 h-4 w-4" />
                                                                 View Profile
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => toast.info('View login history - Feature coming soon')}>
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    setSelectedUser(user);
+                                                                    setIsLoginHistoryDialogOpen(true);
+                                                                }}
+                                                            >
                                                                 <History className="mr-2 h-4 w-4" />
                                                                 Login History
                                                             </DropdownMenuItem>
@@ -902,6 +958,17 @@ export default function AdminLockedAccounts() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* User Details Dialog */}
+            <UserDetailsDialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen} user={selectedUser} />
+
+            {/* Login History Dialog */}
+            <UserLoginHistoryDialog
+                open={isLoginHistoryDialogOpen}
+                onOpenChange={setIsLoginHistoryDialogOpen}
+                userId={selectedUser?.id ?? null}
+                userName={selectedUser?.name}
+            />
         </AppLayout>
     );
 }

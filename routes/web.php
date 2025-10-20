@@ -253,6 +253,7 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{user}', [UserManagementController::class, 'update'])->name('update');
             Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
             Route::delete('/', [UserManagementController::class, 'bulkDelete'])->name('bulk-delete');
+            Route::post('/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('reset-password');
         });
 
         // Login Tracking & Monitoring
@@ -272,6 +273,8 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{user}/unlock', [AccountLockoutController::class, 'unlock'])->name('unlock');
             Route::post('/{user}/lock', [AccountLockoutController::class, 'lock'])->name('lock');
             Route::post('/{user}/reset-attempts', [AccountLockoutController::class, 'resetAttempts'])->name('reset-attempts');
+            Route::post('/bulk-unlock', [AccountLockoutController::class, 'bulkUnlock'])->name('bulk-unlock');
+            Route::post('/bulk-reset-attempts', [AccountLockoutController::class, 'bulkResetAttempts'])->name('bulk-reset-attempts');
         });
 
         // Blockchain Explorer (includes health monitoring)

@@ -41,6 +41,9 @@ import BulkDeleteDialog from '@/components/admin/bulk-delete-dialog';
 import CreateUserDialog from '@/components/admin/create-user-dialog';
 import DeleteUserDialog from '@/components/admin/delete-user-dialog';
 import EditUserDialog from '@/components/admin/edit-user-dialog';
+import ResetPasswordDialog from '@/components/admin/reset-password-dialog';
+import UserDetailsDialog from '@/components/admin/user-details-dialog';
+import UserLoginHistoryDialog from '@/components/admin/user-login-history-dialog';
 import { HeroCard } from '@/components/hero-card';
 import { Pagination } from '@/components/pagination';
 import { StatsGrid } from '@/components/stats-grid';
@@ -56,10 +59,12 @@ interface User {
     email_verified_at?: string;
     two_factor_enabled?: boolean;
     two_factor_confirmed_at?: string;
+    two_factor_recovery_codes?: string;
     backup_codes?: string[];
     backup_codes_generated_at?: string;
     created_at: string;
     updated_at?: string;
+    roles?: Array<{ id: number; name: string }>;
 }
 
 interface BreadcrumbItem {
@@ -93,6 +98,9 @@ export default function AdminUserManagement() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+    const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+    const [isLoginHistoryDialogOpen, setIsLoginHistoryDialogOpen] = useState(false);
+    const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [formData, setFormData] = useState({
@@ -675,7 +683,8 @@ export default function AdminUserManagement() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={() => {
-                                    toast.info('View Details - Feature coming soon');
+                                    setSelectedUser(user);
+                                    setIsDetailsDialogOpen(true);
                                 }}
                             >
                                 View Details
@@ -683,7 +692,8 @@ export default function AdminUserManagement() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 onClick={() => {
-                                    toast.info('Login History - Feature coming soon');
+                                    setSelectedUser(user);
+                                    setIsLoginHistoryDialogOpen(true);
                                 }}
                             >
                                 <History className="mr-2 h-4 w-4" />
@@ -691,7 +701,8 @@ export default function AdminUserManagement() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={() => {
-                                    toast.info('Reset Password - Feature coming soon');
+                                    setSelectedUser(user);
+                                    setIsResetPasswordDialogOpen(true);
                                 }}
                             >
                                 <KeyRound className="mr-2 h-4 w-4" />
@@ -1112,15 +1123,30 @@ export default function AdminUserManagement() {
                                                                 >
                                                                     Copy email
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => toast.info('View Details - Feature coming soon')}>
+                                                                <DropdownMenuItem
+                                                                    onClick={() => {
+                                                                        setSelectedUser(user);
+                                                                        setIsDetailsDialogOpen(true);
+                                                                    }}
+                                                                >
                                                                     View Details
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator />
-                                                                <DropdownMenuItem onClick={() => toast.info('Login History - Feature coming soon')}>
+                                                                <DropdownMenuItem
+                                                                    onClick={() => {
+                                                                        setSelectedUser(user);
+                                                                        setIsLoginHistoryDialogOpen(true);
+                                                                    }}
+                                                                >
                                                                     <History className="mr-2 h-4 w-4" />
                                                                     Login History
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => toast.info('Reset Password - Feature coming soon')}>
+                                                                <DropdownMenuItem
+                                                                    onClick={() => {
+                                                                        setSelectedUser(user);
+                                                                        setIsResetPasswordDialogOpen(true);
+                                                                    }}
+                                                                >
                                                                     <KeyRound className="mr-2 h-4 w-4" />
                                                                     Reset Password
                                                                 </DropdownMenuItem>
@@ -1234,6 +1260,17 @@ export default function AdminUserManagement() {
                     selectedUsers={table.getFilteredSelectedRowModel().rows.map((row) => row.original)}
                     onConfirm={confirmBulkDelete}
                 />
+
+                <UserDetailsDialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen} user={selectedUser} />
+
+                <UserLoginHistoryDialog
+                    open={isLoginHistoryDialogOpen}
+                    onOpenChange={setIsLoginHistoryDialogOpen}
+                    userId={selectedUser?.id ?? null}
+                    userName={selectedUser?.name}
+                />
+
+                <ResetPasswordDialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen} user={selectedUser} />
             </div>
         </AppLayout>
     );
