@@ -117,38 +117,6 @@ class MultichainService
         );
     }
 
-    private function validateConnection(): void
-    {
-        try {
-            $info = $this->mc->getinfo();
-            if (! $this->mc->success()) {
-                throw new Exception($this->mc->errormessage(), $this->mc->errorcode());
-            }
-
-            // Verify we're connected to the right chain
-            if ($info['chainname'] !== config('multichain.chain_name')) {
-                throw new Exception('Connected to wrong blockchain: '.$info['chainname']);
-            }
-
-            // Verify node is fully initialized
-            $initStatus = $this->mc->getinitstatus();
-            if (! $this->mc->success() || ! $initStatus['initialized']) {
-                throw new Exception('Node is not fully initialized');
-            }
-
-        } catch (Exception $e) {
-            if ($this->isConnectionError($e->getMessage())) {
-                throw new Exception(
-                    'Failed to connect to MultiChain node at '.
-                    config('multichain.rpc.host').':'.
-                    config('multichain.rpc.port').
-                    '. Please ensure the blockchain service is accessible and RPC credentials are correct.'
-                );
-            }
-            throw $e;
-        }
-    }
-
     private function isConnectionError(string $message): bool
     {
         $connectionErrors = [
@@ -391,25 +359,6 @@ class MultichainService
     /********************************/
     /*  Stream Management */
     /********************************/
-
-    private function waitForStreamAvailability(string $streamName, int $maxRetries = 3): bool
-    {
-        for ($i = 1; $i <= $maxRetries; $i++) {
-            try {
-                $streamInfo = $this->getStreamInfo($streamName);
-                if (! empty($streamInfo)) {
-                    return true;
-                }
-            } catch (Exception $e) {
-                Log::warning("Attempt $i: Waiting for stream $streamName to be available: ".$e->getMessage());
-                if ($i < $maxRetries) {
-                    sleep(5);
-                }
-            }
-        }
-
-        return false;
-    }
 
     public function createStream(string $streamName, array|bool $options = true, array $details = []): mixed
     {
