@@ -1,3 +1,5 @@
+import BlockIpConfirmationDialog from '@/components/admin/block-ip-confirmation-dialog';
+import LoginLogDetailsDialog from '@/components/admin/login-log-details-dialog';
 import { HeroCard } from '@/components/hero-card';
 import { Pagination } from '@/components/pagination';
 import { StatsGrid } from '@/components/stats-grid';
@@ -131,6 +133,16 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [selectedLogs, setSelectedLogs] = useState<Set<number>>(new Set());
     const [isExporting, setIsExporting] = useState(false);
+
+    // Dialog state for viewing log details
+    const [selectedLog, setSelectedLog] = useState<LoginLog | null>(null);
+    const [selectedLogCategory, setSelectedLogCategory] = useState<'recent' | 'suspicious' | undefined>(undefined);
+    const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+
+    // Dialog state for blocking IP
+    const [ipToBlock, setIpToBlock] = useState<string | null>(null);
+    const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
+    const [isBlocking, setIsBlocking] = useState(false);
 
     // Initialize selectedCategory from URL query on mount
     useEffect(() => {
@@ -447,6 +459,64 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
             dateRange?.to
         );
     }, [debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, selectedCategory, dateRange]);
+
+    // Handler to open the details dialog
+    const handleViewDetails = useCallback((log: LoginLog, category: 'recent' | 'suspicious') => {
+        setSelectedLog(log);
+        setSelectedLogCategory(category);
+        setIsDetailsDialogOpen(true);
+    }, []);
+
+    // Handler to open block IP dialog
+    const handleBlockIpClick = useCallback((ipAddress: string) => {
+        setIpToBlock(ipAddress);
+        setIsBlockDialogOpen(true);
+    }, []);
+
+    // Handler to confirm blocking IP
+    const handleBlockIpConfirm = useCallback(
+        async (reason: string, duration: 'temporary' | 'permanent') => {
+            if (!ipToBlock) return;
+
+            setIsBlocking(true);
+            try {
+                const response = await fetch(route('admin.login-logs.block-ip'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                    body: JSON.stringify({
+                        ip_address: ipToBlock,
+                        reason,
+                        duration,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    toast.success('IP Address Blocked', {
+                        description: `${ipToBlock} has been blocked successfully.`,
+                    });
+                    setIsBlockDialogOpen(false);
+                    setIpToBlock(null);
+                } else {
+                    toast.error('Failed to block IP', {
+                        description: data.error || 'An error occurred while blocking the IP address.',
+                    });
+                }
+            } catch (error) {
+                console.error('Error blocking IP:', error);
+                toast.error('Failed to block IP', {
+                    description: 'An error occurred while blocking the IP address.',
+                });
+            } finally {
+                setIsBlocking(false);
+            }
+        },
+        [ipToBlock],
+    );
 
     // Helper function to highlight search terms
     const highlightSearchTerm = (text: string, searchTerm: string) => {
@@ -959,9 +1029,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
                                                             <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    toast.info('View Details', { description: `Login #${log.id}` });
-                                                                }}
+                                                                onClick={() => handleViewDetails(log, log.category)}
                                                             >
                                                                 <Eye className="mr-2 h-4 w-4" />
                                                                 View Details
@@ -1180,11 +1248,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         <DropdownMenuContent align="end">
                                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                             <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    toast.info('View Details', {
-                                                                        description: `Viewing details for login #${log.id}`,
-                                                                    });
-                                                                }}
+                                                                onClick={() => handleViewDetails(log, log.category)}
                                                             >
                                                                 <Eye className="mr-2 h-4 w-4" />
                                                                 View Details
@@ -1206,11 +1270,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                                     <DropdownMenuSeparator />
                                                                     <DropdownMenuItem
                                                                         className="text-destructive focus:text-destructive"
-                                                                        onClick={() => {
-                                                                            toast.warning('Block IP', {
-                                                                                description: `This would block ${log.ip_address}`,
-                                                                            });
-                                                                        }}
+                                                                        onClick={() => handleBlockIpClick(log.ip_address)}
                                                                     >
                                                                         <ShieldBan className="mr-2 h-4 w-4" />
                                                                         Block IP Address
@@ -1261,6 +1321,23 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                         )}
                     </Card>
                 </div>
+
+                {/* Login Log Details Dialog */}
+                <LoginLogDetailsDialog
+                    open={isDetailsDialogOpen}
+                    onOpenChange={setIsDetailsDialogOpen}
+                    log={selectedLog}
+                    category={selectedLogCategory}
+                />
+
+                {/* Block IP Confirmation Dialog */}
+                <BlockIpConfirmationDialog
+                    open={isBlockDialogOpen}
+                    onOpenChange={setIsBlockDialogOpen}
+                    ipAddress={ipToBlock || ''}
+                    onConfirm={handleBlockIpConfirm}
+                    isBlocking={isBlocking}
+                />
             </div>
         </AppLayout>
     );

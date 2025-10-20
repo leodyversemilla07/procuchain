@@ -261,6 +261,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/recent', [LoginLogController::class, 'recent'])->name('recent');
             Route::get('/statistics', [LoginLogController::class, 'statistics'])->name('statistics');
             Route::get('/suspicious', [LoginLogController::class, 'suspicious'])->name('suspicious');
+            Route::post('/block-ip', [LoginLogController::class, 'blockIp'])->name('block-ip');
+            Route::post('/unblock-ip', [LoginLogController::class, 'unblockIp'])->name('unblock-ip');
+            Route::get('/blocked-ips', [LoginLogController::class, 'blockedIps'])->name('blocked-ips');
         });
 
         // Account Management & Security
