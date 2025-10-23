@@ -6,7 +6,8 @@ use Illuminate\Support\Facades\Redis;
 test('redis connection is working', function () {
     $pong = Redis::ping();
 
-    expect($pong)->toBeTrue();
+    expect($pong)->toBeInstanceOf(\Predis\Response\Status::class)
+        ->and((string) $pong)->toBe('PONG');
 });
 
 test('redis can store and retrieve data', function () {

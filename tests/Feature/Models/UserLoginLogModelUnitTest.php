@@ -242,13 +242,15 @@ describe('UserLoginLog Model - Login Stats', function () {
     });
 
     test('getLoginStats counts failed logins today', function () {
+        $today = now()->startOfDay();
+        
         UserLoginLog::factory()->count(3)->create([
-            'login_at' => now(),
+            'login_at' => $today->copy()->addHours(10),
             'successful' => false,
         ]);
 
         UserLoginLog::factory()->count(2)->create([
-            'login_at' => now()->subDays(2),
+            'login_at' => $today->copy()->subDays(2),
             'successful' => false,
         ]);
 

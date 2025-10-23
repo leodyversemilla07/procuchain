@@ -75,12 +75,30 @@ interface AddressInfo {
 interface PeerInfo {
     id: number;
     addr: string;
-    version: string;
-    subver: string;
-    inbound: boolean;
-    conntime: number;
+    addrlocal?: string;
+    services: string;
+    relaytxes: boolean;
+    lastsend: number;
+    lastrecv: number;
     bytessent: number;
     bytesrecv: number;
+    conntime: number;
+    timeoffset: number;
+    pingtime?: number;
+    minping?: number;
+    pingwait?: number;
+    version: number;
+    subver: string;
+    inbound: boolean;
+    startingheight: number;
+    banscore: number;
+    synced_headers: number;
+    synced_blocks: number;
+    inflight: number[];
+    whitelisted: boolean;
+    minfeefilter: number;
+    bytesrecv_per_msg: Record<string, number>;
+    bytesent_per_msg: Record<string, number>;
 }
 
 interface CircuitBreakerState {
@@ -132,6 +150,7 @@ export default function BlockchainExplorer({
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
+    const [expandedPeers, setExpandedPeers] = useState<Set<number>>(new Set());
 
     const isHealthy = health?.status === 'healthy';
     const isCircuitOpen = health?.circuit_breaker?.is_open ?? false;
@@ -180,6 +199,18 @@ export default function BlockchainExplorer({
     // Truncate hash for display (following MultiChain Explorer pattern)
     const truncateHash = (hash: string, length: number = 10) => {
         return hash.length > length ? hash.substring(0, length) + '...' : hash;
+    };
+
+    // Helper function to format ping time
+    const formatPingTime = (pingtime?: number) => {
+        if (!pingtime) return 'N/A';
+        return `${(pingtime * 1000).toFixed(2)}ms`;
+    };
+
+    // Helper function to get sync status
+    const getSyncStatus = (synced_blocks: number, startingheight: number) => {
+        if (synced_blocks >= startingheight) return 'Fully Synced';
+        return `${synced_blocks}/${startingheight} blocks`;
     };
 
     const handleSearch = () => {
@@ -289,23 +320,25 @@ export default function BlockchainExplorer({
             <div className="flex h-full flex-1 flex-col gap-6 p-6 md:p-8">
                 {/* Network Status Indicator */}
                 <Card className="border-emerald-500/20 bg-emerald-500/5">
-                    <CardContent className="flex items-center gap-3 py-3">
-                        <div className="relative">
-                            <div className="bg-emerald-500 h-3 w-3 rounded-full" />
-                            <div className="bg-emerald-500 absolute inset-0 h-3 w-3 animate-ping rounded-full opacity-75" />
-                        </div>
-                        <div className="flex flex-1 items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium">Network Status: Online</p>
-                                <p className="text-muted-foreground text-xs">
-                                    {overview?.connections || 0} active connections • Last updated{' '}
-                                    {overview?.blocks
-                                        ? formatDistanceToNow(new Date(), { addSuffix: true })
-                                        : 'N/A'}
-                                </p>
+                    <CardContent className="py-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="relative">
+                                    <div className="bg-emerald-500 h-3 w-3 rounded-full" />
+                                    <div className="bg-emerald-500 absolute inset-0 h-3 w-3 animate-ping rounded-full opacity-75" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium">Network Status: Online</p>
+                                    <p className="text-muted-foreground text-xs">
+                                        {overview?.connections || 0} active connections • Last updated{' '}
+                                        {overview?.blocks
+                                            ? formatDistanceToNow(new Date(), { addSuffix: true })
+                                            : 'N/A'}
+                                    </p>
+                                </div>
                             </div>
                             {autoRefresh && (
-                                <Badge variant="secondary" className="ml-auto">
+                                <Badge variant="secondary" className="self-start sm:self-auto">
                                     Auto-refresh enabled
                                 </Badge>
                             )}
@@ -319,7 +352,7 @@ export default function BlockchainExplorer({
                     title="Blockchain Explorer"
                     description="Browse blocks, transactions, streams, addresses and network peers on the ProcuChain blockchain network"
                     actions={
-                        <div className="flex gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row">
                             <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing}>
                                 <RefreshCw className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')} />
                                 {isRefreshing ? 'Refreshing...' : 'Refresh'}
@@ -345,7 +378,7 @@ export default function BlockchainExplorer({
                 {/* Search Bar */}
                 <Card>
                     <CardContent className="pt-6">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row">
                             <div className="relative flex-1">
                                 <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                                 <Input
@@ -357,7 +390,7 @@ export default function BlockchainExplorer({
                                     disabled={isSearching}
                                 />
                             </div>
-                            <Button onClick={handleSearch} disabled={isSearching}>
+                            <Button onClick={handleSearch} disabled={isSearching} className="sm:w-auto">
                                 {isSearching ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -549,38 +582,40 @@ export default function BlockchainExplorer({
                                         <CardDescription>Current blockchain state and parameters</CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <Table>
-                                            <TableBody>
-                                                <TableRow>
-                                                    <TableCell className="font-medium">Chain Name</TableCell>
-                                                    <TableCell className="text-right">{overview.chain}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell className="font-medium">Protocol Version</TableCell>
-                                                    <TableCell className="text-right">{overview.protocol}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell className="font-medium">Blocks</TableCell>
-                                                    <TableCell className="text-right font-mono">{overview.blocks.toLocaleString()}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell className="font-medium">Difficulty</TableCell>
-                                                    <TableCell className="text-right font-mono">{overview.difficulty.toFixed(8)}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell className="font-medium">Connections</TableCell>
-                                                    <TableCell className="text-right">{overview.connections}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell className="font-medium">Streams</TableCell>
-                                                    <TableCell className="text-right">{streams.length}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell className="font-medium">Addresses</TableCell>
-                                                    <TableCell className="text-right">{addresses.length}</TableCell>
-                                                </TableRow>
-                                            </TableBody>
-                                        </Table>
+                                        <div className="overflow-x-auto">
+                                            <Table>
+                                                <TableBody>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Chain Name</TableCell>
+                                                        <TableCell className="text-right">{overview.chain}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Protocol Version</TableCell>
+                                                        <TableCell className="text-right">{overview.protocol}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Blocks</TableCell>
+                                                        <TableCell className="text-right font-mono">{overview.blocks.toLocaleString()}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Difficulty</TableCell>
+                                                        <TableCell className="text-right font-mono">{overview.difficulty.toFixed(8)}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Connections</TableCell>
+                                                        <TableCell className="text-right">{overview.connections}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Streams</TableCell>
+                                                        <TableCell className="text-right">{streams.length}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Addresses</TableCell>
+                                                        <TableCell className="text-right">{addresses.length}</TableCell>
+                                                    </TableRow>
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     </CardContent>
                                 </Card>
 
@@ -591,18 +626,20 @@ export default function BlockchainExplorer({
                                         <CardDescription>Local node details and configuration</CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <Table>
-                                            <TableBody>
-                                                <TableRow>
-                                                    <TableCell className="font-medium">Version</TableCell>
-                                                    <TableCell className="text-right">{overview.version}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell className="font-medium">Node Address</TableCell>
-                                                    <TableCell className="text-right font-mono text-xs break-all">{overview.nodeaddress}</TableCell>
-                                                </TableRow>
-                                            </TableBody>
-                                        </Table>
+                                        <div className="overflow-x-auto">
+                                            <Table>
+                                                <TableBody>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Version</TableCell>
+                                                        <TableCell className="text-right">{overview.version}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">Node Address</TableCell>
+                                                        <TableCell className="text-right font-mono text-xs break-all">{overview.nodeaddress}</TableCell>
+                                                    </TableRow>
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     </CardContent>
                                 </Card>
 
@@ -613,30 +650,32 @@ export default function BlockchainExplorer({
                                         <CardDescription>Latest blocks added to the blockchain</CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Height</TableHead>
-                                                    <TableHead>Hash</TableHead>
-                                                    <TableHead>Miner</TableHead>
-                                                    <TableHead className="text-right">Transactions</TableHead>
-                                                    <TableHead className="text-right">Size</TableHead>
-                                                    <TableHead>Time</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {latestBlocks.slice(0, 10).map((block: BlockInfo) => (
-                                                    <TableRow key={block.hash} className="hover:bg-accent">
-                                                        <TableCell className="font-medium">{block.height}</TableCell>
-                                                        <TableCell className="font-mono text-xs">{truncateHash(block.hash, 16)}</TableCell>
-                                                        <TableCell className="font-mono text-xs">{truncateHash(block.miner, 16)}</TableCell>
-                                                        <TableCell className="text-right">{block.tx_count}</TableCell>
-                                                        <TableCell className="text-right">{formatBytes(block.size)}</TableCell>
-                                                        <TableCell className="text-muted-foreground text-xs">{formatDate(block.time)}</TableCell>
+                                        <div className="overflow-x-auto">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Height</TableHead>
+                                                        <TableHead>Hash</TableHead>
+                                                        <TableHead>Miner</TableHead>
+                                                        <TableHead className="text-right">Transactions</TableHead>
+                                                        <TableHead className="text-right">Size</TableHead>
+                                                        <TableHead>Time</TableHead>
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {latestBlocks.slice(0, 10).map((block: BlockInfo) => (
+                                                        <TableRow key={block.hash} className="hover:bg-accent">
+                                                            <TableCell className="font-medium">{block.height}</TableCell>
+                                                            <TableCell className="font-mono text-xs">{truncateHash(block.hash, 16)}</TableCell>
+                                                            <TableCell className="font-mono text-xs">{truncateHash(block.miner, 16)}</TableCell>
+                                                            <TableCell className="text-right">{block.tx_count}</TableCell>
+                                                            <TableCell className="text-right">{formatBytes(block.size)}</TableCell>
+                                                            <TableCell className="text-muted-foreground text-xs">{formatDate(block.time)}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             </div>
@@ -651,98 +690,100 @@ export default function BlockchainExplorer({
                                 <CardDescription>Latest blocks mined on the blockchain</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="w-12"></TableHead>
-                                            <TableHead>Height</TableHead>
-                                            <TableHead>Hash</TableHead>
-                                            <TableHead>Miner</TableHead>
-                                            <TableHead>Transactions</TableHead>
-                                            <TableHead>Size</TableHead>
-                                            <TableHead>Time</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {latestBlocks.map((block: BlockInfo) => (
-                                            <React.Fragment key={block.hash}>
-                                                <TableRow
-                                                    className="cursor-pointer hover:bg-muted/50"
-                                                    onClick={() => toggleBlockExpansion(block.hash)}
-                                                >
-                                                    <TableCell>
-                                                        <ChevronRight
-                                                            className={cn(
-                                                                'text-muted-foreground h-4 w-4 transition-transform',
-                                                                expandedBlocks.has(block.hash) && 'rotate-90',
-                                                            )}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="font-medium">{block.height}</TableCell>
-                                                    <TableCell className="font-mono text-xs">
-                                                        {truncateHash(block.hash, 16)}
-                                                    </TableCell>
-                                                    <TableCell className="font-mono text-xs">
-                                                        {truncateHash(block.miner, 16)}
-                                                    </TableCell>
-                                                    <TableCell>{block.tx_count}</TableCell>
-                                                    <TableCell>{formatBytes(block.size)}</TableCell>
-                                                    <TableCell className="text-muted-foreground text-xs">
-                                                        <div className="flex flex-col gap-1">
-                                                            <span>{formatDate(block.time)}</span>
-                                                            <span className="text-muted-foreground text-xs">
-                                                                ({formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true })})
-                                                            </span>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                                {expandedBlocks.has(block.hash) && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={7} className="bg-muted/20">
-                                                            <Collapsible open={expandedBlocks.has(block.hash)}>
-                                                                <CollapsibleContent className="px-4 py-3">
-                                                                    <div className="space-y-2">
-                                                                        <p className="text-sm font-medium">Block Details</p>
-                                                                        <div className="grid gap-2 text-sm">
-                                                                            <div className="flex gap-2">
-                                                                                <span className="text-muted-foreground font-medium">
-                                                                                    Full Hash:
-                                                                                </span>
-                                                                                <span className="font-mono break-all">
-                                                                                    {block.hash}
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className="flex gap-2">
-                                                                                <span className="text-muted-foreground font-medium">
-                                                                                    Miner Address:
-                                                                                </span>
-                                                                                <span className="font-mono break-all">
-                                                                                    {block.miner}
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className="flex gap-2">
-                                                                                <span className="text-muted-foreground font-medium">
-                                                                                    Block Size:
-                                                                                </span>
-                                                                                <span>{formatBytes(block.size)}</span>
-                                                                            </div>
-                                                                            <div className="flex gap-2">
-                                                                                <span className="text-muted-foreground font-medium">
-                                                                                    Transaction Count:
-                                                                                </span>
-                                                                                <span>{block.tx_count} transactions</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </CollapsibleContent>
-                                                            </Collapsible>
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-12"></TableHead>
+                                                <TableHead>Height</TableHead>
+                                                <TableHead>Hash</TableHead>
+                                                <TableHead>Miner</TableHead>
+                                                <TableHead>Transactions</TableHead>
+                                                <TableHead>Size</TableHead>
+                                                <TableHead>Time</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {latestBlocks.map((block: BlockInfo) => (
+                                                <React.Fragment key={block.hash}>
+                                                    <TableRow
+                                                        className="cursor-pointer hover:bg-muted/50"
+                                                        onClick={() => toggleBlockExpansion(block.hash)}
+                                                    >
+                                                        <TableCell>
+                                                            <ChevronRight
+                                                                className={cn(
+                                                                    'text-muted-foreground h-4 w-4 transition-transform',
+                                                                    expandedBlocks.has(block.hash) && 'rotate-90',
+                                                                )}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell className="font-medium">{block.height}</TableCell>
+                                                        <TableCell className="font-mono text-xs">
+                                                            {truncateHash(block.hash, 16)}
+                                                        </TableCell>
+                                                        <TableCell className="font-mono text-xs">
+                                                            {truncateHash(block.miner, 16)}
+                                                        </TableCell>
+                                                        <TableCell>{block.tx_count}</TableCell>
+                                                        <TableCell>{formatBytes(block.size)}</TableCell>
+                                                        <TableCell className="text-muted-foreground text-xs">
+                                                            <div className="flex flex-col gap-1">
+                                                                <span>{formatDate(block.time)}</span>
+                                                                <span className="text-muted-foreground text-xs">
+                                                                    ({formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true })})
+                                                                </span>
+                                                            </div>
                                                         </TableCell>
                                                     </TableRow>
-                                                )}
-                                            </React.Fragment>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                                    {expandedBlocks.has(block.hash) && (
+                                                        <TableRow>
+                                                            <TableCell colSpan={7} className="bg-muted/20">
+                                                                <Collapsible open={expandedBlocks.has(block.hash)}>
+                                                                    <CollapsibleContent className="px-4 py-3">
+                                                                        <div className="space-y-2">
+                                                                            <p className="text-sm font-medium">Block Details</p>
+                                                                            <div className="grid gap-2 text-sm">
+                                                                                <div className="flex gap-2">
+                                                                                    <span className="text-muted-foreground font-medium">
+                                                                                        Full Hash:
+                                                                                    </span>
+                                                                                    <span className="font-mono break-all">
+                                                                                        {block.hash}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex gap-2">
+                                                                                    <span className="text-muted-foreground font-medium">
+                                                                                        Miner Address:
+                                                                                    </span>
+                                                                                    <span className="font-mono break-all">
+                                                                                        {block.miner}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex gap-2">
+                                                                                    <span className="text-muted-foreground font-medium">
+                                                                                        Block Size:
+                                                                                    </span>
+                                                                                    <span>{formatBytes(block.size)}</span>
+                                                                                </div>
+                                                                                <div className="flex gap-2">
+                                                                                    <span className="text-muted-foreground font-medium">
+                                                                                        Transaction Count:
+                                                                                    </span>
+                                                                                    <span>{block.tx_count} transactions</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </CollapsibleContent>
+                                                                </Collapsible>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </React.Fragment>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -768,33 +809,35 @@ export default function BlockchainExplorer({
                                         </EmptyHeader>
                                     </Empty>
                                 ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Stream Name</TableHead>
-                                                <TableHead>Items</TableHead>
-                                                <TableHead>Keys</TableHead>
-                                                <TableHead>Publishers</TableHead>
-                                                <TableHead>Status</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {streams.map((stream: StreamInfo) => (
-                                                <TableRow key={stream.name}>
-                                                    <TableCell className="font-medium">{stream.name}</TableCell>
-                                                    <TableCell>{stream.items.toLocaleString()}</TableCell>
-                                                    <TableCell>{stream.keys.toLocaleString()}</TableCell>
-                                                    <TableCell>{stream.publishers}</TableCell>
-                                                    <TableCell>
-                                                        <div className="flex gap-2">
-                                                            {stream.subscribed && <Badge variant="default">Subscribed</Badge>}
-                                                            {stream.synchronized && <Badge variant="secondary">Synced</Badge>}
-                                                        </div>
-                                                    </TableCell>
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Stream Name</TableHead>
+                                                    <TableHead>Items</TableHead>
+                                                    <TableHead>Keys</TableHead>
+                                                    <TableHead>Publishers</TableHead>
+                                                    <TableHead>Status</TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {streams.map((stream: StreamInfo) => (
+                                                    <TableRow key={stream.name}>
+                                                        <TableCell className="font-medium">{stream.name}</TableCell>
+                                                        <TableCell>{stream.items.toLocaleString()}</TableCell>
+                                                        <TableCell>{stream.keys.toLocaleString()}</TableCell>
+                                                        <TableCell>{stream.publishers}</TableCell>
+                                                        <TableCell>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {stream.subscribed && <Badge variant="default">Subscribed</Badge>}
+                                                                {stream.synchronized && <Badge variant="secondary">Synced</Badge>}
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>
@@ -821,22 +864,24 @@ export default function BlockchainExplorer({
                                         </EmptyHeader>
                                     </Empty>
                                 ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Address</TableHead>
-                                                <TableHead>Status</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {addresses.map((address: AddressInfo) => (
-                                                <TableRow key={address.address}>
-                                                    <TableCell className="font-mono text-sm">{address.address}</TableCell>
-                                                    <TableCell>{address.ismine && <Badge variant="default">Mine</Badge>}</TableCell>
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Address</TableHead>
+                                                    <TableHead>Status</TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {addresses.map((address: AddressInfo) => (
+                                                    <TableRow key={address.address}>
+                                                        <TableCell className="font-mono text-sm">{address.address}</TableCell>
+                                                        <TableCell>{address.ismine && <Badge variant="default">Mine</Badge>}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>
@@ -847,38 +892,149 @@ export default function BlockchainExplorer({
                         <Card>
                             <CardHeader>
                                 <CardTitle>Network Peers</CardTitle>
-                                <CardDescription>Connected nodes in the network</CardDescription>
+                                <CardDescription>Connected nodes in the network with detailed connection metrics</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {peers.length > 0 ? (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Address</TableHead>
-                                                <TableHead>Version</TableHead>
-                                                <TableHead>Direction</TableHead>
-                                                <TableHead>Data Sent</TableHead>
-                                                <TableHead>Data Received</TableHead>
-                                                <TableHead>Connected</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {peers.map((peer: PeerInfo) => (
-                                                <TableRow key={peer.id}>
-                                                    <TableCell className="font-mono text-sm">{peer.addr}</TableCell>
-                                                    <TableCell>{peer.subver}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={peer.inbound ? 'secondary' : 'default'}>
-                                                            {peer.inbound ? 'Inbound' : 'Outbound'}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>{formatBytes(peer.bytessent)}</TableCell>
-                                                    <TableCell>{formatBytes(peer.bytesrecv)}</TableCell>
-                                                    <TableCell>{new Date(peer.conntime * 1000).toLocaleString()}</TableCell>
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-12"></TableHead>
+                                                    <TableHead>Address</TableHead>
+                                                    <TableHead>Version</TableHead>
+                                                    <TableHead>Direction</TableHead>
+                                                    <TableHead>Ping</TableHead>
+                                                    <TableHead>Sync Status</TableHead>
+                                                    <TableHead>Ban Score</TableHead>
+                                                    <TableHead>Connected</TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {peers.map((peer: PeerInfo) => (
+                                                    <React.Fragment key={peer.id}>
+                                                        <TableRow
+                                                            className="cursor-pointer hover:bg-muted/50"
+                                                            onClick={() => {
+                                                                setExpandedPeers(prev => {
+                                                                    const next = new Set(prev);
+                                                                    if (next.has(peer.id)) {
+                                                                        next.delete(peer.id);
+                                                                    } else {
+                                                                        next.add(peer.id);
+                                                                    }
+                                                                    return next;
+                                                                });
+                                                            }}
+                                                        >
+                                                            <TableCell>
+                                                                <ChevronRight
+                                                                    className={cn(
+                                                                        'text-muted-foreground h-4 w-4 transition-transform',
+                                                                        expandedPeers.has(peer.id) && 'rotate-90',
+                                                                    )}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="font-mono text-sm">{peer.addr}</TableCell>
+                                                            <TableCell>{peer.subver}</TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={peer.inbound ? 'secondary' : 'default'}>
+                                                                    {peer.inbound ? 'Inbound' : 'Outbound'}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="font-mono text-sm">
+                                                                {formatPingTime(peer.pingtime)}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={peer.synced_blocks >= (peer.startingheight || 0) ? 'default' : 'secondary'}>
+                                                                    {getSyncStatus(peer.synced_blocks || 0, peer.startingheight || 0)}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={(peer.banscore || 0) > 0 ? 'destructive' : 'outline'}>
+                                                                    {peer.banscore || 0}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="text-muted-foreground text-xs">
+                                                                {peer.conntime ? formatDistanceToNow(new Date(peer.conntime * 1000), { addSuffix: true }) : 'Unknown'}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                        {expandedPeers.has(peer.id) && (
+                                                            <TableRow>
+                                                                <TableCell colSpan={8} className="bg-muted/20">
+                                                                    <Collapsible open={expandedPeers.has(peer.id)}>
+                                                                        <CollapsibleContent className="px-4 py-3">
+                                                                            <div className="space-y-3">
+                                                                                <p className="text-sm font-medium">Detailed Connection Information</p>
+                                                                                <div className="grid gap-4 md:grid-cols-2">
+                                                                                    <div className="space-y-2">
+                                                                                        <div className="flex justify-between text-sm">
+                                                                                            <span className="text-muted-foreground">Local Address:</span>
+                                                                                            <span className="font-mono text-xs">{peer.addrlocal || 'N/A'}</span>
+                                                                                        </div>
+                                                                                        <div className="flex justify-between text-sm">
+                                                                                            <span className="text-muted-foreground">Services:</span>
+                                                                                            <span className="font-mono text-xs">{peer.services || 'N/A'}</span>
+                                                                                        </div>
+                                                                                        <div className="flex justify-between text-sm">
+                                                                                            <span className="text-muted-foreground">Time Offset:</span>
+                                                                                            <span>{peer.timeoffset || 0}s</span>
+                                                                                        </div>
+                                                                                        <div className="flex justify-between text-sm">
+                                                                                            <span className="text-muted-foreground">Min Ping:</span>
+                                                                                            <span>{formatPingTime(peer.minping)}</span>
+                                                                                        </div>
+                                                                                        <div className="flex justify-between text-sm">
+                                                                                            <span className="text-muted-foreground">Starting Height:</span>
+                                                                                            <span>{(peer.startingheight || 0).toLocaleString()}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="space-y-2">
+                                                                                        <div className="flex justify-between text-sm">
+                                                                                            <span className="text-muted-foreground">Last Send:</span>
+                                                                                            <span>{peer.lastsend ? formatDistanceToNow(new Date(peer.lastsend * 1000), { addSuffix: true }) : 'Never'}</span>
+                                                                                        </div>
+                                                                                        <div className="flex justify-between text-sm">
+                                                                                            <span className="text-muted-foreground">Last Receive:</span>
+                                                                                            <span>{peer.lastrecv ? formatDistanceToNow(new Date(peer.lastrecv * 1000), { addSuffix: true }) : 'Never'}</span>
+                                                                                        </div>
+                                                                                        <div className="flex justify-between text-sm">
+                                                                                            <span className="text-muted-foreground">Data Sent:</span>
+                                                                                            <span>{formatBytes(peer.bytessent || 0)}</span>
+                                                                                        </div>
+                                                                                        <div className="flex justify-between text-sm">
+                                                                                            <span className="text-muted-foreground">Data Received:</span>
+                                                                                            <span>{formatBytes(peer.bytesrecv || 0)}</span>
+                                                                                        </div>
+                                                                                        <div className="flex justify-between text-sm">
+                                                                                            <span className="text-muted-foreground">Relay TX:</span>
+                                                                                            <span>{peer.relaytxes ? 'Yes' : 'No'}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                {peer.inflight.length > 0 && (
+                                                                                    <div className="mt-3">
+                                                                                        <p className="text-sm font-medium mb-2">Blocks in Flight:</p>
+                                                                                        <div className="flex flex-wrap gap-1">
+                                                                                            {peer.inflight.map(block => (
+                                                                                                <Badge key={block} variant="outline" className="text-xs">
+                                                                                                    {block}
+                                                                                                </Badge>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </CollapsibleContent>
+                                                                    </Collapsible>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )}
+                                                    </React.Fragment>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 ) : (
                                     <Empty>
                                         <EmptyHeader>
