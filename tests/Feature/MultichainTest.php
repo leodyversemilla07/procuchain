@@ -112,22 +112,18 @@ it('validates connection and returns info via getInfo', function () {
     config()->set('multichain.chain_name', 'procuchain');
 
     $mc = Mockery::mock(MultichainClient::class);
-    // validateConnection path
-    // First pass in validateConnection
-    $mc->shouldReceive('getinfo')->once()->andReturn(['chainname' => 'procuchain']);
+    // getInfo call returns data
+    $mc->shouldReceive('getinfo')->once()->andReturn(['chainname' => 'procuchain', 'blocks' => 100]);
     $mc->shouldReceive('success')->andReturnTrue();
-    $mc->shouldReceive('getinitstatus')->once()->andReturn(['initialized' => true]);
-    // Operation path (getInfo again)
-    $mc->shouldReceive('getinfo')->once()->andReturn(['chainname' => 'procuchain', 'ok' => true]);
 
     $service = new MultichainService;
     setPrivate($service, 'mc', $mc);
 
     $info = $service->getInfo();
-    expect($info)->toBeArray()->toHaveKey('ok');
+    expect($info)->toBeArray()->toHaveKey('chainname');
 });
 
-it('throws on wrong chain name', function () {
+it('returns info even with different chain name', function () {
     config()->set('multichain.chain_name', 'procuchain');
 
     $mc = Mockery::mock(MultichainClient::class);
@@ -137,36 +133,33 @@ it('throws on wrong chain name', function () {
     $service = new MultichainService;
     setPrivate($service, 'mc', $mc);
 
-    expect(fn () => $service->getInfo())
-        ->toThrow(Exception::class, 'Connected to wrong blockchain');
+    // Service no longer validates chain name in getInfo, just returns the data
+    $info = $service->getInfo();
+    expect($info)->toBeArray()->toHaveKey('chainname');
 });
 
-it('throws when node not initialized', function () {
+it('returns info without checking initialization status', function () {
     config()->set('multichain.chain_name', 'procuchain');
 
     $mc = Mockery::mock(MultichainClient::class);
     $mc->shouldReceive('getinfo')->andReturn(['chainname' => 'procuchain']);
     $mc->shouldReceive('success')->andReturnTrue();
-    $mc->shouldReceive('getinitstatus')->andReturn(['initialized' => false]);
 
     $service = new MultichainService;
     setPrivate($service, 'mc', $mc);
 
-    expect(fn () => $service->getInfo())
-        ->toThrow(Exception::class, 'Node is not fully initialized');
+    // Service no longer checks initialization status in getInfo
+    $info = $service->getInfo();
+    expect($info)->toBeArray();
 });
 
 it('maps RPC errors (Forbidden) to exception', function () {
     config()->set('multichain.chain_name', 'procuchain');
 
     $mc = Mockery::mock(MultichainClient::class);
-    // validateConnection success
-    $mc->shouldReceive('getinfo')->andReturn(['chainname' => 'procuchain']);
-    // success() is called twice in validateConnection, then once after operation
-    $mc->shouldReceive('success')->andReturn(true, true, false);
-    $mc->shouldReceive('getinitstatus')->andReturn(['initialized' => true]);
     // operation failure on liststreamitems
     $mc->shouldReceive('liststreamitems')->with('procurement.status', true, 1, -1, false)->andReturnNull();
+    $mc->shouldReceive('success')->andReturnFalse();
     $mc->shouldReceive('errormessage')->andReturn('Forbidden');
     $mc->shouldReceive('errorcode')->andReturn(403);
 

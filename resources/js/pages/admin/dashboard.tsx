@@ -17,7 +17,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { dashboard } from '@/routes/admin';
 import { show as procurementsShow } from '@/routes/admin/procurements';
 import { index as procurementsListIndex } from '@/routes/admin/procurements-list';
-import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
+import { CartesianGrid, Line, LineChart, XAxis, Bar, BarChart, YAxis, Area, AreaChart } from 'recharts';
 
 export type TimeRangeKey = '7_days' | '30_days' | '90_days' | '1_year';
 
@@ -257,29 +257,29 @@ export default function AdminDashboard() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard" />
 
-            <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="flex h-full flex-1 flex-col space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 lg:p-8">
                 <HeroCard icon={Shield} title="Admin Dashboard" description="System-wide overview and administrative controls" />
 
                 <StatsGrid items={statsItems} />
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <ProcurementDistributionCard
-                        className="xl:col-span-3"
+                        className="lg:col-span-2"
                         data={procurementDistribution}
                         title="Procurement Distribution"
                         description="Distribution of procurements across stages and statuses"
                         errorState={buildErrorState('Unable to load procurement distribution')}
                     />
                     <StageDistributionCard
-                        className="xl:col-span-2"
+                        className="lg:col-span-1"
                         stageDistribution={stageDistribution}
                         errorState={buildErrorState('Unable to load stage distribution')}
                     />
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3">
                     <RecentActivitiesList
-                        className="lg:col-span-1"
+                        className="md:col-span-1"
                         title="System Activities"
                         icon={Clock}
                         activities={recentActivityItems}
@@ -289,7 +289,7 @@ export default function AdminDashboard() {
                     />
 
                     <RecentProcurementsTable
-                        className="lg:col-span-2"
+                        className="md:col-span-2"
                         procurements={recentProcurementItems}
                         getViewProcurementHref={(procurement) => procurementsShow.url({ id: procurement.id })}
                         viewAllHref={recentProcurementItems.length > 0 ? procurementsListIndex.url() : undefined}
@@ -301,9 +301,9 @@ export default function AdminDashboard() {
                 {userActivityAnalytics && userActivityAnalytics.login_patterns?.daily_login_trend && (
                     <Card className="py-4 sm:py-0">
                         <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
-                            <div className="flex flex-1 flex-col justify-center gap-1 px-6 pb-3 sm:pb-0">
-                                <CardTitle>Login Activity Trend</CardTitle>
-                                <CardDescription>Daily login activity over selected time period</CardDescription>
+                            <div className="flex flex-1 flex-col justify-center gap-1 px-4 pb-3 sm:px-6 sm:pb-0">
+                                <CardTitle className="text-lg sm:text-xl">Login Activity Trend</CardTitle>
+                                <CardDescription className="text-sm">Daily login activity over selected time period</CardDescription>
                             </div>
                             <div className="flex">
                                 {(['logins', 'success'] as const).map((key) => {
@@ -311,24 +311,26 @@ export default function AdminDashboard() {
                                         <button
                                             key={key}
                                             data-active={activeLoginChart === key}
-                                            className="data-[active=true]:bg-muted/50 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+                                            className="data-[active=true]:bg-muted/50 flex flex-1 flex-col justify-center gap-1 border-t px-4 py-3 text-left even:border-l sm:border-t-0 sm:border-l sm:px-6 sm:py-4 md:px-8 md:py-6"
                                             onClick={() => setActiveLoginChart(key)}
                                         >
                                             <span className="text-muted-foreground text-xs">{interactiveLoginChartConfig[key].label}</span>
-                                            <span className="text-lg leading-none font-bold sm:text-3xl">{loginTotals[key].toLocaleString()}</span>
+                                            <span className="text-base leading-none font-bold sm:text-lg md:text-2xl lg:text-3xl">{loginTotals[key].toLocaleString()}</span>
                                         </button>
                                     );
                                 })}
                             </div>
                         </CardHeader>
                         <CardContent className="px-2 sm:p-6">
-                            <ChartContainer config={interactiveLoginChartConfig} className="aspect-auto h-[250px] w-full">
+                            <ChartContainer config={interactiveLoginChartConfig} className="aspect-auto h-[200px] sm:h-[250px] w-full">
                                 <LineChart
                                     accessibilityLayer
                                     data={loginChartData}
                                     margin={{
                                         left: 12,
                                         right: 12,
+                                        top: 8,
+                                        bottom: 8,
                                     }}
                                 >
                                     <CartesianGrid vertical={false} />
@@ -375,53 +377,181 @@ export default function AdminDashboard() {
                 )}
 
                 {/* User Activity Section */}
-                <div className="space-y-6">
-                    <div className="mb-4 flex items-center space-x-2">
-                        <h2 className="text-xl font-semibold">User Activity Analytics</h2>
+                <div className="space-y-4 sm:space-y-6">
+                    <div className="mb-2 sm:mb-4 flex items-center space-x-2">
+                        <h2 className="text-lg sm:text-xl font-semibold">User Activity Analytics</h2>
                     </div>
 
                     {userActivityAnalytics && (
-                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Login Statistics</CardTitle>
+                                <CardHeader className="pb-3 sm:pb-4">
+                                    <CardTitle className="text-base sm:text-lg">Login Statistics</CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent className="space-y-3 sm:space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <span>Total Logins</span>
-                                        <Badge variant="secondary">{formatValue(userActivityAnalytics.login_patterns.total_logins)}</Badge>
+                                        <span className="text-sm sm:text-base">Total Logins</span>
+                                        <Badge variant="secondary" className="text-xs sm:text-sm">{formatValue(userActivityAnalytics.login_patterns?.total_logins || 0)}</Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span>Success Rate</span>
-                                        <Badge variant="default">{(userActivityAnalytics.login_patterns.success_rate || 0).toFixed(1)}%</Badge>
+                                        <span className="text-sm sm:text-base">Success Rate</span>
+                                        <Badge variant="default" className="text-xs sm:text-sm">{((userActivityAnalytics.login_patterns?.success_rate || 0)).toFixed(1)}%</Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span>Failed Logins</span>
-                                        <Badge variant="destructive">{formatValue(userActivityAnalytics.login_patterns.failed_logins)}</Badge>
+                                        <span className="text-sm sm:text-base">Failed Logins</span>
+                                        <Badge variant="destructive" className="text-xs sm:text-sm">{formatValue(userActivityAnalytics.login_patterns?.failed_logins || 0)}</Badge>
                                     </div>
                                 </CardContent>
                             </Card>
 
                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Security Metrics</CardTitle>
+                                <CardHeader className="pb-3 sm:pb-4">
+                                    <CardTitle className="text-base sm:text-lg">Security Metrics</CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent className="space-y-3 sm:space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <span>Security Score</span>
-                                        <Badge variant="default">
-                                            {(userActivityAnalytics.security_metrics?.security_score || 0).toFixed(1)}/100
+                                        <span className="text-sm sm:text-base">Security Score</span>
+                                        <Badge variant="default" className="text-xs sm:text-sm">
+                                            {((userActivityAnalytics.security_metrics?.security_score || 0)).toFixed(1)}/100
                                         </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span>Failed Login Rate</span>
-                                        <Badge variant="secondary">
-                                            {(userActivityAnalytics.security_metrics?.failed_login_rate || 0).toFixed(1)}%
+                                        <span className="text-sm sm:text-base">Failed Login Rate</span>
+                                        <Badge variant="secondary" className="text-xs sm:text-sm">
+                                            {((userActivityAnalytics.security_metrics?.failed_login_rate || 0)).toFixed(1)}%
                                         </Badge>
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            <Card className="md:col-span-2 lg:col-span-1">
+                                <CardHeader className="pb-3 sm:pb-4">
+                                    <CardTitle className="text-base sm:text-lg">Role Activity</CardTitle>
+                                    <CardDescription className="text-xs sm:text-sm">Login activity by user role</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <ChartContainer
+                                        config={{
+                                            logins: {
+                                                label: "Logins",
+                                                color: "var(--chart-1)",
+                                            },
+                                        }}
+                                        className="h-[180px] sm:h-[200px] w-full"
+                                    >
+                                        <BarChart
+                                            accessibilityLayer
+                                            data={Object.entries(userActivityAnalytics.role_activity || {}).map(([role, count]) => ({
+                                                role: role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' '),
+                                                logins: count,
+                                            }))}
+                                            margin={{
+                                                left: 12,
+                                                right: 12,
+                                                top: 8,
+                                                bottom: 8,
+                                            }}
+                                        >
+                                            <CartesianGrid vertical={false} />
+                                            <XAxis
+                                                dataKey="role"
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tickMargin={8}
+                                                tickFormatter={(value) => value.length > 10 ? value.substring(0, 10) + '...' : value}
+                                                fontSize={12}
+                                            />
+                                            <YAxis hide />
+                                            <ChartTooltip
+                                                content={
+                                                    <ChartTooltipContent
+                                                        className="w-[150px]"
+                                                        nameKey="logins"
+                                                        labelFormatter={(value) => `${value}`}
+                                                    />
+                                                }
+                                            />
+                                            <Bar
+                                                dataKey="logins"
+                                                fill="var(--color-logins)"
+                                                radius={[4, 4, 0, 0]}
+                                            />
+                                        </BarChart>
+                                    </ChartContainer>
+                                </CardContent>
+                            </Card>
                         </div>
+                    )}
+
+                    {/* Daily Activity Chart */}
+                    {userActivityAnalytics?.daily_activity && userActivityAnalytics.daily_activity.length > 0 && (
+                        <Card>
+                            <CardHeader className="pb-3 sm:pb-4">
+                                <CardTitle className="text-lg sm:text-xl">Daily Active Users</CardTitle>
+                                <CardDescription className="text-sm">User activity over the selected time period</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ChartContainer
+                                    config={{
+                                        active_users: {
+                                            label: "Active Users",
+                                            color: "var(--chart-2)",
+                                        },
+                                    }}
+                                    className="h-[200px] sm:h-[250px] w-full"
+                                >
+                                    <AreaChart
+                                        accessibilityLayer
+                                        data={userActivityAnalytics.daily_activity}
+                                        margin={{
+                                            left: 12,
+                                            right: 12,
+                                            top: 8,
+                                            bottom: 8,
+                                        }}
+                                    >
+                                        <CartesianGrid vertical={false} />
+                                        <XAxis
+                                            dataKey="date"
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tickMargin={8}
+                                            tickFormatter={(value) => {
+                                                const date = new Date(value);
+                                                return date.toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                });
+                                            }}
+                                            fontSize={12}
+                                        />
+                                        <ChartTooltip
+                                            content={
+                                                <ChartTooltipContent
+                                                    className="w-[150px]"
+                                                    nameKey="active_users"
+                                                    labelFormatter={(value) => {
+                                                        return new Date(value).toLocaleDateString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            year: 'numeric',
+                                                        });
+                                                    }}
+                                                />
+                                            }
+                                        />
+                                        <Area
+                                            dataKey="active_users"
+                                            type="monotone"
+                                            fill="var(--color-active_users)"
+                                            fillOpacity={0.4}
+                                            stroke="var(--color-active_users)"
+                                            strokeWidth={2}
+                                        />
+                                    </AreaChart>
+                                </ChartContainer>
+                            </CardContent>
+                        </Card>
                     )}
                 </div>
             </div>

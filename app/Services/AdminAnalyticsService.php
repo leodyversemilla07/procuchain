@@ -16,10 +16,12 @@ class AdminAnalyticsService
     {
         try {
             return [
+                'overview' => $this->getUserActivityOverview($timeRange, $userId),
                 'login_patterns' => $this->getLoginPatterns($timeRange, $userId),
                 'role_activity' => $this->getRoleActivityBreakdown($timeRange),
                 'session_analytics' => $this->getSessionAnalytics($timeRange, $userId),
                 'security_metrics' => $this->getSecurityMetrics($timeRange),
+                'daily_activity' => $this->getDailyActivity($timeRange, $userId),
                 'generated_at' => now()->toISOString(),
             ];
         } catch (Exception $e) {
@@ -34,8 +36,60 @@ class AdminAnalyticsService
     }
 
     /**
-     * Get login patterns analytics
+     * Get user activity overview
      */
+    public function getUserActivityOverview(string $timeRange, ?int $userId): array
+    {
+        $dateConstraint = $this->getDateConstraint($timeRange);
+
+        $currentPeriod = UserLoginLog::query()
+            ->when($dateConstraint, fn ($q) => $q->where('login_at', '>=', $dateConstraint))
+            ->when($userId, fn ($q) => $q->where('user_id', $userId))
+            ->where('successful', true)
+            ->distinct('user_id')
+            ->count('user_id');
+
+        // Calculate previous period for growth rate
+        $previousPeriodStart = $dateConstraint ? $dateConstraint->copy()->subDays($dateConstraint->diffInDays(now())) : now()->subDays(60);
+        $previousPeriodEnd = $dateConstraint ?: now()->subDays(30);
+
+        $previousPeriod = UserLoginLog::query()
+            ->whereBetween('login_at', [$previousPeriodStart, $previousPeriodEnd])
+            ->when($userId, fn ($q) => $q->where('user_id', $userId))
+            ->where('successful', true)
+            ->distinct('user_id')
+            ->count('user_id');
+
+        $growthRate = $previousPeriod > 0 ? round((($currentPeriod - $previousPeriod) / $previousPeriod) * 100, 2) : 0;
+
+        return [
+            'total_active_users' => $currentPeriod,
+            'growth_rate' => $growthRate,
+        ];
+    }
+
+    /**
+     * Get daily activity data
+     */
+    public function getDailyActivity(string $timeRange, ?int $userId): array
+    {
+        $dateConstraint = $this->getDateConstraint($timeRange);
+
+        return UserLoginLog::query()
+            ->when($dateConstraint, fn ($q) => $q->where('login_at', '>=', $dateConstraint))
+            ->when($userId, fn ($q) => $q->where('user_id', $userId))
+            ->where('successful', true)
+            ->selectRaw('DATE(login_at) as date, COUNT(DISTINCT user_id) as active_users')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($item) => [
+                'date' => $item->date,
+                'active_users' => $item->active_users,
+            ])
+            ->toArray();
+    }
+    
     public function getLoginPatterns(string $timeRange, ?int $userId): array
     {
         $dateConstraint = $this->getDateConstraint($timeRange);
@@ -84,9 +138,12 @@ class AdminAnalyticsService
 
         return UserLoginLog::query()
             ->join('users', 'user_login_logs.user_id', '=', 'users.id')
+            ->join('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
             ->when($dateConstraint, fn ($q) => $q->where('login_at', '>=', $dateConstraint))
-            ->selectRaw('users.role, COUNT(*) as login_count')
-            ->groupBy('users.role')
+            ->where('model_has_roles.model_type', '=', 'App\\Models\\User')
+            ->selectRaw('roles.name as role, COUNT(*) as login_count')
+            ->groupBy('roles.name')
             ->orderBy('login_count', 'desc')
             ->get()
             ->mapWithKeys(fn ($item) => [$item->role => $item->login_count])
@@ -129,7 +186,11 @@ class AdminAnalyticsService
         $averageSessionDuration = ! empty($sessionDurations) ? array_sum($sessionDurations) / count($sessionDurations) : 0;
 
         // Session frequency analysis
-        $dailySessions = $query->selectRaw('DATE(login_at) as date, COUNT(DISTINCT user_id) as unique_users, COUNT(*) as total_sessions')
+        $dailySessions = UserLoginLog::query()
+            ->when($dateConstraint, fn ($q) => $q->where('login_at', '>=', $dateConstraint))
+            ->when($userId, fn ($q) => $q->where('user_id', $userId))
+            ->where('successful', true)
+            ->selectRaw('DATE(login_at) as date, COUNT(DISTINCT user_id) as unique_users, COUNT(*) as total_sessions')
             ->groupBy('date')
             ->orderBy('date')
             ->get()
@@ -139,7 +200,11 @@ class AdminAnalyticsService
             ]]);
 
         // User engagement levels
-        $userEngagement = $query->selectRaw('user_id, COUNT(*) as session_count')
+        $userEngagement = UserLoginLog::query()
+            ->when($dateConstraint, fn ($q) => $q->where('login_at', '>=', $dateConstraint))
+            ->when($userId, fn ($q) => $q->where('user_id', $userId))
+            ->where('successful', true)
+            ->selectRaw('user_id, COUNT(*) as session_count')
             ->groupBy('user_id')
             ->get()
             ->map(function ($item) {
@@ -166,7 +231,7 @@ class AdminAnalyticsService
             'average_session_duration_minutes' => round($averageSessionDuration, 2),
             'total_sessions' => $sessions->count(),
             'unique_active_users' => $sessions->unique('user_id')->count(),
-            'daily_session_trends' => $dailySessions,
+            'daily_session_trends' => $dailySessions->toArray(),
             'user_engagement_distribution' => $engagementDistribution,
             'sessions_per_user_average' => $sessions->count() > 0 ? round($sessions->count() / $sessions->unique('user_id')->count(), 2) : 0,
         ];
@@ -209,10 +274,15 @@ class AdminAnalyticsService
     public function getEmptyUserAnalytics(): array
     {
         return [
+            'overview' => [
+                'total_active_users' => 0,
+                'growth_rate' => 0,
+            ],
             'login_patterns' => [],
             'role_activity' => [],
             'session_analytics' => [],
             'security_metrics' => [],
+            'daily_activity' => [],
             'generated_at' => now()->toISOString(),
         ];
     }
