@@ -26,7 +26,7 @@ class MultichainService
 
         $this->timeout = $isConsole
             ? (int) config('multichain.connection_timeout', 30)
-            : (int) config('multichain.web_connection_timeout', 5); // Reduced from 12 to 5 seconds
+            : (int) config('multichain.web_connection_timeout', 3); // Reduced from 5 to 3 seconds
         $this->initializeClient();
     }
 

@@ -26,10 +26,10 @@ class BlockchainExplorerController extends Controller
     {
         try {
             // Cache blockchain info for 30 seconds to prevent repeated RPC calls
-            $blockchainInfo = Cache::remember('blockchain:info', 30, fn () => $this->multichainService->getBlockchainInfo());
-            $networkInfo = Cache::remember('blockchain:network_info', 30, fn () => $this->multichainService->getNetworkInfo());
-            $nodeInfo = Cache::remember('blockchain:node_info', 30, fn () => $this->multichainService->getInfo());
-            $peerInfo = Cache::remember('blockchain:peer_info', 30, fn () => $this->multichainService->getPeerInfo());
+            $blockchainInfo = Cache::remember('blockchain:info', 60, fn () => $this->multichainService->getBlockchainInfo());
+            $networkInfo = Cache::remember('blockchain:network_info', 60, fn () => $this->multichainService->getNetworkInfo());
+            $nodeInfo = Cache::remember('blockchain:node_info', 60, fn () => $this->multichainService->getInfo());
+            $peerInfo = Cache::remember('blockchain:peer_info', 60, fn () => $this->multichainService->getPeerInfo());
 
             // Get latest blocks (last 10) - cache for 15 seconds as new blocks arrive
             $currentHeight = $blockchainInfo['blocks'];

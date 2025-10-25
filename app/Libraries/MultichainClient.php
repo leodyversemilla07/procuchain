@@ -85,6 +85,26 @@ class MultichainClient
 
     public function setoption($option, $value)
     {
+        // Handle string options for backward compatibility
+        if (is_string($option)) {
+            switch ($option) {
+                case 'chain_name':
+                    $option = MC_OPT_CHAIN_NAME;
+                    break;
+                case 'use_curl':
+                    $option = MC_OPT_USE_CURL;
+                    break;
+                case 'verify_ssl':
+                    $option = MC_OPT_VERIFY_SSL;
+                    break;
+                case 'timeout':
+                    $option = MC_OPT_TIMEOUT;
+                    break;
+                default:
+                    return false;
+            }
+        }
+
         switch ($option) {
             case MC_OPT_CHAIN_NAME:
                 $this->chainname = $value;
