@@ -32,6 +32,19 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        
+        {{-- SEO Meta Tags --}}
+        <meta name="robots" content="index, follow">
+        <meta name="author" content="ProcuChain Team">
+        <link rel="canonical" href="{{ url()->current() }}">
+        
+        {{-- PWA Manifest --}}
+        <link rel="manifest" href="/manifest.json">
+        <meta name="theme-color" content="#4F46E5">
+        
+        {{-- Favicons --}}
+        <link rel="icon" type="image/x-icon" href="/favicon.ico">
+        <link rel="apple-touch-icon" href="/logo.png">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />

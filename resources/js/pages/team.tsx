@@ -58,6 +58,21 @@ export default function Team() {
                     name="description"
                     content="Meet the talented professionals behind ProcuChain - revolutionizing government procurement through blockchain technology and innovative solutions."
                 />
+                <meta name="keywords" content="procuchain team, developers, blockchain experts, mindoro state university, capstone project" />
+                
+                {/* Open Graph / Facebook */}
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content={window.location.href} />
+                <meta property="og:title" content="Meet the ProcuChain Team" />
+                <meta property="og:description" content="Meet the talented professionals behind ProcuChain - revolutionizing government procurement through blockchain technology and innovative solutions." />
+                <meta property="og:image" content="/logo.png" />
+                
+                {/* Twitter */}
+                <meta property="twitter:card" content="summary_large_image" />
+                <meta property="twitter:url" content={window.location.href} />
+                <meta property="twitter:title" content="Meet the ProcuChain Team" />
+                <meta property="twitter:description" content="Meet the talented professionals behind ProcuChain - revolutionizing government procurement through blockchain technology and innovative solutions." />
+                <meta property="twitter:image" content="/logo.png" />
             </Head>{' '}
             <div className="bg-background text-foreground flex min-h-screen flex-col">
                 <Header />
