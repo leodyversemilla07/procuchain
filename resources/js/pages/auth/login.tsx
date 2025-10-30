@@ -23,7 +23,10 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
     return (
         <AuthLayout title="Log in to your account" description="Enter your email and password below to log in">
-            <Head title="Log in" />
+            <Head title="Log in">
+                <meta name="description" content="Log in to ProcuChain to access your blockchain-powered procurement document management system." />
+                <meta name="robots" content="noindex, nofollow" />
+            </Head>
 
             <Form
                 action={store()}

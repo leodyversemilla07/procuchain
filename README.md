@@ -245,16 +245,12 @@ Environment variables (core subset):
     AWS_ENDPOINT=https://sgp1.digitaloceanspaces.com
     ```
 
-- **Email Configuration**: SMTP settings for notifications
+- **Email Configuration**: Resend settings for notifications
 
     ```bash
-    MAIL_MAILER=smtp
-    MAIL_HOST=smtp.gmail.com
-    MAIL_PORT=587
-    MAIL_USERNAME=your_email@gmail.com
-    MAIL_PASSWORD=your_app_password
-    MAIL_ENCRYPTION=tls
-    MAIL_FROM_ADDRESS=your_email@gmail.com
+    MAIL_MAILER=resend
+    RESEND_API_KEY=your_resend_api_key
+    MAIL_FROM_ADDRESS=noreply@yourdomain.com
     MAIL_FROM_NAME="${APP_NAME}"
     ```
 

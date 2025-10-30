@@ -14,6 +14,21 @@ export default function Contact() {
                     name="description"
                     content="Contact the ProcuChain project team for inquiries, support, or feedback about our blockchain-powered procurement system."
                 />
+                <meta name="keywords" content="contact procuchain, support, feedback, inquiries, mindoro state university, bongabong campus" />
+                
+                {/* Open Graph / Facebook */}
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content={window.location.href} />
+                <meta property="og:title" content="Contact ProcuChain Team" />
+                <meta property="og:description" content="Contact the ProcuChain project team for inquiries, support, or feedback about our blockchain-powered procurement system." />
+                <meta property="og:image" content="/logo.png" />
+                
+                {/* Twitter */}
+                <meta property="twitter:card" content="summary_large_image" />
+                <meta property="twitter:url" content={window.location.href} />
+                <meta property="twitter:title" content="Contact ProcuChain Team" />
+                <meta property="twitter:description" content="Contact the ProcuChain project team for inquiries, support, or feedback about our blockchain-powered procurement system." />
+                <meta property="twitter:image" content="/logo.png" />
             </Head>{' '}
             <div className="bg-background text-foreground flex min-h-screen flex-col">
                 <Header />

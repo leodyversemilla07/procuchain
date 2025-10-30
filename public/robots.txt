@@ -1,2 +1,8 @@
 User-agent: *
-Disallow:
+Disallow: /admin
+Disallow: /settings
+Disallow: /notifications
+Disallow: /api
+Allow: /
+
+Sitemap: https://procuchain.tech/sitemap.xml

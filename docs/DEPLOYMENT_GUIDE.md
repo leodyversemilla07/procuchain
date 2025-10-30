@@ -28,7 +28,7 @@
 - [ ] GitHub account with repository access
 - [ ] Heroku account (with payment method for paid dynos)
 - [ ] DigitalOcean account (for Spaces storage)
-- [ ] Email service account (SendGrid, Mailgun, or similar)
+- [ ] Email service account (Resend, Mailgun, or similar)
 - [ ] Server/VM for MultiChain node (DigitalOcean, AWS, Azure, or on-premise)
 
 ### Required Software (Local Machine)
@@ -285,31 +285,31 @@ s3cmd put test.txt s3://procuchain-documents/test.txt \
 
 ---
 
-### Step 1.3: Email Service Setup (SendGrid)
+### Step 1.3: Email Service Setup (Resend)
 
-**1. Create SendGrid Account**
+**1. Create Resend Account**
 ```bash
-# Go to: https://sendgrid.com/
-# Sign up for free account (12,000 emails/month)
+# Go to: https://resend.com/
+# Sign up for free account (3,000 emails/month)
 ```
 
-**2. Verify Sender Identity**
+**2. Verify Domain**
 ```bash
-# Via SendGrid Web UI:
-# 1. Settings → Sender Authentication
-# 2. Verify a Single Sender
-# 3. Add email: noreply@yourdomain.com
-# 4. Complete verification process
+# Via Resend Web UI:
+# 1. Go to Domains
+# 2. Click "Add Domain"
+# 3. Add your domain: yourdomain.com
+# 4. Follow DNS verification steps (add TXT and CNAME records)
+# 5. Wait for domain verification to complete
 ```
 
 **3. Create API Key**
 ```bash
-# Via SendGrid Web UI:
-# 1. Settings → API Keys
-# 2. Create API Key
+# Via Resend Web UI:
+# 1. Go to API Keys
+# 2. Click "Create API Key"
 # 3. Name: procuchain-production
-# 4. Permissions: Full Access (or Mail Send only)
-# 5. Copy key (starts with SG....)
+# 4. Copy the API key (starts with re_...)
 ```
 
 **Alternative: Using Gmail SMTP (NOT recommended for production)**
@@ -326,7 +326,7 @@ MAIL_ENCRYPTION=tls
 ```
 
 **Record These Values:**
-- SendGrid API Key: `___________________________`
+- Resend API Key: `___________________________`
 - From Email: `noreply@yourdomain.com`
 - From Name: `ProcuChain - BAC Office`
 
@@ -511,14 +511,10 @@ heroku config:set AWS_ENDPOINT=https://sgp1.digitaloceanspaces.com -a procuchain
 heroku config:set AWS_USE_PATH_STYLE_ENDPOINT=false -a procuchain-bac
 ```
 
-**5. Email Configuration (SendGrid)**
+**5. Email Configuration (Resend)**
 ```bash
-heroku config:set MAIL_MAILER=smtp -a procuchain-bac
-heroku config:set MAIL_HOST=smtp.sendgrid.net -a procuchain-bac
-heroku config:set MAIL_PORT=587 -a procuchain-bac
-heroku config:set MAIL_USERNAME=apikey -a procuchain-bac
-heroku config:set MAIL_PASSWORD="YOUR_SENDGRID_API_KEY" -a procuchain-bac
-heroku config:set MAIL_ENCRYPTION=tls -a procuchain-bac
+heroku config:set MAIL_MAILER=resend -a procuchain-bac
+heroku config:set RESEND_API_KEY="YOUR_RESEND_API_KEY" -a procuchain-bac
 heroku config:set MAIL_FROM_ADDRESS="noreply@yourdomain.com" -a procuchain-bac
 heroku config:set MAIL_FROM_NAME="ProcuChain - BAC Office" -a procuchain-bac
 heroku config:set MAIL_SUPPORT_EMAIL="support@yourdomain.com" -a procuchain-bac
@@ -1316,23 +1312,20 @@ Swift_TransportException: Connection could not be established
 ```bash
 # 1. Check email configuration
 heroku config:get MAIL_MAILER -a procuchain-bac
-heroku config:get MAIL_HOST -a procuchain-bac
-heroku config:get MAIL_USERNAME -a procuchain-bac
+heroku config:get RESEND_API_KEY -a procuchain-bac
 
-# 2. Test SendGrid API key
-curl -X POST https://api.sendgrid.com/v3/mail/send \
+# 2. Test Resend API key
+curl -X POST https://api.resend.com/emails \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "personalizations": [{
-      "to": [{"email": "test@example.com"}]
-    }],
-    "from": {"email": "noreply@yourdomain.com"},
+    "from": "noreply@yourdomain.com",
+    "to": ["test@example.com"],
     "subject": "Test",
-    "content": [{"type": "text/plain", "value": "Test"}]
+    "text": "Test email"
   }'
 
-# 3. Check SendGrid dashboard for bounces/blocks
+# 3. Check Resend dashboard for bounces/blocks
 
 # 4. Test from Heroku
 heroku run php artisan tinker -a procuchain-bac
@@ -1697,7 +1690,7 @@ Heroku Logs: https://dashboard.heroku.com/apps/procuchain-bac/logs
 **Infrastructure:**
 - Heroku Support: https://help.heroku.com
 - DigitalOcean Support: https://www.digitalocean.com/support
-- SendGrid Support: https://support.sendgrid.com
+- Resend Support: https://resend.com/docs
 
 **Emergency Contacts:**
 - On-call: [Phone number]

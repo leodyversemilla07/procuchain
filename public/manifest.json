@@ -1,0 +1,26 @@
+{
+  "name": "ProcuChain - Blockchain Procurement System",
+  "short_name": "ProcuChain",
+  "description": "A blockchain-powered document management system for Bids and Awards Committee offices",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity", "government"],
+  "lang": "en-US",
+  "dir": "ltr"
+}
