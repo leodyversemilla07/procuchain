@@ -46,41 +46,53 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 
 ## Technology Stack
 
-- **Backend**: Laravel 12 with PHP 8.2+
-- **Frontend**: React 19 with Inertia.js v2 for SPA experience
-- **Database**: MySQL with database-driven sessions, cache, and queue
-- **Blockchain**: MultiChain for immutable document integrity and audit trails
-- **File Storage**: AWS S3-compatible storage (DigitalOcean Spaces)
-- **Styling**: Tailwind CSS v4 for responsive design
-- **Build Tools**: Vite for fast frontend asset compilation
-- **Testing**: Pest v3 for expressive PHP testing
-- **Code Quality**: Laravel Pint for consistent code formatting
+- **Backend**: Laravel 12.36.1 with PHP 8.3.27
+- **Frontend**: React 19.2.0 with Inertia.js v2.2.6 for SPA experience
+- **Database**: MySQL 8.0+ with database-driven sessions, cache, and queue
+- **Blockchain**: MultiChain (Community Edition) for immutable document integrity and audit trails
+- **File Storage**: AWS S3-compatible storage (DigitalOcean Spaces - Singapore region)
+- **Styling**: Tailwind CSS v4.1.14 for responsive design
+- **UI Components**: Radix UI primitives with shadcn/ui patterns
+- **Build Tools**: Vite 7.1.10 for fast frontend asset compilation with HMR
+- **Testing**: Pest v3.8.4 for expressive PHP testing
+- **Code Quality**: Laravel Pint v1.25.1 for consistent code formatting
+- **Authentication**: Laravel Fortify 1.31.2 with two-factor authentication (TOTP)
+- **Authorization**: Spatie Laravel Permission 6.21 for role-based access control
 - **Notifications**:
-    - SMTP email notifications
-    - WebPush browser notifications with VAPID
+    - Resend API for transactional email notifications
+    - WebPush browser notifications with VAPID protocol
 - **Development**:
     - Hot module replacement with Vite
     - Database-driven development stack
+    - Concurrently for multi-process management
+    - Optional SSR with Inertia SSR server
 
 ## Requirements
 
-- PHP 8.2 or higher
-- Composer
-- Node.js and npm
-- MySQL 8 (or compatible)
-- MultiChain node accessible via RPC (for blockchain features)
-- SMTP service (for email notifications)
-- Optional: AWS S3–compatible storage (e.g., DigitalOcean Spaces) for file storage
+- PHP 8.3 or higher (8.3.27 recommended)
+- Composer 2.x
+- Node.js 18+ and npm
+- MySQL 8.0+ (or MariaDB 10.6+)
+- MultiChain 2.3.3+ (Community Edition) accessible via RPC
+- SMTP service or Resend API (for email notifications)
+- AWS S3–compatible storage (e.g., DigitalOcean Spaces) for file storage
 
 ## Architecture Snapshot
 
 High level components:
 
-- Web/API Layer: Laravel 12 + Inertia React SPA.
-- Document Storage: Application storage with blockchain-published metadata hashes (integrity anchor).
-- Blockchain Layer: MultiChain streams (documents, status, events, corrections).
-- Roles / Addresses: Distinct blockchain addresses per functional role (admin, BAC secretariat, BAC chairman, HOPE).
-- Permission Matrix: Config-driven grants for global & per-stream rights.
+- **Web/API Layer**: Laravel 12 + Inertia React SPA with SSR support
+- **Document Storage**: AWS S3-compatible cloud storage with blockchain-published metadata hashes (integrity anchor)
+- **Blockchain Layer**: MultiChain with 4 streams:
+  - `procurement.documents` - Document metadata and file hashes
+  - `procurement.status` - Procurement status transitions
+  - `procurement.events` - Audit event logs
+  - `procurement.corrections` - Document correction trail
+- **Service Layer**: 28 specialized services for business logic isolation
+- **Job Queue**: Database-driven async job processing for blockchain operations
+- **Roles / Addresses**: Distinct blockchain addresses per functional role (admin, BAC secretariat, BAC chairman, HOPE)
+- **Permission Matrix**: Config-driven grants for global & per-stream rights
+- **Security**: Multi-factor authentication, account lockout protection, IP blocking, and comprehensive audit logging
 
 ## Installation
 
@@ -374,53 +386,377 @@ For subsequent deployments, re-run the setup command to ensure streams exist and
 
 ## Usage
 
-1. Access the system through your web browser
-2. Login with authorized credentials
-3. Follow the intuitive interface to manage documents
-4. Track and verify documents using blockchain features
+### Getting Started
+1. Access the system through your web browser at the configured `APP_URL`
+2. Login with authorized credentials (default seeded users or created by admin)
+3. Complete two-factor authentication setup (recommended for all users)
+
+### Role-Specific Workflows
+
+#### Admin Users
+- Manage user accounts and assign roles
+- Monitor login activity and security logs
+- View blockchain explorer for transaction verification
+- Manage IP blocking and account lockouts
+- Access comprehensive system analytics
+
+#### BAC Secretariat
+- Create new procurement projects
+- Upload documents for all 15 procurement stages
+- Publish documents to blockchain for immutability
+- Manage workflow stage transitions
+- Monitor procurement progress and blockchain publishing status
+
+#### BAC Chairman
+- Review and approve procurement documents
+- Monitor procurement workflows
+- View blockchain-verified document integrity
+- Access audit trails for transparency
+
+#### HOPE (Head of Procuring Entity)
+- Executive oversight of all procurements
+- Monitor procurement progress and status
+- Review blockchain-verified audit trails
+- Access high-level procurement analytics
+
+### Document Management
+- **Upload**: Securely upload documents to cloud storage (S3-compatible)
+- **Blockchain Publishing**: Documents automatically published to blockchain with SHA-256 hash
+- **Verification**: Verify document integrity by comparing blockchain hash with current file
+- **Corrections**: Track document corrections with immutable correction trail
+- **Viewing**: View documents in secure PDF viewer with access logging
+- **Download**: Secure file downloads with authentication
+
+### Workflow Stages (15 Stages)
+1. Procurement Initiation
+2. Pre-Procurement Conference
+3. Bidding Documents
+4. Pre-Bid Conference
+5. Supplemental Bid Bulletin
+6. Bid Opening
+7. Bid Evaluation
+8. Post-Qualification
+9. BAC Resolution
+10. Notice of Award
+11. Performance Bond, Contract and PO
+12. Notice to Proceed
+13. Monitoring
+14. Completion
+15. Completed
+
+Each stage requires specific documents and follows defined status transitions (22 statuses total).
+
+### Blockchain Features
+- **Immutable Records**: All document metadata and status changes recorded on blockchain
+- **Transaction Verification**: View transaction IDs (txid) for each blockchain operation
+- **Correction Tracking**: Document corrections tracked without deleting originals
+- **Audit Trail**: Complete history of all procurement activities
+- **Explorer**: Built-in blockchain explorer for transaction lookup and verification
 
 ## Project Structure
 
 Project root snapshot:
 
-- app/ — Laravel application code (Controllers, Models, Services, Jobs, Console, etc.)
-- bootstrap/ — Framework bootstrap files
-- config/ — Application configuration (includes multichain.php)
-- database/ — Migrations, seeders, factories
-- public/ — Web root (index.php, built assets)
-- resources/
-  - css/app.css — Main stylesheet (Tailwind)
-  - js/app.tsx — React SPA entry (Inertia)
-  - js/ssr.tsx — SSR entry for Inertia
-  - views/ — Blade templates (if any)
-- routes/ — web.php, api.php route definitions
-- scripts/ — Project scripts/utilities
-- tests/ — Pest/PHPUnit tests
-- vendor/ — Composer dependencies
-- node_modules/ — Node dependencies
-- vite.config.ts — Vite configuration (client + SSR)
-- package.json — Frontend dependencies and scripts
-- composer.json — PHP dependencies and composer scripts
-- docker-compose.yml — Local DB and phpMyAdmin services
-- Procfile — Process definitions for deployment (e.g., Heroku)
+```
+procuchain/
+├── app/                        # Laravel application code
+│   ├── Console/Commands/       # Artisan commands (MultichainSetup, etc.)
+│   ├── Contracts/             # Interface definitions
+│   ├── Enums/                 # Business logic enums (StageEnums, StatusEnums, StreamEnums)
+│   ├── Http/
+│   │   ├── Controllers/       # Request handlers (Admin, BAC, HOPE, Auth, Settings)
+│   │   ├── Middleware/        # Auth, RBAC, rate limiting
+│   │   └── Requests/          # Form validation rules
+│   ├── Jobs/                  # Queue jobs (6 blockchain/document jobs)
+│   ├── Libraries/             # MultichainClient (JSON-RPC)
+│   ├── Mail/                  # Email notification classes
+│   ├── Models/                # Eloquent ORM models (6 models)
+│   ├── Notifications/         # Email and push notifications
+│   ├── Policies/              # Authorization policies
+│   ├── Providers/             # Service providers
+│   └── Services/              # Business logic layer (28 specialized services)
+├── bootstrap/                 # Framework bootstrap files
+├── config/                    # Application configuration
+│   └── multichain.php         # MultiChain blockchain configuration
+├── database/                  # Migrations, seeders, factories
+│   ├── factories/             # Model factories for testing
+│   ├── migrations/            # Database schema (20+ tables)
+│   └── seeders/               # Database seeders
+├── docs/                      # Project documentation
+│   ├── stages.md              # 15 procurement stages documentation
+│   ├── network-topology.md    # Network architecture diagram
+│   └── workflows/             # Workflow documentation
+├── public/                    # Web root (entry point, built assets)
+├── resources/
+│   ├── css/app.css            # Main stylesheet (Tailwind CSS)
+│   ├── js/
+│   │   ├── app.tsx            # React SPA entry (Inertia client)
+│   │   ├── ssr.tsx            # SSR entry for Inertia
+│   │   ├── components/        # Reusable React components
+│   │   ├── layouts/           # Page layouts (Auth, Dashboard, etc.)
+│   │   ├── pages/             # Inertia page components
+│   │   │   ├── admin/         # Admin dashboard pages
+│   │   │   ├── bac-secretariat/ # BAC Secretariat pages
+│   │   │   ├── bac-chairman/  # BAC Chairman pages
+│   │   │   ├── hope/          # HOPE pages
+│   │   │   ├── auth/          # Authentication pages
+│   │   │   ├── settings/      # User settings pages
+│   │   │   └── procurements/  # Procurement management pages
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── lib/               # Utility functions
+│   │   └── types/             # TypeScript definitions
+│   └── views/                 # Blade templates (minimal, mostly for emails)
+├── routes/                    # Route definitions (141 routes total)
+│   ├── web.php                # Main web routes
+│   ├── auth.php               # Authentication routes
+│   ├── settings.php           # User settings routes
+│   └── console.php            # Console routes
+├── scripts/                   # Installation and setup scripts
+│   ├── install_procuchain.sh  # MultiChain installation script
+│   └── join_procuchain.sh     # Join existing blockchain network
+├── tests/                     # Pest/PHPUnit tests
+│   ├── Feature/               # Feature tests
+│   ├── Unit/                  # Unit tests
+│   └── Pest.php               # Pest configuration
+├── storage/                   # Application storage
+├── vendor/                    # Composer dependencies
+├── node_modules/              # Node dependencies
+├── .env.example               # Environment variables template
+├── boost.json                 # Laravel Boost configuration
+├── components.json            # shadcn/ui configuration
+├── composer.json              # PHP dependencies and scripts
+├── package.json               # Frontend dependencies and scripts
+├── vite.config.ts             # Vite configuration (client + SSR)
+├── tsconfig.json              # TypeScript configuration
+├── eslint.config.js           # ESLint configuration
+├── docker-compose.yml         # Local DB and phpMyAdmin services
+└── Procfile                   # Process definitions for Heroku deployment
+```
+
+### Key Directories Explained
+
+**Services (28 total):**
+- Blockchain: MultichainService, BlockchainOrchestratorService, BlockchainEventLoggerService, etc.
+- Document: DocumentUploadService, DocumentMetadataService, FileStorageService
+- Procurement: ProcurementPublishingService, ProcurementStageTransitionService
+- Security: LoginService, AccountLockoutService, BlockedIpService
+- Analytics: DashboardService, AdminAnalyticsService, LoginAnalyticsService
+
+**Models (6 core models):**
+- User (with roles, 2FA, account lockout)
+- Procurement (with blockchain integration)
+- ProcurementDocument (with S3 storage and blockchain anchors)
+- UserLoginLog (comprehensive audit trail)
+- BlockedIp (IP blocking system)
+- DocumentView (document access tracking)
+
+**Jobs (6 background jobs):**
+- PublishProcurementDocumentsJob
+- UpdateProcurementStatusJob
+- LogBlockchainEventJob
+- PublishDocumentCorrectionJob
+- HandleStageTransitionJob
+- DocumentValidationJob
 
 ## Security
 
-Core practices:
+### Authentication & Authorization
+- **Multi-factor Authentication (2FA)**: Time-based OTP (TOTP) via Google2FA with encrypted recovery codes
+- **Session Management**: Database-driven sessions with secure token handling
+- **Password Security**: Bcrypt hashing with 12 rounds
+- **CSRF Protection**: Laravel token validation on all state-changing requests
+- **Rate Limiting**: Throttling on login and sensitive API endpoints
 
-- Role-based access enforcement (app + blockchain).
-- Immutable audit anchors via MultiChain streams.
-- Principle of least privilege in permission matrix.
-- Environment isolation: never reuse production addresses in non-prod.
-- Secure storage of blockchain addresses in `.env` file.
-- Addresses are displayed masked by default (first 6 + last 6 characters) for security.
-- Regular backup of `.env` file and MultiChain configuration.
-- Proper MultiChain node security and access controls.
+### Account Protection
+- **Account Lockout**: Automatic lockout after configurable failed login attempts (default: 5 attempts)
+- **Lockout Duration**: Configurable temporary lock (default: 30 minutes) with auto-unlock
+- **IP Blocking**: Manual and automatic IP blocking system with expiration support
+- **Login Audit Trail**: Comprehensive logging with device detection (browser, OS, platform)
+- **Email Notifications**: Security alerts for account events (lockout, unlock, suspicious activity)
+
+### Data Security
+- **Encryption at Rest**: Database encryption (configurable)
+- **Encryption in Transit**: TLS 1.2+ for all external connections
+- **S3 Server-Side Encryption**: AWS/DigitalOcean Spaces encryption
+- **Blockchain Addresses**: Masked display (first 6 + last 6 characters) in UI
+- **Sensitive Data Protection**: Passwords and secrets never stored in blockchain
+- **Environment Variables**: Secure credential storage in `.env` file
+
+### Access Control
+- **Role-Based Access Control (RBAC)**: Spatie Laravel Permission with 4 primary roles:
+  - Admin: Full system access and user management
+  - BAC Secretariat: Document management and workflow coordination
+  - BAC Chairman: Approval and oversight functions
+  - HOPE: Executive oversight and monitoring
+- **Permission Matrix**: Granular permissions for blockchain operations
+- **Principle of Least Privilege**: Minimal required permissions per role
+- **Middleware Protection**: Route-level authorization checks
+
+### Blockchain Security
+- **Immutable Audit Trail**: All blockchain writes are permanent via MultiChain streams
+- **Permission-Based Access**: Blockchain-level permissions for write/read/admin operations
+- **Address Isolation**: Distinct addresses per role for accountability
+- **Correction Tracking**: Separate correction stream maintains immutable correction history
+- **No Data Deletion**: Document corrections tracked without deleting original records
+
+### Best Practices
+- Environment isolation: Never reuse production addresses in non-production environments
+- Regular backups of `.env` file and MultiChain configuration
+- Proper MultiChain node security with RPC authentication
+- Secure API key storage for external services (S3, email, push notifications)
+- Database backups with encryption
+- Security monitoring through login logs and audit trails
+
+## Performance & Optimization
+
+### Caching Strategies
+- **Database Caching**: Query result caching with cache invalidation
+- **Dashboard Caching**: Role-specific dashboard data caching
+- **Config Caching**: Production config compilation (`php artisan config:cache`)
+- **Route Caching**: Compiled route list (`php artisan route:cache`)
+- **View Caching**: Compiled Blade templates (`php artisan view:cache`)
+
+### Frontend Optimizations
+- **Vite Code Splitting**: Automatic chunk splitting for optimal loading
+- **Lazy Loading**: Component-level code splitting
+- **Asset Optimization**: Minification and tree-shaking
+- **HMR**: Hot Module Replacement for fast development
+- **SSR Support**: Optional server-side rendering for improved SEO
+
+### Database Optimizations
+- **Strategic Indexes**: Indexes on frequently queried columns (blockchain_status, dates, foreign keys)
+- **Eager Loading**: Prevent N+1 query problems with relationship loading
+- **Connection Pooling**: Persistent database connections
+- **Query Builder**: Efficient query construction with Eloquent ORM
+
+### Blockchain Optimizations
+- **Async Publishing**: Background job processing for blockchain operations
+- **Retry Logic**: Exponential backoff for failed blockchain operations
+- **Circuit Breaker**: Prevent cascade failures with health monitoring
+- **Timeout Management**: Separate timeouts for web (12s) vs console (30s) operations
+
+## Monitoring & Logging
+
+### Application Logs
+- **Laravel Logs**: `storage/logs/laravel.log` for application errors and events
+- **Laravel Pail**: Real-time log viewing with `php artisan pail`
+- **Laravel Boost**: `browser-logs` tool for frontend error tracking
+
+### Audit Trails
+- **User Login Logs**: Comprehensive tracking with device detection and IP logging
+- **Document Views**: Track who viewed documents, when, and for how long
+- **Blockchain Events**: All blockchain operations logged to audit stream
+- **Status Changes**: Complete history of procurement status transitions
+
+### Health Monitoring
+- **MultiChain Node**: Connection status and RPC health checks
+- **Database**: Connection monitoring and query performance
+- **Storage**: S3/Spaces connectivity and operation success rates
+- **Queue**: Failed job tracking and retry monitoring
+
+## API & Integration
+
+### Available Tools (Laravel Boost MCP)
+- `application-info`: Get PHP version, Laravel version, installed packages
+- `database-schema`: Read complete database schema with relationships
+- `database-query`: Execute read-only SQL queries
+- `list-routes`: View all application routes with filters
+- `list-artisan-commands`: List available Artisan commands
+- `tinker`: Execute PHP code in Laravel context
+- `search-docs`: Search Laravel ecosystem documentation
+- `browser-logs`: Read frontend error logs
+- `last-error`: Get details of last backend error
+
+### External Services
+- **AWS S3/DigitalOcean Spaces**: File storage and retrieval
+- **Resend API**: Transactional email delivery
+- **WebPush/VAPID**: Browser push notifications
+- **MultiChain RPC**: Blockchain operations via JSON-RPC 2.0
+
+## Development Guidelines
+
+### Code Quality Standards
+- **PHP**: Laravel Pint with PSR-12 compliance
+- **JavaScript/TypeScript**: ESLint 9 with React plugins, Prettier formatting
+- **Type Safety**: TypeScript 5.7.2 for frontend type checking
+- **Documentation**: PHPDoc blocks for all public methods
+
+### Testing
+- **Framework**: Pest 3.8.4 for expressive testing
+- **Types**: Feature tests and unit tests
+- **Factories**: Model factories for test data generation
+- **Coverage**: Test all happy paths, failure paths, and edge cases
+
+### Git Workflow
+- **Branch**: `main` (protected branch)
+- **Repository**: `leodyversemilla07/procuchain`
+- **Commits**: Descriptive commit messages
+- **PR Reviews**: Code review before merging
+
+## Database Schema Overview
+
+### Core Tables
+- **users** (20 columns): User accounts with blockchain addresses, 2FA, account lockout
+- **procurements** (13 columns): Core procurement records with blockchain integration
+- **procurement_documents** (20 columns): Document metadata with blockchain anchors
+- **user_login_logs** (13 columns): Comprehensive login audit trail
+- **document_views** (13 columns): Document access tracking
+- **blocked_ips** (8 columns): IP blocking system
+- **permissions** & **roles**: Spatie permission system
+- **notifications**: In-app notification storage
+- **push_subscriptions**: WebPush subscription management
+- **sessions**, **cache**, **jobs**: Framework tables
+
+### Blockchain Integration Fields
+- `blockchain_txid`: Transaction ID from MultiChain
+- `blockchain_status`: Enum (pending, confirmed, failed)
+- `blockchain_status_updated_at`: Timestamp of last status update
+- `blockchain_error`: Error message if operation failed
+- `blockchain_retry_count`: Number of retry attempts
+- Document corrections tracked separately with full audit trail
+
+## Known Issues & Future Enhancements
+
+### Planned Enhancements
+- API documentation with OpenAPI/Swagger
+- Automated backup scheduling for blockchain and database
+- Application Performance Monitoring (APM) integration
+- Load testing benchmarks for high-volume scenarios
+- Full-stack Docker Compose environment
+- CI/CD pipeline automation
+- Feature flag system for gradual rollouts
+- Real-time analytics dashboard
+- Multi-node blockchain setup documentation
+
+### Contributing
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Run tests and code quality checks
+4. Commit your changes with descriptive messages
+5. Push to the branch
+6. Open a Pull Request
 
 ## License
 
 MIT License
 
-## Contact
+Copyright (c) 2025 Leodyver Semilla
 
-For support or inquiries, please contact [leodyversemilla07@gmail.com]
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+## Contact & Support
+
+**Project Maintainer:** Leodyver Semilla  
+**Email:** [leodyversemilla07@gmail.com](mailto:leodyversemilla07@gmail.com)  
+**Repository:** [github.com/leodyversemilla07/procuchain](https://github.com/leodyversemilla07/procuchain)
+
+For bug reports, feature requests, or general inquiries, please open an issue on GitHub or contact the maintainer directly.
+
+---
+
+**Built with ❤️ for transparent and accountable public procurement in the Philippines**
