@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\CacheStrategyInterface;
 use App\Enums\StreamEnums;
-use App\Services\CacheStrategyHelper;
 use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
 use App\Services\MultichainService;
@@ -18,7 +18,8 @@ abstract class BaseDashboardController extends Controller
 {
     public function __construct(
         protected MultichainService $multichainService,
-        protected DashboardService $dashboardService
+        protected DashboardService $dashboardService,
+        protected CacheStrategyInterface $cacheStrategy
     ) {
         $this->middleware('auth');
         $this->middleware('role:'.$this->getRoleName());
@@ -43,13 +44,13 @@ abstract class BaseDashboardController extends Controller
             }
 
             // Use database cache for large data to keep Redis usage low
-            $recentActivities = CacheStrategyHelper::rememberLarge(
+            $recentActivities = $this->cacheStrategy->rememberLarge(
                 DashboardCacheKeys::recentActivities($roleName),
                 now()->addMinutes(config('dashboard.cache_ttl.activities')),
                 fn () => $this->dashboardService->getRecentActivities()
             );
 
-            $stats = CacheStrategyHelper::rememberSmall(
+            $stats = $this->cacheStrategy->rememberSmall(
                 DashboardCacheKeys::stats($roleName),
                 now()->addMinutes(config('dashboard.cache_ttl.stats')),
                 function () use ($procurementsByKey, $roleLabel) {
@@ -59,7 +60,7 @@ abstract class BaseDashboardController extends Controller
                 }
             );
 
-            $procurementDistribution = CacheStrategyHelper::rememberLarge(
+            $procurementDistribution = $this->cacheStrategy->rememberLarge(
                 DashboardCacheKeys::procurementDistribution($roleName),
                 now()->addMinutes(config('dashboard.cache_ttl.distribution')),
                 fn () => $this->dashboardService->getProcurementDistributionData($procurementsByKey)
@@ -78,7 +79,7 @@ abstract class BaseDashboardController extends Controller
 
             return Inertia::render($this->getViewName(), $dashboardData);
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error("Failed to retrieve {$this->getRoleLabel()} Dashboard data", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -96,7 +97,7 @@ abstract class BaseDashboardController extends Controller
      */
     protected function getCachedProcurements(string $roleName, string $roleLabel)
     {
-        return CacheStrategyHelper::rememberLarge(
+        return $this->cacheStrategy->rememberLarge(
             DashboardCacheKeys::procurements($roleName),
             now()->addMinutes(config('dashboard.cache_ttl.procurements')),
             function () use ($roleLabel) {
@@ -127,7 +128,7 @@ abstract class BaseDashboardController extends Controller
             $roleName = $this->getRoleName();
             $roleLabel = $this->getRoleLabel();
 
-            $totalDocuments = CacheStrategyHelper::rememberSmall(
+            $totalDocuments = $this->cacheStrategy->rememberSmall(
                 DashboardCacheKeys::totalDocuments($roleName),
                 now()->addMinutes(config('dashboard.cache_ttl.stats')),
                 function () use ($procurementsByKey, $roleLabel) {
@@ -138,7 +139,7 @@ abstract class BaseDashboardController extends Controller
             );
 
             return $this->dashboardService->calculateStats($procurementsByKey, $totalDocuments);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error("Failed to calculate {$this->getRoleLabel()} Dashboard stats", ['error' => $e->getMessage()]);
             Cache::forget(DashboardCacheKeys::totalDocuments($this->getRoleName()));
 
@@ -149,7 +150,7 @@ abstract class BaseDashboardController extends Controller
     /**
      * Render error response with empty dashboard data
      */
-    protected function renderErrorResponse(Exception $e): Response
+    protected function renderErrorResponse(\Exception $e): Response
     {
         return Inertia::render($this->getViewName(), array_merge([
             'recentProcurements' => [],

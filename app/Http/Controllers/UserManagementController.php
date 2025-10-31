@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\User\BulkDeleteUsersRequest;
+use App\Http\Requests\User\ResetUserPasswordRequest;
+use App\Http\Requests\User\StoreUserRequest;
+use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,6 +22,8 @@ class UserManagementController extends Controller
      */
     public function index(): Response
     {
+        $this->authorize('viewAny', User::class);
+
         $users = User::select('id', 'name', 'email', 'blockchain_address', 'email_verified_at', 'remember_token', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at')
             ->with('roles:id,name')
             ->where('id', '!=', Auth::id())
@@ -62,15 +66,10 @@ class UserManagementController extends Controller
     /**
      * Store a new user
      */
-    public function store(Request $request)
+    public function store(StoreUserRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'role' => ['required', Rule::in(['bac_secretariat', 'bac_chairman', 'hope', 'admin'])],
-            'password' => 'required|string|min:8|confirmed',
-            'blockchain_address' => 'nullable|string|max:255',
-        ]);
+        $validated = $request->validated();
+
         try {
             $user = User::create([
                 'name' => $validated['name'],
@@ -90,7 +89,7 @@ class UserManagementController extends Controller
             ]);
 
             return redirect()->back()->with('success', 'User created successfully.');
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to create user', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
@@ -103,15 +102,12 @@ class UserManagementController extends Controller
     /**
      * Update an existing user
      */
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRequest $request, User $user)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'role' => ['required', Rule::in(['bac_secretariat', 'bac_chairman', 'hope', 'admin'])],
-            'blockchain_address' => 'nullable|string|max:255',
-            'password' => 'nullable|string|min:8|confirmed',
-        ]);
+        $this->authorize('update', $user);
+
+        $validated = $request->validated();
+
         try {
             $updateData = [
                 'name' => $validated['name'],
@@ -136,7 +132,7 @@ class UserManagementController extends Controller
             ]);
 
             return redirect()->back()->with('success', 'User updated successfully.');
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to update user', [
                 'admin_id' => Auth::id(),
                 'user_id' => $user->id,
@@ -152,8 +148,10 @@ class UserManagementController extends Controller
      */
     public function destroy(User $user)
     {
+        $this->authorize('delete', $user);
+
         try {
-            // Prevent admin from deleting their own account
+            // Policy already prevents deleting own account, but keeping check for explicit error message
             if ($user->id === Auth::id()) {
                 return redirect()->back()->withErrors(['error' => 'You cannot delete your own account.']);
             }
@@ -166,7 +164,7 @@ class UserManagementController extends Controller
             ]);
 
             return redirect()->back()->with('success', 'User deleted successfully.');
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to delete user', [
                 'admin_id' => Auth::id(),
                 'user_id' => $user->id,
@@ -180,24 +178,17 @@ class UserManagementController extends Controller
     /**
      * Bulk delete users
      */
-    public function bulkDelete(Request $request)
+    public function bulkDelete(BulkDeleteUsersRequest $request)
     {
-        $validated = $request->validate([
-            'user_ids' => 'required|array|min:1',
-            'user_ids.*' => 'required|integer|exists:users,id',
-        ]);
+        $this->authorize('delete', User::class);
+
+        $validated = $request->validated();
 
         try {
             $userIds = $validated['user_ids'];
-            $currentUserId = Auth::id();
-
-            // Remove current user's ID from the list to prevent self-deletion
-            $userIds = array_filter($userIds, function ($id) use ($currentUserId) {
-                return $id !== $currentUserId;
-            });
 
             if (empty($userIds)) {
-                return redirect()->back()->withErrors(['error' => 'Cannot delete your own account or no valid users selected.']);
+                return redirect()->back()->withErrors(['error' => 'No valid users selected for deletion.']);
             }
 
             // Get user details for logging before deletion
@@ -230,7 +221,7 @@ class UserManagementController extends Controller
             $message = $deletedCount === 1 ? 'User deleted successfully.' : "{$deletedCount} users deleted successfully.";
 
             return redirect()->back()->with('success', $message);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to bulk delete users', [
                 'admin_id' => Auth::id(),
                 'user_ids' => $validated['user_ids'] ?? [],
@@ -244,14 +235,14 @@ class UserManagementController extends Controller
     /**
      * Send password reset link to a user
      */
-    public function resetPassword(Request $request, User $user)
+    public function resetPassword(ResetUserPasswordRequest $request, User $user)
     {
-        $validated = $request->validate([
-            'reason' => 'required|string|max:500',
-        ]);
+        $this->authorize('resetPassword', $user);
+
+        $validated = $request->validated();
 
         try {
-            // Prevent admin from resetting their own password via admin panel
+            // Policy already prevents resetting own password, but keeping check for explicit error message
             if ($user->id === Auth::id()) {
                 return redirect()->back()->withErrors(['error' => 'You cannot reset your own password from here. Please use the profile settings.']);
             }

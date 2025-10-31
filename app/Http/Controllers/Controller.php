@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Support\Facades\Auth;
 
 abstract class Controller
 {
+    use AuthorizesRequests, ValidatesRequests;
+
     /**
      * Get the dashboard route for a given user based on their role.
      */

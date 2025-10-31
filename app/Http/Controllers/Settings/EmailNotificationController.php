@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\UpdateEmailNotificationsRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -25,11 +25,9 @@ class EmailNotificationController extends Controller
     /**
      * Update email notification settings.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(UpdateEmailNotificationsRequest $request): RedirectResponse
     {
-        $request->validate([
-            'email_notifications_enabled' => 'required|boolean',
-        ]);
+        $validated = $request->validated();
 
         $user = Auth::user();
 
@@ -43,7 +41,7 @@ class EmailNotificationController extends Controller
         }
 
         $user->update([
-            'email_notifications_enabled' => $request->email_notifications_enabled,
+            'email_notifications_enabled' => $validated['email_notifications_enabled'],
         ]);
 
         return redirect()

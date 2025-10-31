@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\CacheStrategyInterface;
 use App\Services\AdminAnalyticsService;
 use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
@@ -13,9 +14,10 @@ class AdminController extends BaseDashboardController
     public function __construct(
         MultichainService $multichainService,
         DashboardService $dashboardService,
+        CacheStrategyInterface $cacheStrategy,
         private AdminAnalyticsService $analyticsService
     ) {
-        parent::__construct($multichainService, $dashboardService);
+        parent::__construct($multichainService, $dashboardService, $cacheStrategy);
     }
 
     /**

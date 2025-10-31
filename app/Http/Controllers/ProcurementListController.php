@@ -11,9 +11,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Procurement;
 use App\Models\ProcurementDocument;
 use App\Services\ProcurementDataService;
 use Exception;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +24,8 @@ use Inertia\Response;
 
 class ProcurementListController extends BaseController
 {
+    use AuthorizesRequests;
+
     private ProcurementDataService $procurementDataService;
 
     /**
@@ -46,6 +50,8 @@ class ProcurementListController extends BaseController
      */
     public function indexProcurementsList(): Response
     {
+        $this->authorize('viewAny', Procurement::class);
+
         try {
             Log::info('Fetching procurements list');
             $procurements = $this->procurementDataService->fetchAndProcessProcurements();
@@ -57,7 +63,7 @@ class ProcurementListController extends BaseController
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => $procurements,
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to retrieve procurements list', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -75,6 +81,8 @@ class ProcurementListController extends BaseController
      */
     public function showProcurement(string $procurementId): Response
     {
+        $this->authorize('viewAny', Procurement::class);
+
         try {
             $this->validateProcurementId($procurementId);
 
@@ -114,7 +122,7 @@ class ProcurementListController extends BaseController
                 'procurement' => $procurementData,
                 'now' => now()->toIso8601String(),
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to retrieve procurement details', [
                 'procurement_id' => $procurementId,
                 'error' => $e->getMessage(),

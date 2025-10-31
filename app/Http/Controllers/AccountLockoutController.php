@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\AccountLockoutService;
-use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -49,7 +48,7 @@ class AccountLockoutController extends Controller
             return Inertia::render('admin/locked-accounts', [
                 'lockedAccounts' => $formattedUsers,
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to fetch locked accounts', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
@@ -102,7 +101,7 @@ class AccountLockoutController extends Controller
 
                 return back()->with('error', 'Account was not locked or unlock failed');
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to unlock user account', [
                 'admin_id' => Auth::id(),
                 'user_id' => $user->id,
@@ -162,7 +161,7 @@ class AccountLockoutController extends Controller
                     'error' => 'Account is already locked or lock failed',
                 ], 400);
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to lock user account', [
                 'admin_id' => Auth::id(),
                 'user_id' => $user->id,
@@ -211,7 +210,7 @@ class AccountLockoutController extends Controller
 
                 return back()->with('error', 'No failed attempts to reset');
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to reset failed login attempts', [
                 'admin_id' => Auth::id(),
                 'user_id' => $user->id,
@@ -279,7 +278,7 @@ class AccountLockoutController extends Controller
             } else {
                 return back()->with('error', 'Failed to unlock any accounts');
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to bulk unlock accounts', [
                 'admin_id' => Auth::id(),
                 'account_ids' => $validated['account_ids'] ?? [],
@@ -334,7 +333,7 @@ class AccountLockoutController extends Controller
             } else {
                 return back()->with('warning', 'No accounts had failed attempts to reset');
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to bulk reset login attempts', [
                 'admin_id' => Auth::id(),
                 'account_ids' => $validated['account_ids'] ?? [],

@@ -46,7 +46,7 @@ class BlockchainExplorerController extends Controller
                             'tx_count' => count($block['tx'] ?? []),
                             'size' => $block['size'] ?? 0,
                         ];
-                    } catch (Exception $e) {
+                    } catch (\Exception $e) {
                         Log::warning('Failed to fetch block at height '.($currentHeight - $i), [
                             'error' => $e->getMessage(),
                         ]);
@@ -137,7 +137,7 @@ class BlockchainExplorerController extends Controller
                 }, $peerInfo),
                 'health' => $health,
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Blockchain explorer error', [
                 'error' => $e->getMessage(),
             ]);
@@ -145,7 +145,7 @@ class BlockchainExplorerController extends Controller
             // Still get health status even if blockchain connection fails
             try {
                 $health = $this->healthService->getHealthStatus();
-            } catch (Exception $healthError) {
+            } catch (\Exception $healthError) {
                 $health = null;
             }
 
