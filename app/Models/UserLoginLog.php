@@ -75,8 +75,8 @@ class UserLoginLog extends Model
             'unique_users' => $uniqueUsers,
             'today_logins' => static::whereDate('login_at', $now->toDateString())->count(),
             'this_week_logins' => static::whereBetween('login_at', [
-                $now->startOfWeek()->toDateTimeString(),
-                $now->endOfWeek()->toDateTimeString(),
+                $now->copy()->startOfWeek()->toDateTimeString(),
+                $now->copy()->endOfWeek()->toDateTimeString(),
             ])->count(),
             'this_month_logins' => static::whereMonth('login_at', $now->month)
                 ->whereYear('login_at', $now->year)
