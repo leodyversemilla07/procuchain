@@ -274,6 +274,15 @@ Environment variables (core subset):
     VAPID_SUBJECT="mailto:admin@example.com"
     ```
 
+- **Error Tracking**: Sentry for real-time error monitoring
+
+    ```bash
+    SENTRY_LARAVEL_DSN=your_sentry_dsn
+    SENTRY_TRACES_SAMPLE_RATE=1.0  # Performance monitoring (0.0 to 1.0)
+    SENTRY_ENABLE_LOGS=false        # Enable log capture
+    SENTRY_SEND_DEFAULT_PII=false   # Send user data (be careful with privacy)
+    ```
+
 - **Queue**: Database-driven queue system
 - **Cache**: Database-driven cache system
 - **Session**: Database-driven session storage
@@ -637,10 +646,47 @@ procuchain/
 
 ## Monitoring & Logging
 
+### Error Tracking with Sentry
+ProcuChain uses [Sentry](https://sentry.io) for real-time error tracking and performance monitoring.
+
+**Configuration:**
+```bash
+# Already configured in .env
+SENTRY_LARAVEL_DSN=your_sentry_dsn
+SENTRY_TRACES_SAMPLE_RATE=1.0  # 100% transaction sampling for performance monitoring
+```
+
+**Features:**
+- **Real-time Error Tracking**: Automatic error capture and reporting
+- **Performance Monitoring**: Track slow database queries, API calls, and HTTP requests
+- **Release Tracking**: Monitor errors by deployment version
+- **User Context**: Track which users experience errors (when send_default_pii is enabled)
+- **Environment Separation**: Separate error tracking for local, staging, and production
+
+**Testing Sentry:**
+```bash
+# Send a test event to verify configuration
+php artisan sentry:test
+```
+
+**Sentry Dashboard:**
+Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
+- Real-time error alerts
+- Performance metrics and slow queries
+- User impact analysis
+- Error frequency and trends
+
+**Best Practices:**
+- Review Sentry issues daily in production
+- Set up alert rules for critical errors
+- Use releases to track error trends after deployments
+- Configure issue assignment rules for your team
+
 ### Application Logs
 - **Laravel Logs**: `storage/logs/laravel.log` for application errors and events
 - **Laravel Pail**: Real-time log viewing with `php artisan pail`
 - **Laravel Boost**: `browser-logs` tool for frontend error tracking
+- **Sentry Logs**: Real-time error tracking with stack traces and context
 
 ### Audit Trails
 - **User Login Logs**: Comprehensive tracking with device detection and IP logging
@@ -649,6 +695,7 @@ procuchain/
 - **Status Changes**: Complete history of procurement status transitions
 
 ### Health Monitoring
+- **Sentry Performance**: Database query performance, HTTP request timing
 - **MultiChain Node**: Connection status and RPC health checks
 - **Database**: Connection monitoring and query performance
 - **Storage**: S3/Spaces connectivity and operation success rates
