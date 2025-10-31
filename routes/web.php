@@ -11,7 +11,20 @@ use App\Http\Controllers\HopeController;
 use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PdfViewerController;
-use App\Http\Controllers\ProcurementController;
+use App\Http\Controllers\Procurement\BacResolutionController;
+use App\Http\Controllers\Procurement\BiddingDocumentsController;
+use App\Http\Controllers\Procurement\BidEvaluationController;
+use App\Http\Controllers\Procurement\BidOpeningController;
+use App\Http\Controllers\Procurement\CompletionController;
+use App\Http\Controllers\Procurement\MonitoringController;
+use App\Http\Controllers\Procurement\NoticeOfAwardController;
+use App\Http\Controllers\Procurement\NoticeToProceedController;
+use App\Http\Controllers\Procurement\PerformanceBondContractPoController;
+use App\Http\Controllers\Procurement\PostQualificationController;
+use App\Http\Controllers\Procurement\PreBidConferenceController;
+use App\Http\Controllers\Procurement\PreProcurementConferenceController;
+use App\Http\Controllers\Procurement\ProcurementInitiationController;
+use App\Http\Controllers\Procurement\SupplementalBidBulletinController;
 use App\Http\Controllers\ProcurementListController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UserManagementController;
@@ -94,39 +107,39 @@ Route::middleware(['auth'])->group(function () {
 
     // Procurement Publishing & Upload Actions (BAC Secretariat only, but route names have NO prefix)
     Route::middleware(['role:bac_secretariat'])->group(function () {
-        Route::post('/bac-secretariat/publish-procurement-initiation', [ProcurementController::class, 'publishProcurementInitiation'])
+        Route::post('/bac-secretariat/publish-procurement-initiation', [ProcurementInitiationController::class, 'publish'])
             ->name('publish-procurement-initiation');
-        Route::post('/bac-secretariat/publish-pre-procurement-conference-decision', [ProcurementController::class, 'publishPreProcurementConferenceDecision'])
+        Route::post('/bac-secretariat/publish-pre-procurement-conference-decision', [PreProcurementConferenceController::class, 'publishDecision'])
             ->name('bac-secretariat.publish-pre-procurement-conference-decision');
-        Route::post('/bac-secretariat/upload-pre-procurement-conference-documents', [ProcurementController::class, 'uploadPreProcurementConferenceDocuments'])
+        Route::post('/bac-secretariat/upload-pre-procurement-conference-documents', [PreProcurementConferenceController::class, 'uploadDocuments'])
             ->name('bac-secretariat.upload-pre-procurement-conference-documents');
-        Route::post('/bac-secretariat/publish-pre-bid-conference-decision', [ProcurementController::class, 'publishPreBidConferenceDecision'])
+        Route::post('/bac-secretariat/publish-pre-bid-conference-decision', [PreBidConferenceController::class, 'publishDecision'])
             ->name('bac-secretariat.publish-pre-bid-conference-decision');
-        Route::post('/bac-secretariat/upload-pre-bid-conference-documents', [ProcurementController::class, 'uploadPreBidConferenceDocuments'])
+        Route::post('/bac-secretariat/upload-pre-bid-conference-documents', [PreBidConferenceController::class, 'uploadDocuments'])
             ->name('bac-secretariat.upload-pre-bid-conference-documents');
-        Route::post('/bac-secretariat/publish-supplemental-bid-bulletin-decision', [ProcurementController::class, 'publishSupplementalBidBulletinDecision'])
+        Route::post('/bac-secretariat/publish-supplemental-bid-bulletin-decision', [SupplementalBidBulletinController::class, 'publishDecision'])
             ->name('bac-secretariat.publish-supplemental-bid-bulletin-decision');
-        Route::post('/bac-secretariat/upload-supplemental-bid-bulletin-documents', [ProcurementController::class, 'uploadSupplementalBidBulletinDocuments'])
+        Route::post('/bac-secretariat/upload-supplemental-bid-bulletin-documents', [SupplementalBidBulletinController::class, 'uploadDocuments'])
             ->name('bac-secretariat.upload-supplemental-bid-bulletin-documents');
-        Route::post('/bac-secretariat/upload-bidding-documents', [ProcurementController::class, 'uploadBiddingDocuments'])
+        Route::post('/bac-secretariat/upload-bidding-documents', [BiddingDocumentsController::class, 'upload'])
             ->name('bac-secretariat.upload-bidding-documents');
-        Route::post('/bac-secretariat/upload-bid-opening-documents', [ProcurementController::class, 'uploadBidOpeningDocuments'])
+        Route::post('/bac-secretariat/upload-bid-opening-documents', [BidOpeningController::class, 'uploadDocuments'])
             ->name('bac-secretariat.upload-bid-opening-documents');
-        Route::post('/bac-secretariat/upload-bid-evaluation-documents', [ProcurementController::class, 'uploadBidEvaluationDocuments'])
+        Route::post('/bac-secretariat/upload-bid-evaluation-documents', [BidEvaluationController::class, 'uploadDocuments'])
             ->name('bac-secretariat.upload-bid-evaluation-documents');
-        Route::post('/bac-secretariat/upload-post-qualification-documents', [ProcurementController::class, 'uploadPostQualificationDocuments'])
+        Route::post('/bac-secretariat/upload-post-qualification-documents', [PostQualificationController::class, 'uploadDocuments'])
             ->name('bac-secretariat.upload-post-qualification-documents');
-        Route::post('/bac-secretariat/upload-bac-resolution-document', [ProcurementController::class, 'uploadBacResolutionDocument'])
+        Route::post('/bac-secretariat/upload-bac-resolution-document', [BacResolutionController::class, 'uploadDocument'])
             ->name('bac-secretariat.upload-bac-resolution-document');
-        Route::post('/bac-secretariat/upload-noa-document', [ProcurementController::class, 'uploadNoaDocument'])
+        Route::post('/bac-secretariat/upload-noa-document', [NoticeOfAwardController::class, 'uploadDocument'])
             ->name('bac-secretariat.upload-noa-document');
-        Route::post('/bac-secretariat/upload-performance-bond-contract-po-documents', [ProcurementController::class, 'uploadPerformanceBondContractAndPoDocuments'])
+        Route::post('/bac-secretariat/upload-performance-bond-contract-po-documents', [PerformanceBondContractPoController::class, 'uploadDocuments'])
             ->name('bac-secretariat.upload-performance-bond-contract-po-documents');
-        Route::post('/bac-secretariat/upload-ntp-document', [ProcurementController::class, 'uploadNTPDocument'])
+        Route::post('/bac-secretariat/upload-ntp-document', [NoticeToProceedController::class, 'uploadDocument'])
             ->name('bac-secretariat.upload-ntp-document');
-        Route::post('/bac-secretariat/upload-monitoring-document', [ProcurementController::class, 'uploadMonitoringDocument'])
+        Route::post('/bac-secretariat/upload-monitoring-document', [MonitoringController::class, 'uploadDocument'])
             ->name('bac-secretariat.upload-monitoring-document');
-        Route::post('/bac-secretariat/upload-completion-documents', [ProcurementController::class, 'uploadCompletionDocuments'])
+        Route::post('/bac-secretariat/upload-completion-documents', [CompletionController::class, 'uploadDocuments'])
             ->name('bac-secretariat.upload-completion-documents');
     });
 
@@ -149,36 +162,36 @@ Route::middleware(['auth'])->group(function () {
         // Procurement Stage Upload Forms
         // First one uses nested naming: bac-secretariat.procurement.procurement-initiation
         Route::prefix('procurement')->name('procurement.')->group(function () {
-            Route::get('/procurement-initiation', [ProcurementController::class, 'showProcurementInitiation'])
+            Route::get('/procurement-initiation', [ProcurementInitiationController::class, 'show'])
                 ->name('procurement-initiation');
         });
 
         // Rest use flat naming: bac-secretariat.pre-procurement-conference-upload
-        Route::get('/pre-procurement-conference-upload/{id}', [ProcurementController::class, 'showPreProcurementConferenceUpload'])
+        Route::get('/pre-procurement-conference-upload/{id}', [PreProcurementConferenceController::class, 'show'])
             ->name('pre-procurement-conference-upload');
-        Route::get('/pre-bid-conference-upload/{id}', [ProcurementController::class, 'showPreBidConferenceUpload'])
+        Route::get('/pre-bid-conference-upload/{id}', [PreBidConferenceController::class, 'show'])
             ->name('pre-bid-conference-upload');
-        Route::get('/bidding-documents-upload/{id}', [ProcurementController::class, 'showBiddingDocumentsUpload'])
+        Route::get('/bidding-documents-upload/{id}', [BiddingDocumentsController::class, 'show'])
             ->name('bidding-documents-upload');
-        Route::get('/supplemental-bid-bulletin-upload/{id}', [ProcurementController::class, 'showSupplementalBidBulletinUpload'])
+        Route::get('/supplemental-bid-bulletin-upload/{id}', [SupplementalBidBulletinController::class, 'show'])
             ->name('supplemental-bid-bulletin-upload');
-        Route::get('/bid-opening-upload/{id}', [ProcurementController::class, 'showBidOpeningUpload'])
+        Route::get('/bid-opening-upload/{id}', [BidOpeningController::class, 'show'])
             ->name('bid-opening-upload');
-        Route::get('/bid-evaluation-upload/{id}', [ProcurementController::class, 'showBidEvaluationUpload'])
+        Route::get('/bid-evaluation-upload/{id}', [BidEvaluationController::class, 'show'])
             ->name('bid-evaluation-upload');
-        Route::get('/post-qualification-upload/{id}', [ProcurementController::class, 'showPostQualificationUpload'])
+        Route::get('/post-qualification-upload/{id}', [PostQualificationController::class, 'show'])
             ->name('post-qualification-upload');
-        Route::get('/bac-resolution-upload/{id}', [ProcurementController::class, 'showBacResolutionUpload'])
+        Route::get('/bac-resolution-upload/{id}', [BacResolutionController::class, 'show'])
             ->name('bac-resolution-upload');
-        Route::get('/noa-upload/{id}', [ProcurementController::class, 'showNoaUpload'])
+        Route::get('/noa-upload/{id}', [NoticeOfAwardController::class, 'show'])
             ->name('noa-upload');
-        Route::get('/performance-bond-contract-po-upload/{id}', [ProcurementController::class, 'showPerformanceBondContactAndPoUpload'])
+        Route::get('/performance-bond-contract-po-upload/{id}', [PerformanceBondContractPoController::class, 'show'])
             ->name('performance-bond-contract-po-upload');
-        Route::get('/ntp-upload/{id}', [ProcurementController::class, 'showNTPUpload'])
+        Route::get('/ntp-upload/{id}', [NoticeToProceedController::class, 'show'])
             ->name('ntp-upload');
-        Route::get('/monitoring-upload/{id}', [ProcurementController::class, 'showMonitoringUpload'])
+        Route::get('/monitoring-upload/{id}', [MonitoringController::class, 'show'])
             ->name('monitoring-upload');
-        Route::get('/completion-upload/{id}', [ProcurementController::class, 'showCompletionUpload'])
+        Route::get('/completion-upload/{id}', [CompletionController::class, 'show'])
             ->name('completion-upload');
 
         // Blockchain Publishing Status Page
