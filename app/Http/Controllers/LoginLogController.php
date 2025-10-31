@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\BlockedIpService;
 use App\Services\LoginService;
-use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -33,7 +32,7 @@ class LoginLogController extends Controller
                 'statistics' => $statistics,
                 'suspiciousActivities' => $suspiciousActivities,
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to fetch login logs', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
@@ -61,7 +60,7 @@ class LoginLogController extends Controller
                 'success' => true,
                 'data' => $recentLogins,
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to fetch recent logins', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
@@ -86,7 +85,7 @@ class LoginLogController extends Controller
                 'success' => true,
                 'data' => $statistics,
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to fetch login statistics', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
@@ -111,7 +110,7 @@ class LoginLogController extends Controller
                 'success' => true,
                 'data' => $activities,
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to fetch suspicious activities', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
@@ -160,7 +159,7 @@ class LoginLogController extends Controller
                 'message' => 'IP address blocked successfully',
                 'data' => $block,
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to block IP address', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
@@ -201,7 +200,7 @@ class LoginLogController extends Controller
                 'success' => true,
                 'message' => 'IP address unblocked successfully',
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to unblock IP address', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
@@ -226,7 +225,7 @@ class LoginLogController extends Controller
                 'success' => true,
                 'data' => $blockedIps,
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to fetch blocked IPs', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),

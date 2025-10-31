@@ -94,7 +94,7 @@ class DocumentDownloadController extends BaseController
                 'Accept-Ranges' => 'bytes',
                 'Content-Security-Policy' => "default-src 'self'; object-src 'self'; frame-src 'self';",
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Secure file download failed', [
                 'file_key' => $fileKey,
                 'error' => $e->getMessage(),
@@ -132,7 +132,7 @@ class DocumentDownloadController extends BaseController
             }
 
             return null;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('File access validation failed', [
                 'file_key' => $fileKey,
                 'error' => $e->getMessage(),

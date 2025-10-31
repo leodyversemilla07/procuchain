@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Document\CorrectDocumentRequest;
 use App\Models\ProcurementDocument;
 use App\Services\BlockchainCorrectionService;
 use App\Services\MultichainService;
@@ -23,23 +24,11 @@ class DocumentCorrectionController extends Controller
     /**
      * Submit a correction for a document.
      */
-    public function correctDocument(Request $request, ProcurementDocument $document): RedirectResponse
+    public function correctDocument(CorrectDocumentRequest $request, ProcurementDocument $document): RedirectResponse
     {
-        // Validate permissions
-        if (! Auth::user()->hasAnyRole(['admin', 'bac_chairman', 'bac_secretariat'])) {
-            abort(403, 'You do not have permission to correct documents.');
-        }
+        $this->authorize('correct', $document);
 
-        // Validate request
-        $validated = $request->validate([
-            'correction_reason' => 'required|string|min:10|max:1000',
-            'correction_type' => 'required|in:replace,invalidate',
-            'corrected_file' => 'required_if:correction_type,replace|file|mimes:pdf,doc,docx,xls,xlsx|max:10240',
-            'procurement_id' => 'required|integer|exists:procurements,id',
-            'procurement_title' => 'required|string',
-            'original_document_hash' => 'required|string',
-            'original_txid' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         // Process corrected file if replacing
         $correctedMetadata = null;
@@ -85,6 +74,8 @@ class DocumentCorrectionController extends Controller
      */
     public function getCorrectionHistory(Request $request, int $procurementId): JsonResponse
     {
+        $this->authorize('viewCorrectionHistory', ProcurementDocument::class);
+
         try {
             $corrections = $this->correctionService->getCorrections(
                 procurementId: (string) $procurementId,

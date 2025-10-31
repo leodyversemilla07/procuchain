@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\CacheStrategyInterface;
 use App\Services\DashboardService;
 use App\Services\MultichainService;
 use App\Services\ProcurementStageTransitionService;
-use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -14,9 +14,10 @@ class BacSecretariatController extends BaseDashboardController
     public function __construct(
         protected MultichainService $multichainService,
         protected DashboardService $dashboardService,
+        CacheStrategyInterface $cacheStrategy,
         private ProcurementStageTransitionService $stageTransitionService
     ) {
-        parent::__construct($multichainService, $dashboardService);
+        parent::__construct($multichainService, $dashboardService, $cacheStrategy);
     }
 
     protected function getRoleName(): string
@@ -99,7 +100,7 @@ class BacSecretariatController extends BaseDashboardController
                     if ($action !== null) {
                         $priorityActions[] = $action;
                     }
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     Log::warning("Failed to get priority action for procurement {$procurement['id']}", [
                         'error' => $e->getMessage(),
                     ]);
@@ -110,7 +111,7 @@ class BacSecretariatController extends BaseDashboardController
 
             return $priorityActions;
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to retrieve priority actions', [
                 'error' => $e->getMessage(),
             ]);
