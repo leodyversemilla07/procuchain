@@ -14,6 +14,44 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 use Spatie\Permission\Traits\HasRoles;
 
+/**
+ * User Model
+ *
+ * Represents system users with role-based access control, two-factor authentication,
+ * account lockout protection, and blockchain address association.
+ *
+ * @property int $id
+ * @property string $name User's full name
+ * @property string $email User's email address (unique)
+ * @property string|null $blockchain_address MultiChain blockchain address
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property string $password Hashed password
+ * @property bool $account_locked Whether account is currently locked
+ * @property \Illuminate\Support\Carbon|null $locked_at When account was locked
+ * @property \Illuminate\Support\Carbon|null $lock_expires_at When lock expires
+ * @property int $failed_login_attempts Number of failed login attempts
+ * @property \Illuminate\Support\Carbon|null $last_failed_login_at Last failed login timestamp
+ * @property string|null $locked_reason Reason for account lock
+ * @property string|null $two_factor_secret Encrypted 2FA secret
+ * @property string|null $two_factor_recovery_codes Encrypted recovery codes
+ * @property \Illuminate\Support\Carbon|null $two_factor_confirmed_at When 2FA was confirmed
+ * @property bool $email_notifications_enabled Whether email notifications are enabled
+ * @property string|null $remember_token
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read string|null $role Primary role name
+ * @property-read int $remaining_lock_time Minutes until unlock
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserLoginLog> $loginLogs
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
+ *
+ * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder|User newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|User newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|User query()
+ * @method static \Illuminate\Database\Eloquent\Builder|User permission($permissions, $without = false)
+ * @method static \Illuminate\Database\Eloquent\Builder|User role($roles, $guard = null, $without = false)
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */

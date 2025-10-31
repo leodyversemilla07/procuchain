@@ -10,6 +10,31 @@ use Illuminate\Database\Eloquent\Model;
  *
  * Minimal model for tracking blockchain publication status.
  * Source of truth is MultiChain blockchain - this model only tracks sync status.
+ * Uses custom string-based primary keys (e.g., PR-2025-0001-0001).
+ *
+ * @property string $id Custom procurement ID (format: PR-YYYY-####-####)
+ * @property string $title Procurement title/name
+ * @property string $stage Current procurement stage
+ * @property string $current_status Current status
+ * @property string $user_address Blockchain address of user managing procurement
+ * @property int $document_count Number of associated documents
+ * @property \Illuminate\Support\Carbon $last_updated Last update timestamp
+ * @property string|null $blockchain_txid Blockchain transaction ID
+ * @property string $blockchain_status Status: pending|published|failed
+ * @property \Illuminate\Support\Carbon|null $blockchain_status_updated_at
+ * @property string|null $blockchain_error Error message if publication failed
+ * @property int $blockchain_retry_count Number of retry attempts
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ProcurementDocument> $documents
+ *
+ * @method static \Database\Factories\ProcurementFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder|Procurement newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Procurement newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Procurement query()
+ * @method static \Illuminate\Database\Eloquent\Builder|Procurement whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Procurement whereStage($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Procurement whereBlockchainStatus($value)
  */
 class Procurement extends Model
 {
