@@ -2,6 +2,7 @@
 
 use App\Enums\StreamEnums;
 use App\Libraries\MultichainClient;
+use App\Services\MultichainConnectionService;
 use App\Services\MultichainService;
 
 beforeEach(function () {
@@ -52,7 +53,7 @@ it('has stream enums with expected values', function () {
     expect(StreamEnums::DOCUMENTS->value)->toBe('procurement.documents')
         ->and(StreamEnums::STATUS->value)->toBe('procurement.status')
         ->and(StreamEnums::EVENTS->value)->toBe('procurement.events')
-        ->and(StreamEnums::CORRECTION->value)->toBe('procurement.correction');
+        ->and(StreamEnums::CORRECTIONS->value)->toBe('procurement.corrections');
 });
 
 it('has multichain addresses configured in env/config', function () {
@@ -112,12 +113,17 @@ it('validates connection and returns info via getInfo', function () {
     config()->set('multichain.chain_name', 'procuchain');
 
     $mc = Mockery::mock(MultichainClient::class);
-    // getInfo call returns data
+    // getinfo call returns data
     $mc->shouldReceive('getinfo')->once()->andReturn(['chainname' => 'procuchain', 'blocks' => 100]);
     $mc->shouldReceive('success')->andReturnTrue();
 
-    $service = new MultichainService;
-    setPrivate($service, 'mc', $mc);
+    $connectionService = Mockery::mock(MultichainConnectionService::class);
+    $connectionService->shouldReceive('getClient')->andReturn($mc);
+    $connectionService->shouldReceive('handleRequest')->once()->andReturnUsing(function ($callback) {
+        return $callback();
+    });
+
+    $service = new MultichainService($connectionService);
 
     $info = $service->getInfo();
     expect($info)->toBeArray()->toHaveKey('chainname');
@@ -130,8 +136,13 @@ it('returns info even with different chain name', function () {
     $mc->shouldReceive('getinfo')->andReturn(['chainname' => 'wrongchain']);
     $mc->shouldReceive('success')->andReturnTrue();
 
-    $service = new MultichainService;
-    setPrivate($service, 'mc', $mc);
+    $connectionService = Mockery::mock(MultichainConnectionService::class);
+    $connectionService->shouldReceive('getClient')->andReturn($mc);
+    $connectionService->shouldReceive('handleRequest')->once()->andReturnUsing(function ($callback) {
+        return $callback();
+    });
+
+    $service = new MultichainService($connectionService);
 
     // Service no longer validates chain name in getInfo, just returns the data
     $info = $service->getInfo();
@@ -145,8 +156,13 @@ it('returns info without checking initialization status', function () {
     $mc->shouldReceive('getinfo')->andReturn(['chainname' => 'procuchain']);
     $mc->shouldReceive('success')->andReturnTrue();
 
-    $service = new MultichainService;
-    setPrivate($service, 'mc', $mc);
+    $connectionService = Mockery::mock(MultichainConnectionService::class);
+    $connectionService->shouldReceive('getClient')->andReturn($mc);
+    $connectionService->shouldReceive('handleRequest')->once()->andReturnUsing(function ($callback) {
+        return $callback();
+    });
+
+    $service = new MultichainService($connectionService);
 
     // Service no longer checks initialization status in getInfo
     $info = $service->getInfo();
@@ -163,18 +179,24 @@ it('maps RPC errors (Forbidden) to exception', function () {
     $mc->shouldReceive('errormessage')->andReturn('Forbidden');
     $mc->shouldReceive('errorcode')->andReturn(403);
 
-    $service = new MultichainService;
-    setPrivate($service, 'mc', $mc);
+    $connectionService = Mockery::mock(MultichainConnectionService::class);
+    $connectionService->shouldReceive('getClient')->andReturn($mc);
+    $connectionService->shouldReceive('handleRequest')->andReturnUsing(function ($callback) use ($mc) {
+        $result = $callback();
+        if (! $mc->success()) {
+            throw new Exception('MultiChain Error: Forbidden', 403);
+        }
+
+        return $result;
+    });
+
+    $service = new MultichainService($connectionService);
 
     expect(fn () => $service->listStreamItems('procurement.status', true, 1, -1, false))
         ->toThrow(Exception::class, 'MultiChain Error: Forbidden');
 });
 
 it('fails with final message on connection failure', function () {
-    // Limit retries to 1 to avoid sleep and reinit
-    $service = new MultichainService;
-    setPrivate($service, 'maxRetries', 1);
-
     $mc = Mockery::mock(MultichainClient::class);
     // validateConnection -> getinfo fails with connection-like error
     $mc->shouldReceive('getinfo')->andReturnNull();
@@ -182,8 +204,14 @@ it('fails with final message on connection failure', function () {
     $mc->shouldReceive('errormessage')->andReturn('Failed to connect');
     $mc->shouldReceive('errorcode')->andReturn(7);
 
-    setPrivate($service, 'mc', $mc);
+    $connectionService = Mockery::mock(MultichainConnectionService::class);
+    $connectionService->shouldReceive('getClient')->andReturn($mc);
+    $connectionService->shouldReceive('handleRequest')->andThrow(
+        new Exception('MultiChain connection failed')
+    );
+
+    $service = new MultichainService($connectionService);
 
     expect(fn () => $service->getInfo())
-        ->toThrow(Exception::class, 'Failed to connect to MultiChain node after 1 attempts');
+        ->toThrow(Exception::class, 'MultiChain connection failed');
 });

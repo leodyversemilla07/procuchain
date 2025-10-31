@@ -101,7 +101,7 @@ describe('PublishDocumentCorrectionJob', function () {
                 ->shouldReceive('publishFrom')
                 ->with(
                     $this->userAddress,
-                    'procurement.correction',
+                    'procurement.corrections',
                     $this->streamKey,
                     \Mockery::on(function ($data) {
                         return isset($data['json'])
@@ -159,7 +159,7 @@ describe('PublishDocumentCorrectionJob', function () {
                 ->shouldReceive('publishFrom')
                 ->with(
                     $this->userAddress,
-                    'procurement.correction',
+                    'procurement.corrections',
                     $this->streamKey,
                     \Mockery::on(function ($data) {
                         return isset($data['json'])

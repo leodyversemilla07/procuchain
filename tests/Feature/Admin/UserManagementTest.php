@@ -112,8 +112,7 @@ test('admin cannot delete own account', function () {
     $response = $this->actingAs($this->admin)
         ->delete("/admin/users/{$this->admin->id}");
 
-    $response->assertRedirect();
-    $response->assertSessionHasErrors(['error']);
+    $response->assertForbidden();
 
     $this->assertDatabaseHas('users', [
         'id' => $this->admin->id,

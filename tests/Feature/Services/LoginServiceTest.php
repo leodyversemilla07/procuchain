@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Mail;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->loginTrackingService = new LoginService;
+    $this->loginTrackingService = app(LoginService::class);
 });
 
 test('sends account locked email when account is locked after failed attempts', function () {

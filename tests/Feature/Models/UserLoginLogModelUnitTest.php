@@ -228,12 +228,14 @@ describe('UserLoginLog Model - Login Stats', function () {
     });
 
     test('getLoginStats counts this month logins', function () {
+        $thisMonth = now();
+
         UserLoginLog::factory()->count(6)->create([
-            'login_at' => now()->startOfMonth()->addDays(5),
+            'login_at' => $thisMonth->copy()->startOfMonth()->addDays(5),
         ]);
 
         UserLoginLog::factory()->count(2)->create([
-            'login_at' => now()->subMonths(2),
+            'login_at' => $thisMonth->copy()->subMonths(2),
         ]);
 
         $stats = UserLoginLog::getLoginStats();
@@ -242,10 +244,10 @@ describe('UserLoginLog Model - Login Stats', function () {
     });
 
     test('getLoginStats counts failed logins today', function () {
-        $today = now()->startOfDay();
-        
+        $today = now();
+
         UserLoginLog::factory()->count(3)->create([
-            'login_at' => $today->copy()->addHours(10),
+            'login_at' => $today->copy()->startOfDay()->addHours(10),
             'successful' => false,
         ]);
 
