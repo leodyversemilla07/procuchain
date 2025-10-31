@@ -21,7 +21,6 @@ import {
     User,
     XCircle,
 } from 'lucide-react';
-import React from 'react';
 
 interface LoginLog {
     id: number;
@@ -126,15 +125,13 @@ export default function LoginLogDetailsDialog({ open, onOpenChange, log, categor
                             <div
                                 className={cn(
                                     'flex h-10 w-10 items-center justify-center rounded-lg',
-                                    category === 'suspicious'
-                                        ? 'bg-destructive/10 dark:bg-destructive/20'
-                                        : 'bg-primary/10 dark:bg-primary/20',
+                                    category === 'suspicious' ? 'bg-destructive/10 dark:bg-destructive/20' : 'bg-primary/10 dark:bg-primary/20',
                                 )}
                             >
                                 {category === 'suspicious' ? (
-                                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                                    <AlertTriangle className="text-destructive h-5 w-5" />
                                 ) : (
-                                    <Shield className="h-5 w-5 text-primary" />
+                                    <Shield className="text-primary h-5 w-5" />
                                 )}
                             </div>
                             <div>
@@ -165,7 +162,7 @@ export default function LoginLogDetailsDialog({ open, onOpenChange, log, categor
                                         {log.successful ? (
                                             <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600 dark:text-green-400" />
                                         ) : (
-                                            <XCircle className="mt-0.5 h-5 w-5 text-destructive" />
+                                            <XCircle className="text-destructive mt-0.5 h-5 w-5" />
                                         )}
                                         <div className="flex-1">
                                             <p className="text-sm font-medium">Status</p>
@@ -178,9 +175,7 @@ export default function LoginLogDetailsDialog({ open, onOpenChange, log, categor
                                         <Clock className="text-muted-foreground mt-0.5 h-5 w-5" />
                                         <div className="flex-1">
                                             <p className="text-sm font-medium">Session Duration</p>
-                                            <p className="text-muted-foreground mt-1 text-sm">
-                                                {getSessionDuration(log.login_at, log.logout_at)}
-                                            </p>
+                                            <p className="text-muted-foreground mt-1 text-sm">{getSessionDuration(log.login_at, log.logout_at)}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -251,9 +246,7 @@ export default function LoginLogDetailsDialog({ open, onOpenChange, log, categor
                                             <p className="text-muted-foreground text-xs">IP Address</p>
                                             <div className="mt-1 flex items-center space-x-2">
                                                 <Globe className="text-muted-foreground h-4 w-4" />
-                                                <code className="rounded bg-muted px-2 py-1 text-sm font-mono">
-                                                    {log.ip_address}
-                                                </code>
+                                                <code className="bg-muted rounded px-2 py-1 font-mono text-sm">{log.ip_address}</code>
                                             </div>
                                         </div>
                                         <div>
@@ -298,9 +291,7 @@ export default function LoginLogDetailsDialog({ open, onOpenChange, log, categor
                                             <Separator />
                                             <div>
                                                 <p className="text-muted-foreground text-xs">User Agent</p>
-                                                <p className="text-muted-foreground mt-1 break-all font-mono text-xs">
-                                                    {log.user_agent}
-                                                </p>
+                                                <p className="text-muted-foreground mt-1 font-mono text-xs break-all">{log.user_agent}</p>
                                             </div>
                                         </>
                                     )}
@@ -327,7 +318,7 @@ export default function LoginLogDetailsDialog({ open, onOpenChange, log, categor
                                     </div>
                                     {log.logout_at && (
                                         <>
-                                            <div className="border-l-2 border-muted ml-4 h-4" />
+                                            <div className="border-muted ml-4 h-4 border-l-2" />
                                             <div className="flex items-start space-x-3">
                                                 <div className="bg-muted mt-0.5 flex h-8 w-8 items-center justify-center rounded-full">
                                                     <LockOpen className="text-muted-foreground h-4 w-4" />
@@ -347,18 +338,18 @@ export default function LoginLogDetailsDialog({ open, onOpenChange, log, categor
                         {category === 'suspicious' && (
                             <div className="space-y-3">
                                 <div className="flex items-center space-x-2">
-                                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                                    <AlertTriangle className="text-destructive h-4 w-4" />
                                     <h3 className="text-sm font-semibold">Security Alert</h3>
                                 </div>
                                 <Card className="border-destructive/50 bg-destructive/5">
                                     <CardContent className="p-4">
                                         <div className="flex items-start space-x-3">
-                                            <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
+                                            <AlertTriangle className="text-destructive mt-0.5 h-5 w-5" />
                                             <div className="flex-1">
-                                                <p className="font-medium text-destructive">Suspicious Activity Detected</p>
+                                                <p className="text-destructive font-medium">Suspicious Activity Detected</p>
                                                 <p className="text-muted-foreground mt-1 text-sm">
-                                                    This login attempt has been flagged as suspicious. Please review the details
-                                                    carefully and take appropriate action if necessary.
+                                                    This login attempt has been flagged as suspicious. Please review the details carefully and take
+                                                    appropriate action if necessary.
                                                 </p>
                                             </div>
                                         </div>

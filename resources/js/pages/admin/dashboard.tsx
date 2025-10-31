@@ -17,7 +17,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { dashboard } from '@/routes/admin';
 import { show as procurementsShow } from '@/routes/admin/procurements';
 import { index as procurementsListIndex } from '@/routes/admin/procurements-list';
-import { CartesianGrid, Line, LineChart, XAxis, Bar, BarChart, YAxis, Area, AreaChart } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 export type TimeRangeKey = '7_days' | '30_days' | '90_days' | '1_year';
 
@@ -257,7 +257,7 @@ export default function AdminDashboard() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard" />
 
-            <div className="flex h-full flex-1 flex-col space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 lg:p-8">
+            <div className="flex h-full flex-1 flex-col space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6 lg:p-8">
                 <HeroCard icon={Shield} title="Admin Dashboard" description="System-wide overview and administrative controls" />
 
                 <StatsGrid items={statsItems} />
@@ -315,14 +315,16 @@ export default function AdminDashboard() {
                                             onClick={() => setActiveLoginChart(key)}
                                         >
                                             <span className="text-muted-foreground text-xs">{interactiveLoginChartConfig[key].label}</span>
-                                            <span className="text-base leading-none font-bold sm:text-lg md:text-2xl lg:text-3xl">{loginTotals[key].toLocaleString()}</span>
+                                            <span className="text-base leading-none font-bold sm:text-lg md:text-2xl lg:text-3xl">
+                                                {loginTotals[key].toLocaleString()}
+                                            </span>
                                         </button>
                                     );
                                 })}
                             </div>
                         </CardHeader>
                         <CardContent className="px-2 sm:p-6">
-                            <ChartContainer config={interactiveLoginChartConfig} className="aspect-auto h-[200px] sm:h-[250px] w-full">
+                            <ChartContainer config={interactiveLoginChartConfig} className="aspect-auto h-[200px] w-full sm:h-[250px]">
                                 <LineChart
                                     accessibilityLayer
                                     data={loginChartData}
@@ -378,8 +380,8 @@ export default function AdminDashboard() {
 
                 {/* User Activity Section */}
                 <div className="space-y-4 sm:space-y-6">
-                    <div className="mb-2 sm:mb-4 flex items-center space-x-2">
-                        <h2 className="text-lg sm:text-xl font-semibold">User Activity Analytics</h2>
+                    <div className="mb-2 flex items-center space-x-2 sm:mb-4">
+                        <h2 className="text-lg font-semibold sm:text-xl">User Activity Analytics</h2>
                     </div>
 
                     {userActivityAnalytics && (
@@ -391,15 +393,21 @@ export default function AdminDashboard() {
                                 <CardContent className="space-y-3 sm:space-y-4">
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm sm:text-base">Total Logins</span>
-                                        <Badge variant="secondary" className="text-xs sm:text-sm">{formatValue(userActivityAnalytics.login_patterns?.total_logins || 0)}</Badge>
+                                        <Badge variant="secondary" className="text-xs sm:text-sm">
+                                            {formatValue(userActivityAnalytics.login_patterns?.total_logins || 0)}
+                                        </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm sm:text-base">Success Rate</span>
-                                        <Badge variant="default" className="text-xs sm:text-sm">{((userActivityAnalytics.login_patterns?.success_rate || 0)).toFixed(1)}%</Badge>
+                                        <Badge variant="default" className="text-xs sm:text-sm">
+                                            {(userActivityAnalytics.login_patterns?.success_rate || 0).toFixed(1)}%
+                                        </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm sm:text-base">Failed Logins</span>
-                                        <Badge variant="destructive" className="text-xs sm:text-sm">{formatValue(userActivityAnalytics.login_patterns?.failed_logins || 0)}</Badge>
+                                        <Badge variant="destructive" className="text-xs sm:text-sm">
+                                            {formatValue(userActivityAnalytics.login_patterns?.failed_logins || 0)}
+                                        </Badge>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -412,13 +420,13 @@ export default function AdminDashboard() {
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm sm:text-base">Security Score</span>
                                         <Badge variant="default" className="text-xs sm:text-sm">
-                                            {((userActivityAnalytics.security_metrics?.security_score || 0)).toFixed(1)}/100
+                                            {(userActivityAnalytics.security_metrics?.security_score || 0).toFixed(1)}/100
                                         </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm sm:text-base">Failed Login Rate</span>
                                         <Badge variant="secondary" className="text-xs sm:text-sm">
-                                            {((userActivityAnalytics.security_metrics?.failed_login_rate || 0)).toFixed(1)}%
+                                            {(userActivityAnalytics.security_metrics?.failed_login_rate || 0).toFixed(1)}%
                                         </Badge>
                                     </div>
                                 </CardContent>
@@ -433,11 +441,11 @@ export default function AdminDashboard() {
                                     <ChartContainer
                                         config={{
                                             logins: {
-                                                label: "Logins",
-                                                color: "var(--chart-1)",
+                                                label: 'Logins',
+                                                color: 'var(--chart-1)',
                                             },
                                         }}
-                                        className="h-[180px] sm:h-[200px] w-full"
+                                        className="h-[180px] w-full sm:h-[200px]"
                                     >
                                         <BarChart
                                             accessibilityLayer
@@ -458,7 +466,7 @@ export default function AdminDashboard() {
                                                 tickLine={false}
                                                 axisLine={false}
                                                 tickMargin={8}
-                                                tickFormatter={(value) => value.length > 10 ? value.substring(0, 10) + '...' : value}
+                                                tickFormatter={(value) => (value.length > 10 ? value.substring(0, 10) + '...' : value)}
                                                 fontSize={12}
                                             />
                                             <YAxis hide />
@@ -471,11 +479,7 @@ export default function AdminDashboard() {
                                                     />
                                                 }
                                             />
-                                            <Bar
-                                                dataKey="logins"
-                                                fill="var(--color-logins)"
-                                                radius={[4, 4, 0, 0]}
-                                            />
+                                            <Bar dataKey="logins" fill="var(--color-logins)" radius={[4, 4, 0, 0]} />
                                         </BarChart>
                                     </ChartContainer>
                                 </CardContent>
@@ -494,11 +498,11 @@ export default function AdminDashboard() {
                                 <ChartContainer
                                     config={{
                                         active_users: {
-                                            label: "Active Users",
-                                            color: "var(--chart-2)",
+                                            label: 'Active Users',
+                                            color: 'var(--chart-2)',
                                         },
                                     }}
-                                    className="h-[200px] sm:h-[250px] w-full"
+                                    className="h-[200px] w-full sm:h-[250px]"
                                 >
                                     <AreaChart
                                         accessibilityLayer

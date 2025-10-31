@@ -15,20 +15,29 @@ export default function About() {
                     name="description"
                     content="Learn about ProcuChain - an innovative blockchain-based system designed to bring transparency and efficiency to government procurement processes."
                 />
-                <meta name="keywords" content="about procuchain, blockchain procurement, government transparency, procurement innovation, MultiChain, Laravel, React" />
-                
+                <meta
+                    name="keywords"
+                    content="about procuchain, blockchain procurement, government transparency, procurement innovation, MultiChain, Laravel, React"
+                />
+
                 {/* Open Graph / Facebook */}
                 <meta property="og:type" content="website" />
                 <meta property="og:url" content={window.location.href} />
                 <meta property="og:title" content="About ProcuChain - Blockchain Procurement System" />
-                <meta property="og:description" content="Learn about ProcuChain - an innovative blockchain-based system designed to bring transparency and efficiency to government procurement processes." />
+                <meta
+                    property="og:description"
+                    content="Learn about ProcuChain - an innovative blockchain-based system designed to bring transparency and efficiency to government procurement processes."
+                />
                 <meta property="og:image" content="/logo.png" />
-                
+
                 {/* Twitter */}
                 <meta property="twitter:card" content="summary_large_image" />
                 <meta property="twitter:url" content={window.location.href} />
                 <meta property="twitter:title" content="About ProcuChain - Blockchain Procurement System" />
-                <meta property="twitter:description" content="Learn about ProcuChain - an innovative blockchain-based system designed to bring transparency and efficiency to government procurement processes." />
+                <meta
+                    property="twitter:description"
+                    content="Learn about ProcuChain - an innovative blockchain-based system designed to bring transparency and efficiency to government procurement processes."
+                />
                 <meta property="twitter:image" content="/logo.png" />
             </Head>
             <div className="bg-background text-foreground flex min-h-screen flex-col">
