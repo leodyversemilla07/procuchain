@@ -36,7 +36,7 @@ import { dashboard } from '@/routes/admin';
 import { locked } from '@/routes/admin/accounts';
 import { User, type BreadcrumbItem } from '@/types';
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import { format } from 'date-fns';
 import {
     AlertTriangle,
@@ -130,23 +130,32 @@ export default function AdminLockedAccounts() {
         if (flash.info) toast.info(flash.info);
     }, [flash]);
 
-    // Auto-refresh functionality
+    // Auto-refresh functionality using Inertia's usePoll
+    const { stop, start } = usePoll(
+        30000,
+        {
+            only: ['lockedAccounts'],
+            onStart: () => setIsRefreshing(true),
+            onFinish: () => {
+                setIsRefreshing(false);
+                toast.success('Locked accounts refreshed');
+            },
+        },
+        {
+            autoStart: false,
+            keepAlive: false, // Throttle by 90% when tab is in background
+        },
+    );
+
+    // Start/stop polling based on autoRefresh toggle
     useEffect(() => {
-        if (!autoRefresh) return;
-
-        const interval = setInterval(() => {
-            setIsRefreshing(true);
-            router.reload({
-                only: ['lockedAccounts'],
-                onFinish: () => {
-                    setIsRefreshing(false);
-                    toast.success('Locked accounts refreshed');
-                },
-            });
-        }, 30000); // 30 seconds
-
-        return () => clearInterval(interval);
-    }, [autoRefresh]);
+        if (autoRefresh) {
+            start();
+        } else {
+            stop();
+        }
+        return () => stop();
+    }, [autoRefresh, start, stop]);
 
     const handleRefresh = () => {
         setIsRefreshing(true);
@@ -165,7 +174,18 @@ export default function AdminLockedAccounts() {
         try {
             const accountsToExport = selectedAccounts.size > 0 ? filteredAccounts.filter((a) => selectedAccounts.has(a.id)) : filteredAccounts;
 
-            const headers = ['Name', 'Email', 'Role', '2FA Status', 'Lock Status', 'Failed Attempts', 'Locked At', 'Expires At', 'Reason', 'Time Remaining'];
+            const headers = [
+                'Name',
+                'Email',
+                'Role',
+                '2FA Status',
+                'Lock Status',
+                'Failed Attempts',
+                'Locked At',
+                'Expires At',
+                'Reason',
+                'Time Remaining',
+            ];
             const rows = accountsToExport.map((account) => [
                 account.name,
                 account.email,
@@ -226,6 +246,8 @@ export default function AdminLockedAccounts() {
             '/admin/accounts/bulk-unlock',
             { account_ids: accountIds },
             {
+                // Reload locked accounts data to sync across tabs/windows
+                only: ['lockedAccounts'],
                 onSuccess: () => {
                     setSelectedAccounts(new Set());
                     toast.success(`Successfully unlocked ${accountIds.length} account(s)`);
@@ -250,6 +272,8 @@ export default function AdminLockedAccounts() {
             '/admin/accounts/bulk-reset-attempts',
             { account_ids: accountIds },
             {
+                // Reload locked accounts data to sync across tabs/windows
+                only: ['lockedAccounts'],
                 onSuccess: () => {
                     setSelectedAccounts(new Set());
                     toast.success(`Successfully reset attempts for ${accountIds.length} account(s)`);
@@ -279,6 +303,8 @@ export default function AdminLockedAccounts() {
             `/admin/accounts/${selectedUser.id}/unlock`,
             { reason: 'Unlocked by administrator' },
             {
+                // Reload locked accounts data to sync across tabs/windows
+                only: ['lockedAccounts'],
                 onSuccess: () => {
                     setIsUnlockDialogOpen(false);
                     setSelectedUser(null);
@@ -299,6 +325,8 @@ export default function AdminLockedAccounts() {
             `/admin/accounts/${selectedUser.id}/reset-attempts`,
             {},
             {
+                // Reload locked accounts data to sync across tabs/windows
+                only: ['lockedAccounts'],
                 onSuccess: () => {
                     setIsResetDialogOpen(false);
                     setSelectedUser(null);
@@ -402,7 +430,7 @@ export default function AdminLockedAccounts() {
                     <CardContent className="p-4">
                         <div className="flex flex-col gap-4 md:flex-row md:items-center">
                             <div className="relative flex-1">
-                                <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                                 <Input
                                     placeholder="Search by name or email..."
                                     value={searchQuery}
@@ -492,15 +520,21 @@ export default function AdminLockedAccounts() {
                         <div className="space-y-2">
                             <div className="text-muted-foreground text-sm">High-Risk Accounts</div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-2xl font-bold">{filteredAccounts.filter((u) => (u.failed_login_attempts || 0) >= 3).length}</span>
-                                <Badge variant="destructive" className="text-xs">3+ attempts</Badge>
+                                <span className="text-2xl font-bold">
+                                    {filteredAccounts.filter((u) => (u.failed_login_attempts || 0) >= 3).length}
+                                </span>
+                                <Badge variant="destructive" className="text-xs">
+                                    3+ attempts
+                                </Badge>
                             </div>
                         </div>
                         <div className="space-y-2">
                             <div className="text-muted-foreground text-sm">Accounts with 2FA</div>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-2xl font-bold">{filteredAccounts.filter((u) => u.two_factor_enabled).length}</span>
-                                <Badge variant="outline" className="bg-success/10 text-success border-success/50 text-xs">Protected</Badge>
+                                <Badge variant="outline" className="bg-success/10 text-success border-success/50 text-xs">
+                                    Protected
+                                </Badge>
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -514,7 +548,9 @@ export default function AdminLockedAccounts() {
                                         }).length
                                     }
                                 </span>
-                                <Badge variant="outline" className="text-xs">{"<"}1 hour</Badge>
+                                <Badge variant="outline" className="text-xs">
+                                    {'<'}1 hour
+                                </Badge>
                             </div>
                         </div>
                     </CardContent>
@@ -563,169 +599,172 @@ export default function AdminLockedAccounts() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {isLoading || isRefreshing ? (
-                                        Array.from({ length: 5 }).map((_, index) => (
-                                            <TableRow key={index}>
-                                                <TableCell>
-                                                    <Skeleton className="h-4 w-4" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-3">
-                                                        <Skeleton className="h-8 w-8 rounded-full" />
-                                                        <div className="space-y-2">
-                                                            <Skeleton className="h-4 w-32" />
-                                                            <Skeleton className="h-3 w-48" />
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Skeleton className="h-5 w-20" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Skeleton className="h-5 w-16" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Skeleton className="h-5 w-24" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Skeleton className="h-4 w-8" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Skeleton className="h-4 w-32" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Skeleton className="h-4 w-32" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Skeleton className="h-4 w-24" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Skeleton className="h-8 w-8 rounded" />
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        paginatedAccounts.map((user) => (
-                                            <TableRow key={user.id}>
-                                                <TableCell>
-                                                    <Checkbox
-                                                        checked={selectedAccounts.has(user.id)}
-                                                        onCheckedChange={() => toggleAccountSelection(user.id)}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
-                                                            <UserIcon className="text-muted-foreground h-4 w-4" />
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-medium">{user.name}</div>
-                                                            <div className="text-muted-foreground text-sm">{user.email}</div>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge className={getRoleBadgeColor(user.role)}>{getRoleDisplayName(user.role)}</Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-1">
-                                                        {user.two_factor_enabled ? (
-                                                            <Badge className="bg-success/10 dark:bg-success/20 text-success dark:text-success-foreground border-success/50 dark:border-success/30 border px-2 py-1 text-xs">
-                                                                <QrCode className="mr-1 h-3 w-3" />
-                                                                Enabled
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge className="bg-muted dark:bg-muted/50 text-muted-foreground dark:text-muted-foreground/80 border-muted/50 dark:border-muted/30 border px-2 py-1 text-xs">
-                                                                Disabled
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="outline" className={getLockStatusColor(user)}>
-                                                        {user.is_currently_locked ? 'Active Lock' : 'Expired Lock'}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="text-sm font-medium">{user.failed_login_attempts || 0}</span>
-                                                        {(user.failed_login_attempts || 0) >= 3 && <AlertTriangle className="text-destructive h-4 w-4" />}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm">{formatDateTime(user.locked_at)}</div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm">{formatDateTime(user.lock_expires_at)}</div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm">
-                                                        {user.is_currently_locked ? (
-                                                            <div className="text-warning flex items-center space-x-1">
-                                                                <Clock className="h-3 w-3" />
-                                                                <span>{user.lock_time_remaining ?? '—'}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">Expired</span>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    navigator.clipboard.writeText(user.email);
-                                                                    toast.success('Email copied to clipboard');
-                                                                }}
-                                                            >
-                                                                <Copy className="mr-2 h-4 w-4" />
-                                                                Copy Email
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    setSelectedUser(user);
-                                                                    setIsProfileDialogOpen(true);
-                                                                }}
-                                                            >
-                                                                <ExternalLink className="mr-2 h-4 w-4" />
-                                                                View Profile
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    setSelectedUser(user);
-                                                                    setIsLoginHistoryDialogOpen(true);
-                                                                }}
-                                                            >
-                                                                <History className="mr-2 h-4 w-4" />
-                                                                Login History
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            {user.is_currently_locked && hasPermission('manage users') && (
-                                                                <DropdownMenuItem onClick={() => handleUnlockAccount(user)} className="text-success">
-                                                                    <Unlock className="mr-2 h-4 w-4" />
-                                                                    Unlock Account
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            {hasPermission('manage users') && (
-                                                                <DropdownMenuItem onClick={() => handleResetAttempts(user)}>
-                                                                    <RotateCcw className="mr-2 h-4 w-4" />
-                                                                    Reset Attempts
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
+                                    {isLoading || isRefreshing
+                                        ? Array.from({ length: 5 }).map((_, index) => (
+                                              <TableRow key={index}>
+                                                  <TableCell>
+                                                      <Skeleton className="h-4 w-4" />
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <div className="flex items-center space-x-3">
+                                                          <Skeleton className="h-8 w-8 rounded-full" />
+                                                          <div className="space-y-2">
+                                                              <Skeleton className="h-4 w-32" />
+                                                              <Skeleton className="h-3 w-48" />
+                                                          </div>
+                                                      </div>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <Skeleton className="h-5 w-20" />
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <Skeleton className="h-5 w-16" />
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <Skeleton className="h-5 w-24" />
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <Skeleton className="h-4 w-8" />
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <Skeleton className="h-4 w-32" />
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <Skeleton className="h-4 w-32" />
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <Skeleton className="h-4 w-24" />
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <Skeleton className="h-8 w-8 rounded" />
+                                                  </TableCell>
+                                              </TableRow>
+                                          ))
+                                        : paginatedAccounts.map((user) => (
+                                              <TableRow key={user.id}>
+                                                  <TableCell>
+                                                      <Checkbox
+                                                          checked={selectedAccounts.has(user.id)}
+                                                          onCheckedChange={() => toggleAccountSelection(user.id)}
+                                                      />
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <div className="flex items-center space-x-3">
+                                                          <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
+                                                              <UserIcon className="text-muted-foreground h-4 w-4" />
+                                                          </div>
+                                                          <div>
+                                                              <div className="font-medium">{user.name}</div>
+                                                              <div className="text-muted-foreground text-sm">{user.email}</div>
+                                                          </div>
+                                                      </div>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <Badge className={getRoleBadgeColor(user.role)}>{getRoleDisplayName(user.role)}</Badge>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <div className="flex items-center space-x-1">
+                                                          {user.two_factor_enabled ? (
+                                                              <Badge className="bg-success/10 dark:bg-success/20 text-success dark:text-success-foreground border-success/50 dark:border-success/30 border px-2 py-1 text-xs">
+                                                                  <QrCode className="mr-1 h-3 w-3" />
+                                                                  Enabled
+                                                              </Badge>
+                                                          ) : (
+                                                              <Badge className="bg-muted dark:bg-muted/50 text-muted-foreground dark:text-muted-foreground/80 border-muted/50 dark:border-muted/30 border px-2 py-1 text-xs">
+                                                                  Disabled
+                                                              </Badge>
+                                                          )}
+                                                      </div>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <Badge variant="outline" className={getLockStatusColor(user)}>
+                                                          {user.is_currently_locked ? 'Active Lock' : 'Expired Lock'}
+                                                      </Badge>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <div className="flex items-center space-x-2">
+                                                          <span className="text-sm font-medium">{user.failed_login_attempts || 0}</span>
+                                                          {(user.failed_login_attempts || 0) >= 3 && (
+                                                              <AlertTriangle className="text-destructive h-4 w-4" />
+                                                          )}
+                                                      </div>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <div className="text-sm">{formatDateTime(user.locked_at)}</div>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <div className="text-sm">{formatDateTime(user.lock_expires_at)}</div>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                      <div className="text-sm">
+                                                          {user.is_currently_locked ? (
+                                                              <div className="text-warning flex items-center space-x-1">
+                                                                  <Clock className="h-3 w-3" />
+                                                                  <span>{user.lock_time_remaining ?? '—'}</span>
+                                                              </div>
+                                                          ) : (
+                                                              <span className="text-muted-foreground">Expired</span>
+                                                          )}
+                                                      </div>
+                                                  </TableCell>
+                                                  <TableCell className="text-right">
+                                                      <DropdownMenu>
+                                                          <DropdownMenuTrigger asChild>
+                                                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                                                  <MoreHorizontal className="h-4 w-4" />
+                                                              </Button>
+                                                          </DropdownMenuTrigger>
+                                                          <DropdownMenuContent align="end">
+                                                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                              <DropdownMenuSeparator />
+                                                              <DropdownMenuItem
+                                                                  onClick={() => {
+                                                                      navigator.clipboard.writeText(user.email);
+                                                                      toast.success('Email copied to clipboard');
+                                                                  }}
+                                                              >
+                                                                  <Copy className="mr-2 h-4 w-4" />
+                                                                  Copy Email
+                                                              </DropdownMenuItem>
+                                                              <DropdownMenuItem
+                                                                  onClick={() => {
+                                                                      setSelectedUser(user);
+                                                                      setIsProfileDialogOpen(true);
+                                                                  }}
+                                                              >
+                                                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                                                  View Profile
+                                                              </DropdownMenuItem>
+                                                              <DropdownMenuItem
+                                                                  onClick={() => {
+                                                                      setSelectedUser(user);
+                                                                      setIsLoginHistoryDialogOpen(true);
+                                                                  }}
+                                                              >
+                                                                  <History className="mr-2 h-4 w-4" />
+                                                                  Login History
+                                                              </DropdownMenuItem>
+                                                              <DropdownMenuSeparator />
+                                                              {user.is_currently_locked && hasPermission('manage users') && (
+                                                                  <DropdownMenuItem
+                                                                      onClick={() => handleUnlockAccount(user)}
+                                                                      className="text-success"
+                                                                  >
+                                                                      <Unlock className="mr-2 h-4 w-4" />
+                                                                      Unlock Account
+                                                                  </DropdownMenuItem>
+                                                              )}
+                                                              {hasPermission('manage users') && (
+                                                                  <DropdownMenuItem onClick={() => handleResetAttempts(user)}>
+                                                                      <RotateCcw className="mr-2 h-4 w-4" />
+                                                                      Reset Attempts
+                                                                  </DropdownMenuItem>
+                                                              )}
+                                                          </DropdownMenuContent>
+                                                      </DropdownMenu>
+                                                  </TableCell>
+                                              </TableRow>
+                                          ))}
                                 </TableBody>
                             </Table>
                         </CardContent>
@@ -749,164 +788,169 @@ export default function AdminLockedAccounts() {
                 {filteredAccounts.length > 0 && (
                     <div className="md:hidden">
                         <div className="space-y-4">
-                            {isLoading || isRefreshing ? (
-                                Array.from({ length: 3 }).map((_, index) => (
-                                    <Card key={index}>
-                                        <CardContent className="p-4">
-                                            <div className="space-y-4">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-center space-x-3">
-                                                        <Skeleton className="h-10 w-10 rounded-full" />
-                                                        <div className="space-y-2">
-                                                            <Skeleton className="h-4 w-32" />
-                                                            <Skeleton className="h-3 w-48" />
-                                                        </div>
-                                                    </div>
-                                                    <Skeleton className="h-8 w-8" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Skeleton className="h-4 w-full" />
-                                                    <Skeleton className="h-4 w-full" />
-                                                    <Skeleton className="h-4 w-2/3" />
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))
-                            ) : (
-                                paginatedAccounts.map((user) => (
-                                    <Card key={user.id}>
-                                        <CardContent className="p-4">
-                                            <div className="space-y-4">
-                                                {/* Header */}
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-center space-x-3">
-                                                        <Checkbox
-                                                            checked={selectedAccounts.has(user.id)}
-                                                            onCheckedChange={() => toggleAccountSelection(user.id)}
-                                                        />
-                                                        <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
-                                                            <UserIcon className="text-muted-foreground h-5 w-5" />
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-medium">{user.name}</div>
-                                                            <div className="text-muted-foreground text-sm">{user.email}</div>
-                                                        </div>
-                                                    </div>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    navigator.clipboard.writeText(user.email);
-                                                                    toast.success('Email copied to clipboard');
-                                                                }}
-                                                            >
-                                                                <Copy className="mr-2 h-4 w-4" />
-                                                                Copy Email
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    setSelectedUser(user);
-                                                                    setIsProfileDialogOpen(true);
-                                                                }}
-                                                            >
-                                                                <ExternalLink className="mr-2 h-4 w-4" />
-                                                                View Profile
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    setSelectedUser(user);
-                                                                    setIsLoginHistoryDialogOpen(true);
-                                                                }}
-                                                            >
-                                                                <History className="mr-2 h-4 w-4" />
-                                                                Login History
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            {user.is_currently_locked && hasPermission('manage users') && (
-                                                                <DropdownMenuItem onClick={() => handleUnlockAccount(user)} className="text-success">
-                                                                    <Unlock className="mr-2 h-4 w-4" />
-                                                                    Unlock Account
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            {hasPermission('manage users') && (
-                                                                <DropdownMenuItem onClick={() => handleResetAttempts(user)}>
-                                                                    <RotateCcw className="mr-2 h-4 w-4" />
-                                                                    Reset Attempts
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
+                            {isLoading || isRefreshing
+                                ? Array.from({ length: 3 }).map((_, index) => (
+                                      <Card key={index}>
+                                          <CardContent className="p-4">
+                                              <div className="space-y-4">
+                                                  <div className="flex items-start justify-between">
+                                                      <div className="flex items-center space-x-3">
+                                                          <Skeleton className="h-10 w-10 rounded-full" />
+                                                          <div className="space-y-2">
+                                                              <Skeleton className="h-4 w-32" />
+                                                              <Skeleton className="h-3 w-48" />
+                                                          </div>
+                                                      </div>
+                                                      <Skeleton className="h-8 w-8" />
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                      <Skeleton className="h-4 w-full" />
+                                                      <Skeleton className="h-4 w-full" />
+                                                      <Skeleton className="h-4 w-2/3" />
+                                                  </div>
+                                              </div>
+                                          </CardContent>
+                                      </Card>
+                                  ))
+                                : paginatedAccounts.map((user) => (
+                                      <Card key={user.id}>
+                                          <CardContent className="p-4">
+                                              <div className="space-y-4">
+                                                  {/* Header */}
+                                                  <div className="flex items-start justify-between">
+                                                      <div className="flex items-center space-x-3">
+                                                          <Checkbox
+                                                              checked={selectedAccounts.has(user.id)}
+                                                              onCheckedChange={() => toggleAccountSelection(user.id)}
+                                                          />
+                                                          <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
+                                                              <UserIcon className="text-muted-foreground h-5 w-5" />
+                                                          </div>
+                                                          <div>
+                                                              <div className="font-medium">{user.name}</div>
+                                                              <div className="text-muted-foreground text-sm">{user.email}</div>
+                                                          </div>
+                                                      </div>
+                                                      <DropdownMenu>
+                                                          <DropdownMenuTrigger asChild>
+                                                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                                                  <MoreHorizontal className="h-4 w-4" />
+                                                              </Button>
+                                                          </DropdownMenuTrigger>
+                                                          <DropdownMenuContent align="end">
+                                                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                              <DropdownMenuSeparator />
+                                                              <DropdownMenuItem
+                                                                  onClick={() => {
+                                                                      navigator.clipboard.writeText(user.email);
+                                                                      toast.success('Email copied to clipboard');
+                                                                  }}
+                                                              >
+                                                                  <Copy className="mr-2 h-4 w-4" />
+                                                                  Copy Email
+                                                              </DropdownMenuItem>
+                                                              <DropdownMenuItem
+                                                                  onClick={() => {
+                                                                      setSelectedUser(user);
+                                                                      setIsProfileDialogOpen(true);
+                                                                  }}
+                                                              >
+                                                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                                                  View Profile
+                                                              </DropdownMenuItem>
+                                                              <DropdownMenuItem
+                                                                  onClick={() => {
+                                                                      setSelectedUser(user);
+                                                                      setIsLoginHistoryDialogOpen(true);
+                                                                  }}
+                                                              >
+                                                                  <History className="mr-2 h-4 w-4" />
+                                                                  Login History
+                                                              </DropdownMenuItem>
+                                                              <DropdownMenuSeparator />
+                                                              {user.is_currently_locked && hasPermission('manage users') && (
+                                                                  <DropdownMenuItem
+                                                                      onClick={() => handleUnlockAccount(user)}
+                                                                      className="text-success"
+                                                                  >
+                                                                      <Unlock className="mr-2 h-4 w-4" />
+                                                                      Unlock Account
+                                                                  </DropdownMenuItem>
+                                                              )}
+                                                              {hasPermission('manage users') && (
+                                                                  <DropdownMenuItem onClick={() => handleResetAttempts(user)}>
+                                                                      <RotateCcw className="mr-2 h-4 w-4" />
+                                                                      Reset Attempts
+                                                                  </DropdownMenuItem>
+                                                              )}
+                                                          </DropdownMenuContent>
+                                                      </DropdownMenu>
+                                                  </div>
 
-                                                {/* Details */}
-                                                <div className="space-y-2 text-sm">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Role</span>
-                                                        <Badge className={getRoleBadgeColor(user.role)}>{getRoleDisplayName(user.role)}</Badge>
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">2FA Status</span>
-                                                        {user.two_factor_enabled ? (
-                                                            <Badge className="bg-success/10 text-success border-success/50 border px-2 py-1 text-xs">
-                                                                <QrCode className="mr-1 h-3 w-3" />
-                                                                Enabled
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge className="bg-muted text-muted-foreground border-muted/50 border px-2 py-1 text-xs">Disabled</Badge>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Lock Status</span>
-                                                        <Badge variant="outline" className={getLockStatusColor(user)}>
-                                                            {user.is_currently_locked ? 'Active Lock' : 'Expired Lock'}
-                                                        </Badge>
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Failed Attempts</span>
-                                                        <div className="flex items-center space-x-2">
-                                                            <span className="font-medium">{user.failed_login_attempts || 0}</span>
-                                                            {(user.failed_login_attempts || 0) >= 3 && <AlertTriangle className="text-destructive h-4 w-4" />}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Locked At</span>
-                                                        <span>{formatDateTime(user.locked_at)}</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Expires At</span>
-                                                        <span>{formatDateTime(user.lock_expires_at)}</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Time Remaining</span>
-                                                        {user.is_currently_locked ? (
-                                                            <div className="text-warning flex items-center space-x-1">
-                                                                <Clock className="h-3 w-3" />
-                                                                <span>{user.lock_time_remaining ?? '—'}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">Expired</span>
-                                                        )}
-                                                    </div>
-                                                    {user.locked_reason && (
-                                                        <div className="bg-muted/50 mt-2 rounded-md p-2">
-                                                            <div className="text-muted-foreground mb-1 text-xs font-medium">Lock Reason</div>
-                                                            <div className="text-sm">{user.locked_reason}</div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))
-                            )}
+                                                  {/* Details */}
+                                                  <div className="space-y-2 text-sm">
+                                                      <div className="flex items-center justify-between">
+                                                          <span className="text-muted-foreground">Role</span>
+                                                          <Badge className={getRoleBadgeColor(user.role)}>{getRoleDisplayName(user.role)}</Badge>
+                                                      </div>
+                                                      <div className="flex items-center justify-between">
+                                                          <span className="text-muted-foreground">2FA Status</span>
+                                                          {user.two_factor_enabled ? (
+                                                              <Badge className="bg-success/10 text-success border-success/50 border px-2 py-1 text-xs">
+                                                                  <QrCode className="mr-1 h-3 w-3" />
+                                                                  Enabled
+                                                              </Badge>
+                                                          ) : (
+                                                              <Badge className="bg-muted text-muted-foreground border-muted/50 border px-2 py-1 text-xs">
+                                                                  Disabled
+                                                              </Badge>
+                                                          )}
+                                                      </div>
+                                                      <div className="flex items-center justify-between">
+                                                          <span className="text-muted-foreground">Lock Status</span>
+                                                          <Badge variant="outline" className={getLockStatusColor(user)}>
+                                                              {user.is_currently_locked ? 'Active Lock' : 'Expired Lock'}
+                                                          </Badge>
+                                                      </div>
+                                                      <div className="flex items-center justify-between">
+                                                          <span className="text-muted-foreground">Failed Attempts</span>
+                                                          <div className="flex items-center space-x-2">
+                                                              <span className="font-medium">{user.failed_login_attempts || 0}</span>
+                                                              {(user.failed_login_attempts || 0) >= 3 && (
+                                                                  <AlertTriangle className="text-destructive h-4 w-4" />
+                                                              )}
+                                                          </div>
+                                                      </div>
+                                                      <div className="flex items-center justify-between">
+                                                          <span className="text-muted-foreground">Locked At</span>
+                                                          <span>{formatDateTime(user.locked_at)}</span>
+                                                      </div>
+                                                      <div className="flex items-center justify-between">
+                                                          <span className="text-muted-foreground">Expires At</span>
+                                                          <span>{formatDateTime(user.lock_expires_at)}</span>
+                                                      </div>
+                                                      <div className="flex items-center justify-between">
+                                                          <span className="text-muted-foreground">Time Remaining</span>
+                                                          {user.is_currently_locked ? (
+                                                              <div className="text-warning flex items-center space-x-1">
+                                                                  <Clock className="h-3 w-3" />
+                                                                  <span>{user.lock_time_remaining ?? '—'}</span>
+                                                              </div>
+                                                          ) : (
+                                                              <span className="text-muted-foreground">Expired</span>
+                                                          )}
+                                                      </div>
+                                                      {user.locked_reason && (
+                                                          <div className="bg-muted/50 mt-2 rounded-md p-2">
+                                                              <div className="text-muted-foreground mb-1 text-xs font-medium">Lock Reason</div>
+                                                              <div className="text-sm">{user.locked_reason}</div>
+                                                          </div>
+                                                      )}
+                                                  </div>
+                                              </div>
+                                          </CardContent>
+                                      </Card>
+                                  ))}
                         </div>
                         <div className="mt-4 flex justify-center">
                             <Pagination

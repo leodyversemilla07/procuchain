@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePermissions } from '@/hooks/use-permissions';
 import AppLayout from '@/layouts/app-layout';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import {
     flexRender,
     getCoreRowModel,
@@ -32,7 +32,27 @@ import {
     type SortingState,
     type VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, Clock, Download, Edit, History, KeyRound, MoreHorizontal, Plus, QrCode, RefreshCw, Search, Shield, Trash2, UserCheck, Users, X } from 'lucide-react';
+import {
+    ArrowDown,
+    ArrowUp,
+    ArrowUpDown,
+    CheckCircle2,
+    Clock,
+    Download,
+    Edit,
+    History,
+    KeyRound,
+    MoreHorizontal,
+    Plus,
+    QrCode,
+    RefreshCw,
+    Search,
+    Shield,
+    Trash2,
+    UserCheck,
+    Users,
+    X,
+} from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -139,23 +159,32 @@ export default function AdminUserManagement() {
         });
     };
 
-    // Auto-refresh functionality
+    // Auto-refresh functionality using Inertia's usePoll
+    const { stop, start } = usePoll(
+        30000,
+        {
+            only: ['users'],
+            onStart: () => setIsRefreshing(true),
+            onFinish: () => {
+                setIsRefreshing(false);
+                toast.success('Users refreshed');
+            },
+        },
+        {
+            autoStart: false,
+            keepAlive: false, // Throttle by 90% when tab is in background
+        },
+    );
+
+    // Start/stop polling based on autoRefresh toggle
     useEffect(() => {
-        if (!autoRefresh) return;
-
-        const interval = setInterval(() => {
-            setIsRefreshing(true);
-            router.reload({
-                only: ['users'],
-                onFinish: () => {
-                    setIsRefreshing(false);
-                    toast.success('Users refreshed');
-                },
-            });
-        }, 30000); // 30 seconds
-
-        return () => clearInterval(interval);
-    }, [autoRefresh]);
+        if (autoRefresh) {
+            start();
+        } else {
+            stop();
+        }
+        return () => stop();
+    }, [autoRefresh, start, stop]);
 
     const handleRefresh = () => {
         setIsRefreshing(true);
@@ -239,14 +268,18 @@ export default function AdminUserManagement() {
             verified: filteredUsers.filter((u) => u.email_verified_at).length,
             twoFactor: filteredUsers.filter((u) => u.two_factor_enabled).length,
             admins: filteredUsers.filter((u) => u.role === 'admin').length,
-            verifiedPercentage: filteredUsers.length > 0 ? Math.round((filteredUsers.filter((u) => u.email_verified_at).length / filteredUsers.length) * 100) : 0,
-            twoFactorPercentage: filteredUsers.length > 0 ? Math.round((filteredUsers.filter((u) => u.two_factor_enabled).length / filteredUsers.length) * 100) : 0,
+            verifiedPercentage:
+                filteredUsers.length > 0 ? Math.round((filteredUsers.filter((u) => u.email_verified_at).length / filteredUsers.length) * 100) : 0,
+            twoFactorPercentage:
+                filteredUsers.length > 0 ? Math.round((filteredUsers.filter((u) => u.two_factor_enabled).length / filteredUsers.length) * 100) : 0,
         };
     }, [filteredUsers]);
 
     const handleCreateUser = (e: React.FormEvent) => {
         e.preventDefault();
         router.post('/admin/users', formData, {
+            // Reload users data to sync across tabs/windows
+            only: ['users'],
             onSuccess: () => {
                 setIsCreateModalOpen(false);
                 resetForm();
@@ -264,6 +297,8 @@ export default function AdminUserManagement() {
         if (!selectedUser) return;
 
         router.put(`/admin/users/${selectedUser.id}`, formData, {
+            // Reload users data to sync across tabs/windows
+            only: ['users'],
             onSuccess: () => {
                 setIsEditModalOpen(false);
                 setSelectedUser(null);
@@ -286,6 +321,8 @@ export default function AdminUserManagement() {
         if (!userToDelete) return;
 
         router.delete(`/admin/users/${userToDelete.id}`, {
+            // Reload users data to sync across tabs/windows
+            only: ['users'],
             onSuccess: () => {
                 toast.success('User deleted successfully');
                 setIsDeleteDialogOpen(false);
@@ -314,6 +351,8 @@ export default function AdminUserManagement() {
 
         router.delete('/admin/users', {
             data: { user_ids: userIds },
+            // Reload users data to sync across tabs/windows
+            only: ['users'],
             onSuccess: () => {
                 const count = selectedRows.length;
                 const message = count === 1 ? 'User deleted successfully' : `${count} users deleted successfully`;
@@ -821,7 +860,7 @@ export default function AdminUserManagement() {
                                 {/* Search and Filter Row */}
                                 <div className="flex flex-col gap-4 md:flex-row">
                                     <div className="relative flex-1">
-                                        <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                                        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                                         <Input
                                             placeholder="Search by name, email, or blockchain address..."
                                             value={searchQuery}
@@ -910,7 +949,8 @@ export default function AdminUserManagement() {
                                 {(searchQuery || roleFilter !== 'all' || verificationFilter !== 'all' || twoFactorFilter !== 'all') && (
                                     <div className="text-muted-foreground text-sm">
                                         Showing {filteredUsers.length} of {users.length} user(s)
-                                        {table.getFilteredSelectedRowModel().rows.length > 0 && ` • ${table.getFilteredSelectedRowModel().rows.length} selected`}
+                                        {table.getFilteredSelectedRowModel().rows.length > 0 &&
+                                            ` • ${table.getFilteredSelectedRowModel().rows.length} selected`}
                                     </div>
                                 )}
                             </div>
@@ -1065,157 +1105,157 @@ export default function AdminUserManagement() {
                     {filteredUsers.length > 0 && (
                         <div className="md:hidden">
                             <div className="space-y-4">
-                                {isLoading || isRefreshing ? (
-                                    Array.from({ length: 3 }).map((_, index) => (
-                                        <Card key={index}>
-                                            <CardContent className="p-4">
-                                                <div className="space-y-4">
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="space-y-2 flex-1">
-                                                            <Skeleton className="h-5 w-32" />
-                                                            <Skeleton className="h-4 w-48" />
-                                                        </div>
-                                                        <Skeleton className="h-8 w-8" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Skeleton className="h-4 w-full" />
-                                                        <Skeleton className="h-4 w-full" />
-                                                        <Skeleton className="h-4 w-2/3" />
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    ))
-                                ) : (
-                                    table.getRowModel().rows.map((row) => {
-                                        const user = row.original;
-                                        return (
-                                            <Card key={user.id}>
-                                                <CardHeader className="pb-3">
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex items-start gap-3 flex-1">
-                                                            <Checkbox
-                                                                checked={row.getIsSelected()}
-                                                                onCheckedChange={(value) => row.toggleSelected(!!value)}
-                                                            />
-                                                            <div className="space-y-1 flex-1">
-                                                                <CardTitle className="text-base">{user.name}</CardTitle>
-                                                                <p className="text-muted-foreground text-sm">{user.email}</p>
-                                                            </div>
-                                                        </div>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                                <DropdownMenuItem
-                                                                    onClick={async () => {
-                                                                        try {
-                                                                            await navigator.clipboard.writeText(user.email);
-                                                                            toast.success('Email copied');
-                                                                        } catch {
-                                                                            toast.error('Failed to copy');
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    Copy email
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    onClick={() => {
-                                                                        setSelectedUser(user);
-                                                                        setIsDetailsDialogOpen(true);
-                                                                    }}
-                                                                >
-                                                                    View Details
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem
-                                                                    onClick={() => {
-                                                                        setSelectedUser(user);
-                                                                        setIsLoginHistoryDialogOpen(true);
-                                                                    }}
-                                                                >
-                                                                    <History className="mr-2 h-4 w-4" />
-                                                                    Login History
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    onClick={() => {
-                                                                        setSelectedUser(user);
-                                                                        setIsResetPasswordDialogOpen(true);
-                                                                    }}
-                                                                >
-                                                                    <KeyRound className="mr-2 h-4 w-4" />
-                                                                    Reset Password
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                {hasPermission('edit users') && (
-                                                                    <DropdownMenuItem onClick={() => openEditModal(user)}>
-                                                                        <Edit className="mr-2 h-4 w-4" />
-                                                                        Edit user
-                                                                    </DropdownMenuItem>
-                                                                )}
-                                                                {hasPermission('delete users') && (
-                                                                    <DropdownMenuItem
-                                                                        onClick={() => handleDeleteUser(user)}
-                                                                        className="text-destructive"
-                                                                    >
-                                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                                        Delete user
-                                                                    </DropdownMenuItem>
-                                                                )}
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                </CardHeader>
-                                                <CardContent className="space-y-3 pt-0">
-                                                    <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-muted-foreground">Role</span>
-                                                        <Badge className={getRoleBadgeColor(user.role)}>{getRoleDisplayName(user.role)}</Badge>
-                                                    </div>
-                                                    <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-muted-foreground">Email Status</span>
-                                                        {user.email_verified_at ? (
-                                                            <Badge className="border border-green-200 bg-green-100 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
-                                                                Verified
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge className="border border-yellow-200 bg-yellow-100 text-xs text-yellow-800 dark:border-yellow-800/30 dark:bg-yellow-900/20 dark:text-yellow-200">
-                                                                Pending
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-muted-foreground">2FA Status</span>
-                                                        {user.two_factor_enabled ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <Badge className="border border-green-200 bg-green-100 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
-                                                                    <QrCode className="mr-1 h-3 w-3" />
-                                                                    Enabled
-                                                                </Badge>
-                                                                {user.backup_codes && user.backup_codes.length > 0 && (
-                                                                    <span className="text-muted-foreground text-xs">({user.backup_codes.length} codes)</span>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <Badge className="border border-gray-200 bg-gray-100 text-xs text-gray-800 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-300">
-                                                                Disabled
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                    {user.blockchain_address && (
-                                                        <div className="bg-muted/50 rounded-md p-2">
-                                                            <div className="text-muted-foreground mb-1 text-xs font-medium">Blockchain Address</div>
-                                                            <div className="font-mono text-xs break-all">{user.blockchain_address}</div>
-                                                        </div>
-                                                    )}
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })
-                                )}
+                                {isLoading || isRefreshing
+                                    ? Array.from({ length: 3 }).map((_, index) => (
+                                          <Card key={index}>
+                                              <CardContent className="p-4">
+                                                  <div className="space-y-4">
+                                                      <div className="flex items-start justify-between">
+                                                          <div className="flex-1 space-y-2">
+                                                              <Skeleton className="h-5 w-32" />
+                                                              <Skeleton className="h-4 w-48" />
+                                                          </div>
+                                                          <Skeleton className="h-8 w-8" />
+                                                      </div>
+                                                      <div className="space-y-2">
+                                                          <Skeleton className="h-4 w-full" />
+                                                          <Skeleton className="h-4 w-full" />
+                                                          <Skeleton className="h-4 w-2/3" />
+                                                      </div>
+                                                  </div>
+                                              </CardContent>
+                                          </Card>
+                                      ))
+                                    : table.getRowModel().rows.map((row) => {
+                                          const user = row.original;
+                                          return (
+                                              <Card key={user.id}>
+                                                  <CardHeader className="pb-3">
+                                                      <div className="flex items-start justify-between">
+                                                          <div className="flex flex-1 items-start gap-3">
+                                                              <Checkbox
+                                                                  checked={row.getIsSelected()}
+                                                                  onCheckedChange={(value) => row.toggleSelected(!!value)}
+                                                              />
+                                                              <div className="flex-1 space-y-1">
+                                                                  <CardTitle className="text-base">{user.name}</CardTitle>
+                                                                  <p className="text-muted-foreground text-sm">{user.email}</p>
+                                                              </div>
+                                                          </div>
+                                                          <DropdownMenu>
+                                                              <DropdownMenuTrigger asChild>
+                                                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                      <MoreHorizontal className="h-4 w-4" />
+                                                                  </Button>
+                                                              </DropdownMenuTrigger>
+                                                              <DropdownMenuContent align="end">
+                                                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                                  <DropdownMenuItem
+                                                                      onClick={async () => {
+                                                                          try {
+                                                                              await navigator.clipboard.writeText(user.email);
+                                                                              toast.success('Email copied');
+                                                                          } catch {
+                                                                              toast.error('Failed to copy');
+                                                                          }
+                                                                      }}
+                                                                  >
+                                                                      Copy email
+                                                                  </DropdownMenuItem>
+                                                                  <DropdownMenuItem
+                                                                      onClick={() => {
+                                                                          setSelectedUser(user);
+                                                                          setIsDetailsDialogOpen(true);
+                                                                      }}
+                                                                  >
+                                                                      View Details
+                                                                  </DropdownMenuItem>
+                                                                  <DropdownMenuSeparator />
+                                                                  <DropdownMenuItem
+                                                                      onClick={() => {
+                                                                          setSelectedUser(user);
+                                                                          setIsLoginHistoryDialogOpen(true);
+                                                                      }}
+                                                                  >
+                                                                      <History className="mr-2 h-4 w-4" />
+                                                                      Login History
+                                                                  </DropdownMenuItem>
+                                                                  <DropdownMenuItem
+                                                                      onClick={() => {
+                                                                          setSelectedUser(user);
+                                                                          setIsResetPasswordDialogOpen(true);
+                                                                      }}
+                                                                  >
+                                                                      <KeyRound className="mr-2 h-4 w-4" />
+                                                                      Reset Password
+                                                                  </DropdownMenuItem>
+                                                                  <DropdownMenuSeparator />
+                                                                  {hasPermission('edit users') && (
+                                                                      <DropdownMenuItem onClick={() => openEditModal(user)}>
+                                                                          <Edit className="mr-2 h-4 w-4" />
+                                                                          Edit user
+                                                                      </DropdownMenuItem>
+                                                                  )}
+                                                                  {hasPermission('delete users') && (
+                                                                      <DropdownMenuItem
+                                                                          onClick={() => handleDeleteUser(user)}
+                                                                          className="text-destructive"
+                                                                      >
+                                                                          <Trash2 className="mr-2 h-4 w-4" />
+                                                                          Delete user
+                                                                      </DropdownMenuItem>
+                                                                  )}
+                                                              </DropdownMenuContent>
+                                                          </DropdownMenu>
+                                                      </div>
+                                                  </CardHeader>
+                                                  <CardContent className="space-y-3 pt-0">
+                                                      <div className="flex items-center justify-between text-sm">
+                                                          <span className="text-muted-foreground">Role</span>
+                                                          <Badge className={getRoleBadgeColor(user.role)}>{getRoleDisplayName(user.role)}</Badge>
+                                                      </div>
+                                                      <div className="flex items-center justify-between text-sm">
+                                                          <span className="text-muted-foreground">Email Status</span>
+                                                          {user.email_verified_at ? (
+                                                              <Badge className="border border-green-200 bg-green-100 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
+                                                                  Verified
+                                                              </Badge>
+                                                          ) : (
+                                                              <Badge className="border border-yellow-200 bg-yellow-100 text-xs text-yellow-800 dark:border-yellow-800/30 dark:bg-yellow-900/20 dark:text-yellow-200">
+                                                                  Pending
+                                                              </Badge>
+                                                          )}
+                                                      </div>
+                                                      <div className="flex items-center justify-between text-sm">
+                                                          <span className="text-muted-foreground">2FA Status</span>
+                                                          {user.two_factor_enabled ? (
+                                                              <div className="flex items-center gap-2">
+                                                                  <Badge className="border border-green-200 bg-green-100 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
+                                                                      <QrCode className="mr-1 h-3 w-3" />
+                                                                      Enabled
+                                                                  </Badge>
+                                                                  {user.backup_codes && user.backup_codes.length > 0 && (
+                                                                      <span className="text-muted-foreground text-xs">
+                                                                          ({user.backup_codes.length} codes)
+                                                                      </span>
+                                                                  )}
+                                                              </div>
+                                                          ) : (
+                                                              <Badge className="border border-gray-200 bg-gray-100 text-xs text-gray-800 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-300">
+                                                                  Disabled
+                                                              </Badge>
+                                                          )}
+                                                      </div>
+                                                      {user.blockchain_address && (
+                                                          <div className="bg-muted/50 rounded-md p-2">
+                                                              <div className="text-muted-foreground mb-1 text-xs font-medium">Blockchain Address</div>
+                                                              <div className="font-mono text-xs break-all">{user.blockchain_address}</div>
+                                                          </div>
+                                                      )}
+                                                  </CardContent>
+                                              </Card>
+                                          );
+                                      })}
                             </div>
                             <div className="mt-4 flex justify-center">
                                 <Pagination
@@ -1261,10 +1301,10 @@ export default function AdminUserManagement() {
                     onConfirm={confirmBulkDelete}
                 />
 
-                <UserDetailsDialog 
-                    open={isDetailsDialogOpen} 
-                    onOpenChange={setIsDetailsDialogOpen} 
-                    user={selectedUser ? { ...selectedUser } : null} 
+                <UserDetailsDialog
+                    open={isDetailsDialogOpen}
+                    onOpenChange={setIsDetailsDialogOpen}
+                    user={selectedUser ? { ...selectedUser } : null}
                 />
 
                 <UserLoginHistoryDialog

@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePoll } from '@inertiajs/react';
 import { AlertCircle, CheckCircle, Loader2, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import bacSecretariatProcurements from '@/routes/bac-secretariat/procurements';
 
 interface BlockchainPublishingStatusPageProps {
     procurement: {
@@ -15,6 +14,7 @@ interface BlockchainPublishingStatusPageProps {
     };
     stage: string;
     returnUrl?: string;
+    initialStatus?: StatusResponse;
 }
 
 interface StatusResponse {
@@ -35,99 +35,116 @@ interface StatusResponse {
     }>;
 }
 
-export default function BlockchainPublishingStatusPage({ procurement, stage, returnUrl }: BlockchainPublishingStatusPageProps) {
-    const [status, setStatus] = useState<'pending' | 'confirmed' | 'failed'>('pending');
-    const [summary, setSummary] = useState({ pending: 0, confirmed: 0, failed: 0, total: 0 });
-    const [documents, setDocuments] = useState<StatusResponse['documents']>([]);
-    const [attempts, setAttempts] = useState(0);
-    const [isPolling, setIsPolling] = useState(true);
+export default function BlockchainPublishingStatusPage({ procurement, stage, returnUrl, initialStatus }: BlockchainPublishingStatusPageProps) {
+    // Use initialStatus directly from props - Inertia will update it automatically
+    const status = initialStatus;
     const [redirectCountdown, setRedirectCountdown] = useState(3);
     const [showDetails, setShowDetails] = useState(false);
+    const [pollAttempts, setPollAttempts] = useState(0);
 
     const POLLING_INTERVAL = 2000; // 2 seconds
     const MAX_ATTEMPTS = 60; // 2 minutes total
+
+    const isPending = status?.status === 'pending';
+    const hasTimedOut = pollAttempts >= MAX_ATTEMPTS;
 
     const handleRedirect = useCallback(() => {
         const destination = returnUrl || `/procurements/${procurement.id}`;
         router.visit(destination);
     }, [returnUrl, procurement.id]);
 
+    // Reload page data from server using Inertia
+    const reloadStatus = useCallback(() => {
+        router.reload({
+            only: ['initialStatus'],
+            onSuccess: () => {
+                setPollAttempts((prev) => prev + 1);
+            },
+            onError: (error) => {
+                console.error('Failed to check blockchain status:', error);
+                setPollAttempts((prev) => prev + 1);
+            },
+        });
+    }, []);
+
+    // Initial reload if no initial status provided
+    useEffect(() => {
+        if (!initialStatus) {
+            reloadStatus();
+        }
+    }, [initialStatus, reloadStatus]);
+
+    // Use Inertia's built-in polling feature with router.reload()
+    const { stop, start } = usePoll(
+        POLLING_INTERVAL,
+        {
+            onStart: reloadStatus,
+        },
+        {
+            autoStart: false,
+            keepAlive: false, // Throttle by 90% when tab is in background
+        },
+    );
+
+    // Start/stop polling based on status
+    useEffect(() => {
+        if (isPending && !hasTimedOut) {
+            start();
+        } else {
+            stop();
+        }
+
+        return () => stop();
+    }, [isPending, hasTimedOut, start, stop]);
+
     // Prevent navigation while publishing
     useEffect(() => {
-        if (status === 'pending') {
-            // Prevent browser back button
-            const handlePopState = (e: PopStateEvent) => {
-                e.preventDefault();
-                window.history.pushState(null, '', window.location.href);
-                toast.warning('Please wait for blockchain publishing to complete');
-            };
+        if (!isPending) return;
 
-            // Prevent Inertia navigation
-            const removeListener = router.on('before', () => {
-                if (status === 'pending') {
-                    toast.warning('Please wait for blockchain publishing to complete');
-                    return false; // Cancel navigation
-                }
-            });
-
-            // Prevent browser tab close/reload
-            const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-                e.preventDefault();
-                e.returnValue = 'Blockchain publishing in progress. Are you sure you want to leave?';
-                return e.returnValue;
-            };
-
+        // Prevent browser back button
+        const handlePopState = (e: PopStateEvent) => {
+            e.preventDefault();
             window.history.pushState(null, '', window.location.href);
-            window.addEventListener('popstate', handlePopState);
-            window.addEventListener('beforeunload', handleBeforeUnload);
-
-            return () => {
-                window.removeEventListener('popstate', handlePopState);
-                window.removeEventListener('beforeunload', handleBeforeUnload);
-                removeListener();
-            };
-        }
-    }, [status, procurement.id, returnUrl]);
-
-    // Polling logic
-    useEffect(() => {
-        if (!isPolling) return;
-
-        const pollStatus = async () => {
-            try {
-                const response = await fetch(bacSecretariatProcurements.blockchainStatus.url(procurement.id));
-                const data: StatusResponse = await response.json();
-
-                setStatus(data.status);
-                setSummary(data.summary);
-                setDocuments(data.documents);
-                setAttempts((prev) => prev + 1);
-
-                if (data.status !== 'pending') {
-                    setIsPolling(false);
-                }
-
-                if (attempts >= MAX_ATTEMPTS) {
-                    setIsPolling(false);
-                    toast.warning('Blockchain publishing is taking longer than expected', {
-                        description: 'You can continue waiting or check the blockchain explorer for more details.',
-                    });
-                }
-            } catch (error) {
-                console.error('Failed to check blockchain status:', error);
-                setAttempts((prev) => prev + 1);
-            }
+            toast.warning('Please wait for blockchain publishing to complete');
         };
 
-        const interval = setInterval(pollStatus, POLLING_INTERVAL);
-        pollStatus(); // Initial poll
+        // Prevent Inertia navigation
+        const removeListener = router.on('before', () => {
+            toast.warning('Please wait for blockchain publishing to complete');
+            return false; // Cancel navigation
+        });
 
-        return () => clearInterval(interval);
-    }, [isPolling, procurement.id, attempts]);
+        // Prevent browser tab close/reload
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            // Modern browsers will show a generic confirmation dialog
+            // Custom messages are no longer supported for security reasons
+        };
+
+        // Set up history state
+        window.history.pushState(null, '', window.location.href);
+        window.addEventListener('popstate', handlePopState);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            removeListener();
+        };
+    }, [isPending]);
+
+    // Show timeout warning
+    useEffect(() => {
+        if (hasTimedOut && isPending) {
+            toast.warning('Blockchain publishing is taking longer than expected', {
+                description: 'You can continue waiting or check the blockchain explorer for more details.',
+            });
+        }
+    }, [hasTimedOut, isPending]);
 
     // Auto-redirect countdown on success
     useEffect(() => {
-        if (status === 'confirmed') {
+        if (status?.status === 'confirmed') {
             const countdown = setInterval(() => {
                 setRedirectCountdown((prev) => {
                     if (prev <= 1) {
@@ -141,12 +158,11 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
 
             return () => clearInterval(countdown);
         }
-    }, [status, handleRedirect]);
+    }, [status?.status, handleRedirect]);
 
     const handleRetry = () => {
-        setStatus('pending');
-        setIsPolling(true);
-        setAttempts(0);
+        setPollAttempts(0);
+        start();
         toast.info('Retrying blockchain status check...');
     };
 
@@ -160,8 +176,9 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
         router.visit('/admin/blockchain-explorer');
     };
 
+    const summary = status?.summary || { pending: 0, confirmed: 0, failed: 0, total: 0 };
+    const documents = status?.documents || [];
     const progress = summary.total > 0 ? Math.round((summary.confirmed / summary.total) * 100) : 0;
-    const hasTimedOut = attempts >= MAX_ATTEMPTS;
 
     return (
         <>
@@ -169,7 +186,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
             <div className="from-background to-muted/20 flex min-h-screen items-center justify-center bg-gradient-to-b p-4">
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border w-full max-w-2xl shadow-2xl">
                     {/* CONFIRMED STATE */}
-                    {status === 'confirmed' && (
+                    {status?.status === 'confirmed' && (
                         <>
                             <CardHeader className="space-y-3 text-center">
                                 <div className="bg-success/10 border-success/20 mx-auto flex h-20 w-20 items-center justify-center rounded-full border-4">
@@ -217,7 +234,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
                     )}
 
                     {/* FAILED STATE */}
-                    {status === 'failed' && (
+                    {status?.status === 'failed' && (
                         <>
                             <CardHeader className="space-y-3 text-center">
                                 <div className="bg-destructive/10 border-destructive/20 mx-auto flex h-20 w-20 items-center justify-center rounded-full border-4">
@@ -291,7 +308,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
                     )}
 
                     {/* PENDING STATE */}
-                    {status === 'pending' && (
+                    {status?.status === 'pending' && (
                         <>
                             <CardHeader className="space-y-3 text-center">
                                 <div className="bg-primary/10 border-primary/20 mx-auto flex h-20 w-20 items-center justify-center rounded-full border-4">
@@ -369,14 +386,14 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
 
                                 <div className="bg-muted/30 rounded-lg p-3 text-center">
                                     <p className="text-muted-foreground text-xs">
-                                        Attempt {attempts} of {MAX_ATTEMPTS} • Checking every {POLLING_INTERVAL / 1000} seconds
+                                        Attempt {pollAttempts} of {MAX_ATTEMPTS} • Checking every {POLLING_INTERVAL / 1000} seconds
                                     </p>
                                 </div>
                             </CardContent>
                             <CardFooter className="flex flex-col gap-3 border-t pt-6">
                                 {hasTimedOut && (
                                     <div className="grid w-full grid-cols-2 gap-3">
-                                        <Button onClick={() => setIsPolling(true)} variant="default" size="lg">
+                                        <Button onClick={() => start()} variant="default" size="lg">
                                             Continue Waiting
                                         </Button>
                                         <Button onClick={handleCheckHealth} variant="outline" size="lg">
