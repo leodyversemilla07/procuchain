@@ -3,21 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {
-    Activity,
-    AlertTriangle,
-    CheckCircle2,
-    Clock,
-    Globe,
-    History,
-    MapPin,
-    Monitor,
-    Smartphone,
-    Tablet,
-    XCircle,
-} from 'lucide-react';
-import React, { useCallback, useEffect, useState } from 'react';
+import { Activity, AlertTriangle, CheckCircle2, Clock, Globe, History, MapPin, Monitor, Smartphone, Tablet, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import admin from '@/routes/admin';
 
 interface LoginLog {
     id: number;
@@ -50,7 +39,7 @@ export default function UserLoginHistoryDialog({ open, onOpenChange, userId, use
         setIsLoading(true);
         try {
             // Fetch recent logins from the existing endpoint
-            const response = await fetch(route('admin.login-logs.recent', { limit: 100 }));
+            const response = await fetch(admin.loginLogs.recent.url({ query: { limit: 100 } }));
             const data = await response.json();
 
             if (data.success) {
@@ -129,8 +118,8 @@ export default function UserLoginHistoryDialog({ open, onOpenChange, userId, use
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] max-w-[95vw] md:max-w-6xl lg:max-w-7xl gap-0 p-0 flex flex-col overflow-hidden">
-                <DialogHeader className="border-b px-6 py-4 shrink-0">
+            <DialogContent className="flex max-h-[90vh] max-w-[95vw] flex-col gap-0 overflow-hidden p-0 md:max-w-6xl lg:max-w-7xl">
+                <DialogHeader className="shrink-0 border-b px-6 py-4">
                     <div className="flex items-center space-x-3">
                         <div className="bg-primary/10 dark:bg-primary/20 flex h-10 w-10 items-center justify-center rounded-lg">
                             <History className="text-primary h-5 w-5" />
@@ -144,36 +133,36 @@ export default function UserLoginHistoryDialog({ open, onOpenChange, userId, use
                     </div>
                 </DialogHeader>
 
-                <div className="px-6 py-4 shrink-0">
+                <div className="shrink-0 px-6 py-4">
                     {/* Statistics */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                         <div className="bg-muted/50 rounded-lg p-3">
                             <div className="flex items-center gap-2">
                                 <Activity className="text-primary h-4 w-4" />
                                 <span className="text-muted-foreground text-xs">Total Logins</span>
                             </div>
-                            <p className="mt-1 text-xl md:text-2xl font-bold">{stats.total}</p>
+                            <p className="mt-1 text-xl font-bold md:text-2xl">{stats.total}</p>
                         </div>
                         <div className="bg-muted/50 rounded-lg p-3">
                             <div className="flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                                 <span className="text-muted-foreground text-xs">Successful</span>
                             </div>
-                            <p className="mt-1 text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">{stats.successful}</p>
+                            <p className="mt-1 text-xl font-bold text-green-600 md:text-2xl dark:text-green-400">{stats.successful}</p>
                         </div>
                         <div className="bg-muted/50 rounded-lg p-3">
                             <div className="flex items-center gap-2">
-                                <XCircle className="h-4 w-4 text-destructive" />
+                                <XCircle className="text-destructive h-4 w-4" />
                                 <span className="text-muted-foreground text-xs">Failed</span>
                             </div>
-                            <p className="mt-1 text-xl md:text-2xl font-bold text-destructive">{stats.failed}</p>
+                            <p className="text-destructive mt-1 text-xl font-bold md:text-2xl">{stats.failed}</p>
                         </div>
                         <div className="bg-muted/50 rounded-lg p-3">
                             <div className="flex items-center gap-2">
                                 <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                                 <span className="text-muted-foreground text-xs">Success Rate</span>
                             </div>
-                            <p className="mt-1 text-xl md:text-2xl font-bold">{stats.successRate}%</p>
+                            <p className="mt-1 text-xl font-bold md:text-2xl">{stats.successRate}%</p>
                         </div>
                     </div>
                 </div>
@@ -199,7 +188,7 @@ export default function UserLoginHistoryDialog({ open, onOpenChange, userId, use
                                 <p className="text-muted-foreground text-sm">This user has no recorded login activity yet.</p>
                             </div>
                         ) : (
-                            <div className="rounded-md border overflow-x-auto mt-2">
+                            <div className="mt-2 overflow-x-auto rounded-md border">
                                 <Table className="w-full">
                                     <TableHeader>
                                         <TableRow>
@@ -229,11 +218,11 @@ export default function UserLoginHistoryDialog({ open, onOpenChange, userId, use
                                                     <TableCell>
                                                         <div className="flex items-center space-x-2">
                                                             <DeviceIcon className="text-muted-foreground h-4 w-4 shrink-0" />
-                                                            <div className="space-y-1 min-w-0">
-                                                                <div className="text-sm capitalize whitespace-nowrap">{log.device_type || 'Unknown'}</div>
-                                                                {log.browser && (
-                                                                    <div className="text-muted-foreground text-xs">{log.browser}</div>
-                                                                )}
+                                                            <div className="min-w-0 space-y-1">
+                                                                <div className="text-sm whitespace-nowrap capitalize">
+                                                                    {log.device_type || 'Unknown'}
+                                                                </div>
+                                                                {log.browser && <div className="text-muted-foreground text-xs">{log.browser}</div>}
                                                             </div>
                                                         </div>
                                                     </TableCell>
@@ -266,7 +255,7 @@ export default function UserLoginHistoryDialog({ open, onOpenChange, userId, use
                     </div>
                 </div>
 
-                <div className="flex justify-end border-t px-6 py-3 shrink-0">
+                <div className="flex shrink-0 justify-end border-t px-6 py-3">
                     <Button onClick={() => onOpenChange(false)} variant="outline">
                         Close
                     </Button>
