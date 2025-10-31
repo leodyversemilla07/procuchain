@@ -69,8 +69,8 @@ export const RecentProcurementsTable = ({
                     {hasProcurements ? ` (${procurements.length})` : ''}
                 </CardTitle>
                 {hasProcurements && viewAllHref ? (
-                                        <Link 
-                        href={viewAllHref} 
+                    <Link
+                        href={viewAllHref}
                         className="text-primary ml-2 flex shrink-0 items-center text-xs hover:underline md:text-sm"
                         prefetch="hover"
                         cacheFor="1m"
@@ -124,11 +124,7 @@ export const RecentProcurementsTable = ({
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <Button variant="ghost" size="sm" asChild className="h-8 px-2">
-                                                    <Link 
-                                                        href={getViewProcurementHref(procurement)}
-                                                        prefetch="hover"
-                                                        cacheFor="1m"
-                                                    >
+                                                    <Link href={getViewProcurementHref(procurement)} prefetch="hover" cacheFor="1m">
                                                         <EyeIcon className="h-4 w-4" />
                                                     </Link>
                                                 </Button>

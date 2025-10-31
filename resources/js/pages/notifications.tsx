@@ -412,7 +412,7 @@ export default function Notifications() {
                                     >
                                         <div
                                             onClick={loadMore}
-                                            className="text-muted-foreground cursor-pointer border-t py-4 text-center text-sm transition-colors hover:text-foreground"
+                                            className="text-muted-foreground hover:text-foreground cursor-pointer border-t py-4 text-center text-sm transition-colors"
                                         >
                                             {loadingMore ? (
                                                 <div className="flex items-center justify-center gap-2">
@@ -430,9 +430,7 @@ export default function Notifications() {
 
                         {/* End of List Indicator */}
                         {!loading && !has_more && filteredNotifications.length > 0 && (
-                            <div className="text-muted-foreground border-t py-4 text-center text-sm">
-                                No more notifications
-                            </div>
+                            <div className="text-muted-foreground border-t py-4 text-center text-sm">No more notifications</div>
                         )}
                     </CardContent>
                 </Card>
