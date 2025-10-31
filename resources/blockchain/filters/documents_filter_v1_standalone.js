@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, no-undef */
 /**
- * ProcuChain Document Validation Filter
+ * ProcuChain Document Validation Filter (Standalone Version)
  *
  * Stream Filter for: procurement.documents
- * Version: 1.0.0
+ * Version: 1.0.0 (Community Edition Compatible)
  *
  * Purpose: Enforce document metadata integrity, hash uniqueness per procurement,
  * and adherence to allowed document types on the blockchain level.
@@ -15,6 +15,9 @@
  * - File sizes are within acceptable limits
  * - No duplicate hashes exist for the same procurement
  *
+ * Note: This is a standalone version for MultiChain Community Edition
+ * which does not support libraries. All validation is inline.
+ *
  * Rejection Messages: Returned as human-readable strings that will appear
  * in Laravel logs and can be surfaced to the UI.
  *
@@ -25,7 +28,6 @@
  * Main filter function - called by MultiChain for each stream item
  * Returns empty/undefined to accept, or error string to reject
  */
-
 function filterstreamitem() {
     var item = getfilterstreamitem();
 
@@ -36,7 +38,9 @@ function filterstreamitem() {
 
     var data = item.data.json;
 
-    // 1. Validate required fields
+    // ========================================
+    // 1. REQUIRED FIELDS VALIDATION
+    // ========================================
     var requiredFields = [
         'procurement_id',
         'procurement_title',
@@ -56,13 +60,17 @@ function filterstreamitem() {
         }
     }
 
-    // 2. Validate document hash format (SHA-256 = 64 hex characters)
+    // ========================================
+    // 2. DOCUMENT HASH VALIDATION (SHA-256)
+    // ========================================
     var hashPattern = /^[a-f0-9]{64}$/i;
     if (!hashPattern.test(data.hash)) {
         return 'Invalid document hash format. Expected 64-character SHA-256 hex string, got: ' + data.hash;
     }
 
-    // 3. Validate file size (max 10MB = 10485760 bytes)
+    // ========================================
+    // 3. FILE SIZE VALIDATION
+    // ========================================
     var maxFileSize = 10485760; // 10MB in bytes
     var fileSize = parseInt(data.file_size, 10);
 
@@ -74,7 +82,9 @@ function filterstreamitem() {
         return 'File size exceeds maximum allowed (10MB). Size: ' + fileSize + ' bytes';
     }
 
-    // 4. Validate document type (must match valid procurement stages)
+    // ========================================
+    // 4. DOCUMENT TYPE VALIDATION
+    // ========================================
     var validDocumentTypes = [
         'procurement_initiation',
         'pre_procurement_conference',
@@ -104,18 +114,24 @@ function filterstreamitem() {
         return 'Invalid document_type: ' + data.document_type + '. Must match a valid procurement stage.';
     }
 
-    // 5. Validate stage matches document type
+    // ========================================
+    // 5. STAGE VALIDATION
+    // ========================================
     if (data.stage !== data.document_type) {
         return "Stage mismatch: stage '" + data.stage + "' does not match document_type '" + data.document_type + "'";
     }
 
-    // 6. Validate blockchain address format (basic check)
-    var addressPattern = /^[a-zA-Z0-9]{20,50}$/;
-    if (!addressPattern.test(data.user_address)) {
-        return 'Invalid blockchain address format: ' + data.user_address;
+    // ========================================
+    // 6. BLOCKCHAIN ADDRESS VALIDATION
+    // ========================================
+    // MultiChain addresses are typically 25-40 characters
+    if (typeof data.user_address !== 'string' || data.user_address.length < 25 || data.user_address.length > 40) {
+        return 'Invalid blockchain address format';
     }
 
-    // 7. Check for duplicate hashes within the same procurement
+    // ========================================
+    // 7. DUPLICATE HASH CHECK
+    // ========================================
     // Query existing items in the stream for this procurement
 
     var streamName = getfilterstream();
@@ -128,14 +144,18 @@ function filterstreamitem() {
     // For now, we rely on application-level duplicate prevention as blockchain queries
     // in filters have performance implications
 
-    // 8. Validate timestamp format (ISO 8601)
+    // ========================================
+    // 8. TIMESTAMP VALIDATION (ISO 8601)
+    // ========================================
     // Basic check - should contain date and time
     if (data.timestamp.length < 19) {
         // Minimum: "2024-01-01T00:00:00"
         return 'Invalid timestamp format. Expected ISO 8601 format.';
     }
 
-    // 9. Validate procurement_title is not empty and reasonable length
+    // ========================================
+    // 9. STRING LENGTH VALIDATION
+    // ========================================
     if (data.procurement_title.length < 5) {
         return 'Procurement title too short. Minimum 5 characters required.';
     }

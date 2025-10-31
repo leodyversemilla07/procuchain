@@ -1,12 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, no-undef */
 /**
- * ProcuChain Status Validation Filter
+ * ProcuChain Status Validation Filter (Standalone Version)
  *
  * Stream Filter for: procurement.status
- * Version: 1.0.0
+ * Version: 1.0.0 (Community Edition Compatible)
  *
  * Purpose: Enforce status progression rules for procurement workflows
  * This ensures that procurement status transitions follow valid progression paths
+ *
+ * Note: This is a standalone version for MultiChain Community Edition
+ * which does not support libraries. All validation is inline.
  *
  * @see https://www.multichain.com/developers/smart-filters/
  */
@@ -25,7 +28,9 @@ function filterstreamitem() {
 
     var data = item.data.json;
 
-    // 1. Validate required fields
+    // ========================================
+    // 1. REQUIRED FIELDS VALIDATION
+    // ========================================
     var requiredFields = ['procurement_id', 'procurement_title', 'current_status', 'stage', 'timestamp', 'user_address'];
 
     for (var i = 0; i < requiredFields.length; i++) {
@@ -35,7 +40,9 @@ function filterstreamitem() {
         }
     }
 
-    // 2. Validate status is in allowed values
+    // ========================================
+    // 2. STATUS ENUM VALIDATION
+    // ========================================
     var validStatuses = [
         'procurement_submitted',
         'pre_procurement_conference_held',
@@ -72,7 +79,9 @@ function filterstreamitem() {
         return 'Invalid status: ' + data.current_status;
     }
 
-    // 3. Validate stage is in allowed values
+    // ========================================
+    // 3. STAGE ENUM VALIDATION
+    // ========================================
     var validStages = [
         'procurement_initiation',
         'pre_procurement_conference',
@@ -103,7 +112,9 @@ function filterstreamitem() {
         return 'Invalid stage: ' + data.stage;
     }
 
-    // 4. Validate stage-status alignment
+    // ========================================
+    // 4. STAGE-STATUS ALIGNMENT VALIDATION
+    // ========================================
     // This ensures the status makes sense for the given stage
     var stageStatusMap = {
         procurement_initiation: ['procurement_submitted'],
@@ -138,18 +149,24 @@ function filterstreamitem() {
         }
     }
 
-    // 5. Validate blockchain address format
-    var addressPattern = /^[a-zA-Z0-9]{20,50}$/;
-    if (!addressPattern.test(data.user_address)) {
-        return 'Invalid blockchain address format: ' + data.user_address;
+    // ========================================
+    // 5. BLOCKCHAIN ADDRESS VALIDATION
+    // ========================================
+    // MultiChain addresses are typically 25-40 characters
+    if (typeof data.user_address !== 'string' || data.user_address.length < 25 || data.user_address.length > 40) {
+        return 'Invalid blockchain address format';
     }
 
-    // 6. Validate timestamp format
+    // ========================================
+    // 6. TIMESTAMP VALIDATION (ISO 8601)
+    // ========================================
     if (data.timestamp.length < 19) {
         return 'Invalid timestamp format. Expected ISO 8601 format.';
     }
 
-    // 7. Validate procurement title length
+    // ========================================
+    // 7. STRING LENGTH VALIDATION
+    // ========================================
     if (data.procurement_title.length < 5) {
         return 'Procurement title too short. Minimum 5 characters required.';
     }
