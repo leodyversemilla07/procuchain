@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes/admin';
 import loginLogs from '@/routes/admin/login-logs';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, router, usePage, usePoll } from '@inertiajs/react';
 import { format } from 'date-fns';
 import {
     Activity,
@@ -46,8 +46,8 @@ import {
     QrCode,
     RefreshCw,
     Search,
-    ShieldBan,
     Shield,
+    ShieldBan,
     Smartphone,
     Tablet,
     TrendingUp,
@@ -93,7 +93,7 @@ interface LoginStatistics {
 interface Props {
     recentLogins: LoginLog[];
     statistics: LoginStatistics;
-    suspiciousActivities: LoginLog[];
+    suspiciousActivities?: LoginLog[]; // Optional - loaded via Deferred
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -157,26 +157,35 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
         }
     }, []);
 
-    // Auto-refresh functionality
+    // Auto-refresh functionality using Inertia's usePoll
+    const { stop, start } = usePoll(
+        30000,
+        {
+            only: ['recentLogins', 'statistics', 'suspiciousActivities'],
+            onStart: () => setIsRefreshing(true),
+            onFinish: () => {
+                setIsRefreshing(false);
+                toast.success('Data refreshed', {
+                    description: 'Login logs updated successfully',
+                    duration: 2000,
+                });
+            },
+        },
+        {
+            autoStart: false,
+            keepAlive: false, // Throttle by 90% when tab is in background
+        },
+    );
+
+    // Start/stop polling based on autoRefresh toggle
     useEffect(() => {
-        if (!autoRefresh) return;
-
-        const interval = setInterval(() => {
-            setIsRefreshing(true);
-            router.reload({
-                only: ['recentLogins', 'statistics', 'suspiciousActivities'],
-                onFinish: () => {
-                    setIsRefreshing(false);
-                    toast.success('Data refreshed', {
-                        description: 'Login logs updated successfully',
-                        duration: 2000,
-                    });
-                },
-            });
-        }, 30000); // 30 seconds
-
-        return () => clearInterval(interval);
-    }, [autoRefresh]);
+        if (autoRefresh) {
+            start();
+        } else {
+            stop();
+        }
+        return () => stop();
+    }, [autoRefresh, start, stop]);
 
     // Persist selectedCategory to URL query (without reload)
     useEffect(() => {
@@ -259,7 +268,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
     // Sort and filter suspicious activities (latest first)
     const filteredAndSortedSuspiciousActivities = useMemo(() => {
-        return filterLogs(suspiciousActivities).sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
+        return filterLogs(suspiciousActivities || []).sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
     }, [suspiciousActivities, filterLogs]);
 
     // Merge, sort, and paginate combined logs
@@ -292,14 +301,29 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
         (logsToExport?: LoginLog[]) => {
             setIsExporting(true);
             try {
-                const logs = logsToExport || (selectedLogs.size > 0 ? combinedFilteredAndSortedLogs.filter((l) => selectedLogs.has(l.id)) : combinedFilteredAndSortedLogs);
+                const logs =
+                    logsToExport ||
+                    (selectedLogs.size > 0 ? combinedFilteredAndSortedLogs.filter((l) => selectedLogs.has(l.id)) : combinedFilteredAndSortedLogs);
 
                 if (logs.length === 0) {
                     toast.error('No data to export');
                     return;
                 }
 
-                const headers = ['Date/Time', 'User', 'Email', 'Role', '2FA', 'Status', 'IP Address', 'Location', 'Device', 'Browser', 'Platform', 'Session Duration'];
+                const headers = [
+                    'Date/Time',
+                    'User',
+                    'Email',
+                    'Role',
+                    '2FA',
+                    'Status',
+                    'IP Address',
+                    'Location',
+                    'Device',
+                    'Browser',
+                    'Platform',
+                    'Session Duration',
+                ];
 
                 const rows = logs.map((log) => [
                     formatDateTime(log.login_at),
@@ -424,7 +448,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     // Get unique values for filter options
     const getUniqueRoles = useMemo(() => {
         const roles = new Set<string>();
-        [...recentLogins, ...suspiciousActivities].forEach((log) => {
+        [...recentLogins, ...(suspiciousActivities || [])].forEach((log) => {
             if (log.user?.role) roles.add(log.user.role);
         });
         return Array.from(roles).sort();
@@ -432,7 +456,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
     const getUniqueBrowsers = useMemo(() => {
         const browsers = new Set<string>();
-        [...recentLogins, ...suspiciousActivities].forEach((log) => {
+        [...recentLogins, ...(suspiciousActivities || [])].forEach((log) => {
             if (log.browser) browsers.add(log.browser);
         });
         return Array.from(browsers).sort();
@@ -440,7 +464,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
     const getUniqueDeviceTypes = useMemo(() => {
         const deviceTypes = new Set<string>();
-        [...recentLogins, ...suspiciousActivities].forEach((log) => {
+        [...recentLogins, ...(suspiciousActivities || [])].forEach((log) => {
             if (log.device_type) deviceTypes.add(log.device_type);
         });
         return Array.from(deviceTypes).sort();
@@ -479,41 +503,34 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
             if (!ipToBlock) return;
 
             setIsBlocking(true);
-            try {
-                const response = await fetch(route('admin.login-logs.block-ip'), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+
+            router.post(
+                loginLogs.blockIp.url(),
+                {
+                    ip_address: ipToBlock,
+                    reason,
+                    duration,
+                },
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        toast.success('IP Address Blocked', {
+                            description: `${ipToBlock} has been blocked successfully.`,
+                        });
+                        setIsBlockDialogOpen(false);
+                        setIpToBlock(null);
                     },
-                    body: JSON.stringify({
-                        ip_address: ipToBlock,
-                        reason,
-                        duration,
-                    }),
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    toast.success('IP Address Blocked', {
-                        description: `${ipToBlock} has been blocked successfully.`,
-                    });
-                    setIsBlockDialogOpen(false);
-                    setIpToBlock(null);
-                } else {
-                    toast.error('Failed to block IP', {
-                        description: data.error || 'An error occurred while blocking the IP address.',
-                    });
-                }
-            } catch (error) {
-                console.error('Error blocking IP:', error);
-                toast.error('Failed to block IP', {
-                    description: 'An error occurred while blocking the IP address.',
-                });
-            } finally {
-                setIsBlocking(false);
-            }
+                    onError: (errors) => {
+                        console.error('Error blocking IP:', errors);
+                        toast.error('Failed to block IP', {
+                            description: errors.message || 'An error occurred while blocking the IP address.',
+                        });
+                    },
+                    onFinish: () => {
+                        setIsBlocking(false);
+                    },
+                },
+            );
         },
         [ipToBlock],
     );
@@ -638,7 +655,11 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                     </>
                                 )}
                             </Button>
-                            <Button onClick={() => exportToCSV()} variant="outline" disabled={isExporting || combinedFilteredAndSortedLogs.length === 0}>
+                            <Button
+                                onClick={() => exportToCSV()}
+                                variant="outline"
+                                disabled={isExporting || combinedFilteredAndSortedLogs.length === 0}
+                            >
                                 {isExporting ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -895,7 +916,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                         {/* Bulk Actions Bar */}
                         {selectedLogs.size > 0 && (
-                            <div className="flex items-center justify-between rounded-lg border bg-muted/50 p-3">
+                            <div className="bg-muted/50 flex items-center justify-between rounded-lg border p-3">
                                 <div className="flex items-center gap-2">
                                     <Badge variant="default">{selectedLogs.size} selected</Badge>
                                     <Button variant="ghost" size="sm" onClick={() => setSelectedLogs(new Set())}>
@@ -903,12 +924,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                     </Button>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => exportToCSV()}
-                                        disabled={isExporting}
-                                    >
+                                    <Button variant="outline" size="sm" onClick={() => exportToCSV()} disabled={isExporting}>
                                         <Download className="mr-2 h-4 w-4" />
                                         Export Selected
                                     </Button>
@@ -954,8 +970,17 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                             ? `${Math.round((statistics.successful_logins / statistics.total_logins) * 100)}%`
                                             : '0%'}
                                     </p>
-                                    <Badge variant={statistics.total_logins > 0 && (statistics.successful_logins / statistics.total_logins) >= 0.9 ? 'default' : 'destructive'} className="text-xs">
-                                        {statistics.total_logins > 0 && (statistics.successful_logins / statistics.total_logins) >= 0.9 ? 'Healthy' : 'Review'}
+                                    <Badge
+                                        variant={
+                                            statistics.total_logins > 0 && statistics.successful_logins / statistics.total_logins >= 0.9
+                                                ? 'default'
+                                                : 'destructive'
+                                        }
+                                        className="text-xs"
+                                    >
+                                        {statistics.total_logins > 0 && statistics.successful_logins / statistics.total_logins >= 0.9
+                                            ? 'Healthy'
+                                            : 'Review'}
                                     </Badge>
                                 </div>
                             </div>
@@ -964,8 +989,42 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                 </Card>
 
                 {/* Login Logs - Unified Table */}
-                <div className="flex-1">
-                    <Card>
+                <Deferred
+                    data="suspiciousActivities"
+                    fallback={
+                        <div className="flex-1">
+                            <Card>
+                                <CardContent className="space-y-4 p-6">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <Skeleton className="h-6 w-48" />
+                                            <Skeleton className="h-4 w-64" />
+                                        </div>
+                                        <Skeleton className="h-9 w-24" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        {Array.from({ length: 8 }).map((_, index) => (
+                                            <div key={`table-skeleton-${index}`} className="flex items-center gap-4 border-b pb-3">
+                                                <Skeleton className="h-4 w-4" />
+                                                <Skeleton className="h-6 w-20" />
+                                                <div className="flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-32" />
+                                                    <Skeleton className="h-3 w-48" />
+                                                </div>
+                                                <Skeleton className="h-6 w-24" />
+                                                <Skeleton className="h-6 w-16" />
+                                                <Skeleton className="h-4 w-28" />
+                                                <Skeleton className="h-8 w-8" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    }
+                >
+                    <div className="flex-1">
+                        <Card>
                         {/* Mobile Card View */}
                         <div className="md:hidden">
                             <CardContent className="space-y-4 p-4">
@@ -988,7 +1047,10 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                     ))
                                 ) : paginatedCombinedLogs.length > 0 ? (
                                     paginatedCombinedLogs.map((log) => (
-                                        <Card key={`mobile-${log.category}-${log.id}`} className={log.category === 'suspicious' ? 'border-destructive/50' : undefined}>
+                                        <Card
+                                            key={`mobile-${log.category}-${log.id}`}
+                                            className={log.category === 'suspicious' ? 'border-destructive/50' : undefined}
+                                        >
                                             <CardContent className="space-y-3 p-4">
                                                 <div className="flex items-center justify-between">
                                                     {log.category === 'suspicious' ? (
@@ -1028,9 +1090,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem
-                                                                onClick={() => handleViewDetails(log, log.category)}
-                                                            >
+                                                            <DropdownMenuItem onClick={() => handleViewDetails(log, log.category)}>
                                                                 <Eye className="mr-2 h-4 w-4" />
                                                                 View Details
                                                             </DropdownMenuItem>
@@ -1247,9 +1307,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
                                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                            <DropdownMenuItem
-                                                                onClick={() => handleViewDetails(log, log.category)}
-                                                            >
+                                                            <DropdownMenuItem onClick={() => handleViewDetails(log, log.category)}>
                                                                 <Eye className="mr-2 h-4 w-4" />
                                                                 View Details
                                                             </DropdownMenuItem>
@@ -1321,6 +1379,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                         )}
                     </Card>
                 </div>
+                </Deferred>
 
                 {/* Login Log Details Dialog */}
                 <LoginLogDetailsDialog

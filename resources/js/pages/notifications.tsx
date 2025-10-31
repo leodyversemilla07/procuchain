@@ -10,9 +10,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { BreadcrumbItem, User } from '@/types';
-import { Head, router, usePage, usePoll } from '@inertiajs/react';
+import { Head, router, usePage, usePoll, WhenVisible } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
-import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, RotateCw } from 'lucide-react';
+import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, Loader2, RotateCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -39,8 +39,6 @@ interface Notification {
 }
 
 type FilterType = 'all' | 'read' | 'unread';
-
-const ITEMS_PER_PAGE = 10;
 
 const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
     switch (role) {
@@ -70,26 +68,25 @@ const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
 interface NotificationPageProps {
     auth: { user: User };
     notifications: Notification[];
-    pagination: {
-        total: number;
-        per_page: number;
-        current_page: number;
-        last_page: number;
-    };
+    next_cursor: string | null;
+    has_more: boolean;
     unread_count: number;
     [key: string]: unknown; // Index signature for PageProps compatibility
 }
 
 export default function Notifications() {
-    const { auth, notifications: initialNotifications, pagination: initialPagination, unread_count } = usePage<NotificationPageProps>().props;
+    const { auth, notifications: initialNotifications, next_cursor, has_more, unread_count } = usePage<NotificationPageProps>().props;
     const userRole = auth.user?.role;
     const breadcrumbs = getBreadcrumbs(userRole);
 
-    // Use polling to keep notifications updated
-    usePoll(30000); // Poll every 30 seconds
+    // Use polling to keep notifications updated (only first page)
+    usePoll(30000, {
+        only: ['notifications', 'unread_count'],
+    });
 
     const [filter, setFilter] = useState<FilterType>('all');
     const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     // Optimistic state management
     const [optimisticNotifications, setOptimisticNotifications] = useState<Notification[]>(initialNotifications);
@@ -111,11 +108,22 @@ export default function Notifications() {
         return filterNotifications(optimisticNotifications, filter);
     }, [optimisticNotifications, filter, filterNotifications]);
 
-    const currentPage = initialPagination.current_page;
-    const totalPages = Math.max(1, Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE));
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    const paginatedNotifications = filteredNotifications.slice(startIndex, endIndex);
+    // Load more notifications when scrolling to bottom
+    const loadMore = useCallback(() => {
+        if (!has_more || loadingMore) return;
+
+        setLoadingMore(true);
+        router.get(
+            window.location.pathname,
+            { cursor: next_cursor },
+            {
+                only: ['notifications', 'next_cursor', 'has_more'],
+                preserveState: true,
+                preserveScroll: true,
+                onFinish: () => setLoadingMore(false),
+            },
+        );
+    }, [next_cursor, has_more, loadingMore]);
 
     const handleFilterChange = useCallback((newFilter: FilterType) => {
         setFilter(newFilter);
@@ -137,6 +145,8 @@ export default function Notifications() {
                 {},
                 {
                     preserveScroll: true,
+                    // Reload notification data to sync across tabs/windows
+                    only: ['notifications', 'unread_count'],
                     onSuccess: () => {
                         toast.success('Notification marked as read');
                     },
@@ -168,6 +178,8 @@ export default function Notifications() {
             {},
             {
                 preserveScroll: true,
+                // Reload notification data to sync across tabs/windows
+                only: ['notifications', 'unread_count'],
                 onSuccess: () => {
                     toast.success('All notifications marked as read');
                 },
@@ -184,12 +196,10 @@ export default function Notifications() {
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
         router.reload({
-            only: ['notifications', 'unread_count', 'pagination'],
+            only: ['notifications', 'unread_count', 'next_cursor', 'has_more'],
             onFinish: () => setRefreshing(false),
         });
     }, []);
-
-    const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, i) => i + 1), [totalPages]);
 
     // Loading state will be handled by Inertia's processing state
     const loading = false;
@@ -282,7 +292,7 @@ export default function Notifications() {
             >
                 <RotateCw className="h-4 w-4" />
             </Button>
-            {paginatedNotifications.some((n: Notification) => !n.read_at) && (
+            {filteredNotifications.some((n: Notification) => !n.read_at) && (
                 <Button onClick={handleMarkAllAsRead} variant="outline" size="sm" className="text-muted-foreground hover:text-foreground">
                     Mark all as read
                 </Button>
@@ -322,7 +332,7 @@ export default function Notifications() {
                                     ))}
                                 </div>
                             </div>
-                        ) : paginatedNotifications.length === 0 ? (
+                        ) : filteredNotifications.length === 0 ? (
                             <Empty>
                                 <EmptyHeader>
                                     <EmptyMedia variant="icon">
@@ -334,7 +344,7 @@ export default function Notifications() {
                             </Empty>
                         ) : (
                             <div className="divide-border divide-y">
-                                {paginatedNotifications.map((notification: Notification) => (
+                                {filteredNotifications.map((notification: Notification) => (
                                     <Item
                                         key={notification.id}
                                         className={cn(
@@ -390,38 +400,38 @@ export default function Notifications() {
                                         </ItemActions>
                                     </Item>
                                 ))}
+
+                                {/* Infinite Scroll Trigger */}
+                                {has_more && (
+                                    <WhenVisible
+                                        fallback={
+                                            <div className="flex items-center justify-center border-t py-6">
+                                                <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+                                            </div>
+                                        }
+                                    >
+                                        <div
+                                            onClick={loadMore}
+                                            className="text-muted-foreground cursor-pointer border-t py-4 text-center text-sm transition-colors hover:text-foreground"
+                                        >
+                                            {loadingMore ? (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    Loading more...
+                                                </div>
+                                            ) : (
+                                                'Load more notifications'
+                                            )}
+                                        </div>
+                                    </WhenVisible>
+                                )}
                             </div>
                         )}
 
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div className="border-border bg-card/50 flex items-center justify-center gap-2 border-t py-3 sm:py-4">
-                                <div className="flex flex-wrap gap-1">
-                                    {pageNumbers.map((pageNum) => (
-                                        <Button
-                                            key={pageNum}
-                                            variant={pageNum === currentPage ? 'default' : 'outline'}
-                                            size="sm"
-                                            className={cn(
-                                                'h-7 w-7 p-0 sm:h-8 sm:w-8',
-                                                pageNum === currentPage && 'bg-primary text-primary-foreground hover:bg-primary/90',
-                                                pageNum !== currentPage && 'text-muted-foreground hover:text-foreground',
-                                            )}
-                                            onClick={() =>
-                                                router.get(
-                                                    window.location.pathname,
-                                                    { page: pageNum },
-                                                    {
-                                                        preserveState: true,
-                                                        preserveScroll: true,
-                                                    },
-                                                )
-                                            }
-                                        >
-                                            {pageNum}
-                                        </Button>
-                                    ))}
-                                </div>
+                        {/* End of List Indicator */}
+                        {!loading && !has_more && filteredNotifications.length > 0 && (
+                            <div className="text-muted-foreground border-t py-4 text-center text-sm">
+                                No more notifications
                             </div>
                         )}
                     </CardContent>
