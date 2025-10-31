@@ -2,11 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import admin from '@/routes/admin';
 import { router } from '@inertiajs/react';
 import { AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import admin from '@/routes/admin';
 
 interface ResetPasswordDialogProps {
     open: boolean;

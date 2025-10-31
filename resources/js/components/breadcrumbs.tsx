@@ -18,11 +18,7 @@ export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[]
                                             <BreadcrumbPage>{item.title}</BreadcrumbPage>
                                         ) : (
                                             <BreadcrumbLink asChild>
-                                                <Link 
-                                                    href={item.href}
-                                                    prefetch="hover"
-                                                    cacheFor="2m"
-                                                >
+                                                <Link href={item.href} prefetch="hover" cacheFor="2m">
                                                     {item.title}
                                                 </Link>
                                             </BreadcrumbLink>

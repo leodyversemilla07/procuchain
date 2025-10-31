@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import admin from '@/routes/admin';
 import { Activity, AlertTriangle, CheckCircle2, Clock, Globe, History, MapPin, Monitor, Smartphone, Tablet, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import admin from '@/routes/admin';
 
 interface LoginLog {
     id: number;
