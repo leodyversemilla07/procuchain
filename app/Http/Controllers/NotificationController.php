@@ -51,9 +51,9 @@ class NotificationController extends Controller
     }
 
     /**
-     * Show the notifications page with all data loaded via Inertia props.
+     * Show the notifications page with infinite scroll pagination.
      */
-    public function page()
+    public function page(Request $request)
     {
         $user = Auth::user();
 
@@ -63,22 +63,31 @@ class NotificationController extends Controller
             return Redirect::route('bac-secretariat.dashboard');
         }
 
-        // Get notifications data for Inertia props
-        $notifications = $user ? $user->notifications()
-            ->orderBy('created_at', 'desc')
-            ->paginate(10) : collect([]);
+        // Use cursor-based pagination for infinite scroll (more efficient than offset)
+        $perPage = 15; // Show 15 notifications per page
+        $notifications = $user
+            ? $user->notifications()
+                ->orderBy('created_at', 'desc')
+                ->cursorPaginate($perPage)
+            : collect([]);
 
         $unreadCount = $user ? $user->unreadNotifications()->count() : 0;
 
-        return inertia('notifications', [
-            'notifications' => $notifications->items(),
-            'pagination' => [
-                'total' => $notifications->total(),
-                'per_page' => $notifications->perPage(),
-                'current_page' => $notifications->currentPage(),
-                'last_page' => $notifications->lastPage(),
-            ],
+        // Use merge() for infinite scroll - append new notifications to existing array
+        $props = [
+            'next_cursor' => $notifications->nextCursor()?->encode(),
+            'has_more' => $notifications->hasMorePages(),
             'unread_count' => $unreadCount,
-        ]);
+        ];
+
+        // If cursor is present, we're loading more - use merge to append
+        if ($request->has('cursor')) {
+            $props['notifications'] = inertia()->merge($notifications->items());
+        } else {
+            // Initial load - replace notifications
+            $props['notifications'] = $notifications->items();
+        }
+
+        return inertia('notifications', $props);
     }
 }

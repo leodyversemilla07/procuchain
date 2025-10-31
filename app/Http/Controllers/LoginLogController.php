@@ -25,12 +25,12 @@ class LoginLogController extends Controller
         try {
             $recentLogins = $this->loginLogger->getRecentLogins(100);
             $statistics = $this->loginLogger->getLoginStatistics();
-            $suspiciousActivities = $this->loginLogger->getSuspiciousActivities();
 
             return Inertia::render('admin/login-logs', [
                 'recentLogins' => $recentLogins,
                 'statistics' => $statistics,
-                'suspiciousActivities' => $suspiciousActivities,
+                // Defer suspicious activities analysis - loads after initial page render
+                'suspiciousActivities' => Inertia::defer(fn () => $this->loginLogger->getSuspiciousActivities()),
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch login logs', [
