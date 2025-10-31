@@ -4,8 +4,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { router } from '@inertiajs/react';
 import { AlertTriangle, ShieldAlert } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import admin from '@/routes/admin';
 
 interface ResetPasswordDialogProps {
     open: boolean;
@@ -28,7 +29,7 @@ export default function ResetPasswordDialog({ open, onOpenChange, user }: ResetP
         setIsSubmitting(true);
 
         router.post(
-            route('admin.users.reset-password', user.id),
+            admin.users.resetPassword.url(user.id),
             {
                 reason: reason.trim(),
             },
@@ -83,8 +84,7 @@ export default function ResetPasswordDialog({ open, onOpenChange, user }: ResetP
                         <div className="flex-1 space-y-1">
                             <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Important</p>
                             <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                                This will send a password reset link to the user's email address. They will be able to choose their new
-                                password.
+                                This will send a password reset link to the user's email address. They will be able to choose their new password.
                             </p>
                         </div>
                     </div>

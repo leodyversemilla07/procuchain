@@ -9,12 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes/admin';
 import blockchain from '@/routes/admin/blockchain';
 import { PageProps } from '@inertiajs/core';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePoll } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import {
     Activity,
@@ -33,7 +33,7 @@ import {
     Wallet,
     XCircle,
 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface BlockchainOverview {
@@ -155,24 +155,33 @@ export default function BlockchainExplorer({
     const isHealthy = health?.status === 'healthy';
     const isCircuitOpen = health?.circuit_breaker?.is_open ?? false;
 
-    // Auto-refresh functionality
+    // Auto-refresh functionality using Inertia's usePoll
+    const { stop, start } = usePoll(
+        30000,
+        {
+            only: ['overview', 'latestBlocks', 'streams', 'addresses', 'peers', 'health'],
+            onFinish: () => {
+                toast.success('Data refreshed', {
+                    description: 'Blockchain data has been updated',
+                    duration: 2000,
+                });
+            },
+        },
+        {
+            autoStart: false,
+            keepAlive: false, // Throttle by 90% when tab is in background
+        },
+    );
+
+    // Start/stop polling based on autoRefresh toggle
     useEffect(() => {
-        if (!autoRefresh) return;
-
-        const interval = setInterval(() => {
-            router.reload({
-                only: ['overview', 'latestBlocks', 'streams', 'addresses', 'peers', 'health'],
-                onFinish: () => {
-                    toast.success('Data refreshed', {
-                        description: 'Blockchain data has been updated',
-                        duration: 2000,
-                    });
-                },
-            });
-        }, 30000); // 30 seconds
-
-        return () => clearInterval(interval);
-    }, [autoRefresh]);
+        if (autoRefresh) {
+            start();
+        } else {
+            stop();
+        }
+        return () => stop();
+    }, [autoRefresh, start, stop]);
 
     // Format timestamp to human-readable date (following MultiChain Explorer pattern)
     const formatDate = (timestamp: number) => {
@@ -221,7 +230,7 @@ export default function BlockchainExplorer({
 
         setIsSearching(true);
         router.get(
-            route('admin.blockchain.explorer.search'),
+            blockchain.explorer.search.url(),
             { query: searchQuery },
             {
                 preserveState: true,
@@ -240,13 +249,9 @@ export default function BlockchainExplorer({
     };
 
     const handleResetCircuitBreaker = () => {
-        if (
-            confirm(
-                'Are you sure you want to reset the circuit breaker? This will allow blockchain requests to resume immediately.',
-            )
-        ) {
+        if (confirm('Are you sure you want to reset the circuit breaker? This will allow blockchain requests to resume immediately.')) {
             router.post(
-                route('admin.blockchain.explorer.reset'),
+                blockchain.explorer.reset.url(),
                 {},
                 {
                     onSuccess: () => {
@@ -324,16 +329,14 @@ export default function BlockchainExplorer({
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                             <div className="flex items-center gap-3">
                                 <div className="relative">
-                                    <div className="bg-emerald-500 h-3 w-3 rounded-full" />
-                                    <div className="bg-emerald-500 absolute inset-0 h-3 w-3 animate-ping rounded-full opacity-75" />
+                                    <div className="h-3 w-3 rounded-full bg-emerald-500" />
+                                    <div className="absolute inset-0 h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-75" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium">Network Status: Online</p>
                                     <p className="text-muted-foreground text-xs">
                                         {overview?.connections || 0} active connections • Last updated{' '}
-                                        {overview?.blocks
-                                            ? formatDistanceToNow(new Date(), { addSuffix: true })
-                                            : 'N/A'}
+                                        {overview?.blocks ? formatDistanceToNow(new Date(), { addSuffix: true }) : 'N/A'}
                                     </p>
                                 </div>
                             </div>
@@ -357,11 +360,7 @@ export default function BlockchainExplorer({
                                 <RefreshCw className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')} />
                                 {isRefreshing ? 'Refreshing...' : 'Refresh'}
                             </Button>
-                            <Button
-                                onClick={() => setAutoRefresh(!autoRefresh)}
-                                variant={autoRefresh ? 'default' : 'outline'}
-                                size="default"
-                            >
+                            <Button onClick={() => setAutoRefresh(!autoRefresh)} variant={autoRefresh ? 'default' : 'outline'} size="default">
                                 {autoRefresh ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -635,7 +634,9 @@ export default function BlockchainExplorer({
                                                     </TableRow>
                                                     <TableRow>
                                                         <TableCell className="font-medium">Node Address</TableCell>
-                                                        <TableCell className="text-right font-mono text-xs break-all">{overview.nodeaddress}</TableCell>
+                                                        <TableCell className="text-right font-mono text-xs break-all">
+                                                            {overview.nodeaddress}
+                                                        </TableCell>
                                                     </TableRow>
                                                 </TableBody>
                                             </Table>
@@ -707,7 +708,7 @@ export default function BlockchainExplorer({
                                             {latestBlocks.map((block: BlockInfo) => (
                                                 <React.Fragment key={block.hash}>
                                                     <TableRow
-                                                        className="cursor-pointer hover:bg-muted/50"
+                                                        className="hover:bg-muted/50 cursor-pointer"
                                                         onClick={() => toggleBlockExpansion(block.hash)}
                                                     >
                                                         <TableCell>
@@ -719,12 +720,8 @@ export default function BlockchainExplorer({
                                                             />
                                                         </TableCell>
                                                         <TableCell className="font-medium">{block.height}</TableCell>
-                                                        <TableCell className="font-mono text-xs">
-                                                            {truncateHash(block.hash, 16)}
-                                                        </TableCell>
-                                                        <TableCell className="font-mono text-xs">
-                                                            {truncateHash(block.miner, 16)}
-                                                        </TableCell>
+                                                        <TableCell className="font-mono text-xs">{truncateHash(block.hash, 16)}</TableCell>
+                                                        <TableCell className="font-mono text-xs">{truncateHash(block.miner, 16)}</TableCell>
                                                         <TableCell>{block.tx_count}</TableCell>
                                                         <TableCell>{formatBytes(block.size)}</TableCell>
                                                         <TableCell className="text-muted-foreground text-xs">
@@ -748,17 +745,13 @@ export default function BlockchainExplorer({
                                                                                     <span className="text-muted-foreground font-medium">
                                                                                         Full Hash:
                                                                                     </span>
-                                                                                    <span className="font-mono break-all">
-                                                                                        {block.hash}
-                                                                                    </span>
+                                                                                    <span className="font-mono break-all">{block.hash}</span>
                                                                                 </div>
                                                                                 <div className="flex gap-2">
                                                                                     <span className="text-muted-foreground font-medium">
                                                                                         Miner Address:
                                                                                     </span>
-                                                                                    <span className="font-mono break-all">
-                                                                                        {block.miner}
-                                                                                    </span>
+                                                                                    <span className="font-mono break-all">{block.miner}</span>
                                                                                 </div>
                                                                                 <div className="flex gap-2">
                                                                                     <span className="text-muted-foreground font-medium">
@@ -859,7 +852,8 @@ export default function BlockchainExplorer({
                                             </EmptyMedia>
                                             <EmptyTitle>No Wallet Addresses</EmptyTitle>
                                             <EmptyDescription>
-                                                There are no wallet addresses configured for this node. Create a new address to start managing blockchain transactions.
+                                                There are no wallet addresses configured for this node. Create a new address to start managing
+                                                blockchain transactions.
                                             </EmptyDescription>
                                         </EmptyHeader>
                                     </Empty>
@@ -914,9 +908,9 @@ export default function BlockchainExplorer({
                                                 {peers.map((peer: PeerInfo) => (
                                                     <React.Fragment key={peer.id}>
                                                         <TableRow
-                                                            className="cursor-pointer hover:bg-muted/50"
+                                                            className="hover:bg-muted/50 cursor-pointer"
                                                             onClick={() => {
-                                                                setExpandedPeers(prev => {
+                                                                setExpandedPeers((prev) => {
                                                                     const next = new Set(prev);
                                                                     if (next.has(peer.id)) {
                                                                         next.delete(peer.id);
@@ -942,11 +936,13 @@ export default function BlockchainExplorer({
                                                                     {peer.inbound ? 'Inbound' : 'Outbound'}
                                                                 </Badge>
                                                             </TableCell>
-                                                            <TableCell className="font-mono text-sm">
-                                                                {formatPingTime(peer.pingtime)}
-                                                            </TableCell>
+                                                            <TableCell className="font-mono text-sm">{formatPingTime(peer.pingtime)}</TableCell>
                                                             <TableCell>
-                                                                <Badge variant={peer.synced_blocks >= (peer.startingheight || 0) ? 'default' : 'secondary'}>
+                                                                <Badge
+                                                                    variant={
+                                                                        peer.synced_blocks >= (peer.startingheight || 0) ? 'default' : 'secondary'
+                                                                    }
+                                                                >
                                                                     {getSyncStatus(peer.synced_blocks || 0, peer.startingheight || 0)}
                                                                 </Badge>
                                                             </TableCell>
@@ -956,7 +952,9 @@ export default function BlockchainExplorer({
                                                                 </Badge>
                                                             </TableCell>
                                                             <TableCell className="text-muted-foreground text-xs">
-                                                                {peer.conntime ? formatDistanceToNow(new Date(peer.conntime * 1000), { addSuffix: true }) : 'Unknown'}
+                                                                {peer.conntime
+                                                                    ? formatDistanceToNow(new Date(peer.conntime * 1000), { addSuffix: true })
+                                                                    : 'Unknown'}
                                                             </TableCell>
                                                         </TableRow>
                                                         {expandedPeers.has(peer.id) && (
@@ -969,15 +967,23 @@ export default function BlockchainExplorer({
                                                                                 <div className="grid gap-4 md:grid-cols-2">
                                                                                     <div className="space-y-2">
                                                                                         <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">Local Address:</span>
-                                                                                            <span className="font-mono text-xs">{peer.addrlocal || 'N/A'}</span>
+                                                                                            <span className="text-muted-foreground">
+                                                                                                Local Address:
+                                                                                            </span>
+                                                                                            <span className="font-mono text-xs">
+                                                                                                {peer.addrlocal || 'N/A'}
+                                                                                            </span>
                                                                                         </div>
                                                                                         <div className="flex justify-between text-sm">
                                                                                             <span className="text-muted-foreground">Services:</span>
-                                                                                            <span className="font-mono text-xs">{peer.services || 'N/A'}</span>
+                                                                                            <span className="font-mono text-xs">
+                                                                                                {peer.services || 'N/A'}
+                                                                                            </span>
                                                                                         </div>
                                                                                         <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">Time Offset:</span>
+                                                                                            <span className="text-muted-foreground">
+                                                                                                Time Offset:
+                                                                                            </span>
                                                                                             <span>{peer.timeoffset || 0}s</span>
                                                                                         </div>
                                                                                         <div className="flex justify-between text-sm">
@@ -985,25 +991,45 @@ export default function BlockchainExplorer({
                                                                                             <span>{formatPingTime(peer.minping)}</span>
                                                                                         </div>
                                                                                         <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">Starting Height:</span>
+                                                                                            <span className="text-muted-foreground">
+                                                                                                Starting Height:
+                                                                                            </span>
                                                                                             <span>{(peer.startingheight || 0).toLocaleString()}</span>
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="space-y-2">
                                                                                         <div className="flex justify-between text-sm">
                                                                                             <span className="text-muted-foreground">Last Send:</span>
-                                                                                            <span>{peer.lastsend ? formatDistanceToNow(new Date(peer.lastsend * 1000), { addSuffix: true }) : 'Never'}</span>
+                                                                                            <span>
+                                                                                                {peer.lastsend
+                                                                                                    ? formatDistanceToNow(
+                                                                                                          new Date(peer.lastsend * 1000),
+                                                                                                          { addSuffix: true },
+                                                                                                      )
+                                                                                                    : 'Never'}
+                                                                                            </span>
                                                                                         </div>
                                                                                         <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">Last Receive:</span>
-                                                                                            <span>{peer.lastrecv ? formatDistanceToNow(new Date(peer.lastrecv * 1000), { addSuffix: true }) : 'Never'}</span>
+                                                                                            <span className="text-muted-foreground">
+                                                                                                Last Receive:
+                                                                                            </span>
+                                                                                            <span>
+                                                                                                {peer.lastrecv
+                                                                                                    ? formatDistanceToNow(
+                                                                                                          new Date(peer.lastrecv * 1000),
+                                                                                                          { addSuffix: true },
+                                                                                                      )
+                                                                                                    : 'Never'}
+                                                                                            </span>
                                                                                         </div>
                                                                                         <div className="flex justify-between text-sm">
                                                                                             <span className="text-muted-foreground">Data Sent:</span>
                                                                                             <span>{formatBytes(peer.bytessent || 0)}</span>
                                                                                         </div>
                                                                                         <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">Data Received:</span>
+                                                                                            <span className="text-muted-foreground">
+                                                                                                Data Received:
+                                                                                            </span>
                                                                                             <span>{formatBytes(peer.bytesrecv || 0)}</span>
                                                                                         </div>
                                                                                         <div className="flex justify-between text-sm">
@@ -1014,10 +1040,14 @@ export default function BlockchainExplorer({
                                                                                 </div>
                                                                                 {peer.inflight.length > 0 && (
                                                                                     <div className="mt-3">
-                                                                                        <p className="text-sm font-medium mb-2">Blocks in Flight:</p>
+                                                                                        <p className="mb-2 text-sm font-medium">Blocks in Flight:</p>
                                                                                         <div className="flex flex-wrap gap-1">
-                                                                                            {peer.inflight.map(block => (
-                                                                                                <Badge key={block} variant="outline" className="text-xs">
+                                                                                            {peer.inflight.map((block) => (
+                                                                                                <Badge
+                                                                                                    key={block}
+                                                                                                    variant="outline"
+                                                                                                    className="text-xs"
+                                                                                                >
                                                                                                     {block}
                                                                                                 </Badge>
                                                                                             ))}
@@ -1043,8 +1073,8 @@ export default function BlockchainExplorer({
                                             </EmptyMedia>
                                             <EmptyTitle>No Connected Peers</EmptyTitle>
                                             <EmptyDescription>
-                                                There are currently no peers connected to the blockchain network. This may be
-                                                temporary during network synchronization.
+                                                There are currently no peers connected to the blockchain network. This may be temporary during network
+                                                synchronization.
                                             </EmptyDescription>
                                         </EmptyHeader>
                                     </Empty>
@@ -1264,8 +1294,8 @@ export default function BlockchainExplorer({
                                             </EmptyMedia>
                                             <EmptyTitle>Health Data Unavailable</EmptyTitle>
                                             <EmptyDescription>
-                                                Health monitoring data is currently not available. Please check your blockchain
-                                                connection and try refreshing the page.
+                                                Health monitoring data is currently not available. Please check your blockchain connection and try
+                                                refreshing the page.
                                             </EmptyDescription>
                                         </EmptyHeader>
                                     </Empty>
