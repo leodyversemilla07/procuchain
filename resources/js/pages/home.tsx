@@ -50,48 +50,58 @@ export default function Home() {
                     name="description"
                     content="ProcuChain is a blockchain-powered document management system for Bids and Awards Committee offices, providing secure archiving, storage, monitoring, and tracking of procurement documents simultaneously."
                 />
-                <meta name="keywords" content="blockchain, procurement, document management, BAC, government procurement, transparency, secure archiving, audit trail" />
+                <meta
+                    name="keywords"
+                    content="blockchain, procurement, document management, BAC, government procurement, transparency, secure archiving, audit trail"
+                />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                
+
                 {/* Open Graph / Facebook */}
                 <meta property="og:type" content="website" />
                 <meta property="og:url" content={window.location.href} />
                 <meta property="og:title" content="ProcuChain: Blockchain Document Management for BAC Offices" />
-                <meta property="og:description" content="Blockchain-powered document management system for Bids and Awards Committee offices, ensuring transparency and security in government procurement." />
+                <meta
+                    property="og:description"
+                    content="Blockchain-powered document management system for Bids and Awards Committee offices, ensuring transparency and security in government procurement."
+                />
                 <meta property="og:image" content="/logo.png" />
-                
+
                 {/* Twitter */}
                 <meta property="twitter:card" content="summary_large_image" />
                 <meta property="twitter:url" content={window.location.href} />
                 <meta property="twitter:title" content="ProcuChain: Blockchain Document Management for BAC Offices" />
-                <meta property="twitter:description" content="Blockchain-powered document management system for Bids and Awards Committee offices, ensuring transparency and security in government procurement." />
+                <meta
+                    property="twitter:description"
+                    content="Blockchain-powered document management system for Bids and Awards Committee offices, ensuring transparency and security in government procurement."
+                />
                 <meta property="twitter:image" content="/logo.png" />
-                
+
                 {/* JSON-LD Structured Data */}
                 <script type="application/ld+json">
                     {JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": "SoftwareApplication",
-                        "name": "ProcuChain",
-                        "applicationCategory": "BusinessApplication",
-                        "description": "A blockchain-powered document management system for Bids and Awards Committee offices, providing secure archiving, storage, monitoring, and tracking of procurement documents.",
-                        "operatingSystem": "Web",
-                        "offers": {
-                            "@type": "Offer",
-                            "price": "0",
-                            "priceCurrency": "USD"
+                        '@context': 'https://schema.org',
+                        '@type': 'SoftwareApplication',
+                        name: 'ProcuChain',
+                        applicationCategory: 'BusinessApplication',
+                        description:
+                            'A blockchain-powered document management system for Bids and Awards Committee offices, providing secure archiving, storage, monitoring, and tracking of procurement documents.',
+                        operatingSystem: 'Web',
+                        offers: {
+                            '@type': 'Offer',
+                            price: '0',
+                            priceCurrency: 'USD',
                         },
-                        "featureList": [
-                            "Blockchain Document Storage",
-                            "BAC Document Management",
-                            "Real-Time Monitoring & Tracking",
-                            "Secure Role-Based Access"
+                        featureList: [
+                            'Blockchain Document Storage',
+                            'BAC Document Management',
+                            'Real-Time Monitoring & Tracking',
+                            'Secure Role-Based Access',
                         ],
-                        "screenshot": "/logo.png",
-                        "author": {
-                            "@type": "Organization",
-                            "name": "Mindoro State University - Bongabong Campus"
-                        }
+                        screenshot: '/logo.png',
+                        author: {
+                            '@type': 'Organization',
+                            name: 'Mindoro State University - Bongabong Campus',
+                        },
                     })}
                 </script>
             </Head>

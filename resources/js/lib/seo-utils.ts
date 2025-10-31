@@ -3,35 +3,35 @@
  */
 
 export interface StructuredDataOrganization {
-    "@context": "https://schema.org";
-    "@type": "Organization";
+    '@context': 'https://schema.org';
+    '@type': 'Organization';
     name: string;
     url: string;
     logo: string;
     description?: string;
     contactPoint?: {
-        "@type": "ContactPoint";
+        '@type': 'ContactPoint';
         contactType: string;
         email?: string;
     };
 }
 
 export interface StructuredDataWebSite {
-    "@context": "https://schema.org";
-    "@type": "WebSite";
+    '@context': 'https://schema.org';
+    '@type': 'WebSite';
     name: string;
     url: string;
     description: string;
     potentialAction?: {
-        "@type": "SearchAction";
+        '@type': 'SearchAction';
         target: string;
-        "query-input": string;
+        'query-input': string;
     };
 }
 
 export interface StructuredDataSoftwareApplication {
-    "@context": "https://schema.org";
-    "@type": "SoftwareApplication";
+    '@context': 'https://schema.org';
+    '@type': 'SoftwareApplication';
     name: string;
     applicationCategory: string;
     description: string;
@@ -47,17 +47,17 @@ export interface StructuredDataSoftwareApplication {
  */
 export function getOrganizationSchema(): StructuredDataOrganization {
     return {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        name: "ProcuChain",
-        url: "https://procuchain.tech",
-        logo: "https://procuchain.tech/logo.png",
-        description: "Blockchain-powered document management system for government procurement",
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'ProcuChain',
+        url: 'https://procuchain.tech',
+        logo: 'https://procuchain.tech/logo.png',
+        description: 'Blockchain-powered document management system for government procurement',
         contactPoint: {
-            "@type": "ContactPoint",
-            contactType: "technical support",
-            email: "support@procuchain.tech"
-        }
+            '@type': 'ContactPoint',
+            contactType: 'technical support',
+            email: 'support@procuchain.tech',
+        },
     };
 }
 
@@ -66,16 +66,16 @@ export function getOrganizationSchema(): StructuredDataOrganization {
  */
 export function getWebSiteSchema(): StructuredDataWebSite {
     return {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        name: "ProcuChain",
-        url: "https://procuchain.tech",
-        description: "Blockchain-powered document management system for Bids and Awards Committee offices",
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'ProcuChain',
+        url: 'https://procuchain.tech',
+        description: 'Blockchain-powered document management system for Bids and Awards Committee offices',
         potentialAction: {
-            "@type": "SearchAction",
-            target: "https://procuchain.tech/search?q={search_term_string}",
-            "query-input": "required name=search_term_string"
-        }
+            '@type': 'SearchAction',
+            target: 'https://procuchain.tech/search?q={search_term_string}',
+            'query-input': 'required name=search_term_string',
+        },
     };
 }
 
@@ -84,28 +84,24 @@ export function getWebSiteSchema(): StructuredDataWebSite {
  */
 export function getSoftwareApplicationSchema(): StructuredDataSoftwareApplication {
     return {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        name: "ProcuChain",
-        applicationCategory: "BusinessApplication",
-        description: "A blockchain-powered document management system for Bids and Awards Committee offices, providing secure archiving, storage, monitoring, and tracking of procurement documents.",
-        operatingSystem: "Web",
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'ProcuChain',
+        applicationCategory: 'BusinessApplication',
+        description:
+            'A blockchain-powered document management system for Bids and Awards Committee offices, providing secure archiving, storage, monitoring, and tracking of procurement documents.',
+        operatingSystem: 'Web',
         offers: {
-            "@type": "Offer",
-            price: "0",
-            priceCurrency: "USD"
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'USD',
         },
-        featureList: [
-            "Blockchain Document Storage",
-            "BAC Document Management",
-            "Real-Time Monitoring & Tracking",
-            "Secure Role-Based Access"
-        ],
-        screenshot: "https://procuchain.tech/logo.png",
+        featureList: ['Blockchain Document Storage', 'BAC Document Management', 'Real-Time Monitoring & Tracking', 'Secure Role-Based Access'],
+        screenshot: 'https://procuchain.tech/logo.png',
         author: {
-            "@type": "Organization",
-            name: "Mindoro State University - Bongabong Campus"
-        }
+            '@type': 'Organization',
+            name: 'Mindoro State University - Bongabong Campus',
+        },
     };
 }
 
@@ -122,11 +118,12 @@ export function generateMetaDescription(content: string, maxLength = 160): strin
  */
 export function generateKeywords(text: string, maxKeywords = 10): string {
     const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were'];
-    const words = text.toLowerCase()
+    const words = text
+        .toLowerCase()
         .replace(/[^\w\s]/g, ' ')
         .split(/\s+/)
-        .filter(word => word.length > 3 && !commonWords.includes(word));
-    
+        .filter((word) => word.length > 3 && !commonWords.includes(word));
+
     const uniqueWords = [...new Set(words)];
     return uniqueWords.slice(0, maxKeywords).join(', ');
 }

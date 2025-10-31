@@ -103,9 +103,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
             </Form>
 
             {status && (
-                <div className={`mb-4 text-center text-sm font-medium ${
-                    status.includes('account_locked') ? 'text-red-600' : 'text-green-600'
-                }`}>
+                <div className={`mb-4 text-center text-sm font-medium ${status.includes('account_locked') ? 'text-red-600' : 'text-green-600'}`}>
                     {status}
                 </div>
             )}

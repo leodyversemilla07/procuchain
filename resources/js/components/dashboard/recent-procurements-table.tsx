@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
 import type { VariantProps } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
-import { ArrowRight, EyeIcon, FileText } from 'lucide-react';
+import { ChevronRight, EyeIcon, FileText } from 'lucide-react';
 
 type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
 
@@ -39,7 +39,6 @@ export interface RecentProcurementsTableProps {
 }
 
 const DEFAULT_TITLE = 'Recent Procurements';
-const DEFAULT_VIEW_ALL_LABEL = 'View all';
 const DEFAULT_EMPTY_TITLE = 'No procurement records yet';
 const DEFAULT_EMPTY_DESCRIPTION = 'Recent procurements will appear here after they are created.';
 const DEFAULT_ACTION_TOOLTIP = 'View Procurement Details';
@@ -48,7 +47,6 @@ export const RecentProcurementsTable = ({
     procurements,
     getViewProcurementHref,
     viewAllHref,
-    viewAllLabel = DEFAULT_VIEW_ALL_LABEL,
     className,
     title = DEFAULT_TITLE,
     icon: Icon = FileText,
@@ -71,8 +69,14 @@ export const RecentProcurementsTable = ({
                     {hasProcurements ? ` (${procurements.length})` : ''}
                 </CardTitle>
                 {hasProcurements && viewAllHref ? (
-                    <Link href={viewAllHref} className="text-primary ml-2 flex shrink-0 items-center text-xs hover:underline md:text-sm">
-                        {viewAllLabel} <ArrowRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
+                                        <Link 
+                        href={viewAllHref} 
+                        className="text-primary ml-2 flex shrink-0 items-center text-xs hover:underline md:text-sm"
+                        prefetch="hover"
+                        cacheFor="1m"
+                    >
+                        View all
+                        <ChevronRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
                     </Link>
                 ) : null}
             </CardHeader>
@@ -120,7 +124,11 @@ export const RecentProcurementsTable = ({
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <Button variant="ghost" size="sm" asChild className="h-8 px-2">
-                                                    <Link href={getViewProcurementHref(procurement)}>
+                                                    <Link 
+                                                        href={getViewProcurementHref(procurement)}
+                                                        prefetch="hover"
+                                                        cacheFor="1m"
+                                                    >
                                                         <EyeIcon className="h-4 w-4" />
                                                     </Link>
                                                 </Button>

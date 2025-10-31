@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle2, Link2, Mail, Shield, ShieldCheck, User, XCircle } from 'lucide-react';
-import React from 'react';
 
 // Flexible user interface that works with different User types
 interface ExtendedUser {
@@ -46,13 +45,13 @@ export default function UserDetailsDialog({ open, onOpenChange, user }: UserDeta
     const formatDateTime = (dateString?: string | null | unknown) => {
         // Handle null or undefined
         if (dateString === null || dateString === undefined) return 'N/A';
-        
+
         // Convert to string if needed
         const dateStr = String(dateString);
-        
+
         // Check if it's empty or invalid
         if (!dateStr || dateStr === 'null' || dateStr === 'undefined' || dateStr.trim() === '') return 'N/A';
-        
+
         try {
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return 'N/A';
@@ -97,17 +96,15 @@ export default function UserDetailsDialog({ open, onOpenChange, user }: UserDeta
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] max-w-2xl gap-0 p-0 flex flex-col">
-                <DialogHeader className="border-b px-6 py-4 shrink-0">
+            <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col gap-0 p-0">
+                <DialogHeader className="shrink-0 border-b px-6 py-4">
                     <div className="flex items-center space-x-3">
                         <div className="bg-primary/10 dark:bg-primary/20 flex h-10 w-10 items-center justify-center rounded-lg">
                             <User className="text-primary h-5 w-5" />
                         </div>
                         <div>
                             <DialogTitle className="text-foreground text-xl font-semibold">User Details</DialogTitle>
-                            <DialogDescription className="text-muted-foreground mt-1 text-sm">
-                                Complete information for {user.name}
-                            </DialogDescription>
+                            <DialogDescription className="text-muted-foreground mt-1 text-sm">Complete information for {user.name}</DialogDescription>
                         </div>
                     </div>
                 </DialogHeader>
@@ -116,9 +113,9 @@ export default function UserDetailsDialog({ open, onOpenChange, user }: UserDeta
                     <div className="space-y-6 px-6 py-4">
                         {/* Basic Information */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-semibold uppercase tracking-wide">Basic Information</h3>
+                            <h3 className="text-sm font-semibold tracking-wide uppercase">Basic Information</h3>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
                                     <label className="text-muted-foreground text-xs font-medium">User ID</label>
                                     <p className="font-mono text-sm">#{user.id}</p>
@@ -163,7 +160,7 @@ export default function UserDetailsDialog({ open, onOpenChange, user }: UserDeta
 
                         {/* Role & Permissions */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-semibold uppercase tracking-wide">Role & Permissions</h3>
+                            <h3 className="text-sm font-semibold tracking-wide uppercase">Role & Permissions</h3>
                             <div className="space-y-2">
                                 <label className="text-muted-foreground text-xs font-medium">Assigned Role</label>
                                 <div className="flex flex-wrap gap-2">
@@ -190,9 +187,9 @@ export default function UserDetailsDialog({ open, onOpenChange, user }: UserDeta
 
                         {/* Security */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-semibold uppercase tracking-wide">Security</h3>
+                            <h3 className="text-sm font-semibold tracking-wide uppercase">Security</h3>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
                                     <label className="text-muted-foreground text-xs font-medium">Two-Factor Authentication</label>
                                     <div>
@@ -232,11 +229,11 @@ export default function UserDetailsDialog({ open, onOpenChange, user }: UserDeta
                         {user.blockchain_address && (
                             <>
                                 <div className="space-y-4">
-                                    <h3 className="text-sm font-semibold uppercase tracking-wide">Blockchain</h3>
+                                    <h3 className="text-sm font-semibold tracking-wide uppercase">Blockchain</h3>
                                     <div className="space-y-2">
                                         <label className="text-muted-foreground text-xs font-medium">Blockchain Address</label>
                                         <div className="bg-muted flex items-start gap-2 rounded-md p-3">
-                                            <Link2 className="h-4 w-4 shrink-0 mt-0.5" />
+                                            <Link2 className="mt-0.5 h-4 w-4 shrink-0" />
                                             <span className="font-mono text-sm break-all">{user.blockchain_address}</span>
                                         </div>
                                     </div>
@@ -247,26 +244,28 @@ export default function UserDetailsDialog({ open, onOpenChange, user }: UserDeta
 
                         {/* Account Dates */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-semibold uppercase tracking-wide">Account Information</h3>
+                            <h3 className="text-sm font-semibold tracking-wide uppercase">Account Information</h3>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
                                     <label className="text-muted-foreground text-xs font-medium">Account Created</label>
                                     <p className="text-sm break-words">
-                                        {formatDateTime(user.created_at) !== 'N/A' 
-                                            ? formatDateTime(user.created_at) 
-                                            : <span className="text-muted-foreground italic">Date not available</span>
-                                        }
+                                        {formatDateTime(user.created_at) !== 'N/A' ? (
+                                            formatDateTime(user.created_at)
+                                        ) : (
+                                            <span className="text-muted-foreground italic">Date not available</span>
+                                        )}
                                     </p>
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-muted-foreground text-xs font-medium">Last Updated</label>
                                     <p className="text-sm break-words">
-                                        {formatDateTime(user.updated_at) !== 'N/A' 
-                                            ? formatDateTime(user.updated_at) 
-                                            : <span className="text-muted-foreground italic">Date not available</span>
-                                        }
+                                        {formatDateTime(user.updated_at) !== 'N/A' ? (
+                                            formatDateTime(user.updated_at)
+                                        ) : (
+                                            <span className="text-muted-foreground italic">Date not available</span>
+                                        )}
                                     </p>
                                 </div>
 
@@ -295,7 +294,7 @@ export default function UserDetailsDialog({ open, onOpenChange, user }: UserDeta
                     </div>
                 </div>
 
-                <div className="flex justify-end border-t px-6 py-3 shrink-0">
+                <div className="flex shrink-0 justify-end border-t px-6 py-3">
                     <Button onClick={() => onOpenChange(false)} variant="outline">
                         Close
                     </Button>
