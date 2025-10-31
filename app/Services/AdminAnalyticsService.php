@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\UserLoginLog;
 use Carbon\Carbon;
-use Exception;
 use Illuminate\Support\Facades\Log;
 
 class AdminAnalyticsService
@@ -24,7 +23,7 @@ class AdminAnalyticsService
                 'daily_activity' => $this->getDailyActivity($timeRange, $userId),
                 'generated_at' => now()->toISOString(),
             ];
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to generate user activity analytics', [
                 'error' => $e->getMessage(),
                 'time_range' => $timeRange,
@@ -89,7 +88,7 @@ class AdminAnalyticsService
             ])
             ->toArray();
     }
-    
+
     public function getLoginPatterns(string $timeRange, ?int $userId): array
     {
         $dateConstraint = $this->getDateConstraint($timeRange);

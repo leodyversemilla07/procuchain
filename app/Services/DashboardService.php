@@ -37,7 +37,7 @@ class DashboardService
 
         try {
             $name = User::where('blockchain_address', $address)->first()?->name ?? 'Unknown';
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::warning("Failed to retrieve user name for address: $address", ['error' => $e->getMessage()]);
             $name = 'Unknown';
         }
@@ -78,7 +78,7 @@ class DashboardService
                 ->map(function ($group) {
                     return $group->sortByDesc('timestamp')->first();
                 });
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Error processing procurement data', ['error' => $e->getMessage()]);
             throw $e;
         }

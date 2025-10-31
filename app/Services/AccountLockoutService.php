@@ -4,12 +4,96 @@ namespace App\Services;
 
 use App\Mail\AccountLockedMail;
 use App\Models\User;
+use App\Models\UserLoginLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class AccountLockoutService
 {
+    /**
+     * Handle failed login attempt and check for account locking
+     */
+    public function handleFailedLoginAttempt(User $user): void
+    {
+        try {
+            // Don't process if account is already locked
+            if ($user->isAccountLocked()) {
+                return;
+            }
+
+            // Increment failed attempts
+            $user->incrementFailedLoginAttempts();
+
+            // Check if we need to lock the account (3 attempts = lock)
+            if ($user->failed_login_attempts >= 3) {
+                $lockDurationMinutes = config('auth.account_lockout_duration', 30);
+                $user->lockAccount('Account locked due to multiple failed login attempts', $lockDurationMinutes);
+
+                Log::warning('User account locked due to failed login attempts', [
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'failed_attempts' => $user->failed_login_attempts,
+                    'locked_until' => $user->lock_expires_at,
+                ]);
+
+                // Send account locked notification email if user has email notifications enabled
+                if ($user->email_notifications_enabled) {
+                    try {
+                        Mail::to($user->email)->send(new AccountLockedMail(
+                            $user,
+                            'Account locked due to multiple failed login attempts',
+                            "{$lockDurationMinutes} minutes"
+                        ));
+
+                        Log::info('Account locked notification email sent', [
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send account locked notification email', [
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            } else {
+                Log::info('Failed login attempt recorded', [
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'failed_attempts' => $user->failed_login_attempts,
+                    'attempts_remaining' => 3 - $user->failed_login_attempts,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to handle failed login attempt', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Get account lockout statistics
+     */
+    public function getAccountLockoutStatistics(): array
+    {
+        $now = now();
+        $last24Hours = $now->copy()->subHours(24);
+        $last7Days = $now->copy()->subDays(7);
+
+        return [
+            'currently_locked' => User::where('account_locked', true)->count(),
+            'locked_last_24h' => User::where('locked_at', '>=', $last24Hours)->count(),
+            'locked_last_7_days' => User::where('locked_at', '>=', $last7Days)->count(),
+            'total_lockouts' => User::whereNotNull('locked_at')->count(),
+            'failed_attempts_last_24h' => UserLoginLog::where('successful', false)
+                ->where('login_at', '>=', $last24Hours)
+                ->count(),
+        ];
+    }
+
     public function unlockAccount(User $user, string $reason = 'Manually unlocked by admin'): bool
     {
         try {
