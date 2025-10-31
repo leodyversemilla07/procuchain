@@ -118,7 +118,7 @@ class PublishDocumentCorrectionJob implements ShouldQueue
             // Publish correction to blockchain
             $txid = $multiChain->publishFrom(
                 $this->userAddress,
-                StreamEnums::CORRECTION->value,
+                StreamEnums::CORRECTIONS->value,
                 $streamKey,
                 $correctionData
             );
@@ -142,7 +142,7 @@ class PublishDocumentCorrectionJob implements ShouldQueue
                 'warning',
                 now()->toIso8601String()
             );
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to publish document correction', [
                 'procurement_id' => $this->procurementId,
                 'original_txid' => $this->originalTxid,
