@@ -6,15 +6,10 @@ use Illuminate\Http\UploadedFile;
 
 class DocumentUploadService
 {
-    protected $fileStorageService;
-
-    protected $documentMetadataService;
-
-    public function __construct(FileStorageService $fileStorageService, DocumentMetadataService $documentMetadataService)
-    {
-        $this->fileStorageService = $fileStorageService;
-        $this->documentMetadataService = $documentMetadataService;
-    }
+    public function __construct(
+        protected FileStorageService $fileStorageService,
+        protected DocumentMetadataService $documentMetadataService
+    ) {}
 
     /**
      * Upload files and prepare metadata for procurement documents.

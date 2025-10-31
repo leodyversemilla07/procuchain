@@ -6,7 +6,6 @@ namespace App\Services;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
-use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -74,7 +73,7 @@ class ProcurementPublishingService
                 'stage' => $redirectStageName ?? $stage->getDisplayName(),
                 'return_url' => route('bac-secretariat.procurements.show', $procurementId),
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Error publishing documents', [
                 'stage' => $stage->getDisplayName(),
                 'error' => $e->getMessage(),
@@ -154,7 +153,7 @@ class ProcurementPublishingService
                 'stage' => $redirectStageName ?? $currentStage->getDisplayName(),
                 'return_url' => route('bac-secretariat.procurements.show', $procurementId),
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Error publishing documents with transition', [
                 'stage' => $currentStage->getDisplayName(),
                 'error' => $e->getMessage(),
@@ -213,7 +212,7 @@ class ProcurementPublishingService
                 'stage' => $redirectStageName ?? $currentStage->getDisplayName(),
                 'return_url' => route('bac-secretariat.procurements.show', $procurementId),
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Error handling stage transition', [
                 'stage' => $currentStage->getDisplayName(),
                 'error' => $e->getMessage(),
@@ -279,7 +278,7 @@ class ProcurementPublishingService
                 'stage' => $redirectStageName ?? $stage->getDisplayName(),
                 'return_url' => route('bac-secretariat.procurements.show', $procurementId),
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Error updating status', [
                 'stage' => $stage->getDisplayName(),
                 'error' => $e->getMessage(),

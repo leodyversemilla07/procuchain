@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\StreamEnums;
 use App\Jobs\PublishDocumentCorrectionJob;
 use App\Models\ProcurementDocument;
 use Exception;
@@ -75,7 +76,7 @@ class BlockchainCorrectionService
             dispatch($job);
 
             return 'Correction record will be published to blockchain';
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to create correction record', [
                 'document_id' => $document->id ?? null,
                 'error' => $e->getMessage(),
@@ -95,7 +96,7 @@ class BlockchainCorrectionService
         try {
             // Query blockchain for correction records
             $corrections = $multiChain->listStreamKeyItems(
-                'procurement.correction',
+                StreamEnums::CORRECTIONS->value,
                 $procurementId,
                 false, // verbose
                 10000, // count
@@ -103,7 +104,7 @@ class BlockchainCorrectionService
             );
 
             return $corrections ?? [];
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to retrieve corrections', [
                 'procurement_id' => $procurementId,
                 'error' => $e->getMessage(),
@@ -124,7 +125,7 @@ class BlockchainCorrectionService
         try {
             // Search correction stream for this txid
             $corrections = $multiChain->listStreamKeyItems(
-                'procurement.correction',
+                StreamEnums::CORRECTIONS->value,
                 $txid,
                 true, // verbose to get full data
                 1, // only need one
@@ -132,7 +133,7 @@ class BlockchainCorrectionService
             );
 
             return $corrections[0] ?? null;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::warning('Could not check for corrections', [
                 'txid' => $txid,
                 'error' => $e->getMessage(),
