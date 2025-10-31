@@ -43,13 +43,9 @@ test('user can view notifications page with data', function () {
     $response->assertSuccessful()
         ->assertInertia(fn (Assert $page) => $page
             ->component('notifications')
-            ->has('notifications', 10) // Should have paginated data
-            ->has('pagination', fn (Assert $pagination) => $pagination
-                ->where('total', 15)
-                ->where('per_page', 10)
-                ->where('current_page', 1)
-                ->where('last_page', 2)
-            )
+            ->has('notifications', 15) // Cursor pagination shows 15 per page
+            ->has('next_cursor') // Cursor-based pagination uses next_cursor
+            ->where('has_more', false) // No more pages (only 15 total)
             ->where('unread_count', 15)
         );
 });

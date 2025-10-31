@@ -146,10 +146,12 @@ describe('SmartContractSetup Command', function () {
 
         $this->multichainService
             ->shouldReceive('getStreamInfo')
-            ->andReturn(['name' => 'procurement.documents']);
+            ->twice() // Called for both streams
+            ->andReturn(['name' => 'procurement.documents'], ['name' => 'procurement.status']);
 
         $this->multichainService
             ->shouldReceive('createStreamFilter')
+            ->twice() // Called for both filters
             ->andReturn('some-txid');
 
         $this->artisan('smartcontract:setup')
@@ -215,8 +217,21 @@ describe('SmartContractSetup Command', function () {
             ->once()
             ->andThrow(new Exception('Stream not found'));
 
+        // When first stream check fails, second stream is still checked
+        $this->multichainService
+            ->shouldReceive('getStreamInfo')
+            ->with('procurement.status')
+            ->once()
+            ->andReturn(['name' => 'procurement.status']);
+
+        // Filter should be created for the stream that exists
+        $this->multichainService
+            ->shouldReceive('createStreamFilter')
+            ->once()
+            ->andReturn('filter-txid');
+
         $this->artisan('smartcontract:setup')
-            ->assertSuccessful(); // Command succeeds but logs error
+            ->assertSuccessful(); // Command succeeds but logs error for missing stream
     });
 
     it('can check deployment status with --check flag', function () {
@@ -280,7 +295,7 @@ describe('SmartContractSetup Command', function () {
 
 describe('Smart Filter JavaScript Files', function () {
     it('has documents filter file', function () {
-        $path = resource_path('blockchain/filters/documents_filter.js');
+        $path = resource_path('blockchain/filters/documents_filter_v1_standalone.js');
 
         expect(File::exists($path))->toBeTrue()
             ->and(File::get($path))->toContain('filterstreamitem')
@@ -289,7 +304,7 @@ describe('Smart Filter JavaScript Files', function () {
     });
 
     it('has status filter file', function () {
-        $path = resource_path('blockchain/filters/status_filter.js');
+        $path = resource_path('blockchain/filters/status_filter_v1_standalone.js');
 
         expect(File::exists($path))->toBeTrue()
             ->and(File::get($path))->toContain('filterstreamitem')
@@ -308,14 +323,14 @@ describe('Smart Filter JavaScript Files', function () {
     });
 
     it('documents filter validates hash format', function () {
-        $filterCode = File::get(resource_path('blockchain/filters/documents_filter.js'));
+        $filterCode = File::get(resource_path('blockchain/filters/documents_filter_v1_standalone.js'));
 
         expect($filterCode)->toContain('/^[a-f0-9]{64}$/i')
             ->and($filterCode)->toContain('Invalid document hash format');
     });
 
     it('documents filter checks required fields', function () {
-        $filterCode = File::get(resource_path('blockchain/filters/documents_filter.js'));
+        $filterCode = File::get(resource_path('blockchain/filters/documents_filter_v1_standalone.js'));
 
         expect($filterCode)->toContain('procurement_id')
             ->and($filterCode)->toContain('hash')
@@ -325,7 +340,7 @@ describe('Smart Filter JavaScript Files', function () {
     });
 
     it('status filter validates status enums', function () {
-        $filterCode = File::get(resource_path('blockchain/filters/status_filter.js'));
+        $filterCode = File::get(resource_path('blockchain/filters/status_filter_v1_standalone.js'));
 
         expect($filterCode)->toContain('procurement_submitted')
             ->and($filterCode)->toContain('bidding_documents_published')
@@ -334,7 +349,7 @@ describe('Smart Filter JavaScript Files', function () {
     });
 
     it('status filter validates stage-status alignment', function () {
-        $filterCode = File::get(resource_path('blockchain/filters/status_filter.js'));
+        $filterCode = File::get(resource_path('blockchain/filters/status_filter_v1_standalone.js'));
 
         expect($filterCode)->toContain('stageStatusMap')
             ->and($filterCode)->toContain('not valid for stage');

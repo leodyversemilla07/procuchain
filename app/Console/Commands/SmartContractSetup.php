@@ -216,13 +216,13 @@ class SmartContractSetup extends Command
         $filters = [
             [
                 'name' => 'procuchain_documents_validator',
-                'file' => 'documents_filter.js',
+                'file' => 'documents_filter_v1_standalone.js',
                 'stream' => StreamEnums::DOCUMENTS->value,
                 'description' => 'Document hash and metadata validation',
             ],
             [
                 'name' => 'procuchain_status_validator',
-                'file' => 'status_filter.js',
+                'file' => 'status_filter_v1_standalone.js',
                 'stream' => StreamEnums::STATUS->value,
                 'description' => 'Status transition and workflow validation',
             ],
