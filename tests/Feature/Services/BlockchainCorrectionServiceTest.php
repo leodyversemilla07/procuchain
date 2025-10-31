@@ -192,7 +192,7 @@ describe('BlockchainCorrectionService', function () {
             $this->multichainService
                 ->shouldReceive('listStreamKeyItems')
                 ->once()
-                ->with('procurement.correction', 'PROC-2025-001', false, 10000, 0)
+                ->with('procurement.corrections', 'PROC-2025-001', false, 10000, 0)
                 ->andReturn($mockCorrections);
 
             $result = $this->service->getCorrections('PROC-2025-001', $this->multichainService);
@@ -207,7 +207,7 @@ describe('BlockchainCorrectionService', function () {
             $this->multichainService
                 ->shouldReceive('listStreamKeyItems')
                 ->once()
-                ->with('procurement.correction', 'PROC-EMPTY', false, 10000, 0)
+                ->with('procurement.corrections', 'PROC-EMPTY', false, 10000, 0)
                 ->andReturn([]);
 
             $result = $this->service->getCorrections('PROC-EMPTY', $this->multichainService);
@@ -260,7 +260,7 @@ describe('BlockchainCorrectionService', function () {
             $this->multichainService
                 ->shouldReceive('listStreamKeyItems')
                 ->once()
-                ->with('procurement.correction', 'original-txid-123', true, 1, 0)
+                ->with('procurement.corrections', 'original-txid-123', true, 1, 0)
                 ->andReturn($mockCorrection);
 
             $result = $this->service->findCorrectionForTransaction(
@@ -277,7 +277,7 @@ describe('BlockchainCorrectionService', function () {
             $this->multichainService
                 ->shouldReceive('listStreamKeyItems')
                 ->once()
-                ->with('procurement.correction', 'no-correction-txid', true, 1, 0)
+                ->with('procurement.corrections', 'no-correction-txid', true, 1, 0)
                 ->andReturn([]);
 
             $result = $this->service->findCorrectionForTransaction(
@@ -306,7 +306,7 @@ describe('BlockchainCorrectionService', function () {
             $this->multichainService
                 ->shouldReceive('listStreamKeyItems')
                 ->once()
-                ->with('procurement.correction', 'test-txid', true, 1, 0)
+                ->with('procurement.corrections', 'test-txid', true, 1, 0)
                 ->andReturn([]);
 
             $this->service->findCorrectionForTransaction('test-txid', $this->multichainService);
@@ -325,7 +325,7 @@ describe('BlockchainCorrectionService', function () {
             $this->multichainService
                 ->shouldReceive('listStreamKeyItems')
                 ->once()
-                ->with('procurement.correction', 'multi-txid', true, 1, 0)
+                ->with('procurement.corrections', 'multi-txid', true, 1, 0)
                 ->andReturn($mockMultipleResults);
 
             $result = $this->service->findCorrectionForTransaction(

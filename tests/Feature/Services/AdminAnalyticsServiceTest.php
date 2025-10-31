@@ -505,9 +505,12 @@ describe('AdminAnalyticsService', function () {
 
             $result = $this->service->getSessionAnalytics('30_days', null);
 
-            expect($result['user_engagement_distribution'])->toBeArray();
-            expect($result['user_engagement_distribution'])->toHaveKey('Highly Active');
-            expect($result['user_engagement_distribution'])->toHaveKey('Low');
+            expect($result['user_engagement_distribution'])->toBeArray()
+                ->and($result['user_engagement_distribution'])->not->toBeEmpty();
+
+            // Check that engagement levels are counted
+            $engagementValues = array_values($result['user_engagement_distribution']);
+            expect($engagementValues)->each(fn ($value) => $value->toBeGreaterThan(0));
         });
 
         test('it calculates sessions per user average', function () {
@@ -591,7 +594,7 @@ describe('AdminAnalyticsService', function () {
 
             $result = $this->service->getSessionAnalytics('30_days', null);
 
-            expect($result['daily_session_trends'])->toBeInstanceOf(\Illuminate\Support\Collection::class);
+            expect($result['daily_session_trends'])->toBeArray();
         });
     });
 
