@@ -74,7 +74,7 @@ class DocumentValidationJob implements ShouldQueue
                     ]);
             }
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Document validation job failed', [
                 'operation' => $this->operation,
                 'procurement_id' => $this->procurementId,
