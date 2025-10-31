@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\StreamEnums;
 use App\Services\MultichainService;
 use Exception;
 use Illuminate\Console\Command;
@@ -216,13 +217,13 @@ class SmartContractSetup extends Command
             [
                 'name' => 'procuchain_documents_validator',
                 'file' => 'documents_filter.js',
-                'stream' => 'procurement.documents',
+                'stream' => StreamEnums::DOCUMENTS->value,
                 'description' => 'Document hash and metadata validation',
             ],
             [
                 'name' => 'procuchain_status_validator',
                 'file' => 'status_filter.js',
-                'stream' => 'procurement.status',
+                'stream' => StreamEnums::STATUS->value,
                 'description' => 'Status transition and workflow validation',
             ],
         ];

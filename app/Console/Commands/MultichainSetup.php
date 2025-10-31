@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\StreamEnums;
 use App\Models\User;
 use App\Services\MultichainService;
 use Exception;
@@ -52,10 +53,10 @@ class MultichainSetup extends Command
      * @see https://www.multichain.com/developers/data-streams/
      */
     private const STREAMS = [
-        'procurement.documents',
-        'procurement.status',
-        'procurement.events',
-        'procurement.corrections',
+        StreamEnums::DOCUMENTS->value,
+        StreamEnums::STATUS->value,
+        StreamEnums::EVENTS->value,
+        StreamEnums::CORRECTIONS->value,
     ];
 
     /**
