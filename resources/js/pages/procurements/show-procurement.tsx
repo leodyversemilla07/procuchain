@@ -482,7 +482,7 @@ const MetadataItem: FC<MetadataItemProps> = ({ icon, label, value, highlight = f
             <div className="text-muted-foreground mt-0.5">{icon}</div>
             <div className="min-w-0 flex-1">
                 <div className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">{label}</div>
-                <div className={`text-sm break-words ${highlight ? 'text-primary font-semibold' : 'text-foreground'}`}>{value}</div>
+                <div className={`text-sm wrap-break-word ${highlight ? 'text-primary font-semibold' : 'text-foreground'}`}>{value}</div>
             </div>
         </div>
     );
@@ -616,14 +616,14 @@ const DocumentMetadata: FC<DocumentMetadataProps> = ({ metadata }) => {
             return (
                 <div key={key} className="col-span-2">
                     <div className="group flex items-start rounded-md p-2 transition-colors duration-200 ease-in-out hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-                        <div className="text-primary bg-primary/10 mt-0.5 mr-2 flex-shrink-0 rounded-md p-1.5 sm:mr-2.5">
+                        <div className="text-primary bg-primary/10 mt-0.5 mr-2 shrink-0 rounded-md p-1.5 sm:mr-2.5">
                             <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </div>
                         <div className="min-w-0 flex-1">
                             <span className="text-xs font-medium tracking-wide text-neutral-700 uppercase dark:text-neutral-300">
                                 Validity Period
                             </span>
-                            <div className="mt-1 leading-relaxed font-medium break-words text-neutral-800 dark:text-neutral-200">
+                            <div className="mt-1 leading-relaxed font-medium wrap-break-word text-neutral-800 dark:text-neutral-200">
                                 <div className="line-clamp-2 transition-all duration-200 ease-in-out group-hover:line-clamp-none">
                                     {`${formatDateOnly(metadata.validity_period.start_date)} - ${formatDateOnly(metadata.validity_period.end_date)}`}
                                 </div>
@@ -739,7 +739,7 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 variant="outline"
                                 size="sm"
                                 asChild
-                                className="group-hover:border-primary/30 group-hover:bg-background h-8 flex-shrink-0 text-xs font-medium shadow-sm transition-all hover:shadow sm:h-9 sm:text-sm"
+                                className="group-hover:border-primary/30 group-hover:bg-background h-8 shrink-0 text-xs font-medium shadow-sm transition-all hover:shadow sm:h-9 sm:text-sm"
                             >
                                 <Link href={`/pdf-viewer/${encodeURIComponent(doc.file_key)}`} className="flex items-center">
                                     <TrendingUp className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
@@ -751,7 +751,7 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 variant="outline"
                                 size="sm"
                                 asChild
-                                className="group-hover:border-primary/30 group-hover:bg-background h-8 flex-shrink-0 text-xs font-medium shadow-sm transition-all hover:shadow sm:h-9 sm:text-sm"
+                                className="group-hover:border-primary/30 group-hover:bg-background h-8 shrink-0 text-xs font-medium shadow-sm transition-all hover:shadow sm:h-9 sm:text-sm"
                             >
                                 <a
                                     href={`/secure-file/${encodeURIComponent(doc.file_key)}`}
