@@ -79,22 +79,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | MultiChain User Addresses
-    |--------------------------------------------------------------------------
-    |
-    | These environment variables store the blockchain addresses for key users
-    | in the system. Update your .env file to set these values as needed.
-    |
-    */
-    'addresses' => [
-        'bac_secretariat' => env('MULTICHAIN_BAC_SECRETARIAT_ADDRESS', 'default_bac_secretariat_address'),
-        'bac_chairman' => env('MULTICHAIN_BAC_CHAIRMAN_ADDRESS', 'default_bac_chairman_address'),
-        'hope' => env('MULTICHAIN_HOPE_ADDRESS', 'default_hope_address'),
-        'admin' => env('MULTICHAIN_ADMIN_ADDRESS', 'default_admin_address'),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Permission Matrix (Roles)
     |--------------------------------------------------------------------------
     |

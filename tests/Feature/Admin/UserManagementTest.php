@@ -41,7 +41,7 @@ test('admin can create new user', function () {
         'role' => 'bac_secretariat',
         'password' => 'password123',
         'password_confirmation' => 'password123',
-        'blockchain_address' => '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
+        // blockchain_address will be auto-generated
     ];
 
     $response = $this->actingAs($this->admin)
@@ -57,6 +57,7 @@ test('admin can create new user', function () {
 
     $user = User::where('email', 'test@example.com')->first();
     expect($user->hasRole('bac_secretariat'))->toBeTrue();
+    expect($user->blockchain_address)->not->toBeNull(); // Should have auto-generated address
 });
 
 test('admin can update existing user', function () {
