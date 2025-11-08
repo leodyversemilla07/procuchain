@@ -507,7 +507,7 @@ describe('ProcurementInitiationRequest', function () {
             $request = new ProcurementInitiationRequest;
             $validator = Validator::make($data, $request->rules(), $request->messages());
 
-            expect($validator->errors()->first('files.0'))->toContain('10MB');
+            expect($validator->errors()->first('files.0'))->toContain('8MB');
         });
 
         test('it provides custom message for file type', function () {

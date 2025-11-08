@@ -226,11 +226,11 @@ describe('BiddingDocumentsRequest', function () {
             expect($validator->errors()->has('bidding_document_file'))->toBeTrue();
         });
 
-        test('it accepts files up to 10MB', function () {
+        test('it accepts files up to 8MB', function () {
             $data = [
                 'procurement_id' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 10240, 'application/pdf'),
+                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 8192), // 8MB
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -426,7 +426,7 @@ describe('BiddingDocumentsRequest', function () {
             $request = new BiddingDocumentsRequest;
             $validator = Validator::make($data, $request->rules(), $request->messages());
 
-            expect($validator->errors()->first('bidding_document_file'))->toContain('10MB');
+            expect($validator->errors()->first('bidding_document_file'))->toContain('8MB');
         });
 
         test('it provides custom message for file type', function () {
