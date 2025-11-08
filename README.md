@@ -47,14 +47,14 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 ## Technology Stack
 
 - **Backend**: Laravel 12.36.1 with PHP 8.3.27
-- **Frontend**: React 19.2.0 with Inertia.js v2.2.6 for SPA experience
+- **Frontend**: React 19.0.0 with Inertia.js v2.2.15 for SPA experience
 - **Database**: MySQL 8.0+ with database-driven sessions, cache, and queue
 - **Blockchain**: MultiChain (Community Edition) for immutable document integrity and audit trails
 - **File Storage**: AWS S3-compatible storage (DigitalOcean Spaces - Singapore region)
-- **Styling**: Tailwind CSS v4.1.14 for responsive design
+- **Styling**: Tailwind CSS v4.1.16 for responsive design
 - **UI Components**: Radix UI primitives with shadcn/ui patterns
 - **Build Tools**: Vite 7.1.10 for fast frontend asset compilation with HMR
-- **Testing**: Pest v3.8.4 for expressive PHP testing
+- **Testing**: Pest v4.1.3 for expressive PHP testing
 - **Code Quality**: Laravel Pint v1.25.1 for consistent code formatting
 - **Authentication**: Laravel Fortify 1.31.2 with two-factor authentication (TOTP)
 - **Authorization**: Spatie Laravel Permission 6.21 for role-based access control
@@ -66,6 +66,8 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
     - Database-driven development stack
     - Concurrently for multi-process management
     - Optional SSR with Inertia SSR server
+    - TypeScript 5.7.2 for type safety
+    - ESLint 9.17.0 & Prettier 3.4.2 for code quality
 
 ## Requirements
 
@@ -519,6 +521,7 @@ procuchain/
 │   ├── web.php                # Main web routes
 │   ├── auth.php               # Authentication routes
 │   ├── settings.php           # User settings routes
+│   ├── file-uploads-ui-preview.php # File upload preview routes
 │   └── console.php            # Console routes
 ├── scripts/                   # Installation and setup scripts
 │   ├── install_procuchain.sh  # MultiChain installation script
@@ -545,11 +548,12 @@ procuchain/
 ### Key Directories Explained
 
 **Services (28 total):**
-- Blockchain: MultichainService, BlockchainOrchestratorService, BlockchainEventLoggerService, etc.
+- Blockchain: MultichainService, MultichainConnectionService, BlockchainOrchestratorService, BlockchainEventLoggerService, BlockchainHealthService, BlockchainMonitoringService, BlockchainCorrectionService, DocumentBlockchainService
 - Document: DocumentUploadService, DocumentMetadataService, FileStorageService
-- Procurement: ProcurementPublishingService, ProcurementStageTransitionService
-- Security: LoginService, AccountLockoutService, BlockedIpService
+- Procurement: ProcurementPublishingService, ProcurementStageTransitionService, ProcurementDataService, StatusUpdaterService
+- Security: LoginService, AccountLockoutService, BlockedIpService, DeviceDetectionService
 - Analytics: DashboardService, AdminAnalyticsService, LoginAnalyticsService
+- Utilities: CacheStrategyService, EventTypeLabelMapper, StreamKeyService, NotificationService, DashboardCacheKeys
 
 **Models (6 core models):**
 - User (with roles, 2FA, account lockout)
@@ -742,17 +746,21 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 
 ## Database Schema Overview
 
-### Core Tables
-- **users** (20 columns): User accounts with blockchain addresses, 2FA, account lockout
+### Core Tables (22 total)
+- **users** (19 columns): User accounts with blockchain addresses, 2FA, account lockout
 - **procurements** (13 columns): Core procurement records with blockchain integration
-- **procurement_documents** (20 columns): Document metadata with blockchain anchors
+- **procurement_documents** (19 columns): Document metadata with blockchain anchors
 - **user_login_logs** (13 columns): Comprehensive login audit trail
 - **document_views** (13 columns): Document access tracking
 - **blocked_ips** (8 columns): IP blocking system
-- **permissions** & **roles**: Spatie permission system
+- **permissions** & **roles** & **model_has_permissions** & **model_has_roles** & **role_has_permissions**: Spatie permission system (5 tables)
 - **notifications**: In-app notification storage
 - **push_subscriptions**: WebPush subscription management
-- **sessions**, **cache**, **jobs**: Framework tables
+- **sessions**: Database-driven session storage
+- **cache** & **cache_locks**: Database-driven cache system (2 tables)
+- **jobs** & **failed_jobs** & **job_batches**: Queue system (3 tables)
+- **password_reset_tokens**: Password reset functionality
+- **migrations**: Database migration tracking
 
 ### Blockchain Integration Fields
 - `blockchain_txid`: Transaction ID from MultiChain

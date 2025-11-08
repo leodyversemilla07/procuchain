@@ -7,6 +7,7 @@ use App\Http\Requests\User\ResetUserPasswordRequest;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\User;
+use App\Services\MultichainService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -66,16 +67,30 @@ class UserManagementController extends Controller
     /**
      * Store a new user
      */
-    public function store(StoreUserRequest $request)
+    public function store(StoreUserRequest $request, MultichainService $multichainService)
     {
         $validated = $request->validated();
 
         try {
+            // Auto-generate blockchain address if not provided
+            $blockchainAddress = null;
+            if (! empty($validated['blockchain_address'])) {
+                // Use provided address (validate it first)
+                $validation = $multichainService->validateAddress($validated['blockchain_address']);
+                if (! $validation['isvalid']) {
+                    return redirect()->back()->withErrors(['blockchain_address' => 'Invalid blockchain address provided.']);
+                }
+                $blockchainAddress = $validated['blockchain_address'];
+            } else {
+                // Auto-generate new blockchain address
+                $blockchainAddress = $multichainService->getNewAddress();
+            }
+
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
-                'blockchain_address' => ! empty($validated['blockchain_address']) ? $validated['blockchain_address'] : null,
+                'blockchain_address' => $blockchainAddress,
             ]);
 
             // Assign role using Spatie Permission
@@ -86,9 +101,10 @@ class UserManagementController extends Controller
                 'created_user_id' => $user->id,
                 'user_email' => $user->email,
                 'user_role' => $validated['role'],
+                'blockchain_address' => $blockchainAddress,
             ]);
 
-            return redirect()->back()->with('success', 'User created successfully.');
+            return redirect()->back()->with('success', 'User created successfully with blockchain address.');
         } catch (\Exception $e) {
             Log::error('Failed to create user', [
                 'admin_id' => Auth::id(),
