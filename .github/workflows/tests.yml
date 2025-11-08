@@ -40,6 +40,12 @@ jobs:
       - name: Copy Environment File
         run: cp .env.example .env
 
+      - name: Configure CI Environment
+        run: |
+          echo "QUEUE_CONNECTION=sync" >> .env
+          echo "CACHE_DRIVER=array" >> .env
+          echo "SESSION_DRIVER=array" >> .env
+
       - name: Generate Application Key
         run: php artisan key:generate
 
