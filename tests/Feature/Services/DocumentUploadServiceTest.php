@@ -1,11 +1,15 @@
 <?php
 
+use App\Models\Procurement;
 use App\Services\DocumentMetadataService;
 use App\Services\DocumentUploadService;
 use App\Services\FileStorageService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 
 use function Pest\Laravel\mock;
+
+uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->fileStorageService = mock(FileStorageService::class);
@@ -15,6 +19,12 @@ beforeEach(function () {
         $this->fileStorageService,
         $this->documentMetadataService
     );
+
+    // Create a real procurement for foreign key constraint
+    $this->procurement = Procurement::factory()->create([
+        'id' => 'PROC-001',
+        'title' => 'Test Procurement',
+    ]);
 
     $this->procurementId = 'PROC-001';
     $this->procurementTitle = 'Test Procurement';
@@ -53,8 +63,15 @@ describe('DocumentUploadService', function () {
             $this->fileStorageService
                 ->shouldReceive('uploadFile')
                 ->once()
-                ->with($file, 'procurements/PROC-001/bidding/', 'bid_document')
-                ->andReturn('procurements/PROC-001/bidding/bid_document.pdf');
+                ->with($file, 'procurements/PROC-001/bidding/', 'bid_document', \Mockery::any())
+                ->andReturn([
+                    'file_key' => 'procurements/PROC-001/bidding/bid_document.pdf',
+                    'data_txid' => 'data_txid_123',
+                    'metadata_txid' => 'metadata_txid_456',
+                    'hash' => 'hash123',
+                    'size' => 102400,
+                    'filename' => 'document.pdf',
+                ]);
 
             $result = $this->service->uploadAndPrepare(
                 $files,
@@ -66,6 +83,8 @@ describe('DocumentUploadService', function () {
 
             expect($result)->toBeArray();
             expect($result[0])->toHaveKey('file_key');
+            expect($result[0])->toHaveKey('data_txid');
+            expect($result[0])->toHaveKey('metadata_txid');
             expect($result[0]['file_key'])->toBe('procurements/PROC-001/bidding/bid_document.pdf');
         });
 
@@ -101,13 +120,27 @@ describe('DocumentUploadService', function () {
 
             $this->fileStorageService
                 ->shouldReceive('uploadFile')
-                ->with($file1, 'procurements/PROC-001/bidding/', 'bid_document')
-                ->andReturn('path/to/file1.pdf');
+                ->with($file1, 'procurements/PROC-001/bidding/', 'bid_document', \Mockery::any())
+                ->andReturn([
+                    'file_key' => 'path/to/file1.pdf',
+                    'data_txid' => 'data_txid_1',
+                    'metadata_txid' => 'metadata_txid_1',
+                    'hash' => 'hash1',
+                    'size' => 102400,
+                    'filename' => 'document1.pdf',
+                ]);
 
             $this->fileStorageService
                 ->shouldReceive('uploadFile')
-                ->with($file2, 'procurements/PROC-001/bidding/', 'specification_document')
-                ->andReturn('path/to/file2.pdf');
+                ->with($file2, 'procurements/PROC-001/bidding/', 'specification_document', \Mockery::any())
+                ->andReturn([
+                    'file_key' => 'path/to/file2.pdf',
+                    'data_txid' => 'data_txid_2',
+                    'metadata_txid' => 'metadata_txid_2',
+                    'hash' => 'hash2',
+                    'size' => 204800,
+                    'filename' => 'document2.pdf',
+                ]);
 
             $result = $this->service->uploadAndPrepare(
                 $files,
@@ -142,8 +175,15 @@ describe('DocumentUploadService', function () {
 
             $this->fileStorageService
                 ->shouldReceive('uploadFile')
-                ->with($file, 'custom/path/here/', 'bid_doc')
-                ->andReturn('custom/path/here/bid_doc.pdf');
+                ->with($file, 'custom/path/here/', 'bid_doc', \Mockery::any())
+                ->andReturn([
+                    'file_key' => 'custom/path/here/bid_doc.pdf',
+                    'data_txid' => 'data_txid_123',
+                    'metadata_txid' => 'metadata_txid_456',
+                    'hash' => 'hash123',
+                    'size' => 102400,
+                    'filename' => 'document.pdf',
+                ]);
 
             $result = $this->service->uploadAndPrepare(
                 $files,
@@ -176,8 +216,15 @@ describe('DocumentUploadService', function () {
 
             $this->fileStorageService
                 ->shouldReceive('uploadFile')
-                ->with($file, \Mockery::any(), 'technical_specification')
-                ->andReturn('path/to/file.pdf');
+                ->with($file, \Mockery::any(), 'technical_specification', \Mockery::any())
+                ->andReturn([
+                    'file_key' => 'path/to/file.pdf',
+                    'data_txid' => 'data_txid_123',
+                    'metadata_txid' => 'metadata_txid_456',
+                    'hash' => 'hash123',
+                    'size' => 102400,
+                    'filename' => 'document.pdf',
+                ]);
 
             $this->service->uploadAndPrepare(
                 $files,
@@ -212,7 +259,14 @@ describe('DocumentUploadService', function () {
 
             $this->fileStorageService
                 ->shouldReceive('uploadFile')
-                ->andReturn('path/to/file.pdf');
+                ->andReturn([
+                    'file_key' => 'path/to/file.pdf',
+                    'data_txid' => 'data_txid_123',
+                    'metadata_txid' => 'metadata_txid_456',
+                    'hash' => 'hash123',
+                    'size' => 102400,
+                    'filename' => 'document.pdf',
+                ]);
 
             $result = $this->service->uploadAndPrepare(
                 $files,
@@ -225,6 +279,8 @@ describe('DocumentUploadService', function () {
             expect($result[0])->toHaveKey('file_key');
             expect($result[0])->toHaveKey('document_type');
             expect($result[0])->toHaveKey('hash');
+            expect($result[0])->toHaveKey('data_txid');
+            expect($result[0])->toHaveKey('metadata_txid');
         });
 
         it('returns array with all metadata including file keys', function () {
@@ -249,7 +305,14 @@ describe('DocumentUploadService', function () {
 
             $this->fileStorageService
                 ->shouldReceive('uploadFile')
-                ->andReturn('path/to/file.pdf');
+                ->andReturn([
+                    'file_key' => 'path/to/file.pdf',
+                    'data_txid' => 'data_txid_123',
+                    'metadata_txid' => 'metadata_txid_456',
+                    'hash' => 'hash123',
+                    'size' => 102400,
+                    'filename' => 'document.pdf',
+                ]);
 
             $result = $this->service->uploadAndPrepare(
                 $files,
@@ -264,6 +327,58 @@ describe('DocumentUploadService', function () {
             expect($result[0]['file_size'])->toBe(102400);
             expect($result[0]['custom_field'])->toBe('value');
             expect($result[0]['file_key'])->toBe('path/to/file.pdf');
+            expect($result[0]['data_txid'])->toBe('data_txid_123');
+            expect($result[0]['metadata_txid'])->toBe('metadata_txid_456');
+        });
+
+        it('creates procurement document records in database', function () {
+            $file = UploadedFile::fake()->create('test.pdf', 100);
+            $files = [$file];
+            $metadata = [['document_type' => 'Test Document']];
+
+            $preparedMetadata = [
+                [
+                    'document_type' => 'Test Document',
+                    'base_path' => 'procurements/PROC-001/bidding',
+                    'sanitized_document_type' => 'test_document',
+                    'hash' => 'testhash',
+                    'file_size' => 102400,
+                ],
+            ];
+
+            $this->documentMetadataService
+                ->shouldReceive('prepareMetadata')
+                ->andReturn($preparedMetadata);
+
+            $this->fileStorageService
+                ->shouldReceive('uploadFile')
+                ->andReturn([
+                    'file_key' => 'procurements/PROC-001/bidding/test.pdf',
+                    'data_txid' => 'data_test_123',
+                    'metadata_txid' => 'meta_test_456',
+                    'hash' => 'testhash',
+                    'size' => 102400,
+                    'filename' => 'test.pdf',
+                ]);
+
+            $this->service->uploadAndPrepare(
+                $files,
+                $metadata,
+                $this->procurementId,
+                $this->procurementTitle,
+                $this->stageFolder
+            );
+
+            // Verify database record was created
+            $this->assertDatabaseHas('procurement_documents', [
+                'procurement_id' => 'PROC-001',
+                'file_name' => 'test.pdf',
+                'document_type' => 'Test Document',
+                'stage' => 'bidding',
+                'data_txid' => 'data_test_123',
+                'metadata_txid' => 'meta_test_456',
+                'blockchain_status' => 'pending',
+            ]);
         });
     });
 });

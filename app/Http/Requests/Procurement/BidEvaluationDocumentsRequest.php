@@ -26,8 +26,8 @@ class BidEvaluationDocumentsRequest extends FormRequest
         return [
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'summary_file' => 'required|file|mimes:pdf|max:10240',
-            'abstract_file' => 'required|file|mimes:pdf|max:10240',
+            'summary_file' => 'required|file|mimes:pdf|max:8192',
+            'abstract_file' => 'required|file|mimes:pdf|max:8192',
             'evaluation_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'evaluators' => 'required|array|min:1',
             'evaluators.*.name' => 'required|string|min:1|max:255',
@@ -43,9 +43,9 @@ class BidEvaluationDocumentsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'summary_file.max' => 'The summary file must not exceed 10MB in size.',
+            'summary_file.max' => 'The summary file must not exceed 8MB in size.',
             'summary_file.mimes' => 'Only PDF files are allowed.',
-            'abstract_file.max' => 'The abstract file must not exceed 10MB in size.',
+            'abstract_file.max' => 'The abstract file must not exceed 8MB in size.',
             'abstract_file.mimes' => 'Only PDF files are allowed.',
             'evaluators.required' => 'At least one evaluator is required.',
             'evaluators.array' => 'Evaluators must be provided as an array.',

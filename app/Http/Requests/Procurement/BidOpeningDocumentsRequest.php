@@ -27,7 +27,7 @@ class BidOpeningDocumentsRequest extends FormRequest
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
             'bid_documents' => 'required|array|min:1',
-            'bid_documents.*' => 'required|file|mimes:pdf|max:10240',
+            'bid_documents.*' => 'required|file|mimes:pdf|max:8192',
             'bidders_data' => 'required|array|min:1',
             'bidders_data.*.bidder_name' => 'required|string|min:1|max:255',
             'bidders_data.*.bid_value' => 'required|numeric|min:0',
@@ -43,7 +43,7 @@ class BidOpeningDocumentsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'bid_documents.*.max' => 'Each bid document must not exceed 10MB in size.',
+            'bid_documents.*.max' => 'Each bid document must not exceed 8MB in size.',
             'bid_documents.*.mimes' => 'Only PDF files are allowed.',
             'bidders_data.*.bid_value.numeric' => 'The bid value must be a valid number.',
             'bidders_data.*.bid_value.min' => 'The bid value cannot be negative.',

@@ -26,7 +26,7 @@ class SupplementalBidBulletinDocumentsRequest extends FormRequest
         return [
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'bulletin_file' => 'required|file|mimes:pdf|max:10240',
+            'bulletin_file' => 'required|file|mimes:pdf|max:8192',
             'bulletin_number' => 'required|string|min:1|max:50',
             'bulletin_title' => 'required|string|min:5|max:255',
             'issue_date' => 'required|date_format:Y-m-d|before_or_equal:today',
@@ -41,7 +41,7 @@ class SupplementalBidBulletinDocumentsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'bulletin_file.max' => 'The bulletin file must not exceed 10MB in size.',
+            'bulletin_file.max' => 'The bulletin file must not exceed 8MB in size.',
             'bulletin_file.mimes' => 'Only PDF files are allowed.',
         ];
     }

@@ -18,6 +18,8 @@ describe('ProcurementDocument Model', function () {
                 'stage',
                 'metadata',
                 'blockchain_txid',
+                'data_txid',
+                'metadata_txid',
                 'blockchain_status',
                 'blockchain_status_updated_at',
                 'blockchain_error',

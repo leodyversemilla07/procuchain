@@ -26,7 +26,7 @@ class CompletionDocumentsRequest extends FormRequest
         return [
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'completion_file' => 'required|file|mimes:pdf|max:10240',
+            'completion_file' => 'required|file|mimes:pdf|max:8192',
             'completion_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'completion_notes' => 'required|string|min:5|max:1000',
         ];
@@ -40,7 +40,7 @@ class CompletionDocumentsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'completion_file.max' => 'The completion file must not exceed 10MB in size.',
+            'completion_file.max' => 'The completion file must not exceed 8MB in size.',
             'completion_file.mimes' => 'Only PDF files are allowed.',
         ];
     }
