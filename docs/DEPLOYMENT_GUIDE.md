@@ -531,16 +531,13 @@ heroku config:set VAPID_SUBJECT="mailto:admin@yourdomain.com" -a procuchain-bac
 **7. MultiChain Configuration**
 ```bash
 # Use values from your MultiChain setup
-heroku config:set MULTICHAIN_HOST="YOUR_DROPLET_IP_OR_DOMAIN" -a procuchain-bac
-heroku config:set MULTICHAIN_PORT=4786 -a procuchain-bac
-heroku config:set MULTICHAIN_USERNAME=multichainrpc -a procuchain-bac
-heroku config:set MULTICHAIN_PASSWORD="YOUR_MULTICHAIN_RPC_PASSWORD" -a procuchain-bac
+heroku config:set MULTICHAIN_RPC_HOST="YOUR_DROPLET_IP_OR_DOMAIN" -a procuchain-bac
+heroku config:set MULTICHAIN_RPC_PORT=6486 -a procuchain-bac
+heroku config:set MULTICHAIN_RPC_USERNAME=multichainrpc -a procuchain-bac
+heroku config:set MULTICHAIN_RPC_PASSWORD="YOUR_MULTICHAIN_RPC_PASSWORD" -a procuchain-bac
 heroku config:set MULTICHAIN_CHAIN_NAME=procuchain -a procuchain-bac
-
-# Network settings
-heroku config:set MULTICHAIN_P2P_PORT=6271 -a procuchain-bac
-heroku config:set MULTICHAIN_WEB_PORT=7448 -a procuchain-bac
-heroku config:set MULTICHAIN_NODE_ADDRESS="YOUR_DROPLET_IP:6271" -a procuchain-bac
+heroku config:set MULTICHAIN_MASTER_PORT=7447 -a procuchain-bac
+heroku config:set CHAIN_NAME=procuchain -a procuchain-bac
 
 # SSL settings (if configured)
 heroku config:set MULTICHAIN_USE_SSL=false -a procuchain-bac
@@ -902,6 +899,31 @@ Password: SecurePassword123!
 4. Submit
 ```
 
+**2. Add Sentry Configuration**
+```bash
+# Add Sentry environment variables
+heroku config:set SENTRY_LARAVEL_DSN="YOUR_SENTRY_DSN" -a procuchain-bac
+heroku config:set SENTRY_ENABLE_LOGS=true -a procuchain-bac
+heroku config:set SENTRY_LOG_LEVEL=error -a procuchain-bac
+heroku config:set SENTRY_TRACES_SAMPLE_RATE=0.1 -a procuchain-bac
+
+# Or disable Sentry for testing
+heroku config:set SENTRY_LARAVEL_DSN=null -a procuchain-bac
+```
+
+**3. Add Mail Support Email**
+```bash
+heroku config:set MAIL_SUPPORT_EMAIL="support@yourdomain.com" -a procuchain-bac
+```
+
+**4. Add Redis Configuration**
+```bash
+# If using Redis add-on, these are set automatically
+# But you may need to explicitly set:
+heroku config:set REDIS_DB=0 -a procuchain-bac
+heroku config:set REDIS_CACHE_DB=0 -a procuchain-bac
+```
+
 **2. Verify User Login**
 ```
 1. Logout admin
@@ -1254,12 +1276,12 @@ ufw status
 curl --user multichainrpc:PASSWORD \
   --data-binary '{"jsonrpc":"1.0","id":"test","method":"getinfo","params":[]}' \
   -H 'content-type: text/plain;' \
-  http://YOUR_DROPLET_IP:4786
+  http://YOUR_DROPLET_IP:6486
 
 # 4. Verify Heroku config
-heroku config:get MULTICHAIN_HOST -a procuchain-bac
-heroku config:get MULTICHAIN_PORT -a procuchain-bac
-heroku config:get MULTICHAIN_USERNAME -a procuchain-bac
+heroku config:get MULTICHAIN_RPC_HOST -a procuchain-bac
+heroku config:get MULTICHAIN_RPC_PORT -a procuchain-bac
+heroku config:get MULTICHAIN_RPC_USERNAME -a procuchain-bac
 
 # 5. Check multichain.conf
 cat ~/.multichain/procuchain/multichain.conf
