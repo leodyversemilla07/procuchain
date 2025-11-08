@@ -26,9 +26,9 @@ class PostQualificationDocumentsRequest extends FormRequest
         return [
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'post_qualification_report' => 'required|file|mimes:pdf|max:10240',
-            'twg_certification' => 'nullable|file|mimes:pdf|max:10240',
-            'notice_of_post_qualification' => 'required|file|mimes:pdf|max:10240',
+            'post_qualification_report' => 'required|file|mimes:pdf|max:8192',
+            'twg_certification' => 'nullable|file|mimes:pdf|max:8192',
+            'notice_of_post_qualification' => 'required|file|mimes:pdf|max:8192',
             'submission_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'outcome' => 'required|boolean',
             'remarks' => 'nullable|string|max:1000',
@@ -43,11 +43,11 @@ class PostQualificationDocumentsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'post_qualification_report.max' => 'The post qualification report must not exceed 10MB in size.',
+            'post_qualification_report.max' => 'The post qualification report must not exceed 8MB in size.',
             'post_qualification_report.mimes' => 'Only PDF files are allowed.',
-            'twg_certification.max' => 'The TWG certification must not exceed 10MB in size.',
+            'twg_certification.max' => 'The TWG certification must not exceed 8MB in size.',
             'twg_certification.mimes' => 'Only PDF files are allowed.',
-            'notice_of_post_qualification.max' => 'The notice of post qualification must not exceed 10MB in size.',
+            'notice_of_post_qualification.max' => 'The notice of post qualification must not exceed 8MB in size.',
             'notice_of_post_qualification.mimes' => 'Only PDF files are allowed.',
         ];
     }

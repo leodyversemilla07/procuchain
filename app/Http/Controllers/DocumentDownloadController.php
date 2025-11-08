@@ -3,18 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentView;
+use App\Models\ProcurementDocument;
 use App\Services\DocumentBlockchainService;
+use App\Services\FileStorageService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class DocumentDownloadController extends BaseController
 {
     public function __construct(
-        private DocumentBlockchainService $blockchainService
+        private DocumentBlockchainService $blockchainService,
+        private FileStorageService $fileStorageService
     ) {
         $this->middleware('auth');
         $this->middleware('role:bac_chairman|bac_secretariat|hope|admin');
@@ -35,19 +37,54 @@ class DocumentDownloadController extends BaseController
                 abort(404, 'File not found or access denied');
             }
 
-            $disk = Storage::disk('spaces');
+            // Get data_txid from database
+            $document = ProcurementDocument::where('file_key', $fileKey)->first();
 
-            if (! $disk->exists($fileKey)) {
-                $placeholderPdf = $this->createPlaceholderPdf($fileKey, $documentData);
+            if (! $document) {
+                Log::warning('Document not found in database', [
+                    'file_key' => $fileKey,
+                    'user_id' => Auth::id(),
+                ]);
+                abort(404, 'Document not found');
+            }
+
+            // Retrieve file from blockchain using data_txid
+            try {
+                $fileData = $this->fileStorageService->retrieveFile($fileKey, $document->data_txid);
 
                 $this->recordDocumentView($request, $fileKey, $documentData);
 
-                Log::info('Secure file access (placeholder)', [
+                Log::info('Secure file access from blockchain', [
                     'file_key' => $fileKey,
+                    'data_txid' => $document->data_txid,
                     'user_id' => Auth::id(),
                     'user_role' => Auth::user()->role ?? 'unknown',
                     'ip' => $request->ip(),
                 ]);
+
+                $fileName = $document->file_name ?? basename($fileKey);
+
+                return response($fileData['content'])
+                    ->header('Content-Type', 'application/pdf')
+                    ->header('Content-Disposition', 'inline; filename="'.$fileName.'"')
+                    ->header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
+                    ->header('Pragma', 'no-cache')
+                    ->header('Expires', '0')
+                    ->header('X-Content-Type-Options', 'nosniff')
+                    ->header('X-Frame-Options', 'SAMEORIGIN')
+                    ->header('Accept-Ranges', 'bytes')
+                    ->header('Content-Security-Policy', "default-src 'self'; object-src 'self'; frame-src 'self';");
+            } catch (\Exception $blockchainError) {
+                Log::error('Failed to retrieve file from blockchain', [
+                    'file_key' => $fileKey,
+                    'data_txid' => $document->data_txid ?? 'missing',
+                    'error' => $blockchainError->getMessage(),
+                ]);
+
+                // Return placeholder PDF if blockchain retrieval fails
+                $placeholderPdf = $this->createPlaceholderPdf($fileKey, $documentData);
+
+                $this->recordDocumentView($request, $fileKey, $documentData);
 
                 return response($placeholderPdf)
                     ->header('Content-Type', 'application/pdf')
@@ -60,40 +97,6 @@ class DocumentDownloadController extends BaseController
                     ->header('Accept-Ranges', 'bytes')
                     ->header('Content-Security-Policy', "default-src 'self'; object-src 'self'; frame-src 'self';");
             }
-
-            $stream = $disk->readStream($fileKey);
-            if ($stream === false) {
-                abort(404, 'File not readable');
-            }
-
-            $mimeType = 'application/pdf';
-            $fileName = basename($fileKey);
-
-            $this->recordDocumentView($request, $fileKey, $documentData);
-
-            Log::info('Secure file access', [
-                'file_key' => $fileKey,
-                'user_id' => Auth::id(),
-                'user_role' => Auth::user()->role ?? 'unknown',
-                'ip' => $request->ip(),
-            ]);
-
-            return response()->stream(function () use ($stream) {
-                fpassthru($stream);
-                if (is_resource($stream)) {
-                    fclose($stream);
-                }
-            }, 200, [
-                'Content-Type' => $mimeType,
-                'Content-Disposition' => 'inline; filename="'.$fileName.'"',
-                'Cache-Control' => 'private, no-cache, no-store, must-revalidate',
-                'Pragma' => 'no-cache',
-                'Expires' => '0',
-                'X-Content-Type-Options' => 'nosniff',
-                'X-Frame-Options' => 'SAMEORIGIN',
-                'Accept-Ranges' => 'bytes',
-                'Content-Security-Policy' => "default-src 'self'; object-src 'self'; frame-src 'self';",
-            ]);
         } catch (\Exception $e) {
             Log::error('Secure file download failed', [
                 'file_key' => $fileKey,

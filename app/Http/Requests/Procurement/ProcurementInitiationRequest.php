@@ -27,7 +27,7 @@ class ProcurementInitiationRequest extends FormRequest
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
             'files' => 'required|array|min:1',
-            'files.*' => 'required|file|mimes:pdf|max:10240',
+            'files.*' => 'required|file|mimes:pdf|max:8192',
             'metadata' => 'required|array|min:1',
             'metadata.*.document_type' => 'required|string|max:255',
             'metadata.*.submission_date' => 'nullable|date_format:Y-m-d|before_or_equal:today',
@@ -46,7 +46,7 @@ class ProcurementInitiationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'files.*.max' => 'Each file must not exceed 10MB in size.',
+            'files.*.max' => 'Each file must not exceed 8MB in size.',
             'files.*.mimes' => 'Only PDF files are allowed.',
             'metadata.*.submission_date.date_format' => 'The submission date must be in YYYY-MM-DD format.',
             'metadata.*.submission_date.before_or_equal' => 'The submission date cannot be in the future.',

@@ -26,7 +26,7 @@ class MonitoringDocumentRequest extends FormRequest
         return [
             'procurement_id' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'compliance_file' => 'required|file|mimes:pdf|max:10240',
+            'compliance_file' => 'required|file|mimes:pdf|max:8192',
             'report_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'report_notes' => 'required|string|min:5|max:1000',
         ];
@@ -40,7 +40,7 @@ class MonitoringDocumentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'compliance_file.max' => 'The compliance file must not exceed 10MB in size.',
+            'compliance_file.max' => 'The compliance file must not exceed 8MB in size.',
             'compliance_file.mimes' => 'Only PDF files are allowed.',
         ];
     }

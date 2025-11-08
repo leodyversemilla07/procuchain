@@ -39,7 +39,7 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 - **Real-time Status Tracking**: Live updates on procurement progress and document status
 - **Role-based Access Control**: Granular permissions for different user roles (Admin, BAC Secretariat, BAC Chairman, HOPE)
 - **Comprehensive Audit Trail**: Complete history of document changes and workflow transitions
-- **Cloud Storage Integration**: Secure document storage using AWS S3-compatible services (DigitalOcean Spaces)
+- **On-Chain File Storage**: Files stored directly on blockchain with automatic replication across all nodes (Heroku-compatible)
 - **Email Notifications**: Automated email alerts for workflow transitions and updates
 - **Push Notifications**: Real-time browser notifications using WebPush/VAPID
 - **Responsive Interface**: Modern React-based SPA with Inertia.js for seamless user experience
@@ -50,7 +50,7 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 - **Frontend**: React 19.0.0 with Inertia.js v2.2.15 for SPA experience
 - **Database**: MySQL 8.0+ with database-driven sessions, cache, and queue
 - **Blockchain**: MultiChain (Community Edition) for immutable document integrity and audit trails
-- **File Storage**: AWS S3-compatible storage (DigitalOcean Spaces - Singapore region)
+- **File Storage**: On-chain storage directly in blockchain (zero external storage costs, automatic node replication, Heroku-compatible)
 - **Styling**: Tailwind CSS v4.1.16 for responsive design
 - **UI Components**: Radix UI primitives with shadcn/ui patterns
 - **Build Tools**: Vite 7.1.10 for fast frontend asset compilation with HMR
@@ -77,19 +77,20 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 - MySQL 8.0+ (or MariaDB 10.6+)
 - MultiChain 2.3.3+ (Community Edition) accessible via RPC
 - SMTP service or Resend API (for email notifications)
-- AWS S3–compatible storage (e.g., DigitalOcean Spaces) for file storage
 
 ## Architecture Snapshot
 
 High level components:
 
 - **Web/API Layer**: Laravel 12 + Inertia React SPA with SSR support
-- **Document Storage**: AWS S3-compatible cloud storage with blockchain-published metadata hashes (integrity anchor)
-- **Blockchain Layer**: MultiChain with 4 streams:
+- **Document Storage**: On-chain storage in blockchain (file content stored as hex in `file.data` stream, metadata in `file.metadata` stream)
+- **Blockchain Layer**: MultiChain with 6 streams:
   - `procurement.documents` - Document metadata and file hashes
   - `procurement.status` - Procurement status transitions
   - `procurement.events` - Audit event logs
   - `procurement.corrections` - Document correction trail
+  - `file.data` - Actual file content storage (hex-encoded)
+  - `file.metadata` - File metadata and integrity tracking with SHA-256 hashes
 - **Service Layer**: 28 specialized services for business logic isolation
 - **Job Queue**: Database-driven async job processing for blockchain operations
 - **Roles / Addresses**: Distinct blockchain addresses per functional role (admin, BAC secretariat, BAC chairman, HOPE)
@@ -106,7 +107,6 @@ High level components:
 - MySQL database
 - MultiChain (installed and configured)
 - SMTP email service (for notifications)
-- AWS S3-compatible storage or DigitalOcean Spaces (for file storage)
 
 ```bash
 # Clone the repository
@@ -249,14 +249,10 @@ Environment variables (core subset):
 
 **Additional Configuration:**
 
-- **File Storage**: Uses AWS S3-compatible storage (DigitalOcean Spaces)
+- **File Storage**: Local filesystem with blockchain metadata tracking
 
     ```bash
-    AWS_ACCESS_KEY_ID=your_access_key_id
-    AWS_SECRET_ACCESS_KEY=your_secret_access_key
-    AWS_DEFAULT_REGION=sgp1
-    AWS_BUCKET=your_bucket_name
-    AWS_ENDPOINT=https://sgp1.digitaloceanspaces.com
+    FILESYSTEM_DISK=local_blockchain
     ```
 
 - **Email Configuration**: Resend settings for notifications
@@ -590,7 +586,7 @@ procuchain/
 ### Data Security
 - **Encryption at Rest**: Database encryption (configurable)
 - **Encryption in Transit**: TLS 1.2+ for all external connections
-- **S3 Server-Side Encryption**: AWS/DigitalOcean Spaces encryption
+- **File Integrity Verification**: SHA-256 hashes stored on blockchain for tamper detection
 - **Blockchain Addresses**: Masked display (first 6 + last 6 characters) in UI
 - **Sensitive Data Protection**: Passwords and secrets never stored in blockchain
 - **Environment Variables**: Secure credential storage in `.env` file
@@ -614,11 +610,12 @@ procuchain/
 
 ### Best Practices
 - Environment isolation: Never reuse production addresses in non-production environments
-- Regular backups of `.env` file and MultiChain configuration
+- Regular backups of `.env` file and MultiChain configuration (blockchain data backed up automatically by MultiChain nodes)
 - Proper MultiChain node security with RPC authentication
-- Secure API key storage for external services (S3, email, push notifications)
+- Secure API key storage for external services (email, push notifications)
 - Database backups with encryption
 - Security monitoring through login logs and audit trails
+- **Note**: Files are stored on-chain, so no separate file backup needed - just ensure blockchain nodes are properly backed up
 
 ## Performance & Optimization
 
@@ -702,7 +699,7 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - **Sentry Performance**: Database query performance, HTTP request timing
 - **MultiChain Node**: Connection status and RPC health checks
 - **Database**: Connection monitoring and query performance
-- **Storage**: S3/Spaces connectivity and operation success rates
+- **File Storage**: On-chain storage verification with SHA-256 integrity checks
 - **Queue**: Failed job tracking and retry monitoring
 
 ## API & Integration
@@ -719,7 +716,6 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - `last-error`: Get details of last backend error
 
 ### External Services
-- **AWS S3/DigitalOcean Spaces**: File storage and retrieval
 - **Resend API**: Transactional email delivery
 - **WebPush/VAPID**: Browser push notifications
 - **MultiChain RPC**: Blockchain operations via JSON-RPC 2.0
@@ -749,7 +745,7 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 ### Core Tables (22 total)
 - **users** (19 columns): User accounts with blockchain addresses, 2FA, account lockout
 - **procurements** (13 columns): Core procurement records with blockchain integration
-- **procurement_documents** (19 columns): Document metadata with blockchain anchors
+- **procurement_documents** (21 columns): Document metadata with blockchain anchors including `data_txid` and `metadata_txid` for on-chain file retrieval
 - **user_login_logs** (13 columns): Comprehensive login audit trail
 - **document_views** (13 columns): Document access tracking
 - **blocked_ips** (8 columns): IP blocking system
@@ -763,7 +759,9 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - **migrations**: Database migration tracking
 
 ### Blockchain Integration Fields
-- `blockchain_txid`: Transaction ID from MultiChain
+- `blockchain_txid`: Transaction ID from MultiChain for documents stream
+- `data_txid`: Transaction ID for file content on file.data stream (critical for file retrieval)
+- `metadata_txid`: Transaction ID for file metadata on file.metadata stream
 - `blockchain_status`: Enum (pending, confirmed, failed)
 - `blockchain_status_updated_at`: Timestamp of last status update
 - `blockchain_error`: Error message if operation failed

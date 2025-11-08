@@ -83,10 +83,10 @@ export interface BlockchainProcurementDocument {
     document_type: string;
     hash: string;
     file_key: string;
+    metadata_txid: string;
     user_address: string;
     file_size: number;
     stage_metadata: Record<string, unknown>;
-    spaces_url?: string;
 }
 
 export interface BlockchainProcurementState {

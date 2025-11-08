@@ -76,7 +76,7 @@ interface StageMetadata {
 interface Document {
     file_key: string;
     document_type: string;
-    spaces_url?: string;
+    metadata_txid: string;
     hash?: string;
     file_size?: number;
     stage?: string;

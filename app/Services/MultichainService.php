@@ -495,7 +495,14 @@ class MultichainService
                 'data_type' => gettype($data),
             ]);
 
-            return $this->connection->handleRequest(fn (): mixed => $this->connection->getClient()->publish($streamName, $key, $data, $options));
+            // Only pass options parameter if it's explicitly provided and not null
+            return $this->connection->handleRequest(function () use ($streamName, $key, $data, $options): mixed {
+                if ($options !== null) {
+                    return $this->connection->getClient()->publish($streamName, $key, $data, $options);
+                }
+
+                return $this->connection->getClient()->publish($streamName, $key, $data);
+            });
         } catch (Exception $e) {
             Log::error('Failed to publish to MultiChain', [
                 'stream' => $streamName,

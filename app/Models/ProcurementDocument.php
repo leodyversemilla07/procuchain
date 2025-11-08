@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $stage Procurement stage when uploaded
  * @property array|null $metadata Additional document metadata (JSON)
  * @property string|null $blockchain_txid Blockchain transaction ID
+ * @property string|null $data_txid Blockchain transaction ID for file data
+ * @property string|null $metadata_txid Blockchain transaction ID for file metadata
  * @property string $blockchain_status Status: pending|published|failed
  * @property \Illuminate\Support\Carbon|null $blockchain_status_updated_at
  * @property string|null $blockchain_error Error message if publication failed
@@ -57,6 +59,8 @@ class ProcurementDocument extends Model
         'stage',
         'metadata',
         'blockchain_txid',
+        'data_txid',
+        'metadata_txid',
         'blockchain_status',
         'blockchain_status_updated_at',
         'blockchain_error',
