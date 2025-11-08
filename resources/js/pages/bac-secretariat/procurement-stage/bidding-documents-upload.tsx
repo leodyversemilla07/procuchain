@@ -10,7 +10,7 @@ import { BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { addDays, format } from 'date-fns';
 import { AlertCircle, CalendarIcon, ClipboardList, Upload } from 'lucide-react';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 
@@ -55,10 +55,6 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
         validateFile,
         setFile: (file) => setData('bidding_document_file', file),
     });
-
-    useEffect(() => {
-        console.log('Procurement data received:', procurement);
-    }, [procurement]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
@@ -146,7 +142,7 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Upload Bidding Documents" />
 
-            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-gradient-to-b p-4 sm:gap-6 sm:p-6">
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 <div className="flex flex-col gap-2">
                     <div className="text-primary flex items-center gap-2">
                         <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6" />
