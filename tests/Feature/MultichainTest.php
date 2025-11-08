@@ -56,19 +56,25 @@ it('has stream enums with expected values', function () {
         ->and(StreamEnums::CORRECTIONS->value)->toBe('procurement.corrections');
 });
 
-it('has multichain addresses configured in env/config', function () {
-    $addresses = config('multichain.addresses');
-
-    expect($addresses)
+it('can auto-generate blockchain addresses for new users', function () {
+    $service = app(\App\Services\MultichainService::class);
+    
+    // Generate a new address
+    $address = $service->getNewAddress();
+    
+    // Verify address format and validity
+    expect($address)
+        ->toBeString()
+        ->not->toBeEmpty();
+    
+    // Validate the generated address on the blockchain
+    $validation = $service->validateAddress($address);
+    
+    expect($validation)
         ->toBeArray()
-        ->toHaveKeys(['bac_secretariat', 'bac_chairman', 'hope', 'admin']);
-
-    foreach (['bac_secretariat', 'bac_chairman', 'hope', 'admin'] as $role) {
-        expect($addresses[$role] ?? null)
-            ->toBeString()
-            ->not->toBe('')
-            ->and($addresses[$role])->not->toStartWith('default_');
-    }
+        ->toHaveKey('isvalid')
+        ->and($validation['isvalid'])->toBeTrue()
+        ->and($validation['ismine'])->toBeTrue();
 });
 
 it('defines required globals and stream perms per role', function () {
