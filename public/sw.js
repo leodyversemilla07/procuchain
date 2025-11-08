@@ -3,20 +3,16 @@ const CACHE_NAME = 'procuchain-push-v1';
 
 // Install event
 self.addEventListener('install', event => {
-    console.log('Service Worker installing');
     self.skipWaiting();
 });
 
 // Activate event
 self.addEventListener('activate', event => {
-    console.log('Service Worker activating');
     event.waitUntil(self.clients.claim());
 });
 
 // Push event - handles incoming push notifications
 self.addEventListener('push', event => {
-    console.log('🔔 Push received:', event);
-    
     // Send message to all clients about push received
     self.clients.matchAll().then(clients => {
         clients.forEach(client => {
@@ -28,8 +24,6 @@ self.addEventListener('push', event => {
     });
     
     if (!event.data) {
-        console.log('❌ Push event but no data');
-        
         // Send message to clients about no data
         self.clients.matchAll().then(clients => {
             clients.forEach(client => {
@@ -44,7 +38,6 @@ self.addEventListener('push', event => {
 
     try {
         const data = event.data.json();
-        console.log('📦 Push data:', data);
         
         // Send message to clients about received data
         self.clients.matchAll().then(clients => {
@@ -80,8 +73,6 @@ self.addEventListener('push', event => {
                 icon: '/favicon.ico'
             }];
         }
-
-        console.log('🔔 Showing notification with title:', title, 'and options:', options);
         
         // Send message to clients about showing notification
         self.clients.matchAll().then(clients => {
@@ -97,8 +88,6 @@ self.addEventListener('push', event => {
 
         event.waitUntil(
             self.registration.showNotification(title, options).then(() => {
-                console.log('✅ Notification shown successfully');
-                
                 // Send success message to clients
                 self.clients.matchAll().then(clients => {
                     clients.forEach(client => {
@@ -151,8 +140,6 @@ self.addEventListener('push', event => {
 
 // Notification click event
 self.addEventListener('notificationclick', event => {
-    console.log('Notification clicked:', event);
-    
     event.notification.close();
 
     const data = event.notification.data || {};
@@ -195,21 +182,15 @@ self.addEventListener('notificationclick', event => {
 
 // Notification close event
 self.addEventListener('notificationclose', event => {
-    console.log('Notification closed:', event);
-    
     // You can track notification dismissals here if needed
     const data = event.notification.data || {};
     
     // Optional: Send analytics data about notification dismissal
-    if (data.procurement_id) {
-        console.log(`Notification dismissed for procurement: ${data.procurement_id}`);
-    }
+    // Analytics tracking can be added here if needed
 });
 
 // Background sync for offline notifications
 self.addEventListener('sync', event => {
-    console.log('Background sync:', event);
-    
     if (event.tag === 'procurement-sync') {
         event.waitUntil(
             // You can implement background sync logic here
@@ -220,8 +201,6 @@ self.addEventListener('sync', event => {
 
 // Message event - for communication with main thread
 self.addEventListener('message', event => {
-    console.log('Service Worker received message:', event.data);
-    
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
@@ -241,5 +220,3 @@ self.addEventListener('error', event => {
 self.addEventListener('unhandledrejection', event => {
     console.error('Service Worker unhandled rejection:', event);
 });
-
-console.log('Service Worker script loaded');

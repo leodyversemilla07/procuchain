@@ -144,8 +144,6 @@ export default function ProcurementsList({ procurements: initialProcurements, er
 
     usePoll(30000, {
         only: ['procurements'],
-        onStart: () => console.log('Polling for procurement updates...'),
-        onFinish: () => console.log('Procurement data updated'),
     });
 
     const {
@@ -206,11 +204,6 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                     description: 'Getting latest updates from the server',
                 });
             },
-            onProgress: (progress) => {
-                if (progress && progress.percentage) {
-                    console.log(`Loading: ${Math.round(progress.percentage)}%`);
-                }
-            },
             onSuccess: (page) => {
                 const refreshedProcurements = page.props.procurements as ProcurementListItem[] | undefined;
                 toast.success('Data refreshed successfully', {
@@ -221,9 +214,6 @@ export default function ProcurementsList({ procurements: initialProcurements, er
                 toast.error('Failed to refresh data', {
                     description: Object.values(errors).flat().join(', ') || 'Please try again later',
                 });
-            },
-            onFinish: () => {
-                console.log('Refresh operation completed');
             },
         });
     }, []);

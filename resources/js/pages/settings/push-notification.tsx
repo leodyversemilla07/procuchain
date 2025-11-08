@@ -42,14 +42,6 @@ export default function PushNotification() {
             const hasPushManager = 'PushManager' in window;
             const hasNotification = 'Notification' in window;
 
-            console.log('Push notification support check:', {
-                hasServiceWorker,
-                hasPushManager,
-                hasNotification,
-                isSecureContext: window.isSecureContext,
-                protocol: window.location.protocol,
-            });
-
             const supported = hasServiceWorker && hasPushManager && hasNotification;
 
             setIsSupported(supported);
@@ -80,15 +72,12 @@ export default function PushNotification() {
     // Register service worker
     useEffect(() => {
         if (!isSupported) {
-            console.log('Push notifications not supported, skipping service worker registration');
             return;
         }
 
         const registerServiceWorker = async () => {
             try {
-                console.log('Attempting to register service worker at /sw.js');
                 const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-                console.log('Service Worker registered successfully:', reg);
                 setRegistration(reg);
                 await checkSubscriptionStatus(reg);
             } catch (e) {
@@ -149,7 +138,6 @@ export default function PushNotification() {
     const handleSubscribe = async (e?: React.MouseEvent) => {
         e?.preventDefault();
         e?.stopPropagation();
-        console.log('[Push] Subscribe button clicked');
         try {
             // Ensure permission and registration
             if (permission !== 'granted') {
@@ -176,7 +164,6 @@ export default function PushNotification() {
             });
 
             // Send subscription to server using Inertia
-            console.log('[Push] Subscribing with endpoint', subscription.endpoint);
             await new Promise<void>((resolve, reject) => {
                 router.post(
                     '/settings/push/subscribe',
@@ -197,7 +184,6 @@ export default function PushNotification() {
             });
 
             setIsSubscribed(true);
-            console.log('Successfully subscribed to push notifications');
             const success = true;
             if (!success) {
                 toast.error('Failed to subscribe to push notifications');
@@ -213,7 +199,6 @@ export default function PushNotification() {
     const handleUnsubscribe = async (e?: React.MouseEvent) => {
         e?.preventDefault();
         e?.stopPropagation();
-        console.log('[Push] Unsubscribe button clicked');
         try {
             if (!registration) {
                 setError('Service worker not registered');
@@ -226,7 +211,6 @@ export default function PushNotification() {
             const subscription = await registration.pushManager.getSubscription();
             if (subscription) {
                 await subscription.unsubscribe();
-                console.log('Unsubscribing with endpoint', subscription.endpoint);
                 await new Promise<void>((resolve, reject) => {
                     router.visit('/settings/push/unsubscribe', {
                         method: 'delete',
@@ -242,7 +226,6 @@ export default function PushNotification() {
             }
 
             setIsSubscribed(false);
-            console.log('Successfully unsubscribed from push notifications');
             const success = true;
             if (!success) {
                 toast.error('Failed to unsubscribe from push notifications');
@@ -258,7 +241,6 @@ export default function PushNotification() {
     const handleRequestPermission = async (e?: React.MouseEvent) => {
         e?.preventDefault();
         e?.stopPropagation();
-        console.log('[Push] Request permission clicked');
         try {
             const granted = await requestPermission();
             if (granted) {

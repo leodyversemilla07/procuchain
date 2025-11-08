@@ -321,7 +321,6 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
     useEffect(() => {
         const timer = setTimeout(() => {
             if (pdfLoading) {
-                console.log('PDF still loading after 15 seconds, but not forcing error');
                 setPdfLoading(false);
             }
         }, 15000);
@@ -469,12 +468,10 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                         className="bg-background h-full w-full rounded-lg"
                                         style={{ minHeight: '600px' }}
                                         onLoad={() => {
-                                            console.log('PDF object loaded successfully');
                                             setPdfLoading(false);
                                             setPdfError(false);
                                         }}
                                         onError={() => {
-                                            console.log('PDF object load event failed - showing fallback');
                                             setPdfError(true);
                                             setPdfLoading(false);
                                         }}
