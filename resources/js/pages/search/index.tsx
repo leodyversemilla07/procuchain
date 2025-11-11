@@ -21,10 +21,10 @@ export default function SearchIndex({ query, results, searchError }: SearchIndex
     return (
         <>
             <Head title={`Search Results: ${query}`} />
-            <div className="flex min-h-screen flex-col bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-950 dark:to-gray-900 dark:text-white">
+            <div className="flex min-h-screen flex-col bg-linear-to-br from-gray-50 to-blue-50 dark:from-gray-950 dark:to-gray-900 dark:text-white">
                 <Header />
 
-                <main className="flex-grow pt-[76px]">
+                <main className="grow pt-[76px]">
                     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
                         <h1 className="mb-8 text-center text-3xl font-bold md:text-4xl">
                             Search results for: <span className="text-teal-600 dark:text-teal-400">"{query}"</span>
@@ -54,14 +54,14 @@ export default function SearchIndex({ query, results, searchError }: SearchIndex
                                             className="p-4 transition-colors duration-150 hover:bg-gray-50 sm:p-6 dark:hover:bg-gray-700/30"
                                         >
                                             <div className="flex items-start space-x-4">
-                                                <div className="mt-1 flex-shrink-0">
+                                                <div className="mt-1 shrink-0">
                                                     {result.type === 'Procurement' ? (
                                                         <Package className="h-6 w-6 text-blue-500" />
                                                     ) : (
                                                         <FileText className="h-6 w-6 text-teal-500" />
                                                     )}
                                                 </div>
-                                                <div className="flex-grow">
+                                                <div className="grow">
                                                     <h2 className="mb-1 text-lg font-semibold md:text-xl">
                                                         {result.link ? (
                                                             <Link

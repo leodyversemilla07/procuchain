@@ -183,7 +183,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
     return (
         <>
             <Head title="Blockchain Publishing Status" />
-            <div className="from-background to-muted/20 flex min-h-screen items-center justify-center bg-gradient-to-b p-4">
+            <div className="from-background to-muted/20 flex min-h-screen items-center justify-center bg-linear-to-b p-4">
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border w-full max-w-2xl shadow-2xl">
                     {/* CONFIRMED STATE */}
                     {status?.status === 'confirmed' && (

@@ -117,7 +117,7 @@ export default function BidEvaluationUpload({ procurement = { id: '', title: '' 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Upload Bid Evaluation Report" />
-            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-gradient-to-b p-3 sm:gap-6 sm:p-6">
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-3 sm:gap-6 sm:p-6">
                 <div className="flex flex-col gap-2">
                     <div className="text-primary flex items-center gap-2">
                         <BarChart4 className="h-5 w-5 sm:h-6 sm:w-6" />

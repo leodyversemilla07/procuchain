@@ -35,7 +35,7 @@ export default function BulkDeleteDialog({ open, onOpenChange, selectedUsers, on
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent className="gap-0 p-0 sm:max-w-[500px]">
-                <AlertDialogHeader className="from-destructive/5 dark:from-destructive/10 to-background border-b bg-gradient-to-r px-6 py-6 pb-4">
+                <AlertDialogHeader className="from-destructive/5 dark:from-destructive/10 to-background border-b bg-linear-to-r px-6 py-6 pb-4">
                     <div className="flex items-center space-x-3">
                         <div className="bg-destructive/10 dark:bg-destructive/20 flex h-12 w-12 items-center justify-center rounded-lg">
                             <Trash2 className="text-destructive h-6 w-6" />
@@ -53,7 +53,7 @@ export default function BulkDeleteDialog({ open, onOpenChange, selectedUsers, on
                     <div className="space-y-4">
                         <div className="bg-destructive/5 dark:bg-destructive/10 border-destructive/20 dark:border-destructive/30 rounded-lg border p-4">
                             <div className="flex items-start space-x-3">
-                                <div className="bg-destructive/20 dark:bg-destructive/30 mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full">
+                                <div className="bg-destructive/20 dark:bg-destructive/30 mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
                                     <div className="bg-destructive h-2 w-2 rounded-full"></div>
                                 </div>
                                 <div className="space-y-2">
