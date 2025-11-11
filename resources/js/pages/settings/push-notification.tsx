@@ -9,6 +9,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { AlertCircle, Bell, BellOff, CheckCircle2, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { subscribe, unsubscribe } from '@/routes/settings/push-notification';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -166,7 +167,7 @@ export default function PushNotification() {
             // Send subscription to server using Inertia
             await new Promise<void>((resolve, reject) => {
                 router.post(
-                    '/settings/push/subscribe',
+                    subscribe.url(),
                     {
                         endpoint: subscription.endpoint,
                         keys: {
@@ -212,7 +213,7 @@ export default function PushNotification() {
             if (subscription) {
                 await subscription.unsubscribe();
                 await new Promise<void>((resolve, reject) => {
-                    router.visit('/settings/push/unsubscribe', {
+                    router.visit(unsubscribe.url(), {
                         method: 'delete',
                         data: { endpoint: subscription.endpoint },
                         preserveState: true,

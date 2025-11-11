@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { AlertCircle, CalendarIcon, ClipboardList, FileText, Loader2, Upload } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
+import { index as procurementsListIndex } from '@/routes/bac-secretariat/procurements';
 
 // Allowed file types and max file size for uploads
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -228,7 +229,7 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => router.visit('/bac-secretariat/procurements-list')}
+                                    onClick={() => router.visit(procurementsListIndex.url())}
                                     disabled={processing}
                                     className="h-10 w-full"
                                 >

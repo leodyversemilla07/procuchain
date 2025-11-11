@@ -16,6 +16,12 @@ import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, Loader2, RotateCw 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+// Import Wayfinder route helpers for each role
+import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
+import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
+import { show as hopeShow } from '@/routes/hope/procurements';
+import { show as adminShow } from '@/routes/admin/procurements';
+
 interface Notification {
     id: string;
     type: string;
@@ -39,6 +45,22 @@ interface Notification {
 }
 
 type FilterType = 'all' | 'read' | 'unread';
+
+// Helper function to get the correct Wayfinder route based on user role
+const getProcurementShowUrl = (role: string, id: string): string => {
+    switch (role) {
+        case 'bac_secretariat':
+            return bacSecretariatShow.url(id);
+        case 'bac_chairman':
+            return bacChairmanShow.url(id);
+        case 'hope':
+            return hopeShow.url(id);
+        case 'admin':
+            return adminShow.url(id);
+        default:
+            return `/procurements-list/${id}`;
+    }
+};
 
 const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
     switch (role) {
@@ -241,8 +263,9 @@ export default function Notifications() {
             if (!notification.read_at) {
                 handleMarkAsRead(notification.id);
             }
-            // Navigate directly to the procurement
-            router.visit(`/${userRole?.replace('_', '-')}/procurements-list/${notification.data.procurement_id}`);
+            // Navigate to procurement details using Wayfinder routes
+            const procurementUrl = getProcurementShowUrl(userRole || 'guest', notification.data.procurement_id);
+            router.visit(procurementUrl);
         },
         [userRole, handleMarkAsRead],
     );

@@ -8,4 +8,5 @@ enum StreamEnums: string
     case STATUS = 'procurement.status';
     case EVENTS = 'procurement.events';
     case CORRECTIONS = 'procurement.corrections';
+    case FILE_DATA = 'file.data';
 }

@@ -4,12 +4,34 @@ import { ProcurementListItem, SharedData, Stage, Status } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { AlertCircle, BarChart4Icon, Edit2Icon, EyeIcon, UploadCloudIcon } from 'lucide-react';
 
+// Import Wayfinder route helpers for each role
+import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
+import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
+import { show as hopeShow } from '@/routes/hope/procurements';
+import { show as adminShow } from '@/routes/admin/procurements';
+
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
     onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
     onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
     onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
 }
+
+// Helper function to get the correct Wayfinder route based on user role
+const getProcurementShowUrl = (role: string, id: string): string => {
+    switch (role) {
+        case 'bac_secretariat':
+            return bacSecretariatShow.url(id);
+        case 'bac_chairman':
+            return bacChairmanShow.url(id);
+        case 'hope':
+            return hopeShow.url(id);
+        case 'admin':
+            return adminShow.url(id);
+        default:
+            return `/procurements-list/${id}`;
+    }
+};
 
 const DropdownActionItem = ({
     icon,
@@ -208,7 +230,8 @@ export const ActionButtons = ({
 }: ActionButtonsProps) => {
     const { id } = procurement;
     const { auth } = usePage<SharedData>().props;
-    const isBacSecretariat = auth.user?.role === 'bac_secretariat';
+    const userRole = auth.user?.role || 'guest';
+    const isBacSecretariat = userRole === 'bac_secretariat';
 
     const buttonConfigs = getButtonConfigs(procurement, {
         onOpenPreProcurementDialog,
@@ -220,7 +243,7 @@ export const ActionButtons = ({
     const viewDetailsConfig = {
         icon: <EyeIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
         tooltipText: 'View Details',
-        href: `procurements-list/${id}`,
+        href: getProcurementShowUrl(userRole, id),
     };
 
     const viewCorrectionsConfig = {

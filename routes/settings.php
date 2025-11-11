@@ -11,30 +11,33 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth')->group(function () {
     Route::redirect('settings', 'settings/profile');
 
-    Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Profile settings
+    Route::get('settings/profile', [ProfileController::class, 'edit'])->name('settings.profile.edit');
+    Route::patch('settings/profile', [ProfileController::class, 'update'])->name('settings.profile.update');
+    Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('settings.profile.destroy');
 
-    Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
+    // Password settings
+    Route::get('settings/password', [PasswordController::class, 'edit'])->name('settings.password.edit');
     Route::put('settings/password', [PasswordController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('settings.password.update');
 
     // Push notification settings
-    Route::get('settings/push-notification', [PushNotificationController::class, 'edit'])->name('push-notification.edit');
+    Route::get('settings/push-notification', [PushNotificationController::class, 'edit'])->name('settings.push-notification.edit');
 
-    // Push notification routes
-    Route::get('/settings/push/subscriptions', [PushNotificationController::class, 'index']);
-    Route::post('/settings/push/subscribe', [PushNotificationController::class, 'store']);
-    Route::delete('/settings/push/unsubscribe', [PushNotificationController::class, 'destroy']);
+    // Push notification subscription management
+    Route::get('settings/push-notification/subscriptions', [PushNotificationController::class, 'index'])->name('settings.push-notification.subscriptions.index');
+    Route::post('settings/push-notification/subscribe', [PushNotificationController::class, 'store'])->name('settings.push-notification.subscribe');
+    Route::delete('settings/push-notification/unsubscribe', [PushNotificationController::class, 'destroy'])->name('settings.push-notification.unsubscribe');
 
     // Email notification settings
-    Route::get('settings/email-notification', [EmailNotificationController::class, 'edit'])->name('email-notification.edit');
-    Route::patch('settings/email-notification', [EmailNotificationController::class, 'update'])->name('email-notification.update');
+    Route::get('settings/email-notification', [EmailNotificationController::class, 'edit'])->name('settings.email-notification.edit');
+    Route::patch('settings/email-notification', [EmailNotificationController::class, 'update'])->name('settings.email-notification.update');
 
     // Appearance settings
-    Route::get('settings/appearance', [AppearanceController::class, 'edit'])->name('appearance.edit');
+    Route::get('settings/appearance', [AppearanceController::class, 'edit'])->name('settings.appearance.edit');
 
+    // Two-factor authentication settings
     Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
-        ->name('two-factor.show');
+        ->name('settings.two-factor.show');
 });

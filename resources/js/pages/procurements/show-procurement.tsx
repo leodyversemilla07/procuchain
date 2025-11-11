@@ -25,6 +25,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
+import pdf from '@/routes/pdf';
+import secure from '@/routes/secure';
 import { SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
@@ -741,7 +743,7 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 asChild
                                 className="group-hover:border-primary/30 group-hover:bg-background h-8 shrink-0 text-xs font-medium shadow-sm transition-all hover:shadow sm:h-9 sm:text-sm"
                             >
-                                <Link href={`/pdf-viewer/${encodeURIComponent(doc.file_key)}`} className="flex items-center">
+                                <Link href={pdf.viewer.url({ fileKey: encodeURIComponent(doc.file_key) })} className="flex items-center">
                                     <TrendingUp className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                     View with Analytics
                                 </Link>
@@ -754,7 +756,7 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 className="group-hover:border-primary/30 group-hover:bg-background h-8 shrink-0 text-xs font-medium shadow-sm transition-all hover:shadow sm:h-9 sm:text-sm"
                             >
                                 <a
-                                    href={`/secure-file/${encodeURIComponent(doc.file_key)}`}
+                                    href={secure.file.download.url({ fileKey: encodeURIComponent(doc.file_key) })}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center"

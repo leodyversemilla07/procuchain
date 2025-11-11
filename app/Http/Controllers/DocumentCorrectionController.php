@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Document\CorrectDocumentRequest;
 use App\Models\ProcurementDocument;
 use App\Services\BlockchainCorrectionService;
+use App\Services\FileStorageService;
 use App\Services\MultichainService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,7 +18,8 @@ class DocumentCorrectionController extends Controller
 {
     public function __construct(
         private readonly BlockchainCorrectionService $correctionService,
-        private readonly MultichainService $multiChainService
+        private readonly MultichainService $multiChainService,
+        private readonly FileStorageService $fileStorageService
     ) {}
 
     /**
@@ -34,15 +35,34 @@ class DocumentCorrectionController extends Controller
         $correctedMetadata = null;
         if ($validated['correction_type'] === 'replace' && $request->hasFile('corrected_file')) {
             $file = $request->file('corrected_file');
-            $filePath = $file->store('procurement_documents', 'local');
 
-            $correctedMetadata = [
-                'file_name' => $file->getClientOriginalName(),
-                'file_size' => $file->getSize(),
-                'mime_type' => $file->getMimeType(),
-                'file_key' => $filePath,
-                'hash' => hash_file('sha256', $file->getRealPath()),
-            ];
+            // Upload file to blockchain (on-chain storage)
+            try {
+                $uploadResult = $this->fileStorageService->uploadFile(
+                    file: $file,
+                    path: 'procurement_documents/'.$document->procurement_id,
+                    suffix: 'corrected_'.time(),
+                    metadata: [
+                        'document_id' => $document->id,
+                        'procurement_id' => $document->procurement_id,
+                        'correction_type' => 'replace',
+                        'original_txid' => $document->txid,
+                        'corrected_by' => Auth::user()->name,
+                    ]
+                );
+
+                $correctedMetadata = [
+                    'file_name' => $uploadResult['filename'],
+                    'file_size' => $uploadResult['size'],
+                    'mime_type' => $file->getMimeType(),
+                    'file_key' => $uploadResult['file_key'],
+                    'hash' => $uploadResult['hash'],
+                    'data_txid' => $uploadResult['data_txid'],
+                    'metadata_txid' => $uploadResult['metadata_txid'],
+                ];
+            } catch (\Exception $e) {
+                return redirect()->back()->withErrors(['error' => 'Failed to upload corrected file to blockchain: '.$e->getMessage()]);
+            }
         }
 
         // Get user's blockchain address
@@ -60,11 +80,6 @@ class DocumentCorrectionController extends Controller
 
             return redirect()->back()->with('success', 'Document correction submitted successfully. Transaction ID: '.$correctionTxid);
         } catch (\Exception $e) {
-            // Clean up uploaded file if correction failed
-            if (isset($filePath)) {
-                Storage::disk('local')->delete($filePath);
-            }
-
             return redirect()->back()->withErrors(['error' => 'Failed to submit correction: '.$e->getMessage()]);
         }
     }

@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePermissions } from '@/hooks/use-permissions';
 import AppLayout from '@/layouts/app-layout';
+import admin from '@/routes/admin';
 import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import {
     flexRender,
@@ -277,7 +278,7 @@ export default function AdminUserManagement() {
 
     const handleCreateUser = (e: React.FormEvent) => {
         e.preventDefault();
-        router.post('/admin/users', formData, {
+        router.post(admin.users.store.url(), formData, {
             // Reload users data to sync across tabs/windows
             only: ['users'],
             onSuccess: () => {
@@ -296,7 +297,7 @@ export default function AdminUserManagement() {
         e.preventDefault();
         if (!selectedUser) return;
 
-        router.put(`/admin/users/${selectedUser.id}`, formData, {
+        router.put(admin.users.update.url({ user: selectedUser.id }), formData, {
             // Reload users data to sync across tabs/windows
             only: ['users'],
             onSuccess: () => {
@@ -320,7 +321,7 @@ export default function AdminUserManagement() {
     const confirmDeleteUser = () => {
         if (!userToDelete) return;
 
-        router.delete(`/admin/users/${userToDelete.id}`, {
+        router.delete(admin.users.destroy.url({ user: userToDelete.id }), {
             // Reload users data to sync across tabs/windows
             only: ['users'],
             onSuccess: () => {
@@ -349,7 +350,7 @@ export default function AdminUserManagement() {
 
         const userIds = selectedRows.map((row) => row.original.id);
 
-        router.delete('/admin/users', {
+        router.delete(admin.users.bulkDelete.url(), {
             data: { user_ids: userIds },
             // Reload users data to sync across tabs/windows
             only: ['users'],

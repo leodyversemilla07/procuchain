@@ -1,5 +1,4 @@
 import { LucideIcon } from 'lucide-react';
-import type { Config } from 'ziggy-js';
 
 // ============================================================================
 // BLOCKCHAIN TYPES
@@ -9,6 +8,8 @@ export enum StreamType {
     DOCUMENTS = 'procurement.documents',
     STATE = 'procurement.status',
     EVENTS = 'procurement.events',
+    CORRECTIONS = 'procurement.corrections',
+    FILE_DATA = 'file.data',
 }
 
 export enum Stage {
@@ -283,7 +284,6 @@ export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
-    ziggy: Config & { location: string };
     csrf_token?: string;
     [key: string]: unknown;
 }

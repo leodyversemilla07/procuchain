@@ -105,13 +105,13 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, procurementI
                                 aria-label="Supplemental bid bulletin status"
                             >
                                 <Label htmlFor="supplemental-yes" className="m-0 w-full">
-                                    <div className="flex min-h-[48px] cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
+                                    <div className="flex min-h-12 cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                                         <RadioGroupItem value="true" id="supplemental-yes" />
                                         <span className="cursor-pointer">Yes</span>
                                     </div>
                                 </Label>
                                 <Label htmlFor="supplemental-no" className="m-0 w-full">
-                                    <div className="flex min-h-[48px] cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
+                                    <div className="flex min-h-12 cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                                         <RadioGroupItem value="false" id="supplemental-no" />
                                         <span className="cursor-pointer">No</span>
                                     </div>
@@ -146,12 +146,12 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, procurementI
                             type="button"
                             variant="outline"
                             onClick={() => onOpenChange(false)}
-                            className="min-h-[44px] w-full text-sm sm:w-auto sm:text-base"
+                            className="min-h-11 w-full text-sm sm:w-auto sm:text-base"
                             disabled={form.processing}
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={form.processing} className="min-h-[44px] w-full text-sm sm:w-auto sm:text-base">
+                        <Button type="submit" disabled={form.processing} className="min-h-11 w-full text-sm sm:w-auto sm:text-base">
                             {form.processing ? (
                                 <span className="flex items-center gap-2">
                                     <LoaderCircle className="h-4 w-4 animate-spin" />
