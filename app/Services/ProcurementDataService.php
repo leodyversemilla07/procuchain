@@ -210,12 +210,12 @@ class ProcurementDataService
                 $data = $item['data']['json'] ?? [];
                 $fileKey = $data['file_key'] ?? '';
 
-                $secureUrl = ! empty($fileKey) ? route('secure.file.download', ['fileKey' => $fileKey]) : '';
+                $fileUrl = ! empty($fileKey) ? route('files.download', ['fileKey' => $fileKey]) : '';
 
                 return [
                     'file_key' => $fileKey,
                     'document_type' => $data['document_type'] ?? '',
-                    'spaces_url' => $secureUrl,
+                    'spaces_url' => $fileUrl,
                     'hash' => $data['hash'] ?? '',
                     'file_size' => $data['file_size'] ?? null,
                     'stage' => $data['stage'] ?? '',

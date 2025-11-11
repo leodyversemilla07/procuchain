@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { BreadcrumbItem, SharedData } from '@/types';
+import { UserRole } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import {
     Activity,
@@ -67,7 +68,9 @@ interface Document {
     procurement_id: string;
     procurement_title: string;
     document_type: string;
+    document_type_display: string;
     stage: string;
+    stage_display: string;
     file_size?: number;
     timestamp: string;
     hash?: string;
@@ -88,13 +91,13 @@ const getBreadcrumbs = (role?: string, procurementId?: string): BreadcrumbItem[]
     const getProcurementDetailsHref = (role: string, id?: string) => {
         if (!id || id === 'Unknown' || id.trim() === '') return '#';
         switch (role) {
-            case 'bac_secretariat':
+            case UserRole.BAC_SECRETARIAT:
                 return `/bac-secretariat/procurements-list/${id}`;
-            case 'bac_chairman':
+            case UserRole.BAC_CHAIRMAN:
                 return `/bac-chairman/procurements-list/${id}`;
-            case 'hope':
+            case UserRole.HOPE:
                 return `/hope/procurements-list/${id}`;
-            case 'admin':
+            case UserRole.ADMIN:
                 return `/admin/procurements-list/${id}`;
             default:
                 return '#';
@@ -104,28 +107,28 @@ const getBreadcrumbs = (role?: string, procurementId?: string): BreadcrumbItem[]
     const procurementDetailsHref = getProcurementDetailsHref(role || '', procurementId);
 
     switch (role) {
-        case 'bac_secretariat':
+        case UserRole.BAC_SECRETARIAT:
             return [
                 { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
                 { title: 'Procurement List', href: '/bac-secretariat/procurements-list' },
                 { title: 'Procurement Details', href: procurementDetailsHref },
                 { title: 'PDF Viewer', href: '#' },
             ];
-        case 'bac_chairman':
+        case UserRole.BAC_CHAIRMAN:
             return [
                 { title: 'Bids and Awards Committee Chairman Dashboard', href: '/bac-chairman/dashboard' },
                 { title: 'Procurement List', href: '/bac-chairman/procurements-list' },
                 { title: 'Procurement Details', href: procurementDetailsHref },
                 { title: 'PDF Viewer', href: '#' },
             ];
-        case 'hope':
+        case UserRole.HOPE:
             return [
                 { title: 'Head of Procuring Entity Dashboard', href: '/hope/dashboard' },
                 { title: 'Procurement List', href: '/hope/procurements-list' },
                 { title: 'Procurement Details', href: procurementDetailsHref },
                 { title: 'PDF Viewer', href: '#' },
             ];
-        case 'admin':
+        case UserRole.ADMIN:
             return [
                 { title: 'Admin Dashboard', href: '/admin/dashboard' },
                 { title: 'Procurement List', href: '/admin/procurements-list' },
@@ -144,13 +147,13 @@ const getBreadcrumbs = (role?: string, procurementId?: string): BreadcrumbItem[]
 
 const getRoleBadgeColor = (role: string) => {
     switch (role) {
-        case 'bac_chairman':
+        case UserRole.BAC_CHAIRMAN:
             return 'bg-primary/10 text-primary';
-        case 'bac_secretariat':
+        case UserRole.BAC_SECRETARIAT:
             return 'bg-info/10 text-info';
-        case 'hope':
+        case UserRole.HOPE:
             return 'bg-success/10 text-success';
-        case 'admin':
+        case UserRole.ADMIN:
             return 'bg-destructive/10 text-destructive';
         default:
             return 'bg-muted text-muted-foreground';
@@ -159,38 +162,17 @@ const getRoleBadgeColor = (role: string) => {
 
 const formatRole = (role: string) => {
     switch (role) {
-        case 'bac_chairman':
+        case UserRole.BAC_CHAIRMAN:
             return 'BAC Chairman';
-        case 'bac_secretariat':
+        case UserRole.BAC_SECRETARIAT:
             return 'BAC Secretariat';
-        case 'hope':
+        case UserRole.HOPE:
             return 'Head of Office';
-        case 'admin':
+        case UserRole.ADMIN:
             return 'Administrator';
         default:
             return role.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     }
-};
-
-const formatStage = (stage: string) => {
-    const stageFormatMap: Record<string, string> = {
-        ProcurementInitiation: 'Procurement Initiation',
-        PreProcurementConference: 'Pre-Procurement Conference',
-        BiddingDocuments: 'Bidding Documents',
-        PreBidConference: 'Pre-Bid Conference',
-        BidOpening: 'Bid Opening',
-        BidEvaluation: 'Bid Evaluation',
-        PostQualification: 'Post Qualification',
-        NoticeOfAward: 'Notice of Award',
-        NoticeToProceed: 'Notice to Proceed',
-        PerformanceBondContractAndPo: 'Performance Bond, Contract & PO',
-        Monitoring: 'Monitoring',
-        Completion: 'Completion',
-        BacResolution: 'BAC Resolution',
-        SupplementalBidBulletin: 'Supplemental Bid Bulletin',
-    };
-
-    return stageFormatMap[stage] || stage.replace(/([A-Z])/g, ' $1').trim();
 };
 
 const getStageIcon = (stage: string) => {
@@ -362,18 +344,18 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
     return (
         <TooltipProvider>
             <AppLayout breadcrumbs={breadcrumbs}>
-                <Head title={`PDF Viewer - ${document.document_type}`} />
+                <Head title={`PDF Viewer - ${document.document_type_display}`} />
 
                 <div className="p-4 md:p-6 lg:p-8">
                     <div className="mb-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-primary text-2xl font-bold">{document.document_type}</h1>
+                                <h1 className="text-primary text-2xl font-bold">{document.document_type_display}</h1>
                                 <p className="text-muted-foreground mt-1 text-sm">{document.procurement_title}</p>
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
                                     <Badge variant="outline" className="flex items-center gap-1.5">
                                         {React.createElement(getStageIcon(document.stage), { className: 'h-3.5 w-3.5' })}
-                                        <span className="font-medium">{formatStage(document.stage)}</span>
+                                        <span className="font-medium">{document.stage_display}</span>
                                     </Badge>
                                     {document.current_status && (
                                         <Badge
@@ -598,7 +580,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                                 Document Type:
                                             </span>
                                             <Badge variant="secondary" className="font-medium">
-                                                {document.document_type}
+                                                {document.document_type_display}
                                             </Badge>
                                         </div>
                                         <div className="flex items-center justify-between">
@@ -608,7 +590,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                                             </span>
                                             <Badge variant="outline" className="flex items-center gap-1.5">
                                                 {React.createElement(getStageIcon(document.stage), { className: 'h-3.5 w-3.5' })}
-                                                {formatStage(document.stage)}
+                                                {document.stage_display}
                                             </Badge>
                                         </div>
                                         {document.current_status && (

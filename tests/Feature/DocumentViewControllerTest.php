@@ -64,3 +64,31 @@ it('requires proper role for PDF viewer access', function () {
     // Should succeed for valid roles
     $response->assertSuccessful();
 });
+
+it('formats stage enum to display name correctly', function () {
+    /** @var User $user */
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+    $user = User::factory()->createOne();
+    $user->assignRole('bac_secretariat');
+    actingAs($user);
+
+    DocumentView::factory()->create([
+        'user_id' => $user->id,
+        'file_key' => 'test-stage-format',
+        'document_type' => 'procurement_initiation',
+        'stage' => 'procurement_initiation',
+        'procurement_id' => 'TEST-002',
+    ]);
+
+    $response = get('/pdf-viewer/test-stage-format');
+
+    $response->assertSuccessful();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('documents/pdf-viewer')
+        ->has('document')
+        ->where('document.stage', 'procurement_initiation')
+        ->where('document.stage_display', 'Procurement Initiation')
+        ->where('document.document_type', 'procurement_initiation')
+        ->where('document.document_type_display', 'Procurement Initiation Document')
+    );
+});
