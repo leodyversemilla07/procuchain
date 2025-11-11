@@ -14,10 +14,11 @@ import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { dashboard } from '@/routes/admin';
 import { show as procurementsShow } from '@/routes/admin/procurements';
 import { index as procurementsListIndex } from '@/routes/admin/procurements';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
+import { UserRole } from '@/types/enums';
 
 export type TimeRangeKey = '7_days' | '30_days' | '90_days' | '1_year';
 
@@ -122,12 +123,7 @@ const formatValue = (value: number, type: 'currency' | 'number' | 'percentage' =
     }
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Admin Dashboard',
-        href: dashboard.url(),
-    },
-];
+const breadcrumbs: BreadcrumbItem[] = [getDashboardBreadcrumb(UserRole.ADMIN)];
 
 export default function AdminDashboard() {
     const { analytics, recentProcurements = [], procurementDistribution = [], recentActivities = [], stats, error } = usePage<DashboardProps>().props;

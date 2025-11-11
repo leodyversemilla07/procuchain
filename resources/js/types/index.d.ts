@@ -72,9 +72,116 @@ export type {
 } from './navigation';
 
 // ============================================================================
+// ADMIN & USER MANAGEMENT TYPES
+// ============================================================================
+export type {
+    LoginLog,
+    LoginStatistics,
+    TimeRangeKey,
+    UserActivityOverview,
+    LoginPatterns,
+    RoleActivity,
+    SessionAnalytics,
+    SecurityMetrics,
+    UserActivityAnalytics,
+    ExtendedUser,
+    LockedAccount,
+    BlockchainOverview,
+    BlockInfo,
+    StreamInfo,
+    AddressInfo,
+    PeerInfo,
+    CircuitBreakerState,
+    QueueMetrics,
+    DocumentMetrics,
+    HealthStatus,
+    BlockchainExplorerData,
+} from './admin';
+
+// ============================================================================
+// DASHBOARD TYPES
+// ============================================================================
+export type {
+    DashboardStats,
+    RecentActivity,
+    RecentProcurement,
+    PriorityAction,
+    StatsGridItem,
+    ProcurementDistributionItem,
+    DistributionKey,
+    StageDistributionItem,
+} from './dashboard';
+
+// ============================================================================
+// NOTIFICATION TYPES
+// ============================================================================
+export type {
+    Notification,
+    NotificationFilterType,
+} from './notification';
+
+// ============================================================================
+// VIEWER TYPES
+// ============================================================================
+export type {
+    ViewerUser,
+    DocumentView,
+    ViewStats,
+    PdfDocument,
+    CorrectionRecord,
+    CorrectionData,
+    ProcurementDocument,
+} from './viewer';
+
+// ============================================================================
+// SEARCH TYPES
+// ============================================================================
+export type {
+    SearchResult,
+    SearchSuggestion,
+} from './search';
+
+// ============================================================================
+// COMPONENT PROPS TYPES
+// ============================================================================
+export type {
+    PersonData,
+    AffiliationType,
+    PaginationConfig,
+    FileUploadConfig,
+    ErrorStateTone,
+    ErrorStateConfig,
+    SEOConfig,
+    BadgeVariant,
+    ChartConfig,
+} from './components';
+
+// ============================================================================
+// UTILITY TYPES
+// ============================================================================
+export type {
+    Appearance,
+    CopiedValue,
+    CopyFn,
+    NavigatorUABrandVersion,
+    NavigatorUAData,
+    NavigatorWithUAData,
+    OSInfo,
+    StructuredDataOrganization,
+    StructuredDataWebSite,
+    StructuredDataSoftwareApplication,
+    CSVValue,
+    ValidationError,
+    FormErrors,
+    DateRange,
+    ValidityPeriod,
+} from './utils';
+
+// ============================================================================
 // CONSTANTS
 // ============================================================================
 export {
     MUNICIPAL_OFFICES,
+    STAGE_ORDER,
     type MunicipalOffice,
 } from './constants';

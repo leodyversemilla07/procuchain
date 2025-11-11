@@ -15,7 +15,8 @@ import { Button } from '@/components/ui/button';
 import { useProcurementList } from '@/hooks/use-procurement-list';
 import AppLayout from '@/layouts/app-layout';
 import { initiation as procurementInitiation } from '@/routes/bac-secretariat/procurement';
-import { BreadcrumbItem, ProcurementListItem, SharedData, Status } from '@/types';
+import { ProcurementListItem, SharedData, Status } from '@/types';
+import { getProcurementListBreadcrumbs } from '@/utils/breadcrumbs';
 import { toast } from 'sonner';
 
 interface ShowProps {
@@ -101,40 +102,10 @@ const ProcurementStatsSummary = ({ total, inProgress, completed, documentTotal, 
     return <StatsGrid items={items} userRole={userRole} className={className} gridClassName="lg:grid-cols-4" />;
 };
 
-export const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
-    switch (role) {
-        case 'bac_secretariat':
-            return [
-                { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
-                { title: 'Procurement List', href: '#' },
-            ];
-        case 'bac_chairman':
-            return [
-                { title: 'Bids and Awards Committee Chairman Dashboard', href: '/bac-chairman/dashboard' },
-                { title: 'Procurement List', href: '#' },
-            ];
-        case 'hope':
-            return [
-                { title: 'Head of Procuring Entity Dashboard', href: '/hope/dashboard' },
-                { title: 'Procurement List', href: '#' },
-            ];
-        case 'admin':
-            return [
-                { title: 'Admin Dashboard', href: '/admin/dashboard' },
-                { title: 'Procurement List', href: '#' },
-            ];
-        default:
-            return [
-                { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Procurement List', href: '#' },
-            ];
-    }
-};
-
 export default function ProcurementsList({ procurements: initialProcurements, error: initialError }: ShowProps) {
     const { auth } = usePage<SharedData>().props;
     const userRole = auth?.user?.role || 'guest';
-    const breadcrumbs = getBreadcrumbs(userRole);
+    const breadcrumbs = getProcurementListBreadcrumbs(userRole);
 
     const [searchValue, setSearchValue] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');

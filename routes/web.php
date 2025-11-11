@@ -94,15 +94,15 @@ Route::middleware(['auth'])->group(function () {
     // Document Corrections - View Only (All Authenticated Users)
     Route::get('/procurements/{id}/corrections', [DocumentCorrectionController::class, 'showCorrectionsPage'])
         ->name('procurements.corrections.page');
+    Route::get('/procurements/{procurement}/corrections-history', [DocumentCorrectionController::class, 'getCorrectionHistory'])
+        ->name('procurements.corrections');
+    Route::get('/corrections/check/{txid}', [DocumentCorrectionController::class, 'checkCorrection'])
+        ->name('corrections.check');
 
     // Document Corrections - Management (Admin, BAC Chairman, BAC Secretariat)
     Route::middleware(['role:admin,bac_chairman,bac_secretariat'])->group(function () {
         Route::post('/documents/{document}/correct', [DocumentCorrectionController::class, 'correctDocument'])
             ->name('documents.correct');
-        Route::get('/procurements/{procurement}/corrections', [DocumentCorrectionController::class, 'getCorrectionHistory'])
-            ->name('procurements.corrections');
-        Route::get('/corrections/check/{txid}', [DocumentCorrectionController::class, 'checkCorrection'])
-            ->name('corrections.check');
     });
 
     // Procurement Publishing & Upload Actions (BAC Secretariat only)
@@ -191,12 +191,13 @@ Route::middleware(['auth'])->group(function () {
 
         // Blockchain Publishing Status Page
         Route::get('/blockchain/publishing-status/{id}', function (string $id) {
-            $procurement = \App\Models\Procurement::findOrFail($id);
+            // Fetch procurement data from blockchain instead of database
+            // For now, just accept the procurement ID from the route
 
             return Inertia::render('blockchain-publishing-status', [
                 'procurement' => [
-                    'id' => $procurement->id,
-                    'title' => $procurement->title,
+                    'id' => $id,
+                    'title' => 'Procurement '.$id, // Will be fetched from blockchain in future
                 ],
                 'stage' => request('stage', 'Document Upload'),
                 'returnUrl' => request('return_url'),

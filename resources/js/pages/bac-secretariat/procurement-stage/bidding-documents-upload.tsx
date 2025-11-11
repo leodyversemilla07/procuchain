@@ -13,6 +13,9 @@ import { AlertCircle, CalendarIcon, ClipboardList, Upload } from 'lucide-react';
 import React from 'react';
 import { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
+import { buildBreadcrumbs } from '@/utils/breadcrumbs';
+import { UserRole } from '@/types/enums';
+import { getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 
 interface BiddingDocumentsUploadProps {
     procurement: {
@@ -56,11 +59,10 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
         setFile: (file) => setData('bidding_document_file', file),
     });
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
-        { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+    const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
+        getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
         { title: `Upload Bidding Documents - ${procurement?.id || 'Unknown ID'}${procurement?.title ? ': ' + procurement.title : ''}`, href: '#' },
-    ];
+    ]);
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();

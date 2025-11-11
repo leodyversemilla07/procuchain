@@ -12,6 +12,9 @@ import { AlertCircle, CalendarIcon, ClipboardList, FileText, Loader2, Upload } f
 import React from 'react';
 import { toast } from 'sonner';
 import { index as procurementsListIndex } from '@/routes/bac-secretariat/procurements';
+import { buildBreadcrumbs } from '@/utils/breadcrumbs';
+import { UserRole } from '@/types/enums';
+import { getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 
 // Allowed file types and max file size for uploads
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -51,11 +54,10 @@ export default function PreProcurementUpload({ procurement = { id: '', title: ''
         return true;
     };
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
-        { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+    const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
+        getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
         { title: `Upload Pre-Procurement Documents - ${procurement.id}: ${procurement.title}`, href: '#' },
-    ];
+    ]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: 'minutes_file' | 'attendance_file') => {
         if (e.target.files && e.target.files.length > 0) {

@@ -5,11 +5,11 @@ import { StageDistributionCard } from '@/components/dashboard/stage-distribution
 import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes/hope';
 import { show as procurementsShow } from '@/routes/hope/procurements';
 import { index as procurementsListIndex } from '@/routes/hope/procurements';
-import type { BreadcrumbItem, SharedData } from '@/types';
-import { Stage, Status } from '@/types';
+import type { SharedData } from '@/types';
+import { Stage, Status, UserRole } from '@/types';
+import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
 import { Head, router, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';
@@ -44,15 +44,10 @@ interface DashboardProps extends SharedData {
     error?: string;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Head of Procuring Entity Dashboard',
-        href: dashboard.url(),
-    },
-];
-
 export default function HOPEDashboard() {
     const { recentProcurements = [], procurementDistribution = [], recentActivities = [], stats, error } = usePage<DashboardProps>().props;
+    
+    const breadcrumbs = [getDashboardBreadcrumb(UserRole.HOPE)];
 
     // Calculate distribution from procurementDistribution data (separate from recent procurements)
     const stageDistribution = useMemo(() => {

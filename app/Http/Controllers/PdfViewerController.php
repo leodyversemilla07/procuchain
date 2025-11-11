@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Models\DocumentView;
-use App\Services\DocumentBlockchainService;
+use App\Services\ProcurementDataService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +16,7 @@ use Inertia\Response;
 class PdfViewerController extends BaseController
 {
     public function __construct(
-        private DocumentBlockchainService $blockchainService
+        private ProcurementDataService $procurementDataService
     ) {
         $this->middleware('auth');
         $this->middleware('role:bac_chairman|bac_secretariat|hope|admin');
@@ -29,7 +29,7 @@ class PdfViewerController extends BaseController
     {
         Log::info('PDF Viewer requested', ['file_key' => $fileKey]);
 
-        $documentData = $this->blockchainService->getDocumentData($fileKey);
+        $documentData = $this->procurementDataService->getDocumentDataByFileKey($fileKey);
 
         // Format the stage and document_type if document data exists
         if ($documentData) {
@@ -44,7 +44,7 @@ class PdfViewerController extends BaseController
         $currentStatus = null;
         if ($documentData && isset($documentData['procurement_id']) && $documentData['procurement_id'] !== 'Unknown') {
             Log::info('Attempting to get procurement status', ['procurement_id' => $documentData['procurement_id']]);
-            $currentStatus = $this->blockchainService->getCurrentProcurementStatus($documentData['procurement_id']);
+            $currentStatus = $this->procurementDataService->getCurrentProcurementStatus($documentData['procurement_id']);
             if ($currentStatus) {
                 $documentData['current_status'] = $currentStatus['current_status'] ?? null;
                 $documentData['status_timestamp'] = $currentStatus['timestamp'] ?? null;
@@ -77,7 +77,7 @@ class PdfViewerController extends BaseController
                 }
             }
 
-            $alternativeHash = $this->blockchainService->getHashByProcurementId($procurementId, $fileKey);
+            $alternativeHash = $this->procurementDataService->getHashByProcurementId($procurementId, $fileKey);
 
             if (! $documentView) {
                 $documentView = DocumentView::create([
@@ -131,7 +131,7 @@ class PdfViewerController extends BaseController
 
             if ($procurementId !== 'Unknown') {
                 Log::info('Attempting to get procurement status for fallback data', ['procurement_id' => $procurementId]);
-                $currentStatus = $this->blockchainService->getCurrentProcurementStatus($procurementId);
+                $currentStatus = $this->procurementDataService->getCurrentProcurementStatus($procurementId);
                 if ($currentStatus) {
                     $documentData['current_status'] = $currentStatus['current_status'] ?? null;
                     $documentData['status_timestamp'] = $currentStatus['timestamp'] ?? null;
@@ -306,8 +306,8 @@ class PdfViewerController extends BaseController
     private function getFileSize(string $fileKey): ?int
     {
         try {
-            // Get file size from blockchain metadata using DocumentBlockchainService
-            $documentData = $this->blockchainService->getDocumentData($fileKey);
+            // Get file size from blockchain metadata using ProcurementDataService
+            $documentData = $this->procurementDataService->getDocumentDataByFileKey($fileKey);
 
             if ($documentData && isset($documentData['file_size'])) {
                 Log::info('Got file size from blockchain metadata', [

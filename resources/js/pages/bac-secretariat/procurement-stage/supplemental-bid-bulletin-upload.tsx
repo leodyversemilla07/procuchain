@@ -11,6 +11,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useFileDrop } from '@/hooks/use-file-drop';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
+import { buildBreadcrumbs } from '@/utils/breadcrumbs';
+import { UserRole } from '@/types/enums';
+import { getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 
 // Allowed file types and max file size for uploads
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -33,11 +36,10 @@ export default function SupplementalBidBulletinUpload({ procurement = { id: '', 
         issue_date: new Date(),
     });
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
-        { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+    const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
+        getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
         { title: `Upload Supplemental Bid Bulletin - ${procurement.id}: ${procurement.title}`, href: '#' },
-    ];
+    ]);
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();

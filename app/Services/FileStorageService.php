@@ -7,7 +7,11 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Service for handling on-chain file storage with blockchain
+ * Unified File Storage Service with Blockchain
+ *
+ * Handles all file operations for blockchain storage:
+ * - Low-level: Direct blockchain storage operations
+ * - High-level: Document upload orchestration with metadata preparation
  *
  * Stores files directly on blockchain for:
  * - True decentralization and redundancy across all nodes
@@ -285,5 +289,108 @@ class FileStorageService
         $mb = $this->maxChunkSize / 1048576;
 
         return number_format($mb, 0).' MB';
+    }
+
+    // =====================================================================
+    // HIGH-LEVEL DOCUMENT UPLOAD ORCHESTRATION
+    // Merged from DocumentUploadService
+    // =====================================================================
+
+    /**
+     * Upload files and prepare metadata for procurement documents.
+     *
+     * Orchestrates the complete upload process:
+     * 1. Prepares metadata for all files
+     * 2. Uploads each file to blockchain
+     * 3. Returns complete metadata array with blockchain transaction IDs
+     *
+     * Merged from DocumentUploadService to consolidate file operations.
+     *
+     * @param  UploadedFile[]  $files
+     * @param  array  $metadata  Metadata for each file
+     * @param  string  $procurementId  Procurement ID
+     * @param  string  $procurementTitle  Procurement title
+     * @param  string  $stageFolder  Stage folder name
+     * @return array Complete metadata array with blockchain transaction IDs
+     */
+    public function uploadAndPrepare(array $files, array $metadata, string $procurementId, string $procurementTitle, string $stageFolder): array
+    {
+        $metadataArray = $this->prepareMetadata(
+            $files,
+            $metadata,
+            $procurementId,
+            $procurementTitle,
+            $stageFolder
+        );
+
+        foreach ($files as $index => $file) {
+            // Use base_path and sanitized_document_type from metadataArray
+            $meta = &$metadataArray[$index];
+
+            // Upload file with on-chain blockchain storage
+            $result = $this->uploadFile(
+                $file,
+                $meta['base_path'].'/',
+                $meta['sanitized_document_type'],
+                [
+                    'procurement_id' => $procurementId,
+                    'procurement_title' => $procurementTitle,
+                    'document_type' => $meta['document_type'] ?? 'unknown',
+                    'stage' => $stageFolder,
+                ]
+            );
+
+            // Store file_key, data_txid, metadata_txid for on-chain storage
+            $meta['file_key'] = $result['file_key'];
+            $meta['data_txid'] = $result['data_txid'];
+            $meta['metadata_txid'] = $result['metadata_txid'];
+            $meta['file_hash'] = $result['hash'];
+
+            // Pure blockchain - no database records needed
+            // Document tracking happens via blockchain streams only
+        }
+
+        return $metadataArray;
+    }
+
+    /**
+     * Prepare metadata for procurement documents.
+     *
+     * Standardizes metadata format for all files before upload.
+     * Generates file paths, sanitizes names, and calculates hashes.
+     *
+     * Merged from DocumentUploadService (originally from DocumentMetadataService).
+     *
+     * @param  UploadedFile[]  $files  Files to prepare metadata for
+     * @param  array  $metadata  Input metadata for each file
+     * @param  string  $procurementId  Procurement ID
+     * @param  string  $procurementTitle  Procurement title
+     * @param  string  $stageFolder  Stage folder name
+     * @return array Prepared metadata array with paths, hashes, and sanitized names
+     */
+    public function prepareMetadata(array $files, array $metadata, string $procurementId, string $procurementTitle, string $stageFolder): array
+    {
+        $sanitizedTitle = preg_replace('/[^a-zA-Z0-9]/', '_', $procurementTitle);
+        $basePath = trim("$procurementId-$sanitizedTitle/$stageFolder", '/');
+        $metadataArray = [];
+
+        foreach ($files as $index => $file) {
+            $documentType = $metadata[$index]['document_type'] ?? "doc-$index";
+            $sanitizedDocumentType = preg_replace('/[^a-zA-Z0-9_-]/', '_', $documentType);
+            $hash = hash('sha256', file_get_contents($file->getRealPath()));
+
+            $metadataArray[] = array_merge(
+                [
+                    'hash' => $hash,
+                    'file_size' => $file->getSize(),
+                    'document_type' => $documentType,
+                    'sanitized_document_type' => $sanitizedDocumentType,
+                    'base_path' => $basePath,
+                ],
+                $metadata[$index]
+            );
+        }
+
+        return $metadataArray;
     }
 }

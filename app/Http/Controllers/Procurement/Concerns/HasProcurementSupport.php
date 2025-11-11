@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Procurement\Concerns;
 
-use App\Enums\StreamEnums;
 use App\Services\MultichainService;
+use App\Services\ProcurementDataService;
 use App\Services\ProcurementPublishingService;
 use Illuminate\Http\RedirectResponse;
 
@@ -13,15 +13,19 @@ trait HasProcurementSupport
 
     protected ProcurementPublishingService $publishingService;
 
+    protected ProcurementDataService $procurementDataService;
+
     /**
      * Initialize procurement support dependencies
      */
     protected function initializeProcurementSupport(
         MultichainService $multiChain,
-        ProcurementPublishingService $publishingService
+        ProcurementPublishingService $publishingService,
+        ProcurementDataService $procurementDataService
     ): void {
         $this->multiChain = $multiChain;
         $this->publishingService = $publishingService;
+        $this->procurementDataService = $procurementDataService;
     }
 
     /**
@@ -51,30 +55,17 @@ trait HasProcurementSupport
 
     /**
      * Helper to find procurement by id from the STATUS stream.
+     * Optimized to use ProcurementDataService instead of fetching all 1000 status items.
      *
      * @param  string|int  $id
      */
     protected function findProcurementById($id): ?array
     {
-        $statusItems = $this->multiChain->listStreamItems(
-            StreamEnums::STATUS->value,
-            true,
-            1000,
-            0
-        );
+        $statusItems = $this->procurementDataService->fetchStatusItems($id);
 
-        if (! empty($statusItems)) {
-            foreach ($statusItems as $item) {
-                if (
-                    isset($item['data']['json']) &&
-                    isset($item['data']['json']['procurement_id']) &&
-                    $item['data']['json']['procurement_id'] === $id
-                ) {
-                    return $item['data']['json'];
-                }
-            }
-        }
+        // Return the most recent status item
+        $latestStatus = $statusItems->first();
 
-        return null;
+        return $latestStatus ?: null;
     }
 }

@@ -543,13 +543,13 @@ procuchain/
 
 ### Key Directories Explained
 
-**Services (28 total):**
-- Blockchain: MultichainService, MultichainConnectionService, BlockchainOrchestratorService, BlockchainEventLoggerService, BlockchainHealthService, BlockchainMonitoringService, BlockchainCorrectionService, DocumentBlockchainService
-- Document: DocumentUploadService, DocumentMetadataService, FileStorageService
-- Procurement: ProcurementPublishingService, ProcurementStageTransitionService, ProcurementDataService, StatusUpdaterService
+**Services (25 total):**
+- Blockchain: MultichainService, MultichainConnectionService, BlockchainHealthService, BlockchainMonitoringService
+- Document & File: FileStorageService (with document upload orchestration)
+- Procurement: ProcurementPublishingService (with atomic blockchain operations), ProcurementStageTransitionService, ProcurementDataService
 - Security: LoginService, AccountLockoutService, BlockedIpService, DeviceDetectionService
 - Analytics: DashboardService, AdminAnalyticsService, LoginAnalyticsService
-- Utilities: CacheStrategyService, EventTypeLabelMapper, StreamKeyService, NotificationService, DashboardCacheKeys
+- Utilities: CacheStrategyService, NotificationService, DashboardCacheKeys
 
 **Models (6 core models):**
 - User (with roles, 2FA, account lockout)

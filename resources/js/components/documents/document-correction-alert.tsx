@@ -80,15 +80,17 @@ export function DocumentCorrectionAlert({
                                 <strong>Date:</strong> {new Date(correctedAt).toLocaleString()}
                             </div>
                         )}
-                        <div className="mt-3 flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => setShowDetails(true)} className="gap-2">
+                        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                            <Button size="sm" variant="outline" onClick={() => setShowDetails(true)} className="w-full gap-2 sm:w-auto">
                                 <Info className="h-4 w-4" />
-                                View Details
+                                <span className="hidden sm:inline">View Details</span>
+                                <span className="sm:hidden">Details</span>
                             </Button>
                             {onViewHistory && (
-                                <Button size="sm" variant="outline" onClick={onViewHistory} className="gap-2">
+                                <Button size="sm" variant="outline" onClick={onViewHistory} className="w-full gap-2 sm:w-auto">
                                     <History className="h-4 w-4" />
-                                    View Full History
+                                    <span className="hidden sm:inline">View Full History</span>
+                                    <span className="sm:hidden">History</span>
                                 </Button>
                             )}
                         </div>
@@ -98,7 +100,7 @@ export function DocumentCorrectionAlert({
 
             {/* Correction Details Dialog */}
             <AlertDialog open={showDetails} onOpenChange={setShowDetails}>
-                <AlertDialogContent className="max-w-2xl">
+                <AlertDialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2">
                             <AlertCircle className="h-5 w-5 text-amber-600" />
@@ -123,7 +125,7 @@ export function DocumentCorrectionAlert({
                         </div>
 
                         {/* Blockchain Info */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <h4 className="mb-2 text-sm font-semibold">Original Transaction</h4>
                                 <p className="bg-muted rounded p-2 font-mono text-xs break-all">{correctionData?.original_txid || 'N/A'}</p>
@@ -164,7 +166,7 @@ export function DocumentCorrectionAlert({
                         {/* Audit Info */}
                         <div className="border-t pt-4">
                             <h4 className="mb-2 font-semibold">Audit Information</h4>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="grid gap-4 text-sm sm:grid-cols-2">
                                 <div>
                                     <strong>Corrected By:</strong>
                                     <p className="text-muted-foreground">{correctedBy || 'Unknown'}</p>

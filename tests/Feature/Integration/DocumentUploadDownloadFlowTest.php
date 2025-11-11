@@ -2,7 +2,6 @@
 
 use App\Models\Procurement;
 use App\Models\ProcurementDocument;
-use App\Services\DocumentUploadService;
 use App\Services\FileStorageService;
 use Illuminate\Http\UploadedFile;
 
@@ -11,7 +10,6 @@ use function Pest\Laravel\assertDatabaseHas;
 describe('Document Upload and Download Integration', function () {
     beforeEach(function () {
         $this->fileStorageService = app(FileStorageService::class);
-        $this->documentUploadService = app(DocumentUploadService::class);
 
         // Create a procurement for testing
         $this->procurement = Procurement::factory()->create([
@@ -27,7 +25,7 @@ describe('Document Upload and Download Integration', function () {
             'document_type' => 'Test Document',
         ]];
 
-        $result = $this->documentUploadService->uploadAndPrepare(
+        $result = $this->fileStorageService->uploadAndPrepare(
             [$file],
             $metadata,
             $this->procurement->id,
@@ -68,7 +66,7 @@ describe('Document Upload and Download Integration', function () {
             'document_type' => 'Retrieval Test',
         ]];
 
-        $uploadResult = $this->documentUploadService->uploadAndPrepare(
+        $uploadResult = $this->fileStorageService->uploadAndPrepare(
             [$file],
             $metadata,
             $this->procurement->id,
@@ -98,7 +96,7 @@ describe('Document Upload and Download Integration', function () {
             ['document_type' => 'Document Two'],
         ];
 
-        $result = $this->documentUploadService->uploadAndPrepare(
+        $result = $this->fileStorageService->uploadAndPrepare(
             [$file1, $file2],
             $metadata,
             $this->procurement->id,
@@ -141,7 +139,7 @@ describe('Document Upload and Download Integration', function () {
             'submission_date' => '2025-11-08',
         ]];
 
-        $result = $this->documentUploadService->uploadAndPrepare(
+        $result = $this->fileStorageService->uploadAndPrepare(
             [$file],
             $metadata,
             $this->procurement->id,

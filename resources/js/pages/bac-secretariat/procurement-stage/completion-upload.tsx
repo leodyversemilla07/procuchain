@@ -12,6 +12,9 @@ import { format } from 'date-fns';
 import { AlertCircle, CalendarIcon, CheckCircle, FileText, Upload } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
+import { buildBreadcrumbs } from '@/utils/breadcrumbs';
+import { UserRole } from '@/types/enums';
+import { getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 
 // Helper for type-safe error access
 function getFieldError<T extends object>(errors: T, field: keyof T): string | undefined {
@@ -37,11 +40,10 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
         completion_notes: '',
     });
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
-        { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+    const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
+        getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
         { title: `Upload Certificate of Completion - ${procurement.id}`, href: '#' },
-    ];
+    ]);
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();

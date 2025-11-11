@@ -16,6 +16,8 @@ import { Stage, Status } from '@/types';
 import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import { ActivityIcon, Bell, CheckCircle, Clock, FileIcon, FileText, FileUpIcon, PlusIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
+import { UserRole } from '@/types/enums';
 
 interface DashboardStats {
     ongoingProjects: number;
@@ -57,12 +59,7 @@ interface DashboardProps extends SharedData {
     error?: string;
 }
 
-const breadcrumbs = [
-    {
-        title: 'Bids and Awards Committee Secretariat Dashboard',
-        href: '/bac-secretariat/dashboard',
-    },
-];
+const breadcrumbs = [getDashboardBreadcrumb(UserRole.BAC_SECRETARIAT)];
 
 export default function BACSecretariatDashboard() {
     const pageProps = usePage<DashboardProps>().props;
