@@ -2,6 +2,12 @@
 
 namespace App\Enums;
 
+/**
+ * Stage Enum
+ *
+ * Represents all stages in the procurement workflow.
+ * Stages follow the government procurement process from initiation to completion.
+ */
 enum StageEnums: string
 {
     case PROCUREMENT_INITIATION = 'procurement_initiation';
@@ -20,6 +26,9 @@ enum StageEnums: string
     case COMPLETION = 'completion';
     case COMPLETED = 'completed';
 
+    /**
+     * Get the user-friendly display name for the stage
+     */
     public function getDisplayName(): string
     {
         return match ($this) {
@@ -41,6 +50,9 @@ enum StageEnums: string
         };
     }
 
+    /**
+     * Get the storage path segment for file organization
+     */
     public function getStoragePathSegment(): string
     {
         return match ($this) {
@@ -60,5 +72,118 @@ enum StageEnums: string
             self::COMPLETION => 'Completion',
             self::COMPLETED => 'Completed',
         };
+    }
+
+    /**
+     * Get a description of the stage
+     */
+    public function getDescription(): string
+    {
+        return match ($this) {
+            self::PROCUREMENT_INITIATION => 'Initial stage where procurement requirements are defined and approved',
+            self::PRE_PROCUREMENT_CONFERENCE => 'Optional conference to discuss procurement requirements with potential bidders',
+            self::BIDDING_DOCUMENTS => 'Preparation and publication of official bidding documents',
+            self::PRE_BID_CONFERENCE => 'Conference to clarify bidding requirements and answer bidder questions',
+            self::SUPPLEMENTAL_BID_BULLETIN => 'Issuance of supplemental bulletins to modify or clarify bidding documents',
+            self::BID_OPENING => 'Public opening of submitted bids',
+            self::BID_EVALUATION => 'Technical and financial evaluation of submitted bids',
+            self::POST_QUALIFICATION => 'Verification of winning bidder\'s qualifications and capacity',
+            self::BAC_RESOLUTION => 'Formal resolution by the Bids and Awards Committee',
+            self::NOTICE_OF_AWARD => 'Official notification of contract award to winning bidder',
+            self::PERFORMANCE_BOND_CONTRACT_AND_PO => 'Submission of performance bond, contract signing, and purchase order issuance',
+            self::NOTICE_TO_PROCEED => 'Authorization for contractor to begin work',
+            self::MONITORING => 'Active monitoring of contract implementation',
+            self::COMPLETION => 'Final stage of contract completion and acceptance',
+            self::COMPLETED => 'Procurement process fully completed',
+        };
+    }
+
+    /**
+     * Get the next stage in the workflow
+     */
+    public function getNextStage(): ?self
+    {
+        return match ($this) {
+            self::PROCUREMENT_INITIATION => self::PRE_PROCUREMENT_CONFERENCE,
+            self::PRE_PROCUREMENT_CONFERENCE => self::BIDDING_DOCUMENTS,
+            self::BIDDING_DOCUMENTS => self::PRE_BID_CONFERENCE,
+            self::PRE_BID_CONFERENCE => self::SUPPLEMENTAL_BID_BULLETIN,
+            self::SUPPLEMENTAL_BID_BULLETIN => self::BID_OPENING,
+            self::BID_OPENING => self::BID_EVALUATION,
+            self::BID_EVALUATION => self::POST_QUALIFICATION,
+            self::POST_QUALIFICATION => self::BAC_RESOLUTION,
+            self::BAC_RESOLUTION => self::NOTICE_OF_AWARD,
+            self::NOTICE_OF_AWARD => self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+            self::PERFORMANCE_BOND_CONTRACT_AND_PO => self::NOTICE_TO_PROCEED,
+            self::NOTICE_TO_PROCEED => self::MONITORING,
+            self::MONITORING => self::COMPLETION,
+            self::COMPLETION => self::COMPLETED,
+            self::COMPLETED => null,
+        };
+    }
+
+    /**
+     * Get the previous stage in the workflow
+     */
+    public function getPreviousStage(): ?self
+    {
+        return match ($this) {
+            self::PROCUREMENT_INITIATION => null,
+            self::PRE_PROCUREMENT_CONFERENCE => self::PROCUREMENT_INITIATION,
+            self::BIDDING_DOCUMENTS => self::PRE_PROCUREMENT_CONFERENCE,
+            self::PRE_BID_CONFERENCE => self::BIDDING_DOCUMENTS,
+            self::SUPPLEMENTAL_BID_BULLETIN => self::PRE_BID_CONFERENCE,
+            self::BID_OPENING => self::SUPPLEMENTAL_BID_BULLETIN,
+            self::BID_EVALUATION => self::BID_OPENING,
+            self::POST_QUALIFICATION => self::BID_EVALUATION,
+            self::BAC_RESOLUTION => self::POST_QUALIFICATION,
+            self::NOTICE_OF_AWARD => self::BAC_RESOLUTION,
+            self::PERFORMANCE_BOND_CONTRACT_AND_PO => self::NOTICE_OF_AWARD,
+            self::NOTICE_TO_PROCEED => self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+            self::MONITORING => self::NOTICE_TO_PROCEED,
+            self::COMPLETION => self::MONITORING,
+            self::COMPLETED => self::COMPLETION,
+        };
+    }
+
+    /**
+     * Check if the stage is final
+     */
+    public function isFinal(): bool
+    {
+        return $this === self::COMPLETED;
+    }
+
+    /**
+     * Check if the stage is initial
+     */
+    public function isInitial(): bool
+    {
+        return $this === self::PROCUREMENT_INITIATION;
+    }
+
+    /**
+     * Get all cases as an array of values
+     *
+     * @return array<string>
+     */
+    public static function values(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
+
+    /**
+     * Get all cases as an array of display names
+     *
+     * @return array<string, string> [value => display_name]
+     */
+    public static function options(): array
+    {
+        $options = [];
+        foreach (self::cases() as $case) {
+            $options[$case->value] = $case->getDisplayName();
+        }
+
+        return $options;
     }
 }

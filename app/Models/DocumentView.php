@@ -42,7 +42,7 @@ class DocumentView extends Model
      */
     public static function getRecentViewsForFile(string $fileKey, int $limit = 10)
     {
-        return static::with('user:id,name,role,blockchain_address')
+        return static::with(['user:id,name,blockchain_address', 'user.roles:id,name'])
             ->where('file_key', $fileKey)
             ->orderBy('viewed_at', 'desc')
             ->limit($limit)
@@ -54,7 +54,7 @@ class DocumentView extends Model
      */
     public static function getProcurementViewStats(string $procurementId)
     {
-        return static::with('user:id,name,role')
+        return static::with(['user:id,name', 'user.roles:id,name'])
             ->where('procurement_id', $procurementId)
             ->selectRaw('
                 file_key,

@@ -77,10 +77,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('.mark-all-as-read');
     });
 
-    // Secure File Downloads (All Authenticated Users)
-    Route::get('/secure-file/{fileKey}', [DocumentDownloadController::class, 'downloadFile'])
+    // File Downloads (All Authenticated Users)
+    Route::get('/files/{fileKey}', [DocumentDownloadController::class, 'downloadFile'])
         ->where('fileKey', '.*')
-        ->name('secure.file.download');
+        ->name('files.download');
 
     // PDF Viewer (All Authenticated Users)
     Route::get('/pdf-viewer/{fileKey}', [PdfViewerController::class, 'showPdfViewer'])

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DocumentTypeEnums;
+use App\Enums\StageEnums;
 use App\Models\DocumentView;
 use App\Services\DocumentBlockchainService;
 use Illuminate\Http\Request;
@@ -28,6 +30,16 @@ class PdfViewerController extends BaseController
         Log::info('PDF Viewer requested', ['file_key' => $fileKey]);
 
         $documentData = $this->blockchainService->getDocumentData($fileKey);
+
+        // Format the stage and document_type if document data exists
+        if ($documentData) {
+            if (isset($documentData['stage'])) {
+                $documentData['stage_display'] = $this->formatStage($documentData['stage']);
+            }
+            if (isset($documentData['document_type'])) {
+                $documentData['document_type_display'] = $this->formatDocumentType($documentData['document_type']);
+            }
+        }
 
         $currentStatus = null;
         if ($documentData && isset($documentData['procurement_id']) && $documentData['procurement_id'] !== 'Unknown') {
@@ -107,8 +119,10 @@ class PdfViewerController extends BaseController
             $documentData = [
                 'procurement_id' => $procurementId,
                 'procurement_title' => $procurementTitle,
-                'document_type' => pathinfo($fileKey, PATHINFO_FILENAME),
-                'stage' => $parts[1] ?? 'Unknown',
+                'document_type' => $documentView->document_type ?? pathinfo($fileKey, PATHINFO_FILENAME),
+                'document_type_display' => $this->formatDocumentType($documentView->document_type ?? pathinfo($fileKey, PATHINFO_FILENAME)),
+                'stage' => $documentView->stage ?? ($parts[1] ?? 'Unknown'),
+                'stage_display' => $this->formatStage($documentView->stage ?? ($parts[1] ?? 'Unknown')),
                 'file_size' => $this->getFileSize($fileKey),
                 'timestamp' => $documentView->created_at->toISOString(),
                 'hash' => $alternativeHash ?: '',
@@ -158,14 +172,14 @@ class PdfViewerController extends BaseController
         return Inertia::render('documents/pdf-viewer', [
             'document' => $documentData,
             'fileKey' => $fileKey,
-            'pdfUrl' => route('secure.file.download', ['fileKey' => $fileKey]),
+            'pdfUrl' => route('files.download', ['fileKey' => $fileKey]),
             'viewStats' => $viewStats,
             'recentViews' => $recentViews->map(function ($view) {
                 return [
                     'id' => $view->id,
                     'user' => [
                         'name' => $view->user->name,
-                        'role' => $view->user->role,
+                        'role' => $view->user->roles->first()?->name ?? 'guest',
                     ],
                     'viewed_at' => $view->viewed_at->format('M j, Y g:i A'),
                     'viewed_at_human' => $view->viewed_at->diffForHumans(),
@@ -175,6 +189,57 @@ class PdfViewerController extends BaseController
                 ];
             }),
         ]);
+    }
+
+    /**
+     * Format stage enum to display name
+     */
+    private function formatStage(?string $stage): string
+    {
+        if (! $stage || $stage === 'Unknown') {
+            return 'Unknown';
+        }
+
+        // Try to match the stage with StageEnums
+        try {
+            $stageEnum = StageEnums::tryFrom($stage);
+            if ($stageEnum) {
+                return $stageEnum->getDisplayName();
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to format stage', ['stage' => $stage, 'error' => $e->getMessage()]);
+        }
+
+        // Fallback: return as is if no enum match
+        return $stage;
+    }
+
+    /**
+     * Format document type to display name
+     */
+    private function formatDocumentType(?string $documentType): string
+    {
+        if (! $documentType || $documentType === 'Unknown') {
+            return 'Unknown Document';
+        }
+
+        // Try to match the document type with DocumentTypeEnums
+        try {
+            $documentTypeEnum = DocumentTypeEnums::fromString($documentType);
+            if ($documentTypeEnum) {
+                return $documentTypeEnum->getDisplayName();
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to format document type', ['document_type' => $documentType, 'error' => $e->getMessage()]);
+        }
+
+        // Fallback: Convert snake_case or kebab-case to Title Case if no enum match
+        if (! preg_match('/[A-Z\s]/', $documentType)) {
+            return ucwords(str_replace(['_', '-'], ' ', $documentType));
+        }
+
+        // Already formatted, return as is
+        return $documentType;
     }
 
     /**

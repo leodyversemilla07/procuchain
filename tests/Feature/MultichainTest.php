@@ -58,18 +58,18 @@ it('has stream enums with expected values', function () {
 
 it('can auto-generate blockchain addresses for new users', function () {
     $service = app(\App\Services\MultichainService::class);
-    
+
     // Generate a new address
     $address = $service->getNewAddress();
-    
+
     // Verify address format and validity
     expect($address)
         ->toBeString()
         ->not->toBeEmpty();
-    
+
     // Validate the generated address on the blockchain
     $validation = $service->validateAddress($address);
-    
+
     expect($validation)
         ->toBeArray()
         ->toHaveKey('isvalid')

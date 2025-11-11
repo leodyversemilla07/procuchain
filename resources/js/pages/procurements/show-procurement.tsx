@@ -25,8 +25,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
+import files from '@/routes/files';
 import pdf from '@/routes/pdf';
-import secure from '@/routes/secure';
 import { SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
@@ -756,7 +756,7 @@ const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 className="group-hover:border-primary/30 group-hover:bg-background h-8 shrink-0 text-xs font-medium shadow-sm transition-all hover:shadow sm:h-9 sm:text-sm"
                             >
                                 <a
-                                    href={secure.file.download.url({ fileKey: encodeURIComponent(doc.file_key) })}
+                                    href={files.download.url({ fileKey: encodeURIComponent(doc.file_key) })}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center"

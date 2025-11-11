@@ -37,32 +37,39 @@ class DocumentDownloadController extends BaseController
                 abort(404, 'File not found or access denied');
             }
 
-            // Get data_txid from database
+            // Try to get data_txid from database first, fallback to blockchain metadata
             $document = ProcurementDocument::where('file_key', $fileKey)->first();
 
-            if (! $document) {
-                Log::warning('Document not found in database', [
+            $dataTxid = null;
+            $fileName = basename($fileKey);
+
+            if ($document) {
+                $dataTxid = $document->data_txid;
+                $fileName = $document->file_name ?? $fileName;
+            } else {
+                // If not in database, try to get from blockchain metadata
+                Log::info('Document not found in database, retrieving from blockchain metadata', [
                     'file_key' => $fileKey,
                     'user_id' => Auth::id(),
                 ]);
-                abort(404, 'Document not found');
+
+                // Extract data_txid from documentData if available
+                $dataTxid = $documentData['data_txid'] ?? null;
             }
 
             // Retrieve file from blockchain using data_txid
             try {
-                $fileData = $this->fileStorageService->retrieveFile($fileKey, $document->data_txid);
+                $fileData = $this->fileStorageService->retrieveFile($fileKey, $dataTxid);
 
                 $this->recordDocumentView($request, $fileKey, $documentData);
 
                 Log::info('Secure file access from blockchain', [
                     'file_key' => $fileKey,
-                    'data_txid' => $document->data_txid,
+                    'data_txid' => $dataTxid ?? 'not_available',
                     'user_id' => Auth::id(),
                     'user_role' => Auth::user()->role ?? 'unknown',
                     'ip' => $request->ip(),
                 ]);
-
-                $fileName = $document->file_name ?? basename($fileKey);
 
                 return response($fileData['content'])
                     ->header('Content-Type', 'application/pdf')
@@ -77,7 +84,7 @@ class DocumentDownloadController extends BaseController
             } catch (\Exception $blockchainError) {
                 Log::error('Failed to retrieve file from blockchain', [
                     'file_key' => $fileKey,
-                    'data_txid' => $document->data_txid ?? 'missing',
+                    'data_txid' => $dataTxid ?? 'not_available',
                     'error' => $blockchainError->getMessage(),
                 ]);
 
