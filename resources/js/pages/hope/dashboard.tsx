@@ -7,7 +7,7 @@ import { StatsGrid } from '@/components/stats-grid';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/hope';
 import { show as procurementsShow } from '@/routes/hope/procurements';
-import { index as procurementsListIndex } from '@/routes/hope/procurements-list';
+import { index as procurementsListIndex } from '@/routes/hope/procurements';
 import type { BreadcrumbItem, SharedData } from '@/types';
 import { Stage, Status } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';

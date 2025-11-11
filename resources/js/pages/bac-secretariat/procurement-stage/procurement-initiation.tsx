@@ -22,6 +22,7 @@ import MunicipalOfficeSelect from '@/components/municipal-office-select';
 import PeopleInput from '@/components/people-input';
 
 import { FileText, Plus, X } from 'lucide-react';
+import { index as procurementsListIndex } from '@/routes/bac-secretariat/procurements';
 
 interface FileMetadata {
     document_type: string;
@@ -237,7 +238,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                     reset();
                     // Navigate to the procurement list with a success message
                     setTimeout(() => {
-                        router.visit('/bac-secretariat/procurements-list', {
+                        router.visit(procurementsListIndex.url(), {
                             preserveState: false,
                             replace: true,
                         });
@@ -478,7 +479,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                                     key={index}
                                                                     className="bg-background/50 flex items-start gap-3 rounded border p-2"
                                                                 >
-                                                                    <FileText className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
+                                                                    <FileText className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                                                                     <div className="min-w-0 flex-1 space-y-1">
                                                                         <p className="text-foreground truncate text-xs font-medium" title={file.name}>
                                                                             {file.name}

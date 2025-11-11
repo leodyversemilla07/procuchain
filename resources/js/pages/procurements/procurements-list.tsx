@@ -14,7 +14,7 @@ import { SupplementalBidBulletinDialog } from '@/components/supplemental-bid-bul
 import { Button } from '@/components/ui/button';
 import { useProcurementList } from '@/hooks/use-procurement-list';
 import AppLayout from '@/layouts/app-layout';
-import { procurementInitiation } from '@/routes/bac-secretariat/procurement';
+import { initiation as procurementInitiation } from '@/routes/bac-secretariat/procurement';
 import { BreadcrumbItem, ProcurementListItem, SharedData, Status } from '@/types';
 import { toast } from 'sonner';
 

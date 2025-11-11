@@ -7,7 +7,7 @@ import { StatsGrid } from '@/components/stats-grid';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/bac-chairman';
 import { show as procurementsShow } from '@/routes/bac-chairman/procurements';
-import { index as procurementsListIndex } from '@/routes/bac-chairman/procurements-list';
+import { index as procurementsListIndex } from '@/routes/bac-chairman/procurements';
 import type { BreadcrumbItem, SharedData } from '@/types';
 import { Stage, Status } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';

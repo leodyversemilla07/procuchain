@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -237,44 +236,31 @@ class PdfViewerController extends BaseController
     }
 
     /**
-     * Get file size from storage
+     * Get file size from blockchain metadata
      */
     private function getFileSize(string $fileKey): ?int
     {
         try {
-            if (Storage::disk('spaces')->exists($fileKey)) {
-                $size = Storage::disk('spaces')->size($fileKey);
-                if ($size > 0) {
-                    Log::info('Got file size from DigitalOcean Spaces', [
-                        'file_key' => $fileKey,
-                        'size' => $size,
-                    ]);
+            // Get file size from blockchain metadata using DocumentBlockchainService
+            $documentData = $this->blockchainService->getDocumentData($fileKey);
 
-                    return $size;
-                }
+            if ($documentData && isset($documentData['file_size'])) {
+                Log::info('Got file size from blockchain metadata', [
+                    'file_key' => $fileKey,
+                    'size' => $documentData['file_size'],
+                ]);
+
+                return (int) $documentData['file_size'];
             }
 
-            if (Storage::disk('local')->exists($fileKey)) {
-                $size = Storage::disk('local')->size($fileKey);
-                if ($size > 0) {
-                    Log::info('Got file size from local storage', [
-                        'file_key' => $fileKey,
-                        'size' => $size,
-                    ]);
-
-                    return $size;
-                }
-            }
-
-            Log::warning('Could not determine file size', [
+            Log::warning('Could not determine file size from blockchain', [
                 'file_key' => $fileKey,
-                'spaces_exists' => Storage::disk('spaces')->exists($fileKey),
-                'local_exists' => Storage::disk('local')->exists($fileKey),
+                'has_document_data' => $documentData !== null,
             ]);
 
             return null;
         } catch (\Exception $e) {
-            Log::error('Failed to get file size', [
+            Log::error('Failed to get file size from blockchain', [
                 'file_key' => $fileKey,
                 'error' => $e->getMessage(),
             ]);

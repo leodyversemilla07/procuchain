@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { dashboard } from '@/routes/admin';
 import { show as procurementsShow } from '@/routes/admin/procurements';
-import { index as procurementsListIndex } from '@/routes/admin/procurements-list';
+import { index as procurementsListIndex } from '@/routes/admin/procurements';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 export type TimeRangeKey = '7_days' | '30_days' | '90_days' | '1_year';
@@ -300,7 +300,7 @@ export default function AdminDashboard() {
                 {/* Login Activity Trend */}
                 {userActivityAnalytics && userActivityAnalytics.login_patterns?.daily_login_trend && (
                     <Card className="py-4 sm:py-0">
-                        <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
+                        <CardHeader className="flex flex-col items-stretch border-b p-0! sm:flex-row">
                             <div className="flex flex-1 flex-col justify-center gap-1 px-4 pb-3 sm:px-6 sm:pb-0">
                                 <CardTitle className="text-lg sm:text-xl">Login Activity Trend</CardTitle>
                                 <CardDescription className="text-sm">Daily login activity over selected time period</CardDescription>

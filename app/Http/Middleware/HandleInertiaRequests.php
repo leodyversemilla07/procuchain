@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -56,10 +55,6 @@ class HandleInertiaRequests extends Middleware
                     'accessBlockchain' => $request->user()?->canAccessBlockchain() ?? false,
                     'manageUsers' => $request->user()?->canManageUsers() ?? false,
                 ],
-            ],
-            'ziggy' => fn (): array => [
-                ...(new Ziggy)->toArray(),
-                'location' => $request->url(),
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),

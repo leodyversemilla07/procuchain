@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { index as blockchainExplorerIndex } from '@/routes/admin/blockchain/explorer';
 
 interface BlockchainPublishingStatusPageProps {
     procurement: {
@@ -173,7 +174,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
     };
 
     const handleCheckHealth = () => {
-        router.visit('/admin/blockchain-explorer');
+        router.visit(blockchainExplorerIndex.url());
     };
 
     const summary = status?.summary || { pending: 0, confirmed: 0, failed: 0, total: 0 };

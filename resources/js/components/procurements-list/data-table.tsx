@@ -17,6 +17,12 @@ import {
 import { ArrowDownIcon, ArrowUpDown, ArrowUpIcon, CalendarIcon, FileIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+// Import Wayfinder route helpers for each role
+import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
+import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
+import { show as hopeShow } from '@/routes/hope/procurements';
+import { show as adminShow } from '@/routes/admin/procurements';
+
 import { ErrorState } from '@/components/error-state';
 import { Pagination } from '@/components/pagination';
 import { LoadingSkeleton } from '@/components/procurements-list/loading-skeleton';
@@ -27,10 +33,34 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getStageBadgeIcon, getStageBadgeStyle, getStatusBadgeIcon, getStatusBadgeStyle } from '@/constants/procurement-badges';
+import { getStageBadgeStyle, getStatusBadgeStyle } from '@/constants/procurement-badges';
 import { exportProcurementsToCSV } from '@/lib/csv';
 import { cn } from '@/lib/utils';
 import { ProcurementListItem, SharedData, Stage, Status } from '@/types';
+
+// Helper function to format snake_case to readable label
+const formatLabel = (value: string): string => {
+    return value
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+};
+
+// Helper function to get the correct Wayfinder route based on user role
+const getProcurementShowUrl = (role: string, id: string): string => {
+    switch (role) {
+        case 'bac_secretariat':
+            return bacSecretariatShow.url(id);
+        case 'bac_chairman':
+            return bacChairmanShow.url(id);
+        case 'hope':
+            return hopeShow.url(id);
+        case 'admin':
+            return adminShow.url(id);
+        default:
+            return `/procurements-list/${id}`;
+    }
+};
 
 // Local hook: detect horizontal truncation efficiently
 function useIsTruncated<T extends HTMLElement>(ref: React.RefObject<T | null>, depKey?: unknown) {
@@ -79,11 +109,12 @@ export interface ProcurementsDataTableProps {
 
 export const IdCell = ({ id }: { id: string }) => {
     const { auth } = usePage<SharedData>().props;
-    const userRole = (auth?.user?.role || 'guest').replace('_', '-');
-    const baseRoute = `/${userRole}/procurements-list/${id}`;
+    const userRole = auth?.user?.role || 'guest';
+    const procurementUrl = getProcurementShowUrl(userRole, id);
+    
     return (
         <div className="font-medium text-blue-600 dark:text-blue-400">
-            <Link href={baseRoute} className="flex items-center transition-all duration-150 hover:underline" prefetch="hover" cacheFor="5m">
+            <Link href={procurementUrl} className="flex items-center transition-all duration-150 hover:underline" prefetch="hover" cacheFor="5m">
                 <span className="rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 font-mono text-xs dark:border-blue-800/60 dark:bg-blue-900/30">
                     {id}
                 </span>
@@ -96,12 +127,13 @@ export const TitleCell = ({ procurement }: { procurement: ProcurementListItem })
     const textRef = useRef<HTMLDivElement>(null);
     const isTruncated = useIsTruncated(textRef, procurement.title);
     const { auth } = usePage<SharedData>().props;
-    const userRole = (auth?.user?.role || 'guest').replace('_', '-');
-    const baseRoute = `/${userRole}/procurements-list/${procurement.id}`;
+    const userRole = auth?.user?.role || 'guest';
+    const procurementUrl = getProcurementShowUrl(userRole, procurement.id);
+    
     const titleContent = (
         <div ref={textRef} className="max-w-[280px] truncate font-medium" title={procurement.title}>
             <Link
-                href={baseRoute}
+                href={procurementUrl}
                 className="text-gray-900 transition-colors duration-150 hover:text-blue-600 hover:underline dark:text-gray-100"
                 prefetch="hover"
                 cacheFor="5m"
@@ -120,9 +152,10 @@ export const TitleCell = ({ procurement }: { procurement: ProcurementListItem })
     );
 };
 
-export const BadgeCell = <T extends string>({ value, getStyle, icon }: { value: T; getStyle: (value: T) => string; icon?: React.ReactNode }) => {
+export const BadgeCell = <T extends string>({ value, getStyle }: { value: T; getStyle: (value: T) => string }) => {
     const textRef = useRef<HTMLSpanElement>(null);
-    const isTruncated = useIsTruncated(textRef, value);
+    const displayValue = formatLabel(value);
+    const isTruncated = useIsTruncated(textRef, displayValue);
     const badge = (
         <Badge
             variant="outline"
@@ -133,16 +166,15 @@ export const BadgeCell = <T extends string>({ value, getStyle, icon }: { value: 
                 'max-w-[180px]',
             )}
         >
-            {icon && <span className="flex-shrink-0">{icon}</span>}
-            <span ref={textRef} className="min-w-0 truncate" title={String(value)}>
-                {value}
+            <span ref={textRef} className="min-w-0 truncate" title={displayValue}>
+                {displayValue}
             </span>
         </Badge>
     );
     return isTruncated ? (
         <Tooltip>
             <TooltipTrigger asChild>{badge}</TooltipTrigger>
-            <TooltipContent className="font-medium">{value}</TooltipContent>
+            <TooltipContent className="font-medium">{displayValue}</TooltipContent>
         </Tooltip>
     ) : (
         badge
@@ -150,11 +182,11 @@ export const BadgeCell = <T extends string>({ value, getStyle, icon }: { value: 
 };
 
 export const StageCell = ({ stage }: { stage: Stage }) => (
-    <BadgeCell<Stage> value={stage} getStyle={getStageBadgeStyle} icon={getStageBadgeIcon(stage)} />
+    <BadgeCell<Stage> value={stage} getStyle={getStageBadgeStyle} />
 );
 
 export const StatusCell = ({ status }: { status: Status }) => (
-    <BadgeCell<Status> value={status} getStyle={getStatusBadgeStyle} icon={getStatusBadgeIcon(status)} />
+    <BadgeCell<Status> value={status} getStyle={getStatusBadgeStyle} />
 );
 
 export const DocumentCountCell = ({ count }: { count: number }) => (
@@ -193,7 +225,7 @@ export const LastUpdatedCell = ({ date }: { date: string }) => {
 
 export function DataTableCheckbox({ checked, onCheckedChange, disabled = false, title }: DataTableCheckboxProps) {
     return (
-        <div className="flex h-full w-full min-w-[24px] items-center justify-center">
+        <div className="flex h-full w-full min-w-6 items-center justify-center">
             <Checkbox
                 checked={checked}
                 onCheckedChange={(value) => onCheckedChange(!!value)}
