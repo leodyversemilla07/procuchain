@@ -11,6 +11,9 @@ import { format } from 'date-fns';
 import { AlertCircle, Award, CalendarIcon, Upload } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
+import { buildBreadcrumbs } from '@/utils/breadcrumbs';
+import { UserRole } from '@/types/enums';
+import { getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 
 const ALLOWED_FILE_TYPES = ['application/pdf'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -38,11 +41,10 @@ export default function NoticeOfAwardUpload({ procurement = { id: '', title: '' 
         signatories: [] as Array<{ name: string; affiliation: string }>,
     });
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
-        { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+    const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
+        getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
         { title: `Upload Notice of Award - ${procurement.id}: ${procurement.title}`, href: '#' },
-    ];
+    ]);
 
     // File validation
     const validateFile = (file: File) => {

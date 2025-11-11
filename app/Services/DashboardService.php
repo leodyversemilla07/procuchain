@@ -13,14 +13,22 @@ use Illuminate\Support\Facades\Log;
  *
  * Provides shared dashboard functionality for all role-based dashboards.
  * Handles procurement data retrieval, transformation, and statistics calculation.
+ *
+ * Merged EventTypeLabelMapper into this service to reduce redundancy.
  */
 class DashboardService
 {
     private array $userNameCache = [];
 
+    private array $eventLabelMap = [
+        'document_upload' => 'Uploaded Documents',
+        'phase_transition' => 'Phase Transition',
+        'publication' => 'Published Documents',
+        'procurement completed' => 'Completed Procurement',
+    ];
+
     public function __construct(
-        private MultichainService $multichainService,
-        private EventTypeLabelMapper $eventTypeLabelMapper
+        private MultichainService $multichainService
     ) {}
 
     /**
@@ -156,7 +164,7 @@ class DashboardService
                         return null;
                     }
 
-                    $actionLabel = $this->eventTypeLabelMapper->getLabel(
+                    $actionLabel = $this->getEventLabel(
                         $data['event_type'] ?? '',
                         $data['details'] ?? ''
                     );
@@ -291,5 +299,27 @@ class DashboardService
             'completedBiddings' => $this->countCompletedBiddings($procurementsByKey),
             'totalDocuments' => $totalDocuments,
         ];
+    }
+
+    /**
+     * Get event label from event type
+     *
+     * Merged from EventTypeLabelMapper
+     */
+    public function getEventLabel(string $eventType, string $details = ''): string
+    {
+        $eventType = strtolower($eventType);
+
+        if (isset($this->eventLabelMap[$eventType])) {
+            return $this->eventLabelMap[$eventType];
+        }
+
+        if ($eventType === 'decision' && str_contains(strtolower($details), 'pre-procurement')) {
+            return 'Pre-Procurement Decision';
+        } elseif ($eventType === 'decision') {
+            return 'Decision Made';
+        }
+
+        return ucwords(str_replace('_', ' ', $eventType));
     }
 }

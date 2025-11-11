@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { BreadcrumbItem, SharedData, UserRole } from '@/types';
+import { getDashboardBreadcrumb, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 import { Head, usePage } from '@inertiajs/react';
 import {
     Activity,
@@ -105,43 +106,12 @@ const getBreadcrumbs = (role?: string, procurementId?: string): BreadcrumbItem[]
 
     const procurementDetailsHref = getProcurementDetailsHref(role || '', procurementId);
 
-    switch (role) {
-        case UserRole.BAC_SECRETARIAT:
-            return [
-                { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
-                { title: 'Procurement List', href: '/bac-secretariat/procurements-list' },
-                { title: 'Procurement Details', href: procurementDetailsHref },
-                { title: 'PDF Viewer', href: '#' },
-            ];
-        case UserRole.BAC_CHAIRMAN:
-            return [
-                { title: 'Bids and Awards Committee Chairman Dashboard', href: '/bac-chairman/dashboard' },
-                { title: 'Procurement List', href: '/bac-chairman/procurements-list' },
-                { title: 'Procurement Details', href: procurementDetailsHref },
-                { title: 'PDF Viewer', href: '#' },
-            ];
-        case UserRole.HOPE:
-            return [
-                { title: 'Head of Procuring Entity Dashboard', href: '/hope/dashboard' },
-                { title: 'Procurement List', href: '/hope/procurements-list' },
-                { title: 'Procurement Details', href: procurementDetailsHref },
-                { title: 'PDF Viewer', href: '#' },
-            ];
-        case UserRole.ADMIN:
-            return [
-                { title: 'Admin Dashboard', href: '/admin/dashboard' },
-                { title: 'Procurement List', href: '/admin/procurements-list' },
-                { title: 'Procurement Details', href: procurementDetailsHref },
-                { title: 'PDF Viewer', href: '#' },
-            ];
-        default:
-            return [
-                { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Procurement List', href: '#' },
-                { title: 'Procurement Details', href: procurementDetailsHref },
-                { title: 'PDF Viewer', href: '#' },
-            ];
-    }
+    return [
+        getDashboardBreadcrumb(role),
+        getProcurementsListBreadcrumb(role),
+        { title: 'Procurement Details', href: procurementDetailsHref },
+        { title: 'PDF Viewer', href: '#' },
+    ];
 };
 
 const getRoleBadgeColor = (role: string) => {

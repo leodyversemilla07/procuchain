@@ -11,6 +11,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useFileDrop } from '@/hooks/use-file-drop';
 import AppLayout from '@/layouts/app-layout';
 import { format } from 'date-fns';
+import { buildBreadcrumbs } from '@/utils/breadcrumbs';
+import { UserRole } from '@/types/enums';
+import { getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 
 // Allowed file types and max file size for uploads
 const ALLOWED_FILE_TYPES = ['application/pdf'];
@@ -50,11 +53,10 @@ export default function PreBidConferenceUpload({ procurement = { id: '', title: 
         return true;
     };
 
-    const breadcrumbs = [
-        { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
-        { title: 'Procurements List', href: '/bac-secretariat/procurements-list' },
+    const breadcrumbs = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
+        getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
         { title: `Upload Pre-Bid Conference Documents - ${procurement.id}: ${procurement.title}`, href: '#' },
-    ];
+    ]);
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();

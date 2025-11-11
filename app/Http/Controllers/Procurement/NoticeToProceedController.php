@@ -7,6 +7,7 @@ use App\Enums\StatusEnums;
 use App\Http\Controllers\Procurement\Concerns\HasProcurementSupport;
 use App\Http\Requests\Procurement\NoticeToProceedDocumentRequest;
 use App\Services\MultichainService;
+use App\Services\ProcurementDataService;
 use App\Services\ProcurementPublishingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller as BaseController;
@@ -19,9 +20,10 @@ class NoticeToProceedController extends BaseController
 
     public function __construct(
         MultichainService $multiChain,
-        ProcurementPublishingService $publishingService
+        ProcurementPublishingService $publishingService,
+        ProcurementDataService $procurementDataService
     ) {
-        $this->initializeProcurementSupport($multiChain, $publishingService);
+        $this->initializeProcurementSupport($multiChain, $publishingService, $procurementDataService);
         $this->applyProcurementMiddleware();
     }
 

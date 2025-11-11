@@ -48,3 +48,23 @@ export const MUNICIPAL_OFFICES = [
 ] as const;
 
 export type MunicipalOffice = typeof MUNICIPAL_OFFICES[number]['value'];
+
+/**
+ * Ordered list of procurement stages for workflow progression
+ */
+export const STAGE_ORDER = [
+    'Procurement Initiation',
+    'Pre-Procurement Conference',
+    'Bidding Documents',
+    'Pre-Bid Conference',
+    'Supplemental Bid Bulletin',
+    'Bid Opening',
+    'Bid Evaluation',
+    'Post-Qualification',
+    'BAC Resolution',
+    'Notice of Award',
+    'Performance Bond, Contract and PO',
+    'Notice to Proceed',
+    'Monitoring',
+    'Completed',
+] as const;

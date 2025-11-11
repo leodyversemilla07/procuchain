@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { useMultiFileDrop } from '@/hooks/use-file-drop';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
+import { buildBreadcrumbs } from '@/utils/breadcrumbs';
+import { UserRole } from '@/types/enums';
 
 import AppLayout from '@/layouts/app-layout';
 
@@ -49,12 +51,11 @@ interface HeaderProps {
     };
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Bids and Awards Committee Secretariat Dashboard', href: '/bac-secretariat/dashboard' },
-    { title: 'Procurement Initiation', href: '#' },
-];
-
 export default function ProcurementInitiationForm({ formState }: HeaderProps) {
+    const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
+        { title: 'Procurement Initiation', href: '#' },
+    ]);
+    
     const [dates, setDates] = useState<Record<number, Date | undefined>>({});
 
     const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm<UseFormData>({

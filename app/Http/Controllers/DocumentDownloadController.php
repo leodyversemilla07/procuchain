@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentView;
-use App\Models\ProcurementDocument;
-use App\Services\DocumentBlockchainService;
 use App\Services\FileStorageService;
+use App\Services\ProcurementDataService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -15,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 class DocumentDownloadController extends BaseController
 {
     public function __construct(
-        private DocumentBlockchainService $blockchainService,
+        private ProcurementDataService $procurementDataService,
         private FileStorageService $fileStorageService
     ) {
         $this->middleware('auth');
@@ -37,25 +36,15 @@ class DocumentDownloadController extends BaseController
                 abort(404, 'File not found or access denied');
             }
 
-            // Try to get data_txid from database first, fallback to blockchain metadata
-            $document = ProcurementDocument::where('file_key', $fileKey)->first();
+            // Pure blockchain architecture - get data_txid from blockchain metadata
+            $dataTxid = $documentData['data_txid'] ?? null;
+            $fileName = $documentData['file_name'] ?? basename($fileKey);
 
-            $dataTxid = null;
-            $fileName = basename($fileKey);
-
-            if ($document) {
-                $dataTxid = $document->data_txid;
-                $fileName = $document->file_name ?? $fileName;
-            } else {
-                // If not in database, try to get from blockchain metadata
-                Log::info('Document not found in database, retrieving from blockchain metadata', [
-                    'file_key' => $fileKey,
-                    'user_id' => Auth::id(),
-                ]);
-
-                // Extract data_txid from documentData if available
-                $dataTxid = $documentData['data_txid'] ?? null;
-            }
+            Log::info('Retrieving file from blockchain', [
+                'file_key' => $fileKey,
+                'data_txid' => $dataTxid,
+                'user_id' => Auth::id(),
+            ]);
 
             // Retrieve file from blockchain using data_txid
             try {
@@ -121,7 +110,7 @@ class DocumentDownloadController extends BaseController
     private function validateFileAccess(string $fileKey): ?array
     {
         try {
-            $blockchainData = $this->blockchainService->validateDocumentExistsInBlockchain($fileKey);
+            $blockchainData = $this->procurementDataService->validateDocumentExistsInBlockchain($fileKey);
 
             if ($blockchainData) {
                 return $blockchainData;

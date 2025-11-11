@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
-import { BreadcrumbItem, User } from '@/types';
+import { User } from '@/types';
+import { buildBreadcrumbs } from '@/utils/breadcrumbs';
 import { Head, router, usePage, usePoll, WhenVisible } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, Loader2, RotateCw } from 'lucide-react';
@@ -62,44 +63,19 @@ const getProcurementShowUrl = (role: string, id: string): string => {
     }
 };
 
-const getBreadcrumbs = (role?: string): BreadcrumbItem[] => {
-    switch (role) {
-        case 'bac_chairman':
-            return [
-                { title: 'Bids and Awards Committee Chairman Dashboard', href: '/bac-chairman/dashboard' },
-                { title: 'Notifications', href: '/notifications' },
-            ];
-        case 'hope':
-            return [
-                { title: 'Head of Procuring Entity Dashboard', href: '/hope/dashboard' },
-                { title: 'Notifications', href: '/notifications' },
-            ];
-        case 'admin':
-            return [
-                { title: 'Admin Dashboard', href: '/admin/dashboard' },
-                { title: 'Notifications', href: '/notifications' },
-            ];
-        default:
-            return [
-                { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Notifications', href: '/notifications' },
-            ];
-    }
-};
-
 interface NotificationPageProps {
     auth: { user: User };
     notifications: Notification[];
     next_cursor: string | null;
     has_more: boolean;
     unread_count: number;
-    [key: string]: unknown; // Index signature for PageProps compatibility
+    [key: string]: unknown;
 }
 
 export default function Notifications() {
     const { auth, notifications: initialNotifications, next_cursor, has_more, unread_count } = usePage<NotificationPageProps>().props;
     const userRole = auth.user?.role;
-    const breadcrumbs = getBreadcrumbs(userRole);
+    const breadcrumbs = buildBreadcrumbs(userRole, [{ title: 'Notifications', href: '/notifications' }]);
 
     // Use polling to keep notifications updated (only first page)
     usePoll(30000, {
