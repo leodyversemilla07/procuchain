@@ -7,8 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
-import { BreadcrumbItem, SharedData } from '@/types';
-import { UserRole } from '@/types';
+import { BreadcrumbItem, SharedData, UserRole } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import {
     Activity,
@@ -31,20 +30,20 @@ import {
     PlayCircle,
     Shield,
     Target,
-    User,
     Users,
     Users2,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
-interface User {
+// PDF Viewer specific interfaces
+interface ViewerUser {
     name: string;
     role: string;
 }
 
 interface DocumentView {
     id: number;
-    user: User;
+    user: ViewerUser;
     viewed_at: string;
     viewed_at_human: string;
     ip_address: string;
@@ -64,7 +63,7 @@ interface ViewStats {
     last_viewed?: string;
 }
 
-interface Document {
+interface PdfDocument {
     procurement_id: string;
     procurement_title: string;
     document_type: string;
@@ -80,7 +79,7 @@ interface Document {
 }
 
 interface Props {
-    document: Document;
+    document: PdfDocument;
     fileKey: string;
     pdfUrl: string;
     viewStats: ViewStats;
