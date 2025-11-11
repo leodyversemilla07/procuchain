@@ -83,9 +83,6 @@ describe('PublishDocumentCorrectionJob', function () {
     });
 
     describe('handle method - successful correction with metadata', function () {
-        // NOTE: These tests expose a bug in PublishDocumentCorrectionJob line 133-140
-        // The job calls logEvent() with named parameters, but the method signature requires positional parameters
-        // This needs to be fixed in the production code: app/Jobs/PublishDocumentCorrectionJob.php
         it('publishes document correction with corrected metadata successfully', function () {
             $this->multichainService
                 ->shouldReceive('validateAddress')

@@ -22,6 +22,11 @@ abstract class Controller
             return '/';
         }
 
+        // Load roles once to avoid N+1 queries
+        if (! $user->relationLoaded('roles')) {
+            $user->load('roles');
+        }
+
         if ($user->hasRole('bac_secretariat')) {
             return route('bac-secretariat.dashboard');
         }

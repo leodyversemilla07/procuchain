@@ -110,7 +110,7 @@ export default function MonitoringUpload({ procurement = { id: '', title: '' } }
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Upload Compliance Report" />
-            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-6 rounded-xl bg-gradient-to-b p-6">
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-6 rounded-xl bg-linear-to-b p-6">
                 <div className="flex flex-col gap-2">
                     <div className="text-primary flex items-center gap-2">
                         <ClipboardCheck className="h-6 w-6" />

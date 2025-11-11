@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Procurement;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -18,6 +19,28 @@ describe('ProcurementController Feature', function () {
         // Fake notifications and events to avoid real side effects
         Notification::fake();
         Event::fake();
+
+        // Create procurement records that tests will reference
+        Procurement::factory()->create([
+            'id' => 'ntp-proc-1',
+            'title' => 'NTP Procurement',
+            'stage' => 'Notice to Proceed',
+        ]);
+        Procurement::factory()->create([
+            'id' => 'mon-proc-1',
+            'title' => 'Monitoring Procurement',
+            'stage' => 'Monitoring',
+        ]);
+        Procurement::factory()->create([
+            'id' => 'comp-proc-1',
+            'title' => 'Completion Procurement',
+            'stage' => 'Completion',
+        ]);
+        Procurement::factory()->create([
+            'id' => 'test-proc-2',
+            'title' => 'Test Procurement 2',
+            'stage' => 'Pre-Procurement Conference',
+        ]);
     });
 
     test('showProcurementInitiation returns ok', function () {
