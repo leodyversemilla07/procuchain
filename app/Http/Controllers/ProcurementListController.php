@@ -55,12 +55,39 @@ class ProcurementListController extends BaseController
             Log::info('Fetching procurements list');
             $procurements = $this->procurementDataService->fetchAndProcessProcurements();
 
+            // Get filter parameters from request
+            $search = request()->input('search', '');
+            $status = request()->input('status', 'all');
+            $stage = request()->input('stage', 'all');
+            $page = max((int) request()->input('page', 1), 1);
+            $perPage = (int) request()->input('per_page', 10);
+            if ($perPage <= 0) {
+                $perPage = 10;
+            }
+
+            // Apply filters if provided
+            $filteredProcurements = $this->filterProcurements($procurements, $search, $status, $stage);
+
+            // Simple array-based pagination (no DB) per Laravel + Inertia guidance
+            $total = count($filteredProcurements);
+            $offset = ($page - 1) * $perPage;
+            $pageItems = array_slice($filteredProcurements, $offset, $perPage);
+
             Log::info('Successfully retrieved procurements list', [
-                'count' => count($procurements),
+                'total_count' => count($procurements),
+                'filtered_count' => $total,
+                'page' => $page,
+                'per_page' => $perPage,
+                'filters' => compact('search', 'status', 'stage'),
             ]);
 
             return Inertia::render('procurements/procurements-list', [
-                'procurements' => $procurements,
+                'procurements' => $pageItems,
+                'pagination' => [
+                    'total' => $total,
+                    'page' => $page,
+                    'per_page' => $perPage,
+                ],
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve procurements list', [
@@ -70,9 +97,48 @@ class ProcurementListController extends BaseController
 
             return Inertia::render('procurements/procurements-list', [
                 'procurements' => [],
+                'pagination' => [
+                    'total' => 0,
+                    'page' => (int) request()->input('page', 1),
+                    'per_page' => (int) request()->input('per_page', 10),
+                ],
                 'error' => 'Unable to connect to the blockchain node right now. Please try again shortly.',
             ]);
         }
+    }
+
+    /**
+     * Filter procurements based on search, status, and stage
+     *
+     * @param  array<int, array<string, mixed>>  $procurements
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterProcurements(array $procurements, string $search, string $status, string $stage): array
+    {
+        return array_values(array_filter($procurements, function ($procurement) use ($search, $status, $stage) {
+            // Search filter (title and ID)
+            if (! empty($search)) {
+                $searchLower = strtolower($search);
+                $titleMatch = str_contains(strtolower($procurement['title'] ?? ''), $searchLower);
+                $idMatch = str_contains(strtolower($procurement['id'] ?? ''), $searchLower);
+
+                if (! $titleMatch && ! $idMatch) {
+                    return false;
+                }
+            }
+
+            // Status filter
+            if ($status !== 'all' && ($procurement['current_status'] ?? '') !== $status) {
+                return false;
+            }
+
+            // Stage filter
+            if ($stage !== 'all' && ($procurement['stage'] ?? '') !== $stage) {
+                return false;
+            }
+
+            return true;
+        }));
     }
 
     /**

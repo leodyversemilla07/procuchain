@@ -1,13 +1,9 @@
 import type { BreadcrumbItem } from '@/types';
 import { UserRole } from '@/types';
-import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
-import { index as bacSecretariatProcurementsIndex } from '@/routes/bac-secretariat/procurements';
-import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
-import { index as bacChairmanProcurementsIndex } from '@/routes/bac-chairman/procurements';
-import { dashboard as hopeDashboard } from '@/routes/hope';
-import { index as hopeProcurementsIndex } from '@/routes/hope/procurements';
-import { dashboard as adminDashboard } from '@/routes/admin';
-import { index as adminProcurementsIndex } from '@/routes/admin/procurements';
+import bacSecretariat from '@/routes/bac-secretariat';
+import bacChairman from '@/routes/bac-chairman';
+import hope from '@/routes/hope';
+import admin from '@/routes/admin';
 
 /**
  * Breadcrumb Utilities for the Procurement System
@@ -51,13 +47,13 @@ interface BreadcrumbConfig {
 export const getDashboardBreadcrumb = (role?: string): BreadcrumbItem => {
     switch (role) {
         case UserRole.BAC_SECRETARIAT:
-            return { title: 'BAC Secretariat Dashboard', href: bacSecretariatDashboard.url() };
+            return { title: 'BAC Secretariat Dashboard', href: bacSecretariat.dashboard.url() };
         case UserRole.BAC_CHAIRMAN:
-            return { title: 'BAC Chairman Dashboard', href: bacChairmanDashboard.url() };
+            return { title: 'BAC Chairman Dashboard', href: bacChairman.dashboard.url() };
         case UserRole.HOPE:
-            return { title: 'HOPE Dashboard', href: hopeDashboard.url() };
+            return { title: 'HOPE Dashboard', href: hope.dashboard.url() };
         case UserRole.ADMIN:
-            return { title: 'Admin Dashboard', href: adminDashboard.url() };
+            return { title: 'Admin Dashboard', href: admin.dashboard.url() };
         default:
             return { title: 'Dashboard', href: '/dashboard' };
     }
@@ -69,13 +65,13 @@ export const getDashboardBreadcrumb = (role?: string): BreadcrumbItem => {
 export const getProcurementsListBreadcrumb = (role?: string): BreadcrumbItem => {
     switch (role) {
         case UserRole.BAC_SECRETARIAT:
-            return { title: 'Procurements', href: bacSecretariatProcurementsIndex.url() };
+            return { title: 'Procurements', href: bacSecretariat.procurements.index.url() };
         case UserRole.BAC_CHAIRMAN:
-            return { title: 'Procurements', href: bacChairmanProcurementsIndex.url() };
+            return { title: 'Procurements', href: bacChairman.procurements.index.url() };
         case UserRole.HOPE:
-            return { title: 'Procurements', href: hopeProcurementsIndex.url() };
+            return { title: 'Procurements', href: hope.procurements.index.url() };
         case UserRole.ADMIN:
-            return { title: 'Procurements', href: adminProcurementsIndex.url() };
+            return { title: 'Procurements', href: admin.procurements.index.url() };
         default:
             return { title: 'Procurements', href: '/procurements-list' };
     }
@@ -85,19 +81,21 @@ export const getProcurementsListBreadcrumb = (role?: string): BreadcrumbItem => 
  * Get procurement detail breadcrumb based on user role
  */
 export const getProcurementDetailBreadcrumb = (role?: string, procurementId?: string): BreadcrumbItem => {
-    const baseHref = procurementId ? `/procurement/${procurementId}` : '#';
+    if (!procurementId) {
+        return { title: 'Procurement Details', href: '#' };
+    }
     
     switch (role) {
         case UserRole.BAC_SECRETARIAT:
-            return { title: 'Procurement Details', href: `/bac-secretariat${baseHref}` };
+            return { title: 'Procurement Details', href: bacSecretariat.procurements.show.url(procurementId) };
         case UserRole.BAC_CHAIRMAN:
-            return { title: 'Procurement Details', href: `/bac-chairman${baseHref}` };
+            return { title: 'Procurement Details', href: bacChairman.procurements.show.url(procurementId) };
         case UserRole.HOPE:
-            return { title: 'Procurement Details', href: `/hope${baseHref}` };
+            return { title: 'Procurement Details', href: hope.procurements.show.url(procurementId) };
         case UserRole.ADMIN:
-            return { title: 'Procurement Details', href: `/admin${baseHref}` };
+            return { title: 'Procurement Details', href: admin.procurements.show.url(procurementId) };
         default:
-            return { title: 'Procurement Details', href: baseHref };
+            return { title: 'Procurement Details', href: `/procurements-list/${procurementId}` };
     }
 };
 

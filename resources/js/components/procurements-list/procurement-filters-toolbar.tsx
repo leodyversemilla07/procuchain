@@ -22,8 +22,24 @@ export interface ProcurementFiltersToolbarProps {
     onRefresh: () => void;
     refreshDisabled?: boolean;
     isRefreshing?: boolean;
+    lastRefreshed?: Date;
     className?: string;
 }
+
+const formatTimeAgo = (date: Date): string => {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    
+    if (seconds < 10) return 'just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+};
 
 export function ProcurementFiltersToolbar({
     searchValue,
@@ -37,6 +53,7 @@ export function ProcurementFiltersToolbar({
     onRefresh,
     refreshDisabled = false,
     isRefreshing = false,
+    lastRefreshed,
     className,
 }: ProcurementFiltersToolbarProps) {
     return (
@@ -81,15 +98,21 @@ export function ProcurementFiltersToolbar({
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="flex justify-center sm:justify-end">
+                    <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-end">
+                        {lastRefreshed && (
+                            <span className="text-muted-foreground text-xs" role="status" aria-live="polite">
+                                Updated {formatTimeAgo(lastRefreshed)}
+                            </span>
+                        )}
                         <Button
                             onClick={onRefresh}
                             disabled={refreshDisabled}
                             variant="outline"
                             size="default"
                             className="flex h-10 w-full items-center space-x-2 sm:w-auto"
+                            aria-label={isRefreshing ? 'Refreshing data' : 'Refresh procurement data'}
                         >
-                            <RefreshCw className={cn('h-4 w-4', isRefreshing ? 'animate-spin' : undefined)} />
+                            <RefreshCw className={cn('h-4 w-4', isRefreshing ? 'animate-spin' : undefined)} aria-hidden="true" />
                             <span>Refresh</span>
                         </Button>
                     </div>

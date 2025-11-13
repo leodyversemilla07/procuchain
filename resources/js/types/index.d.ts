@@ -152,7 +152,6 @@ export type {
     ErrorStateTone,
     ErrorStateConfig,
     SEOConfig,
-    BadgeVariant,
     ChartConfig,
 } from './components';
 

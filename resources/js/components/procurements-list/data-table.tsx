@@ -1,89 +1,35 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Link, router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import {
     ColumnDef,
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
     useReactTable,
     type Column,
-    type ColumnFiltersState,
     type RowSelectionState,
     type SortingState,
     type VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowDownIcon, ArrowUpDown, ArrowUpIcon, CalendarIcon, FileIcon } from 'lucide-react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-
-// Import Wayfinder route helpers for each role
-import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
-import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
-import { show as hopeShow } from '@/routes/hope/procurements';
-import { show as adminShow } from '@/routes/admin/procurements';
+import { ArrowDownIcon, ArrowUpDown, ArrowUpIcon } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { ErrorState } from '@/components/error-state';
 import { Pagination } from '@/components/pagination';
 import { LoadingSkeleton } from '@/components/procurements-list/loading-skeleton';
+import { MobileCardView } from '@/components/procurements-list/mobile-card-view';
 import { ProcurementBulkActionsBar } from '@/components/procurements-list/procurement-bulk-actions-bar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getStageBadgeStyle, getStatusBadgeStyle } from '@/constants/procurement-badges';
 import { exportProcurementsToCSV } from '@/lib/csv';
 import { cn } from '@/lib/utils';
-import { ProcurementListItem, SharedData, Stage, Status } from '@/types';
+import { ProcurementListItem } from '@/types';
 
-// Helper function to format snake_case to readable label
-const formatLabel = (value: string): string => {
-    return value
-        .split('_')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-};
-
-// Helper function to get the correct Wayfinder route based on user role
-const getProcurementShowUrl = (role: string, id: string): string => {
-    switch (role) {
-        case 'bac_secretariat':
-            return bacSecretariatShow.url(id);
-        case 'bac_chairman':
-            return bacChairmanShow.url(id);
-        case 'hope':
-            return hopeShow.url(id);
-        case 'admin':
-            return adminShow.url(id);
-        default:
-            return `/procurements-list/${id}`;
-    }
-};
-
-// Local hook: detect horizontal truncation efficiently
-function useIsTruncated<T extends HTMLElement>(ref: React.RefObject<T | null>, depKey?: unknown) {
-    const [isTruncated, setIsTruncated] = useState(false);
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-        const check = () => setIsTruncated(el.scrollWidth > el.clientWidth);
-        check();
-        let ro: ResizeObserver | null = null;
-        if (typeof ResizeObserver !== 'undefined') {
-            ro = new ResizeObserver(() => check());
-            ro.observe(el);
-        }
-        const onResize = () => check();
-        window.addEventListener('resize', onResize);
-        return () => {
-            window.removeEventListener('resize', onResize);
-            if (ro) ro.disconnect();
-        };
-    }, [ref, depKey]);
-    return isTruncated;
-}
+// Re-export cell components for backwards compatibility
+export { IdCell, TitleCell, BadgeCell, StageCell, StatusCell, DocumentCountCell, LastUpdatedCell } from './cells';
 
 interface DataTableCheckboxProps {
     checked: boolean | 'indeterminate';
@@ -103,125 +49,17 @@ export interface ProcurementsDataTableProps {
     loading: boolean;
     error: string | null;
     userRole: string;
-    searchValue: string;
     onRowSelectionChange?: (selectedRows: ProcurementListItem[]) => void;
+    onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
+    onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
+    onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
+    // Optional server-side pagination controls
+    serverTotal?: number;
+    pageIndex?: number; // zero-based
+    pageSize?: number;
+    onNavigatePage?: (pageIndex: number) => void;
+    onChangePageSize?: (pageSize: number) => void;
 }
-
-export const IdCell = ({ id }: { id: string }) => {
-    const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.user?.role || 'guest';
-    const procurementUrl = getProcurementShowUrl(userRole, id);
-    
-    return (
-        <div className="font-medium text-blue-600 dark:text-blue-400">
-            <Link href={procurementUrl} className="flex items-center transition-all duration-150 hover:underline" prefetch="hover" cacheFor="5m">
-                <span className="rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 font-mono text-xs dark:border-blue-800/60 dark:bg-blue-900/30">
-                    {id}
-                </span>
-            </Link>
-        </div>
-    );
-};
-
-export const TitleCell = ({ procurement }: { procurement: ProcurementListItem }) => {
-    const textRef = useRef<HTMLDivElement>(null);
-    const isTruncated = useIsTruncated(textRef, procurement.title);
-    const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.user?.role || 'guest';
-    const procurementUrl = getProcurementShowUrl(userRole, procurement.id);
-    
-    const titleContent = (
-        <div ref={textRef} className="max-w-[280px] truncate font-medium" title={procurement.title}>
-            <Link
-                href={procurementUrl}
-                className="text-gray-900 transition-colors duration-150 hover:text-blue-600 hover:underline dark:text-gray-100"
-                prefetch="hover"
-                cacheFor="5m"
-            >
-                {procurement.title}
-            </Link>
-        </div>
-    );
-    return isTruncated ? (
-        <Tooltip>
-            <TooltipTrigger asChild>{titleContent}</TooltipTrigger>
-            <TooltipContent className="font-medium">{procurement.title}</TooltipContent>
-        </Tooltip>
-    ) : (
-        titleContent
-    );
-};
-
-export const BadgeCell = <T extends string>({ value, getStyle }: { value: T; getStyle: (value: T) => string }) => {
-    const textRef = useRef<HTMLSpanElement>(null);
-    const displayValue = formatLabel(value);
-    const isTruncated = useIsTruncated(textRef, displayValue);
-    const badge = (
-        <Badge
-            variant="outline"
-            className={cn(
-                getStyle(value),
-                'inline-flex items-center gap-1.5 overflow-hidden px-2 py-0.5 text-ellipsis whitespace-nowrap',
-                'border font-medium shadow-sm transition-all duration-150',
-                'max-w-[180px]',
-            )}
-        >
-            <span ref={textRef} className="min-w-0 truncate" title={displayValue}>
-                {displayValue}
-            </span>
-        </Badge>
-    );
-    return isTruncated ? (
-        <Tooltip>
-            <TooltipTrigger asChild>{badge}</TooltipTrigger>
-            <TooltipContent className="font-medium">{displayValue}</TooltipContent>
-        </Tooltip>
-    ) : (
-        badge
-    );
-};
-
-export const StageCell = ({ stage }: { stage: Stage }) => (
-    <BadgeCell<Stage> value={stage} getStyle={getStageBadgeStyle} />
-);
-
-export const StatusCell = ({ status }: { status: Status }) => (
-    <BadgeCell<Status> value={status} getStyle={getStatusBadgeStyle} />
-);
-
-export const DocumentCountCell = ({ count }: { count: number }) => (
-    <div className="flex items-center gap-1.5">
-        {count !== undefined ? (
-            <div className="flex items-center rounded-full bg-blue-50 py-0.5 pr-2 pl-1 dark:bg-blue-900/20">
-                <FileIcon className="mr-1 h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
-                <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{count}</span>
-            </div>
-        ) : (
-            // Skeleton loader for deferred document counts
-            <div className="flex animate-pulse items-center rounded-full bg-gray-100 py-0.5 pr-2 pl-1 dark:bg-gray-800">
-                <div className="mr-1 h-3.5 w-3.5 rounded bg-gray-300 dark:bg-gray-600"></div>
-                <div className="h-3 w-4 rounded bg-gray-300 dark:bg-gray-600"></div>
-            </div>
-        )}
-    </div>
-);
-
-export const LastUpdatedCell = ({ date }: { date: string }) => {
-    const formattedDate = new Date(date);
-    const displayDate = !isNaN(formattedDate.getTime())
-        ? formattedDate.toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-          })
-        : date;
-    return (
-        <div className="flex items-center gap-1.5">
-            <CalendarIcon className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{displayDate}</span>
-        </div>
-    );
-};
 
 export function DataTableCheckbox({ checked, onCheckedChange, disabled = false, title }: DataTableCheckboxProps) {
     return (
@@ -261,9 +99,23 @@ export function DataTableColumnHeader<TData, TValue>({ column, title, className 
     );
 }
 
-export function ProcurementsDataTable({ columns, data, loading, error, userRole, searchValue, onRowSelectionChange }: ProcurementsDataTableProps) {
+export function ProcurementsDataTable({
+    columns,
+    data,
+    loading,
+    error,
+    userRole,
+    onRowSelectionChange,
+    onOpenPreProcurementDialog,
+    onOpenPreBidDialog,
+    onOpenSupplementalBidBulletinDialog,
+    serverTotal,
+    pageIndex,
+    pageSize,
+    onNavigatePage,
+    onChangePageSize,
+}: ProcurementsDataTableProps) {
     const [sorting, setSorting] = useState<SortingState>([{ id: 'last_updated', desc: true }]);
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
@@ -271,26 +123,34 @@ export function ProcurementsDataTable({ columns, data, loading, error, userRole,
         data: data as ProcurementListItem[],
         columns,
         onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
         state: {
             sorting,
-            columnFilters,
             columnVisibility,
             rowSelection,
         },
         enableRowSelection: true,
         initialState: {
             pagination: {
-                pageSize: 10,
+                pageSize: pageSize ?? 10,
             },
         },
     });
+
+    // Keep table page index in sync with server-controlled page index if provided
+    useEffect(() => {
+        if (typeof pageIndex === 'number') {
+            table.setPageIndex(pageIndex);
+        }
+        if (typeof pageSize === 'number') {
+            table.setPageSize(pageSize);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pageIndex, pageSize]);
 
     useEffect(() => {
         if (onRowSelectionChange) {
@@ -298,11 +158,6 @@ export function ProcurementsDataTable({ columns, data, loading, error, userRole,
             onRowSelectionChange(selectedRows as ProcurementListItem[]);
         }
     }, [rowSelection, onRowSelectionChange, table]);
-
-    useEffect(() => {
-        const searchColumnId = 'title';
-        table.getColumn(searchColumnId)?.setFilterValue(searchValue);
-    }, [searchValue, table]);
 
     const handleRetry = React.useCallback(() => {
         router.reload({ only: ['procurements'] });
@@ -333,9 +188,15 @@ export function ProcurementsDataTable({ columns, data, loading, error, userRole,
             />
         );
     if (data.length === 0) {
-        const hasSearch = Boolean(searchValue.trim());
-        const title = hasSearch ? 'No procurements match your search' : 'No procurements available yet';
-        const description = hasSearch
+        // Check URL params for active filters
+        const params = new URLSearchParams(window.location.search);
+        const hasSearch = Boolean(params.get('search'));
+        const hasStatus = params.get('status') && params.get('status') !== 'all';
+        const hasStage = params.get('stage') && params.get('stage') !== 'all';
+        const hasFilters = hasSearch || hasStatus || hasStage;
+        
+        const title = hasFilters ? 'No procurements match your search' : 'No procurements available yet';
+        const description = hasFilters
             ? 'Try adjusting your search or filters to find the procurements you need.'
             : userRole === 'bac_secretariat'
               ? 'Create your first procurement record to start tracking progress across every stage.'
@@ -381,11 +242,41 @@ export function ProcurementsDataTable({ columns, data, loading, error, userRole,
                 className="mb-4"
             />
 
-            {/* Table */}
-            <Card className="overflow-hidden">
+            {/* Mobile Card View (visible on small screens) */}
+            <div className="space-y-3 md:hidden">
+                {table.getRowModel().rows.map((row) => (
+                    <MobileCardView
+                        key={row.id}
+                        procurement={row.original}
+                        selected={row.getIsSelected()}
+                        onSelect={(checked) => row.toggleSelected(checked)}
+                        onOpenPreProcurementDialog={onOpenPreProcurementDialog}
+                        onOpenPreBidDialog={onOpenPreBidDialog}
+                        onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
+                        userRole={userRole}
+                    />
+                ))}
+                
+                {/* Mobile Pagination */}
+                {table.getRowModel().rows.length > 0 && (
+                    <div className="flex justify-center pt-4">
+                        <Pagination
+                            pageIndex={typeof pageIndex === 'number' ? pageIndex : table.getState().pagination.pageIndex}
+                            pageSize={typeof pageSize === 'number' ? pageSize : table.getState().pagination.pageSize}
+                            pageCount={serverTotal ? Math.max(1, Math.ceil(serverTotal / (typeof pageSize === 'number' ? pageSize : table.getState().pagination.pageSize))) : table.getPageCount()}
+                            totalItems={serverTotal ?? table.getFilteredRowModel().rows.length}
+                            onPageChange={onNavigatePage ?? table.setPageIndex}
+                            onPageSizeChange={onChangePageSize ?? table.setPageSize}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Desktop Table View (hidden on small screens) */}
+            <Card className="hidden overflow-hidden md:block">
                 <CardContent className="px-0 py-0">
                     <div className="overflow-x-auto">
-                        <Table>
+                        <Table role="table" aria-label="Procurements table">
                             <TableHeader>
                                 {table.getHeaderGroups().map((headerGroup) => (
                                     <TableRow key={headerGroup.id}>
@@ -431,12 +322,12 @@ export function ProcurementsDataTable({ columns, data, loading, error, userRole,
                 </CardContent>
                 <CardFooter className="justify-end border-t">
                     <Pagination
-                        pageIndex={table.getState().pagination.pageIndex}
-                        pageSize={table.getState().pagination.pageSize}
-                        pageCount={table.getPageCount()}
-                        totalItems={table.getFilteredRowModel().rows.length}
-                        onPageChange={table.setPageIndex}
-                        onPageSizeChange={table.setPageSize}
+                        pageIndex={typeof pageIndex === 'number' ? pageIndex : table.getState().pagination.pageIndex}
+                        pageSize={typeof pageSize === 'number' ? pageSize : table.getState().pagination.pageSize}
+                        pageCount={serverTotal ? Math.max(1, Math.ceil(serverTotal / (typeof pageSize === 'number' ? pageSize : table.getState().pagination.pageSize))) : table.getPageCount()}
+                        totalItems={serverTotal ?? table.getFilteredRowModel().rows.length}
+                        onPageChange={onNavigatePage ?? table.setPageIndex}
+                        onPageSizeChange={onChangePageSize ?? table.setPageSize}
                     />
                 </CardFooter>
             </Card>

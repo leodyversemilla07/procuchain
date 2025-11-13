@@ -7,7 +7,7 @@ import { useMultiFileDrop } from '@/hooks/use-file-drop';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { buildBreadcrumbs } from '@/utils/breadcrumbs';
-import { UserRole } from '@/types/enums';
+import { UserRole, DocumentType } from '@/types/enums';
 
 import AppLayout from '@/layouts/app-layout';
 
@@ -64,7 +64,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         files: [null],
         metadata: [
             {
-                document_type: '',
+                document_type: DocumentType.PROCUREMENT_INITIATION_DOCUMENT,
                 submission_date: new Date(),
                 municipal_offices: '',
                 signatories: [],
@@ -108,7 +108,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
             clearErrors();
             const updated = Array.isArray(data.metadata) ? [...data.metadata] : [];
             if (!updated[index]) {
-                updated[index] = { document_type: '', submission_date: new Date(), municipal_offices: '', signatories: [] };
+                updated[index] = { document_type: DocumentType.PROCUREMENT_INITIATION_DOCUMENT, submission_date: new Date(), municipal_offices: '', signatories: [] };
             }
             // If field is submission_date, ensure value is a Date
             if (field === 'submission_date') {
@@ -140,7 +140,7 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                 setData('files', updatedFiles);
                 const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
                 if (!meta[index]) {
-                    meta[index] = { document_type: '', submission_date: new Date(), municipal_offices: '', signatories: [] };
+                    meta[index] = { document_type: DocumentType.PROCUREMENT_INITIATION_DOCUMENT, submission_date: new Date(), municipal_offices: '', signatories: [] };
                     setData('metadata', meta);
                 }
             } else {
@@ -174,8 +174,8 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
         const meta = Array.isArray(data.metadata) ? [...data.metadata] : [];
         const last = meta.length - 1;
         const copy =
-            last >= 0 && meta[last] ? meta[last] : { document_type: '', submission_date: new Date(), municipal_offices: '', signatories: [] };
-        meta.push({ ...copy, document_type: '', submission_date: new Date(), signatories: [] });
+            last >= 0 && meta[last] ? meta[last] : { document_type: DocumentType.PROCUREMENT_INITIATION_DOCUMENT, submission_date: new Date(), municipal_offices: '', signatories: [] };
+        meta.push({ ...copy, document_type: DocumentType.PROCUREMENT_INITIATION_DOCUMENT, submission_date: new Date(), signatories: [] });
         setData('files', files);
         setData('metadata', meta);
         setDates((d) => (last >= 0 ? { ...d, [last + 1]: new Date() } : { 0: new Date() }));
@@ -487,11 +487,9 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                                         </p>
                                                                         <div className="text-muted-foreground flex flex-wrap gap-2 text-xs">
                                                                             <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                                                                            {metadata?.document_type && (
-                                                                                <Badge variant="secondary" className="h-4 px-1 text-[10px]">
-                                                                                    {metadata.document_type}
-                                                                                </Badge>
-                                                                            )}
+                                                                            <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                                                                                Procurement Initiation Document
+                                                                            </Badge>
                                                                             {metadata?.municipal_offices && (
                                                                                 <Badge variant="outline" className="h-4 px-1 text-[10px]">
                                                                                     {metadata.municipal_offices}
@@ -603,22 +601,13 @@ export default function ProcurementInitiationForm({ formState }: HeaderProps) {
                                                             <Input
                                                                 id={`document-type-${index}`}
                                                                 type="text"
-                                                                value={meta?.document_type || ''}
-                                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                                                    handleMetadataChange(index, 'document_type', e.target.value)
-                                                                }
-                                                                placeholder="Enter document type"
-                                                                className={cn(
-                                                                    'transition-all duration-200',
-                                                                    hasError(`metadata.${index}.document_type`)
-                                                                        ? 'border-destructive ring-destructive/30 ring-1'
-                                                                        : 'border-input focus:border-primary',
-                                                                )}
+                                                                value="Procurement Initiation Document"
+                                                                readOnly
+                                                                className="bg-muted/50 cursor-not-allowed"
                                                                 required
                                                             />
                                                             <FieldDescription>
-                                                                Enter the type of document being uploaded (e.g., Project Proposal, Technical
-                                                                Requirements)
+                                                                Document type is fixed for procurement initiation stage
                                                             </FieldDescription>
                                                             {hasError(`metadata.${index}.document_type`) && (
                                                                 <FieldError>
