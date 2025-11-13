@@ -191,8 +191,9 @@ Route::middleware(['auth'])->group(function () {
 
         // Blockchain Publishing Status Page
         Route::get('/blockchain/publishing-status/{id}', function (string $id) {
-            // Fetch procurement data from blockchain instead of database
-            // For now, just accept the procurement ID from the route
+            // Fetch procurement data and blockchain status
+            $statusResponse = app(\App\Http\Controllers\ProcurementListController::class)->getBlockchainStatus($id);
+            $initialStatus = $statusResponse->getData(true);
 
             return Inertia::render('blockchain-publishing-status', [
                 'procurement' => [
@@ -201,6 +202,7 @@ Route::middleware(['auth'])->group(function () {
                 ],
                 'stage' => request('stage', 'Document Upload'),
                 'returnUrl' => request('return_url'),
+                'initialStatus' => $initialStatus,
             ]);
         })->name('blockchain.publishing-status');
     });

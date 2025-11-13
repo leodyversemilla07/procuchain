@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 export interface HeroCardProps {
     icon: LucideIcon;
     title: string;
-    description: string;
+    description: string | ReactNode;
     actions?: ReactNode;
     className?: string;
     iconWrapperClassName?: string;

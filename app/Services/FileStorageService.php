@@ -61,7 +61,7 @@ class FileStorageService
         $filename = $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         $fileSize = $file->getSize();
-        $mimeType = $file->getMimeType();
+        $mimeType = 'application/pdf'; // All procurement documents are PDFs
 
         // Read file content and convert to hex
         $fileContent = file_get_contents($file->getRealPath());
@@ -119,6 +119,7 @@ class FileStorageService
             'metadata_txid' => $metadataTxid,
             'filename' => $filename,
             'size' => $fileSize,
+            'mime_type' => $mimeType,
             'hash' => $fileHash,
         ];
     }

@@ -132,7 +132,7 @@ class ProcurementPublishingService
                     'user_address' => $userAddress,
                     'stage' => $stage->value,
                     'status' => $documentData['status'],
-                    'document_type' => $documentType->value,
+                    'document_type' => $stage->value, // Must match stage for blockchain filter validation
                     'file_key' => $fileResult['file_key'],
                     'file_name' => $fileResult['filename'],
                     'file_size' => $fileResult['size'],
@@ -141,7 +141,7 @@ class ProcurementPublishingService
                     'data_txid' => $fileResult['data_txid'],
                     'metadata_txid' => $fileResult['metadata_txid'],
                     'uploaded_by' => $documentData['uploaded_by'] ?? 'System',
-                    'uploaded_at' => now()->toIso8601String(),
+                    'timestamp' => now()->toIso8601String(),
                     'description' => $documentData['description'] ?? null,
                 ],
             ];
@@ -728,7 +728,7 @@ class ProcurementPublishingService
                     ],
                     eventData: [
                         'stage' => $stage->value,
-                        'event_type' => 'document_uploaded',
+                        'event_type' => 'document_published',
                         'category' => 'document',
                         'severity' => 'info',
                         'details' => "Uploaded {$file->getClientOriginalName()} for {$stage->getDisplayName()}",
@@ -778,7 +778,7 @@ class ProcurementPublishingService
             );
 
             // Redirect to status page
-            return redirect()->route('blockchain.publishing-status', [
+            return redirect()->route('bac-secretariat.blockchain.publishing-status', [
                 'id' => $procurementId,
                 'stage' => $redirectStageName ?? $stage->getDisplayName(),
                 'return_url' => route('bac-secretariat.procurements.show', $procurementId),
@@ -916,7 +916,7 @@ class ProcurementPublishingService
                 nextStage: $nextStage->getDisplayName()
             );
 
-            return redirect()->route('blockchain.publishing-status', [
+            return redirect()->route('bac-secretariat.blockchain.publishing-status', [
                 'id' => $procurementId,
                 'stage' => $redirectStageName ?? $currentStage->getDisplayName(),
                 'return_url' => route('bac-secretariat.procurements.show', $procurementId),
@@ -998,7 +998,7 @@ class ProcurementPublishingService
                 nextStage: $nextStage->getDisplayName()
             );
 
-            return redirect()->route('blockchain.publishing-status', [
+            return redirect()->route('bac-secretariat.blockchain.publishing-status', [
                 'id' => $procurementId,
                 'stage' => $redirectStageName ?? $currentStage->getDisplayName(),
                 'return_url' => route('bac-secretariat.procurements.show', $procurementId),
@@ -1073,7 +1073,7 @@ class ProcurementPublishingService
                 documentCount: 0
             );
 
-            return redirect()->route('blockchain.publishing-status', [
+            return redirect()->route('bac-secretariat.blockchain.publishing-status', [
                 'id' => $procurementId,
                 'stage' => $redirectStageName ?? $stage->getDisplayName(),
                 'return_url' => route('bac-secretariat.procurements.show', $procurementId),

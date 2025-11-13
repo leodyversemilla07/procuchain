@@ -15,6 +15,7 @@ enum StreamEnums: string
     case EVENTS = 'procurement.events';
     case CORRECTIONS = 'procurement.corrections';
     case FILE_DATA = 'file.data';
+    case FILE_METADATA = 'file.metadata';
 
     /**
      * Get the user-friendly display name for the stream
@@ -27,6 +28,7 @@ enum StreamEnums: string
             self::EVENTS => 'Procurement Events',
             self::CORRECTIONS => 'Procurement Corrections',
             self::FILE_DATA => 'File Data',
+            self::FILE_METADATA => 'File Metadata',
         };
     }
 
@@ -41,6 +43,7 @@ enum StreamEnums: string
             self::EVENTS => 'Records procurement events and activities',
             self::CORRECTIONS => 'Maintains correction records and amendments',
             self::FILE_DATA => 'Stores raw file data and binary content',
+            self::FILE_METADATA => 'Stores file metadata, hashes, and storage information',
         };
     }
 
@@ -62,7 +65,10 @@ enum StreamEnums: string
      */
     public function isFileStream(): bool
     {
-        return $this === self::FILE_DATA;
+        return in_array($this, [
+            self::FILE_DATA,
+            self::FILE_METADATA,
+        ]);
     }
 
     /**

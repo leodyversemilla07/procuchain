@@ -1,6 +1,7 @@
 import '../css/app.css';
 
 import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
@@ -15,10 +16,10 @@ createInertiaApp({
         const root = createRoot(el);
 
         root.render(
-            <>
+            <TooltipProvider>
                 <App {...props} />
                 <Toaster />
-            </>,
+            </TooltipProvider>,
         );
     },
     progress: {
