@@ -39,11 +39,11 @@ class PreProcurementController extends BaseController
         StatusPublisher $statusPublisher,
         EventPublisher $eventPublisher,
         ProcurementDataService $procurementDataService,
+        \App\Repositories\DocumentRepository $documentRepository,
         protected DocumentValidationService $validationService,
-        protected ProcurementOrchestrator $orchestrator,
-        protected \App\Repositories\DocumentRepository $documentRepository
+        protected ProcurementOrchestrator $orchestrator
     ) {
-        $this->initializeProcurementSupport($multichain, $documentPublisher, $statusPublisher, $eventPublisher, $procurementDataService);
+        $this->initializeProcurementSupport($multichain, $documentPublisher, $statusPublisher, $eventPublisher, $procurementDataService, $documentRepository);
         $this->applyProcurementMiddleware();
     }
 
@@ -338,7 +338,7 @@ class PreProcurementController extends BaseController
     /**
      * Get document upload guide for a specific stage (API endpoint for frontend).
      */
-    public function getDocumentGuide(Request $request, string $pr_number, StageEnums $stage): JsonResponse
+    public function documentGuide(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
         if (! $stage->isPreProcurement()) {
             abort(403, 'Invalid stage for Pre-Procurement phase');
@@ -368,7 +368,7 @@ class PreProcurementController extends BaseController
             }
 
             // Get procurement data
-            $procurement = $this->procurementRepository->findByProcurement($pr_number);
+            $procurement = app(\App\Repositories\ProcurementRepository::class)->findByProcurement($pr_number);
             if (! $procurement) {
                 return back()->with('error', 'Procurement not found.');
             }
@@ -597,37 +597,6 @@ class PreProcurementController extends BaseController
             return redirect()->back()->withErrors([
                 'error' => 'Failed to publish decision to blockchain. Please try again.',
             ]);
-        }
-    }
-
-    /**
-     * Get uploaded document types for a specific procurement and stage from blockchain.
-     *
-     * @return string[] Array of document type enum values (e.g., ['purchase_request', 'ppmp'])
-     */
-    protected function getUploadedDocumentTypes(string $pr_number, StageEnums $stage): array
-    {
-        try {
-            // Fetch all documents for this procurement from blockchain
-            $documents = $this->documentRepository->findByProcurement($pr_number);
-
-            // Filter by current stage and extract document types
-            $uploadedTypes = [];
-            foreach ($documents as $doc) {
-                if ($doc->stage === $stage->value) {
-                    $uploadedTypes[] = $doc->documentType;
-                }
-            }
-
-            return array_unique($uploadedTypes);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to fetch uploaded documents', [
-                'pr_number' => $pr_number,
-                'stage' => $stage->value,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
         }
     }
 

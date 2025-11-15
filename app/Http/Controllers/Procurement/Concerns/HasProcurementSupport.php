@@ -21,6 +21,8 @@ trait HasProcurementSupport
 
     protected ProcurementDataService $procurementDataService;
 
+    protected \App\Repositories\DocumentRepository $documentRepository;
+
     /**
      * Initialize procurement support dependencies
      */
@@ -29,13 +31,15 @@ trait HasProcurementSupport
         DocumentPublisher $documentPublisher,
         StatusPublisher $statusPublisher,
         EventPublisher $eventPublisher,
-        ProcurementDataService $procurementDataService
+        ProcurementDataService $procurementDataService,
+        \App\Repositories\DocumentRepository $documentRepository
     ): void {
         $this->multiChain = $multichain;
         $this->documentPublisher = $documentPublisher;
         $this->statusPublisher = $statusPublisher;
         $this->eventPublisher = $eventPublisher;
         $this->procurementDataService = $procurementDataService;
+        $this->documentRepository = $documentRepository;
     }
 
     /**
@@ -77,5 +81,36 @@ trait HasProcurementSupport
         $latestStatus = $statusItems->first();
 
         return $latestStatus ?: null;
+    }
+
+    /**
+     * Get uploaded document types for a specific procurement and stage from blockchain.
+     *
+     * @return string[] Array of document type enum values (e.g., ['purchase_request', 'ppmp'])
+     */
+    protected function getUploadedDocumentTypes(string $pr_number, \App\Enums\StageEnums $stage): array
+    {
+        try {
+            // Fetch all documents for this procurement from blockchain
+            $documents = $this->documentRepository->findByProcurement($pr_number);
+
+            // Filter by current stage and extract document types
+            $uploadedTypes = [];
+            foreach ($documents as $doc) {
+                if ($doc->stage === $stage->value) {
+                    $uploadedTypes[] = $doc->documentType;
+                }
+            }
+
+            return array_unique($uploadedTypes);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to fetch uploaded documents', [
+                'pr_number' => $pr_number,
+                'stage' => $stage->value,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 }
