@@ -25,7 +25,7 @@ describe('NotificationService', function () {
                 ->once()
                 ->withArgs(function ($message, $context) {
                     return str_contains($message, 'Procurement stage update notification sent') &&
-                        $context['procurement_id'] === 'PROC-001' &&
+                        $context['pr_number'] === 'PROC-001' &&
                         $context['stage'] === 'Bidding' &&
                         $context['recipients_count'] === 3;
                 });
@@ -46,7 +46,7 @@ describe('NotificationService', function () {
                 function ($notification) {
                     $data = $notification->toArray($this->bacChairman);
 
-                    return $data['procurement_id'] === 'PROC-001' &&
+                    return $data['pr_number'] === 'PROC-001' &&
                         $data['procurement_title'] === 'Test Procurement' &&
                         $data['stage_identifier'] === 'Bidding' &&
                         $data['current_status'] === 'pending' &&
@@ -89,7 +89,7 @@ describe('NotificationService', function () {
             Log::shouldReceive('warning')
                 ->once()
                 ->with('No users found with specified roles to notify for procurement update', [
-                    'procurement_id' => 'PROC-003',
+                    'pr_number' => 'PROC-003',
                     'roles' => ['bac_chairman', 'hope', 'admin'],
                 ]);
 
@@ -113,7 +113,7 @@ describe('NotificationService', function () {
                 ->once()
                 ->withArgs(function ($message, $context) {
                     return str_contains($message, 'Procurement stage update notification sent') &&
-                        $context['procurement_id'] === 'PROC-004';
+                        $context['pr_number'] === 'PROC-004';
                 });
 
             $this->notificationService->notifyStageUpdate(
@@ -137,13 +137,13 @@ describe('NotificationService', function () {
                 ->once()
                 ->withArgs(function ($message, $context) {
                     return str_contains($message, 'Procurement stage update notification sent') &&
-                        $context['procurement_id'] === 'PROC-005' &&
+                        $context['pr_number'] === 'PROC-005' &&
                         $context['roles_notified'] === ['bac_secretariat', 'admin'] &&
                         $context['recipients_count'] === 2;
                 });
 
             $this->notificationService->notifyStageUpdate(
-                procurementId: 'PROC-005',
+                pr_number: 'PROC-005',
                 procurementTitle: 'Test Procurement 5',
                 stageIdentifier: 'Bidding',
                 currentStatus: 'pending',
@@ -176,7 +176,7 @@ describe('NotificationService', function () {
                 });
 
             $this->notificationService->notifyStageUpdate(
-                procurementId: 'PROC-006',
+                pr_number: 'PROC-006',
                 procurementTitle: 'Test Procurement 6',
                 stageIdentifier: 'Bidding',
                 currentStatus: 'pending',

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
+use App\Libraries\MultiChain\Manager;
 use App\Services\DashboardService;
-use App\Services\MultichainService;
 use App\Services\ProcurementStageTransitionService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -12,12 +12,12 @@ use Illuminate\Support\Facades\Log;
 class BacSecretariatController extends BaseDashboardController
 {
     public function __construct(
-        protected MultichainService $multichainService,
+        protected Manager $multichain,
         protected DashboardService $dashboardService,
         CacheStrategyInterface $cacheStrategy,
         private ProcurementStageTransitionService $stageTransitionService
     ) {
-        parent::__construct($multichainService, $dashboardService, $cacheStrategy);
+        parent::__construct($multichain, $dashboardService, $cacheStrategy);
     }
 
     protected function getRoleName(): string

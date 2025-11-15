@@ -92,7 +92,7 @@ export interface Document {
     stage?: string;
     stage_formatted?: string;
     stage_metadata?: StageMetadata;
-    procurement_id?: string;
+    pr_number?: string;
     procurement_title?: string;
     user_address?: string;
     timestamp?: string;
@@ -114,7 +114,7 @@ export interface Event {
     stage_formatted?: string;
     stage_order?: number;
     document_count?: number;
-    procurement_id?: string;
+    pr_number?: string;
     procurement_title?: string;
     user_address?: string;
     category?: string;
@@ -139,7 +139,7 @@ export interface TimelineItem {
     current_status?: string;
     status: string;
     status_formatted?: string;
-    procurement_id?: string;
+    pr_number?: string;
     procurement_title?: string;
     user_address?: string;
 }

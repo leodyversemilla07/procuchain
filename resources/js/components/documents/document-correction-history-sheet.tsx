@@ -32,11 +32,11 @@ interface CorrectionRecord {
 interface CorrectionHistorySheetProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    procurementId: string | number;
+    pr_number: string | number;
     documentHash?: string;
 }
 
-export function CorrectionHistorySheet({ open, onOpenChange, procurementId, documentHash }: CorrectionHistorySheetProps) {
+export function CorrectionHistorySheet({ open, onOpenChange, pr_number, documentHash }: CorrectionHistorySheetProps) {
     const [corrections, setCorrections] = useState<CorrectionRecord[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -46,7 +46,7 @@ export function CorrectionHistorySheet({ open, onOpenChange, procurementId, docu
         setError(null);
 
         try {
-            const url = correctionsRoute.url(procurementId);
+            const url = correctionsRoute.url(pr_number);
             const response = await fetch(url);
 
             if (!response.ok) {
@@ -77,7 +77,7 @@ export function CorrectionHistorySheet({ open, onOpenChange, procurementId, docu
             fetchCorrections();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, procurementId]);
+    }, [open, pr_number]);
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>

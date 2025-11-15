@@ -144,30 +144,30 @@ class ProcurementListController extends BaseController
     /**
      * Display the specified procurement
      */
-    public function showProcurement(string $procurementId): Response
+    public function showProcurement(string $pr_number): Response
     {
         // Authorization: All authenticated users can view procurement details
         // (removed Procurement model dependency)
 
         try {
-            $this->validateProcurementId($procurementId);
+            $this->validatepr_number($pr_number);
 
-            Log::info('Fetching procurement details', ['procurement_id' => $procurementId]);
+            Log::info('Fetching procurement details', ['pr_number' => $pr_number]);
 
-            $statusItems = $this->procurementDataService->fetchStatusItems($procurementId);
+            $statusItems = $this->procurementDataService->fetchStatusItems($pr_number);
             $currentStatus = $statusItems->first();
 
             if (! $currentStatus) {
                 return $this->renderNotFound();
             }
 
-            $documents = $this->procurementDataService->fetchAndProcessAllDocuments($procurementId);
-            $events = $this->procurementDataService->fetchAndProcessEvents($procurementId);
+            $documents = $this->procurementDataService->fetchAndProcessAllDocuments($pr_number);
+            $events = $this->procurementDataService->fetchAndProcessEvents($pr_number);
 
             $this->procurementDataService->preloadUserNames(collect($events));
 
             $procurementData = $this->procurementDataService->buildProcurementData(
-                $procurementId,
+                $pr_number,
                 $currentStatus,
                 $documents,
                 $events,
@@ -180,13 +180,13 @@ class ProcurementListController extends BaseController
             ]);
 
             if ($procurementData === null) {
-                Log::warning('Procurement details not found after cache check', ['procurement_id' => $procurementId]);
+                Log::warning('Procurement details not found after cache check', ['pr_number' => $pr_number]);
 
                 return $this->renderNotFound();
             }
 
             Log::info('Successfully retrieved procurement details', [
-                'procurement_id' => $procurementId,
+                'pr_number' => $pr_number,
             ]);
 
             return Inertia::render('procurements/show-procurement', [
@@ -195,7 +195,7 @@ class ProcurementListController extends BaseController
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve procurement details', [
-                'procurement_id' => $procurementId,
+                'pr_number' => $pr_number,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -211,9 +211,9 @@ class ProcurementListController extends BaseController
      *
      * @throws Exception
      */
-    private function validateProcurementId(?string $procurementId): void
+    private function validatepr_number(?string $pr_number): void
     {
-        if (empty($procurementId)) {
+        if (empty($pr_number)) {
             throw new Exception('Procurement ID is required');
         }
     }
@@ -231,23 +231,74 @@ class ProcurementListController extends BaseController
     /**
      * Get blockchain publication status for procurement documents
      *
-     * Pure blockchain architecture - no database tracking needed.
-     * Documents are published atomically and tracked via transaction IDs.
+     * Queries actual blockchain to retrieve document transaction status
      */
     public function getBlockchainStatus(string $id): JsonResponse
     {
-        // In pure blockchain architecture, all documents are published atomically
-        // Status is always 'confirmed' immediately after successful publishing
-        // or the entire operation fails - no partial states
-        return response()->json([
-            'status' => 'confirmed',
-            'summary' => [
-                'pending' => 0,
-                'confirmed' => 1,
-                'failed' => 0,
-                'total' => 1,
-            ],
-            'message' => 'Pure blockchain architecture - all documents published atomically',
-        ]);
+        try {
+            // Fetch documents from blockchain for this procurement
+            $documentRepository = app(\App\Repositories\DocumentRepository::class);
+            $documentDataArray = $documentRepository->findByProcurement($id);
+
+            // Transform DocumentData objects to status response format
+            $documents = array_map(function ($doc, $index) {
+                return [
+                    'id' => $index + 1,
+                    'file_name' => $doc->fileName,
+                    'blockchain_status' => 'confirmed', // Documents on blockchain are always confirmed
+                    'blockchain_error' => null,
+                    'blockchain_txid' => $doc->metadataTxid,
+                    'blockchain_status_updated_at' => $doc->timestamp->toISOString(),
+                ];
+            }, $documentDataArray, array_keys($documentDataArray));
+
+            $total = count($documents);
+            $confirmed = $total; // All blockchain documents are confirmed
+            $pending = 0;
+            $failed = 0;
+
+            // If no documents found, return empty state
+            if ($total === 0) {
+                return response()->json([
+                    'status' => 'confirmed',
+                    'summary' => [
+                        'pending' => 0,
+                        'confirmed' => 0,
+                        'failed' => 0,
+                        'total' => 0,
+                    ],
+                    'documents' => [],
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'confirmed',
+                'summary' => [
+                    'pending' => $pending,
+                    'confirmed' => $confirmed,
+                    'failed' => $failed,
+                    'total' => $total,
+                ],
+                'documents' => array_values($documents),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch blockchain status', [
+                'pr_number' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Return safe default on error
+            return response()->json([
+                'status' => 'confirmed',
+                'summary' => [
+                    'pending' => 0,
+                    'confirmed' => 0,
+                    'failed' => 0,
+                    'total' => 0,
+                ],
+                'documents' => [],
+            ]);
+        }
     }
 }

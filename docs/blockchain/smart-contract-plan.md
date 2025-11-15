@@ -90,7 +90,7 @@ Implementation in ProcuChain layers domain-specific validation on these primitiv
 | -------------------- | ------- |
 | **Purpose**          | Enforce document metadata integrity, hash uniqueness per procurement, and adherence to allowed document types. |
 | **Triggers**         | Writes from `PublishProcurementDocumentsJob` and any direct `MultichainService::publish*` calls targeting the documents stream. |
-| **Validation Rules** | - `hash` must be 64-character hex (`SHA-256`).<br>- `document_type` must match entries in `App\Enums\StageEnums`/allowed list.<br>- `file_size` within configured bounds.<br>- Required metadata (`file_key`, `user_address`, `timestamp`, `procurement_id`, `procurement_title`).<br>- Reject duplicates by checking existing stream items for the same `procurement_id` + `hash`. |
+| **Validation Rules** | - `hash` must be 64-character hex (`SHA-256`).<br>- `document_type` must match entries in `App\Enums\StageEnums`/allowed list.<br>- `file_size` within configured bounds.<br>- Required metadata (`file_key`, `user_address`, `timestamp`, `pr_number`, `procurement_title`).<br>- Reject duplicates by checking existing stream items for the same `pr_number` + `hash`. |
 | **Implementation Notes** | - Library helper: `validateDocumentEntry(item, helpers)`.<br>- Filter JS uses `streamkeyitem` lookups to detect duplicates.<br>- Configurable thresholds (max size, allowed types) pulled from blockchain variables (`document_validation_config`). |
 
 **Deployment Steps**

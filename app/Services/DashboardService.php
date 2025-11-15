@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
-use App\Enums\StreamEnums;
+use App\DataTransferObjects\DocumentData;
+use App\DataTransferObjects\EventData;
 use App\Models\User;
+use App\Repositories\DocumentRepository;
+use App\Repositories\EventRepository;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -18,8 +21,6 @@ use Illuminate\Support\Facades\Log;
  */
 class DashboardService
 {
-    private array $userNameCache = [];
-
     private array $eventLabelMap = [
         'document_upload' => 'Uploaded Documents',
         'phase_transition' => 'Phase Transition',
@@ -28,7 +29,10 @@ class DashboardService
     ];
 
     public function __construct(
-        private MultichainService $multichainService
+        private Manager $multichain,
+        private EventRepository $eventRepository,
+        private DocumentRepository $documentRepository,
+        private UserService $userService
     ) {}
 
     /**
@@ -39,18 +43,7 @@ class DashboardService
      */
     public function getUserName(string $address): string
     {
-        if (isset($this->userNameCache[$address])) {
-            return $this->userNameCache[$address];
-        }
-
-        try {
-            $name = User::where('blockchain_address', $address)->first()?->name ?? 'Unknown';
-        } catch (\Exception $e) {
-            Log::warning("Failed to retrieve user name for address: $address", ['error' => $e->getMessage()]);
-            $name = 'Unknown';
-        }
-
-        return $this->userNameCache[$address] = $name;
+        return $this->userService->getUserNameByAddress($address);
     }
 
     /**
@@ -65,14 +58,14 @@ class DashboardService
             return collect($allStates)
                 ->map(function ($item) {
                     $data = $item['data']['json'] ?? [];
-                    if (! isset($data['procurement_id'], $data['procurement_title'])) {
+                    if (! isset($data['pr_number'], $data['procurement_title'])) {
                         Log::warning('Invalid procurement data structure', ['data' => $data]);
 
                         return null;
                     }
 
                     return [
-                        'id' => $data['procurement_id'],
+                        'id' => $data['pr_number'],
                         'title' => $data['procurement_title'],
                         'stage' => $data['stage'] ?? '',
                         'status' => $data['current_status'] ?? $data['stage'] ?? '',
@@ -143,47 +136,36 @@ class DashboardService
     public function getRecentActivities(): array
     {
         try {
-            $allEvents = $this->multichainService->listStreamItems(
-                StreamEnums::EVENTS->value,
-                true,
-                config('dashboard.stream_limits.recent_activities'),
-                config('dashboard.stream_limits.recent_activities_offset'),
-                true
-            );
+            $limit = config('dashboard.display_limits.recent_activities_display');
+            $eventDtos = $this->eventRepository->findRecent($limit * 2); // Fetch extra to allow for filtering
 
-            if (! $allEvents) {
-                Log::warning('No events found in stream');
+            if (empty($eventDtos)) {
+                Log::warning('No events found in repository');
 
                 return [];
             }
 
-            return collect($allEvents)
-                ->map(function ($item) {
-                    $data = $item['data']['json'] ?? [];
-                    if (! isset($data['procurement_id'], $data['procurement_title'])) {
-                        return null;
-                    }
-
+            return collect($eventDtos)
+                ->map(function (EventData $event) {
                     $actionLabel = $this->getEventLabel(
-                        $data['event_type'] ?? '',
-                        $data['details'] ?? ''
+                        $event->eventType,
+                        $event->details
                     );
 
                     return [
-                        'id' => $data['procurement_id'],
-                        'title' => $data['procurement_title'],
+                        'id' => $event->pr_number,
+                        'title' => $event->procurementTitle,
                         'action' => $actionLabel,
-                        'details' => $data['details'] ?? '',
-                        'raw_event_type' => $data['event_type'] ?? '',
-                        'stage' => $data['stage_identifier'] ?? '',
-                        'date' => $data['timestamp'] ?? now()->toIso8601String(),
-                        'user' => $this->getUserName($data['user_address'] ?? ''),
-                        'timestamp' => strtotime($data['timestamp'] ?? 'now'),
+                        'details' => $event->details,
+                        'raw_event_type' => $event->eventType,
+                        'stage' => $event->stage,
+                        'date' => $event->timestamp,
+                        'user' => $this->getUserName($event->userAddress),
+                        'timestamp' => strtotime($event->timestamp),
                     ];
                 })
-                ->filter()
                 ->sortByDesc('timestamp')
-                ->take(config('dashboard.display_limits.recent_activities_display'))
+                ->take($limit)
                 ->values()
                 ->toArray();
         } catch (Exception $e) {
@@ -205,30 +187,23 @@ class DashboardService
     public function getTotalDocuments(Collection $procurementsByKey): int
     {
         try {
-            $documentItems = $this->multichainService->listStreamItems(
-                StreamEnums::DOCUMENTS->value,
-                true,
-                config('dashboard.stream_limits.document_items'),
-                0,
-                false
-            );
+            $documentDtos = $this->documentRepository->all();
 
-            if ($documentItems === null) {
+            if (empty($documentDtos)) {
                 Log::warning('Failed to retrieve document stream items for dashboard stats.');
 
                 return 0;
             }
 
-            $documentCountMap = collect($documentItems)
-                ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-                ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
-                ->map(function ($items) {
-                    return collect($items)->map(fn ($item) => $item['data']['json']['hash'])->unique()->count();
+            $documentCountMap = collect($documentDtos)
+                ->groupBy(fn (DocumentData $doc) => $doc->pr_number)
+                ->map(function ($docs) {
+                    return collect($docs)->pluck('hash')->unique()->count();
                 });
 
-            $dashboardProcurementIds = $procurementsByKey->keys();
+            $dashboardpr_numbers = $procurementsByKey->keys();
             $totalDocuments = $documentCountMap
-                ->filter(fn ($count, $procurementId) => $dashboardProcurementIds->contains($procurementId))
+                ->filter(fn ($count, $pr_number) => $dashboardpr_numbers->contains($pr_number))
                 ->sum();
 
             Log::info('Dashboard document count calculated', ['total_documents' => $totalDocuments]);
@@ -298,6 +273,95 @@ class DashboardService
             'ongoingProjects' => $this->countOngoingProjects($procurementsByKey),
             'completedBiddings' => $this->countCompletedBiddings($procurementsByKey),
             'totalDocuments' => $totalDocuments,
+        ];
+    }
+
+    /**
+     * Group procurements by phase
+     *
+     * @param  Collection  $procurementsByKey  Procurements collection
+     * @return array Array grouped by phase
+     */
+    public function groupProcurementsByPhase(Collection $procurementsByKey): array
+    {
+        $grouped = [
+            'pre_procurement' => [],
+            'procurement' => [],
+            'post_procurement' => [],
+        ];
+
+        foreach ($procurementsByKey as $procurement) {
+            $stageEnum = \App\Enums\StageEnums::tryFrom($procurement['stage']);
+            if ($stageEnum) {
+                $phase = $stageEnum->getPhase();
+                $grouped[$phase][] = $procurement;
+            }
+        }
+
+        return [
+            'pre_procurement' => [
+                'title' => 'Pre-Procurement (Planning & Preparation)',
+                'count' => count($grouped['pre_procurement']),
+                'procurements' => $grouped['pre_procurement'],
+            ],
+            'procurement' => [
+                'title' => 'Procurement (Bidding & Evaluation)',
+                'count' => count($grouped['procurement']),
+                'procurements' => $grouped['procurement'],
+            ],
+            'post_procurement' => [
+                'title' => 'Post-Procurement (Award & Implementation)',
+                'count' => count($grouped['post_procurement']),
+                'procurements' => $grouped['post_procurement'],
+            ],
+        ];
+    }
+
+    /**
+     * Get phase statistics
+     *
+     * @param  Collection  $procurementsByKey  Procurements collection
+     * @return array Phase-based statistics
+     */
+    public function getPhaseStatistics(Collection $procurementsByKey): array
+    {
+        $stats = [
+            'pre_procurement' => 0,
+            'procurement' => 0,
+            'post_procurement' => 0,
+        ];
+
+        foreach ($procurementsByKey as $procurement) {
+            $stageEnum = \App\Enums\StageEnums::tryFrom($procurement['stage']);
+            if ($stageEnum) {
+                $phase = $stageEnum->getPhase();
+                $stats[$phase]++;
+            }
+        }
+
+        return [
+            'pre_procurement' => [
+                'label' => 'Pre-Procurement',
+                'count' => $stats['pre_procurement'],
+                'percentage' => $procurementsByKey->count() > 0
+                    ? round(($stats['pre_procurement'] / $procurementsByKey->count()) * 100, 1)
+                    : 0,
+            ],
+            'procurement' => [
+                'label' => 'Procurement',
+                'count' => $stats['procurement'],
+                'percentage' => $procurementsByKey->count() > 0
+                    ? round(($stats['procurement'] / $procurementsByKey->count()) * 100, 1)
+                    : 0,
+            ],
+            'post_procurement' => [
+                'label' => 'Post-Procurement',
+                'count' => $stats['post_procurement'],
+                'percentage' => $procurementsByKey->count() > 0
+                    ? round(($stats['post_procurement'] / $procurementsByKey->count()) * 100, 1)
+                    : 0,
+            ],
+            'total' => $procurementsByKey->count(),
         ];
     }
 

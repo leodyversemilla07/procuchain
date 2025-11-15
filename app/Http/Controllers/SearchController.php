@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\StreamEnums;
+use App\Libraries\MultiChain\Manager;
 use App\Models\User;
-use App\Services\MultichainService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -86,7 +86,7 @@ class SearchController extends Controller
         };
     }
 
-    public function index(Request $request, MultichainService $multichainService): Response
+    public function index(Request $request, Manager $multichain): Response
     {
         $query = $request->input('query', '');
         $publicResults = [];
@@ -139,7 +139,7 @@ class SearchController extends Controller
                         $statusItems = Cache::store('database')->remember(
                             'search_status_items',
                             now()->addMinutes(5),
-                            fn () => $multichainService->listStreamItems(StreamEnums::STATUS->value, true, 10000, 0, false)
+                            fn () => $multichain->listStreamItems(StreamEnums::STATUS->value, true, 10000, 0, false)
                         );
                         Log::info('SearchController: listStreamItems call completed.', ['response_type' => gettype($statusItems)]);
 
@@ -177,7 +177,7 @@ class SearchController extends Controller
                                 })
                                 ->filter()
                                 ->filter(function ($status) {
-                                    $hasId = isset($status['procurement_id']);
+                                    $hasId = isset($status['pr_number']);
                                     $hasTitle = isset($status['procurement_title']);
                                     if (! $hasId || ! $hasTitle) {
                                         Log::debug('SearchController: Skipping status due to missing fields', ['status_keys' => array_keys($status)]);
@@ -185,17 +185,17 @@ class SearchController extends Controller
 
                                     return $hasId && $hasTitle;
                                 })
-                                ->keyBy('procurement_id')
+                                ->keyBy('pr_number')
                                 ->all();
 
                             Log::info('SearchController: Finished processing statuses.', ['latest_count' => count($latestStatuses)]);
 
-                            foreach ($latestStatuses as $procurementId => $status) {
+                            foreach ($latestStatuses as $pr_number => $status) {
                                 $stage = $status['stage'] ?? 'N/A';
                                 $currentStatus = $status['current_status'] ?? 'N/A';
 
                                 $procTitleLower = Str::lower($status['procurement_title']);
-                                $procIdLower = Str::lower((string) $procurementId);
+                                $procIdLower = Str::lower((string) $pr_number);
 
                                 if (Str::contains($procTitleLower, $searchQueryLower) || Str::contains($procIdLower, $searchQueryLower)) {
                                     $routeName = $this->getRoleBasedProcurementRoute($userRole);
@@ -203,14 +203,14 @@ class SearchController extends Controller
                                     if ($routeName) {
                                         if (app('router')->has($routeName)) {
                                             $procurementResults[] = [
-                                                'id' => 'proc_'.$procurementId,
-                                                'title' => $status['procurement_title']." ({$procurementId})",
+                                                'id' => 'proc_'.$pr_number,
+                                                'title' => $status['procurement_title']." ({$pr_number})",
                                                 'description' => "Current Stage: {$stage} | Status: {$currentStatus}",
-                                                'link' => route($routeName, ['id' => $procurementId]),
+                                                'link' => route($routeName, ['id' => $pr_number]),
                                                 'type' => 'Procurement',
                                             ];
                                         } else {
-                                            Log::warning('SearchController: Route not found for procurement link.', ['route_name' => $routeName, 'procurement_id' => $procurementId]);
+                                            Log::warning('SearchController: Route not found for procurement link.', ['route_name' => $routeName, 'pr_number' => $pr_number]);
                                         }
                                     }
                                 }
@@ -261,7 +261,7 @@ class SearchController extends Controller
         ]);
     }
 
-    public function suggestions(Request $request, MultichainService $multichainService): JsonResponse
+    public function suggestions(Request $request, Manager $multichain): JsonResponse
     {
         $query = $request->input('query', '');
         $suggestions = [];
@@ -304,34 +304,34 @@ class SearchController extends Controller
                     $statusItems = Cache::store('database')->remember(
                         'search_suggestions_status_items',
                         now()->addMinutes(5),
-                        fn () => $multichainService->listStreamItems(StreamEnums::STATUS->value, true, 500, 0, false)
+                        fn () => $multichain->listStreamItems(StreamEnums::STATUS->value, true, 500, 0, false)
                     );
 
                     if (is_array($statusItems)) {
                         $latestStatuses = collect($statusItems)
                             ->map(fn ($item) => $item['data']['json'] ?? null)
                             ->filter()
-                            ->filter(fn ($status) => isset($status['procurement_id']) && isset($status['procurement_title']))
-                            ->keyBy('procurement_id')
+                            ->filter(fn ($status) => isset($status['pr_number']) && isset($status['procurement_title']))
+                            ->keyBy('pr_number')
                             ->reverse()
                             ->all();
 
-                        foreach ($latestStatuses as $procurementId => $status) {
+                        foreach ($latestStatuses as $pr_number => $status) {
                             if (count($suggestions) >= $limit) {
                                 break;
                             }
 
                             $procTitleLower = Str::lower($status['procurement_title']);
-                            $procIdLower = Str::lower((string) $procurementId);
+                            $procIdLower = Str::lower((string) $pr_number);
 
                             if (Str::contains($procTitleLower, $searchQueryLower) || Str::contains($procIdLower, $searchQueryLower)) {
                                 $routeName = $this->getRoleBasedProcurementRoute($userRole);
 
                                 if ($routeName && app('router')->has($routeName)) {
                                     $suggestions[] = [
-                                        'id' => 'proc_'.$procurementId,
-                                        'title' => Str::limit($status['procurement_title'], 40)." ({$procurementId})",
-                                        'link' => route($routeName, ['id' => $procurementId]),
+                                        'id' => 'proc_'.$pr_number,
+                                        'title' => Str::limit($status['procurement_title'], 40)." ({$pr_number})",
+                                        'link' => route($routeName, ['id' => $pr_number]),
                                         'type' => 'Procurement',
                                     ];
                                 }

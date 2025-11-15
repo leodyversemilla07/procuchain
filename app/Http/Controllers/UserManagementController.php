@@ -6,8 +6,8 @@ use App\Http\Requests\User\BulkDeleteUsersRequest;
 use App\Http\Requests\User\ResetUserPasswordRequest;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
+use App\Libraries\MultiChain\Manager;
 use App\Models\User;
-use App\Services\MultichainService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -67,7 +67,7 @@ class UserManagementController extends Controller
     /**
      * Store a new user
      */
-    public function store(StoreUserRequest $request, MultichainService $multichainService)
+    public function store(StoreUserRequest $request, Manager $multichain)
     {
         $validated = $request->validated();
 
@@ -76,14 +76,14 @@ class UserManagementController extends Controller
             $blockchainAddress = null;
             if (! empty($validated['blockchain_address'])) {
                 // Use provided address (validate it first)
-                $validation = $multichainService->validateAddress($validated['blockchain_address']);
+                $validation = $multichain->validateAddress($validated['blockchain_address']);
                 if (! $validation['isvalid']) {
                     return redirect()->back()->withErrors(['blockchain_address' => 'Invalid blockchain address provided.']);
                 }
                 $blockchainAddress = $validated['blockchain_address'];
             } else {
                 // Auto-generate new blockchain address
-                $blockchainAddress = $multichainService->getNewAddress();
+                $blockchainAddress = $multichain->getNewAddress();
             }
 
             $user = User::create([

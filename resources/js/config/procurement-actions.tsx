@@ -36,7 +36,7 @@ interface ActionDefinition {
     iconClassName: string;
     tooltipText: string;
     bgClassName: string;
-    getHref?: (procurementId: string) => string;
+    getHref?: (pr_number: string) => string;
     action?: 'pre-procurement' | 'pre-bid' | 'supplemental-bid-bulletin';
 }
 
@@ -200,7 +200,7 @@ const matchesCondition = (condition: ActionCondition, stage: Stage, status: Stat
  * Get all matching action configurations for a given procurement
  */
 export const getActionConfigs = (
-    procurementId: string,
+    pr_number: string,
     stage: Stage,
     status: Status,
     handlers: {
@@ -220,7 +220,7 @@ export const getActionConfigs = (
             };
 
             if (def.getHref) {
-                config.href = def.getHref(procurementId);
+                config.href = def.getHref(pr_number);
             } else if (def.action) {
                 switch (def.action) {
                     case 'pre-procurement':

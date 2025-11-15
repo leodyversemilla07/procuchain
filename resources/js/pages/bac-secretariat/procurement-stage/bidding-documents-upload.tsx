@@ -1,62 +1,34 @@
-import DatePicker from '@/components/date-picker';
-import DateRangePicker from '@/components/date-range-picker';
-import FileUploadArea from '@/components/file-upload-area';
-import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFileDrop } from '@/hooks/use-file-drop';
+import { useProgressiveUpload } from '@/hooks/use-progressive-upload';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import { addDays, format } from 'date-fns';
-import { AlertCircle, CalendarIcon, ClipboardList, Upload } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { CheckCircle2, ClipboardList } from 'lucide-react';
 import React from 'react';
-import { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 import { buildBreadcrumbs } from '@/utils/breadcrumbs';
 import { UserRole } from '@/types/enums';
 import { getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
+import { DocumentChecklistCard } from '@/components/procurement/document-checklist-card';
+import type { DocumentGuide } from '@/types/document-guide';
+import { markStageComplete } from '@/actions/App/Http/Controllers/Procurement/PreProcurementController';
 
 interface BiddingDocumentsUploadProps {
     procurement: {
         id: string;
         title: string;
     };
+    documentGuide?: DocumentGuide;
+    uploadedDocuments?: string[];
 }
 
-export default function BiddingDocumentsUpload({ procurement }: BiddingDocumentsUploadProps) {
-    const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
-        procurement_id: procurement?.id || '',
-        procurement_title: procurement?.title || '',
-        bidding_document_file: null as File | null,
-        issuance_date: new Date(),
-        validity_period_start: format(new Date(), 'yyyy-MM-dd'),
-        validity_period_end: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
-        validity_period: {
-            from: new Date(),
-            to: addDays(new Date(), 7),
-        } as DateRange | undefined,
-    });
-
-    // File drop logic
-    const validateFile = (file: File) => {
-        if (file.type !== 'application/pdf') {
-            toast.error('Invalid file type', {
-                description: 'Only PDF files are allowed.',
-            });
-            return false;
-        }
-        if (file.size > 10 * 1024 * 1024) {
-            toast.error('File too large', {
-                description: 'Maximum file size is 10MB.',
-            });
-            return false;
-        }
-        return true;
-    };
-    const fileDrop = useFileDrop({
-        validateFile,
-        setFile: (file) => setData('bidding_document_file', file),
+export default function BiddingDocumentsUpload({ procurement, documentGuide, uploadedDocuments = [] }: BiddingDocumentsUploadProps) {
+    // Progressive upload hook
+    const { isUploading, handleDocumentUpload } = useProgressiveUpload({
+        procurementId: procurement?.id || '',
+        stage: 'bidding_documents',
+        phase: 'pre-procurement',
     });
 
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
@@ -64,81 +36,26 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
         { title: `Upload Bidding Documents - ${procurement?.id || 'Unknown ID'}${procurement?.title ? ': ' + procurement.title : ''}`, href: '#' },
     ]);
 
-    const onSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!data.bidding_document_file) {
-            toast.error('Missing file', {
-                description: 'Please upload the bidding documents file.',
-            });
-            return;
-        }
-        if (!data.issuance_date) {
-            toast.error('Missing issuance date', {
-                description: 'Please select the issuance date.',
-            });
-            return;
-        }
-        if (!data.validity_period || !data.validity_period.from || !data.validity_period.to) {
-            toast.error('Missing validity period', {
-                description: 'Please select the validity period.',
-            });
-            return;
-        }
-
-        transform((formData) => ({
-            ...formData,
-            issuance_date: format(formData.issuance_date, 'yyyy-MM-dd'),
-            validity_period_start:
-                formData.validity_period && formData.validity_period.from ? format(formData.validity_period.from, 'yyyy-MM-dd') : '',
-            validity_period_end: formData.validity_period && formData.validity_period.to ? format(formData.validity_period.to, 'yyyy-MM-dd') : '',
-        }));
-
-        post('/bac-secretariat/upload-bidding-documents', {
-            preserveScroll: true,
-            preserveState: true,
-            forceFormData: true,
-            onSuccess: () => {
-                reset();
-                clearErrors();
-                toast.success('Bidding documents uploaded successfully!', {
-                    description: 'Bidding documents have been submitted.',
-                });
+    const handleMarkComplete = () => {
+        router.post(
+            markStageComplete({ pr_number: procurement.id, stage: 'bidding_documents' }).url,
+            {},
+            {
+                onSuccess: () => {
+                    toast.success('Stage marked as complete!', {
+                        description: 'All required documents have been uploaded.',
+                    });
+                },
+                onError: () => {
+                    toast.error('Failed to mark stage as complete', {
+                        description: 'Please try again or contact support.',
+                    });
+                },
             },
-            onError: (errors) => {
-                toast.error('Failed to upload bidding documents', {
-                    description: Object.values(errors)[0] as string,
-                });
-            },
-        });
+        );
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            if (validateFile(file)) {
-                setData('bidding_document_file', file);
-            }
-        }
-    };
-
-    // Handle date selection for validity period
-    const handleValidityPeriodChange = (range: DateRange | undefined) => {
-        setData('validity_period', range);
-        if (range?.from) {
-            setData('validity_period_start', format(range.from, 'yyyy-MM-dd'));
-        }
-        if (range?.to) {
-            setData('validity_period_end', format(range.to, 'yyyy-MM-dd'));
-        }
-    };
-
-    // Handle issuance date selection
-    const handleIssuanceDateChange = (date: Date | undefined) => {
-        if (date) {
-            setData('issuance_date', date);
-        }
-    };
+    const allRequiredUploaded = documentGuide && uploadedDocuments.length >= documentGuide.counts.required_count;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -161,82 +78,58 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
                     </p>
                 </div>
 
-                <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                     <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+                        {/* Document Checklist - Progressive Upload */}
+                        {documentGuide && (
+                            <DocumentChecklistCard
+                                documentGuide={documentGuide}
+                                uploadedDocuments={uploadedDocuments}
+                                canUpload={!isUploading}
+                                onUploadClick={handleDocumentUpload}
+                                className="lg:order-last"
+                            />
+                        )}
+
                         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
                             <CardHeader className="space-y-1 pb-2 sm:pb-4">
                                 <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
                                     <ClipboardList className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
-                                    Required Document
+                                    Progressive Document Upload
                                 </CardTitle>
-                                <CardDescription className="text-sm">Please upload the bidding documents in PDF format</CardDescription>
+                                <CardDescription className="text-sm">
+                                    Use the checklist on the right to upload required documents one at a time. Once all required documents are uploaded, you can mark this stage as complete.
+                                </CardDescription>
                             </CardHeader>
 
                             <CardContent className="space-y-6 sm:space-y-8">
-                                <FileUploadArea
-                                    label="Bidding Documents"
-                                    file={data.bidding_document_file}
-                                    error={errors.bidding_document_file}
-                                    isDragging={fileDrop.isDragging}
-                                    onFileChange={handleFileChange}
-                                    onDragEnter={fileDrop.handleDragEnter}
-                                    onDragLeave={fileDrop.handleDragLeave}
-                                    onDragOver={fileDrop.handleDragOver}
-                                    onDrop={fileDrop.handleDrop}
-                                    onRemove={() => setData('bidding_document_file', null)}
-                                    inputId="file-input"
-                                    required={true}
-                                />
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border h-fit shadow-md">
-                            <CardHeader className="space-y-1 pb-2 sm:pb-4">
-                                <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                                    <CalendarIcon className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
-                                    Document Details
-                                </CardTitle>
-                                <CardDescription className="text-sm">Provide information about the bidding documents</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4 sm:space-y-6">
-                                <div className="space-y-2">
-                                    <DatePicker
-                                        label="Issuance Date"
-                                        value={data.issuance_date}
-                                        onChange={handleIssuanceDateChange}
-                                        error={errors.issuance_date}
-                                        required={true}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <DateRangePicker
-                                        label="Validity Period"
-                                        value={data.validity_period}
-                                        onChange={handleValidityPeriodChange}
-                                        error={errors.validity_period_start || errors.validity_period_end}
-                                        required={true}
-                                    />
-                                    {errors.validity_period_start && <InputError message={errors.validity_period_start} />}
-                                    {errors.validity_period_end && <InputError message={errors.validity_period_end} />}
+                                <div className="rounded-lg border border-muted bg-muted/30 p-4">
+                                    <h3 className="text-sm font-medium mb-2">How to Upload Documents:</h3>
+                                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                                        <li>Click the "Upload" button next to each document in the checklist</li>
+                                        <li>Select the PDF file from your computer (max 10MB)</li>
+                                        <li>Documents are automatically saved to the blockchain</li>
+                                        <li>Track your progress in real-time</li>
+                                    </ol>
                                 </div>
                             </CardContent>
 
                             <CardFooter className="flex flex-col gap-3 border-t pt-4">
                                 <Button
-                                    type="submit"
-                                    disabled={processing}
+                                    type="button"
+                                    disabled={!allRequiredUploaded || isUploading}
+                                    onClick={handleMarkComplete}
                                     className="flex h-10 w-full items-center gap-2 text-sm sm:h-11 sm:text-base"
                                 >
-                                    {processing ? (
+                                    {isUploading ? (
                                         <div className="flex items-center gap-2">
                                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                            Processing...
+                                            Uploading...
                                         </div>
                                     ) : (
                                         <>
-                                            <Upload className="h-4 w-4" />
-                                            Submit Documents
+                                            <CheckCircle2 className="h-4 w-4" />
+                                            Mark Stage as Complete
                                         </>
                                     )}
                                 </Button>
@@ -245,33 +138,15 @@ export default function BiddingDocumentsUpload({ procurement }: BiddingDocuments
                                     type="button"
                                     variant="outline"
                                     onClick={() => window.history.back()}
-                                    disabled={processing}
+                                    disabled={isUploading}
                                     className="h-10 w-full text-sm sm:text-base"
                                 >
-                                    Cancel
+                                    Back to Procurements
                                 </Button>
                             </CardFooter>
                         </Card>
                     </div>
-                </form>
-
-                {Object.keys(errors).length > 0 && (
-                    <Card className="border-destructive/50 bg-destructive/5 dark:bg-destructive/10 shadow-md">
-                        <CardContent className="p-4">
-                            <div className="flex items-start">
-                                <AlertCircle className="text-destructive mt-0.5 mr-3 h-5 w-5" />
-                                <div>
-                                    <h4 className="text-destructive text-sm font-medium">Please fix the following errors:</h4>
-                                    <ul className="text-destructive/90 mt-2 list-inside list-disc space-y-1 text-xs sm:text-sm">
-                                        {Object.entries(errors).map(([field, message]) => (
-                                            <li key={field}>{message}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+                </div>
             </div>
         </AppLayout>
     );

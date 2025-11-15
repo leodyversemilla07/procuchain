@@ -417,7 +417,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                 <PreProcurementDialog
                     open={preProcurementDialogOpen}
                     onOpenChange={setPreProcurementDialogOpen}
-                    procurementId={selectedProcurement.id}
+                    pr_number={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
                     onComplete={() => router.reload({ only: ['procurements'] })}
                 />
@@ -426,7 +426,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                 <PreBidConferenceDialog
                     open={preBidConferenceDialogOpen}
                     onOpenChange={setPreBidConferenceDialogOpen}
-                    procurementId={selectedProcurement.id}
+                    pr_number={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
                     onComplete={() => router.reload({ only: ['procurements'] })}
                 />
@@ -435,7 +435,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                 <SupplementalBidBulletinDialog
                     open={supplementalBidBulletinDialogOpen}
                     onOpenChange={setSupplementalBidBulletinDialogOpen}
-                    procurementId={selectedProcurement.id}
+                    pr_number={selectedProcurement.id}
                     procurementTitle={selectedProcurement.title}
                     onComplete={() => router.reload({ only: ['procurements'] })}
                 />

@@ -332,7 +332,7 @@ describe('Smart Filter JavaScript Files', function () {
     it('documents filter checks required fields', function () {
         $filterCode = File::get(resource_path('blockchain/filters/documents_filter_v1_standalone.js'));
 
-        expect($filterCode)->toContain('procurement_id')
+        expect($filterCode)->toContain('pr_number')
             ->and($filterCode)->toContain('hash')
             ->and($filterCode)->toContain('file_key')
             ->and($filterCode)->toContain('document_type')

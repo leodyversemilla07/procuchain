@@ -51,7 +51,7 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                             <Hash className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             Procurement ID:
                         </span>
-                        <span className="bg-muted rounded px-2 py-1 font-mono text-xs font-medium sm:text-sm">{document.procurement_id}</span>
+                        <span className="bg-muted rounded px-2 py-1 font-mono text-xs font-medium sm:text-sm">{document.pr_number}</span>
                     </div>
 
                     <div className="flex items-start justify-between gap-2">

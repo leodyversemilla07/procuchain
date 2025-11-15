@@ -26,7 +26,7 @@ class BlockchainMonitoringService
     private const HEALTH_CHECK_TTL = 60; // Cache health check for 1 minute
 
     public function __construct(
-        private MultichainService $multichainService
+        private Manager $multichain
     ) {}
 
     /**
@@ -54,7 +54,7 @@ class BlockchainMonitoringService
     {
         try {
             // Simple getInfo call to check connectivity
-            $info = $this->multichainService->getInfo();
+            $info = $this->multichain->getinfo();
 
             if (isset($info['nodeaddress'])) {
                 $this->recordSuccess();

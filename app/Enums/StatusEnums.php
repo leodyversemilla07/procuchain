@@ -33,6 +33,12 @@ enum StatusEnums: string
     case COMPLETION_DOCUMENTS_UPLOADED = 'completion_documents_uploaded';
     case COMPLETED = 'completed';
 
+    // Issue #12 fix: Lifecycle state statuses for procurement management
+    case STAGE_ON_HOLD = 'stage_on_hold';
+    case STAGE_CANCELLED = 'stage_cancelled';
+    case STAGE_REJECTED = 'stage_rejected';
+    case STAGE_PENDING_CORRECTION = 'stage_pending_correction';
+
     /**
      * Get the user-friendly display name for the status
      */
@@ -61,6 +67,11 @@ enum StatusEnums: string
             self::MONITORING_COMPLETED => 'Monitoring Completed',
             self::COMPLETION_DOCUMENTS_UPLOADED => 'Completion Documents Uploaded',
             self::COMPLETED => 'Completed',
+            // Issue #12 fix: Lifecycle states
+            self::STAGE_ON_HOLD => 'On Hold',
+            self::STAGE_CANCELLED => 'Cancelled',
+            self::STAGE_REJECTED => 'Rejected',
+            self::STAGE_PENDING_CORRECTION => 'Pending Correction',
         };
     }
 
@@ -92,6 +103,11 @@ enum StatusEnums: string
             self::MONITORING_COMPLETED => 'MonitoringCompleted',
             self::COMPLETION_DOCUMENTS_UPLOADED => 'CompletionDocumentsUploaded',
             self::COMPLETED => 'Completed',
+            // Issue #12 fix: Lifecycle states
+            self::STAGE_ON_HOLD => 'OnHold',
+            self::STAGE_CANCELLED => 'Cancelled',
+            self::STAGE_REJECTED => 'Rejected',
+            self::STAGE_PENDING_CORRECTION => 'PendingCorrection',
         };
     }
 
@@ -123,6 +139,11 @@ enum StatusEnums: string
             self::MONITORING_COMPLETED => 'Project monitoring phase has been completed',
             self::COMPLETION_DOCUMENTS_UPLOADED => 'Completion documents have been uploaded',
             self::COMPLETED => 'Procurement process is fully completed',
+            // Issue #12 fix: Lifecycle states
+            self::STAGE_ON_HOLD => 'Procurement has been temporarily paused',
+            self::STAGE_CANCELLED => 'Procurement has been terminated',
+            self::STAGE_REJECTED => 'Stage has been rejected and requires rework',
+            self::STAGE_PENDING_CORRECTION => 'Awaiting corrections before proceeding',
         };
     }
 
@@ -135,6 +156,10 @@ enum StatusEnums: string
             self::POST_QUALIFICATION_FAILED,
             self::PRE_PROCUREMENT_CONFERENCE_SKIPPED,
             self::PRE_BID_CONFERENCE_SKIPPED,
+            self::STAGE_ON_HOLD,
+            self::STAGE_CANCELLED,
+            self::STAGE_REJECTED,
+            self::STAGE_PENDING_CORRECTION,
         ]);
     }
 
@@ -153,6 +178,39 @@ enum StatusEnums: string
     {
         return in_array($this, [
             self::SUPPLEMENTAL_BULLETINS_ONGOING,
+            self::STAGE_PENDING_CORRECTION,
+        ]);
+    }
+
+    /**
+     * Check if the status indicates a blocked or problem state (Issue #12 fix)
+     */
+    public function isBlocked(): bool
+    {
+        return in_array($this, [
+            self::POST_QUALIFICATION_FAILED,
+            self::STAGE_ON_HOLD,
+            self::STAGE_REJECTED,
+            self::STAGE_PENDING_CORRECTION,
+        ]);
+    }
+
+    /**
+     * Check if the status indicates procurement is terminated (Issue #12 fix)
+     */
+    public function isTerminated(): bool
+    {
+        return $this === self::STAGE_CANCELLED;
+    }
+
+    /**
+     * Check if the status indicates a stage was skipped (Issue #12 fix)
+     */
+    public function isSkipped(): bool
+    {
+        return in_array($this, [
+            self::PRE_PROCUREMENT_CONFERENCE_SKIPPED,
+            self::PRE_BID_CONFERENCE_SKIPPED,
         ]);
     }
 

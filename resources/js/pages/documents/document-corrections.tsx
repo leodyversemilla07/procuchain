@@ -235,7 +235,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                     open={showCorrectionSheet}
                     onOpenChange={setShowCorrectionSheet}
                     documentId={selectedDocument.id}
-                    procurementId={procurement.id}
+                    pr_number={procurement.id}
                     procurementTitle={procurement.title}
                     originalDocumentHash={selectedDocument.hash}
                     originalTxid={selectedDocument.blockchain_txid}
@@ -246,7 +246,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
             <CorrectionHistorySheet
                 open={showHistorySheet}
                 onOpenChange={setShowHistorySheet}
-                procurementId={procurement.id}
+                pr_number={procurement.id}
                 documentHash={historyDocumentHash}
             />
         </AppLayout>

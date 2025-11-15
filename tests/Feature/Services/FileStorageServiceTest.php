@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\FileStorageService;
+use App\Services\BlockchainStorageService;
 use App\Services\MultichainService;
 use Illuminate\Http\UploadedFile;
 
@@ -17,10 +17,10 @@ beforeEach(function () {
         ->byDefault()
         ->andReturn([]);
 
-    $this->service = new FileStorageService($this->multichainMock);
+    $this->service = new BlockchainStorageService($this->multichainMock);
 });
 
-describe('FileStorageService - On-Chain Storage', function () {
+describe('BlockchainStorageService - On-Chain Storage', function () {
     describe('uploadFile', function () {
         it('uploads file successfully to blockchain with hex encoding', function () {
             $mockService = Mockery::mock(MultichainService::class);
@@ -37,12 +37,12 @@ describe('FileStorageService - On-Chain Storage', function () {
                 ->with('file.metadata', Mockery::type('string'), Mockery::type('array'))
                 ->andReturn('metadata_txid_456');
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
             $file = UploadedFile::fake()->create('document.pdf', 100);
             $path = 'procurements/PROC-001/bidding';
             $suffix = 'bid_document';
 
-            $result = $service->uploadFile($file, $path, $suffix, ['procurement_id' => 'PROC-001']);
+            $result = $service->uploadFile($file, $path, $suffix, ['pr_number' => 'PROC-001']);
 
             expect($result)->toBeArray();
             expect($result)->toHaveKeys(['file_key', 'data_txid', 'metadata_txid', 'filename', 'size', 'hash']);
@@ -56,9 +56,9 @@ describe('FileStorageService - On-Chain Storage', function () {
             $mockService = Mockery::mock(MultichainService::class);
             $mockService->shouldReceive('publish')->andReturn('txid1', 'txid2');
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
             $file = UploadedFile::fake()->create('document.pdf', 100);
-            $result = $service->uploadFile($file, 'test', 'doc', ['procurement_id' => 'TEST']);
+            $result = $service->uploadFile($file, 'test', 'doc', ['pr_number' => 'TEST']);
 
             expect($result['hash'])->toBeString();
             expect($result['hash'])->toHaveLength(64); // SHA-256 hex length
@@ -81,7 +81,7 @@ describe('FileStorageService - On-Chain Storage', function () {
                 ->with('file.metadata', Mockery::any(), Mockery::any())
                 ->andReturn('metadata_txid');
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
             $file = UploadedFile::fake()->createWithContent('test.txt', $fileContent);
 
             $result = $service->uploadFile($file, 'test', 'file', []);
@@ -109,7 +109,7 @@ describe('FileStorageService - On-Chain Storage', function () {
                 )
                 ->andReturn('metadata_txid');
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
             $file = UploadedFile::fake()->create('doc.pdf', 100);
 
             $result = $service->uploadFile($file, 'test', 'file', []);
@@ -118,7 +118,7 @@ describe('FileStorageService - On-Chain Storage', function () {
         });
 
         it('throws exception for files exceeding max size', function () {
-            $service = new FileStorageService($this->multichainMock);
+            $service = new BlockchainStorageService($this->multichainMock);
 
             // Create file larger than 8MB
             $largeFile = UploadedFile::fake()->create('large.pdf', 9000); // 9MB
@@ -141,19 +141,19 @@ describe('FileStorageService - On-Chain Storage', function () {
                     'file.metadata',
                     Mockery::type('string'),
                     Mockery::on(function ($data) {
-                        return $data['json']['procurement_id'] === 'PROC-123' &&
+                        return $data['json']['pr_number'] === 'PROC-123' &&
                                $data['json']['title'] === 'Bid Document';
                     })
                 )
                 ->andReturn('txid_with_context');
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
             $file = UploadedFile::fake()->create('bid.pdf', 100);
             $result = $service->uploadFile(
                 $file,
                 'test',
                 'bid',
-                ['procurement_id' => 'PROC-123', 'title' => 'Bid Document']
+                ['pr_number' => 'PROC-123', 'title' => 'Bid Document']
             );
 
             expect($result['metadata_txid'])->toBe('txid_with_context');
@@ -176,7 +176,7 @@ describe('FileStorageService - On-Chain Storage', function () {
                     'data' => $fileHex,
                 ]);
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
 
             $retrieved = $service->retrieveFile('test/file.pdf', 'data_txid_123');
 
@@ -200,7 +200,7 @@ describe('FileStorageService - On-Chain Storage', function () {
                     'data' => $fileHex,
                 ]]);
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
 
             $retrieved = $service->retrieveFile('test/file.pdf');
 
@@ -214,7 +214,7 @@ describe('FileStorageService - On-Chain Storage', function () {
                 ->once()
                 ->andReturn([]); // No items found
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
 
             expect(fn () => $service->retrieveFile('non/existent/file.pdf'))
                 ->toThrow(Exception::class, 'File not found on blockchain');
@@ -249,7 +249,7 @@ describe('FileStorageService - On-Chain Storage', function () {
                     'data' => $fileHex,
                 ]);
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
 
             $isValid = $service->verifyFileIntegrity('test/file.pdf', 'metadata_txid');
 
@@ -282,7 +282,7 @@ describe('FileStorageService - On-Chain Storage', function () {
                     'data' => $corruptedHex,
                 ]);
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
 
             $isValid = $service->verifyFileIntegrity('test/file.pdf', 'metadata_txid');
 
@@ -305,7 +305,7 @@ describe('FileStorageService - On-Chain Storage', function () {
                     ]],
                 ]);
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
             $metadata = $service->getFileMetadata('test_txid');
 
             expect($metadata)->toBeArray();
@@ -332,7 +332,7 @@ describe('FileStorageService - On-Chain Storage', function () {
                 )
                 ->andReturn('delete_txid');
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
 
             $success = $service->deleteFile('test/doc.pdf', 'Test deletion');
 
@@ -353,7 +353,7 @@ describe('FileStorageService - On-Chain Storage', function () {
                 )
                 ->andReturn('delete_txid');
 
-            $service = new FileStorageService($mockService);
+            $service = new BlockchainStorageService($mockService);
 
             $success = $service->deleteFile('test/doc.pdf', 'Compliance violation');
 
@@ -363,14 +363,14 @@ describe('FileStorageService - On-Chain Storage', function () {
 
     describe('getMaxFileSize', function () {
         it('returns maximum file size in bytes', function () {
-            $service = new FileStorageService($this->multichainMock);
+            $service = new BlockchainStorageService($this->multichainMock);
             $maxSize = $service->getMaxFileSize();
 
             expect($maxSize)->toBe(8388608); // 8MB in bytes
         });
 
         it('returns formatted max file size', function () {
-            $service = new FileStorageService($this->multichainMock);
+            $service = new BlockchainStorageService($this->multichainMock);
             $formatted = $service->getMaxFileSizeFormatted();
 
             expect($formatted)->toBe('8 MB');

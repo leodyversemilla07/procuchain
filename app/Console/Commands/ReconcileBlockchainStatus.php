@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Libraries\MultiChain\Manager;
 use App\Models\ProcurementDocument;
-use App\Services\MultichainService;
 use Illuminate\Console\Command;
 
 class ReconcileBlockchainStatus extends Command
@@ -28,7 +28,7 @@ class ReconcileBlockchainStatus extends Command
     /**
      * Execute the console command.
      */
-    public function handle(MultichainService $multichainService): int
+    public function handle(Manager $multichain): int
     {
         $age = (int) $this->option('age');
         $limit = (int) $this->option('limit');
@@ -81,7 +81,7 @@ class ReconcileBlockchainStatus extends Command
 
             try {
                 // Try to verify transaction on blockchain
-                $result = $multichainService->getRawTransaction($txid);
+                $result = $multichain->getRawTransaction($txid);
 
                 if ($result && isset($result['txid'])) {
                     $confirmations = $result['confirmations'] ?? 0;

@@ -95,7 +95,7 @@ Sentry::addBreadcrumb(new \Sentry\Breadcrumb(
     \Sentry\Breadcrumb::TYPE_USER,
     'procurement.published',
     'Published procurement to blockchain',
-    ['procurement_id' => $procurementId]
+    ['pr_number' => $pr_number]
 ));
 ```
 
@@ -231,7 +231,7 @@ Always include context:
 
 ```php
 Log::info('Procurement published to blockchain', [
-    'procurement_id' => $procurement->id,
+    'pr_number' => $procurement->id,
     'blockchain_txid' => $txid,
     'stage' => $procurement->stage,
     'document_count' => $procurement->document_count,
@@ -388,7 +388,7 @@ $userViews = DocumentView::where('user_id', $userId)
 ```php
 $events = $multichainService->listStreamKeyItems(
     'procurement.events',
-    $procurementId,
+    $pr_number,
     true,  // verbose
     100    // limit
 );

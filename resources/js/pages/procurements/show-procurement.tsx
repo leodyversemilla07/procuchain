@@ -25,7 +25,7 @@ interface ProcurementStatus {
     timestamp: string;
     formatted_date: string;
     formatted_date_only: string;
-    procurement_id?: string;
+    pr_number?: string;
     procurement_title?: string;
     user_address?: string;
     progress: number;
@@ -193,7 +193,7 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                 {/* Procurement Header */}
                 <ProcurementHeader 
                     title={procurement.title}
-                    procurementId={procurement.id}
+                    pr_number={procurement.id}
                     status={procurement.status}
                     userRole={userRole}
                 />

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Libraries\MultiChain\Manager;
 use App\Services\BlockchainMonitoringService;
-use App\Services\MultichainService;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +15,7 @@ use Inertia\Response;
 class BlockchainExplorerController extends Controller
 {
     public function __construct(
-        private MultichainService $multichainService,
+        private Manager $multichain,
         private BlockchainMonitoringService $healthService
     ) {}
 
@@ -26,10 +26,10 @@ class BlockchainExplorerController extends Controller
     {
         try {
             // Cache blockchain info for 30 seconds to prevent repeated RPC calls
-            $blockchainInfo = Cache::remember('blockchain:info', 60, fn () => $this->multichainService->getBlockchainInfo());
-            $networkInfo = Cache::remember('blockchain:network_info', 60, fn () => $this->multichainService->getNetworkInfo());
-            $nodeInfo = Cache::remember('blockchain:node_info', 60, fn () => $this->multichainService->getInfo());
-            $peerInfo = Cache::remember('blockchain:peer_info', 60, fn () => $this->multichainService->getPeerInfo());
+            $blockchainInfo = Cache::remember('blockchain:info', 60, fn () => $this->multichain->getblockchaininfo());
+            $networkInfo = Cache::remember('blockchain:network_info', 60, fn () => $this->multichain->getnetworkinfo());
+            $nodeInfo = Cache::remember('blockchain:node_info', 60, fn () => $this->multichain->getinfo());
+            $peerInfo = Cache::remember('blockchain:peer_info', 60, fn () => $this->multichain->getpeerinfo());
 
             // Get latest blocks (last 10) - cache for 15 seconds as new blocks arrive
             $currentHeight = $blockchainInfo['blocks'];
@@ -37,7 +37,7 @@ class BlockchainExplorerController extends Controller
                 $blocks = [];
                 for ($i = 0; $i < min(10, $currentHeight + 1); $i++) {
                     try {
-                        $block = $this->multichainService->getBlock($currentHeight - $i, 1);
+                        $block = $this->multichain->getblock($currentHeight - $i, 1);
                         $blocks[] = [
                             'height' => $block['height'],
                             'hash' => $block['hash'],
@@ -58,7 +58,7 @@ class BlockchainExplorerController extends Controller
 
             // Get streams - cache for 60 seconds (streams don't change often)
             $streamsList = Cache::remember('blockchain:streams', 60, function () {
-                $streams = $this->multichainService->listStreams('*', true, 1000, 0);
+                $streams = $this->multichain->liststreams('*', true, 1000, 0);
                 // Filter out system streams and re-index array
                 $streams = array_values(array_filter($streams, fn ($stream) => $stream['name'] !== 'root'));
 
@@ -79,7 +79,7 @@ class BlockchainExplorerController extends Controller
 
             // Get addresses - cache for 60 seconds (addresses don't change often)
             $addressesList = Cache::remember('blockchain:addresses', 60, function () {
-                $addresses = $this->multichainService->getAddresses();
+                $addresses = $this->multichain->getaddresses();
 
                 return array_map(function ($address) {
                     return [
@@ -173,7 +173,7 @@ class BlockchainExplorerController extends Controller
                 throw new Exception('Block hash or height is required');
             }
 
-            $block = $this->multichainService->getBlock($hashOrHeight, 4);
+            $block = $this->multichain->getblock($hashOrHeight, 4);
 
             return [
                 'success' => true,
@@ -199,7 +199,7 @@ class BlockchainExplorerController extends Controller
                 throw new Exception('Transaction ID is required');
             }
 
-            $transaction = $this->multichainService->getRawTransaction($txid, true);
+            $transaction = $this->multichain->getrawtransaction($txid, true);
 
             return [
                 'success' => true,
@@ -222,7 +222,7 @@ class BlockchainExplorerController extends Controller
             $count = $request->input('count', 100);
             $start = $request->input('start', -100);
 
-            $items = $this->multichainService->listStreamItems($streamName, true, $count, $start);
+            $items = $this->multichain->liststreamitems($streamName, true, $count, $start);
 
             return [
                 'success' => true,
@@ -242,8 +242,8 @@ class BlockchainExplorerController extends Controller
     public function getAddress(Request $request, string $address): array
     {
         try {
-            $addressInfo = $this->multichainService->validateAddress($address);
-            $addressDetails = $this->multichainService->listAddresses($address, true);
+            $addressInfo = $this->multichain->validateAddress($address);
+            $addressDetails = $this->multichain->listaddresses($address, true);
 
             return [
                 'success' => true,
@@ -274,7 +274,7 @@ class BlockchainExplorerController extends Controller
             // Try as block height
             if (is_numeric($query)) {
                 try {
-                    $block = $this->multichainService->getBlock((int) $query, 1);
+                    $block = $this->multichain->getblock((int) $query, 1);
                     $results['block'] = $block;
                 } catch (Exception $e) {
                     // Not a valid block height
@@ -283,7 +283,7 @@ class BlockchainExplorerController extends Controller
 
             // Try as block hash
             try {
-                $block = $this->multichainService->getBlock($query, 1);
+                $block = $this->multichain->getblock($query, 1);
                 $results['block'] = $block;
             } catch (Exception $e) {
                 // Not a valid block hash
@@ -291,7 +291,7 @@ class BlockchainExplorerController extends Controller
 
             // Try as transaction
             try {
-                $tx = $this->multichainService->getRawTransaction($query, true);
+                $tx = $this->multichain->getrawtransaction($query, true);
                 $results['transaction'] = $tx;
             } catch (Exception $e) {
                 // Not a valid transaction
@@ -299,7 +299,7 @@ class BlockchainExplorerController extends Controller
 
             // Try as address
             try {
-                $address = $this->multichainService->validateAddress($query);
+                $address = $this->multichain->validateAddress($query);
                 if ($address['isvalid']) {
                     $results['address'] = $address;
                 }

@@ -2,16 +2,22 @@
 
 namespace App\Http\Controllers\Procurement\Concerns;
 
-use App\Services\MultichainService;
+use App\Libraries\MultiChain\Manager;
 use App\Services\ProcurementDataService;
-use App\Services\ProcurementPublishingService;
+use App\Services\Publishers\DocumentPublisher;
+use App\Services\Publishers\EventPublisher;
+use App\Services\Publishers\StatusPublisher;
 use Illuminate\Http\RedirectResponse;
 
 trait HasProcurementSupport
 {
-    protected MultichainService $multiChain;
+    protected Manager $multichain;
 
-    protected ProcurementPublishingService $publishingService;
+    protected DocumentPublisher $documentPublisher;
+
+    protected StatusPublisher $statusPublisher;
+
+    protected EventPublisher $eventPublisher;
 
     protected ProcurementDataService $procurementDataService;
 
@@ -19,12 +25,16 @@ trait HasProcurementSupport
      * Initialize procurement support dependencies
      */
     protected function initializeProcurementSupport(
-        MultichainService $multiChain,
-        ProcurementPublishingService $publishingService,
+        Manager $multichain,
+        DocumentPublisher $documentPublisher,
+        StatusPublisher $statusPublisher,
+        EventPublisher $eventPublisher,
         ProcurementDataService $procurementDataService
     ): void {
-        $this->multiChain = $multiChain;
-        $this->publishingService = $publishingService;
+        $this->multiChain = $multichain;
+        $this->documentPublisher = $documentPublisher;
+        $this->statusPublisher = $statusPublisher;
+        $this->eventPublisher = $eventPublisher;
         $this->procurementDataService = $procurementDataService;
     }
 

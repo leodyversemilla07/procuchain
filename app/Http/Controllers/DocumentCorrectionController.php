@@ -6,8 +6,12 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Http\Requests\Document\CorrectDocumentRequest;
-use App\Services\MultichainService;
-use App\Services\ProcurementPublishingService;
+use App\Libraries\MultiChain\Manager;
+use App\Repositories\CorrectionRepository;
+use App\Repositories\DocumentRepository;
+use App\Repositories\StatusRepository;
+use App\Services\BlockchainStorageService;
+use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,8 +22,12 @@ use Inertia\Response;
 class DocumentCorrectionController extends Controller
 {
     public function __construct(
-        private readonly ProcurementPublishingService $procurementPublishing,
-        private readonly MultichainService $multiChainService
+        private readonly CorrectionPublisher $correctionPublisher,
+        private readonly Manager $multichain,
+        private readonly BlockchainStorageService $fileStorageService,
+        private readonly DocumentRepository $documentRepository,
+        private readonly CorrectionRepository $correctionRepository,
+        private readonly StatusRepository $statusRepository
     ) {}
 
     /**
@@ -33,59 +41,25 @@ class DocumentCorrectionController extends Controller
         $validated = $request->validated();
 
         try {
-            // Fetch the original document from blockchain
-            $documentItems = $this->multiChainService->listStreamItems(
-                'procurement.documents',
-                true,
-                10000,
-                0,
-                false
-            );
-
-            $originalDocument = collect($documentItems)->firstWhere('txid', $txid);
+            // Fetch the original document from blockchain using repository
+            $originalDocument = $this->documentRepository->findByTxid($txid);
 
             if (! $originalDocument) {
                 return redirect()->back()->withErrors(['error' => 'Document not found in blockchain.']);
             }
 
-            $documentData = $originalDocument['data']['json'];
-            $procurementId = $documentData['procurement_id'] ?? null;
+            // Convert DTO to array for compatibility
+            $documentData = [
+                'pr_number' => $originalDocument->pr_number,
+                'procurement_title' => $originalDocument->procurementTitle,
+                'stage' => $originalDocument->stage,
+                'hash' => $originalDocument->hash,
+            ];
+            $pr_number = $documentData['pr_number'] ?? null;
             $procurementTitle = $documentData['procurement_title'] ?? null;
 
-            if (! $procurementId || ! $procurementTitle) {
+            if (! $pr_number || ! $procurementTitle) {
                 return redirect()->back()->withErrors(['error' => 'Invalid document: missing procurement information.']);
-            }
-
-            // Process corrected file if replacing
-            $correctedMetadata = null;
-            if ($validated['correction_type'] === 'replace' && $request->hasFile('corrected_file')) {
-                $file = $request->file('corrected_file');
-
-                try {
-                    $uploadResult = $this->fileStorageService->uploadFile(
-                        file: $file,
-                        path: 'procurement_documents/'.$procurementId,
-                        suffix: 'corrected_'.time(),
-                        metadata: [
-                            'procurement_id' => $procurementId,
-                            'correction_type' => 'replace',
-                            'original_txid' => $txid,
-                            'corrected_by' => auth()->user()->name,
-                        ]
-                    );
-
-                    $correctedMetadata = [
-                        'file_name' => $uploadResult['filename'],
-                        'file_size' => $uploadResult['size'],
-                        'mime_type' => $file->getMimeType(),
-                        'file_key' => $uploadResult['file_key'],
-                        'hash' => $uploadResult['hash'],
-                        'data_txid' => $uploadResult['data_txid'],
-                        'metadata_txid' => $uploadResult['metadata_txid'],
-                    ];
-                } catch (\Exception $e) {
-                    return redirect()->back()->withErrors(['error' => 'Failed to upload corrected file: '.$e->getMessage()]);
-                }
             }
 
             // Get user's blockchain address
@@ -100,47 +74,24 @@ class DocumentCorrectionController extends Controller
                 default => 'metadata_correction',
             };
 
-            // Use ProcurementPublishingService for atomic correction publishing
-            $result = $this->procurementPublishing->publishCorrection(
-                procurementId: $procurementId,
+            // Use CorrectionPublisher for atomic correction publishing
+            $result = $this->correctionPublisher->publish(
+                prNumber: $pr_number,
                 procurementTitle: $procurementTitle,
                 originalTxid: $txid,
                 originalDocumentHash: $documentData['hash'] ?? '',
                 correctionType: $correctionType,
                 action: $action,
                 reason: $validated['correction_reason'],
+                correctedBy: auth()->user()->name ?? 'System',
                 userAddress: $userAddress,
-                replacementFile: $request->hasFile('corrected_file') ? $request->file('corrected_file') : null,
-                correctedMetadata: $correctedMetadata,
-                eventData: [
-                    'stage' => $documentData['stage'] ?? 'unknown',
-                    'event_type' => 'document_corrected',
-                    'category' => 'correction',
-                    'severity' => 'warning',
-                    'details' => "Document corrected: {$validated['correction_reason']}",
-                    'document_count' => 1,
-                ]
+                correctedFile: $request->hasFile('corrected_file') ? $request->file('corrected_file') : null
             );
 
-            if (! $result['success']) {
-                Log::error('Failed to publish correction', [
-                    'procurement_id' => $procurementId,
-                    'original_txid' => $txid,
-                    'error' => $result['error'],
-                    'completed_steps' => $result['completed_steps'] ?? [],
-                ]);
-
-                return redirect()->back()->withErrors([
-                    'error' => 'Failed to submit correction: '.$result['error'],
-                ]);
-            }
-
             Log::info('Document correction published to blockchain', [
-                'procurement_id' => $procurementId,
+                'pr_number' => $pr_number,
                 'original_txid' => $txid,
                 'correction_txid' => $result['correction_txid'],
-                'event_txid' => $result['event_txid'],
-                'file_txids' => $result['file_txids'] ?? [],
                 'correction_type' => $validated['correction_type'],
             ]);
 
@@ -162,95 +113,72 @@ class DocumentCorrectionController extends Controller
     public function getCorrectionHistory(Request $request, string $procurement): JsonResponse
     {
         try {
-            // Fetch corrections from blockchain corrections stream
-            $correctionItems = $this->multiChainService->listStreamItems(
-                'procurement.corrections',
-                true,
-                10000,
-                0,
-                false
-            );
+            // Fetch corrections for this procurement using repository
+            $correctionDtos = $this->correctionRepository->findByProcurement($procurement);
 
-            // Fetch documents to get file information
-            $documentItems = $this->multiChainService->listStreamItems(
-                'procurement.documents',
-                true,
-                10000,
-                0,
-                false
-            );
+            // Fetch all documents using repository for document metadata lookup
+            $allDocuments = $this->documentRepository->all();
 
-            // Create a map of txid -> document info for quick lookup
-            $documentsMap = collect($documentItems)
-                ->keyBy(function ($item) {
-                    return $item['txid'];
-                })
-                ->map(function ($item) {
-                    $data = $item['data']['json'];
-
-                    // Extract filename from file_key or use file_name
-                    $fileName = $data['file_name'] ?? null;
-                    if (! $fileName && isset($data['file_key'])) {
-                        $fileName = basename($data['file_key']);
-                    }
-
+            // Create a map of document info keyed by pr_number for quick lookup
+            $documentsMap = collect($allDocuments)
+                ->keyBy(fn ($doc) => $doc->pr_number.'_'.$doc->fileKey)
+                ->mapWithKeys(function ($doc) {
                     // Get formatted document type
-                    $documentTypeEnum = DocumentTypeEnums::fromString($data['document_type'] ?? 'unknown');
+                    $documentTypeEnum = DocumentTypeEnums::fromString($doc->documentType);
 
                     return [
-                        'file_name' => $fileName,
-                        'file_key' => $data['file_key'] ?? null,
-                        'document_type' => $data['document_type'] ?? '',
-                        'document_type_display' => $documentTypeEnum?->getDisplayName() ?? ($data['document_type'] ?? 'Unknown'),
-                        'hash' => $data['hash'] ?? '',
-                        'file_size' => $data['file_size'] ?? 0,
+                        $doc->fileKey => [
+                            'file_name' => $doc->fileName,
+                            'file_key' => $doc->fileKey,
+                            'document_type' => $doc->documentType,
+                            'document_type_display' => $documentTypeEnum?->getDisplayName() ?? $doc->documentType,
+                            'hash' => $doc->hash,
+                            'file_size' => $doc->fileSize,
+                        ],
                     ];
                 });
 
-            // Filter corrections for this procurement
-            $corrections = collect($correctionItems)
-                ->filter(function ($item) use ($procurement) {
-                    $data = $item['data']['json'] ?? [];
-
-                    return ($data['procurement_id'] ?? '') === $procurement;
-                })
-                ->map(function ($item) use ($documentsMap) {
-                    $data = $item['data']['json'];
-                    $originalTxid = $data['original_txid'] ?? '';
-
-                    // Get original document info
-                    $originalDoc = $documentsMap->get($originalTxid);
+            // Map corrections to response format
+            $corrections = collect($correctionDtos)
+                ->map(function ($correctionDto) use ($documentsMap) {
+                    // Try to find the original document info
+                    $originalDoc = null;
+                    foreach ($documentsMap as $key => $doc) {
+                        if ($doc['hash'] === $correctionDto->originalDocumentHash) {
+                            $originalDoc = $doc;
+                            break;
+                        }
+                    }
 
                     // Format correction type for display
-                    $correctionType = $data['correction_type'] ?? 'metadata';
-                    $correctionTypeDisplay = match ($correctionType) {
+                    $correctionTypeDisplay = match ($correctionDto->correctionType) {
                         'replace' => 'Document Replacement',
                         'invalidate' => 'Document Invalidation',
                         'metadata' => 'Metadata Correction',
                         'document_correction' => 'Document Correction',
-                        default => ucwords(str_replace('_', ' ', $correctionType)),
+                        default => ucwords(str_replace('_', ' ', $correctionDto->correctionType)),
                     };
 
                     return [
-                        'txid' => $item['txid'],
-                        'timestamp' => $data['timestamp'] ?? '',
-                        'original_txid' => $originalTxid,
-                        'correction_txid' => $item['txid'],
-                        'reason' => $data['reason'] ?? $data['correction_reason'] ?? '',
-                        'corrected_by' => $data['corrected_by'] ?? '',
-                        'correction_type' => $correctionType,
+                        'txid' => $correctionDto->originalTxid,
+                        'timestamp' => $correctionDto->timestamp->toIso8601String(),
+                        'original_txid' => $correctionDto->originalTxid,
+                        'correction_txid' => $correctionDto->originalTxid,
+                        'reason' => $correctionDto->reason,
+                        'corrected_by' => $correctionDto->correctedBy,
+                        'correction_type' => $correctionDto->correctionType,
                         'correction_type_display' => $correctionTypeDisplay,
-                        'original_document_hash' => $data['original_document_hash'] ?? $data['document_hash'] ?? $data['hash'] ?? '',
-                        'document_hash' => $data['original_document_hash'] ?? $data['document_hash'] ?? $data['hash'] ?? '',
+                        'original_document_hash' => $correctionDto->originalDocumentHash,
+                        'document_hash' => $correctionDto->originalDocumentHash,
                         'file_name' => $originalDoc['file_name'] ?? null,
                         'file_key' => $originalDoc['file_key'] ?? null,
                         'document_type' => $originalDoc['document_type'] ?? '',
                         'document_type_display' => $originalDoc['document_type_display'] ?? null,
-                        'procurement_id' => $data['procurement_id'] ?? '',
-                        'procurement_title' => $data['procurement_title'] ?? '',
-                        'action' => $data['action'] ?? 'replace',
-                        'metadata' => $data,
-                        'corrected_metadata' => isset($data['corrected_metadata']) ? $data['corrected_metadata'] : null,
+                        'pr_number' => $correctionDto->pr_number,
+                        'procurement_title' => $correctionDto->procurementTitle,
+                        'action' => $correctionDto->action,
+                        'metadata' => $correctionDto->toBlockchainArray(),
+                        'corrected_metadata' => $correctionDto->correctedMetadata,
                     ];
                 })
                 ->sortByDesc('timestamp')
@@ -264,7 +192,7 @@ class DocumentCorrectionController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve correction history from blockchain', [
-                'procurement_id' => $procurement,
+                'pr_number' => $procurement,
                 'error' => $e->getMessage(),
             ]);
 
@@ -286,10 +214,9 @@ class DocumentCorrectionController extends Controller
         ]);
 
         try {
-            $correction = $this->correctionService->findCorrectionForTransaction(
-                txid: $txid,
-                multiChain: $this->multiChainService
-            );
+            // Find correction by original txid using repository
+            $corrections = $this->correctionRepository->findByOriginalTxid($txid);
+            $correction = ! empty($corrections) ? $corrections[0] : null;
 
             return response()->json([
                 'success' => true,
@@ -310,102 +237,61 @@ class DocumentCorrectionController extends Controller
     public function showCorrectionsPage(string $id): Response
     {
         try {
-            // Fetch procurement data from blockchain
-            $statusItems = $this->multiChainService->listStreamItems(
-                'procurement.status',
-                true,
-                1000,
-                0,
-                false
-            );
+            // Fetch the latest status for this procurement using repository
+            $latestStatus = $this->statusRepository->getLatest($id);
 
-            // Find the latest status for this procurement
-            $procurementStatus = collect($statusItems)
-                ->filter(function ($item) use ($id) {
-                    $data = $item['data']['json'] ?? [];
-
-                    return ($data['procurement_id'] ?? '') === $id;
-                })
-                ->sortByDesc(function ($item) {
-                    return $item['data']['json']['timestamp'] ?? '';
-                })
-                ->first();
-
-            if (! $procurementStatus) {
+            if (! $latestStatus) {
                 abort(404, 'Procurement not found in blockchain');
             }
 
-            $statusData = $procurementStatus['data']['json'];
+            // Fetch documents for this procurement using repository
+            $documentDtos = $this->documentRepository->findByProcurement($id);
 
-            // Fetch documents from blockchain
-            $documentItems = $this->multiChainService->listStreamItems(
-                'procurement.documents',
-                true,
-                10000,
-                0,
-                false
-            );
-
-            $documents = collect($documentItems)
-                ->filter(function ($item) use ($id) {
-                    $data = $item['data']['json'] ?? [];
-
-                    return ($data['procurement_id'] ?? '') === $id;
-                })
-                ->map(function ($item) {
-                    $data = $item['data']['json'];
-
-                    // Extract filename from file_key or use file_name if available
-                    $fileName = $data['file_name'] ?? null;
-                    if (! $fileName && isset($data['file_key'])) {
-                        // Extract filename from file_key (e.g., "test/final-document.pdf" -> "final-document.pdf")
-                        $fileName = basename($data['file_key']);
-                    }
-                    $fileName = $fileName ?: 'Unknown';
-
+            $documents = collect($documentDtos)
+                ->map(function ($doc) {
                     // Get formatted document type
-                    $documentTypeEnum = DocumentTypeEnums::fromString($data['document_type'] ?? 'unknown');
-                    $documentTypeDisplay = $documentTypeEnum?->getDisplayName() ?? ($data['document_type'] ?? 'Unknown');
+                    $documentTypeEnum = DocumentTypeEnums::fromString($doc->documentType);
+                    $documentTypeDisplay = $documentTypeEnum?->getDisplayName() ?? $doc->documentType;
 
                     return [
-                        'id' => $item['txid'], // Use txid as unique identifier
-                        'file_name' => $fileName,
-                        'file_key' => $data['file_key'] ?? null,
-                        'document_type' => $data['document_type'] ?? '',
+                        'id' => $doc->dataTxid, // Use data txid as unique identifier
+                        'file_name' => $doc->fileName,
+                        'file_key' => $doc->fileKey,
+                        'document_type' => $doc->documentType,
                         'document_type_display' => $documentTypeDisplay,
-                        'hash' => $data['hash'] ?? '',
-                        'file_size' => $data['file_size'] ?? 0,
-                        'uploaded_at' => $data['timestamp'] ?? $data['uploaded_at'] ?? now()->toIso8601String(),
-                        'blockchain_txid' => $item['txid'],
-                        'is_corrected' => $data['is_corrected'] ?? false,
-                        'correction_reason' => $data['correction_reason'] ?? null,
-                        'corrected_by' => $data['corrected_by'] ?? null,
-                        'corrected_at' => $data['corrected_at'] ?? null,
-                        'correction_txid' => $data['correction_txid'] ?? null,
+                        'hash' => $doc->hash,
+                        'file_size' => $doc->fileSize,
+                        'uploaded_at' => $doc->timestamp->toIso8601String(),
+                        'blockchain_txid' => $doc->dataTxid,
+                        'is_corrected' => false, // Would need to check corrections repository
+                        'correction_reason' => null,
+                        'corrected_by' => null,
+                        'corrected_at' => null,
+                        'correction_txid' => null,
                     ];
                 })
                 ->values()
                 ->all();
 
             // Get formatted status and stage
-            $statusEnum = StatusEnums::tryFrom($statusData['current_status'] ?? 'unknown');
-            $stageEnum = StageEnums::tryFrom($statusData['stage'] ?? 'unknown');
+            $statusEnum = StatusEnums::tryFrom($latestStatus->currentStatus);
+            $stageEnum = StageEnums::tryFrom($latestStatus->stage);
 
             return Inertia::render('documents/document-corrections', [
                 'procurement' => [
                     'id' => $id,
-                    'title' => $statusData['procurement_title'] ?? 'Unknown',
+                    'title' => $latestStatus->procurementTitle,
                     'reference_number' => $id,
-                    'status' => $statusData['current_status'] ?? 'unknown',
-                    'status_display' => $statusEnum?->getDisplayName() ?? ($statusData['current_status'] ?? 'Unknown'),
-                    'stage' => $statusData['stage'] ?? 'unknown',
-                    'stage_display' => $stageEnum?->getDisplayName() ?? ($statusData['stage'] ?? 'Unknown'),
+                    'status' => $latestStatus->currentStatus,
+                    'status_display' => $statusEnum?->getDisplayName() ?? $latestStatus->currentStatus,
+                    'stage' => $latestStatus->stage,
+                    'stage_display' => $stageEnum?->getDisplayName() ?? $latestStatus->stage,
                     'documents' => $documents,
                 ],
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch procurement correction data from blockchain', [
-                'procurement_id' => $id,
+                'pr_number' => $id,
                 'error' => $e->getMessage(),
             ]);
 

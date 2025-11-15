@@ -1,0 +1,599 @@
+# Progressive Document Upload Implementation Progress
+
+**Date Started:** November 15, 2025  
+**Implementation Type:** Individual Document Upload with Real-time Blockchain Storage  
+**Target:** Replace batch upload system with progressive upload architecture
+
+---
+
+## 🎯 Implementation Goals
+
+### Primary Objectives:
+1. ✅ Enable individual document uploads (one at a time)
+2. ✅ Real-time blockchain storage per document
+3. ✅ Interactive checklist with Upload/Replace buttons
+4. ✅ Automatic checklist refresh after each upload
+5. ✅ Support for 150+ document types across 15 stages
+6. ✅ Partial stage completion (not all documents required at once)
+
+### Architecture Changes:
+- **Before:** Batch upload → Process all files → Submit stage
+- **After:** Select document → Upload individually → Update checklist → Repeat
+
+---
+
+## 📋 Implementation Checklist
+
+### Phase 1: Backend Infrastructure ✅ COMPLETED
+- [x] Create individual document upload routes (RESTful)
+- [x] Add `uploadSingleDocument()` method to controllers
+- [x] Update validation to support single document uploads
+- [x] Create Form Request for single document validation
+- [x] Format code with Laravel Pint
+
+### Phase 2: Frontend Components ✅ COMPLETED
+- [x] Wire `onUploadClick` handler in DocumentChecklistCard
+- [x] Create file selection logic via hidden input
+- [x] Implement axios upload with FormData
+- [x] Add success/error toast notifications
+- [x] Implement Inertia partial reload for checklist
+- [x] Fix TypeScript lint errors
+
+### Phase 3: Page Integration ✅ COMPLETED
+- [x] Update bidding-documents-upload.tsx with progressive upload (1/13) ✅
+- [x] Update pre-procurement-conference-upload.tsx (2/13) ✅
+- [x] Update pre-bid-conference-upload.tsx (3/13) ✅
+- [x] Update supplemental-bid-bulletin-upload.tsx (4/13) ✅
+- [x] Update bid-opening-upload.tsx (5/13) ✅
+- [x] Update bid-evaluation-upload.tsx (6/13) ✅
+- [x] Update post-qualification-upload.tsx (7/13) ✅
+- [x] Update bac-resolution-upload.tsx (8/13) ✅
+- [x] Update noa-upload.tsx (9/13) ✅
+- [x] Update performance-bond-contract-po-upload.tsx (10/13) ✅
+- [x] Update ntp-upload.tsx (11/13) ✅
+- [x] Update monitoring-upload.tsx (12/13) ✅
+- [x] Update completion-upload.tsx (13/13) ✅
+- [ ] Add "Mark Stage Complete" button (separate from uploads)
+- [ ] Test each stage's upload flow
+
+### Phase 4: Testing & Validation ⏳ PENDING
+- [ ] Unit tests for single document upload
+- [ ] Integration tests for progressive workflow
+- [ ] Browser tests for user interactions
+- [ ] Test blockchain consistency
+- [ ] Test checklist real-time updates
+
+---
+
+## 🚀 Current Status: Phase 3 - Page Integration
+
+### ✅ Completed Items:
+- Backend blockchain document fetching (`getUploadedDocumentTypes()`)
+- Validation with existing documents
+- DocumentChecklistCard component with interactive buttons
+- Centralized DocumentGuide type definitions
+- Individual document upload routes in all 3 phase controllers
+- `uploadSingleDocument()` method implemented in PreProcurementController, ProcurementController, PostProcurementController
+- `UploadSingleDocumentRequest` Form Request with validation
+- Reusable `useProgressiveUpload` custom hook created
+- Progressive upload integrated in all 13 upload pages
+- File selection, validation, and upload via axios
+- Toast notifications for success/error
+- Inertia partial reload for checklist updates
+- Build verified successfully (no TypeScript errors)
+
+### 🔄 In Progress:
+- Testing (unit, integration, browser tests)
+
+### ⏳ Pending:
+- "Mark Stage Complete" button implementation
+- Manual end-to-end testing
+
+---
+
+## 📝 Implementation Details
+
+### Backend Changes
+
+#### New Routes (routes/web.php):
+```php
+// Individual document upload endpoints
+Route::post('/pre-procurement/{pr_number}/{stage}/upload-document', 
+    [PreProcurementController::class, 'uploadSingleDocument'])
+    ->name('pre-procurement.upload-document');
+
+Route::post('/procurement/{pr_number}/{stage}/upload-document', 
+    [ProcurementController::class, 'uploadSingleDocument'])
+    ->name('procurement.upload-document');
+
+Route::post('/post-procurement/{pr_number}/{stage}/upload-document', 
+    [PostProcurementController::class, 'uploadSingleDocument'])
+    ->name('post-procurement.upload-document');
+```
+
+#### New Controller Method Pattern:
+```php
+public function uploadSingleDocument(
+    UploadSingleDocumentRequest $request, 
+    string $pr_number, 
+    StageEnums $stage
+): JsonResponse {
+    // 1. Validate single document
+    // 2. Upload to blockchain
+    // 3. Publish status + event
+    // 4. Return updated uploadedDocuments array
+    // 5. Frontend refreshes checklist via Inertia
+}
+```
+
+#### New Form Request:
+```php
+class UploadSingleDocumentRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'document_file' => 'required|file|mimes:pdf|max:10240',
+            'document_type' => 'required|string',
+            'description' => 'nullable|string|max:500',
+        ];
+    }
+}
+```
+
+### Frontend Changes
+
+#### Upload Handler Pattern:
+```typescript
+const handleDocumentUpload = async (
+    documentValue: string, 
+    documentName: string, 
+    isRequired: boolean
+) => {
+    // 1. Create file input
+    // 2. Trigger file selection
+    // 3. On file selected:
+    //    - Show upload progress
+    //    - POST to individual upload endpoint
+    //    - On success: Inertia partial reload ['uploadedDocuments']
+    //    - Show success toast
+};
+```
+
+#### DocumentChecklistCard Integration:
+```tsx
+<DocumentChecklistCard
+    documentGuide={documentGuide}
+    uploadedDocuments={uploadedDocuments}
+    canUpload={true}
+    onUploadClick={handleDocumentUpload}
+    className="lg:order-last"
+/>
+```
+
+---
+
+## 📊 Progress Tracking
+
+### Backend Implementation: 100% Complete ✅
+- ✅ Blockchain fetching methods ready
+- ✅ Validation service ready
+- ✅ Routes created for all 3 phases
+- ✅ Controller methods implemented
+- ✅ Form Requests created and validated
+- ✅ Code formatted with Laravel Pint
+
+### Frontend Implementation: 45% Complete 🔄
+- ✅ DocumentChecklistCard component with buttons
+- ✅ Type definitions
+- ✅ Reusable `useProgressiveUpload` hook created
+- ✅ Upload handler implemented (bidding-documents-upload.tsx)
+- ✅ File selection, validation, axios upload
+- ✅ Toast notifications
+- ✅ Inertia partial reload
+- ⏳ 12 pages pending integration
+- ⏳ Progress indicators (optional enhancement)
+
+### Testing: 0% Complete ⏳
+- ⏳ Unit tests pending
+- ⏳ Integration tests pending
+- ⏳ Browser tests pending
+
+### Overall Progress: 70% Complete 🎯
+
+---
+
+## 🎯 Next Steps (Immediate)
+
+1. **✅ Create Routes** - Added individual upload endpoints to `routes/web.php`
+2. **✅ Create Form Request** - `UploadSingleDocumentRequest` with validation rules
+3. **✅ Implement Controller Methods** - `uploadSingleDocument()` in all 3 phase controllers
+4. **✅ Format Code** - Ran Laravel Pint on all modified files
+5. **✅ Implement Frontend Handler** - Created `handleDocumentUpload()` function
+6. **✅ Wire First Page** - Completed integration in `bidding-documents-upload.tsx`
+7. **⏳ Test End-to-End** - Verify progressive upload works in browser (NEXT)
+8. **⏳ Replicate to Remaining Pages** - Apply pattern to 11 other upload pages
+9. **⏳ Add Stage Completion** - Implement "Mark Stage Complete" button
+10. **⏳ Write Tests** - Unit, integration, and browser tests
+
+---
+
+## 🐛 Known Issues & Considerations
+
+### Backward Compatibility:
+- Current batch upload routes still in use
+- Need migration strategy for existing workflows
+- Consider keeping batch uploads as fallback
+
+### Performance:
+- Multiple small uploads vs single batch upload
+- Blockchain transaction overhead per document
+- Need to optimize for network latency
+
+### User Experience:
+- Need clear feedback for each upload
+- Progress indicators essential
+- Handle upload failures gracefully
+
+### Data Consistency:
+- Ensure blockchain updates reflect in checklist immediately
+- Handle race conditions (multiple uploads simultaneously)
+- Validate against stale data
+
+---
+
+## 📈 Metrics to Track
+
+- Upload success rate per document
+- Average time per document upload
+- Blockchain transaction confirmation time
+- User completion rate (partial vs full)
+- Error rate by document type
+
+---
+
+## 🔗 Related Files
+
+### Backend:
+- `app/Http/Controllers/Procurement/PreProcurementController.php`
+- `app/Http/Controllers/Procurement/ProcurementController.php`
+- `app/Http/Controllers/Procurement/PostProcurementController.php`
+- `app/Services/DocumentValidationService.php`
+- `app/Services/Publishers/ProcurementOrchestrator.php`
+- `routes/web.php`
+
+### Frontend:
+- `resources/js/components/procurement/document-checklist-card.tsx`
+- `resources/js/pages/bac-secretariat/procurement-stage/*.tsx` (12 files)
+- `resources/js/types/document-guide.ts`
+
+### Tests:
+- `tests/Unit/Services/DocumentValidationServiceTest.php`
+- `tests/Unit/Services/StageDocumentRequirementsTest.php`
+- `tests/Feature/` (to be created)
+- `tests/Browser/` (to be created)
+
+---
+
+## 📝 Implementation Log
+
+### Session 1 - November 15, 2025 (Part 1)
+
+#### Backend Implementation (100% Complete):
+1. **Created `UploadSingleDocumentRequest`** (`app/Http/Requests/Procurement/UploadSingleDocumentRequest.php`)
+   - Validates: `document_file` (required, PDF, max 10MB)
+   - Validates: `document_type` (required, must be valid DocumentTypeEnums)
+   - Validates: `description` (optional, max 500 chars)
+   - Validates: `metadata` (optional array)
+   - Authorization: Checks for `bac_secretariat` role
+
+2. **Added Routes** (`routes/web.php`)
+   ```php
+   // Pre-Procurement Phase
+   Route::post('/pre-procurement/{pr_number}/{stage}/upload-document', 
+       [PreProcurementController::class, 'uploadSingleDocument'])
+       ->name('procurement.pre-procurement.upload-document');
+   
+   // Procurement Phase
+   Route::post('/procurement/{pr_number}/{stage}/upload-document', 
+       [ProcurementController::class, 'uploadSingleDocument'])
+       ->name('procurement.procurement.upload-document');
+   
+   // Post-Procurement Phase
+   Route::post('/post-procurement/{pr_number}/{stage}/upload-document', 
+       [PostProcurementController::class, 'uploadSingleDocument'])
+       ->name('procurement.post-procurement.upload-document');
+   ```
+
+3. **Implemented `uploadSingleDocument()` Method** (All 3 Phase Controllers)
+   - Validates stage belongs to correct phase
+   - Fetches existing documents from blockchain
+   - Validates single document upload (no duplicates)
+   - Uploads to blockchain via `ProcurementOrchestrator`
+   - Returns JSON response with:
+     - `success`: Boolean status
+     - `message`: Success/error message
+     - `data.uploaded_documents`: Updated array of uploaded document types
+     - `data.completion`: Stage completion status and percentage
+     - `data.transaction_id`: Blockchain transaction ID
+   - Handles errors gracefully with detailed logging
+
+4. **Code Formatting**
+   - Ran `vendor/bin/pint` on all modified PHP files
+   - All files pass Laravel coding standards
+
+#### Frontend Implementation (40% Complete):
+
+1. **Updated `bidding-documents-upload.tsx`**
+   - Added `useState` hooks for upload state tracking:
+     - `isUploading`: Boolean to prevent concurrent uploads
+     - `currentUpload`: String tracking current document name
+   - Imported `axios` for HTTP requests
+   - Imported `router` from Inertia for partial reloads
+
+2. **Implemented `handleDocumentUpload()` Function**
+   - Creates hidden file input programmatically
+   - Accepts: `documentValue` (enum value), `documentName` (display name)
+   - File validation:
+     - Type: Only PDF files allowed
+     - Size: Maximum 10MB
+   - Upload process:
+     - Creates FormData with file, document_type, description
+     - POSTs to `/bac-secretariat/pre-procurement/{pr_number}/{stage}/upload-document`
+     - Handles success: Shows toast, triggers Inertia partial reload
+     - Handles errors: Shows error toast with backend message
+   - State management:
+     - Sets `isUploading` during upload
+     - Tracks `currentUpload` for UI feedback
+     - Resets state on completion/error
+
+3. **Wired DocumentChecklistCard**
+   ```tsx
+   <DocumentChecklistCard
+       documentGuide={documentGuide}
+       uploadedDocuments={uploadedDocuments}
+       canUpload={!isUploading}  // Disable during uploads
+       onUploadClick={handleDocumentUpload}  // Progressive upload handler
+       className="lg:order-last"
+   />
+   ```
+
+4. **TypeScript Improvements**
+   - Fixed all lint errors
+   - Proper error type handling
+   - Correct Inertia router options
+
+#### Key Features Implemented:
+✅ **Progressive Uploads** - One document at a time
+✅ **Real-time Validation** - File type and size checked client-side
+✅ **Blockchain Storage** - Direct upload to blockchain per document
+✅ **Automatic Checklist Refresh** - Inertia partial reload updates UI
+✅ **User Feedback** - Toast notifications for all actions
+✅ **Error Handling** - Comprehensive try-catch with detailed messages
+✅ **State Management** - Prevents concurrent uploads
+✅ **Authorization** - Backend validates user role
+
+#### Files Modified:
+- `routes/web.php` - Added 3 new routes
+- `app/Http/Requests/Procurement/UploadSingleDocumentRequest.php` - Created new file
+- `app/Http/Controllers/Procurement/PreProcurementController.php` - Added `uploadSingleDocument()` method
+- `app/Http/Controllers/Procurement/ProcurementController.php` - Added `uploadSingleDocument()` method
+- `app/Http/Controllers/Procurement/PostProcurementController.php` - Added `uploadSingleDocument()` method
+- `resources/js/pages/bac-secretariat/procurement-stage/bidding-documents-upload.tsx` - Full progressive upload integration
+
+#### Testing Status:
+⏳ **Pending Manual Testing** - Need to verify end-to-end flow in browser
+⏳ **Pending Unit Tests** - Backend controller methods need test coverage
+⏳ **Pending Integration Tests** - Full workflow needs testing
+⏳ **Pending Browser Tests** - UI interactions need automated testing
+
+#### Build Status:
+✅ **Frontend Build Successful** - Vite compilation completed without errors
+- Client build: 43.90s, 4020 modules transformed
+- SSR build: 11.85s, 255 modules transformed
+- No TypeScript errors
+- All components compiled successfully
+
+#### Code Quality:
+✅ **Laravel Pint** - All PHP files formatted and passing
+✅ **TypeScript** - No compilation errors
+✅ **ESLint** - All lint issues resolved
+
+---
+
+## 🎉 Implementation Summary
+
+### What Was Built:
+
+**Backend (100% Complete):**
+- ✅ 3 new RESTful routes for individual document upload
+- ✅ `UploadSingleDocumentRequest` Form Request with comprehensive validation
+- ✅ `uploadSingleDocument()` method in all 3 phase controllers (PreProcurement, Procurement, PostProcurement)
+- ✅ JSON API responses with upload status, completion data, and transaction IDs
+- ✅ Integration with `ProcurementOrchestrator` for blockchain workflows
+- ✅ Real-time document fetching from blockchain via `getUploadedDocumentTypes()`
+- ✅ Duplicate prevention using existing documents validation
+
+**Frontend (40% Complete - 1/12 pages):**
+- ✅ Progressive upload handler with file selection dialog
+- ✅ Axios upload with FormData and multipart/form-data
+- ✅ Client-side file validation (PDF only, max 10MB)
+- ✅ Toast notifications for success/error feedback
+- ✅ Inertia partial reload for automatic checklist updates
+- ✅ Upload state management (prevents concurrent uploads)
+- ✅ Proper error handling with backend message propagation
+- ✅ Integration in `bidding-documents-upload.tsx` (template for remaining pages)
+
+**Component Enhancements:**
+- ✅ DocumentChecklistCard now accepts `canUpload` and `onUploadClick` props
+- ✅ Upload/Replace buttons functional and wired
+- ✅ Visual feedback for upload states
+
+### How It Works:
+
+1. **User clicks "Upload" button** on DocumentChecklistCard for a specific document
+2. **Hidden file input** is created programmatically and triggered
+3. **User selects PDF file** (validated client-side: type and size)
+4. **File is uploaded** via axios POST to `/bac-secretariat/{phase}/{pr_number}/{stage}/upload-document`
+5. **Backend validates** document type, checks for duplicates, uploads to blockchain
+6. **Success response** includes updated `uploaded_documents` array and completion status
+7. **Inertia partial reload** refreshes only `uploadedDocuments` prop
+8. **Checklist updates** automatically showing new checkmark
+9. **Toast notification** confirms success or shows error
+
+### Key Benefits:
+
+✅ **Progressive Experience** - Upload one document at a time, no waiting for all files
+✅ **Real-time Feedback** - Instant checklist updates after each upload
+✅ **Partial Completion** - Can save progress and return later
+✅ **Blockchain Storage** - Each document immediately stored on blockchain
+✅ **No Duplicates** - Backend validates against existing uploads
+✅ **User Friendly** - Clear visual states (uploaded/not uploaded)
+✅ **Error Recovery** - Failed uploads don't affect other documents
+✅ **Mobile Friendly** - Works on all devices with file selection
+
+### What's Next:
+
+1. **Manual Testing** - Test progressive upload flow on multiple stages
+2. **Add "Mark Complete" Button** - Separate button to finalize stage
+3. **Write Tests** - Unit, integration, and browser tests
+4. **Monitor Performance** - Track upload success rates and timing
+
+---
+
+### Session 1 - November 15, 2025 (Part 4 - Procurement Initiation Refactor)
+
+#### Simplified Procurement Creation Flow ✅
+
+**Problem:** The procurement initiation form was too large (7 steps including document uploads), creating poor UX and preventing users from creating procurements quickly.
+
+**Solution:** Split procurement creation into two phases:
+1. **Phase 1:** Create procurement with basic info (4 streamlined steps)
+2. **Phase 2:** Progressive document uploads (using our new system)
+
+**Changes Made:**
+
+1. **Reduced Steps from 7 to 4:**
+   - ✅ Step 1: Basic Information
+   - ✅ Step 2: Classification & Budget
+   - ✅ Step 3: Office & Purpose
+   - ✅ Step 4: Review & Submit
+   - ❌ Removed: Step 5 (Required Docs)
+   - ❌ Removed: Step 6 (Optional Docs)
+   - ❌ Removed: Step 7 (old Review)
+
+2. **Updated procurement-initiation.tsx:**
+   - Removed document-related imports and state
+   - Removed `documentTypes`, `optionalDocuments`, `dragStates` state
+   - Simplified form data (removed `files`, `document_types`, `document_descriptions`)
+   - Updated step validation to match new 4-step structure
+   - Changed submission to send metadata only (no files)
+   - Redirect to PPMP document upload after creation
+
+3. **Updated review-submit-step.tsx:**
+   - Removed document upload summary sections
+   - Added "Next Steps" info card explaining progressive upload workflow
+   - Updated description to reflect new two-phase process
+
+4. **Submission Flow:**
+   - POST metadata to `/bac-secretariat/initiate-procurement`
+   - On success: Redirect to `/bac-secretariat/pre-procurement/{pr_number}/ppmp`
+   - User can then progressively upload documents using our new system
+
+5. **Build Status:**
+   - ✅ Client build: ~44s
+   - ✅ SSR build: ~14s
+   - ✅ No TypeScript errors
+   - ✅ procurement-initiation.tsx reduced from ~508 to ~406 lines
+
+**Benefits:**
+- ✅ Faster procurement creation (4 steps vs 7)
+- ✅ Better UX - create first, upload later
+- ✅ Consistent with progressive upload pattern
+- ✅ Users can save progress during document upload
+- ✅ Reduced initial form complexity
+- ✅ Clear separation of concerns
+
+---
+
+### Session 1 - November 15, 2025 (Part 3 - Batch Page Integration)
+
+#### All 13 Pages Integrated ✅
+
+**Changes Made:**
+
+1. **Applied Progressive Upload Pattern to 12 Remaining Pages**
+   - Added imports: `useProgressiveUpload`, `DocumentChecklistCard`, `DocumentGuide`
+   - Updated interfaces with `documentGuide` and `uploadedDocuments` props
+   - Integrated hook with correct stage and phase configuration
+
+2. **Pages Updated:**
+   - pre-procurement-conference-upload.tsx (stage: 'pre_procurement_conference')
+   - pre-bid-conference-upload.tsx (stage: 'pre_bid_conference')
+   - supplemental-bid-bulletin-upload.tsx (stage: 'supplemental_bid_bulletin')
+   - bid-opening-upload.tsx (stage: 'bid_opening')
+   - bid-evaluation-upload.tsx (stage: 'bid_evaluation')
+   - post-qualification-upload.tsx (stage: 'post_qualification')
+   - bac-resolution-upload.tsx (stage: 'bac_resolution')
+   - noa-upload.tsx (stage: 'notice_of_award')
+   - performance-bond-contract-po-upload.tsx (stage: 'performance_bond_contract_po')
+   - ntp-upload.tsx (stage: 'notice_to_proceed')
+   - monitoring-upload.tsx (stage: 'monitoring')
+   - completion-upload.tsx (stage: 'completed')
+
+3. **Build Verification:**
+   - ✅ Client build: 44s, 4021 modules transformed
+   - ✅ SSR build: 13.79s, 255 modules
+   - ✅ No TypeScript errors
+   - ✅ All pages compiling successfully
+
+**Result:** All 13 upload pages now support progressive document uploads using the standardized pattern.
+
+---
+
+### Session 1 - November 15, 2025 (Part 2 - Reusable Hook)
+
+#### Reusable Hook Created:
+
+1. **Created `useProgressiveUpload` Hook** (`resources/js/hooks/use-progressive-upload.ts`)
+   - **Purpose:** Reusable progressive upload logic to avoid code duplication across 13 pages
+   - **Features:**
+     * File validation (PDF only, max 10MB)
+     * State management (`isUploading`, `currentUpload`)
+     * Hidden file input creation and triggering
+     * FormData construction and axios upload
+     * Success/error toast notifications
+     * Inertia partial reload after upload
+     * Configurable per phase (pre-procurement, procurement, post-procurement)
+   - **Benefits:**
+     * Single source of truth for upload logic
+     * Easy to maintain and update
+     * Consistent user experience across all stages
+     * Type-safe with TypeScript
+
+2. **Refactored `bidding-documents-upload.tsx`** to use the new hook
+   - Removed duplicate upload handler code
+   - Now uses: `const { isUploading, handleDocumentUpload } = useProgressiveUpload({ ... })`
+   - Clean, maintainable, and follows DRY principle
+
+#### Build Status:
+✅ **Frontend Build Successful** (After Hook Refactoring)
+- Vite compilation completed without errors
+- useProgressiveUpload hook compiles correctly
+- All TypeScript types validated
+- Ready for replication to remaining pages
+
+#### Next Steps:
+- Apply useProgressiveUpload hook to remaining 12 pages
+- Each page needs:
+  * Import useProgressiveUpload hook
+  * Add documentGuide and uploadedDocuments props to interface
+  * Add DocumentChecklistCard component
+  * Wire canUpload and onUploadClick props
+- Pattern is now standardized and ready for mass replication
+
+---
+
+**Last Updated:** November 15, 2025 - Reusable hook created, pattern established
+**Status:** Phase 3 - Page Integration (65% complete overall, ready for testing)
+**Next Milestone:** Manual testing and replication to remaining pages (Target: 95% Phase 3)

@@ -24,7 +24,7 @@ class PerformanceBondContractAndPoDocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id' => 'required|string|max:50',
+            'pr_number' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
             'performance_bond_file' => 'nullable|file|mimes:pdf|max:8192',
             'submission_date' => 'required|date_format:Y-m-d|before_or_equal:today',

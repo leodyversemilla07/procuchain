@@ -23,7 +23,7 @@ describe('BlockchainCorrectionService', function () {
             $procurement = Procurement::factory()->create();
 
             $document = ProcurementDocument::create([
-                'procurement_id' => $procurement->id,
+                'pr_number' => $procurement->id,
                 'document_type' => 'test_document',
                 'file_key' => 'test/path.pdf',
                 'file_name' => 'test.pdf',
@@ -52,7 +52,7 @@ describe('BlockchainCorrectionService', function () {
             // Verify job was dispatched
             $document->refresh();
             Queue::assertPushed(PublishDocumentCorrectionJob::class, function ($job) use ($document) {
-                return $job->procurementId === $document->procurement->id
+                return $job->pr_number === $document->procurement->id
                     && $job->procurementTitle === $document->procurement->title
                     && $job->originalTxid === 'original-txid-123'
                     && $job->originalDocumentHash === 'abc123hash'
@@ -66,7 +66,7 @@ describe('BlockchainCorrectionService', function () {
             $procurement = Procurement::factory()->create();
 
             $document = ProcurementDocument::create([
-                'procurement_id' => $procurement->id,
+                'pr_number' => $procurement->id,
                 'document_type' => 'test_document',
                 'file_key' => 'test/path.pdf',
                 'file_name' => 'test.pdf',
@@ -87,7 +87,7 @@ describe('BlockchainCorrectionService', function () {
             $procurement = Procurement::factory()->create();
 
             $document = ProcurementDocument::create([
-                'procurement_id' => $procurement->id,
+                'pr_number' => $procurement->id,
                 'document_type' => 'test_document',
                 'file_key' => 'test/path.pdf',
                 'file_name' => 'test.pdf',
@@ -119,7 +119,7 @@ describe('BlockchainCorrectionService', function () {
             $procurement = Procurement::factory()->create();
 
             $document = ProcurementDocument::create([
-                'procurement_id' => $procurement->id,
+                'pr_number' => $procurement->id,
                 'document_type' => 'invalid_doc',
                 'file_key' => 'invalid/path.pdf',
                 'file_name' => 'invalid.pdf',
@@ -147,7 +147,7 @@ describe('BlockchainCorrectionService', function () {
         test('it logs error and rethrows exception on failure', function () {
             // Create document with invalid procurement relationship to trigger exception
             $document = new ProcurementDocument([
-                'procurement_id' => 'non-existent-id',
+                'pr_number' => 'non-existent-id',
                 'document_type' => 'test',
                 'file_path' => 'test.pdf',
                 'hash' => 'hash123',
@@ -345,7 +345,7 @@ describe('BlockchainCorrectionService', function () {
             $procurement = Procurement::factory()->create();
 
             $document = ProcurementDocument::create([
-                'procurement_id' => $procurement->id,
+                'pr_number' => $procurement->id,
                 'document_type' => 'contract',
                 'file_key' => 'contracts/contract.pdf',
                 'file_name' => 'contract.pdf',

@@ -13,7 +13,7 @@ describe('Procurement Model - Relationships', function () {
         ]);
 
         ProcurementDocument::factory()->count(3)->create([
-            'procurement_id' => 'PR-REL-001',
+            'pr_number' => 'PR-REL-001',
         ]);
 
         expect($procurement->documents)->toHaveCount(3);
@@ -35,7 +35,7 @@ describe('Procurement Model - Relationships', function () {
         ]);
 
         ProcurementDocument::factory()->count(5)->create([
-            'procurement_id' => 'PR-EAGER-001',
+            'pr_number' => 'PR-EAGER-001',
         ]);
 
         $loadedProcurement = Procurement::with('documents')->find('PR-EAGER-001');
@@ -50,13 +50,13 @@ describe('Procurement Model - Relationships', function () {
         ]);
 
         $document = ProcurementDocument::factory()->create([
-            'procurement_id' => 'PR-CASCADE-001',
+            'pr_number' => 'PR-CASCADE-001',
         ]);
 
-        $foundDocument = ProcurementDocument::where('procurement_id', 'PR-CASCADE-001')->first();
+        $foundDocument = ProcurementDocument::where('pr_number', 'PR-CASCADE-001')->first();
 
         expect($foundDocument)->not->toBeNull();
-        expect($foundDocument->procurement_id)->toBe('PR-CASCADE-001');
+        expect($foundDocument->pr_number)->toBe('PR-CASCADE-001');
     });
 });
 
@@ -151,8 +151,8 @@ describe('Procurement Model - Scopes and Queries', function () {
         $proc1 = Procurement::factory()->create(['id' => 'PR-COUNT-1']);
         $proc2 = Procurement::factory()->create(['id' => 'PR-COUNT-2']);
 
-        ProcurementDocument::factory()->count(3)->create(['procurement_id' => 'PR-COUNT-1']);
-        ProcurementDocument::factory()->count(7)->create(['procurement_id' => 'PR-COUNT-2']);
+        ProcurementDocument::factory()->count(3)->create(['pr_number' => 'PR-COUNT-1']);
+        ProcurementDocument::factory()->count(7)->create(['pr_number' => 'PR-COUNT-2']);
 
         $procurements = Procurement::withCount('documents')->get();
 

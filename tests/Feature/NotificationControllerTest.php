@@ -28,7 +28,7 @@ test('user can view notifications page with data', function () {
             'notifiable_type' => User::class,
             'notifiable_id' => $this->user->id,
             'data' => [
-                'procurement_id' => "PROC-{$i}",
+                'pr_number' => "PROC-{$i}",
                 'procurement_title' => "Test Procurement {$i}",
                 'stage_identifier' => 'Test Stage',
                 'current_status' => 'pending',

@@ -99,7 +99,8 @@ enum StageEnums: string
     }
 
     /**
-     * Get the next stage in the workflow
+     * Get the next stage in the workflow (simple linear path)
+     * For flexible workflow, use getNextStages() which returns all possible next stages
      */
     public function getNextStage(): ?self
     {
@@ -120,6 +121,100 @@ enum StageEnums: string
             self::COMPLETION => self::COMPLETED,
             self::COMPLETED => null,
         };
+    }
+
+    /**
+     * Get all possible next stages (flexible workflow - Issue #8 fix)
+     * Returns array of stages that can follow the current stage
+     *
+     * @return array<self>
+     */
+    public function getNextStages(): array
+    {
+        return match ($this) {
+            self::PROCUREMENT_INITIATION => [
+                self::PRE_PROCUREMENT_CONFERENCE,  // Optional per RA 9184
+                self::BIDDING_DOCUMENTS,          // Can skip to this
+            ],
+            self::PRE_PROCUREMENT_CONFERENCE => [
+                self::BIDDING_DOCUMENTS,
+            ],
+            self::BIDDING_DOCUMENTS => [
+                self::PRE_BID_CONFERENCE,
+            ],
+            self::PRE_BID_CONFERENCE => [
+                self::SUPPLEMENTAL_BID_BULLETIN,  // Optional
+                self::BID_OPENING,                // Can skip to this
+            ],
+            self::SUPPLEMENTAL_BID_BULLETIN => [
+                self::SUPPLEMENTAL_BID_BULLETIN,  // Can repeat
+                self::BID_OPENING,                // Move forward
+            ],
+            self::BID_OPENING => [
+                self::BID_EVALUATION,
+            ],
+            self::BID_EVALUATION => [
+                self::POST_QUALIFICATION,
+            ],
+            self::POST_QUALIFICATION => [
+                self::BAC_RESOLUTION,
+            ],
+            self::BAC_RESOLUTION => [
+                self::NOTICE_OF_AWARD,
+            ],
+            self::NOTICE_OF_AWARD => [
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+            ],
+            self::PERFORMANCE_BOND_CONTRACT_AND_PO => [
+                self::NOTICE_TO_PROCEED,
+            ],
+            self::NOTICE_TO_PROCEED => [
+                self::MONITORING,
+            ],
+            self::MONITORING => [
+                self::COMPLETION,
+            ],
+            self::COMPLETION => [
+                self::COMPLETED,
+            ],
+            self::COMPLETED => [],
+        };
+    }
+
+    /**
+     * Check if this stage can be skipped (Issue #8 fix)
+     * Per RA 9184, some stages are optional
+     */
+    public function canSkip(): bool
+    {
+        return match ($this) {
+            self::PRE_PROCUREMENT_CONFERENCE => true,  // Optional per RA 9184
+            self::SUPPLEMENTAL_BID_BULLETIN => true,   // Optional
+            default => false,
+        };
+    }
+
+    /**
+     * Check if this stage can be repeated (Issue #8 fix)
+     * Some stages like supplemental bulletins can occur multiple times
+     */
+    public function canRepeat(): bool
+    {
+        return match ($this) {
+            self::SUPPLEMENTAL_BID_BULLETIN => true,  // Can be issued multiple times
+            default => false,
+        };
+    }
+
+    /**
+     * Check if the given stage is a valid next stage from current stage
+     * Supports flexible workflow (Issue #8 fix)
+     */
+    public function isValidNextStage(self $nextStage): bool
+    {
+        $possibleNext = $this->getNextStages();
+
+        return in_array($nextStage, $possibleNext, true);
     }
 
     /**
@@ -160,6 +255,143 @@ enum StageEnums: string
     public function isInitial(): bool
     {
         return $this === self::PROCUREMENT_INITIATION;
+    }
+
+    /**
+     * Get the procurement phase this stage belongs to (Issue #11 fix)
+     * BAC_RESOLUTION moved to procurement phase per RA 9184
+     *
+     * @return string 'pre_procurement', 'procurement', or 'post_procurement'
+     */
+    public function getPhase(): string
+    {
+        return match ($this) {
+            self::PROCUREMENT_INITIATION,
+            self::PRE_PROCUREMENT_CONFERENCE,
+            self::BIDDING_DOCUMENTS => 'pre_procurement',
+
+            self::PRE_BID_CONFERENCE,
+            self::SUPPLEMENTAL_BID_BULLETIN,
+            self::BID_OPENING,
+            self::BID_EVALUATION,
+            self::POST_QUALIFICATION,
+            self::BAC_RESOLUTION => 'procurement',  // Fixed: BAC Resolution comes after evaluation
+
+            self::NOTICE_OF_AWARD,
+            self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+            self::NOTICE_TO_PROCEED,
+            self::MONITORING,
+            self::COMPLETION,
+            self::COMPLETED => 'post_procurement',
+        };
+    }
+
+    /**
+     * Get the display name for the phase
+     */
+    public function getPhaseDisplayName(): string
+    {
+        return match ($this->getPhase()) {
+            'pre_procurement' => 'Pre-Procurement',
+            'procurement' => 'Procurement',
+            'post_procurement' => 'Post-Procurement',
+        };
+    }
+
+    /**
+     * Get the full phase display with description
+     */
+    public function getPhaseDisplayNameWithDescription(): string
+    {
+        return match ($this->getPhase()) {
+            'pre_procurement' => 'Pre-Procurement (Planning & Preparation)',
+            'procurement' => 'Procurement (Bidding & Evaluation)',
+            'post_procurement' => 'Post-Procurement (Award & Implementation)',
+        };
+    }
+
+    /**
+     * Check if the stage is in the pre-procurement phase
+     */
+    public function isPreProcurement(): bool
+    {
+        return $this->getPhase() === 'pre_procurement';
+    }
+
+    /**
+     * Check if the stage is in the procurement phase
+     */
+    public function isProcurement(): bool
+    {
+        return $this->getPhase() === 'procurement';
+    }
+
+    /**
+     * Check if the stage is in the post-procurement phase
+     */
+    public function isPostProcurement(): bool
+    {
+        return $this->getPhase() === 'post_procurement';
+    }
+
+    /**
+     * Get all stages for a specific phase
+     *
+     * @param  string  $phase  'pre_procurement', 'procurement', or 'post_procurement'
+     * @return array<self>
+     */
+    public static function getStagesByPhase(string $phase): array
+    {
+        return array_filter(
+            self::cases(),
+            fn (self $stage) => $stage->getPhase() === $phase
+        );
+    }
+
+    /**
+     * Get all phases with their stages grouped
+     *
+     * @return array<string, array<self>>
+     */
+    public static function getAllPhasesWithStages(): array
+    {
+        return [
+            'pre_procurement' => self::getStagesByPhase('pre_procurement'),
+            'procurement' => self::getStagesByPhase('procurement'),
+            'post_procurement' => self::getStagesByPhase('post_procurement'),
+        ];
+    }
+
+    /**
+     * Get phase progress based on stage position
+     *
+     * @return array{phase: string, progress: int, current_stage_in_phase: int, total_stages_in_phase: int}
+     */
+    public function getPhaseProgress(): array
+    {
+        $phase = $this->getPhase();
+        $stagesInPhase = self::getStagesByPhase($phase);
+        $totalStagesInPhase = count($stagesInPhase);
+
+        // Find position of current stage within its phase
+        $currentPosition = 0;
+        foreach ($stagesInPhase as $index => $stage) {
+            if ($stage === $this) {
+                $currentPosition = $index + 1;
+                break;
+            }
+        }
+
+        $progress = $totalStagesInPhase > 0
+            ? (int) round(($currentPosition / $totalStagesInPhase) * 100)
+            : 0;
+
+        return [
+            'phase' => $phase,
+            'progress' => $progress,
+            'current_stage_in_phase' => $currentPosition,
+            'total_stages_in_phase' => $totalStagesInPhase,
+        ];
     }
 
     /**

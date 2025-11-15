@@ -97,7 +97,7 @@ describe('DashboardService', function () {
                 [
                     'data' => [
                         'json' => [
-                            'procurement_id' => 'PR-001',
+                            'pr_number' => 'PR-001',
                             'procurement_title' => 'Test Procurement',
                             'stage' => 'Pre-Procurement',
                             'current_status' => 'Active',
@@ -127,7 +127,7 @@ describe('DashboardService', function () {
                 [
                     'data' => [
                         'json' => [
-                            'procurement_id' => 'PR-001',
+                            'pr_number' => 'PR-001',
                             'procurement_title' => 'Test Procurement',
                             'stage' => 'Pre-Procurement',
                             'current_status' => 'Active',
@@ -139,7 +139,7 @@ describe('DashboardService', function () {
                 [
                     'data' => [
                         'json' => [
-                            'procurement_id' => 'PR-001',
+                            'pr_number' => 'PR-001',
                             'procurement_title' => 'Test Procurement',
                             'stage' => 'Bidding',
                             'current_status' => 'In Progress',
@@ -166,7 +166,7 @@ describe('DashboardService', function () {
                 [
                     'data' => [
                         'json' => [
-                            'procurement_id' => 'PR-001',
+                            'pr_number' => 'PR-001',
                             'procurement_title' => 'Valid Procurement',
                             'stage' => 'Pre-Procurement',
                             'timestamp' => '2024-01-15T10:00:00Z',
@@ -176,7 +176,7 @@ describe('DashboardService', function () {
                 [
                     'data' => [
                         'json' => [
-                            'procurement_id' => 'PR-002',
+                            'pr_number' => 'PR-002',
                             // Missing procurement_title
                             'stage' => 'Pre-Procurement',
                         ],
@@ -185,7 +185,7 @@ describe('DashboardService', function () {
                 [
                     'data' => [
                         'json' => [
-                            // Missing procurement_id
+                            // Missing pr_number
                             'procurement_title' => 'Invalid Procurement',
                             'stage' => 'Pre-Procurement',
                         ],
@@ -229,7 +229,7 @@ describe('DashboardService', function () {
                 [
                     'data' => [
                         'json' => [
-                            'procurement_id' => 'PR-001',
+                            'pr_number' => 'PR-001',
                             'procurement_title' => 'Test Procurement',
                             'stage' => 'Pre-Procurement',
                             // No current_status field
@@ -249,7 +249,7 @@ describe('DashboardService', function () {
                 [
                     'data' => [
                         'json' => [
-                            'procurement_id' => 'PR-001',
+                            'pr_number' => 'PR-001',
                             'procurement_title' => 'First Procurement',
                             'stage' => 'Pre-Procurement',
                             'timestamp' => '2024-01-15T10:00:00Z',
@@ -259,7 +259,7 @@ describe('DashboardService', function () {
                 [
                     'data' => [
                         'json' => [
-                            'procurement_id' => 'PR-002',
+                            'pr_number' => 'PR-002',
                             'procurement_title' => 'Second Procurement',
                             'stage' => 'Bidding',
                             'timestamp' => '2024-01-16T14:00:00Z',
@@ -269,7 +269,7 @@ describe('DashboardService', function () {
                 [
                     'data' => [
                         'json' => [
-                            'procurement_id' => 'PR-003',
+                            'pr_number' => 'PR-003',
                             'procurement_title' => 'Third Procurement',
                             'stage' => 'Post-Qualification',
                             'timestamp' => '2024-01-17T09:00:00Z',
@@ -443,7 +443,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-001',
+                                'pr_number' => 'PR-001',
                                 'procurement_title' => 'Test Procurement',
                                 'event_type' => 'document_uploaded',
                                 'details' => 'Contract signed',
@@ -477,7 +477,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-001',
+                                'pr_number' => 'PR-001',
                                 'procurement_title' => 'Valid',
                                 'event_type' => 'test',
                                 'timestamp' => '2024-01-15T10:00:00Z',
@@ -487,7 +487,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                // Missing procurement_id
+                                // Missing pr_number
                                 'procurement_title' => 'Invalid',
                             ],
                         ],
@@ -526,7 +526,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-001',
+                                'pr_number' => 'PR-001',
                                 'procurement_title' => 'Oldest',
                                 'timestamp' => '2024-01-10T10:00:00Z',
                             ],
@@ -535,7 +535,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-002',
+                                'pr_number' => 'PR-002',
                                 'procurement_title' => 'Newest',
                                 'timestamp' => '2024-01-20T10:00:00Z',
                             ],
@@ -544,7 +544,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-003',
+                                'pr_number' => 'PR-003',
                                 'procurement_title' => 'Middle',
                                 'timestamp' => '2024-01-15T10:00:00Z',
                             ],
@@ -570,7 +570,7 @@ describe('DashboardService', function () {
                 $activities[] = [
                     'data' => [
                         'json' => [
-                            'procurement_id' => "PR-{$i}",
+                            'pr_number' => "PR-{$i}",
                             'procurement_title' => "Procurement {$i}",
                             'timestamp' => "2024-01-{$i}T10:00:00Z",
                         ],
@@ -623,7 +623,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-001',
+                                'pr_number' => 'PR-001',
                                 'hash' => 'hash1',
                             ],
                         ],
@@ -631,7 +631,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-001',
+                                'pr_number' => 'PR-001',
                                 'hash' => 'hash2',
                             ],
                         ],
@@ -639,7 +639,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-002',
+                                'pr_number' => 'PR-002',
                                 'hash' => 'hash3',
                             ],
                         ],
@@ -647,7 +647,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-003', // Not in dashboard
+                                'pr_number' => 'PR-003', // Not in dashboard
                                 'hash' => 'hash4',
                             ],
                         ],
@@ -676,7 +676,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-001',
+                                'pr_number' => 'PR-001',
                                 'hash' => 'duplicate_hash',
                             ],
                         ],
@@ -684,7 +684,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-001',
+                                'pr_number' => 'PR-001',
                                 'hash' => 'duplicate_hash', // Same hash
                             ],
                         ],
@@ -727,7 +727,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-001',
+                                'pr_number' => 'PR-001',
                                 'hash' => 'valid_hash',
                             ],
                         ],
@@ -735,7 +735,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'procurement_id' => 'PR-001',
+                                'pr_number' => 'PR-001',
                                 // Missing hash
                             ],
                         ],
@@ -743,7 +743,7 @@ describe('DashboardService', function () {
                     [
                         'data' => [
                             'json' => [
-                                // Missing procurement_id
+                                // Missing pr_number
                                 'hash' => 'invalid_hash',
                             ],
                         ],

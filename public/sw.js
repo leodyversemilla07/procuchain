@@ -152,7 +152,7 @@ self.addEventListener('notificationclick', event => {
         url = data.url;
     } else if (data.url) {
         url = data.url;
-    } else if (data.procurement_id) {
+    } else if (data.pr_number) {
         // Fallback to notifications page if we have procurement ID
         url = '/notifications';
     }

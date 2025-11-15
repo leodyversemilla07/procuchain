@@ -24,7 +24,7 @@ class PreProcurementConferenceDocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id' => 'required|string|max:50',
+            'pr_number' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
             'minutes_file' => 'required|file|mimes:pdf|max:8192',
             'attendance_file' => 'required|file|mimes:pdf|max:8192',

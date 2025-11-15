@@ -6,7 +6,7 @@ use App\Services\ProcurementStageTransitionService;
 
 beforeEach(function () {
     $this->service = new ProcurementStageTransitionService;
-    $this->procurementId = 'PROC-001';
+    $this->pr_number = 'PROC-001';
     $this->procurementTitle = 'Test Procurement Project';
 });
 
@@ -16,12 +16,12 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 $this->procurementTitle
             );
 
             expect($result)->toBeArray();
-            expect($result['id'])->toBe($this->procurementId);
+            expect($result['id'])->toBe($this->pr_number);
             expect($result['title'])->toBe($this->procurementTitle);
             expect($result['action'])->toBe('Continue Procurement Processing');
             expect($result['route'])->toContain('/bac-secretariat/procurements-list');
@@ -31,7 +31,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName(),
                 StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 $this->procurementTitle
             );
 
@@ -43,7 +43,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 'Non-existent Stage',
                 'Non-existent Status',
-                $this->procurementId,
+                $this->pr_number,
                 $this->procurementTitle
             );
 
@@ -54,7 +54,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 'Wrong Status',
-                $this->procurementId,
+                $this->pr_number,
                 $this->procurementTitle
             );
 
@@ -62,12 +62,12 @@ describe('ProcurementStageTransitionService', function () {
         });
 
         it('includes procurement ID in route', function () {
-            $procurementId = 'PROC-12345';
+            $pr_number = 'PROC-12345';
 
             $result = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $procurementId,
+                $pr_number,
                 $this->procurementTitle
             );
 
@@ -79,7 +79,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 $this->procurementTitle
             );
 
@@ -115,14 +115,14 @@ describe('ProcurementStageTransitionService', function () {
             $result1 = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 $title1
             );
 
             $result2 = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 $title2
             );
 
@@ -136,7 +136,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 $this->procurementTitle
             );
 
@@ -147,7 +147,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 'Procurement',
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 $this->procurementTitle
             );
 
@@ -160,7 +160,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 strtolower($stageName),
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 $this->procurementTitle
             );
 
@@ -174,7 +174,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 $this->procurementTitle
             );
 
@@ -185,7 +185,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 'Submitted',
-                $this->procurementId,
+                $this->pr_number,
                 $this->procurementTitle
             );
 
@@ -209,7 +209,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 ''
             );
 
@@ -235,7 +235,7 @@ describe('ProcurementStageTransitionService', function () {
             $result = $this->service->getPriorityAction(
                 StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
                 StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
-                $this->procurementId,
+                $this->pr_number,
                 $specialTitle
             );
 

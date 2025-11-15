@@ -11,6 +11,14 @@ use Illuminate\Support\Facades\Cache;
  *
  * This service enforces cache storage to database for large/persistent data
  * while keeping small, frequently-accessed data in Redis (when configured).
+ *
+ * RECOMMENDED USAGE (Issue #14 fix - automatic strategy enforcement):
+ * - Use remember() for automatic cache strategy (recommended for most cases)
+ * - Use put() for automatic cache strategy on writes
+ *
+ * MANUAL CONTROL (only when you know the data size):
+ * - Use rememberLarge() to force database cache
+ * - Use rememberSmall() to force default cache
  */
 class CacheStrategyService implements CacheStrategyInterface
 {
@@ -102,5 +110,44 @@ class CacheStrategyService implements CacheStrategyInterface
         }
 
         return $value;
+    }
+
+    /**
+     * Automatic cache strategy - RECOMMENDED method (Issue #14 fix)
+     *
+     * This is the primary method developers should use.
+     * Automatically chooses the best cache store based on data size:
+     * - Small data (<100KB): Uses default cache (Redis or database)
+     * - Large data (≥100KB): Uses database cache to avoid Redis memory limits
+     *
+     * @param  string  $key  Cache key
+     * @param  \DateTimeInterface|\DateInterval|int  $ttl  Time to live
+     * @param  callable  $callback  Callback to generate value if not cached
+     * @return mixed Cached or generated value
+     */
+    public function remember(string $key, \DateTimeInterface|\DateInterval|int $ttl, callable $callback): mixed
+    {
+        return $this->rememberSmart($key, $ttl, $callback);
+    }
+
+    /**
+     * Automatic cache strategy for writes - RECOMMENDED method (Issue #14 fix)
+     *
+     * Automatically chooses the best cache store based on data size:
+     * - Small data (<100KB): Uses default cache (Redis or database)
+     * - Large data (≥100KB): Uses database cache to avoid Redis memory limits
+     *
+     * @param  string  $key  Cache key
+     * @param  mixed  $value  Value to cache
+     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl  Time to live (null = forever)
+     * @return bool Success status
+     */
+    public function put(string $key, mixed $value, \DateTimeInterface|\DateInterval|int|null $ttl = null): bool
+    {
+        if ($this->isLarge($value)) {
+            return Cache::store('database')->put($key, $value, $ttl);
+        }
+
+        return $this->cache->put($key, $value, $ttl);
     }
 }

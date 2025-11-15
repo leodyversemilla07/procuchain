@@ -34,11 +34,13 @@
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "pestphp/pest": "^4.0",
+        "pestphp/pest-plugin-browser": "4.0",
         "pestphp/pest-plugin-laravel": "^4.0",
         "pestphp/pest-plugin-stressless": "^4.0",
         "spatie/browsershot": "^5.0",
         "spatie/crawler": "^8.4",
         "spatie/laravel-sitemap": "^7.3",
+        "spatie/laravel-typescript-transformer": "*",
         "spatie/robots-txt": "^2.5"
     },
     "autoload": {

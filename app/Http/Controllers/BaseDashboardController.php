@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
 use App\Enums\StreamEnums;
+use App\Libraries\MultiChain\Manager;
 use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
-use App\Services\MultichainService;
 use Exception;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
@@ -17,7 +17,7 @@ use Inertia\Response;
 abstract class BaseDashboardController extends Controller
 {
     public function __construct(
-        protected MultichainService $multichainService,
+        protected Manager $multichain,
         protected DashboardService $dashboardService,
         protected CacheStrategyInterface $cacheStrategy
     ) {
@@ -73,6 +73,9 @@ abstract class BaseDashboardController extends Controller
                 'recentProcurements' => Inertia::defer(fn () => $this->dashboardService->getRecentProcurements($procurementsByKey)),
                 'procurementDistribution' => Inertia::defer(fn () => $procurementDistribution),
                 'recentActivities' => Inertia::defer(fn () => $recentActivities),
+                // Phase-based data
+                'phaseStatistics' => Inertia::defer(fn () => $this->dashboardService->getPhaseStatistics($procurementsByKey)),
+                'procurementsByPhase' => Inertia::defer(fn () => $this->dashboardService->groupProcurementsByPhase($procurementsByKey)),
             ], $this->getAdditionalDashboardData($procurementsByKey, $roleName));
 
             Log::info("Successfully retrieved {$roleLabel} Dashboard data");

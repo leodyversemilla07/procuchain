@@ -42,19 +42,19 @@ class PdfViewerController extends BaseController
         }
 
         $currentStatus = null;
-        if ($documentData && isset($documentData['procurement_id']) && $documentData['procurement_id'] !== 'Unknown') {
-            Log::info('Attempting to get procurement status', ['procurement_id' => $documentData['procurement_id']]);
-            $currentStatus = $this->procurementDataService->getCurrentProcurementStatus($documentData['procurement_id']);
+        if ($documentData && isset($documentData['pr_number']) && $documentData['pr_number'] !== 'Unknown') {
+            Log::info('Attempting to get procurement status', ['pr_number' => $documentData['pr_number']]);
+            $currentStatus = $this->procurementDataService->getCurrentProcurementStatus($documentData['pr_number']);
             if ($currentStatus) {
                 $documentData['current_status'] = $currentStatus['current_status'] ?? null;
                 $documentData['status_timestamp'] = $currentStatus['timestamp'] ?? null;
                 Log::info('Procurement status found', [
-                    'procurement_id' => $documentData['procurement_id'],
+                    'pr_number' => $documentData['pr_number'],
                     'current_status' => $documentData['current_status'],
                     'status_timestamp' => $documentData['status_timestamp'],
                 ]);
             } else {
-                Log::info('No procurement status found', ['procurement_id' => $documentData['procurement_id']]);
+                Log::info('No procurement status found', ['pr_number' => $documentData['pr_number']]);
             }
         }
 
@@ -64,26 +64,26 @@ class PdfViewerController extends BaseController
             $documentView = DocumentView::where('file_key', $fileKey)->first();
 
             $parts = explode('/', $fileKey);
-            $procurementId = 'Unknown';
+            $pr_number = 'Unknown';
 
             if (! empty($parts[0])) {
                 if (preg_match('/^(PROC-\d{4}-\d{3})/', $parts[0], $matches)) {
-                    $procurementId = $matches[1];
+                    $pr_number = $matches[1];
                 } else {
                     $lastHyphenPos = strrpos($parts[0], '-');
                     if ($lastHyphenPos !== false) {
-                        $procurementId = substr($parts[0], 0, $lastHyphenPos);
+                        $pr_number = substr($parts[0], 0, $lastHyphenPos);
                     }
                 }
             }
 
-            $alternativeHash = $this->procurementDataService->getHashByProcurementId($procurementId, $fileKey);
+            $alternativeHash = $this->procurementDataService->getHashBypr_number($pr_number, $fileKey);
 
             if (! $documentView) {
                 $documentView = DocumentView::create([
                     'user_id' => Auth::id(),
                     'file_key' => $fileKey,
-                    'procurement_id' => $procurementId,
+                    'pr_number' => $pr_number,
                     'procurement_title' => 'Document Viewer (Development Mode)',
                     'document_type' => pathinfo($fileKey, PATHINFO_FILENAME),
                     'stage' => $parts[1] ?? 'Unknown',
@@ -97,7 +97,7 @@ class PdfViewerController extends BaseController
                 ]);
             }
 
-            $existingView = DocumentView::where('procurement_id', $procurementId)
+            $existingView = DocumentView::where('pr_number', $pr_number)
                 ->whereNotNull('procurement_title')
                 ->where('procurement_title', '!=', 'Document Viewer (Development Mode)')
                 ->where('procurement_title', '!=', 'Document (Development Mode)')
@@ -109,7 +109,7 @@ class PdfViewerController extends BaseController
                 $procurementTitle = $existingView->procurement_title;
             } else {
                 if (! empty($parts[0]) && str_contains($parts[0], '-')) {
-                    $titlePart = substr($parts[0], strlen($procurementId) + 1);
+                    $titlePart = substr($parts[0], strlen($pr_number) + 1);
                     if (! empty($titlePart)) {
                         $procurementTitle = ucwords(str_replace(['_', '-'], ' ', $titlePart));
                     }
@@ -117,7 +117,7 @@ class PdfViewerController extends BaseController
             }
 
             $documentData = [
-                'procurement_id' => $procurementId,
+                'pr_number' => $pr_number,
                 'procurement_title' => $procurementTitle,
                 'document_type' => $documentView->document_type ?? pathinfo($fileKey, PATHINFO_FILENAME),
                 'document_type_display' => $this->formatDocumentType($documentView->document_type ?? pathinfo($fileKey, PATHINFO_FILENAME)),
@@ -129,19 +129,19 @@ class PdfViewerController extends BaseController
                 'user_address' => Auth::user()->blockchain_address ?? 'no-blockchain-address',
             ];
 
-            if ($procurementId !== 'Unknown') {
-                Log::info('Attempting to get procurement status for fallback data', ['procurement_id' => $procurementId]);
-                $currentStatus = $this->procurementDataService->getCurrentProcurementStatus($procurementId);
+            if ($pr_number !== 'Unknown') {
+                Log::info('Attempting to get procurement status for fallback data', ['pr_number' => $pr_number]);
+                $currentStatus = $this->procurementDataService->getCurrentProcurementStatus($pr_number);
                 if ($currentStatus) {
                     $documentData['current_status'] = $currentStatus['current_status'] ?? null;
                     $documentData['status_timestamp'] = $currentStatus['timestamp'] ?? null;
                     Log::info('Procurement status found for fallback data', [
-                        'procurement_id' => $procurementId,
+                        'pr_number' => $pr_number,
                         'current_status' => $documentData['current_status'],
                         'status_timestamp' => $documentData['status_timestamp'],
                     ]);
                 } else {
-                    Log::info('No procurement status found for fallback data', ['procurement_id' => $procurementId]);
+                    Log::info('No procurement status found for fallback data', ['pr_number' => $pr_number]);
                 }
             }
         }
@@ -155,7 +155,7 @@ class PdfViewerController extends BaseController
             'has_hash' => ! empty($documentData['hash']),
             'hash_value' => $documentData['hash'] ?? 'NOT SET',
             'hash_source' => ! empty($documentData['hash']) ? 'blockchain' : 'none',
-            'procurement_id' => $documentData['procurement_id'] ?? 'NOT SET',
+            'pr_number' => $documentData['pr_number'] ?? 'NOT SET',
         ]);
 
         $viewStats = $this->getFileViewStats($fileKey);

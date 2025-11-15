@@ -288,7 +288,7 @@ Add JSDoc comments for complex types:
  * Complete procurement data including documents, status, and events
  */
 export interface Procurement {
-    procurement_id: string;
+    pr_number: string;
     // ...
 }
 ```

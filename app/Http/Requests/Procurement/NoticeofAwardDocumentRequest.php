@@ -24,7 +24,7 @@ class NoticeOfAwardDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'procurement_id' => 'required|string|max:50',
+            'pr_number' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
             'noa_file' => 'required|file|mimes:pdf|max:8192',
             'issuance_date' => 'required|date_format:Y-m-d|before_or_equal:today',

@@ -111,7 +111,7 @@ it('can dispatch a procurement stage notification to the authenticated user', fu
     Notification::fake();
 
     $data = [
-        'procurement_id' => 'TEST-001',
+        'pr_number' => 'TEST-001',
         'procurement_title' => 'Test Procurement for Push Notifications',
         'stage_identifier' => 'Test Stage',
         'current_status' => 'testing',

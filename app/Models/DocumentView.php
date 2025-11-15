@@ -13,7 +13,7 @@ class DocumentView extends Model
     protected $fillable = [
         'user_id',
         'file_key',
-        'procurement_id',
+        'pr_number',
         'procurement_title',
         'document_type',
         'stage',
@@ -52,10 +52,10 @@ class DocumentView extends Model
     /**
      * Get view statistics for a procurement
      */
-    public static function getProcurementViewStats(string $procurementId)
+    public static function getProcurementViewStats(string $pr_number)
     {
         return static::with(['user:id,name', 'user.roles:id,name'])
-            ->where('procurement_id', $procurementId)
+            ->where('pr_number', $pr_number)
             ->selectRaw('
                 file_key,
                 document_type,
