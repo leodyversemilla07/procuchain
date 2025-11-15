@@ -39,11 +39,11 @@ class PostProcurementController extends BaseController
         StatusPublisher $statusPublisher,
         EventPublisher $eventPublisher,
         ProcurementDataService $procurementDataService,
+        \App\Repositories\DocumentRepository $documentRepository,
         protected DocumentValidationService $validationService,
-        protected ProcurementOrchestrator $orchestrator,
-        protected \App\Repositories\DocumentRepository $documentRepository
+        protected ProcurementOrchestrator $orchestrator
     ) {
-        $this->initializeProcurementSupport($multichain, $documentPublisher, $statusPublisher, $eventPublisher, $procurementDataService);
+        $this->initializeProcurementSupport($multichain, $documentPublisher, $statusPublisher, $eventPublisher, $procurementDataService, $documentRepository);
         $this->applyProcurementMiddleware();
     }
 
@@ -348,7 +348,7 @@ class PostProcurementController extends BaseController
     /**
      * Get document upload guide for a specific stage (API endpoint for frontend).
      */
-    public function getDocumentGuide(Request $request, string $pr_number, StageEnums $stage): JsonResponse
+    public function documentGuide(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
         if (! $stage->isPostProcurement()) {
             abort(403, 'Invalid stage for Post-Procurement phase');
@@ -450,35 +450,6 @@ class PostProcurementController extends BaseController
             'errors' => $validation['errors'] ?? [],
             'warnings' => $validation['warnings'] ?? [],
         ]);
-    }
-
-    /**
-     * Get uploaded document types for a stage.
-     */
-    protected function getUploadedDocumentTypes(string $pr_number, StageEnums $stage): array
-    {
-        try {
-            // Fetch all documents for this procurement from blockchain
-            $documents = $this->documentRepository->findByProcurement($pr_number);
-
-            // Filter by current stage and extract document types
-            $uploadedTypes = [];
-            foreach ($documents as $doc) {
-                if ($doc->stage === $stage->value) {
-                    $uploadedTypes[] = $doc->documentType;
-                }
-            }
-
-            return array_unique($uploadedTypes);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to fetch uploaded documents', [
-                'pr_number' => $pr_number,
-                'stage' => $stage->value,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
     }
 
     /**
