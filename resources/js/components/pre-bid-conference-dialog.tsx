@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 interface PreBidDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    procurementId: string;
+    pr_number: string;
     procurementTitle: string;
     onComplete?: (skipToStage?: string, conferenceHeld?: boolean) => void;
 }
@@ -21,9 +21,9 @@ interface PageProps {
     errors?: Record<string, string>;
 }
 
-export function PreBidConferenceDialog({ open, onOpenChange, procurementId, procurementTitle, onComplete }: PreBidDialogProps) {
+export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurementTitle, onComplete }: PreBidDialogProps) {
     const form = useForm({
-        procurement_id: procurementId,
+        pr_number: pr_number,
         procurement_title: procurementTitle,
         conference_held: undefined as boolean | undefined,
     });
@@ -58,8 +58,8 @@ export function PreBidConferenceDialog({ open, onOpenChange, procurementId, proc
             return;
         }
 
-        if (!procurementId) {
-            form.setError('procurement_id', 'Procurement ID is required');
+        if (!pr_number) {
+            form.setError('pr_number', 'Procurement ID is required');
             return;
         }
 
@@ -72,7 +72,7 @@ export function PreBidConferenceDialog({ open, onOpenChange, procurementId, proc
 
         // Set all form data at once to ensure consistency
         form.setData({
-            procurement_id: procurementId,
+            pr_number: pr_number,
             procurement_title: procurementTitle,
             conference_held: Boolean(form.data.conference_held),
         });
@@ -107,7 +107,7 @@ export function PreBidConferenceDialog({ open, onOpenChange, procurementId, proc
                     </DialogDescription>
                     <div className="mt-2">
                         <span className="block text-sm font-medium text-gray-700 sm:text-base dark:text-gray-300">Title: {procurementTitle}</span>
-                        <span className="mt-1 block text-xs text-gray-500 sm:text-sm dark:text-gray-400">ID: {procurementId}</span>
+                        <span className="mt-1 block text-xs text-gray-500 sm:text-sm dark:text-gray-400">ID: {pr_number}</span>
                     </div>
                 </DialogHeader>
 

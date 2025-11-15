@@ -20,7 +20,7 @@ class DocumentViewFactory extends Factory
         return [
             'user_id' => User::factory(),
             'file_key' => fake()->uuid(),
-            'procurement_id' => fake()->randomNumber(5),
+            'pr_number' => fake()->randomNumber(5),
             'procurement_title' => fake()->sentence(),
             'document_type' => fake()->randomElement(['specification', 'proposal', 'contract', 'report']),
             'stage' => fake()->randomElement(['submission', 'evaluation', 'award', 'completion']),

@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\StreamEnums;
-use App\Services\MultichainService;
+use App\Libraries\MultiChain\Manager;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -40,16 +40,16 @@ class SmartContractSetup extends Command
 
     protected $description = 'Deploy smart contract libraries and filters to MultiChain blockchain';
 
-    private MultichainService $multichainService;
+    private Manager $multichain;
 
     private array $deploymentResults = [];
 
     /**
      * Execute the console command.
      */
-    public function handle(MultichainService $multichainService): int
+    public function handle(Manager $multichain): int
     {
-        $this->multichainService = $multichainService;
+        $this->multichainService = $multichain;
 
         $this->info('🔗 ProcuChain Smart Contract Setup');
         $this->newLine();
@@ -106,7 +106,7 @@ class SmartContractSetup extends Command
         $this->info('🔍 Checking MultiChain connection...');
 
         try {
-            $info = $this->multichainService->getInfo();
+            $info = $this->multichainService->getinfo();
 
             $this->line("✓ Connected to blockchain: {$info['chainname']}");
             $this->line("✓ Block height: {$info['blocks']}");
@@ -221,10 +221,10 @@ class SmartContractSetup extends Command
                 'description' => 'Document hash and metadata validation',
             ],
             [
-                'name' => 'procuchain_status_validator',
-                'file' => 'status_filter_v1_standalone.js',
+                'name' => 'procuchain_status_v3',
+                'file' => 'status_filter_v3_standalone.js',
                 'stream' => StreamEnums::STATUS->value,
-                'description' => 'Status transition and workflow validation',
+                'description' => 'Status transition and workflow validation (v3: pr_number support)',
             ],
         ];
 
@@ -257,7 +257,10 @@ class SmartContractSetup extends Command
 
             // Verify stream exists
             try {
-                $this->multichainService->getStreamInfo($streamName);
+                $streams = $this->multichainService->liststreams($streamName);
+                if (empty($streams)) {
+                    throw new Exception("Stream '{$streamName}' does not exist. Create it first using multichain:setup");
+                }
             } catch (Exception $e) {
                 throw new Exception("Stream '{$streamName}' does not exist. Create it first using multichain:setup");
             }

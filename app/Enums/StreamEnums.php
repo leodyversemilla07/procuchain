@@ -10,12 +10,14 @@ namespace App\Enums;
  */
 enum StreamEnums: string
 {
+    case METADATA = 'procurement.metadata';
     case DOCUMENTS = 'procurement.documents';
     case STATUS = 'procurement.status';
     case EVENTS = 'procurement.events';
     case CORRECTIONS = 'procurement.corrections';
     case FILE_DATA = 'file.data';
     case FILE_METADATA = 'file.metadata';
+    case FILE_CHUNKS = 'file.chunks';
 
     /**
      * Get the user-friendly display name for the stream
@@ -23,12 +25,14 @@ enum StreamEnums: string
     public function getDisplayName(): string
     {
         return match ($this) {
+            self::METADATA => 'Procurement Metadata',
             self::DOCUMENTS => 'Procurement Documents',
             self::STATUS => 'Procurement Status',
             self::EVENTS => 'Procurement Events',
             self::CORRECTIONS => 'Procurement Corrections',
             self::FILE_DATA => 'File Data',
             self::FILE_METADATA => 'File Metadata',
+            self::FILE_CHUNKS => 'File Chunks',
         };
     }
 
@@ -38,12 +42,14 @@ enum StreamEnums: string
     public function getDescription(): string
     {
         return match ($this) {
+            self::METADATA => 'Stores core procurement metadata and details',
             self::DOCUMENTS => 'Stores procurement documents and their metadata',
             self::STATUS => 'Tracks status changes throughout the procurement process',
             self::EVENTS => 'Records procurement events and activities',
             self::CORRECTIONS => 'Maintains correction records and amendments',
             self::FILE_DATA => 'Stores raw file data and binary content',
             self::FILE_METADATA => 'Stores file metadata, hashes, and storage information',
+            self::FILE_CHUNKS => 'Stores chunked file data for large files',
         };
     }
 
@@ -53,6 +59,7 @@ enum StreamEnums: string
     public function isProcurementStream(): bool
     {
         return in_array($this, [
+            self::METADATA,
             self::DOCUMENTS,
             self::STATUS,
             self::EVENTS,
@@ -68,6 +75,7 @@ enum StreamEnums: string
         return in_array($this, [
             self::FILE_DATA,
             self::FILE_METADATA,
+            self::FILE_CHUNKS,
         ]);
     }
 

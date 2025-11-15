@@ -11,7 +11,7 @@ import { index as procurementsListIndex } from '@/routes/bac-secretariat/procure
 interface PreProcurementDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    procurementId: string;
+    pr_number: string;
     procurementTitle: string;
     onComplete?: (skipToStage?: string, conferenceHeld?: boolean) => void;
 }
@@ -22,9 +22,9 @@ interface PageProps {
     errors?: Record<string, string>;
 }
 
-export function PreProcurementDialog({ open, onOpenChange, procurementId, procurementTitle, onComplete }: PreProcurementDialogProps) {
+export function PreProcurementDialog({ open, onOpenChange, pr_number, procurementTitle, onComplete }: PreProcurementDialogProps) {
     const form = useForm({
-        procurement_id: procurementId,
+        pr_number: pr_number,
         procurement_title: procurementTitle,
         conference_held: undefined as boolean | undefined,
     });
@@ -98,7 +98,7 @@ export function PreProcurementDialog({ open, onOpenChange, procurementId, procur
                     </DialogDescription>
                     <div className="mt-2">
                         <span className="block text-sm font-medium text-gray-700 sm:text-base dark:text-gray-300">Title: {procurementTitle}</span>
-                        <span className="mt-1 block text-xs text-gray-500 sm:text-sm dark:text-gray-400">ID: {procurementId}</span>
+                        <span className="mt-1 block text-xs text-gray-500 sm:text-sm dark:text-gray-400">ID: {pr_number}</span>
                     </div>
                 </DialogHeader>
 

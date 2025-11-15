@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentView;
-use App\Services\FileStorageService;
+use App\Services\BlockchainStorageService;
 use App\Services\ProcurementDataService;
 use Exception;
 use Illuminate\Http\Request;
@@ -15,7 +15,7 @@ class DocumentDownloadController extends BaseController
 {
     public function __construct(
         private ProcurementDataService $procurementDataService,
-        private FileStorageService $fileStorageService
+        private BlockchainStorageService $fileStorageService
     ) {
         $this->middleware('auth');
         $this->middleware('role:bac_chairman|bac_secretariat|hope|admin');
@@ -122,7 +122,7 @@ class DocumentDownloadController extends BaseController
                 $parts = explode('/', $fileKey);
 
                 return [
-                    'procurement_id' => $parts[0] ?? 'Unknown',
+                    'pr_number' => $parts[0] ?? 'Unknown',
                     'procurement_title' => 'Document (Development Mode)',
                     'document_type' => pathinfo($fileKey, PATHINFO_FILENAME),
                     'stage' => $parts[1] ?? 'Unknown',
@@ -143,7 +143,7 @@ class DocumentDownloadController extends BaseController
                 $parts = explode('/', $fileKey);
 
                 return [
-                    'procurement_id' => $parts[0] ?? 'Unknown',
+                    'pr_number' => $parts[0] ?? 'Unknown',
                     'procurement_title' => 'Document (Development Mode)',
                     'document_type' => pathinfo($fileKey, PATHINFO_FILENAME),
                     'stage' => $parts[1] ?? 'Unknown',
@@ -164,7 +164,7 @@ class DocumentDownloadController extends BaseController
             DocumentView::create([
                 'user_id' => Auth::id(),
                 'file_key' => $fileKey,
-                'procurement_id' => $documentData['procurement_id'] ?? '',
+                'pr_number' => $documentData['pr_number'] ?? '',
                 'procurement_title' => $documentData['procurement_title'] ?? null,
                 'document_type' => $documentData['document_type'] ?? null,
                 'stage' => $documentData['stage'] ?? null,
@@ -192,7 +192,7 @@ class DocumentDownloadController extends BaseController
     private function createPlaceholderPdf(string $fileKey, array $documentData): string
     {
         $documentType = $documentData['document_type'] ?? 'Document';
-        $procurementId = $documentData['procurement_id'] ?? 'Unknown';
+        $pr_number = $documentData['pr_number'] ?? 'Unknown';
         $stage = $documentData['stage'] ?? 'Unknown';
 
         $pdf = "%PDF-1.4\n";
@@ -203,7 +203,7 @@ class DocumentDownloadController extends BaseController
         $pdf .= "5 0 obj\n<< /Length 200 >>\nstream\n";
         $pdf .= "BT\n/F1 16 Tf\n100 700 Td\n(DEVELOPMENT MODE - PLACEHOLDER PDF) Tj\n";
         $pdf .= "0 -30 Td\n(Document: {$documentType}) Tj\n";
-        $pdf .= "0 -20 Td\n(Procurement ID: {$procurementId}) Tj\n";
+        $pdf .= "0 -20 Td\n(Procurement ID: {$pr_number}) Tj\n";
         $pdf .= "0 -20 Td\n(Stage: {$stage}) Tj\n";
         $pdf .= "0 -40 Td\n(File Key: {$fileKey}) Tj\n";
         $pdf .= "0 -60 Td\n(This is a placeholder PDF for development purposes.) Tj\n";

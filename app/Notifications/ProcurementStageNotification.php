@@ -54,7 +54,7 @@ class ProcurementStageNotification extends Notification
      */
     protected function getRoleSpecificUrl(object $notifiable): string
     {
-        $id = $this->data['procurement_id'];
+        $id = $this->data['pr_number'];
 
         // Generate URL based on user role
         switch ($notifiable->role) {
@@ -124,7 +124,7 @@ class ProcurementStageNotification extends Notification
             ->view('emails.procurement-notification', [
                 'notifiable' => $notifiable,
                 'subject' => $subject,
-                'procurementId' => $this->data['procurement_id'],
+                'pr_number' => $this->data['pr_number'],
                 'procurementTitle' => $this->data['procurement_title'],
                 'stageIdentifier' => $this->data['stage_identifier'],
                 'currentStatus' => $this->data['current_status'],
@@ -145,7 +145,7 @@ class ProcurementStageNotification extends Notification
     public function toArray(object $notifiable): array
     {
         $data = [
-            'procurement_id' => $this->data['procurement_id'],
+            'pr_number' => $this->data['pr_number'],
             'procurement_title' => $this->data['procurement_title'],
             'stage_identifier' => $this->data['stage_identifier'],
             'current_status' => $this->data['current_status'],
@@ -185,7 +185,7 @@ class ProcurementStageNotification extends Notification
         $data = [
             'title' => $title,
             'message' => $message,
-            'procurement_id' => $this->data['procurement_id'],
+            'pr_number' => $this->data['pr_number'],
             'procurement_title' => $this->data['procurement_title'],
             'stage_identifier' => $this->data['stage_identifier'],
             'current_status' => $this->data['current_status'],
@@ -226,7 +226,7 @@ class ProcurementStageNotification extends Notification
             ->icon('/favicon.ico') // You can customize this icon
             ->badge('/favicon.ico') // Badge icon for Android notifications
             ->data([
-                'procurement_id' => $this->data['procurement_id'],
+                'pr_number' => $this->data['pr_number'],
                 'stage_identifier' => $this->data['stage_identifier'],
                 'current_status' => $this->data['current_status'],
                 'url' => $url,

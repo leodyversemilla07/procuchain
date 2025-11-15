@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\UserRoleEnums;
-use App\Http\Requests\Procurement\ProcurementInitiationRequest;
+use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 
 uses(RefreshDatabase::class);
 
-describe('ProcurementInitiationRequest', function () {
+describe('InitiateProcurementRequest', function () {
     beforeEach(function () {
         Storage::fake('local');
         $this->user = User::factory()->create();
@@ -20,7 +20,7 @@ describe('ProcurementInitiationRequest', function () {
 
     describe('authorization', function () {
         test('it authorizes bac secretariat users', function () {
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $request->setUserResolver(fn () => $this->user);
 
             expect($request->authorize())->toBeTrue();
@@ -32,7 +32,7 @@ describe('ProcurementInitiationRequest', function () {
 
             $this->actingAs($unauthorizedUser);
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
 
             expect($request->authorize())->toBeFalse();
         });
@@ -40,7 +40,7 @@ describe('ProcurementInitiationRequest', function () {
         test('it denies guest users', function () {
             auth()->logout();
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $request->setUserResolver(fn () => null);
 
             expect($request->authorize())->toBeFalse();
@@ -50,7 +50,7 @@ describe('ProcurementInitiationRequest', function () {
     describe('validation rules', function () {
         test('it passes with valid data', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [
                     UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
@@ -67,7 +67,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->passes())->toBeTrue();
@@ -75,7 +75,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it passes without optional fields', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [
                     UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
@@ -87,15 +87,15 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->passes())->toBeTrue();
         });
     });
 
-    describe('procurement_id validation', function () {
-        test('it requires procurement_id', function () {
+    describe('pr_number validation', function () {
+        test('it requires pr_number', function () {
             $data = [
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf')],
@@ -106,53 +106,53 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('procurement_id'))->toBeTrue();
+            expect($validator->errors()->has('pr_number'))->toBeTrue();
         });
 
-        test('it requires procurement_id to be a string', function () {
+        test('it requires pr_number to be a string', function () {
             $data = [
-                'procurement_id' => 12345,
+                'pr_number' => 12345,
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('procurement_id'))->toBeTrue();
+            expect($validator->errors()->has('pr_number'))->toBeTrue();
         });
 
-        test('it rejects procurement_id exceeding 50 characters', function () {
+        test('it rejects pr_number exceeding 50 characters', function () {
             $data = [
-                'procurement_id' => str_repeat('A', 51),
+                'pr_number' => str_repeat('A', 51),
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('procurement_id'))->toBeTrue();
+            expect($validator->errors()->has('pr_number'))->toBeTrue();
         });
     });
 
     describe('procurement_title validation', function () {
         test('it requires procurement_title', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -161,13 +161,13 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it requires minimum 5 characters', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Test',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -176,13 +176,13 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it rejects procurement_title exceeding 255 characters', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => str_repeat('A', 256),
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -193,12 +193,12 @@ describe('ProcurementInitiationRequest', function () {
     describe('files validation', function () {
         test('it requires files array', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -207,13 +207,13 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it requires at least one file', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [],
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -222,7 +222,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it rejects non-PDF files', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [
                     UploadedFile::fake()->create('document1.docx', 1024),
@@ -230,7 +230,7 @@ describe('ProcurementInitiationRequest', function () {
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -239,7 +239,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it rejects files exceeding 10MB', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [
                     UploadedFile::fake()->create('document1.pdf', 10241, 'application/pdf'),
@@ -247,7 +247,7 @@ describe('ProcurementInitiationRequest', function () {
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -256,7 +256,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it accepts multiple PDF files', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [
                     UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
@@ -268,7 +268,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->passes())->toBeTrue();
@@ -278,12 +278,12 @@ describe('ProcurementInitiationRequest', function () {
     describe('metadata validation', function () {
         test('it requires metadata array', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -292,13 +292,13 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it requires at least one metadata entry', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -307,7 +307,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it requires document_type in metadata', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [
@@ -315,7 +315,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -324,7 +324,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it rejects document_type exceeding 255 characters', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [
@@ -332,7 +332,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -343,7 +343,7 @@ describe('ProcurementInitiationRequest', function () {
     describe('submission_date validation', function () {
         test('it accepts valid date in Y-m-d format', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [
@@ -354,7 +354,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->passes())->toBeTrue();
@@ -364,7 +364,7 @@ describe('ProcurementInitiationRequest', function () {
             $futureDate = now()->addDays(1)->format('Y-m-d');
 
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [
@@ -375,7 +375,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -384,7 +384,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it rejects invalid date format', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [
@@ -395,7 +395,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -406,7 +406,7 @@ describe('ProcurementInitiationRequest', function () {
     describe('signatories validation', function () {
         test('it accepts valid signatories', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [
@@ -420,7 +420,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->passes())->toBeTrue();
@@ -428,7 +428,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it requires name for each signatory', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [
@@ -441,7 +441,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -450,7 +450,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it requires position for each signatory', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [
@@ -463,7 +463,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -472,7 +472,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it rejects signatory name exceeding 255 characters', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
                 'metadata' => [
@@ -485,7 +485,7 @@ describe('ProcurementInitiationRequest', function () {
                 ],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
@@ -496,7 +496,7 @@ describe('ProcurementInitiationRequest', function () {
     describe('custom error messages', function () {
         test('it provides custom message for file size', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [
                     UploadedFile::fake()->create('document1.pdf', 10241, 'application/pdf'),
@@ -504,7 +504,7 @@ describe('ProcurementInitiationRequest', function () {
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules(), $request->messages());
 
             expect($validator->errors()->first('files.0'))->toContain('8MB');
@@ -512,7 +512,7 @@ describe('ProcurementInitiationRequest', function () {
 
         test('it provides custom message for file type', function () {
             $data = [
-                'procurement_id' => 'PROC-2024-001',
+                'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
                 'files' => [
                     UploadedFile::fake()->create('document1.docx', 1024),
@@ -520,7 +520,7 @@ describe('ProcurementInitiationRequest', function () {
                 'metadata' => [['document_type' => 'Project Proposal']],
             ];
 
-            $request = new ProcurementInitiationRequest;
+            $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules(), $request->messages());
 
             expect($validator->errors()->first('files.0'))->toContain('PDF');

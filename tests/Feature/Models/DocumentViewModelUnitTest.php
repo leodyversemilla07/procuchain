@@ -12,7 +12,7 @@ describe('DocumentView Model - Configuration', function () {
         $expectedFillable = [
             'user_id',
             'file_key',
-            'procurement_id',
+            'pr_number',
             'procurement_title',
             'document_type',
             'stage',
@@ -155,23 +155,23 @@ describe('DocumentView Model - Static Methods - Recent Views', function () {
 
 describe('DocumentView Model - Static Methods - Procurement Stats', function () {
     test('getProcurementViewStats returns stats grouped by file', function () {
-        $procurementId = 'PR-STATS-001';
+        $pr_number = 'PR-STATS-001';
 
         DocumentView::factory()->count(3)->create([
-            'procurement_id' => $procurementId,
+            'pr_number' => $pr_number,
             'file_key' => 'file-1',
             'document_type' => 'procurement_plan',
             'stage' => 'procurement_initiation',
         ]);
 
         DocumentView::factory()->count(2)->create([
-            'procurement_id' => $procurementId,
+            'pr_number' => $pr_number,
             'file_key' => 'file-2',
             'document_type' => 'bidding_documents',
             'stage' => 'submission_evaluation',
         ]);
 
-        $stats = DocumentView::getProcurementViewStats($procurementId);
+        $stats = DocumentView::getProcurementViewStats($pr_number);
 
         expect($stats)->toHaveCount(2);
     });
@@ -437,7 +437,7 @@ describe('DocumentView Model - Data Integrity', function () {
     test('requires user_id', function () {
         expect(fn () => DocumentView::create([
             'file_key' => 'test-file',
-            'procurement_id' => 'PR-001',
+            'pr_number' => 'PR-001',
             'viewed_at' => now(),
         ]))->toThrow(\Illuminate\Database\QueryException::class);
     });
@@ -447,7 +447,7 @@ describe('DocumentView Model - Data Integrity', function () {
 
         expect(fn () => DocumentView::create([
             'user_id' => $user->id,
-            'procurement_id' => 'PR-001',
+            'pr_number' => 'PR-001',
             'viewed_at' => now(),
         ]))->toThrow(\Illuminate\Database\QueryException::class);
     });
@@ -471,14 +471,14 @@ describe('DocumentView Model - Data Integrity', function () {
         $view = DocumentView::factory()->create([
             'user_id' => $user->id,
             'file_key' => 'file-abc-123',
-            'procurement_id' => 'PR-2024-001',
+            'pr_number' => 'PR-2024-001',
             'procurement_title' => 'Supply of Office Equipment',
             'document_type' => 'bidding_documents',
             'stage' => 'submission_evaluation',
         ]);
 
         expect($view->file_key)->toBe('file-abc-123');
-        expect($view->procurement_id)->toBe('PR-2024-001');
+        expect($view->pr_number)->toBe('PR-2024-001');
         expect($view->procurement_title)->toBe('Supply of Office Equipment');
         expect($view->document_type)->toBe('bidding_documents');
         expect($view->stage)->toBe('submission_evaluation');
@@ -486,18 +486,18 @@ describe('DocumentView Model - Data Integrity', function () {
 });
 
 describe('DocumentView Model - Query Scenarios', function () {
-    test('can filter by procurement_id', function () {
-        $procurementId = 'PR-FILTER-001';
+    test('can filter by pr_number', function () {
+        $pr_number = 'PR-FILTER-001';
 
         DocumentView::factory()->count(3)->create([
-            'procurement_id' => $procurementId,
+            'pr_number' => $pr_number,
         ]);
 
         DocumentView::factory()->count(2)->create([
-            'procurement_id' => 'PR-OTHER-001',
+            'pr_number' => 'PR-OTHER-001',
         ]);
 
-        $views = DocumentView::where('procurement_id', $procurementId)->get();
+        $views = DocumentView::where('pr_number', $pr_number)->get();
 
         expect($views)->toHaveCount(3);
     });

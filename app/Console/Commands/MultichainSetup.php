@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Enums\StreamEnums;
+use App\Libraries\MultiChain\Manager;
 use App\Models\User;
-use App\Services\MultichainService;
 use Exception;
 use Illuminate\Console\Command;
 
@@ -57,6 +57,7 @@ class MultichainSetup extends Command
         StreamEnums::STATUS->value,
         StreamEnums::EVENTS->value,
         StreamEnums::CORRECTIONS->value,
+        'procurement.metadata', // Procurement metadata storage
     ];
 
     /**
@@ -72,14 +73,14 @@ class MultichainSetup extends Command
         'admin',
     ];
 
-    private MultichainService $multichainService;
+    private Manager $multichain;
 
     private array $generatedAddresses = [];
 
-    public function __construct(MultichainService $multichainService)
+    public function __construct(Manager $multichain)
     {
         parent::__construct();
-        $this->multichainService = $multichainService;
+        $this->multichainService = $multichain;
     }
 
     public function handle(): int

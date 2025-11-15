@@ -12,7 +12,7 @@ class NotificationService
     /**
      * Notify users about procurement stage updates.
      *
-     * @param  string  $procurementId  The procurement ID
+     * @param  string  $pr_number  The procurement ID
      * @param  string  $procurementTitle  The procurement title
      * @param  string  $stageIdentifier  The stage identifier
      * @param  string  $currentStatus  The current status
@@ -24,7 +24,7 @@ class NotificationService
      * @param  array  $rolesToNotify  Roles to notify (defaults to bac_chairman, hope, admin)
      */
     public function notifyStageUpdate(
-        string $procurementId,
+        string $pr_number,
         string $procurementTitle,
         string $stageIdentifier,
         string $currentStatus,
@@ -43,7 +43,7 @@ class NotificationService
 
         if ($usersToNotify->isEmpty()) {
             Log::warning('No users found with specified roles to notify for procurement update', [
-                'procurement_id' => $procurementId,
+                'pr_number' => $pr_number,
                 'roles' => $rolesToNotify,
             ]);
 
@@ -51,7 +51,7 @@ class NotificationService
         }
 
         $notificationData = [
-            'procurement_id' => $procurementId,
+            'pr_number' => $pr_number,
             'procurement_title' => $procurementTitle,
             'stage_identifier' => $stageIdentifier,
             'current_status' => $currentStatus,
@@ -67,7 +67,7 @@ class NotificationService
 
         Notification::send($usersToNotify, new ProcurementStageNotification($notificationData));
         Log::info('Procurement stage update notification sent', [
-            'procurement_id' => $procurementId,
+            'pr_number' => $pr_number,
             'stage' => $stageIdentifier,
             'next_stage' => $stageTransition ? $nextStage : 'none',
             'roles_notified' => $rolesToNotify,

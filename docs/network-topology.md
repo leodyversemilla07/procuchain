@@ -282,7 +282,7 @@ AWS_ENDPOINT=https://sgp1.digitaloceanspaces.com
 ```
 Bucket: {AWS_BUCKET}
 ├── procurement-documents/
-│   ├── {procurement_id}/
+│   ├── {pr_number}/
 │   │   ├── {file_hash}.pdf
 │   │   ├── {file_hash}.docx
 │   │   └── {file_hash}.xlsx
@@ -439,7 +439,7 @@ Connection Command:
     "txid": "transaction_hash",
     "vout": 0,
     "address": "blockchain_address",
-    "key": "procurement_id",
+    "key": "pr_number",
     "data": {
         "json": {
             "document_type": "bidding_documents",
@@ -448,7 +448,7 @@ Connection Command:
             "file_key": "s3_object_key",
             "user_address": "publisher_address",
             "timestamp": "2025-10-16T12:00:00Z",
-            "procurement_id": "PROC-2025-001",
+            "pr_number": "PROC-2025-001",
             "procurement_title": "IT Equipment Procurement"
         }
     }
@@ -456,7 +456,7 @@ Connection Command:
 
 // Status Stream Item
 {
-    "key": "procurement_id",
+    "key": "pr_number",
     "data": {
         "json": {
             "status": "bid_opening",

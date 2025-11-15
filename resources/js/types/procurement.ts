@@ -17,7 +17,7 @@ export interface ProcurementListItem {
 }
 
 export interface Procurement {
-    procurement_id: string;
+    pr_number: string;
     procurement_title: string;
     documents: Document[];
     status: Status;
@@ -29,7 +29,7 @@ export interface Procurement {
 
 export interface PrInitiationResponse {
     success: boolean;
-    procurement_id: string;
+    pr_number: string;
     procurement_title: string;
     document_count: number;
     timestamp: string;

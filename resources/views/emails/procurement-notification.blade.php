@@ -350,7 +350,7 @@
                     <div class="detail-row">
                         <div class="detail-label">ID:</div>
                         <div class="detail-value">
-                            <span class="procurement-id">{{ $procurementId }}</span>
+                            <span class="procurement-id">{{ $pr_number }}</span>
                         </div>
                     </div>
                     <div class="detail-row">

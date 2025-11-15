@@ -32,6 +32,28 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
+        // Configure rate limiters for blockchain operations (Issue #18 fix)
+        $middleware->throttleApi();
+        $middleware->throttleWithRedis();
+
+        // Custom rate limiter for blockchain writes (Issue #20: use config)
+        \Illuminate\Support\Facades\RateLimiter::for('blockchain_writes', function ($request) {
+            // Load limit from config (Issue #20 fix)
+            $limit = config('blockchain.rate_limiting.writes_per_minute', 10);
+
+            // Per-user rate limiting for blockchain write operations
+            // Prevents abuse and protects blockchain node from overload
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute($limit)
+                ->by($request->user()?->id ?: $request->ip())
+                ->response(function () use ($limit) {
+                    return response()->json([
+                        'error' => 'Too many blockchain operations. Please wait a moment before trying again.',
+                        'retry_after' => 60,
+                        'limit' => $limit,
+                    ], 429);
+                });
+        });
+
     })
     ->withSchedule(function (Schedule $schedule) {
         // Blockchain reconciliation - verify pending documents against blockchain every hour

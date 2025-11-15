@@ -301,7 +301,7 @@ describe('BlockchainMonitoringService', function () {
             // Create documents
             DB::table('procurement_documents')->insert([
                 [
-                    'procurement_id' => 'PR-001',
+                    'pr_number' => 'PR-001',
                     'file_key' => 'file1.pdf',
                     'file_name' => 'file1.pdf',
                     'document_type' => 'test',
@@ -312,7 +312,7 @@ describe('BlockchainMonitoringService', function () {
                     'updated_at' => now(),
                 ],
                 [
-                    'procurement_id' => 'PR-002',
+                    'pr_number' => 'PR-002',
                     'file_key' => 'file2.pdf',
                     'file_name' => 'file2.pdf',
                     'document_type' => 'test',
@@ -342,7 +342,7 @@ describe('BlockchainMonitoringService', function () {
 
             DB::table('procurement_documents')->insert([
                 [
-                    'procurement_id' => 'PR-001',
+                    'pr_number' => 'PR-001',
                     'file_key' => 'failed1.pdf',
                     'file_name' => 'failed1.pdf',
                     'document_type' => 'test',
@@ -354,7 +354,7 @@ describe('BlockchainMonitoringService', function () {
                     'updated_at' => now(),
                 ],
                 [
-                    'procurement_id' => 'PR-002',
+                    'pr_number' => 'PR-002',
                     'file_key' => 'failed2.pdf',
                     'file_name' => 'failed2.pdf',
                     'document_type' => 'test',

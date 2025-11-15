@@ -30,7 +30,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
     
     // Build breadcrumbs using centralized utility
     const procurementsListBreadcrumb = getProcurementsListBreadcrumb(userRole);
-    const procurementDetailBreadcrumb = getProcurementDetailBreadcrumb(userRole, document.procurement_id);
+    const procurementDetailBreadcrumb = getProcurementDetailBreadcrumb(userRole, document.pr_number);
     const breadcrumbs = buildBreadcrumbs(userRole, [
         procurementsListBreadcrumb,
         procurementDetailBreadcrumb,

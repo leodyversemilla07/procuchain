@@ -15,6 +15,14 @@ pest()->extend(Tests\TestCase::class)
     ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
 
+pest()->extend(Tests\TestCase::class)
+    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->in('Browser');
+
+// Configure browser testing
+pest()->browser()
+    ->timeout(30000); // 30 seconds timeout for browser operations
+
 /*
 |--------------------------------------------------------------------------
 | Custom Expectations

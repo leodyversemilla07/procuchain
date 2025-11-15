@@ -3,10 +3,15 @@
  * ProcuChain Status Validation Filter (Standalone Version)
  *
  * Stream Filter for: procurement.status
- * Version: 1.0.0 (Community Edition Compatible)
+ * Version: 3.0.0 (pr_number support with backward compatibility)
  *
  * Purpose: Enforce status progression rules for procurement workflows
  * This ensures that procurement status transitions follow valid progression paths
+ *
+ * Changes in v3:
+ * - Accept pr_number (PR-YYYY-####-####) as primary identifier
+ * - Maintain backward compatibility with pr_number (UUID)
+ * - Added PR number format validation
  *
  * Note: This is a standalone version for MultiChain Community Edition
  * which does not support libraries. All validation is inline.
@@ -31,12 +36,26 @@ function filterstreamitem() {
     // ========================================
     // 1. REQUIRED FIELDS VALIDATION
     // ========================================
-    var requiredFields = ['procurement_id', 'procurement_title', 'current_status', 'stage', 'timestamp', 'user_address'];
+    // Accept EITHER pr_number (new) OR pr_number (legacy) for backward compatibility
+    if ((!data.pr_number || data.pr_number === '') && (!data.pr_number || data.pr_number === '')) {
+        return 'Missing required field: pr_number or pr_number (at least one must be provided)';
+    }
+
+    var requiredFields = ['procurement_title', 'current_status', 'stage', 'timestamp', 'user_address'];
 
     for (var i = 0; i < requiredFields.length; i++) {
         var field = requiredFields[i];
         if (!data[field] || data[field] === '') {
             return 'Missing required field: ' + field;
+        }
+    }
+    
+    // PR Number format validation (if provided)
+    if (data.pr_number && data.pr_number !== '') {
+        // PR-YYYY-####-#### format (e.g., PR-2025-0001-0042)
+        var prNumberPattern = /^PR-\d{4}-\d{4}-\d{4}$/;
+        if (!prNumberPattern.test(data.pr_number)) {
+            return 'Invalid PR number format. Expected: PR-YYYY-####-#### (e.g., PR-2025-0001-0042)';
         }
     }
 

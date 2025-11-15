@@ -32,6 +32,12 @@ interface CacheStrategyInterface
     public function rememberSmart(string $key, \DateTimeInterface|\DateInterval|int $ttl, callable $callback): mixed;
 
     /**
+     * Automatic cache strategy - recommended method (alias for rememberSmart)
+     * Automatically chooses the best cache store based on data size
+     */
+    public function remember(string $key, \DateTimeInterface|\DateInterval|int $ttl, callable $callback): mixed;
+
+    /**
      * Put large data in database cache
      */
     public function putLarge(string $key, mixed $value, \DateTimeInterface|\DateInterval|int|null $ttl = null): bool;
@@ -40,6 +46,12 @@ interface CacheStrategyInterface
      * Put small data in default cache
      */
     public function putSmall(string $key, mixed $value, \DateTimeInterface|\DateInterval|int|null $ttl = null): bool;
+
+    /**
+     * Automatic cache strategy for writes - recommended method
+     * Automatically chooses the best cache store based on data size
+     */
+    public function put(string $key, mixed $value, \DateTimeInterface|\DateInterval|int|null $ttl = null): bool;
 
     /**
      * Get estimated size of a value in KB

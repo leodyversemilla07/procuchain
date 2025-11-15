@@ -50,6 +50,28 @@ export const MUNICIPAL_OFFICES = [
 export type MunicipalOffice = typeof MUNICIPAL_OFFICES[number]['value'];
 
 /**
+ * LGU Funding Sources per Local Government Code of 1991
+ */
+export const FUNDING_SOURCES = [
+    { value: 'General Fund', label: 'General Fund', description: 'Regular income from local sources and IRA' },
+    { value: 'Internal Revenue Allotment (IRA)', label: 'Internal Revenue Allotment (IRA)', description: 'Share from national taxes' },
+    { value: 'Special Education Fund (SEF)', label: 'Special Education Fund (SEF)', description: 'Additional 1% real property tax for education' },
+    { value: 'Trust Fund', label: 'Trust Fund', description: 'Donations, grants, and special purpose funds' },
+    { value: '20% Development Fund', label: '20% Development Fund', description: 'Portion of IRA for development projects' },
+    { value: 'Calamity Fund', label: 'Calamity Fund', description: 'Reserved for disaster response and recovery' },
+    { value: 'Local Disaster Risk Reduction and Management Fund (LDRRMF)', label: 'LDRRMF', description: 'For disaster preparedness and mitigation' },
+    { value: 'Gender and Development (GAD) Fund', label: 'GAD Fund', description: 'Mandatory 5% allocation for GAD programs' },
+    { value: 'National Government Subsidy', label: 'National Government Subsidy', description: 'Specific subsidies from national agencies' },
+    { value: 'Foreign Grants and Loans', label: 'Foreign Grants and Loans', description: 'International funding assistance' },
+    { value: 'Local Revenue Code', label: 'Local Revenue Code', description: 'Taxes, fees, and charges under LGU ordinances' },
+    { value: 'Public-Private Partnership (PPP)', label: 'PPP Fund', description: 'Partnership with private sector' },
+    { value: 'Internally Generated Income', label: 'Internally Generated Income', description: 'LGU own-source revenue' },
+    { value: 'Other Sources', label: 'Other Sources', description: 'Other legitimate funding sources' },
+] as const;
+
+export type FundingSource = typeof FUNDING_SOURCES[number]['value'];
+
+/**
  * Ordered list of procurement stages for workflow progression
  */
 export const STAGE_ORDER = [

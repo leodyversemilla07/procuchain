@@ -347,7 +347,7 @@
     - Status selection dropdown.
 - **BAC Chairman & HOPE**:
     - Real-time view: Table with columns for general (e.g., `document_type`, `hash`) and stage-specific metadata (e.g., `bidder_name`).
-    - Filters: `procurement_id`, stage, date range.
+    - Filters: `pr_number`, stage, date range.
     - Visuals: Timeline of statuses/events.
 - **Notifications**: Alerts for stage completions via email/dashboard.
 

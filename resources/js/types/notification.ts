@@ -15,7 +15,7 @@ export interface Notification {
     data: {
         title: string;
         message: string;
-        procurement_id: string;
+        pr_number: string;
         procurement_title: string;
         stage_identifier: string;
         current_status: string;

@@ -82,7 +82,21 @@ export enum UserRole {
 }
 
 export enum DocumentType {
-    // Procurement Initiation
+    // Procurement Initiation - RA 9184 Compliant Document Types
+    PURCHASE_REQUEST = 'purchase_request',
+    TECHNICAL_SPECIFICATIONS = 'technical_specifications',
+    TERMS_OF_REFERENCE = 'terms_of_reference',
+    CERTIFICATE_OF_FUNDS = 'certificate_of_funds',
+    PPMP_ENTRY = 'ppmp_entry',
+    MARKET_RESEARCH = 'market_research',
+    PRICE_SURVEY = 'price_survey',
+    APPROVAL_DOCUMENTS = 'approval_documents',
+    END_USER_REQUEST = 'end_user_request',
+    DEPARTMENT_ENDORSEMENT = 'department_endorsement',
+    BUDGET_ALLOCATION = 'budget_allocation',
+    PROJECT_PROPOSAL = 'project_proposal',
+    
+    // Legacy - Keep for backwards compatibility
     PROCUREMENT_INITIATION_DOCUMENT = 'procurement_initiation_document',
     
     // Pre-Procurement Conference

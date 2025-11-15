@@ -18,7 +18,7 @@ interface ProcurementStatus {
     timestamp: string;
     formatted_date: string;
     formatted_date_only: string;
-    procurement_id?: string;
+    pr_number?: string;
     procurement_title?: string;
     user_address?: string;
     progress: number;
@@ -27,12 +27,12 @@ interface ProcurementStatus {
 
 interface ProcurementHeaderProps {
     title: string;
-    procurementId: string;
+    pr_number: string;
     status: ProcurementStatus;
     userRole?: string;
 }
 
-export function ProcurementHeader({ title, procurementId, status, userRole }: ProcurementHeaderProps) {
+export function ProcurementHeader({ title, pr_number, status, userRole }: ProcurementHeaderProps) {
     const stageToSearch = (status?.stage_formatted || status?.stage) as typeof STAGE_ORDER[number];
     const stageIndex = stageToSearch ? STAGE_ORDER.indexOf(stageToSearch) + 1 : 0;
     const totalStages = STAGE_ORDER.length;
@@ -42,19 +42,19 @@ export function ProcurementHeader({ title, procurementId, status, userRole }: Pr
     const getNextStageRoute = () => {
         const stage = status?.stage || '';
         const routes: Record<string, string> = {
-            'procurement_initiation': `/bac-secretariat/pre-procurement-conference-upload/${procurementId}`,
-            'pre_procurement_conference': `/bac-secretariat/bidding-documents-upload/${procurementId}`,
-            'bidding_documents': `/bac-secretariat/pre-bid-conference-upload/${procurementId}`,
-            'pre_bid_conference': `/bac-secretariat/supplemental-bid-bulletin-upload/${procurementId}`,
-            'supplemental_bid_bulletin': `/bac-secretariat/bid-opening-upload/${procurementId}`,
-            'bid_opening': `/bac-secretariat/bid-evaluation-upload/${procurementId}`,
-            'bid_evaluation': `/bac-secretariat/post-qualification-upload/${procurementId}`,
-            'post_qualification': `/bac-secretariat/bac-resolution-upload/${procurementId}`,
-            'bac_resolution': `/bac-secretariat/noa-upload/${procurementId}`,
-            'notice_of_award': `/bac-secretariat/performance-bond-contract-po-upload/${procurementId}`,
-            'performance_bond_contract_and_po': `/bac-secretariat/ntp-upload/${procurementId}`,
-            'notice_to_proceed': `/bac-secretariat/monitoring-upload/${procurementId}`,
-            'monitoring': `/bac-secretariat/completion-upload/${procurementId}`,
+            'procurement_initiation': `/bac-secretariat/pre-procurement-conference-upload/${pr_number}`,
+            'pre_procurement_conference': `/bac-secretariat/bidding-documents-upload/${pr_number}`,
+            'bidding_documents': `/bac-secretariat/pre-bid-conference-upload/${pr_number}`,
+            'pre_bid_conference': `/bac-secretariat/supplemental-bid-bulletin-upload/${pr_number}`,
+            'supplemental_bid_bulletin': `/bac-secretariat/bid-opening-upload/${pr_number}`,
+            'bid_opening': `/bac-secretariat/bid-evaluation-upload/${pr_number}`,
+            'bid_evaluation': `/bac-secretariat/post-qualification-upload/${pr_number}`,
+            'post_qualification': `/bac-secretariat/bac-resolution-upload/${pr_number}`,
+            'bac_resolution': `/bac-secretariat/noa-upload/${pr_number}`,
+            'notice_of_award': `/bac-secretariat/performance-bond-contract-po-upload/${pr_number}`,
+            'performance_bond_contract_and_po': `/bac-secretariat/ntp-upload/${pr_number}`,
+            'notice_to_proceed': `/bac-secretariat/monitoring-upload/${pr_number}`,
+            'monitoring': `/bac-secretariat/completion-upload/${pr_number}`,
         };
         return routes[stage];
     };
@@ -79,7 +79,7 @@ export function ProcurementHeader({ title, procurementId, status, userRole }: Pr
                     <CardTitle className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">{title}</CardTitle>
                     <CardDescription className="flex flex-wrap items-center gap-1.5 text-sm sm:gap-2 sm:text-base">
                         <Hash className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
-                        <span className="font-mono text-xs sm:text-sm">Procurement ID: {procurementId}</span>
+                        <span className="font-mono text-xs sm:text-sm">Procurement ID: {pr_number}</span>
                     </CardDescription>
                 </div>
 

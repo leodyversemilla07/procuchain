@@ -36,7 +36,7 @@ import admin from '@/routes/admin';
 interface BreadcrumbConfig {
     role?: string;
     procurementTitle?: string;
-    procurementId?: string;
+    pr_number?: string;
     documentTitle?: string;
     customSegments?: BreadcrumbItem[];
 }
@@ -80,22 +80,22 @@ export const getProcurementsListBreadcrumb = (role?: string): BreadcrumbItem => 
 /**
  * Get procurement detail breadcrumb based on user role
  */
-export const getProcurementDetailBreadcrumb = (role?: string, procurementId?: string): BreadcrumbItem => {
-    if (!procurementId) {
+export const getProcurementDetailBreadcrumb = (role?: string, pr_number?: string): BreadcrumbItem => {
+    if (!pr_number) {
         return { title: 'Procurement Details', href: '#' };
     }
     
     switch (role) {
         case UserRole.BAC_SECRETARIAT:
-            return { title: 'Procurement Details', href: bacSecretariat.procurements.show.url(procurementId) };
+            return { title: 'Procurement Details', href: bacSecretariat.procurements.show.url(pr_number) };
         case UserRole.BAC_CHAIRMAN:
-            return { title: 'Procurement Details', href: bacChairman.procurements.show.url(procurementId) };
+            return { title: 'Procurement Details', href: bacChairman.procurements.show.url(pr_number) };
         case UserRole.HOPE:
-            return { title: 'Procurement Details', href: hope.procurements.show.url(procurementId) };
+            return { title: 'Procurement Details', href: hope.procurements.show.url(pr_number) };
         case UserRole.ADMIN:
-            return { title: 'Procurement Details', href: admin.procurements.show.url(procurementId) };
+            return { title: 'Procurement Details', href: admin.procurements.show.url(pr_number) };
         default:
-            return { title: 'Procurement Details', href: `/procurements-list/${procurementId}` };
+            return { title: 'Procurement Details', href: `/procurements-list/${pr_number}` };
     }
 };
 

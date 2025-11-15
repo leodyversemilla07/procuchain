@@ -24,7 +24,7 @@ it('can view documents through the application', function () {
         'file_key' => 'test-document',
         'document_type' => 'Test Document',
         'stage' => 'BiddingDocuments',
-        'procurement_id' => 'TEST-001',
+        'pr_number' => 'TEST-001',
     ]);
 
     $response = get('/pdf-viewer/test-document');
@@ -56,7 +56,7 @@ it('requires proper role for PDF viewer access', function () {
         'file_key' => 'test-document',
         'document_type' => 'Test Document',
         'stage' => 'BiddingDocuments',
-        'procurement_id' => 'TEST-001',
+        'pr_number' => 'TEST-001',
     ]);
 
     $response = get('/pdf-viewer/test-document');
@@ -77,7 +77,7 @@ it('formats stage enum to display name correctly', function () {
         'file_key' => 'test-stage-format',
         'document_type' => 'procurement_initiation',
         'stage' => 'procurement_initiation',
-        'procurement_id' => 'TEST-002',
+        'pr_number' => 'TEST-002',
     ]);
 
     $response = get('/pdf-viewer/test-stage-format');

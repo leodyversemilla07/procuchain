@@ -4,7 +4,7 @@
  */
 
 export interface BlockchainProcurementDocument {
-    procurement_id: string;
+    pr_number: string;
     procurement_title: string;
     stage: string;
     timestamp: string;
@@ -19,7 +19,7 @@ export interface BlockchainProcurementDocument {
 }
 
 export interface BlockchainProcurementState {
-    procurement_id: string;
+    pr_number: string;
     procurement_title: string;
     current_status: string;
     stage: string;
@@ -28,7 +28,7 @@ export interface BlockchainProcurementState {
 }
 
 export interface BlockchainProcurementEvent {
-    procurement_id: string;
+    pr_number: string;
     procurement_title: string;
     event_type: string;
     stage: string;

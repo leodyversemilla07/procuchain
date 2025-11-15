@@ -13,7 +13,7 @@ interface DocumentCorrectionSheetProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     documentId: number | string;
-    procurementId: number | string;
+    pr_number: number | string;
     procurementTitle: string;
     originalDocumentHash: string;
     originalTxid?: string;
@@ -23,7 +23,7 @@ export function DocumentCorrectionSheet({
     open,
     onOpenChange,
     documentId,
-    procurementId,
+    pr_number,
     procurementTitle,
     originalDocumentHash,
     originalTxid,
@@ -42,7 +42,7 @@ export function DocumentCorrectionSheet({
         const formData = new FormData();
         formData.append('correction_reason', correctionReason);
         formData.append('correction_type', correctionType);
-        formData.append('procurement_id', procurementId.toString());
+        formData.append('pr_number', pr_number.toString());
         formData.append('procurement_title', procurementTitle);
         formData.append('original_document_hash', originalDocumentHash);
         if (originalTxid) {

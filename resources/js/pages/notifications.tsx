@@ -16,6 +16,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, Loader2, RotateCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { markAsRead, markAllAsRead, page as notificationsPage } from '@/actions/App/Http/Controllers/NotificationController';
 
 // Import Wayfinder route helpers for each role
 import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
@@ -31,7 +32,7 @@ interface Notification {
     data: {
         title: string;
         message: string;
-        procurement_id: string;
+        pr_number: string;
         procurement_title: string;
         stage_identifier: string;
         current_status: string;
@@ -139,7 +140,7 @@ export default function Notifications() {
 
             // Make the actual request
             router.post(
-                `/notifications/${id}/mark-as-read`,
+                markAsRead(id).url,
                 {},
                 {
                     preserveScroll: true,
@@ -172,7 +173,7 @@ export default function Notifications() {
 
         // Make the actual request
         router.post(
-            '/notifications/mark-all-as-read',
+            markAllAsRead().url,
             {},
             {
                 preserveScroll: true,
@@ -240,7 +241,7 @@ export default function Notifications() {
                 handleMarkAsRead(notification.id);
             }
             // Navigate to procurement details using Wayfinder routes
-            const procurementUrl = getProcurementShowUrl(userRole || 'guest', notification.data.procurement_id);
+            const procurementUrl = getProcurementShowUrl(userRole || 'guest', notification.data.pr_number);
             router.visit(procurementUrl);
         },
         [userRole, handleMarkAsRead],

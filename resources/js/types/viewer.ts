@@ -35,7 +35,7 @@ export interface ViewStats {
 }
 
 export interface PdfDocument {
-    procurement_id: string;
+    pr_number: string;
     procurement_title: string;
     document_type: string;
     document_type_display: string;
@@ -68,7 +68,7 @@ export interface CorrectionRecord {
 
 export interface CorrectionData {
     document_file_key: string;
-    procurement_id: string;
+    pr_number: string;
     stage: string;
     document_type: string;
     original_hash: string;

@@ -1,43 +1,32 @@
-import DatePicker from '@/components/date-picker';
-import FileUploadArea from '@/components/file-upload-area';
-import InputError from '@/components/input-error';
-import { TextareaWithLabel } from '@/components/textarea-with-label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFileDrop } from '@/hooks/use-file-drop';
+import { useProgressiveUpload } from '@/hooks/use-progressive-upload';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import { format } from 'date-fns';
-import { AlertCircle, CalendarIcon, CheckCircle, FileText, Upload } from 'lucide-react';
+import { Head } from '@inertiajs/react';
+import { CheckCircle2, CheckCircle } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
 import { buildBreadcrumbs } from '@/utils/breadcrumbs';
 import { UserRole } from '@/types/enums';
 import { getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
-
-// Helper for type-safe error access
-function getFieldError<T extends object>(errors: T, field: keyof T): string | undefined {
-    return errors && typeof errors === 'object' ? (errors as Record<string, string>)[field as string] : undefined;
-}
+import { DocumentChecklistCard } from '@/components/procurement/document-checklist-card';
+import type { DocumentGuide } from '@/types/document-guide';
 
 interface CompletionUploadProps {
     procurement?: {
         id: string;
         title: string;
     };
+    documentGuide?: DocumentGuide;
+    uploadedDocuments?: string[];
 }
 
-export default function CompletionUpload({ procurement = { id: '', title: '' } }: CompletionUploadProps) {
-    // Format current date for initial form data
-    const currentDate = new Date();
-
-    const { data, setData, post, processing, errors, reset, clearErrors, transform } = useForm({
-        procurement_id: procurement?.id || '',
-        procurement_title: procurement?.title || '',
-        completion_file: null as File | null,
-        completion_date: currentDate,
-        completion_notes: '',
+export default function CompletionUpload({ procurement = { id: '', title: '' }, documentGuide, uploadedDocuments = [] }: CompletionUploadProps) {
+    const { isUploading, handleDocumentUpload } = useProgressiveUpload({
+        procurementId: procurement?.id || '',
+        stage: 'completed',
+        phase: 'post-procurement',
     });
 
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
@@ -45,69 +34,13 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
         { title: `Upload Certificate of Completion - ${procurement.id}`, href: '#' },
     ]);
 
-    const onSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Client-side validation
-        if (!data.completion_file) {
-            toast.error('Missing Certificate of Completion', { description: 'Please upload the certificate of completion PDF.' });
-            return;
-        }
-        if (!data.completion_date) {
-            toast.error('Missing completion date', { description: 'Please select the completion date.' });
-            return;
-        }
-
-        transform((formData) => ({
-            ...formData,
-            completion_date: formData.completion_date ? format(formData.completion_date, 'yyyy-MM-dd') : '',
-        }));
-
-        post('/bac-secretariat/upload-completion-documents', {
-            preserveScroll: true,
-            preserveState: true,
-            forceFormData: true,
-            onSuccess: () => {
-                toast.success('Certificate of Completion uploaded successfully!', {
-                    description: 'Completion document has been submitted.',
-                });
-                reset();
-                clearErrors();
-            },
-            onError: () => {
-                toast.error('Failed to upload Certificate of Completion', {
-                    description: 'Please check the form for errors.',
-                });
-            },
+    const handleMarkComplete = () => {
+        toast.success('Stage marked as complete!', {
+            description: 'All required documents have been uploaded.',
         });
     };
 
-    // File validation
-    const validateFile = (file: File) => {
-        if (file.type !== 'application/pdf') {
-            toast.error('Invalid file type', { description: 'Please upload only PDF files.' });
-            return false;
-        }
-        if (file.size > 10 * 1024 * 1024) {
-            toast.error('File too large', { description: 'Maximum file size is 10MB.' });
-            return false;
-        }
-        return true;
-    };
-
-    // Use custom file drop hook for completion file
-    const completionDrop = useFileDrop({
-        validateFile,
-        setFile: (file) => setData('completion_file', file),
-    });
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            if (validateFile(file)) {
-                setData('completion_file', file);
-            }
-        }
-    };
+    const allRequiredUploaded = documentGuide && uploadedDocuments.length >= documentGuide.counts.required_count;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -124,118 +57,75 @@ export default function CompletionUpload({ procurement = { id: '', title: '' } }
                         <span className="text-foreground font-medium italic"> {procurement.title}</span>
                     </p>
                 </div>
-                <form onSubmit={onSubmit} className="space-y-6">
+
+                <div className="space-y-6">
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                        {documentGuide && (
+                            <DocumentChecklistCard
+                                documentGuide={documentGuide}
+                                uploadedDocuments={uploadedDocuments}
+                                canUpload={!isUploading}
+                                onUploadClick={handleDocumentUpload}
+                                className="lg:order-last"
+                            />
+                        )}
+
                         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
                             <CardHeader className="space-y-1 pb-4">
                                 <CardTitle className="flex items-center gap-2 text-xl font-semibold">
-                                    <FileText className="text-primary h-5 w-5" />
-                                    Required Document
+                                    <CheckCircle className="text-primary h-5 w-5" />
+                                    Progressive Document Upload
                                 </CardTitle>
-                                <CardDescription>Please upload the Certificate of Completion in PDF format</CardDescription>
+                                <CardDescription>
+                                    Use the checklist on the right to upload required documents one at a time. Once all required documents are uploaded, you can mark this stage as complete.
+                                </CardDescription>
                             </CardHeader>
+
                             <CardContent className="space-y-8">
-                                <FileUploadArea
-                                    label="Certificate of Completion Document"
-                                    file={data.completion_file}
-                                    error={getFieldError(errors, 'completion_file')}
-                                    isDragging={completionDrop.isDragging}
-                                    onFileChange={handleFileChange}
-                                    onDragEnter={completionDrop.handleDragEnter}
-                                    onDragLeave={completionDrop.handleDragLeave}
-                                    onDragOver={completionDrop.handleDragOver}
-                                    onDrop={completionDrop.handleDrop}
-                                    onRemove={() => setData('completion_file', null)}
-                                    inputId="completion-file-input"
-                                    required={true}
-                                />
-                                {getFieldError(errors, 'completion_file') && <InputError message={getFieldError(errors, 'completion_file')} />}
-                            </CardContent>
-                        </Card>
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border h-fit shadow-md">
-                            <CardHeader className="space-y-1 pb-4">
-                                <CardTitle className="flex items-center gap-2 text-xl font-semibold">
-                                    <CalendarIcon className="text-primary h-5 w-5" />
-                                    Completion Details
-                                </CardTitle>
-                                <CardDescription>Provide information about the Completion</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <DatePicker
-                                    label="Completion Date"
-                                    value={data.completion_date instanceof Date ? data.completion_date : new Date(data.completion_date)}
-                                    onChange={(date) => {
-                                        if (date) setData('completion_date', date);
-                                    }}
-                                    error={getFieldError(errors, 'completion_date')}
-                                    required
-                                />
-                                {getFieldError(errors, 'completion_date') && <InputError message={getFieldError(errors, 'completion_date')} />}
-                                <div className="space-y-2">
-                                    <TextareaWithLabel
-                                        label="Notes"
-                                        value={data.completion_notes}
-                                        onChange={(e) => setData('completion_notes', e.target.value)}
-                                        placeholder="Enter any additional notes"
-                                        rows={5} // Updated to match the height in monitoring-upload.tsx
-                                        required={false}
-                                        error={getFieldError(errors, 'completion_notes')}
-                                        errorClassName="mt-1.5 sm:mt-2"
-                                    />
-                                    {getFieldError(errors, 'completion_notes') && <InputError message={getFieldError(errors, 'completion_notes')} />}{' '}
-                                    {/* Renamed key */}
+                                <div className="rounded-lg border border-muted bg-muted/30 p-4">
+                                    <h3 className="text-sm font-medium mb-2">How to Upload Documents:</h3>
+                                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                                        <li>Click the "Upload" button next to each document in the checklist</li>
+                                        <li>Select the PDF file from your computer (max 10MB)</li>
+                                        <li>Documents are automatically saved to the blockchain</li>
+                                        <li>Track your progress in real-time</li>
+                                    </ol>
                                 </div>
                             </CardContent>
+
                             <CardFooter className="flex flex-col gap-3 border-t pt-4">
                                 <Button
-                                    type="submit"
-                                    disabled={
-                                        processing || !data.completion_file || (data.completion_file && data.completion_file.size > 10 * 1024 * 1024)
-                                    }
+                                    type="button"
+                                    disabled={!allRequiredUploaded || isUploading}
+                                    onClick={handleMarkComplete}
                                     className="flex h-11 w-full items-center gap-2"
                                 >
-                                    {processing ? (
+                                    {isUploading ? (
                                         <div className="flex items-center gap-2">
                                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                            Processing...
+                                            Uploading...
                                         </div>
                                     ) : (
                                         <>
-                                            <Upload className="h-4 w-4" />
-                                            Submit Completion
+                                            <CheckCircle2 className="h-4 w-4" />
+                                            Mark Stage as Complete
                                         </>
                                     )}
                                 </Button>
+
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => window.history.back()}
-                                    disabled={processing}
+                                    disabled={isUploading}
                                     className="h-10 w-full"
                                 >
-                                    Cancel
+                                    Back to Procurements
                                 </Button>
                             </CardFooter>
                         </Card>
                     </div>
-                </form>
-                {Object.keys(errors).length > 0 && (
-                    <Card className="border-destructive/50 bg-destructive/5 dark:bg-destructive/10 shadow-md">
-                        <CardContent className="p-4">
-                            <div className="flex items-start">
-                                <AlertCircle className="text-destructive mt-0.5 mr-3 h-5 w-5" />
-                                <div>
-                                    <h4 className="text-destructive text-sm font-medium">Please fix the following errors:</h4>
-                                    <ul className="text-destructive/90 mt-2 list-inside list-disc space-y-1 text-sm">
-                                        {Object.entries(errors).map(([field, message]) => (
-                                            <li key={field}>{message}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+                </div>
             </div>
         </AppLayout>
     );

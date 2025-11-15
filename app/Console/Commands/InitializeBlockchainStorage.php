@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\MultichainService;
+use App\Libraries\MultiChain\Manager;
 use Exception;
 use Illuminate\Console\Command;
 
@@ -26,7 +26,7 @@ class InitializeBlockchainStorage extends Command
     /**
      * Execute the console command.
      */
-    public function handle(MultichainService $multichain): int
+    public function handle(Manager $multichain): int
     {
         $this->info('🔗 Initializing On-Chain File Storage...');
         $this->newLine();

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('file_key'); // The file key/path in storage
-            $table->string('procurement_id'); // Links to procurement
+            $table->string('pr_number'); // Links to procurement
             $table->string('procurement_title')->nullable();
             $table->string('document_type')->nullable(); // e.g., 'Minutes', 'Attendance', etc.
             $table->string('stage')->nullable(); // e.g., 'Pre-Bid Conference'
@@ -28,7 +28,7 @@ return new class extends Migration
 
             // Indexes for better query performance
             $table->index(['user_id', 'file_key']);
-            $table->index(['procurement_id', 'viewed_at']);
+            $table->index(['pr_number', 'viewed_at']);
             $table->index(['file_key', 'viewed_at']);
             $table->index('viewed_at');
         });

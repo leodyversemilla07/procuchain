@@ -3,10 +3,15 @@
  * ProcuChain Document Validation Filter (Standalone Version)
  *
  * Stream Filter for: procurement.documents
- * Version: 1.0.0 (Community Edition Compatible)
+ * Version: 2.0.0 (pr_number support with backward compatibility)
  *
  * Purpose: Enforce document metadata integrity, hash uniqueness per procurement,
  * and adherence to allowed document types on the blockchain level.
+ *
+ * Changes in v2:
+ * - Accept pr_number (PR-YYYY-####-####) as primary identifier
+ * - Maintain backward compatibility with pr_number (UUID)
+ * - Added PR number format validation
  *
  * This filter ensures that:
  * - Document hashes are valid SHA-256 format (64 hex characters)
@@ -41,8 +46,12 @@ function filterstreamitem() {
     // ========================================
     // 1. REQUIRED FIELDS VALIDATION
     // ========================================
+    // Accept EITHER pr_number (new) OR pr_number (legacy) for backward compatibility
+    if ((!data.pr_number || data.pr_number === '') && (!data.pr_number || data.pr_number === '')) {
+        return 'Missing required field: pr_number or pr_number (at least one must be provided)';
+    }
+
     var requiredFields = [
-        'procurement_id',
         'procurement_title',
         'hash',
         'file_key',
@@ -57,6 +66,15 @@ function filterstreamitem() {
         var field = requiredFields[i];
         if (!data[field] || data[field] === '') {
             return 'Missing required field: ' + field;
+        }
+    }
+
+    // PR Number format validation (if provided)
+    if (data.pr_number && data.pr_number !== '') {
+        // PR-YYYY-####-#### format (e.g., PR-2025-0001-0042)
+        var prNumberPattern = /^PR-\d{4}-\d{4}-\d{4}$/;
+        if (!prNumberPattern.test(data.pr_number)) {
+            return 'Invalid PR number format. Expected: PR-YYYY-####-#### (e.g., PR-2025-0001-0042)';
         }
     }
 

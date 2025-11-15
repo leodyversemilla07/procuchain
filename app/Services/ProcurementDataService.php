@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\DataTransferObjects\DocumentData;
+use App\DataTransferObjects\EventData;
+use App\DataTransferObjects\StatusData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
-use App\Enums\StreamEnums;
+use App\Libraries\MultiChain\Manager;
 use App\Models\User;
+use App\Repositories\DocumentRepository;
+use App\Repositories\EventRepository;
+use App\Repositories\StatusRepository;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
@@ -21,25 +27,46 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcurementDataService
 {
-    private MultichainService $multichainService;
+    private Manager $multichain;
+
+    private StatusRepository $statusRepository;
+
+    private DocumentRepository $documentRepository;
+
+    private EventRepository $eventRepository;
+
+    private UserService $userService;
 
     /**
      * @var array<string, string>
      */
     private array $userCache = [];
 
-    private const STATUS_PAGE_SIZE = 1000;
+    // Issue #20 fix: Load from config instead of hardcoded constants
+    private int $statusPageSize;
 
-    private const DOCUMENT_PAGE_SIZE = 10000;
+    private int $documentPageSize;
 
     public function __construct(
-        MultichainService $multichainService
+        Manager $multichain,
+        StatusRepository $statusRepository,
+        DocumentRepository $documentRepository,
+        EventRepository $eventRepository,
+        UserService $userService
     ) {
-        $this->multichainService = $multichainService;
+        $this->multichain = $multichain;
+        $this->statusRepository = $statusRepository;
+        $this->documentRepository = $documentRepository;
+        $this->eventRepository = $eventRepository;
+        $this->userService = $userService;
+
+        // Load configuration values (Issue #20 fix)
+        $this->statusPageSize = config('blockchain.pagination.status_page_size', 1000);
+        $this->documentPageSize = config('blockchain.pagination.document_page_size', 10000);
     }
 
     /**
-     * Fetch and process all procurements for listing page
+     * Fetch and process all procurement data
      *
      * @return array<int, array<string, mixed>>
      *
@@ -47,85 +74,71 @@ class ProcurementDataService
      */
     public function fetchAndProcessProcurements(): array
     {
-        Log::info('fetchAndProcessProcurements: Fetching status items from MultiChain');
-        $statusItems = $this->multichainService->listStreamItems(
-            StreamEnums::STATUS->value,
-            true,
-            self::STATUS_PAGE_SIZE,
-            0,
-            false
-        );
+        Log::info('fetchAndProcessProcurements: Starting to fetch data from repositories');
 
-        if ($statusItems === null) {
-            Log::error('fetchAndProcessProcurements: Failed to retrieve status stream items');
-            throw new Exception('Failed to retrieve status stream items');
-        }
+        // Fetch all status items using repository
+        $statusDtos = $this->statusRepository->all();
+        $statusItems = collect($statusDtos);
 
-        Log::info('fetchAndProcessProcurements: Retrieved status items', ['count' => count($statusItems)]);
+        // Fetch all document items using repository
+        $documentDtos = $this->documentRepository->all();
 
-        Log::info('fetchAndProcessProcurements: Fetching document items from MultiChain');
-        $documentItems = $this->multichainService->listStreamItems(
-            StreamEnums::DOCUMENTS->value,
-            true,
-            self::DOCUMENT_PAGE_SIZE,
-            0,
-            false
-        );
+        Log::info('fetchAndProcessProcurements: Fetched data from repositories', [
+            'status_count' => $statusItems->count(),
+            'document_count' => count($documentDtos),
+        ]);
 
-        if ($documentItems === null) {
-            Log::error('fetchAndProcessProcurements: Failed to retrieve document stream items');
-            throw new Exception('Failed to retrieve document stream items');
-        }
+        // Preload user names for performance
+        $this->preloadUserNamesFromDtos($statusItems);
 
-        Log::info('fetchAndProcessProcurements: Retrieved document items', ['count' => count($documentItems)]);
+        // Build document count map by pr_number
+        $documentCountMap = collect($documentDtos)
+            ->groupBy(fn (DocumentData $doc) => $doc->prNumber)
+            ->map(fn ($docs) => $docs->count())
+            ->all();
 
-        // Preload user names
-        $this->preloadUserNames(collect($statusItems));
+        // Process status items to get latest status per procurement
+        $result = $statusItems
+            ->map(function (StatusData $statusDto) use ($documentCountMap) {
+                $originalTimestamp = $statusDto->timestamp;
+                $displayTimestamp = Carbon::parse($statusDto->timestamp)->toDateString();
 
-        // Build a map: procurement_id => document count (unique by hash)
-        $documentCountMap = collect($documentItems)
-            ->filter(fn ($item) => isset($item['data']['json']['procurement_id']) && isset($item['data']['json']['hash']))
-            ->groupBy(fn ($item) => $item['data']['json']['procurement_id'])
-            ->map(function ($items) {
-                return collect($items)
-                    ->map(fn ($item) => $item['data']['json']['hash'])
-                    ->unique()
-                    ->count();
-            });
-
-        Log::info('fetchAndProcessProcurements: Built document count map', ['count' => $documentCountMap->count()]);
-
-        // Map procurements, using the precomputed document count
-        $result = collect($statusItems)
-            ->map(function ($item) use ($documentCountMap) {
-                $data = $item['data']['json'] ?? [];
-                $originalTimestamp = $data['timestamp'] ?? null;
-                $displayTimestamp = isset($data['timestamp'])
-                    ? Carbon::parse($data['timestamp'])->toDateString()
-                    : Carbon::now()->toDateString();
-
-                $currentStatus = $data['current_status'] ?? '';
-                $stage = $data['stage'] ?? '';
+                // Get stage enum and phase information
+                $stageEnum = StageEnums::tryFrom($statusDto->stage);
+                $phase = $stageEnum?->getPhase() ?? 'unknown';
+                $phaseDisplayName = $stageEnum?->getPhaseDisplayName() ?? 'Unknown';
+                $phaseProgress = $stageEnum?->getPhaseProgress() ?? [
+                    'phase' => 'unknown',
+                    'progress' => 0,
+                    'current_stage_in_phase' => 0,
+                    'total_stages_in_phase' => 0,
+                ];
 
                 return [
-                    'id' => $data['procurement_id'] ?? null,
-                    'title' => $data['procurement_title'] ?? null,
-                    'stage' => $stage,
-                    'stage_formatted' => $this->formatStageName($stage),
-                    'current_status' => $currentStatus,
-                    'status_formatted' => $this->formatStatus($currentStatus),
+                    'id' => $statusDto->prNumber,
+                    'title' => $statusDto->procurementTitle,
+                    'stage' => $statusDto->stage,
+                    'stage_formatted' => $this->formatStageName($statusDto->stage),
+                    'phase' => $phase,
+                    'phase_display' => $phaseDisplayName,
+                    'phase_progress' => $phaseProgress,
+                    'current_status' => $statusDto->currentStatus,
+                    'status_formatted' => $this->formatStatus($statusDto->currentStatus),
                     'timestamp' => $originalTimestamp,
                     'display_date' => $displayTimestamp,
                     'last_updated' => $displayTimestamp,
-                    'user_address' => $data['user_address'] ?? '',
-                    'user' => $this->getUserName($data['user_address'] ?? ''),
-                    'document_count' => $documentCountMap[$data['procurement_id'] ?? ''] ?? 0,
+                    'user_address' => $statusDto->userAddress,
+                    'user' => $this->getUserName($statusDto->userAddress),
+                    'document_count' => $documentCountMap[$statusDto->prNumber] ?? 0,
                 ];
             })
             ->groupBy('id')
             ->map(function ($group) {
                 return $group->sortByDesc(function ($item) {
-                    return strtotime($item['timestamp'] ?? '0');
+                    // Handle both Carbon instance and string timestamp
+                    $timestamp = $item['timestamp'] ?? '0';
+
+                    return $timestamp instanceof Carbon ? $timestamp->timestamp : strtotime($timestamp);
                 })->first();
             })
             ->values()
@@ -141,46 +154,37 @@ class ProcurementDataService
      *
      * @throws Exception
      */
-    public function fetchStatusItems(string $procurementId): Collection
+    public function fetchStatusItems(string $pr_number): Collection
     {
-        $statusStreamItems = $this->multichainService->listStreamItems(
-            StreamEnums::STATUS->value,
-            true,
-            self::STATUS_PAGE_SIZE,
-            0,
-            false
-        );
+        $statusDtos = $this->statusRepository->findByProcurement($pr_number);
 
-        if (! $statusStreamItems) {
-            throw new Exception('Status stream items not found');
-        }
+        return collect($statusDtos)
+            ->map(function (StatusData $statusDto) {
+                $stage = $statusDto->stage;
+                $currentStatus = $statusDto->currentStatus;
 
-        return collect($statusStreamItems)
-            ->filter(function ($item) use ($procurementId) {
-                $data = $item['data']['json'] ?? [];
-
-                return ($data['procurement_id'] ?? '') === $procurementId;
-            })
-            ->map(function ($item) {
-                $data = $item['data']['json'] ?? [];
-                $stage = $data['stage'] ?? '';
-                $currentStatus = $data['current_status'] ?? '';
+                // Get stage enum and phase information
+                $stageEnum = StageEnums::tryFrom($stage);
+                $phase = $stageEnum?->getPhase() ?? 'unknown';
+                $phaseDisplayName = $stageEnum?->getPhaseDisplayName() ?? 'Unknown';
 
                 return [
                     'stage' => $stage,
                     'stage_formatted' => $this->formatStageName($stage),
                     'stage_description' => $this->getStageDescription($stage),
                     'stage_order' => $this->getStageOrderIndex($stage),
+                    'phase' => $phase,
+                    'phase_display' => $phaseDisplayName,
                     'current_status' => $currentStatus,
                     'status' => $currentStatus,
                     'status_formatted' => $this->formatStatus($currentStatus),
-                    'timestamp' => $data['timestamp'] ?? '',
-                    'formatted_date' => $this->formatDateTime($data['timestamp'] ?? ''),
-                    'formatted_date_only' => $this->formatDateOnly($data['timestamp'] ?? ''),
-                    'formatted_time_only' => $this->formatTimeOnly($data['timestamp'] ?? ''),
-                    'procurement_id' => $data['procurement_id'] ?? '',
-                    'procurement_title' => $data['procurement_title'] ?? '',
-                    'user_address' => $data['user_address'] ?? '',
+                    'timestamp' => $statusDto->timestamp,
+                    'formatted_date' => $statusDto->getFormattedDateTime(),
+                    'formatted_date_only' => $statusDto->getFormattedDateOnly(),
+                    'formatted_time_only' => $statusDto->getFormattedTimeOnly(),
+                    'pr_number' => $statusDto->prNumber,
+                    'procurement_title' => $statusDto->procurementTitle,
+                    'user_address' => $statusDto->userAddress,
                 ];
             })
             ->sortByDesc('timestamp');
@@ -193,79 +197,52 @@ class ProcurementDataService
      *
      * @throws Exception
      */
-    public function fetchAndProcessAllDocuments(string $procurementId): array
+    public function fetchAndProcessAllDocuments(string $pr_number): array
     {
-        $allDocumentItems = $this->multichainService->listStreamItems(
-            StreamEnums::DOCUMENTS->value,
-            true,
-            self::DOCUMENT_PAGE_SIZE,
-            0,
-            false
-        );
+        $documentDtos = $this->documentRepository->findByProcurement($pr_number);
 
-        if ($allDocumentItems === null) {
-            Log::warning('Failed to retrieve any document stream items.', ['procurement_id' => $procurementId]);
-
-            return [];
-        }
-
-        $totalFetched = count($allDocumentItems);
-
-        $filteredItems = collect($allDocumentItems)
-            ->filter(function ($item) use ($procurementId) {
-                return isset($item['data']['json']['procurement_id']) &&
-                    $item['data']['json']['procurement_id'] === $procurementId;
-            });
-
-        $totalAfterFilter = $filteredItems->count();
+        $totalAfterFilter = count($documentDtos);
 
         Log::debug('Document Fetching Stats', [
-            'procurement_id' => $procurementId,
-            'total_fetched_from_stream' => $totalFetched,
+            'pr_number' => $pr_number,
             'total_after_filtering_by_id' => $totalAfterFilter,
         ]);
 
-        return $filteredItems
-            ->map(function ($item) {
-                $data = $item['data']['json'] ?? [];
-                $fileKey = $data['file_key'] ?? '';
-                $hash = $data['hash'] ?? '';
-                $stage = $data['stage'] ?? '';
-                $timestamp = $data['timestamp'] ?? '';
-
-                // Cast file_size to int or null to ensure type safety
-                $fileSize = isset($data['file_size']) && $data['file_size'] !== ''
-                    ? (int) $data['file_size']
-                    : null;
+        return collect($documentDtos)
+            ->map(function (DocumentData $doc) {
+                $fileKey = $doc->fileKey;
+                $hash = $doc->hash;
+                $stage = $doc->stage;
+                $timestamp = $doc->timestamp;
 
                 $fileUrl = ! empty($fileKey) ? route('files.download', ['fileKey' => $fileKey]) : '';
 
                 // Format stage metadata if present
-                $stageMetadata = $data['stage_metadata'] ?? null;
+                $stageMetadata = $doc->stageMetadata;
                 if ($stageMetadata && is_array($stageMetadata)) {
                     $stageMetadata = $this->formatStageMetadata($stageMetadata);
                 }
 
                 return [
                     'file_key' => $fileKey,
-                    'document_type' => $data['document_type'] ?? '',
-                    'document_type_formatted' => $this->formatDocumentType($data['document_type'] ?? ''),
+                    'document_type' => $doc->documentType,
+                    'document_type_formatted' => $this->formatDocumentType($doc->documentType),
                     'spaces_url' => $fileUrl,
                     'hash' => $hash,
-                    'hash_short' => $this->shortenHash($hash),
-                    'hash_medium' => $this->shortenHash($hash, 6, 4),
-                    'file_size' => $fileSize,
-                    'file_size_formatted' => $this->formatFileSize($fileSize),
+                    'hash_short' => $doc->getShortenedHash(),
+                    'hash_medium' => $doc->getShortenedHash(6, 4),
+                    'file_size' => $doc->fileSize,
+                    'file_size_formatted' => $doc->getFormattedFileSize(),
                     'stage' => $stage,
                     'stage_formatted' => $this->formatStageName($stage),
                     'stage_metadata' => $stageMetadata,
-                    'procurement_id' => $data['procurement_id'] ?? '',
-                    'procurement_title' => $data['procurement_title'] ?? '',
-                    'user_address' => $data['user_address'] ?? '',
+                    'pr_number' => $doc->prNumber,
+                    'procurement_title' => $doc->procurementTitle,
+                    'user_address' => $doc->userAddress,
                     'timestamp' => $timestamp,
-                    'formatted_date' => $this->formatDateTime($timestamp),
-                    'formatted_date_only' => $this->formatDateOnly($timestamp),
-                    'formatted_time_only' => $this->formatTimeOnly($timestamp),
+                    'formatted_date' => $doc->getFormattedDateTime(),
+                    'formatted_date_only' => $doc->getFormattedDateOnly(),
+                    'formatted_time_only' => $doc->getFormattedTimeOnly(),
                 ];
             })
             ->sortByDesc('timestamp')
@@ -278,40 +255,31 @@ class ProcurementDataService
      *
      * @return array<int, array<string, mixed>>
      */
-    public function fetchAndProcessEvents(string $procurementId): array
+    public function fetchAndProcessEvents(string $pr_number): array
     {
-        $events = $this->multichainService->listStreamItems(
-            StreamEnums::EVENTS->value
-        );
+        $eventDtos = $this->eventRepository->findByProcurement($pr_number);
 
-        return collect($events)
-            ->filter(function ($item) use ($procurementId) {
-                $data = $item['data']['json'] ?? [];
-
-                return ($data['procurement_id'] ?? '') === $procurementId;
-            })
-            ->map(function ($item) {
-                $data = $item['data']['json'] ?? [];
-                $timestamp = $data['timestamp'] ?? '';
-                // Use 'stage' field (stream filter uses 'stage', not 'stage_identifier')
-                $stage = $data['stage'] ?? $data['stage_identifier'] ?? '';
+        return collect($eventDtos)
+            ->map(function (EventData $event) {
+                $timestamp = $event->timestamp;
+                $stage = $event->stage;
 
                 return [
                     'timestamp' => $timestamp,
-                    'formatted_date' => $this->formatDateTime($timestamp),
-                    'formatted_date_only' => $this->formatDateOnly($timestamp),
-                    'formatted_time_only' => $this->formatTimeOnly($timestamp),
-                    'event_type' => $data['event_type'] ?? '',
-                    'details' => $data['details'] ?? '',
+                    'formatted_date' => $event->getFormattedDateTime(),
+                    'formatted_date_only' => $event->getFormattedDateOnly(),
+                    'formatted_time_only' => $event->getFormattedTimeOnly(),
+                    'event_type' => $event->eventType,
+                    'details' => $event->details,
                     'stage' => $stage,
                     'stage_formatted' => $this->formatStageName($stage),
                     'stage_order' => $this->getStageOrderIndex($stage),
-                    'document_count' => $data['document_count'] ?? null,
-                    'procurement_id' => $data['procurement_id'] ?? '',
-                    'procurement_title' => $data['procurement_title'] ?? '',
-                    'user_address' => $data['user_address'] ?? '',
-                    'category' => $data['category'] ?? '',
-                    'severity' => $data['severity'] ?? '',
+                    'document_count' => $event->documentCount,
+                    'pr_number' => $event->prNumber,
+                    'procurement_title' => $event->procurementTitle,
+                    'user_address' => $event->userAddress,
+                    'category' => $event->category,
+                    'severity' => $event->severity,
                 ];
             })
             ->sortBy('timestamp')
@@ -328,7 +296,7 @@ class ProcurementDataService
      * @return array<string, mixed>
      */
     public function buildProcurementData(
-        string $procurementId,
+        string $pr_number,
         array $currentStatus,
         array $documents,
         array $events,
@@ -338,7 +306,7 @@ class ProcurementDataService
         $progress = $this->calculateProgress($stage);
 
         return [
-            'id' => $procurementId,
+            'id' => $pr_number,
             'title' => $currentStatus['procurement_title'] ?? 'N/A',
             'status' => [
                 'stage' => $stage,
@@ -350,7 +318,7 @@ class ProcurementDataService
                 'timestamp' => $currentStatus['timestamp'] ?? '',
                 'formatted_date' => $currentStatus['formatted_date'] ?? '',
                 'formatted_date_only' => $currentStatus['formatted_date_only'] ?? '',
-                'procurement_id' => $currentStatus['procurement_id'] ?? '',
+                'pr_number' => $currentStatus['pr_number'] ?? '',
                 'procurement_title' => $currentStatus['procurement_title'] ?? '',
                 'user_address' => $currentStatus['user_address'] ?? '',
                 'progress' => $progress,
@@ -363,7 +331,7 @@ class ProcurementDataService
     }
 
     /**
-     * Preload user names for batch user lookup
+     * Preload user names for batch user lookup from raw stream items
      */
     public function preloadUserNames(Collection $items): void
     {
@@ -380,11 +348,31 @@ class ProcurementDataService
     }
 
     /**
+     * Preload user names from DTOs for performance
+     */
+    private function preloadUserNamesFromDtos(Collection $statusDtos): void
+    {
+        $addresses = $statusDtos->map(fn (StatusData $dto) => $dto->userAddress)
+            ->unique()
+            ->filter()
+            ->toArray();
+
+        $this->userService->preloadUserNames($addresses);
+
+        // Build local cache from UserService
+        $this->userCache = [];
+        foreach ($addresses as $address) {
+            $this->userCache[$address] = $this->userService->getUserNameByAddress($address);
+        }
+    }
+
+    /**
      * Get username from blockchain address
      */
     public function getUserName(string $address): string
     {
-        return $this->userCache[$address] ?? 'Unknown';
+        // Check local cache first, then fallback to UserService
+        return $this->userCache[$address] ?? $this->userService->getUserNameByAddress($address);
     }
 
     // =====================================================================
@@ -552,14 +540,16 @@ class ProcurementDataService
     /**
      * Format timestamp to full date and time
      */
-    public function formatDateTime(?string $dateString): string
+    public function formatDateTime(Carbon|string|null $dateString): string
     {
         if (empty($dateString)) {
             return 'Invalid Date';
         }
 
         try {
-            return Carbon::parse($dateString)->format('M j, Y, g:i A');
+            $date = $dateString instanceof Carbon ? $dateString : Carbon::parse($dateString);
+
+            return $date->format('M j, Y, g:i A');
         } catch (\Exception $e) {
             return 'Invalid Date';
         }
@@ -568,14 +558,16 @@ class ProcurementDataService
     /**
      * Format timestamp to date only
      */
-    public function formatDateOnly(?string $dateString): string
+    public function formatDateOnly(Carbon|string|null $dateString): string
     {
         if (empty($dateString)) {
             return 'Invalid Date';
         }
 
         try {
-            return Carbon::parse($dateString)->format('F j, Y');
+            $date = $dateString instanceof Carbon ? $dateString : Carbon::parse($dateString);
+
+            return $date->format('M j, Y');
         } catch (\Exception $e) {
             return 'Invalid Date';
         }
@@ -584,14 +576,16 @@ class ProcurementDataService
     /**
      * Format timestamp to time only
      */
-    public function formatTimeOnly(?string $dateString): string
+    public function formatTimeOnly(Carbon|string|null $dateString): string
     {
         if (empty($dateString)) {
             return 'Invalid Time';
         }
 
         try {
-            return Carbon::parse($dateString)->format('g:i A');
+            $date = $dateString instanceof Carbon ? $dateString : Carbon::parse($dateString);
+
+            return $date->format('g:i A');
         } catch (\Exception $e) {
             return 'Invalid Time';
         }
@@ -747,57 +741,39 @@ class ProcurementDataService
         try {
             Log::info('Attempting to get blockchain data', ['file_key' => $fileKey]);
 
-            $allDocumentItems = $this->multichainService->listStreamItems(
-                StreamEnums::DOCUMENTS->value,
-                true,
-                self::DOCUMENT_PAGE_SIZE,
-                0,
-                false
-            );
-
-            if ($allDocumentItems === null) {
-                Log::warning('Failed to retrieve document stream items.', ['file_key' => $fileKey]);
-
-                return null;
-            }
+            $allDocuments = $this->documentRepository->all();
 
             Log::info('Retrieved document stream items', [
                 'file_key' => $fileKey,
-                'total_items' => count($allDocumentItems),
+                'total_items' => count($allDocuments),
             ]);
 
-            $documentItem = collect($allDocumentItems)
-                ->filter(function ($item) use ($fileKey) {
-                    return isset($item['data']['json']['file_key']) &&
-                        $item['data']['json']['file_key'] === $fileKey;
-                })
-                ->first();
+            $document = collect($allDocuments)
+                ->first(fn (DocumentData $doc) => $doc->fileKey === $fileKey);
 
-            if (! $documentItem) {
+            if (! $document) {
                 Log::info('No blockchain document found for file key', ['file_key' => $fileKey]);
 
                 return null;
             }
 
-            $data = $documentItem['data']['json'] ?? [];
-
             Log::info('Found blockchain document data', [
                 'file_key' => $fileKey,
-                'hash' => $data['hash'] ?? 'NOT SET',
-                'procurement_id' => $data['procurement_id'] ?? 'NOT SET',
+                'hash' => $document->hash,
+                'pr_number' => $document->prNumber,
             ]);
 
             return [
-                'procurement_id' => $data['procurement_id'] ?? 'Unknown',
-                'procurement_title' => $data['procurement_title'] ?? 'Unknown Document',
-                'document_type' => $data['document_type'] ?? pathinfo($fileKey, PATHINFO_FILENAME),
-                'stage' => $data['stage'] ?? 'Unknown',
-                'file_size' => $data['file_size'] ?? null,
-                'timestamp' => $data['timestamp'] ?? now()->toISOString(),
-                'hash' => $data['hash'] ?? '',
-                'user_address' => $data['user_address'] ?? 'unknown@example.com',
-                'stage_metadata' => $data['stage_metadata'] ?? null,
-                'data_txid' => $data['data_txid'] ?? null,
+                'pr_number' => $document->prNumber,
+                'procurement_title' => $document->procurementTitle,
+                'document_type' => $document->documentType,
+                'stage' => $document->stage,
+                'file_size' => $document->fileSize,
+                'timestamp' => $document->timestamp,
+                'hash' => $document->hash,
+                'user_address' => $document->userAddress,
+                'stage_metadata' => $document->stageMetadata,
+                'data_txid' => $document->dataTxid,
             ];
         } catch (\Exception $e) {
             Log::error('Failed to get document data from blockchain', [
@@ -814,10 +790,10 @@ class ProcurementDataService
      *
      * Merged from DocumentBlockchainService - optimized to use existing method
      */
-    public function getCurrentProcurementStatus(string $procurementId): ?array
+    public function getCurrentProcurementStatus(string $pr_number): ?array
     {
         try {
-            $statusItems = $this->fetchStatusItems($procurementId);
+            $statusItems = $this->fetchStatusItems($pr_number);
 
             $latestStatus = $statusItems->first();
 
@@ -826,7 +802,7 @@ class ProcurementDataService
                     'current_status' => $latestStatus['current_status'] ?? '',
                     'stage' => $latestStatus['stage'] ?? '',
                     'timestamp' => $latestStatus['timestamp'] ?? '',
-                    'procurement_id' => $latestStatus['procurement_id'] ?? '',
+                    'pr_number' => $latestStatus['pr_number'] ?? '',
                     'procurement_title' => $latestStatus['procurement_title'] ?? '',
                     'user_address' => $latestStatus['user_address'] ?? '',
                 ];
@@ -835,7 +811,7 @@ class ProcurementDataService
             return null;
         } catch (\Exception $e) {
             Log::error('Failed to get procurement status', [
-                'procurement_id' => $procurementId,
+                'pr_number' => $pr_number,
                 'error' => $e->getMessage(),
             ]);
 
@@ -848,64 +824,48 @@ class ProcurementDataService
      *
      * Merged from DocumentBlockchainService
      */
-    public function getHashByProcurementId(string $procurementId, string $fileKey): ?string
+    public function getHashBypr_number(string $pr_number, string $fileKey): ?string
     {
         try {
             Log::info('Attempting alternative hash lookup', [
-                'procurement_id' => $procurementId,
+                'pr_number' => $pr_number,
                 'file_key' => $fileKey,
             ]);
 
-            $allDocumentItems = $this->multichainService->listStreamItems(
-                StreamEnums::DOCUMENTS->value,
-                true,
-                self::DOCUMENT_PAGE_SIZE,
-                0,
-                false
-            );
+            $allDocuments = $this->documentRepository->all();
 
-            if ($allDocumentItems === null) {
-                return null;
-            }
-
-            $documentItem = collect($allDocumentItems)
-                ->filter(function ($item) use ($procurementId, $fileKey) {
-                    $data = $item['data']['json'] ?? [];
-                    $itemProcurementId = $data['procurement_id'] ?? '';
-                    $itemFileKey = $data['file_key'] ?? '';
-
-                    if ($itemProcurementId === $procurementId) {
+            $document = collect($allDocuments)
+                ->first(function (DocumentData $doc) use ($pr_number, $fileKey) {
+                    // Match by procurement ID
+                    if ($doc->prNumber === $pr_number) {
                         return true;
                     }
 
+                    // Pattern matching on file keys
                     $fileKeyParts = explode('/', $fileKey);
-                    $itemFileKeyParts = explode('/', $itemFileKey);
+                    $docFileKeyParts = explode('/', $doc->fileKey);
 
-                    if (count($fileKeyParts) >= 1 && count($itemFileKeyParts) >= 1) {
-                        return $fileKeyParts[0] === $itemFileKeyParts[0];
+                    if (count($fileKeyParts) >= 1 && count($docFileKeyParts) >= 1) {
+                        return $fileKeyParts[0] === $docFileKeyParts[0];
                     }
 
                     return false;
-                })
-                ->first();
+                });
 
-            if ($documentItem) {
-                $data = $documentItem['data']['json'] ?? [];
-                $hash = $data['hash'] ?? null;
-
+            if ($document) {
                 Log::info('Alternative hash lookup result', [
-                    'found_hash' => ! empty($hash),
-                    'hash_value' => $hash,
-                    'matched_file_key' => $data['file_key'] ?? 'NOT SET',
+                    'found_hash' => ! empty($document->hash),
+                    'hash_value' => $document->hash,
+                    'matched_file_key' => $document->fileKey,
                 ]);
 
-                return $hash;
+                return $document->hash;
             }
 
             return null;
         } catch (\Exception $e) {
             Log::error('Alternative hash lookup failed', [
-                'procurement_id' => $procurementId,
+                'pr_number' => $pr_number,
                 'file_key' => $fileKey,
                 'error' => $e->getMessage(),
             ]);
@@ -922,23 +882,25 @@ class ProcurementDataService
     public function validateDocumentExistsInBlockchain(string $fileKey): ?array
     {
         try {
-            $allDocumentItems = $this->multichainService->listStreamItems(
-                StreamEnums::DOCUMENTS->value,
-                true,
-                self::DOCUMENT_PAGE_SIZE,
-                0,
-                false
-            );
+            $allDocuments = $this->documentRepository->all();
 
-            if ($allDocumentItems === null) {
-                return null;
-            }
+            $document = collect($allDocuments)
+                ->first(fn (DocumentData $doc) => $doc->fileKey === $fileKey);
 
-            foreach ($allDocumentItems as $item) {
-                $data = $item['data']['json'] ?? [];
-                if (($data['file_key'] ?? '') === $fileKey) {
-                    return $data;
-                }
+            if ($document) {
+                return [
+                    'file_key' => $document->fileKey,
+                    'pr_number' => $document->prNumber,
+                    'procurement_title' => $document->procurementTitle,
+                    'document_type' => $document->documentType,
+                    'stage' => $document->stage,
+                    'file_size' => $document->fileSize,
+                    'timestamp' => $document->timestamp,
+                    'hash' => $document->hash,
+                    'user_address' => $document->userAddress,
+                    'stage_metadata' => $document->stageMetadata,
+                    'data_txid' => $document->dataTxid,
+                ];
             }
 
             return null;

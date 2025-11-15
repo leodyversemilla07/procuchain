@@ -2,14 +2,14 @@
 
 use App\Models\Procurement;
 use App\Models\ProcurementDocument;
-use App\Services\FileStorageService;
+use App\Services\BlockchainStorageService;
 use Illuminate\Http\UploadedFile;
 
 use function Pest\Laravel\assertDatabaseHas;
 
 describe('Document Upload and Download Integration', function () {
     beforeEach(function () {
-        $this->fileStorageService = app(FileStorageService::class);
+        $this->BlockchainStorageService = app(BlockchainStorageService::class);
 
         // Create a procurement for testing
         $this->procurement = Procurement::factory()->create([
@@ -25,7 +25,7 @@ describe('Document Upload and Download Integration', function () {
             'document_type' => 'Test Document',
         ]];
 
-        $result = $this->fileStorageService->uploadAndPrepare(
+        $result = $this->BlockchainStorageService->uploadAndPrepare(
             [$file],
             $metadata,
             $this->procurement->id,
@@ -40,7 +40,7 @@ describe('Document Upload and Download Integration', function () {
 
         // Verify database record was created
         assertDatabaseHas('procurement_documents', [
-            'procurement_id' => $this->procurement->id,
+            'pr_number' => $this->procurement->id,
             'file_name' => 'test-document.pdf',
             'document_type' => 'Test Document',
             'stage' => 'testing',
@@ -66,7 +66,7 @@ describe('Document Upload and Download Integration', function () {
             'document_type' => 'Retrieval Test',
         ]];
 
-        $uploadResult = $this->fileStorageService->uploadAndPrepare(
+        $uploadResult = $this->BlockchainStorageService->uploadAndPrepare(
             [$file],
             $metadata,
             $this->procurement->id,
@@ -77,7 +77,7 @@ describe('Document Upload and Download Integration', function () {
         $document = ProcurementDocument::where('file_key', $uploadResult[0]['file_key'])->first();
 
         // Retrieve the file using data_txid
-        $retrievedFile = $this->fileStorageService->retrieveFile(
+        $retrievedFile = $this->BlockchainStorageService->retrieveFile(
             $document->file_key,
             $document->data_txid
         );
@@ -96,7 +96,7 @@ describe('Document Upload and Download Integration', function () {
             ['document_type' => 'Document Two'],
         ];
 
-        $result = $this->fileStorageService->uploadAndPrepare(
+        $result = $this->BlockchainStorageService->uploadAndPrepare(
             [$file1, $file2],
             $metadata,
             $this->procurement->id,
@@ -108,19 +108,19 @@ describe('Document Upload and Download Integration', function () {
 
         // Verify both database records were created
         assertDatabaseHas('procurement_documents', [
-            'procurement_id' => $this->procurement->id,
+            'pr_number' => $this->procurement->id,
             'file_name' => 'document1.pdf',
             'document_type' => 'Document One',
         ]);
 
         assertDatabaseHas('procurement_documents', [
-            'procurement_id' => $this->procurement->id,
+            'pr_number' => $this->procurement->id,
             'file_name' => 'document2.pdf',
             'document_type' => 'Document Two',
         ]);
 
         // Verify both have data_txid
-        $documents = ProcurementDocument::where('procurement_id', $this->procurement->id)->get();
+        $documents = ProcurementDocument::where('pr_number', $this->procurement->id)->get();
 
         expect($documents)->toHaveCount(2);
 
@@ -139,7 +139,7 @@ describe('Document Upload and Download Integration', function () {
             'submission_date' => '2025-11-08',
         ]];
 
-        $result = $this->fileStorageService->uploadAndPrepare(
+        $result = $this->BlockchainStorageService->uploadAndPrepare(
             [$file],
             $metadata,
             $this->procurement->id,
