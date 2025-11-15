@@ -47,17 +47,18 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 ## Technology Stack
 
 - **Backend**: Laravel 12.36.1 with PHP 8.3.27
-- **Frontend**: React 19.0.0 with Inertia.js v2.2.15 for SPA experience
+- **Frontend**: React 19.2.0 with Inertia.js v2.2.16 for SPA experience
 - **Database**: MySQL 8.0+ with database-driven sessions, cache, and queue
 - **Blockchain**: MultiChain (Community Edition) for immutable document integrity and audit trails
 - **File Storage**: On-chain storage directly in blockchain (zero external storage costs, automatic node replication, Heroku-compatible)
-- **Styling**: Tailwind CSS v4.1.16 for responsive design
+- **Styling**: Tailwind CSS v4.1.17 for responsive design
 - **UI Components**: Radix UI primitives with shadcn/ui patterns
-- **Build Tools**: Vite 7.1.10 for fast frontend asset compilation with HMR
+- **Build Tools**: Vite 6.0+ for fast frontend asset compilation with HMR
 - **Testing**: Pest v4.1.3 for expressive PHP testing
 - **Code Quality**: Laravel Pint v1.25.1 for consistent code formatting
 - **Authentication**: Laravel Fortify 1.31.2 with two-factor authentication (TOTP)
 - **Authorization**: Spatie Laravel Permission 6.21 for role-based access control
+- **Type-Safe Routes**: Laravel Wayfinder 0.1.12 for TypeScript route generation
 - **Notifications**:
     - Resend API for transactional email notifications
     - WebPush browser notifications with VAPID protocol
@@ -84,14 +85,16 @@ High level components:
 
 - **Web/API Layer**: Laravel 12 + Inertia React SPA with SSR support
 - **Document Storage**: On-chain storage in blockchain (file content stored as hex in `file.data` stream, metadata in `file.metadata` stream)
-- **Blockchain Layer**: MultiChain with 6 streams:
+- **Blockchain Layer**: MultiChain with 8 streams:
+  - `procurement.metadata` - Core procurement metadata
   - `procurement.documents` - Document metadata and file hashes
   - `procurement.status` - Procurement status transitions
   - `procurement.events` - Audit event logs
   - `procurement.corrections` - Document correction trail
   - `file.data` - Actual file content storage (hex-encoded)
   - `file.metadata` - File metadata and integrity tracking with SHA-256 hashes
-- **Service Layer**: 28 specialized services for business logic isolation
+  - `file.chunks` - Large file chunks
+- **Service Layer**: 20+ specialized services for business logic isolation
 - **Job Queue**: Database-driven async job processing for blockchain operations
 - **Roles / Addresses**: Distinct blockchain addresses per functional role (admin, BAC secretariat, BAC chairman, HOPE)
 - **Permission Matrix**: Config-driven grants for global & per-stream rights
@@ -462,6 +465,8 @@ Each stage requires specific documents and follows defined status transitions (2
 
 ## Project Structure
 
+**For comprehensive architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
+
 Project root snapshot:
 
 ```
@@ -474,20 +479,20 @@ procuchain/
 │   │   ├── Controllers/       # Request handlers (Admin, BAC, HOPE, Auth, Settings)
 │   │   ├── Middleware/        # Auth, RBAC, rate limiting
 │   │   └── Requests/          # Form validation rules
-│   ├── Jobs/                  # Queue jobs (6 blockchain/document jobs)
+│   
 │   ├── Libraries/             # MultichainClient (JSON-RPC)
 │   ├── Mail/                  # Email notification classes
-│   ├── Models/                # Eloquent ORM models (6 models)
+│   ├── Models/                # Eloquent ORM models (4 primary models)
 │   ├── Notifications/         # Email and push notifications
 │   ├── Policies/              # Authorization policies
 │   ├── Providers/             # Service providers
-│   └── Services/              # Business logic layer (28 specialized services)
+│   └── Services/              # Business logic layer (20+ specialized services)
 ├── bootstrap/                 # Framework bootstrap files
 ├── config/                    # Application configuration
 │   └── multichain.php         # MultiChain blockchain configuration
 ├── database/                  # Migrations, seeders, factories
 │   ├── factories/             # Model factories for testing
-│   ├── migrations/            # Database schema (20+ tables)
+│   ├── migrations/            # Database schema (21 tables)
 │   └── seeders/               # Database seeders
 ├── docs/                      # Project documentation
 │   ├── stages.md              # 15 procurement stages documentation
@@ -513,7 +518,7 @@ procuchain/
 │   │   ├── lib/               # Utility functions
 │   │   └── types/             # TypeScript definitions
 │   └── views/                 # Blade templates (minimal, mostly for emails)
-├── routes/                    # Route definitions (141 routes total)
+├── routes/                    # Route definitions (151 routes total)
 │   ├── web.php                # Main web routes
 │   ├── auth.php               # Authentication routes
 │   ├── settings.php           # User settings routes
@@ -543,29 +548,27 @@ procuchain/
 
 ### Key Directories Explained
 
-**Services (25 total):**
-- Blockchain: MultichainService, MultichainConnectionService, BlockchainHealthService, BlockchainMonitoringService
-- Document & File: FileStorageService (with document upload orchestration)
-- Procurement: ProcurementPublishingService (with atomic blockchain operations), ProcurementStageTransitionService, ProcurementDataService
-- Security: LoginService, AccountLockoutService, BlockedIpService, DeviceDetectionService
-- Analytics: DashboardService, AdminAnalyticsService, LoginAnalyticsService
-- Utilities: CacheStrategyService, NotificationService, DashboardCacheKeys
+**Services (20+ specialized services):**
+- **Blockchain**: BlockchainHealthService, BlockchainMonitoringService, BlockchainStorageService
+- **Publishers**: DocumentPublisher, StatusPublisher, EventPublisher, CorrectionPublisher, ProcurementOrchestrator
+- **Procurement**: ProcurementDataService, ProcurementStageTransitionService, StageDocumentRequirements, DocumentValidationService
+- **Security**: LoginService, AccountLockoutService, BlockedIpService, DeviceDetectionService, LoginLoggerService
+- **Analytics**: DashboardService, AdminAnalyticsService, LoginAnalyticsService
+- **Utilities**: FileStorageService, CacheStrategyService, NotificationService, UserService, DashboardCacheKeys
 
-**Models (6 core models):**
-- User (with roles, 2FA, account lockout)
-- Procurement (with blockchain integration)
-- ProcurementDocument (with S3 storage and blockchain anchors)
-- UserLoginLog (comprehensive audit trail)
-- BlockedIp (IP blocking system)
-- DocumentView (document access tracking)
+**Models (4 primary models):**
+- **User** - Authentication, roles, 2FA, account lockout
+- **UserLoginLog** - Comprehensive audit trail with device detection
+- **BlockedIp** - IP blocking system
+- **DocumentView** - Document access tracking
 
-**Jobs (6 background jobs):**
-- PublishProcurementDocumentsJob
-- UpdateProcurementStatusJob
-- LogBlockchainEventJob
-- PublishDocumentCorrectionJob
-- HandleStageTransitionJob
-- DocumentValidationJob
+**Note:** Procurement data is managed through blockchain streams and database queries, not a dedicated Eloquent model.
+
+**Background Processing:**
+- Queue-based blockchain operations to prevent HTTP timeouts
+- Async document publishing via Laravel's queue system
+- Database-driven queue (jobs table)
+- Retry logic with exponential backoff
 
 ## Security
 
