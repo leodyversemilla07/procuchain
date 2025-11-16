@@ -10,33 +10,6 @@ use Illuminate\Console\Command;
 
 /**
  * MultiChain Setup Command
- *
- * Sets up the MultiChain blockchain for the procurement system using official MultiChain API commands.
- * This command follows the official MultiChain documentation for all blockchain operations.
- *
- * Official API Reference: https://www.multichain.com/developers/json-rpc-api/
- * Getting Started Guide: https://www.multichain.com/getting-started/
- *
- * Prerequisites (from install_procuchain.sh):
- * 1. MultiChain must be installed (version 2.3.3 or compatible)
- * 2. Blockchain node must be running (multichaind <chain-name> -daemon)
- * 3. RPC credentials must be configured in .env file
- *
- * Key Operations (aligned with official API):
- * - Connection validation using getinfo
- * - Address generation using getnewaddress
- * - Stream creation using create (type=stream)
- * - Permission management using grant
- * - Stream subscription using subscribe
- *
- * This command complements the install_procuchain.sh script which:
- * - Downloads and installs MultiChain binaries
- * - Creates the blockchain using multichain-util create
- * - Starts the daemon using multichaind -daemon
- * - Configures network and RPC settings
- *
- * @see https://www.multichain.com/developers/json-rpc-api/
- * @see scripts/install_procuchain.sh
  */
 class MultichainSetup extends Command
 {
@@ -73,7 +46,7 @@ class MultichainSetup extends Command
         'admin',
     ];
 
-    private Manager $multichain;
+    private Manager $multichainService;
 
     private array $generatedAddresses = [];
 
@@ -85,7 +58,7 @@ class MultichainSetup extends Command
 
     public function handle(): int
     {
-        $this->info('🔗 MultiChain Setup Starting...');
+        $this->info('MultiChain Setup Starting...');
         $this->line('Using official MultiChain API commands');
         $this->newLine();
 
@@ -119,12 +92,12 @@ class MultichainSetup extends Command
             $this->updateAddresses($addresses);
 
             $this->newLine();
-            $this->info('✅ MultiChain setup completed successfully!');
+            $this->info('MultiChain setup completed successfully!');
             $this->displayAddresses($addresses);
 
             return self::SUCCESS;
         } catch (Exception $e) {
-            $this->error('❌ Setup failed: '.$e->getMessage());
+            $this->error('Setup failed: '.$e->getMessage());
             $this->line('   Check logs for more details');
 
             return self::FAILURE;
@@ -137,16 +110,18 @@ class MultichainSetup extends Command
             // Official docs: getinfo command returns general information about node and blockchain
             // Returns: chainname, description, protocol, port, nodeaddress, burnaddress, etc.
             // Reference: https://www.multichain.com/developers/json-rpc-api/
-            $info = $this->multichainService->getInfo();
+            // Use exact MultiChain RPC method names (lowercase) — the client expects the RPC method string
+            // as defined by the MultiChain JSON-RPC API (e.g., getinfo, getnewaddress, getstreaminfo)
+            $info = $this->multichainService->getinfo();
 
-            $this->info('✅ Connected to MultiChain node');
+            $this->info('Connected to MultiChain node');
             $this->line('   Chain: '.($info['chainname'] ?? 'Unknown'));
             $this->line('   Protocol: '.($info['protocol'] ?? 'Unknown'));
             $this->line('   Node: '.($info['nodeaddress'] ?? 'Unknown'));
 
             return self::SUCCESS;
         } catch (Exception $e) {
-            $this->error('❌ Cannot connect to MultiChain node');
+            $this->error('Cannot connect to MultiChain node');
             $this->line('   Error: '.$e->getMessage());
             $this->newLine();
             $this->warn('Please ensure:');
@@ -160,7 +135,7 @@ class MultichainSetup extends Command
 
     private function setupAddresses(): array
     {
-        $this->info('📍 Setting up blockchain addresses...');
+        $this->info('Setting up blockchain addresses...');
         $addresses = [];
         $generatedAddresses = [];
 
@@ -179,24 +154,25 @@ class MultichainSetup extends Command
                     $isMine = (bool) ($validation['ismine'] ?? false);
 
                     if (! $isValid) {
-                        $this->line("⚠️ Configured address for {$role} is not valid on this chain");
+                        $this->line("Configured address for {$role} is not valid on this chain");
                         $needsNewAddress = true;
                     } elseif (! $isMine) {
-                        $this->line("⚠️ Configured address for {$role} is not controlled by this node");
+                        $this->line("Configured address for {$role} is not controlled by this node");
                         $needsNewAddress = true;
                     } else {
-                        $this->line("✓ Using configured address for {$role}");
+                        $this->line("Using configured address for {$role}");
                     }
                 } catch (Exception $e) {
-                    $this->line("⚠️ Unable to validate configured address for {$role}: {$e->getMessage()}");
+                    $this->line("Unable to validate configured address for {$role}: {$e->getMessage()}");
                     $needsNewAddress = true;
                 }
             }
 
             if ($needsNewAddress) {
-                $address = $this->multichainService->getNewAddress();
+                // Generate a new address using explicit MultiChain RPC method name
+                $address = $this->multichainService->getnewaddress();
                 $generatedAddresses[$role] = $address;
-                $this->line("✓ Generated new address for {$role}");
+                $this->line("Generated new address for {$role}");
             }
 
             $addresses[$role] = $address;
@@ -210,33 +186,31 @@ class MultichainSetup extends Command
 
     private function createStreams(): void
     {
-        $this->info('🏗️ Creating procurement streams...');
+        $this->info('Creating procurement streams...');
 
         foreach (self::STREAMS as $stream) {
             try {
                 // Check if stream exists using official getstreaminfo command
                 // Reference: https://www.multichain.com/developers/json-rpc-api/
-                $this->multichainService->getStreamInfo($stream);
-                $this->line("✓ Stream {$stream} already exists");
+                // Use the MultiChain RPC 'getstreaminfo' call
+                $this->multichainService->getstreaminfo($stream);
+                $this->line("Stream {$stream} already exists");
 
                 // Ensure we're subscribed to existing stream
                 // Official docs: subscribe command with stream name and rescan parameter
                 $this->multichainService->subscribe($stream, true);
             } catch (Exception $e) {
-                // Stream doesn't exist, create it
-                // Official docs: create command with type='stream', name, and open parameter
-                // Syntax: create stream name open|restrictions
                 $this->line("Creating stream {$stream}...");
-                $this->multichainService->createStream($stream, true);
+                $this->multichainService->create('stream', $stream, true);
                 $this->multichainService->subscribe($stream, true);
-                $this->line("✓ Created and subscribed to stream {$stream}");
+                $this->line("Created and subscribed to stream {$stream}");
             }
         }
     }
 
     private function grantPermissions(array $addresses): void
     {
-        $this->info('🔐 Granting permissions...');
+        $this->info('Granting permissions...');
 
         $permissions = config('multichain.permissions.roles', []);
 
@@ -278,7 +252,7 @@ class MultichainSetup extends Command
                 }
             }
 
-            $this->line("✓ Granted permissions for {$role}");
+            $this->line("Granted permissions for {$role}");
         }
     }
 
@@ -290,7 +264,7 @@ class MultichainSetup extends Command
             return;
         }
 
-        $this->info('💾 Updating generated addresses...');
+        $this->info('Updating generated addresses...');
 
         // Update .env file
         $this->updateEnvFile();
@@ -298,7 +272,7 @@ class MultichainSetup extends Command
         // Update database users
         $this->updateDatabaseUsers($addresses);
 
-        $this->line('✅ Addresses updated in .env and database');
+        $this->line('Addresses updated in .env and database');
     }
 
     private function updateEnvFile(): void
@@ -356,25 +330,25 @@ class MultichainSetup extends Command
     private function displayAddresses(array $addresses): void
     {
         $this->newLine();
-        $this->info('📋 Blockchain Addresses Summary:');
+        $this->info('Blockchain Addresses Summary:');
         $this->newLine();
 
         $rows = [];
         foreach ($addresses as $role => $address) {
             $masked = substr($address, 0, 8).'...'.substr($address, -8);
-            $status = isset($this->generatedAddresses[$role]) ? '🆕 Generated' : '✓ Existing';
+            $status = isset($this->generatedAddresses[$role]) ? 'Generated' : 'Existing';
             $rows[] = [ucfirst(str_replace('_', ' ', $role)), $masked, $status];
         }
 
         $this->table(['Role', 'Address (masked)', 'Status'], $rows);
 
         $this->newLine();
-        $this->line('💡 Full addresses are stored in:');
+        $this->line('Full addresses are stored in:');
         $this->line('   • Configuration: config/multichain.php');
         $this->line('   • Environment: .env file');
         $this->line('   • Database: users.blockchain_address column');
         $this->newLine();
-        $this->line('📚 Next steps:');
+        $this->line('Next steps:');
         $this->line('   • Verify setup: php artisan multichain:setup --check');
         $this->line('   • View permissions: multichain-cli '.config('multichain.chain_name').' listpermissions');
         $this->line('   • View streams: multichain-cli '.config('multichain.chain_name').' liststreams');
