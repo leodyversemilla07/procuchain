@@ -1,7 +1,7 @@
 <?php
 
+use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementInitiationDocumentTypeEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,6 +29,7 @@ beforeEach(function () {
     $this->user = User::factory()->create([
         'name' => 'Test BAC Secretariat',
         'email' => 'bac.secretariat.'.uniqid().'@test.com',
+        'blockchain_address' => '1TestAddress1234567890123456789012345678901234567890',
     ]);
 
     // Assign BAC Secretariat role
@@ -66,7 +67,7 @@ test('can initiate procurement with all required documents for goods', function 
     $response = $this->actingAs($this->user)
         ->post('/bac-secretariat/initiate-procurement', [
             // Basic Information
-            'pr_number' => 'PR-2025-0001-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-001',
             'title' => 'Office Supplies Procurement',
             'description' => 'Purchase of office supplies for municipal office for FY 2025',
@@ -97,10 +98,10 @@ test('can initiate procurement with all required documents for goods', function 
             // Documents
             'files' => $files,
             'document_types' => [
-                ProcurementInitiationDocumentTypeEnums::PURCHASE_REQUEST->value,
-                ProcurementInitiationDocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
-                ProcurementInitiationDocumentTypeEnums::PPMP_ENTRY->value,
-                ProcurementInitiationDocumentTypeEnums::TECHNICAL_SPECIFICATIONS->value,
+                DocumentTypeEnums::PURCHASE_REQUEST->value,
+                DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
+                DocumentTypeEnums::PPMP_ENTRY->value,
+                DocumentTypeEnums::TECHNICAL_SPECIFICATIONS->value,
             ],
             'document_descriptions' => [
                 'Official Purchase Request with PR number',
@@ -130,7 +131,7 @@ test('consulting services requires terms of reference not technical specificatio
 
     $response = $this->actingAs($this->user)
         ->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => 'PR-2025-0002-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-002',
             'title' => 'IT Consulting Services',
             'description' => 'Professional IT consulting services for system upgrade',
@@ -147,10 +148,10 @@ test('consulting services requires terms of reference not technical specificatio
             'prepared_by' => 'Test BAC Secretariat',
             'files' => $files,
             'document_types' => [
-                ProcurementInitiationDocumentTypeEnums::PURCHASE_REQUEST->value,
-                ProcurementInitiationDocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
-                ProcurementInitiationDocumentTypeEnums::PPMP_ENTRY->value,
-                ProcurementInitiationDocumentTypeEnums::TERMS_OF_REFERENCE->value,
+                DocumentTypeEnums::PURCHASE_REQUEST->value,
+                DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
+                DocumentTypeEnums::PPMP_ENTRY->value,
+                DocumentTypeEnums::TERMS_OF_REFERENCE->value,
             ],
             'document_descriptions' => [
                 'Official Purchase Request',
@@ -222,7 +223,7 @@ test('validation fails when mandatory documents are missing', function () {
 
     $response = $this->actingAs($this->user)
         ->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => 'PR-2025-0005-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-005',
             'title' => 'Test Procurement',
             'description' => 'Test description',
@@ -237,8 +238,8 @@ test('validation fails when mandatory documents are missing', function () {
             'prepared_by' => 'Test BAC Secretariat',
             'files' => $files,
             'document_types' => [
-                ProcurementInitiationDocumentTypeEnums::PURCHASE_REQUEST->value,
-                ProcurementInitiationDocumentTypeEnums::PPMP_ENTRY->value,
+                DocumentTypeEnums::PURCHASE_REQUEST->value,
+                DocumentTypeEnums::PPMP_ENTRY->value,
                 // Missing: CERTIFICATE_OF_FUNDS and TECHNICAL_SPECIFICATIONS
             ],
             'document_descriptions' => ['PR', 'PPMP'],
@@ -263,7 +264,7 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
 
     $response = $this->actingAs($this->user)
         ->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => 'PR-2025-0006-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-006',
             'title' => 'Large Procurement',
             'description' => 'Large procurement exceeding Shopping threshold',
@@ -278,10 +279,10 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
             'prepared_by' => 'Test BAC Secretariat',
             'files' => $files,
             'document_types' => [
-                ProcurementInitiationDocumentTypeEnums::PURCHASE_REQUEST->value,
-                ProcurementInitiationDocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
-                ProcurementInitiationDocumentTypeEnums::PPMP_ENTRY->value,
-                ProcurementInitiationDocumentTypeEnums::TECHNICAL_SPECIFICATIONS->value,
+                DocumentTypeEnums::PURCHASE_REQUEST->value,
+                DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
+                DocumentTypeEnums::PPMP_ENTRY->value,
+                DocumentTypeEnums::TECHNICAL_SPECIFICATIONS->value,
             ],
             'document_descriptions' => ['PR', 'Certificate', 'PPMP', 'Specs'],
         ]);
@@ -305,7 +306,7 @@ test('validation fails for non-pdf files', function () {
 
     $response = $this->actingAs($this->user)
         ->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => 'PR-2025-0007-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-007',
             'title' => 'Test Procurement',
             'description' => 'Test description',
@@ -320,10 +321,10 @@ test('validation fails for non-pdf files', function () {
             'prepared_by' => 'Test BAC Secretariat',
             'files' => $files,
             'document_types' => [
-                ProcurementInitiationDocumentTypeEnums::PURCHASE_REQUEST->value,
-                ProcurementInitiationDocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
-                ProcurementInitiationDocumentTypeEnums::PPMP_ENTRY->value,
-                ProcurementInitiationDocumentTypeEnums::TECHNICAL_SPECIFICATIONS->value,
+                DocumentTypeEnums::PURCHASE_REQUEST->value,
+                DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
+                DocumentTypeEnums::PPMP_ENTRY->value,
+                DocumentTypeEnums::TECHNICAL_SPECIFICATIONS->value,
             ],
             'document_descriptions' => ['PR', 'Certificate', 'PPMP', 'Specs'],
         ]);
@@ -348,7 +349,7 @@ test('can add optional supporting documents', function () {
 
     $response = $this->actingAs($this->user)
         ->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => 'PR-2025-0008-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-008',
             'title' => 'Office Supplies with Supporting Docs',
             'description' => 'Purchase with market research and price survey',
@@ -365,12 +366,12 @@ test('can add optional supporting documents', function () {
             'prepared_by' => 'Test BAC Secretariat',
             'files' => $files,
             'document_types' => [
-                ProcurementInitiationDocumentTypeEnums::PURCHASE_REQUEST->value,
-                ProcurementInitiationDocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
-                ProcurementInitiationDocumentTypeEnums::PPMP_ENTRY->value,
-                ProcurementInitiationDocumentTypeEnums::TECHNICAL_SPECIFICATIONS->value,
-                ProcurementInitiationDocumentTypeEnums::MARKET_RESEARCH->value,
-                ProcurementInitiationDocumentTypeEnums::PRICE_SURVEY->value,
+                DocumentTypeEnums::PURCHASE_REQUEST->value,
+                DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value,
+                DocumentTypeEnums::PPMP_ENTRY->value,
+                DocumentTypeEnums::TECHNICAL_SPECIFICATIONS->value,
+                DocumentTypeEnums::MARKET_RESEARCH->value,
+                DocumentTypeEnums::PRICE_SURVEY->value,
             ],
             'document_descriptions' => [
                 'Official PR',

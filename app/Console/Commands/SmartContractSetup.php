@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\StreamEnums;
-use App\Libraries\MultiChain\Manager;
+use App\Libraries\MultiChain\Contracts\MultiChainManagerInterface as Manager;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -51,7 +51,7 @@ class SmartContractSetup extends Command
     {
         $this->multichainService = $multichain;
 
-        $this->info('🔗 ProcuChain Smart Contract Setup');
+        $this->info('ProcuChain Smart Contract Setup');
         $this->newLine();
 
         try {
@@ -66,7 +66,7 @@ class SmartContractSetup extends Command
             if (! $this->option('skip-library') && ($this->option('deploy-libraries') || ! $this->option('deploy-filters'))) {
                 $this->deployLibraries();
             } elseif ($this->option('skip-library')) {
-                $this->warn('⏭️  Skipping library deployment (filters work standalone)');
+                $this->warn('Skipping library deployment (filters work standalone)');
                 $this->newLine();
             }
 
@@ -78,7 +78,7 @@ class SmartContractSetup extends Command
             $this->displaySummary();
 
             $this->newLine();
-            $this->info('✅ Smart contract setup completed successfully!');
+            $this->info('Smart contract setup completed successfully!');
             $this->newLine();
 
             $this->comment('Next steps:');
@@ -88,7 +88,7 @@ class SmartContractSetup extends Command
 
             return Command::SUCCESS;
         } catch (Exception $e) {
-            $this->error('❌ Smart contract setup failed: '.$e->getMessage());
+            $this->error('Smart contract setup failed: '.$e->getMessage());
             Log::error('Smart contract setup failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -103,13 +103,13 @@ class SmartContractSetup extends Command
      */
     private function checkConnection(): void
     {
-        $this->info('🔍 Checking MultiChain connection...');
+        $this->info('Checking MultiChain connection...');
 
         try {
             $info = $this->multichainService->getinfo();
 
-            $this->line("✓ Connected to blockchain: {$info['chainname']}");
-            $this->line("✓ Block height: {$info['blocks']}");
+            $this->line("Connected to blockchain: {$info['chainname']}");
+            $this->line("Block height: {$info['blocks']}");
             $this->newLine();
         } catch (Exception $e) {
             throw new Exception('Failed to connect to MultiChain node: '.$e->getMessage());
@@ -121,7 +121,7 @@ class SmartContractSetup extends Command
      */
     private function checkDeploymentStatus(): int
     {
-        $this->info('📊 Checking smart contract deployment status...');
+        $this->info('Checking smart contract deployment status...');
         $this->newLine();
 
         // This would require implementing listlibraries and liststreamfilters calls
@@ -138,7 +138,7 @@ class SmartContractSetup extends Command
      */
     private function deployLibraries(): void
     {
-        $this->info('📚 Deploying JavaScript libraries...');
+        $this->info('Deploying JavaScript libraries...');
         $this->newLine();
 
         $libraryPath = resource_path('blockchain/libraries/validation_helpers.js');
@@ -158,10 +158,14 @@ class SmartContractSetup extends Command
             // Create library with updatemode='none' (no updates allowed after creation)
             $restrictions = (object) ['updatemode' => 'none'];
 
-            $txid = $this->multichainService->createLibrary(
+            $txid = $this->multichainService->create(
+                'library',
                 $libraryName,
-                $restrictions,
-                $libraryCode
+                true,
+                [
+                    'restrictions' => $restrictions,
+                    'code' => $libraryCode,
+                ]
             );
 
             $this->deploymentResults[] = [
@@ -171,7 +175,7 @@ class SmartContractSetup extends Command
                 'txid' => $txid,
             ];
 
-            $this->info("✓ Library '{$libraryName}' deployed successfully");
+            $this->info("Library '{$libraryName}' deployed successfully");
             $this->line("  Transaction ID: {$txid}");
             $this->newLine();
         } catch (Exception $e) {
@@ -179,7 +183,7 @@ class SmartContractSetup extends Command
 
             // Check if library already exists
             if (str_contains($errorMsg, 'already exists') || str_contains($errorMsg, 'duplicate')) {
-                $this->warn("⚠ Library '{$libraryName}' already exists");
+                $this->warn("Library '{$libraryName}' already exists");
 
                 if ($this->option('force')) {
                     $this->line('  Use MultiChain update mechanism to modify existing library');
@@ -192,7 +196,7 @@ class SmartContractSetup extends Command
                     'txid' => 'N/A',
                 ];
             } else {
-                $this->error("✗ Failed to deploy library '{$libraryName}': {$errorMsg}");
+                $this->error("Failed to deploy library '{$libraryName}': {$errorMsg}");
                 $this->deploymentResults[] = [
                     'type' => 'Library',
                     'name' => $libraryName,
@@ -210,7 +214,7 @@ class SmartContractSetup extends Command
      */
     private function deployFilters(): void
     {
-        $this->info('🛡️ Deploying stream filters...');
+        $this->info('Deploying stream filters...');
         $this->newLine();
 
         $filters = [
@@ -257,10 +261,7 @@ class SmartContractSetup extends Command
 
             // Verify stream exists
             try {
-                $streams = $this->multichainService->liststreams($streamName);
-                if (empty($streams)) {
-                    throw new Exception("Stream '{$streamName}' does not exist. Create it first using multichain:setup");
-                }
+                $this->multichainService->getstreaminfo($streamName);
             } catch (Exception $e) {
                 throw new Exception("Stream '{$streamName}' does not exist. Create it first using multichain:setup");
             }
@@ -270,10 +271,14 @@ class SmartContractSetup extends Command
             // Uncomment to include validation helper library
             // $restrictions->libraries = ['procuchain_validation_helpers'];
 
-            $txid = $this->multichainService->createStreamFilter(
+            $txid = $this->multichainService->create(
+                'streamfilter',
                 $filterName,
-                $restrictions,
-                $filterCode
+                true,
+                [
+                    'restrictions' => $restrictions,
+                    'code' => $filterCode,
+                ]
             );
 
             $this->deploymentResults[] = [
@@ -283,15 +288,15 @@ class SmartContractSetup extends Command
                 'txid' => $txid,
             ];
 
-            $this->info("✓ Filter '{$filterName}' deployed successfully");
+            $this->info("Filter '{$filterName}' deployed successfully");
             $this->line("  Transaction ID: {$txid}");
-            $this->warn('  ⚠ Filter requires admin approval before activation');
+            $this->warn('  Filter requires admin approval before activation');
             $this->newLine();
         } catch (Exception $e) {
             $errorMsg = $e->getMessage();
 
             if (str_contains($errorMsg, 'already exists') || str_contains($errorMsg, 'duplicate')) {
-                $this->warn("⚠ Filter '{$filterName}' already exists");
+                $this->warn("Filter '{$filterName}' already exists");
                 $this->deploymentResults[] = [
                     'type' => 'Stream Filter',
                     'name' => $filterName,
@@ -299,7 +304,7 @@ class SmartContractSetup extends Command
                     'txid' => 'N/A',
                 ];
             } else {
-                $this->error("✗ Failed to deploy filter '{$filterName}': {$errorMsg}");
+                $this->error("Failed to deploy filter '{$filterName}': {$errorMsg}");
                 $this->deploymentResults[] = [
                     'type' => 'Stream Filter',
                     'name' => $filterName,
@@ -322,7 +327,7 @@ class SmartContractSetup extends Command
         }
 
         $this->newLine();
-        $this->info('📋 Deployment Summary:');
+        $this->info('Deployment Summary:');
         $this->newLine();
 
         $headers = ['Type', 'Name', 'Status', 'Transaction ID'];

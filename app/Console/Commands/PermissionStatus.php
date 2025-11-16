@@ -49,7 +49,7 @@ class PermissionStatus extends Command
 
     protected function showOverview(): void
     {
-        $this->components->info('Overview');
+        $this->info('Overview');
 
         $roleCount = Role::count();
         $permissionCount = Permission::count();
@@ -69,7 +69,7 @@ class PermissionStatus extends Command
 
     protected function showRoles(): void
     {
-        $this->components->info('Roles & Their Permissions');
+        $this->info('Roles & Their Permissions');
 
         $roles = Role::with('permissions')->get();
 
@@ -83,15 +83,15 @@ class PermissionStatus extends Command
             $userCount = $role->users()->count();
             $permissionCount = $role->permissions->count();
 
-            $this->line("  <fg=cyan>Role:</> {$role->name}");
-            $this->line("  <fg=gray>Users:</> {$userCount} | <fg=gray>Permissions:</> {$permissionCount}");
+            $this->line("Role: {$role->name}");
+            $this->line("Users: {$userCount} | Permissions: {$permissionCount}");
 
             if ($permissionCount > 0) {
                 $permissions = $role->permissions->pluck('name')->toArray();
                 $chunked = array_chunk($permissions, 4);
 
                 foreach ($chunked as $chunk) {
-                    $this->line('    • '.implode(', ', $chunk));
+                    $this->line('  - '.implode(', ', $chunk));
                 }
             }
 
@@ -101,7 +101,7 @@ class PermissionStatus extends Command
 
     protected function showPermissions(): void
     {
-        $this->components->info('All Permissions');
+        $this->info('All Permissions');
 
         $permissions = Permission::withCount('roles')->get()->groupBy(function ($permission) {
             // Group by category (first word)
@@ -111,11 +111,11 @@ class PermissionStatus extends Command
         });
 
         foreach ($permissions as $category => $perms) {
-            $this->line("  <fg=yellow>{$category}</> ({$perms->count()} permissions)");
+            $this->line("{$category} ({$perms->count()} permissions)");
 
             foreach ($perms as $permission) {
                 $roleCount = $permission->roles_count;
-                $this->line("    • {$permission->name} <fg=gray>({$roleCount} roles)</>");
+                $this->line("  - {$permission->name} ({$roleCount} roles)");
             }
 
             $this->newLine();
@@ -132,7 +132,7 @@ class PermissionStatus extends Command
             return Command::FAILURE;
         }
 
-        $this->components->info("Role Details: {$role->name}");
+        $this->info("Role Details: {$role->name}");
         $this->newLine();
 
         // Basic info
@@ -180,7 +180,7 @@ class PermissionStatus extends Command
             return Command::FAILURE;
         }
 
-        $this->components->info("User Permissions: {$user->name}");
+        $this->info("User Permissions: {$user->name}");
         $this->newLine();
 
         // Basic info
@@ -199,7 +199,7 @@ class PermissionStatus extends Command
         // Roles
         if ($user->roles->isNotEmpty()) {
             $this->newLine();
-            $this->components->info('Assigned Roles');
+            $this->info('Assigned Roles');
             $this->table(
                 ['Role Name'],
                 $user->roles->map(fn ($r) => [$r->name])->toArray()
@@ -209,7 +209,7 @@ class PermissionStatus extends Command
         // Direct permissions
         if ($user->permissions->isNotEmpty()) {
             $this->newLine();
-            $this->components->info('Direct Permissions');
+            $this->info('Direct Permissions');
             $this->table(
                 ['Permission Name'],
                 $user->permissions->map(fn ($p) => [$p->name])->toArray()
@@ -220,7 +220,7 @@ class PermissionStatus extends Command
         $allPermissions = $user->getAllPermissions();
         if ($allPermissions->isNotEmpty()) {
             $this->newLine();
-            $this->components->info('All Permissions (via roles + direct)');
+            $this->info('All Permissions (via roles + direct)');
 
             $grouped = $allPermissions->groupBy(function ($permission) {
                 $parts = explode(' ', $permission->name);
@@ -229,7 +229,7 @@ class PermissionStatus extends Command
             });
 
             foreach ($grouped as $category => $permissions) {
-                $this->line("  <fg=yellow>{$category}</>: ".implode(', ', $permissions->pluck('name')->toArray()));
+                $this->line("{$category}: ".implode(', ', $permissions->pluck('name')->toArray()));
             }
         }
 
@@ -238,17 +238,17 @@ class PermissionStatus extends Command
 
     protected function showUsageExamples(): void
     {
-        $this->components->info('Usage Examples');
+        $this->info('Usage Examples');
 
         $this->line('  View specific role:');
-        $this->line('    <fg=green>php artisan permission:status --role=admin</>');
+        $this->line('    php artisan permission:status --role=admin');
         $this->newLine();
 
         $this->line('  View user permissions:');
-        $this->line('    <fg=green>php artisan permission:status --user=1</>');
+        $this->line('    php artisan permission:status --user=1');
         $this->newLine();
 
         $this->line('  Clear permission cache:');
-        $this->line('    <fg=green>php artisan permission:cache-reset</>');
+        $this->line('    php artisan permission:cache-reset');
     }
 }

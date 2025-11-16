@@ -15,32 +15,27 @@ use NotificationChannels\WebPush\HasPushSubscriptions;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
- * User Model
- *
- * Represents system users with role-based access control, two-factor authentication,
- * account lockout protection, and blockchain address association.
- *
  * @property int $id
- * @property string $name User's full name
- * @property string $email User's email address (unique)
- * @property string|null $blockchain_address MultiChain blockchain address
+ * @property string $name
+ * @property string $email
+ * @property string|null $blockchain_address
  * @property \Illuminate\Support\Carbon|null $email_verified_at
- * @property string $password Hashed password
- * @property bool $account_locked Whether account is currently locked
- * @property \Illuminate\Support\Carbon|null $locked_at When account was locked
- * @property \Illuminate\Support\Carbon|null $lock_expires_at When lock expires
- * @property int $failed_login_attempts Number of failed login attempts
- * @property \Illuminate\Support\Carbon|null $last_failed_login_at Last failed login timestamp
- * @property string|null $locked_reason Reason for account lock
- * @property string|null $two_factor_secret Encrypted 2FA secret
- * @property string|null $two_factor_recovery_codes Encrypted recovery codes
- * @property \Illuminate\Support\Carbon|null $two_factor_confirmed_at When 2FA was confirmed
- * @property bool $email_notifications_enabled Whether email notifications are enabled
+ * @property string $password
+ * @property bool $account_locked
+ * @property \Illuminate\Support\Carbon|null $locked_at
+ * @property \Illuminate\Support\Carbon|null $lock_expires_at
+ * @property int $failed_login_attempts
+ * @property \Illuminate\Support\Carbon|null $last_failed_login_at
+ * @property string|null $locked_reason
+ * @property string|null $two_factor_secret
+ * @property string|null $two_factor_recovery_codes
+ * @property \Illuminate\Support\Carbon|null $two_factor_confirmed_at
+ * @property bool $email_notifications_enabled
  * @property string|null $remember_token
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read string|null $role Primary role name
- * @property-read int $remaining_lock_time Minutes until unlock
+ * @property-read string|null $primary_role
+ * @property-read int $remaining_lock_time
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserLoginLog> $loginLogs
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $roles
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
@@ -95,7 +90,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $appends = [
-        'role',
+        'primary_role',
     ];
 
     /**
@@ -121,9 +116,9 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the user's role attribute.
+     * Get the user's primary role attribute.
      */
-    protected function role(): \Illuminate\Database\Eloquent\Casts\Attribute
+    protected function primaryRole(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
             get: fn (): ?string => $this->getPrimaryRole(),

@@ -14,10 +14,10 @@ return [
     */
 
     'rpc' => [
-        'host' => env('MULTICHAIN_RPC_HOST', env('MULTICHAIN_HOST', '127.0.0.1')),
-        'port' => env('MULTICHAIN_RPC_PORT', env('MULTICHAIN_PORT', 4786)),
-        'username' => env('MULTICHAIN_RPC_USERNAME', env('MULTICHAIN_USERNAME', 'multichainrpc')),
-        'password' => env('MULTICHAIN_RPC_PASSWORD', env('MULTICHAIN_PASSWORD', 'default_password_change_me')),
+        'host' => env('MULTICHAIN_RPC_HOST', '127.0.0.1'),
+        'port' => env('MULTICHAIN_RPC_PORT', 4786),
+        'username' => env('MULTICHAIN_RPC_USERNAME', 'multichainrpc'),
+        'password' => env('MULTICHAIN_RPC_PASSWORD', 'default_password_change_me'),
     ],
 
     /*

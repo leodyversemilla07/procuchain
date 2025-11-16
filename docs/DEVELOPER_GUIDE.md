@@ -346,6 +346,18 @@ $txid = $client->publish(
 );
 ```
 
+### Creating a local development blockchain
+
+To keep production data isolated, use the included script `scripts/install_procuchain_dev.sh` to create an isolated development chain:
+
+```bash
+chmod +x scripts/install_procuchain_dev.sh
+./scripts/install_procuchain_dev.sh
+```
+
+The script prints `MULTICHAIN_` variables to add to your `.env` (for example `MULTICHAIN_CHAIN_NAME=procuchain-dev` and `MULTICHAIN_RPC_PORT=7450`). Do not use these values in production.
+
+
 ### Blockchain Status Management
 
 All blockchain writes track status:

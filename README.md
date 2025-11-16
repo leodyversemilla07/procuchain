@@ -191,6 +191,22 @@ The setup command performs the following operations:
 4. **Permission Grants**: Assigns appropriate permissions to each role address based on the configuration
 5. **Address Persistence**: Updates the `.env` file with newly generated addresses and syncs user records in the database
 
+**Important RPC notes:**
+
+- Use the exact MultiChain JSON-RPC method names when calling methods directly via the library. RPC method names must be lower-case in the JSON-RPC payload — for example: `getinfo`, `getnewaddress`, `getstreaminfo`, `create('stream', 'name', true)`, `subscribe`, `grant`.
+- Avoid calling `getInfo()` / `getNewAddress()` with camel case since the underlying RPC payload expects the exact method name string.
+
+### Development blockchain node
+
+To create a separate development blockchain for local testing, run the included installer script:
+
+```bash
+chmod +x scripts/install_procuchain_dev.sh
+./scripts/install_procuchain_dev.sh
+```
+
+After the script finishes update your local `.env` with the printed `MULTICHAIN_` values (chain name will be `procuchain-dev`, RPC port `7450` by default).
+
 **Available Options:**
 
 | Option    | Purpose                                                     |
