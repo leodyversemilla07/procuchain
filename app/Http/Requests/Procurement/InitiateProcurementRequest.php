@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Procurement;
 
+use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementInitiationDocumentTypeEnums;
 use App\Enums\ProcurementModeEnums;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -51,7 +51,7 @@ class InitiateProcurementRequest extends FormRequest
 
             // Documents - Must use specific document types per RA 9184
             'files.*' => ['required', 'file', 'mimes:pdf', 'max:51200'], // 50MB max
-            'document_types.*' => ['required', Rule::enum(ProcurementInitiationDocumentTypeEnums::class)],
+            'document_types.*' => ['required', Rule::enum(DocumentTypeEnums::class)],
             'document_descriptions.*' => ['nullable', 'string', 'max:500'],
         ];
     }
@@ -80,9 +80,9 @@ class InitiateProcurementRequest extends FormRequest
         }
 
         // Get mandatory documents for this category
-        $requiredDocs = ProcurementInitiationDocumentTypeEnums::getMandatoryForCategory($category);
+        $requiredDocs = DocumentTypeEnums::getMandatoryForCategory($category);
         $providedTypes = array_map(
-            fn ($type) => ProcurementInitiationDocumentTypeEnums::tryFrom($type),
+            fn ($type) => DocumentTypeEnums::tryFrom($type),
             $documentTypes
         );
         $providedTypes = array_filter($providedTypes); // Remove nulls

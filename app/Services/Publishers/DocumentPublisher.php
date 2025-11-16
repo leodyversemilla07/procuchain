@@ -67,10 +67,11 @@ class DocumentPublisher
             ]);
 
             $fileResult = $this->fileStorage->uploadFile(
-                file: $file,
-                path: 'procurement_documents/'.$prNumber,
-                suffix: $stage->value.'_'.time(),
-                metadata: [
+                $file,
+                $prNumber,
+                $stage->getId(),
+                $documentType->value,
+                [
                     'pr_number' => $prNumber,
                     'procurement_title' => $procurementTitle,
                     'stage' => $stage->value,

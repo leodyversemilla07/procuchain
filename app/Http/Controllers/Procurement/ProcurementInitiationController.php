@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Procurement;
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
-use App\Enums\ProcurementInitiationDocumentTypeEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Procurement\Concerns\HasProcurementSupport;
@@ -85,7 +84,7 @@ class ProcurementInitiationController extends BaseController
                     'requires_bac_resolution' => $case->requiresBACResolution(),
                 ])
                 ->values(),
-            'documentTypes' => collect(ProcurementInitiationDocumentTypeEnums::cases())
+            'documentTypes' => collect(DocumentTypeEnums::getInitiationDocuments())
                 ->map(fn ($docType) => [
                     'value' => $docType->value,
                     'label' => $docType->getDisplayName(),
@@ -149,7 +148,7 @@ class ProcurementInitiationController extends BaseController
 
         foreach ($requestFiles as $index => $file) {
             $docTypeValue = $documentTypes[$index] ?? null;
-            $docType = $docTypeValue ? ProcurementInitiationDocumentTypeEnums::tryFrom($docTypeValue) : null;
+            $docType = $docTypeValue ? DocumentTypeEnums::tryFrom($docTypeValue) : null;
 
             // Skip invalid document types
             if (! $docType) {

@@ -26,6 +26,11 @@ enum DocumentTypeEnums: string
     case SANGGUNIANG_BAYAN_RESOLUTION = 'sangguniang_bayan_resolution';
     case ENVIRONMENTAL_COMPLIANCE_CERTIFICATE = 'environmental_compliance_certificate';
     case PROGRAM_OF_WORK = 'program_of_work';
+    case END_USER_REQUEST = 'end_user_request';
+    case OFFICE_ENDORSEMENT = 'office_endorsement';
+    case BUDGET_ALLOCATION = 'budget_allocation';
+    case PROJECT_PROPOSAL = 'project_proposal';
+    case APPROVAL_DOCUMENTS = 'approval_documents';
 
     // Stage 2: Pre-Procurement Conference (5 documents)
     case PRE_PROCUREMENT_AGENDA = 'pre_procurement_agenda';
@@ -240,6 +245,11 @@ enum DocumentTypeEnums: string
             self::SANGGUNIANG_BAYAN_RESOLUTION => 'Sangguniang Bayan Resolution',
             self::ENVIRONMENTAL_COMPLIANCE_CERTIFICATE => 'Environmental Compliance Certificate (ECC)',
             self::PROGRAM_OF_WORK => 'Program of Work (POW)',
+            self::END_USER_REQUEST => 'End-User Request Letter',
+            self::OFFICE_ENDORSEMENT => 'Office Endorsement',
+            self::BUDGET_ALLOCATION => 'Budget Allocation Document',
+            self::PROJECT_PROPOSAL => 'Project Proposal',
+            self::APPROVAL_DOCUMENTS => 'Approval Documents',
 
             // Stage 2: Pre-Procurement Conference
             self::PRE_PROCUREMENT_AGENDA => 'Pre-Procurement Conference Agenda',
@@ -472,6 +482,11 @@ enum DocumentTypeEnums: string
             self::MAYORS_PERMIT => 'Municipal business permit',
             self::BIR_REGISTRATION => 'Bureau of Internal Revenue registration',
             self::TAX_CLEARANCE => 'Tax compliance certificate',
+            self::END_USER_REQUEST => 'Request letter from end-user office detailing specific requirements and justification',
+            self::OFFICE_ENDORSEMENT => 'Endorsement letter from requesting office head approving the procurement request',
+            self::BUDGET_ALLOCATION => 'Budget allocation document showing line item and appropriation for the procurement',
+            self::PROJECT_PROPOSAL => 'Detailed project proposal document outlining objectives, scope, and expected outcomes',
+            self::APPROVAL_DOCUMENTS => 'Department head approval, Sanggunian resolution for infrastructure, or higher authority approval for large amounts',
             self::UNKNOWN => 'Unknown or unspecified document type',
             default => $this->getDisplayName(), // Use display name as fallback for any missing cases
         };
@@ -605,5 +620,159 @@ enum DocumentTypeEnums: string
         }
 
         return $options;
+    }
+
+    /**
+     * Check if document is mandatory for all procurements
+     */
+    public function isMandatory(): bool
+    {
+        return match ($this) {
+            self::PURCHASE_REQUEST,
+            self::CERTIFICATE_OF_FUNDS,
+            self::PPMP_ENTRY => true,
+            default => false,
+        };
+    }
+
+    /**
+     * Check if document is mandatory for specific procurement category
+     */
+    public function isMandatoryForCategory(ProcurementCategoryEnums $category): bool
+    {
+        return match ($this) {
+            self::PURCHASE_REQUEST,
+            self::CERTIFICATE_OF_FUNDS,
+            self::PPMP_ENTRY => true,
+
+            self::TECHNICAL_SPECIFICATIONS => in_array($category, [
+                ProcurementCategoryEnums::GOODS,
+                ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS,
+            ]),
+
+            self::TERMS_OF_REFERENCE => $category === ProcurementCategoryEnums::CONSULTING_SERVICES,
+
+            default => false,
+        };
+    }
+
+    /**
+     * Check if document is applicable for specific category
+     */
+    public function isApplicableForCategory(ProcurementCategoryEnums $category): bool
+    {
+        return match ($this) {
+            self::TECHNICAL_SPECIFICATIONS => in_array($category, [
+                ProcurementCategoryEnums::GOODS,
+                ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS,
+            ]),
+
+            self::TERMS_OF_REFERENCE => $category === ProcurementCategoryEnums::CONSULTING_SERVICES,
+
+            // All other documents apply to all categories
+            default => true,
+        };
+    }
+
+    /**
+     * Get all mandatory documents for a specific category
+     *
+     * @return array<self>
+     */
+    public static function getMandatoryForCategory(ProcurementCategoryEnums $category): array
+    {
+        return array_filter(
+            self::cases(),
+            fn (self $docType) => $docType->isMandatoryForCategory($category)
+        );
+    }
+
+    /**
+     * Get all applicable documents for a specific category
+     *
+     * @return array<self>
+     */
+    public static function getApplicableForCategory(ProcurementCategoryEnums $category): array
+    {
+        return array_filter(
+            self::cases(),
+            fn (self $docType) => $docType->isApplicableForCategory($category)
+        );
+    }
+
+    /**
+     * Get all mandatory document types (applies to all categories)
+     *
+     * @return array<self>
+     */
+    public static function getAllMandatory(): array
+    {
+        return array_filter(
+            self::cases(),
+            fn (self $docType) => $docType->isMandatory()
+        );
+    }
+
+    /**
+     * Get all optional document types
+     *
+     * @return array<self>
+     */
+    public static function getAllOptional(): array
+    {
+        return array_filter(
+            self::cases(),
+            fn (self $docType) => ! $docType->isMandatory()
+        );
+    }
+
+    /**
+     * Get document type requirements summary
+     */
+    public function getRequirementSummary(): string
+    {
+        if ($this->isMandatory()) {
+            return 'Required for all procurements per RA 9184';
+        }
+
+        $categories = [];
+        foreach (ProcurementCategoryEnums::cases() as $category) {
+            if ($this->isMandatoryForCategory($category)) {
+                $categories[] = $category->getDisplayName();
+            }
+        }
+
+        if (! empty($categories)) {
+            return 'Required for: '.implode(', ', $categories);
+        }
+
+        return 'Optional supporting document';
+    }
+
+    /**
+     * Get all document types for procurement initiation stage
+     *
+     * @return array<self>
+     */
+    public static function getInitiationDocuments(): array
+    {
+        return [
+            self::PURCHASE_REQUEST,
+            self::PPMP,
+            self::APP,
+            self::CERTIFICATE_OF_FUNDS,
+            self::APPROVED_BUDGET_CONTRACT,
+            self::TECHNICAL_SPECIFICATIONS,
+            self::TERMS_OF_REFERENCE,
+            self::MARKET_RESEARCH,
+            self::SANGGUNIANG_BAYAN_RESOLUTION,
+            self::ENVIRONMENTAL_COMPLIANCE_CERTIFICATE,
+            self::PROGRAM_OF_WORK,
+            self::END_USER_REQUEST,
+            self::OFFICE_ENDORSEMENT,
+            self::BUDGET_ALLOCATION,
+            self::PROJECT_PROPOSAL,
+            self::APPROVAL_DOCUMENTS,
+        ];
     }
 }

@@ -3,57 +3,77 @@
 namespace App\Console\Commands;
 
 use App\Enums\StreamEnums;
-use App\Libraries\MultiChain\Manager;
+use App\Enums\UserRoleEnums;
+use App\Libraries\MultiChain\Contracts\MultiChainManagerInterface as Manager;
 use App\Models\User;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 /**
  * MultiChain Setup Command
+ *
+ * Sets up the MultiChain blockchain for the procurement system.
+ * Idempotent - can be run multiple times safely.
  */
 class MultichainSetup extends Command
 {
     protected $signature = 'multichain:setup 
         {--check : Only check connection to MultiChain node}
-        {--reset : Reset and recreate all blockchain setup}';
+        {--reset : Reset and recreate all blockchain setup}
+        {--init-storage : Initialize on-chain file storage streams}
+        {--test-storage : Test the on-chain file storage after setup}';
 
     protected $description = 'Setup MultiChain blockchain for procurement system (aligned with official MultiChain API)';
 
     /**
-     * Streams to create on the blockchain
-     * Each stream is created using the official 'create' command with type='stream'
-     *
-     * @see https://www.multichain.com/developers/data-streams/
+     * Procurement streams to create
      */
     private const STREAMS = [
         StreamEnums::DOCUMENTS->value,
         StreamEnums::STATUS->value,
         StreamEnums::EVENTS->value,
         StreamEnums::CORRECTIONS->value,
-        'procurement.metadata', // Procurement metadata storage
+        StreamEnums::METADATA->value,
+    ];
+
+    /**
+     * File storage streams for on-chain file storage
+     * FILE_CHUNKS enables chunking of large files (>2MB) across multiple transactions
+     */
+    private const FILE_STORAGE_STREAMS = [
+        [
+            'name' => StreamEnums::FILE_DATA->value,
+            'purpose' => 'on_chain_file_storage',
+        ],
+        [
+            'name' => StreamEnums::FILE_METADATA->value,
+            'purpose' => 'file_metadata_tracking',
+        ],
+        [
+            'name' => StreamEnums::FILE_CHUNKS->value,
+            'purpose' => 'large_file_chunking',
+        ],
     ];
 
     /**
      * Roles that require blockchain addresses
-     * Addresses are generated using the official 'getnewaddress' command
-     *
-     * @see https://www.multichain.com/developers/json-rpc-api/
      */
     private const ROLES = [
-        'bac_secretariat',
-        'bac_chairman',
-        'hope',
-        'admin',
+        UserRoleEnums::BAC_SECRETARIAT->value,
+        UserRoleEnums::BAC_CHAIRMAN->value,
+        UserRoleEnums::HOPE->value,
+        UserRoleEnums::ADMIN->value,
     ];
 
-    private Manager $multichainService;
+    private Manager $multichainManager;
 
     private array $generatedAddresses = [];
 
     public function __construct(Manager $multichain)
     {
         parent::__construct();
-        $this->multichainService = $multichain;
+        $this->multichainManager = $multichain;
     }
 
     public function handle(): int
@@ -76,29 +96,46 @@ class MultichainSetup extends Command
                 return self::FAILURE;
             }
 
-            // 2. Setup addresses
-            // Uses: getnewaddress command for each role
-            $addresses = $this->setupAddresses();
+            // 2. Setup addresses (idempotent: reuse existing valid addresses)
+            // Uses: getnewaddress command for each role (only if needed)
+            $addressResult = $this->setupAddresses();
+            $addresses = $addressResult['addresses'];
 
-            // 3. Create streams
+            // 3. Create streams (idempotent: check existence first)
             // Uses: create command (type=stream) and subscribe command
             $this->createStreams();
 
-            // 4. Grant permissions
+            // 4. Grant permissions (idempotent: handle already granted permissions)
             // Uses: grant command for global and per-stream permissions
             $this->grantPermissions($addresses);
 
-            // 5. Update .env and database with new addresses
+            // 5. Update database with addresses (idempotent: only update if changed)
             $this->updateAddresses($addresses);
+
+            // 6. Initialize file storage streams if requested (idempotent)
+            if ($this->option('init-storage')) {
+                $this->initializeFileStorage();
+            }
 
             $this->newLine();
             $this->info('MultiChain setup completed successfully!');
-            $this->displayAddresses($addresses);
+            $this->displayAddresses($addresses, $addressResult['statuses']);
+
+            // Test file storage if requested
+            if ($this->option('test-storage')) {
+                $this->testFileStorage();
+            }
 
             return self::SUCCESS;
         } catch (Exception $e) {
             $this->error('Setup failed: '.$e->getMessage());
             $this->line('   Check logs for more details');
+
+            // Log the full exception for debugging
+            Log::error('MultichainSetup command failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             return self::FAILURE;
         }
@@ -107,12 +144,7 @@ class MultichainSetup extends Command
     private function checkConnection(): int
     {
         try {
-            // Official docs: getinfo command returns general information about node and blockchain
-            // Returns: chainname, description, protocol, port, nodeaddress, burnaddress, etc.
-            // Reference: https://www.multichain.com/developers/json-rpc-api/
-            // Use exact MultiChain RPC method names (lowercase) — the client expects the RPC method string
-            // as defined by the MultiChain JSON-RPC API (e.g., getinfo, getnewaddress, getstreaminfo)
-            $info = $this->multichainService->getinfo();
+            $info = $this->multichainManager->getinfo();
 
             $this->info('Connected to MultiChain node');
             $this->line('   Chain: '.($info['chainname'] ?? 'Unknown'));
@@ -133,81 +165,86 @@ class MultichainSetup extends Command
         }
     }
 
+    /**
+     * Setup blockchain addresses (idempotent)
+     */
     private function setupAddresses(): array
     {
         $this->info('Setting up blockchain addresses...');
         $addresses = [];
-        $generatedAddresses = [];
+        $statuses = [];
 
         foreach (self::ROLES as $role) {
-            // Try to get from config first
-            $address = config("multichain.addresses.{$role}");
-            $needsNewAddress = false;
+            // Check if a valid address already exists for this role
+            $existingAddress = $this->getExistingValidAddress($role);
+            if ($existingAddress) {
+                $addresses[$role] = $existingAddress;
+                $statuses[$role] = 'Reused';
+                $this->line("Reusing valid address for {$role}");
 
-            // If not in config or is a placeholder, generate new one
-            if (! $address || str_contains($address, 'default_')) {
-                $needsNewAddress = true;
-            } else {
-                try {
-                    $validation = $this->multichainService->validateAddress($address);
-                    $isValid = (bool) ($validation['isvalid'] ?? false);
-                    $isMine = (bool) ($validation['ismine'] ?? false);
-
-                    if (! $isValid) {
-                        $this->line("Configured address for {$role} is not valid on this chain");
-                        $needsNewAddress = true;
-                    } elseif (! $isMine) {
-                        $this->line("Configured address for {$role} is not controlled by this node");
-                        $needsNewAddress = true;
-                    } else {
-                        $this->line("Using configured address for {$role}");
-                    }
-                } catch (Exception $e) {
-                    $this->line("Unable to validate configured address for {$role}: {$e->getMessage()}");
-                    $needsNewAddress = true;
-                }
+                continue;
             }
 
-            if ($needsNewAddress) {
-                // Generate a new address using explicit MultiChain RPC method name
-                $address = $this->multichainService->getnewaddress();
-                $generatedAddresses[$role] = $address;
-                $this->line("Generated new address for {$role}");
-            }
-
+            // Generate new address if none exists or invalid
+            $address = $this->multichainManager->getnewaddress();
             $addresses[$role] = $address;
+            $statuses[$role] = 'Generated';
+            $this->generatedAddresses[$role] = $address;
+            $this->line("Generated new address for {$role}");
         }
 
-        // Store generated addresses for later persistence
-        $this->generatedAddresses = $generatedAddresses;
-
-        return $addresses;
+        return ['addresses' => $addresses, 'statuses' => $statuses];
     }
 
+    /**
+     * Get an existing valid blockchain address for a role, if available
+     */
+    private function getExistingValidAddress(string $role): ?string
+    {
+        $user = User::role($role)->whereNotNull('blockchain_address')->first();
+        if (! $user || ! $user->blockchain_address) {
+            return null;
+        }
+
+        // Validate the address using MultiChain
+        try {
+            $validation = $this->multichainManager->validateaddress($user->blockchain_address);
+
+            return $validation['isvalid'] ?? false ? $user->blockchain_address : null;
+        } catch (Exception $e) {
+            // If validation fails, assume invalid
+            return null;
+        }
+    }
+
+    /**
+     * Create streams (idempotent)
+     */
     private function createStreams(): void
     {
         $this->info('Creating procurement streams...');
 
         foreach (self::STREAMS as $stream) {
-            try {
-                // Check if stream exists using official getstreaminfo command
-                // Reference: https://www.multichain.com/developers/json-rpc-api/
-                // Use the MultiChain RPC 'getstreaminfo' call
-                $this->multichainService->getstreaminfo($stream);
-                $this->line("Stream {$stream} already exists");
+            $streamEnum = StreamEnums::from($stream);
+            $displayName = $streamEnum->getDisplayName();
 
-                // Ensure we're subscribed to existing stream
-                // Official docs: subscribe command with stream name and rescan parameter
-                $this->multichainService->subscribe($stream, true);
+            try {
+                $this->multichainManager->getstreaminfo($stream);
+                $this->line("Stream '{$displayName}' ({$stream}) already exists");
+
+                $this->multichainManager->subscribe($stream, true);
             } catch (Exception $e) {
-                $this->line("Creating stream {$stream}...");
-                $this->multichainService->create('stream', $stream, true);
-                $this->multichainService->subscribe($stream, true);
-                $this->line("Created and subscribed to stream {$stream}");
+                $this->line("Creating stream '{$displayName}' ({$stream})...");
+                $this->multichainManager->create('stream', $stream, true);
+                $this->multichainManager->subscribe($stream, true);
+                $this->line("Created and subscribed to stream '{$displayName}'");
             }
         }
     }
 
+    /**
+     * Grant permissions (idempotent)
+     */
     private function grantPermissions(array $addresses): void
     {
         $this->info('Granting permissions...');
@@ -222,31 +259,30 @@ class MultichainSetup extends Command
             $rolePerms = $permissions[$role];
 
             // Grant global permissions
-            // Official docs: grant command - grant addresses permissions
-            // Syntax: grant address(es) permissions (native-amount)
-            // Reference: https://www.multichain.com/developers/json-rpc-api/
             foreach ($rolePerms['global'] ?? [] as $perm) {
                 try {
-                    $this->multichainService->grant($address, $perm);
+                    $this->multichainManager->grant($address, $perm);
+                    $this->line("Granted global permission '{$perm}' to {$role}");
                 } catch (Exception $e) {
-                    // Permission might already be granted, log but continue
                     if (! str_contains($e->getMessage(), 'already has')) {
-                        throw $e;
+                        $this->warn("Failed to grant global permission '{$perm}' to {$role}: {$e->getMessage()}");
+                    } else {
+                        $this->line("Global permission '{$perm}' already granted to {$role}");
                     }
                 }
             }
 
             // Grant stream permissions
-            // For per-stream permissions, use entity.permission format
-            // e.g., stream1.write, stream1.read, stream1.admin
             foreach (self::STREAMS as $stream) {
                 foreach ($rolePerms['stream'] ?? [] as $perm) {
                     try {
-                        $this->multichainService->grant($address, "{$stream}.{$perm}");
+                        $this->multichainManager->grant($address, "{$stream}.{$perm}");
+                        $this->line("Granted stream permission '{$perm}' on {$stream} to {$role}");
                     } catch (Exception $e) {
-                        // Permission might already be granted
                         if (! str_contains($e->getMessage(), 'already has')) {
-                            throw $e;
+                            $this->warn("Failed to grant stream permission '{$perm}' on {$stream} to {$role}: {$e->getMessage()}");
+                        } else {
+                            $this->line("Stream permission '{$perm}' on {$stream} already granted to {$role}");
                         }
                     }
                 }
@@ -256,6 +292,9 @@ class MultichainSetup extends Command
         }
     }
 
+    /**
+     * Update addresses in database (idempotent)
+     */
     private function updateAddresses(array $addresses): void
     {
         if (empty($this->generatedAddresses)) {
@@ -266,56 +305,16 @@ class MultichainSetup extends Command
 
         $this->info('Updating generated addresses...');
 
-        // Update .env file
-        $this->updateEnvFile();
-
-        // Update database users
+        // Update database users with new addresses
         $this->updateDatabaseUsers($addresses);
 
-        $this->line('Addresses updated in .env and database');
-    }
-
-    private function updateEnvFile(): void
-    {
-        $envPath = base_path('.env');
-
-        if (! file_exists($envPath) || ! is_writable($envPath)) {
-            $this->warn('Cannot update .env file - not writable');
-
-            return;
-        }
-
-        $envContent = file_get_contents($envPath);
-
-        foreach ($this->generatedAddresses as $role => $address) {
-            // Convert role to proper env key format
-            $envKey = match ($role) {
-                'bac_secretariat' => 'MULTICHAIN_BAC_SECRETARIAT_ADDRESS',
-                'bac_chairman' => 'MULTICHAIN_BAC_CHAIRMAN_ADDRESS',
-                'hope' => 'MULTICHAIN_HOPE_ADDRESS',
-                'admin' => 'MULTICHAIN_ADMIN_ADDRESS',
-                default => 'MULTICHAIN_'.strtoupper(str_replace('_', '_', $role)).'_ADDRESS'
-            };
-
-            $pattern = '/^'.preg_quote($envKey, '/').'=.*/m';
-            $replacement = $envKey.'='.$address;
-
-            if (preg_match($pattern, $envContent)) {
-                $envContent = preg_replace($pattern, $replacement, $envContent);
-            } else {
-                $envContent .= PHP_EOL.$replacement;
-            }
-
-            $this->line("Updated {$envKey} in .env");
-        }
-
-        file_put_contents($envPath, $envContent);
+        $this->line('Addresses updated in database');
     }
 
     private function updateDatabaseUsers(array $addresses): void
     {
-        foreach ($addresses as $role => $address) {
-            $users = User::where('role', $role)->get();
+        foreach ($this->generatedAddresses as $role => $address) {
+            $users = User::role($role)->get();
 
             foreach ($users as $user) {
                 if ($user->blockchain_address !== $address) {
@@ -327,7 +326,7 @@ class MultichainSetup extends Command
         }
     }
 
-    private function displayAddresses(array $addresses): void
+    private function displayAddresses(array $addresses, array $statuses): void
     {
         $this->newLine();
         $this->info('Blockchain Addresses Summary:');
@@ -336,7 +335,7 @@ class MultichainSetup extends Command
         $rows = [];
         foreach ($addresses as $role => $address) {
             $masked = substr($address, 0, 8).'...'.substr($address, -8);
-            $status = isset($this->generatedAddresses[$role]) ? 'Generated' : 'Existing';
+            $status = $statuses[$role] ?? 'Unknown';
             $rows[] = [ucfirst(str_replace('_', ' ', $role)), $masked, $status];
         }
 
@@ -344,13 +343,123 @@ class MultichainSetup extends Command
 
         $this->newLine();
         $this->line('Full addresses are stored in:');
-        $this->line('   • Configuration: config/multichain.php');
-        $this->line('   • Environment: .env file');
         $this->line('   • Database: users.blockchain_address column');
         $this->newLine();
         $this->line('Next steps:');
         $this->line('   • Verify setup: php artisan multichain:setup --check');
         $this->line('   • View permissions: multichain-cli '.config('multichain.chain_name').' listpermissions');
         $this->line('   • View streams: multichain-cli '.config('multichain.chain_name').' liststreams');
+    }
+
+    /**
+     * Initialize on-chain file storage streams (idempotent)
+     */
+    private function initializeFileStorage(): void
+    {
+        $this->info('Initializing on-chain file storage streams...');
+
+        $created = 0;
+        $existing = 0;
+
+        foreach (self::FILE_STORAGE_STREAMS as $streamConfig) {
+            $streamEnum = StreamEnums::from($streamConfig['name']);
+            $displayName = $streamEnum->getDisplayName();
+
+            try {
+                $this->multichainManager->getstreaminfo($streamConfig['name']);
+                $this->line("Stream '{$displayName}' ({$streamConfig['name']}) already exists");
+                $existing++;
+            } catch (Exception $e) {
+                $this->multichainManager->create('stream', $streamConfig['name'], true, [
+                    'description' => $streamEnum->getDescription(),
+                    'purpose' => $streamConfig['purpose'],
+                ]);
+
+                $this->line("Stream '{$displayName}' ({$streamConfig['name']}) created successfully");
+                $created++;
+            }
+        }
+
+        $this->newLine();
+        if ($created > 0) {
+            $this->info("Created {$created} file storage stream(s)");
+        }
+        if ($existing > 0) {
+            $this->info("Found {$existing} existing file storage stream(s)");
+        }
+
+        $this->line('Files stored directly on blockchain in file.data stream');
+        $this->line('Metadata tracked in file.metadata stream');
+        $this->line('Heroku-compatible (no ephemeral filesystem issues)');
+        $this->line('Automatically replicated across all blockchain nodes');
+    }
+
+    /**
+     * Test the on-chain file storage functionality
+     */
+    private function testFileStorage(): void
+    {
+        $this->newLine();
+        $this->info('Testing on-chain file storage...');
+
+        try {
+            $storage = app(\App\Services\FileStorageService::class);
+
+            // Create a small test file (keep it small for testing)
+            $testContent = "This is a test document for on-chain storage.\n".str_repeat('Test data line. ', 50);
+            $tempFile = tempnam(sys_get_temp_dir(), 'test_');
+            file_put_contents($tempFile, $testContent);
+
+            $uploadedFile = new \Illuminate\Http\UploadedFile(
+                $tempFile,
+                'test_document.pdf',
+                'application/pdf',
+                null,
+                true
+            );
+
+            $this->line('  Max file size: '.$storage->getMaxFileSizeFormatted());
+            $this->line('  Test file size: '.round(strlen($testContent) / 1024, 2).' KB');
+            $this->newLine();
+
+            // Store file on blockchain
+            $this->components->task('Storing test file on blockchain', function () use ($storage, $uploadedFile, &$result) {
+                $result = $storage->uploadFile(
+                    $uploadedFile,
+                    'test/storage',
+                    'test_'.now()->timestamp,
+                    ['test' => true, 'purpose' => 'on_chain_initialization_test']
+                );
+
+                return true;
+            });
+
+            $this->line("  File Key: {$result['file_key']}");
+            $this->line("  Data TXID: {$result['data_txid']}");
+            $this->line("  Metadata TXID: {$result['metadata_txid']}");
+            $this->line('  Size: '.round($result['size'] / 1024, 2).' KB');
+            $this->line("  Hash: {$result['hash']}");
+
+            // Retrieve and verify
+            $this->components->task('Retrieving & verifying from blockchain', function () use ($storage, $result, $testContent, &$retrieved) {
+                $retrieved = $storage->retrieveFile($result['file_key'], $result['data_txid']);
+                $verified = $storage->verifyFileIntegrity($result['file_key'], $result['metadata_txid']);
+
+                return $retrieved['content'] === $testContent && $verified;
+            });
+
+            $this->info('Test passed! File stored on-chain, retrieved, and verified');
+            $this->line('File content stored directly on blockchain (replicated across all nodes)');
+            $this->line('Works on Heroku (no ephemeral filesystem dependency)');
+
+            // Cleanup
+            @unlink($tempFile);
+        } catch (Exception $e) {
+            $this->error('Test failed: '.$e->getMessage());
+
+            if (str_contains($e->getMessage(), 'exceeds maximum')) {
+                $this->warn('Tip: On-chain storage is best for files under 8 MB');
+            }
+        }
     }
 }

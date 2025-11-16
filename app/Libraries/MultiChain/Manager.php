@@ -2,6 +2,7 @@
 
 namespace App\Libraries\MultiChain;
 
+use App\Libraries\MultiChain\Contracts\MultiChainManagerInterface;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  * - $manager->liststreamitems('stream1', true, 100)
  * - $manager->publish('stream1', 'key1', ['json' => $data])
  */
-final class Manager
+final class Manager implements MultiChainManagerInterface
 {
     private Client $client;
 
@@ -56,6 +57,47 @@ final class Manager
         $this->client->setoption('verify_ssl', config('multichain.verify_ssl', true));
         $this->client->setoption('use_curl', true);
         $this->client->setTimeout($timeout);
+    }
+
+    // Interface method implementations
+    public function getinfo(): array
+    {
+        return $this->__call('getinfo', []);
+    }
+
+    public function getnewaddress(): string
+    {
+        return $this->__call('getnewaddress', []);
+    }
+
+    public function getstreaminfo(string $stream): array
+    {
+        return $this->__call('getstreaminfo', [$stream]);
+    }
+
+    public function create(string $type, string $name, bool $open = true, array $options = []): string
+    {
+        return $this->__call('create', [$type, $name, $open, $options]);
+    }
+
+    public function subscribe(string $stream, bool $rescan = true): void
+    {
+        $this->__call('subscribe', [$stream, $rescan]);
+    }
+
+    public function grant(string $address, string $permissions): void
+    {
+        $this->__call('grant', [$address, $permissions]);
+    }
+
+    public function importaddress(string $address, string $label = '', bool $rescan = true): void
+    {
+        $this->__call('importaddress', [$address, $label, $rescan]);
+    }
+
+    public function validateaddress(string $address): array
+    {
+        return $this->__call('validateaddress', [$address]);
     }
 
     /**

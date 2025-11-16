@@ -148,6 +148,14 @@ final class ProcurementData
         );
     }
 
+    /**
+     * Create ProcurementData from array (alias for fromBlockchainArray)
+     */
+    public static function fromArray(array $data): self
+    {
+        return self::fromBlockchainArray($data);
+    }
+
     public function requiresPhilGEPS(): bool
     {
         return $this->procurementMode->requiresPhilGEPS();

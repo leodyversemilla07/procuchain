@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\CacheStrategyInterface;
+use App\Libraries\MultiChain\Contracts\MultiChainManagerInterface;
 use App\Libraries\MultiChain\Manager;
 use App\Services\CacheStrategyService;
 use App\Services\NotificationService;
@@ -14,7 +15,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Register MultiChain Manager as singleton
+        // Register MultiChain Manager interface binding
+        $this->app->singleton(MultiChainManagerInterface::class, Manager::class);
+
+        // Register MultiChain Manager as singleton (for backward compatibility)
         $this->app->singleton(Manager::class);
 
         // Add contextual binding to resolve any Manager reference to the MultiChain Manager

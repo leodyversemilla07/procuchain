@@ -418,4 +418,15 @@ enum StageEnums: string
 
         return $options;
     }
+
+    /**
+     * Get the integer ID for this stage (1-based index for compatibility with legacy systems)
+     */
+    public function getId(): int
+    {
+        $cases = self::cases();
+        $index = array_search($this, $cases, true);
+
+        return $index + 1; // 1-based indexing
+    }
 }
