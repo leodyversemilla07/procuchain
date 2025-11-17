@@ -4,6 +4,7 @@
  */
 
 import type { Status } from './enums';
+import type { Document, Event } from './document';
 
 export interface ProcurementListItem {
     id: string;

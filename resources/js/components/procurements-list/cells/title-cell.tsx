@@ -31,7 +31,7 @@ export const TitleCell = ({ procurement }: TitleCellProps) => {
     const textRef = useRef<HTMLDivElement>(null);
     const isTruncated = useIsTruncated(textRef, procurement.title);
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.user?.role || 'guest';
+    const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
     const procurementUrl = getProcurementShowUrl(userRole, procurement.id);
     
     const titleContent = (

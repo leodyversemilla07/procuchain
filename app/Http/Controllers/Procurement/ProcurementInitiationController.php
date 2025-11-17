@@ -11,12 +11,18 @@ use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Http\Controllers\Procurement\Concerns\HasProcurementSupport;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
+use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Libraries\MultiChain\Manager;
 use App\Repositories\ProcurementRepository;
+use App\Services\DocumentValidationService;
 use App\Services\ProcurementDataService;
+use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
+use App\Services\Publishers\StatusPublisher;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -27,20 +33,27 @@ class ProcurementInitiationController extends BaseController
     use HasProcurementSupport;
 
     // Issue #3 & #13 Fix: Inject orchestrator for atomic workflow operations
-    protected Manager $multichain;
-
-    protected ProcurementDataService $procurementDataService;
-
     public function __construct(
         Manager $multichain,
+        \App\Services\Publishers\DocumentPublisher $documentPublisher,
+        StatusPublisher $statusPublisher,
+        EventPublisher $eventPublisher,
         ProcurementDataService $procurementDataService,
+        \App\Repositories\DocumentRepository $documentRepository,
         private readonly ProcurementRepository $procurements,
-        private readonly ProcurementOrchestrator $orchestrator
+        private readonly ProcurementOrchestrator $orchestrator,
+        protected DocumentValidationService $validationService
     ) {
-        // Note: Orchestrator handles publishers internally for atomic operations (Issue #3)
-        // We still need multichain/dataService for read operations
-        $this->multichain = $multichain;
-        $this->procurementDataService = $procurementDataService;
+        // Initialize trait dependencies (includes statusPublisher and eventPublisher)
+        $this->initializeProcurementSupport(
+            $multichain,
+            $documentPublisher,
+            $statusPublisher,
+            $eventPublisher,
+            $procurementDataService,
+            $documentRepository
+        );
+
         $this->applyProcurementMiddleware();
     }
 
@@ -54,15 +67,51 @@ class ProcurementInitiationController extends BaseController
     public function show(?string $id = null): Response
     {
         if ($id) {
-            $procurement = $this->procurements->find($id);
+            $procurement = $this->procurements->findByProcurement($id);
 
             if (! $procurement) {
                 abort(404);
             }
 
+            // Get the latest status from blockchain to check if stage is complete
+            $statusRepo = app(\App\Repositories\StatusRepository::class);
+            $statuses = $statusRepo->findByProcurement($id);
+            $latestStatus = ! empty($statuses) ? end($statuses) : null; // Most recent status (last in array)
+
+            // Reset array pointer after using end()
+            if (! empty($statuses)) {
+                reset($statuses);
+            }
+
+            // Check if this stage has been marked complete
+            // A stage is complete when there's a status record with marked_complete_at metadata
+            $isStageComplete = $latestStatus
+                && $latestStatus->stage === StageEnums::PROCUREMENT_INITIATION->value
+                && isset($latestStatus->metadata['marked_complete_at']);
+
+            // Debug logging
+            Log::info('Stage completion check', [
+                'pr_number' => $id,
+                'has_status' => $latestStatus !== null,
+                'stage' => $latestStatus?->stage,
+                'expected_stage' => StageEnums::PROCUREMENT_INITIATION->value,
+                'metadata' => $latestStatus?->metadata ?? [],
+                'has_complete_marker' => isset($latestStatus?->metadata['marked_complete_at']),
+                'isStageComplete' => $isStageComplete,
+            ]);
+
             return Inertia::render('bac-secretariat/procurement-stage/procurement-initiation-show', [
-                'procurement' => $procurement,
-                'history' => $this->procurements->getHistory($id),
+                'pr_number' => $id,
+                'documentGuide' => $this->validationService->getStageDocumentGuide(
+                    StageEnums::PROCUREMENT_INITIATION
+                ),
+                'uploadedDocuments' => $this->getUploadedDocumentTypes(
+                    $id,
+                    StageEnums::PROCUREMENT_INITIATION
+                ),
+                'currentStage' => $latestStatus?->stage ?? StageEnums::PROCUREMENT_INITIATION->value,
+                'currentStatus' => $latestStatus?->currentStatus ?? $procurement->status,
+                'isStageComplete' => $isStageComplete,
             ]);
         }
 
@@ -233,6 +282,243 @@ class ProcurementInitiationController extends BaseController
             return redirect()->back()->withErrors([
                 'error' => 'Failed to initiate procurement. Please try again.',
             ]);
+        }
+    }
+
+    /**
+     * Upload a single document progressively after procurement initiation
+     */
+    public function uploadSingleDocument(
+        UploadSingleDocumentRequest $request,
+        string $pr_number
+    ): RedirectResponse {
+        $stage = StageEnums::PROCUREMENT_INITIATION;
+        $user = auth()->user();
+        $userAddress = $user->blockchain_address;
+
+        try {
+            // Extract file and document type from request
+            $file = $request->file('document_file');
+            $documentTypeValue = $request->input('document_type');
+            $documentType = DocumentTypeEnums::tryFrom($documentTypeValue);
+
+            if (! $documentType) {
+                return back()->withErrors(['document_type' => 'Invalid document type provided']);
+            }
+
+            // Fetch already uploaded documents for this stage
+            $existingDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
+            $existingDocumentEnums = array_filter(
+                array_map(fn ($docType) => DocumentTypeEnums::tryFrom($docType), $existingDocuments),
+                fn ($enum) => $enum !== null
+            );
+
+            // Validate the single document upload (prevents duplicates)
+            $validation = $this->validationService->validateUpload(
+                $stage,
+                $documentType,
+                $existingDocumentEnums
+            );
+
+            if (! empty($validation['errors'])) {
+                return back()->withErrors(['message' => implode(' ', $validation['errors'])]);
+            }
+
+            // Get procurement details
+            $procurement = $this->procurements->findByProcurement($pr_number);
+            if (! $procurement) {
+                return back()->withErrors(['message' => 'Procurement not found']);
+            }
+
+            // Publish document workflow to blockchain via orchestrator
+            $result = $this->orchestrator->publishDocumentWorkflow(
+                procurementData: [
+                    'pr_number' => $pr_number,
+                    'procurement_title' => $procurement->title,
+                    'user_address' => $userAddress,
+                ],
+                file: $file,
+                documentData: [
+                    'stage' => $stage,
+                    'status' => $procurement->status,
+                    'document_type' => $documentType,
+                    'uploaded_by' => $user->name,
+                    'description' => $request->input('description'),
+                    'stage_metadata' => $request->input('metadata', []),
+                ],
+                statusData: [
+                    'stage' => $stage,
+                    'current_status' => \App\Enums\StatusEnums::tryFrom($procurement->status) ?? \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED,
+                    'metadata' => [
+                        'documents_uploaded' => 1,
+                        'uploaded_at' => now()->toIso8601String(),
+                        'progressive_upload' => true,
+                    ],
+                ],
+                eventData: [
+                    'stage' => $stage->value,
+                    'event_type' => 'document_uploaded',
+                    'category' => 'procurement',
+                    'severity' => 'info',
+                    'details' => sprintf(
+                        'Document "%s" uploaded to stage "%s" (progressive upload)',
+                        $documentType->getDisplayName(),
+                        $stage->getDisplayName()
+                    ),
+                    'document_count' => 1,
+                ]
+            );
+
+            if (! $result['success']) {
+                return back()->withErrors(['message' => 'Failed to upload document to blockchain']);
+            }
+
+            // Refresh uploaded documents and check completion (for internal tracking)
+            $uploadedDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
+            $uploadedDocumentEnums = array_filter(
+                array_map(fn ($docType) => DocumentTypeEnums::tryFrom($docType), $uploadedDocuments),
+                fn ($enum) => $enum !== null
+            );
+
+            // Check stage completion status (for internal tracking)
+            $completionCheck = $this->validationService->validateStageCompletion($stage, $uploadedDocumentEnums);
+
+            // Return success with message
+            return back()->with('success', sprintf(
+                'Document "%s" uploaded successfully',
+                $documentType->getDisplayName()
+            ));
+        } catch (\Exception $e) {
+            \Log::error('Failed to upload single document', [
+                'pr_number' => $pr_number,
+                'stage' => $stage->value,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->withErrors(['message' => 'An error occurred while uploading the document']);
+        }
+    }
+
+    /**
+     * Validate document upload before submission (real-time validation)
+     */
+    public function validateUpload(Request $request, string $pr_number): JsonResponse
+    {
+        $stage = StageEnums::PROCUREMENT_INITIATION;
+        $documentTypeValue = $request->input('document_type');
+
+        $documentType = DocumentTypeEnums::tryFrom($documentTypeValue);
+        if (! $documentType) {
+            return response()->json([
+                'valid' => false,
+                'errors' => ['Invalid document type'],
+            ], 400);
+        }
+
+        // Get already uploaded documents
+        $existingDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
+        $existingDocumentEnums = array_filter(
+            array_map(fn ($docType) => DocumentTypeEnums::tryFrom($docType), $existingDocuments),
+            fn ($enum) => $enum !== null
+        );
+
+        $validation = $this->validationService->validateUpload(
+            $stage,
+            $documentType,
+            $existingDocumentEnums
+        );
+
+        return response()->json([
+            'valid' => empty($validation['errors']),
+            'errors' => $validation['errors'] ?? [],
+            'warnings' => $validation['warnings'] ?? [],
+        ]);
+    }
+
+    /**
+     * Get document guide for Procurement Initiation stage
+     */
+    public function documentGuide(Request $request, string $pr_number): JsonResponse
+    {
+        $stage = StageEnums::PROCUREMENT_INITIATION;
+        $guide = $this->validationService->getStageDocumentGuide($stage);
+
+        return response()->json($guide);
+    }
+
+    /**
+     * Mark the Procurement Initiation stage as complete
+     */
+    public function markStageComplete(Request $request, string $pr_number): RedirectResponse
+    {
+        $stage = StageEnums::PROCUREMENT_INITIATION;
+
+        try {
+            // Verify all required documents are uploaded
+            $uploadedDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
+            $documentGuide = $this->validationService->getStageDocumentGuide($stage);
+
+            if (count($uploadedDocuments) < $documentGuide['counts']['required_count']) {
+                return back()->with('error', 'Cannot mark stage as complete. Please upload all required documents first.');
+            }
+
+            // Get procurement data
+            $procurement = $this->procurements->findByProcurement($pr_number);
+            if (! $procurement) {
+                return back()->with('error', 'Procurement not found.');
+            }
+
+            // Get user blockchain address or use system default
+            $user = auth()->user();
+            $userAddress = $user->blockchain_address ?? $user->email;
+
+            // When Procurement Initiation is complete, transition to Pre-Procurement Conference stage
+            $nextStage = StageEnums::PRE_PROCUREMENT_CONFERENCE;
+            $completionStatus = \App\Enums\StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD;
+
+            // 1. Publish status update to blockchain
+            $this->statusPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $procurement->title,
+                stage: $nextStage,
+                currentStatus: $completionStatus,
+                userAddress: $userAddress,
+                previousStatus: null,
+                metadata: [
+                    'documents_uploaded' => count($uploadedDocuments),
+                    'marked_complete_at' => now()->toIso8601String(),
+                    'previous_stage' => StageEnums::PROCUREMENT_INITIATION->value,
+                ]
+            );
+
+            // 2. Publish completion event to blockchain
+            $this->eventPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $procurement->title,
+                stage: $stage->value,
+                eventType: 'stage_completed',
+                category: 'stage_transition',
+                severity: 'info',
+                details: "Stage {$stage->getDisplayName()} marked as complete with all required documents uploaded. Transitioned to {$nextStage->getDisplayName()}.",
+                documentCount: count($uploadedDocuments),
+                userAddress: $userAddress,
+                metadata: [
+                    'stage' => $stage->value,
+                    'next_stage' => $nextStage->value,
+                    'completion_status' => $completionStatus->value,
+                ]
+            );
+
+            return back()->with('success', 'Procurement Initiation stage marked as complete! Next stage: Pre-Procurement Conference.');
+        } catch (\Exception $e) {
+            Log::error('Failed to mark Procurement Initiation stage as complete', [
+                'pr_number' => $pr_number,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->with('error', 'Failed to mark stage as complete: '.$e->getMessage());
         }
     }
 }

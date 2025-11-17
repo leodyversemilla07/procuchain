@@ -1,0 +1,15 @@
+node_modules
+vendor
+.git
+.env
+storage/logs/*
+bootstrap/cache/*
+.phpunit.cache
+*.log
+.vscode
+.github
+docs
+tests
+README.md
+docker-compose.yml
+Dockerfile*

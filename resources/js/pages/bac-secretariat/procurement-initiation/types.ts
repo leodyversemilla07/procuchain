@@ -56,11 +56,6 @@ export type UseFormData = {
 
     // Prepared By
     prepared_by: string;
-
-    // Documents
-    files: (File | null)[];
-    document_types: string[];
-    document_descriptions: string[];
 };
 
 export interface StepProps {

@@ -26,7 +26,7 @@ const getProcurementShowUrl = (role: string, id: string): string => {
 
 export const IdCell = ({ id }: IdCellProps) => {
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.user?.role || 'guest';
+    const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
     const procurementUrl = getProcurementShowUrl(userRole, id);
     
     return (

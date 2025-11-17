@@ -354,7 +354,7 @@ export default function Header() {
                         <div className="hidden items-center space-x-2 lg:flex">
                             {auth.user ? (
                                 <Link
-                                    href={getDashboardRouteByRole(auth.user.role)}
+                                    href={getDashboardRouteByRole(auth.roles?.[0] || auth.user.role)}
                                     className="text-primary-foreground bg-primary hover:bg-primary/90 focus:ring-ring rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-200 focus:ring-1 focus:outline-none"
                                 >
                                     Dashboard
@@ -516,7 +516,7 @@ export default function Header() {
                     <div className="mt-6 px-3 sm:mt-8 sm:px-4 md:px-6 lg:px-8">
                         {auth.user ? (
                             <Link
-                                href={getDashboardRouteByRole(auth.user.role)}
+                                href={getDashboardRouteByRole(auth.roles?.[0] || auth.user.role)}
                                 onClick={resetSearchState}
                                 className="text-primary-foreground bg-primary hover:bg-primary/90 focus:ring-ring block w-full rounded-md py-2.5 text-center font-medium transition-colors duration-200 focus:ring-1 focus:outline-none sm:py-3"
                             >

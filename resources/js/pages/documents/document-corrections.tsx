@@ -52,7 +52,7 @@ interface DocumentCorrectionsProps {
 
 export default function DocumentCorrections({ procurement, auth }: DocumentCorrectionsProps) {
     const { auth: pageAuth } = usePage<SharedData>().props;
-    const userRole = pageAuth?.user?.role || auth?.user?.roles?.[0] || 'guest';
+    const userRole = pageAuth?.roles?.[0] || auth?.roles?.[0] || pageAuth?.user?.role || 'guest';
     const breadcrumbs = getDocumentCorrectionsBreadcrumbs(userRole, procurement.title);
     
     const [selectedDocument, setSelectedDocument] = useState<ProcurementDocument | null>(null);

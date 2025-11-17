@@ -166,6 +166,10 @@ class ProcurementListController extends BaseController
 
             $this->procurementDataService->preloadUserNames(collect($events));
 
+            // Fetch procurement details from blockchain
+            $procurementRepository = app(\App\Repositories\ProcurementRepository::class);
+            $procurementDetails = $procurementRepository->findByProcurement($pr_number);
+
             $procurementData = $this->procurementDataService->buildProcurementData(
                 $pr_number,
                 $currentStatus,
@@ -173,6 +177,42 @@ class ProcurementListController extends BaseController
                 $events,
                 $statusItems
             );
+
+            // Add procurement details to response if available
+            if ($procurementDetails) {
+                $procurementData['details'] = [
+                    'pr_number' => $procurementDetails->prNumber,
+                    'ppmp_reference' => $procurementDetails->ppmpReference,
+                    'title' => $procurementDetails->title,
+                    'description' => $procurementDetails->description,
+                    'abc_amount' => $procurementDetails->abcAmount,
+                    'abc_amount_formatted' => $procurementDetails->getFormattedAbcAmount(),
+                    'funding_source' => $procurementDetails->fundingSource,
+                    'category' => $procurementDetails->category->value,
+                    'category_label' => $procurementDetails->category->label(),
+                    'procurement_mode' => $procurementDetails->procurementMode->value,
+                    'procurement_mode_label' => $procurementDetails->procurementMode->label(),
+                    'office' => $procurementDetails->office,
+                    'end_user' => $procurementDetails->endUser,
+                    'purpose' => $procurementDetails->purpose,
+                    'delivery_location' => $procurementDetails->deliveryLocation,
+                    'delivery_date' => $procurementDetails->deliveryDate->toIso8601String(),
+                    'delivery_date_formatted' => $procurementDetails->getFormattedDeliveryDate(),
+                    'delivery_term_days' => $procurementDetails->deliveryTermDays,
+                    'prepared_by' => $procurementDetails->preparedBy,
+                    'bac_resolution_number' => $procurementDetails->bacResolutionNumber,
+                    'bac_resolution_date' => $procurementDetails->bacResolutionDate?->toIso8601String(),
+                    'bac_resolution_date_formatted' => $procurementDetails->getFormattedBacResolutionDate(),
+                    'philgeps_reference' => $procurementDetails->philgepsReference,
+                    'philgeps_posting_date' => $procurementDetails->philgepsPostingDate?->toIso8601String(),
+                    'philgeps_posting_date_formatted' => $procurementDetails->getFormattedPhilgepsPostingDate(),
+                    'approved_by' => $procurementDetails->approvedBy,
+                    'approval_date' => $procurementDetails->approvalDate?->toIso8601String(),
+                    'approval_date_formatted' => $procurementDetails->getFormattedApprovalDate(),
+                    'created_at' => $procurementDetails->createdAt->toIso8601String(),
+                    'created_at_formatted' => $procurementDetails->getFormattedCreatedAt(),
+                ];
+            }
 
             Log::debug('Current status data', [
                 'current_status' => $currentStatus,

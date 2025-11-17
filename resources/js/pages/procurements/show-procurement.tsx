@@ -15,6 +15,39 @@ import { DocumentsTab } from '../../components/show-procurement/documents-tab';
 import { ProcurementHeader } from '../../components/show-procurement/procurement-header';
 import { TimelineTab } from '../../components/show-procurement/timeline-tab';
 
+interface ProcurementDetails {
+    pr_number: string;
+    ppmp_reference?: string;
+    title: string;
+    description: string;
+    abc_amount: number;
+    abc_amount_formatted: string;
+    funding_source: string;
+    category: string;
+    category_label: string;
+    procurement_mode: string;
+    procurement_mode_label: string;
+    office: string;
+    end_user?: string;
+    purpose: string;
+    delivery_location: string;
+    delivery_date: string;
+    delivery_date_formatted: string;
+    delivery_term_days?: number;
+    prepared_by?: string;
+    bac_resolution_number?: string;
+    bac_resolution_date?: string;
+    bac_resolution_date_formatted?: string;
+    philgeps_reference?: string;
+    philgeps_posting_date?: string;
+    philgeps_posting_date_formatted?: string;
+    approved_by?: string;
+    approval_date?: string;
+    approval_date_formatted?: string;
+    created_at: string;
+    created_at_formatted: string;
+}
+
 interface ProcurementStatus {
     stage: string;
     stage_formatted: string;
@@ -39,6 +72,7 @@ interface Procurement {
     documents: Document[];
     events: Event[];
     timeline?: TimelineItem[];
+    details?: ProcurementDetails;
 }
 
 interface ShowProps {
@@ -56,7 +90,8 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
     const [isLoading] = useState<boolean>(false);
 
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.user?.role || 'guest';
+    // Extract role from roles array (roles[0]) instead of user.role
+    const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
     const breadcrumbs = getProcurementDetailBreadcrumbs(userRole, procurement?.title);
 
     const totalDocuments = procurement?.documents?.length ?? 0;
@@ -198,8 +233,16 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                     userRole={userRole}
                 />
 
-                <Tabs defaultValue="documents" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 gap-1 sm:gap-0 lg:w-auto lg:inline-grid">
+                <Tabs defaultValue="details" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 gap-1 sm:gap-0 lg:w-auto lg:inline-grid">
+                        <TabsTrigger
+                            value="details"
+                            className="gap-1.5 text-xs transition-all duration-200 sm:gap-2 sm:text-sm"
+                            aria-label="Details tab"
+                        >
+                            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+                            <span>Details</span>
+                        </TabsTrigger>
                         <TabsTrigger
                             value="documents"
                             className="gap-1.5 text-xs transition-all duration-200 sm:gap-2 sm:text-sm"
@@ -221,6 +264,189 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                             <span>Timeline</span>
                         </TabsTrigger>
                     </TabsList>
+
+                    {/* Details Tab */}
+                    <TabsContent value="details" className="mt-3 sm:mt-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Procurement Information</CardTitle>
+                                <CardDescription>Complete details from procurement initiation</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {procurement.details ? (
+                                    <>
+                                        {/* Basic Information */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold">Basic Information</h3>
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <label className="text-sm font-medium text-muted-foreground">PR Number</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.pr_number}</p>
+                                                </div>
+                                                {procurement.details.ppmp_reference && (
+                                                    <div>
+                                                        <label className="text-sm font-medium text-muted-foreground">PPMP Reference</label>
+                                                        <p className="mt-1 text-sm">{procurement.details.ppmp_reference}</p>
+                                                    </div>
+                                                )}
+                                                <div className="sm:col-span-2">
+                                                    <label className="text-sm font-medium text-muted-foreground">Title</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.title}</p>
+                                                </div>
+                                                <div className="sm:col-span-2">
+                                                    <label className="text-sm font-medium text-muted-foreground">Description</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.description}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Financial Information */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold">Financial Information</h3>
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <label className="text-sm font-medium text-muted-foreground">ABC Amount</label>
+                                                    <p className="mt-1 text-sm font-semibold text-primary">{procurement.details.abc_amount_formatted}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-muted-foreground">Funding Source</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.funding_source}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Classification */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold">Classification</h3>
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <label className="text-sm font-medium text-muted-foreground">Category</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.category_label}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-muted-foreground">Procurement Mode</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.procurement_mode_label}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Office and Purpose */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold">Office & Purpose</h3>
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <label className="text-sm font-medium text-muted-foreground">Office</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.office}</p>
+                                                </div>
+                                                {procurement.details.end_user && (
+                                                    <div>
+                                                        <label className="text-sm font-medium text-muted-foreground">End User</label>
+                                                        <p className="mt-1 text-sm">{procurement.details.end_user}</p>
+                                                    </div>
+                                                )}
+                                                <div className="sm:col-span-2">
+                                                    <label className="text-sm font-medium text-muted-foreground">Purpose</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.purpose}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Delivery Details */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold">Delivery Details</h3>
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <label className="text-sm font-medium text-muted-foreground">Delivery Location</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.delivery_location}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-medium text-muted-foreground">Delivery Date</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.delivery_date_formatted}</p>
+                                                </div>
+                                                {procurement.details.delivery_term_days && (
+                                                    <div>
+                                                        <label className="text-sm font-medium text-muted-foreground">Delivery Term</label>
+                                                        <p className="mt-1 text-sm">{procurement.details.delivery_term_days} days</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Additional Information */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold">Additional Information</h3>
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                {procurement.details.prepared_by && (
+                                                    <div>
+                                                        <label className="text-sm font-medium text-muted-foreground">Prepared By</label>
+                                                        <p className="mt-1 text-sm">{procurement.details.prepared_by}</p>
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <label className="text-sm font-medium text-muted-foreground">Created At</label>
+                                                    <p className="mt-1 text-sm">{procurement.details.created_at_formatted}</p>
+                                                </div>
+                                                {procurement.details.bac_resolution_number && (
+                                                    <>
+                                                        <div>
+                                                            <label className="text-sm font-medium text-muted-foreground">BAC Resolution Number</label>
+                                                            <p className="mt-1 text-sm">{procurement.details.bac_resolution_number}</p>
+                                                        </div>
+                                                        {procurement.details.bac_resolution_date_formatted && (
+                                                            <div>
+                                                                <label className="text-sm font-medium text-muted-foreground">BAC Resolution Date</label>
+                                                                <p className="mt-1 text-sm">{procurement.details.bac_resolution_date_formatted}</p>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                                {procurement.details.philgeps_reference && (
+                                                    <>
+                                                        <div>
+                                                            <label className="text-sm font-medium text-muted-foreground">PhilGEPS Reference</label>
+                                                            <p className="mt-1 text-sm">{procurement.details.philgeps_reference}</p>
+                                                        </div>
+                                                        {procurement.details.philgeps_posting_date_formatted && (
+                                                            <div>
+                                                                <label className="text-sm font-medium text-muted-foreground">PhilGEPS Posting Date</label>
+                                                                <p className="mt-1 text-sm">{procurement.details.philgeps_posting_date_formatted}</p>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                                {procurement.details.approved_by && (
+                                                    <>
+                                                        <div>
+                                                            <label className="text-sm font-medium text-muted-foreground">Approved By</label>
+                                                            <p className="mt-1 text-sm">{procurement.details.approved_by}</p>
+                                                        </div>
+                                                        {procurement.details.approval_date_formatted && (
+                                                            <div>
+                                                                <label className="text-sm font-medium text-muted-foreground">Approval Date</label>
+                                                                <p className="mt-1 text-sm">{procurement.details.approval_date_formatted}</p>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <Empty>
+                                        <EmptyHeader>
+                                            <EmptyMedia variant="icon">
+                                                <AlertCircle className="text-muted-foreground" />
+                                            </EmptyMedia>
+                                            <EmptyTitle>No Details Available</EmptyTitle>
+                                            <EmptyDescription>
+                                                Procurement details are not available at this time.
+                                            </EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
                     {/* Documents Tab */}
                     <TabsContent value="documents" className="mt-3 sm:mt-6">

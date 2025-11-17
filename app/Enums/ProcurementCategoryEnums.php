@@ -24,6 +24,14 @@ enum ProcurementCategoryEnums: string
         };
     }
 
+    /**
+     * Alias for getDisplayName() for convenience
+     */
+    public function label(): string
+    {
+        return $this->getDisplayName();
+    }
+
     public function getDescription(): string
     {
         return match ($this) {

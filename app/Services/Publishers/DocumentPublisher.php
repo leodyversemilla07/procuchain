@@ -91,7 +91,7 @@ class DocumentPublisher
                 userAddress: $userAddress,
                 stage: $stage->value,
                 status: $status,
-                documentType: $stage->value, // Must match stage for blockchain filter
+                documentType: $documentType->value,
                 fileKey: $fileResult['file_key'],
                 fileName: $fileResult['filename'],
                 fileSize: $fileResult['size'],

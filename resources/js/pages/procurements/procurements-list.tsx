@@ -111,7 +111,7 @@ const ProcurementStatsSummary = ({ total, inProgress, completed, documentTotal, 
 
 export default function ProcurementsList({ procurements: initialProcurements, pagination, error: initialError }: ShowProps) {
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.user?.role || 'guest';
+    const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
     const breadcrumbs = getProcurementListBreadcrumbs(userRole);
 
     const [searchValue, setSearchValue] = useState('');

@@ -33,26 +33,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Configure rate limiters for blockchain operations (Issue #18 fix)
+        // Use database-based throttling (matches cache driver configuration)
         $middleware->throttleApi();
-        $middleware->throttleWithRedis();
-
-        // Custom rate limiter for blockchain writes (Issue #20: use config)
-        \Illuminate\Support\Facades\RateLimiter::for('blockchain_writes', function ($request) {
-            // Load limit from config (Issue #20 fix)
-            $limit = config('blockchain.rate_limiting.writes_per_minute', 10);
-
-            // Per-user rate limiting for blockchain write operations
-            // Prevents abuse and protects blockchain node from overload
-            return \Illuminate\Cache\RateLimiting\Limit::perMinute($limit)
-                ->by($request->user()?->id ?: $request->ip())
-                ->response(function () use ($limit) {
-                    return response()->json([
-                        'error' => 'Too many blockchain operations. Please wait a moment before trying again.',
-                        'retry_after' => 60,
-                        'limit' => $limit,
-                    ], 429);
-                });
-        });
 
     })
     ->withSchedule(function (Schedule $schedule) {
@@ -71,11 +53,12 @@ return Application::configure(basePath: dirname(__DIR__))
             ->hourly();
 
         // Monitor Redis memory usage (important for 30MB free tier)
-        $schedule->command('redis:monitor-memory --warn-threshold=80')
-            ->everyThirtyMinutes()
-            ->onFailure(function () {
-                Log::warning('Redis memory usage exceeded 80% threshold');
-            });
+        // Disabled: Only needed if using Redis for rate limiting
+        // $schedule->command('redis:monitor-memory --warn-threshold=80')
+        //     ->everyThirtyMinutes()
+        //     ->onFailure(function () {
+        //         Log::warning('Redis memory usage exceeded 80% threshold');
+        //     });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         Integration::handles($exceptions);

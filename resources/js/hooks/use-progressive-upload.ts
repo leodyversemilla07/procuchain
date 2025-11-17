@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { uploadSingleDocument as uploadPreProcurement } from '@/actions/App/Http/Controllers/Procurement/PreProcurementController';
 import { uploadSingleDocument as uploadProcurement } from '@/actions/App/Http/Controllers/Procurement/ProcurementController';
 import { uploadSingleDocument as uploadPostProcurement } from '@/actions/App/Http/Controllers/Procurement/PostProcurementController';
+import { uploadSingleDocument as uploadInitiation } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
 
 interface ProgressiveUploadOptions {
     procurementId: string;
     stage: string;
-    phase: 'pre-procurement' | 'procurement' | 'post-procurement';
+    phase: 'pre-procurement' | 'procurement' | 'post-procurement' | 'initiation';
     onUploadStart?: (documentName: string) => void;
     onUploadComplete?: (documentValue: string) => void;
     onUploadError?: (error: string) => void;
@@ -55,13 +56,24 @@ export function useProgressiveUpload(options: ProgressiveUploadOptions) {
             setCurrentUpload(documentName);
             options.onUploadStart?.(documentName);
 
-            // Get the appropriate Wayfinder route based on phase
-            const uploadRoute =
-                options.phase === 'pre-procurement'
-                    ? uploadPreProcurement
-                    : options.phase === 'procurement'
-                      ? uploadProcurement
-                      : uploadPostProcurement;
+            // Get the appropriate Wayfinder route based on phase/stage
+            let uploadRoute;
+            let routeParams;
+
+            if (options.phase === 'initiation' || options.stage === 'procurement_initiation') {
+                // Special case for procurement initiation (no stage parameter needed)
+                uploadRoute = uploadInitiation;
+                routeParams = { pr_number: options.procurementId };
+            } else {
+                // Standard phase-based routing
+                uploadRoute =
+                    options.phase === 'pre-procurement'
+                        ? uploadPreProcurement
+                        : options.phase === 'procurement'
+                          ? uploadProcurement
+                          : uploadPostProcurement;
+                routeParams = { pr_number: options.procurementId, stage: options.stage };
+            }
 
             // Create FormData for Inertia file upload
             const formData = {
@@ -71,7 +83,7 @@ export function useProgressiveUpload(options: ProgressiveUploadOptions) {
             };
 
             // Submit using Inertia router with file upload support
-            router.post(uploadRoute({ pr_number: options.procurementId, stage: options.stage }).url, formData, {
+            router.post(uploadRoute(routeParams).url, formData, {
                 preserveScroll: true,
                 forceFormData: true, // Ensure FormData encoding for file upload
                 onSuccess: () => {
