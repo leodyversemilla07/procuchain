@@ -409,3 +409,68 @@ test('users without permission cannot initiate procurement', function () {
 
     $response->assertStatus(403);
 });
+
+/**
+ * Test: Can mark procurement initiation stage as complete with all documents uploaded
+ */
+test('can mark procurement initiation stage as complete when all documents uploaded', function () {
+    // Mock the required services
+    $statusPublisher = Mockery::mock(\App\Services\Publishers\StatusPublisher::class);
+    $eventPublisher = Mockery::mock(\App\Services\Publishers\EventPublisher::class);
+    
+    $this->app->instance(\App\Services\Publishers\StatusPublisher::class, $statusPublisher);
+    $this->app->instance(\App\Services\Publishers\EventPublisher::class, $eventPublisher);
+
+    // Setup mocks to expect publish calls
+    $statusPublisher->shouldReceive('publish')
+        ->once()
+        ->andReturn(true);
+    
+    $eventPublisher->shouldReceive('publish')
+        ->once()
+        ->andReturn(true);
+
+    $prNumber = 'PR-2025-TEST-0001';
+    
+    // Mock document repository to return uploaded documents
+    $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class);
+    $documentRepo->shouldReceive('findByProcurement')
+        ->with($prNumber)
+        ->andReturn([
+            (object) ['stage' => 'procurement_initiation', 'documentType' => 'purchase_request'],
+            (object) ['stage' => 'procurement_initiation', 'documentType' => 'ppmp'],
+        ]);
+    $this->app->instance(\App\Repositories\DocumentRepository::class, $documentRepo);
+
+    // Mock procurement repository
+    $procurementRepo = Mockery::mock(\App\Repositories\ProcurementRepository::class);
+    $procurementRepo->shouldReceive('findByProcurement')
+        ->with($prNumber)
+        ->andReturn((object) ['title' => 'Test Procurement', 'pr_number' => $prNumber]);
+    $this->app->instance(\App\Repositories\ProcurementRepository::class, $procurementRepo);
+
+    $response = $this->actingAs($this->user)
+        ->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
+
+    $response->assertSessionHas('success');
+});
+
+/**
+ * Test: Cannot mark stage as complete without all required documents
+ */
+test('cannot mark procurement initiation stage as complete without required documents', function () {
+    $prNumber = 'PR-2025-TEST-0002';
+    
+    // Mock document repository to return no documents
+    $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class);
+    $documentRepo->shouldReceive('findByProcurement')
+        ->with($prNumber)
+        ->andReturn([]);
+    $this->app->instance(\App\Repositories\DocumentRepository::class, $documentRepo);
+
+    $response = $this->actingAs($this->user)
+        ->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
+
+    $response->assertSessionHas('error');
+});
+

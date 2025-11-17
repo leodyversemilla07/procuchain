@@ -1,0 +1,46 @@
+# MultiChain Dockerfile for development
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    tar \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install MultiChain
+RUN wget https://www.multichain.com/download/multichain-2.3.3.tar.gz \
+    && tar -xvzf multichain-2.3.3.tar.gz \
+    && mv multichain-2.3.3/multichaind multichain-2.3.3/multichain-cli multichain-2.3.3/multichain-util /usr/local/bin/ \
+    && rm -rf multichain-2.3.3 multichain-2.3.3.tar.gz
+
+# Create multichain user
+RUN useradd -r -s /bin/bash multichain
+
+# Start script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Set working directory
+WORKDIR /home/multichain
+
+# Create directory for blockchain data
+RUN mkdir -p /home/multichain/.multichain && chown -R multichain:multichain /home/multichain/.multichain
+
+# Switch to multichain user
+USER multichain
+
+# Set environment variables
+ENV CHAIN_NAME=procuchain-dev
+ENV RPC_USER=multichainrpc
+ENV RPC_PASSWORD=multichainrpc
+ENV RPC_PORT=7450
+ENV P2P_PORT=7449
+
+# Expose ports
+EXPOSE ${P2P_PORT} ${RPC_PORT}
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD multichain-cli ${CHAIN_NAME} getinfo || exit 1
+
+CMD ["/usr/local/bin/docker-entrypoint.sh"]

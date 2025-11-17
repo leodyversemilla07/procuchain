@@ -16,6 +16,7 @@ import {
     monitoringUpload,
     completionUpload,
 } from '@/routes/bac-secretariat/procurement';
+import { show as initiationShow } from '@/routes/bac-secretariat/procurement/initiation';
 
 export interface ActionConfig {
     icon: React.ReactNode;
@@ -49,11 +50,11 @@ const iconSize = 'h-4 w-4';
 export const ACTION_REGISTRY: ActionDefinition[] = [
     {
         condition: { stage: Stage.PROCUREMENT_INITIATION, status: Status.PROCUREMENT_SUBMITTED },
-        icon: Edit2Icon,
-        iconClassName: cn(iconSize, 'text-amber-600 dark:text-amber-400'),
-        tooltipText: 'Record Pre-Procurement Conference Decision',
-        bgClassName: 'bg-amber-50 dark:bg-amber-900/20',
-        action: 'pre-procurement',
+        icon: UploadCloudIcon,
+        iconClassName: cn(iconSize, 'text-blue-600 dark:text-blue-400'),
+        tooltipText: 'Upload Initiation Documents',
+        bgClassName: 'bg-blue-50 dark:bg-blue-900/20',
+        getHref: (id) => initiationShow.url(id),
     },
     {
         condition: { stage: Stage.PRE_PROCUREMENT_CONFERENCE, status: Status.PRE_PROCUREMENT_CONFERENCE_HELD },

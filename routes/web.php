@@ -104,6 +104,14 @@ Route::middleware(['auth'])->group(function () {
             // Procurement Initiation (Stage 1)
             Route::post('/initiate-procurement', [ProcurementInitiationController::class, 'initiate'])
                 ->name('procurement.initiate');
+            Route::post('/procurement-initiation/{pr_number}/upload-document', [ProcurementInitiationController::class, 'uploadSingleDocument'])
+                ->name('procurement.initiation.upload-document');
+            Route::post('/procurement-initiation/{pr_number}/complete', [ProcurementInitiationController::class, 'markStageComplete'])
+                ->name('procurement.initiation.complete');
+            Route::get('/procurement-initiation/{pr_number}/document-guide', [ProcurementInitiationController::class, 'documentGuide'])
+                ->name('procurement.initiation.document-guide');
+            Route::post('/procurement-initiation/{pr_number}/validate-upload', [ProcurementInitiationController::class, 'validateUpload'])
+                ->name('procurement.initiation.validate-upload');
 
             // Pre-Procurement Phase (Stages 1-3)
             Route::post('/pre-procurement/{pr_number}/{stage}/upload', [PreProcurementController::class, 'uploadDocuments'])
@@ -117,11 +125,11 @@ Route::middleware(['auth'])->group(function () {
 
             // Procurement Phase (Stages 4-9)
             Route::post('/procurement/{pr_number}/{stage}/upload', [ProcurementController::class, 'uploadDocuments'])
-                ->name('procurement.procurement.upload');
+                ->name('procurement.phase.upload');
             Route::post('/procurement/{pr_number}/{stage}/upload-document', [ProcurementController::class, 'uploadSingleDocument'])
-                ->name('procurement.procurement.upload-document');
+                ->name('procurement.phase.upload-document');
             Route::post('/procurement/{pr_number}/{stage}/complete', [ProcurementController::class, 'markStageComplete'])
-                ->name('procurement.procurement.complete');
+                ->name('procurement.phase.complete');
 
             // Post-Procurement Phase (Stages 10-15)
             Route::post('/post-procurement/{pr_number}/{stage}/upload', [PostProcurementController::class, 'uploadDocuments'])
@@ -175,13 +183,13 @@ Route::middleware(['auth'])->group(function () {
 
         // Procurement Phase Routes (Stages 4-9)
         Route::get('/procurement/{pr_number}/{stage}', [ProcurementController::class, 'show'])
-            ->name('procurement.procurement.show');
+            ->name('procurement.phase.show');
         Route::get('/procurement/{pr_number}/{stage}/document-guide', [ProcurementController::class, 'documentGuide'])
-            ->name('procurement.procurement.document-guide');
+            ->name('procurement.phase.document-guide');
         Route::get('/procurement/{pr_number}/{stage}/check-completion', [ProcurementController::class, 'checkCompletion'])
-            ->name('procurement.procurement.check-completion');
+            ->name('procurement.phase.check-completion');
         Route::post('/procurement/{pr_number}/{stage}/validate-upload', [ProcurementController::class, 'validateUpload'])
-            ->name('procurement.procurement.validate-upload');
+            ->name('procurement.phase.validate-upload');
 
         // Post-Procurement Phase Routes (Stages 10-15)
         Route::get('/post-procurement/{pr_number}/{stage}', [PostProcurementController::class, 'show'])
@@ -202,7 +210,7 @@ Route::middleware(['auth'])->group(function () {
         })->name('procurement.pre-procurement-conference-upload');
 
         Route::get('/pre-bid-conference-upload/{id}', function (string $id) {
-            return redirect()->route('bac-secretariat.procurement.procurement.show', [
+            return redirect()->route('bac-secretariat.procurement.phase.show', [
                 'pr_number' => $id,
                 'stage' => \App\Enums\StageEnums::PRE_BID_CONFERENCE->value,
             ]);
@@ -216,35 +224,35 @@ Route::middleware(['auth'])->group(function () {
         })->name('procurement.bidding-documents-upload');
 
         Route::get('/supplemental-bid-bulletin-upload/{id}', function (string $id) {
-            return redirect()->route('bac-secretariat.procurement.procurement.show', [
+            return redirect()->route('bac-secretariat.procurement.phase.show', [
                 'pr_number' => $id,
                 'stage' => \App\Enums\StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
             ]);
         })->name('procurement.supplemental-bid-bulletin-upload');
 
         Route::get('/bid-opening-upload/{id}', function (string $id) {
-            return redirect()->route('bac-secretariat.procurement.procurement.show', [
+            return redirect()->route('bac-secretariat.procurement.phase.show', [
                 'pr_number' => $id,
                 'stage' => \App\Enums\StageEnums::BID_OPENING->value,
             ]);
         })->name('procurement.bid-opening-upload');
 
         Route::get('/bid-evaluation-upload/{id}', function (string $id) {
-            return redirect()->route('bac-secretariat.procurement.procurement.show', [
+            return redirect()->route('bac-secretariat.procurement.phase.show', [
                 'pr_number' => $id,
                 'stage' => \App\Enums\StageEnums::BID_EVALUATION->value,
             ]);
         })->name('procurement.bid-evaluation-upload');
 
         Route::get('/post-qualification-upload/{id}', function (string $id) {
-            return redirect()->route('bac-secretariat.procurement.procurement.show', [
+            return redirect()->route('bac-secretariat.procurement.phase.show', [
                 'pr_number' => $id,
                 'stage' => \App\Enums\StageEnums::POST_QUALIFICATION->value,
             ]);
         })->name('procurement.post-qualification-upload');
 
         Route::get('/bac-resolution-upload/{id}', function (string $id) {
-            return redirect()->route('bac-secretariat.procurement.procurement.show', [
+            return redirect()->route('bac-secretariat.procurement.phase.show', [
                 'pr_number' => $id,
                 'stage' => \App\Enums\StageEnums::BAC_RESOLUTION->value,
             ]);

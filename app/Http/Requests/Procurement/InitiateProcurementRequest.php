@@ -49,9 +49,12 @@ class InitiateProcurementRequest extends FormRequest
             // Prepared By
             'prepared_by' => ['required', 'string', 'max:255'],
 
-            // Documents - Must use specific document types per RA 9184
-            'files.*' => ['required', 'file', 'mimes:pdf', 'max:51200'], // 50MB max
-            'document_types.*' => ['required', Rule::enum(DocumentTypeEnums::class)],
+            // Documents - Optional to support progressive upload (can upload after initiation)
+            'files' => ['nullable', 'array'],
+            'files.*' => ['file', 'mimes:pdf', 'max:51200'], // 50MB max
+            'document_types' => ['nullable', 'array'],
+            'document_types.*' => ['required_with:files.*', Rule::enum(DocumentTypeEnums::class)],
+            'document_descriptions' => ['nullable', 'array'],
             'document_descriptions.*' => ['nullable', 'string', 'max:500'],
         ];
     }
@@ -69,10 +72,18 @@ class InitiateProcurementRequest extends FormRequest
 
     /**
      * Validate that all mandatory documents are provided per RA 9184
+     * Note: Only validates if files are provided (supports progressive upload)
      */
     protected function validateMandatoryDocuments($validator): void
     {
         $documentTypes = $this->input('document_types', []);
+        $files = $this->input('files', []);
+
+        // Skip validation for progressive upload workflow (no files provided initially)
+        if (empty($files)) {
+            return;
+        }
+
         $category = ProcurementCategoryEnums::tryFrom($this->input('category'));
 
         if (! $category) {

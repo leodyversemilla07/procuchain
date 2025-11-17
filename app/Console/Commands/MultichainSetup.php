@@ -6,8 +6,10 @@ use App\Enums\StreamEnums;
 use App\Enums\UserRoleEnums;
 use App\Libraries\MultiChain\Contracts\MultiChainManagerInterface as Manager;
 use App\Models\User;
+use App\Services\BlockchainStorageService;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -360,6 +362,7 @@ class MultichainSetup extends Command
 
         $created = 0;
         $existing = 0;
+        $subscribed = 0;
 
         foreach (self::FILE_STORAGE_STREAMS as $streamConfig) {
             $streamEnum = StreamEnums::from($streamConfig['name']);
@@ -378,6 +381,17 @@ class MultichainSetup extends Command
                 $this->line("Stream '{$displayName}' ({$streamConfig['name']}) created successfully");
                 $created++;
             }
+
+            // Subscribe to the stream (idempotent - safe to call multiple times)
+            try {
+                $this->multichainManager->subscribe($streamConfig['name'], true);
+                $this->line("Subscribed to stream '{$displayName}' ({$streamConfig['name']})");
+                $subscribed++;
+            } catch (Exception $e) {
+                if (!str_contains($e->getMessage(), 'already subscribed')) {
+                    $this->warn("Failed to subscribe to '{$displayName}': {$e->getMessage()}");
+                }
+            }
         }
 
         $this->newLine();
@@ -386,6 +400,9 @@ class MultichainSetup extends Command
         }
         if ($existing > 0) {
             $this->info("Found {$existing} existing file storage stream(s)");
+        }
+        if ($subscribed > 0) {
+            $this->info("Subscribed to {$subscribed} file storage stream(s)");
         }
 
         $this->line('Files stored directly on blockchain in file.data stream');
@@ -403,14 +420,14 @@ class MultichainSetup extends Command
         $this->info('Testing on-chain file storage...');
 
         try {
-            $storage = app(\App\Services\FileStorageService::class);
+            $storage = app(BlockchainStorageService::class);
 
             // Create a small test file (keep it small for testing)
             $testContent = "This is a test document for on-chain storage.\n".str_repeat('Test data line. ', 50);
             $tempFile = tempnam(sys_get_temp_dir(), 'test_');
             file_put_contents($tempFile, $testContent);
 
-            $uploadedFile = new \Illuminate\Http\UploadedFile(
+            $uploadedFile = new UploadedFile(
                 $tempFile,
                 'test_document.pdf',
                 'application/pdf',

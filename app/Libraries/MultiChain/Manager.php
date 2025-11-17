@@ -77,7 +77,12 @@ final class Manager implements MultiChainManagerInterface
 
     public function create(string $type, string $name, bool $open = true, array $options = []): string
     {
-        return $this->__call('create', [$type, $name, $open, $options]);
+        $params = [$type, $name, $open];
+        if (! empty($options)) {
+            $params[] = $options;
+        }
+
+        return $this->__call('create', $params);
     }
 
     public function subscribe(string $stream, bool $rescan = true): void

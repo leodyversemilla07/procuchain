@@ -20,6 +20,7 @@ import {
     BasicInformationStep,
     ClassificationBudgetStep,
     OfficePurposeStep,
+    DeliveryDetailsStep,
     ReviewSubmitStep,
 } from './procurement-initiation/steps';
 
@@ -59,10 +60,11 @@ export default function ProcurementInitiationForm({
         { id: 1, title: 'Basic Info', description: 'PR details' },
         { id: 2, title: 'Budget', description: 'Classification & ABC' },
         { id: 3, title: 'Office', description: 'Office & purpose' },
-        { id: 4, title: 'Review', description: 'Final check' },
+        { id: 4, title: 'Delivery', description: 'Delivery details' },
+        { id: 5, title: 'Review', description: 'Final check' },
     ];
 
-    const { data, setData, processing, errors, reset, clearErrors } = useForm<UseFormData>({
+    const { data, setData, processing, errors, clearErrors } = useForm<UseFormData>({
         // Basic Information
         pr_number: `PR-${new Date().getFullYear()}-0000-0000`,
         ppmp_reference: '',
@@ -91,11 +93,6 @@ export default function ProcurementInitiationForm({
 
         // Prepared By
         prepared_by: auth.user.name,
-
-        // Documents (empty arrays - not used but required by type)
-        files: [],
-        document_types: [],
-        document_descriptions: [],
     });
 
 
@@ -149,9 +146,17 @@ export default function ProcurementInitiationForm({
     }, [data.office, data.purpose, data.prepared_by]);
 
     const validateStep4 = useCallback((): boolean => {
+        return !!(
+            data.delivery_location &&
+            data.delivery_location.trim() !== '' &&
+            data.delivery_date
+        );
+    }, [data.delivery_location, data.delivery_date]);
+
+    const validateStep5 = useCallback((): boolean => {
         // Review step - validate all previous steps
-        return validateStep1() && validateStep2() && validateStep3();
-    }, [validateStep1, validateStep2, validateStep3]);
+        return validateStep1() && validateStep2() && validateStep3() && validateStep4();
+    }, [validateStep1, validateStep2, validateStep3, validateStep4]);
 
     const validateCurrentStep = useCallback((): boolean => {
         switch (currentStep) {
@@ -162,7 +167,9 @@ export default function ProcurementInitiationForm({
             case 3:
                 return validateStep3();
             case 4:
-                return validateStep4(); // Review step
+                return validateStep4();
+            case 5:
+                return validateStep5(); // Review step
             default:
                 return false;
         }
@@ -172,6 +179,7 @@ export default function ProcurementInitiationForm({
         validateStep2,
         validateStep3,
         validateStep4,
+        validateStep5,
     ]);
 
     const handleNext = useCallback((e?: React.MouseEvent) => {
@@ -204,15 +212,7 @@ export default function ProcurementInitiationForm({
         [currentStep],
     );
 
-    const onSubmit = useCallback(
-        (e: React.FormEvent) => {
-            e.preventDefault();
-
-            // Only allow submission on the final step (Review step)
-            if (currentStep !== steps.length) {
-                return;
-            }
-
+    const handleCreateProcurement = useCallback(() => {
             const submissionToast = toast.loading('Creating Procurement...');
 
             // Prepare data for submission (no documents)
@@ -236,16 +236,14 @@ export default function ProcurementInitiationForm({
 
             router.post(initiate().url, submissionData, {
                 onSuccess: () => {
-                    const createdPrNumber = data.pr_number;
                     toast.success('Procurement created successfully!', {
                         id: submissionToast,
-                        description: 'Redirecting to document upload...',
+                        description: 'Redirecting to procurement list. You can upload documents from there.',
                     });
-                    reset();
                     
-                    // Redirect to PPMP stage for progressive document uploads
+                    // Always redirect to procurement list after creation
                     setTimeout(() => {
-                        router.visit(`/bac-secretariat/pre-procurement/${createdPrNumber}/ppmp`, {
+                        router.visit('/bac-secretariat/procurements-list', {
                             preserveState: false,
                             replace: true,
                         });
@@ -260,7 +258,21 @@ export default function ProcurementInitiationForm({
                 preserveScroll: true,
             });
         },
-        [currentStep, steps.length, reset, data],
+        [data],
+    );
+
+    const onSubmit = useCallback(
+        (e: React.FormEvent) => {
+            e.preventDefault();
+
+            // Only allow submission on the final step (Review step)
+            if (currentStep !== steps.length) {
+                return;
+            }
+
+            handleCreateProcurement();
+        },
+        [currentStep, steps.length, handleCreateProcurement],
     );
 
     const renderCurrentStep = () => {
@@ -286,6 +298,8 @@ export default function ProcurementInitiationForm({
             case 3:
                 return <OfficePurposeStep {...commonProps} />;
             case 4:
+                return <DeliveryDetailsStep {...commonProps} />;
+            case 5:
                 return (
                     <ReviewSubmitStep
                         data={data}
@@ -376,23 +390,22 @@ export default function ProcurementInitiationForm({
                                     <ArrowRight className="h-4 w-4" />
                                 </Button>
                             ) : (
-                                <Button
-                                    type="submit"
-                                    disabled={processing || !validateStep4()}
-                                    className="w-full gap-2"
-                                >
-                                    {processing ? (
-                                        <>
-                                            <span className="hidden sm:inline">Creating...</span>
-                                            <span className="sm:hidden">Creating...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="hidden sm:inline">Create & Upload Documents</span>
-                                            <span className="sm:hidden">Create</span>
-                                        </>
-                                    )}
-                                </Button>
+                                <>
+                                    <Button
+                                        type="submit"
+                                        disabled={processing || !validateStep5()}
+                                        className="w-full gap-2"
+                                    >
+                                        {processing ? (
+                                            <span>Creating...</span>
+                                        ) : (
+                                            <>
+                                                <span className="hidden sm:inline">Create Procurement</span>
+                                                <span className="sm:hidden">Create</span>
+                                            </>
+                                        )}
+                                    </Button>
+                                </>
                             )}
                         </div>
                     </div>

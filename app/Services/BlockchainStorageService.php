@@ -170,8 +170,21 @@ final class BlockchainStorageService
             $dataItem = $items[0];
         }
 
-        // Get hex data from blockchain
-        $fileHex = $dataItem['data'] ?? null;
+        // Get hex data from blockchain - handle both verbose and non-verbose responses
+        $fileHex = null;
+        if (is_string($dataItem['data'] ?? null)) {
+            // Non-verbose mode - data is directly a hex string
+            $fileHex = $dataItem['data'];
+        } elseif (is_array($dataItem['data'] ?? null)) {
+            // Verbose mode - need to use gettxoutdata to get raw hex
+            $txid = $dataItem['txid'] ?? $dataItem['data']['txid'] ?? null;
+            $vout = $dataItem['vout'] ?? $dataItem['data']['vout'] ?? 0;
+            
+            if ($txid) {
+                $fileHex = $this->multichain->gettxoutdata($txid, $vout);
+            }
+        }
+        
         if (! $fileHex) {
             throw new Exception('File data not found in blockchain item');
         }

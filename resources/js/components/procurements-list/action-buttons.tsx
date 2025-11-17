@@ -4,7 +4,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { AlertCircle, EyeIcon } from 'lucide-react';
 import { getActionConfigs } from '@/config/procurement-actions';
 
-// Import Wayfinder route helpers for each role
+// Import Wayfinder route helpers for each role (from /procurements-list routes)
 import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
 import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
 import { show as hopeShow } from '@/routes/hope/procurements';
@@ -28,8 +28,12 @@ const getProcurementShowUrl = (role: string, id: string): string => {
             return hopeShow.url(id);
         case 'admin':
             return adminShow.url(id);
+        case 'guest':
+            // Guests shouldn't be able to view procurement details
+            return '#';
         default:
-            return `/procurements-list/${id}`;
+            // Unknown role, default to admin route
+            return adminShow.url(id);
     }
 };
 
@@ -69,7 +73,9 @@ export const ActionButtons = ({
 }: ActionButtonsProps) => {
     const { id, stage, current_status } = procurement;
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth.user?.role || 'guest';
+    
+    // Extract role from roles array (roles[0]) instead of user.role
+    const userRole = auth.roles?.[0] || auth.user?.role || 'guest';
     const isBacSecretariat = userRole === 'bac_secretariat';
 
     // Get workflow actions from the centralized configuration
