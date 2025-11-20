@@ -35,27 +35,28 @@ export default function Contact() {
                 />
                 <meta property="twitter:image" content="/logo.png" />
             </Head>{' '}
-            <div className="bg-background text-foreground flex min-h-screen flex-col">
+            <div className="flex min-h-screen flex-col bg-background">
                 <Header />
 
-                <main className="flex-grow pt-20 pb-12 sm:pt-24 sm:pb-16 md:pt-32 md:pb-20">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+                <main className="flex-1">
+                    <div className="container mx-auto px-4 py-16 sm:px-12 lg:px-16 xl:px-20">
                         {/* Hero Section */}
-                        <div className="mb-12 sm:mb-16 md:mb-20">
-                            <h1 className="mb-4 text-center text-2xl font-medium sm:mb-6 sm:text-3xl md:mb-8 md:text-4xl">Contact Us</h1>
-                            <p className="text-muted-foreground mx-auto max-w-xl px-4 text-center text-sm sm:px-0 sm:text-base">
+                        <div className="mx-auto max-w-4xl text-center mb-16">
+                            <h1 className="mb-4 text-4xl font-bold sm:text-5xl md:text-6xl">Contact Us</h1>
+                            <p className="text-lg text-muted-foreground">
                                 Have questions? We're here to help. Reach out to us through the following channels.
                             </p>
-                        </div>{' '}
+                        </div>
+
                         {/* Contact Information */}
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-                            <Card className="bg-muted border-0">
-                                <CardContent className="p-4 sm:p-6">
+                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                            <Card className="border">
+                                <CardContent className="p-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <div className="bg-card border-border mb-3 rounded-full border p-3 shadow-sm">
-                                            <Mail className="text-primary h-5 w-5" />
+                                        <div className="mb-4 rounded-full bg-primary/10 p-3">
+                                            <Mail className="h-6 w-6 text-primary" />
                                         </div>
-                                        <h3 className="text-foreground mb-1 text-sm font-medium">Email</h3>
+                                        <h3 className="mb-2 font-semibold">Email</h3>
                                         <a
                                             href="mailto:semilla.leodyver@minsu.edu.ph"
                                             className="text-muted-foreground hover:text-primary text-sm transition-colors"
@@ -66,28 +67,28 @@ export default function Contact() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="bg-muted border-0">
-                                <CardContent className="p-4 sm:p-6">
+                            <Card className="border">
+                                <CardContent className="p-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <div className="bg-card border-border mb-3 rounded-full border p-3 shadow-sm">
-                                            <Phone className="text-primary h-5 w-5" />
+                                        <div className="mb-4 rounded-full bg-primary/10 p-3">
+                                            <Phone className="h-6 w-6 text-primary" />
                                         </div>
-                                        <h3 className="text-foreground mb-1 text-sm font-medium">Phone</h3>
-                                        <a href="tel:+639777616265" className="text-muted-foreground hover:text-primary text-sm transition-colors">
+                                        <h3 className="mb-2 font-semibold">Phone</h3>
+                                        <a href="tel:+639777616265" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                                             +63 977 761 6365
                                         </a>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="bg-muted border-0">
-                                <CardContent className="p-4 sm:p-6">
+                            <Card className="border">
+                                <CardContent className="p-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <div className="bg-card border-border mb-3 rounded-full border p-3 shadow-sm">
-                                            <MapPin className="text-primary h-5 w-5" />
+                                        <div className="mb-4 rounded-full bg-primary/10 p-3">
+                                            <MapPin className="h-6 w-6 text-primary" />
                                         </div>
-                                        <h3 className="text-foreground mb-1 text-sm font-medium">Location</h3>
-                                        <p className="text-muted-foreground text-sm">
+                                        <h3 className="mb-2 font-semibold">Location</h3>
+                                        <p className="text-sm text-muted-foreground">
                                             Mindoro State University
                                             <br />
                                             Bongabong Campus
@@ -96,14 +97,14 @@ export default function Contact() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="bg-muted border-0">
-                                <CardContent className="p-4 sm:p-6">
+                            <Card className="border">
+                                <CardContent className="p-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <div className="bg-card border-border mb-3 rounded-full border p-3 shadow-sm">
-                                            <Building className="text-primary h-5 w-5" />
+                                        <div className="mb-4 rounded-full bg-primary/10 p-3">
+                                            <Building className="h-6 w-6 text-primary" />
                                         </div>
-                                        <h3 className="text-foreground mb-1 text-sm font-medium">Department</h3>
-                                        <p className="text-muted-foreground text-sm">
+                                        <h3 className="mb-2 font-semibold">Department</h3>
+                                        <p className="text-sm text-muted-foreground">
                                             Information Technology
                                             <br />
                                             Capstone Project
