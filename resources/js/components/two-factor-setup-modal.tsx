@@ -93,10 +93,13 @@ function TwoFactorSetupStep({
                             ) : (
                                 <>
                                     <input
+                                        id="two-factor-setup-key"
+                                        name="setup_key"
                                         type="text"
                                         readOnly
                                         value={manualSetupKey}
                                         className="bg-background text-foreground h-full w-full p-3 outline-none"
+                                        aria-label="Two-factor authentication setup key"
                                     />
                                     <button onClick={() => copy(manualSetupKey)} className="border-border hover:bg-muted border-l px-3">
                                         <IconComponent className="w-4" />

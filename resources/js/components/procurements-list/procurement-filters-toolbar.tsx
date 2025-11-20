@@ -64,11 +64,14 @@ export function ProcurementFiltersToolbar({
                         <div className="relative max-w-md flex-1">
                             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
                             <Input
+                                id="procurement-search"
+                                name="search"
                                 type="text"
                                 placeholder="Search procurements..."
                                 value={searchValue}
                                 onChange={(event) => onSearchChange(event.target.value)}
                                 className="h-10 pl-10"
+                                autoComplete="off"
                             />
                         </div>
                     </div>
