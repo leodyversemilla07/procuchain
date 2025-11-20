@@ -57,10 +57,20 @@ final readonly class StatusRepository
     {
         $allStatuses = $this->all();
 
-        return array_filter(
+        $filtered = array_filter(
             $allStatuses,
-            fn (StatusData $status) => $status->prNumber === $prNumber
+            fn (StatusData $status): bool => $status->prNumber === $prNumber
         );
+
+        // Sort by timestamp descending (most recent first)
+        usort($filtered, function (StatusData $a, StatusData $b): int {
+            $timeA = $a->timestamp instanceof \Carbon\Carbon ? $a->timestamp->timestamp : strtotime($a->timestamp);
+            $timeB = $b->timestamp instanceof \Carbon\Carbon ? $b->timestamp->timestamp : strtotime($b->timestamp);
+
+            return $timeB - $timeA;
+        });
+
+        return array_values($filtered);
     }
 
     /**

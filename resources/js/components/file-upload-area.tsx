@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { cn } from '@/lib/utils';
 import { FileText, FileUp, X } from 'lucide-react';
 import React from 'react';
@@ -59,14 +60,18 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
             onClick={() => document.getElementById(inputId)?.click()}
         >
             {!file ? (
-                <div className="flex flex-col items-center gap-2 text-center">
-                    <FileUp className="h-8 w-8 text-muted-foreground" />
-                    <div>
-                        <p className="text-sm font-medium">Drop file or click to browse</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">PDF only, max 10MB</p>
+                <Empty className="border-0 p-4 min-h-0 gap-3">
+                    <EmptyMedia variant="icon">
+                        <FileUp className="h-5 w-5" />
+                    </EmptyMedia>
+                    <div className="flex flex-col gap-1">
+                        <EmptyTitle className="text-sm">Drop file or click to browse</EmptyTitle>
+                        <EmptyDescription className="text-xs">
+                            PDF only, max 10MB
+                        </EmptyDescription>
                     </div>
                     <Input id={inputId} type="file" accept={accept} className="hidden" onChange={onFileChange} required={required} />
-                </div>
+                </Empty>
             ) : (
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 flex-1 min-w-0">

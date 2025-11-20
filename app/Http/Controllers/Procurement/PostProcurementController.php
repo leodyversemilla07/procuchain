@@ -62,11 +62,14 @@ class PostProcurementController extends BaseController
         // Determine which Inertia component to render based on stage
         $component = match ($stage) {
             StageEnums::NOTICE_OF_AWARD => 'bac-secretariat/procurement-stage/noa-upload',
-            StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO => 'bac-secretariat/procurement-stage/contract-po-upload',
-            StageEnums::NOTICE_TO_PROCEED => 'bac-secretariat/procurement-stage/notice-to-proceed-upload',
+            // Frontend file is `performance-bond-contract-po-upload.tsx`
+            StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO => 'bac-secretariat/procurement-stage/performance-bond-contract-po-upload',
+            // Frontend file is `ntp-upload.tsx`
+            StageEnums::NOTICE_TO_PROCEED => 'bac-secretariat/procurement-stage/ntp-upload',
             StageEnums::MONITORING => 'bac-secretariat/procurement-stage/monitoring-upload',
             StageEnums::COMPLETION => 'bac-secretariat/procurement-stage/completion-upload',
-            StageEnums::COMPLETED => 'bac-secretariat/procurement-stage/completed',
+            // There is no dedicated "completed" page; render completion upload as a fallback
+            StageEnums::COMPLETED => 'bac-secretariat/procurement-stage/completion-upload',
             default => abort(404, 'Stage component not found'),
         };
 
@@ -77,6 +80,7 @@ class PostProcurementController extends BaseController
                 'status' => $procurement['current_status'] ?? '',
                 'stage' => $stage->getDisplayName(),
                 'stage_value' => $stage->value,
+                'current_stage' => $procurement['stage'] ?? '',
             ],
             'documentGuide' => $this->validationService->getStageDocumentGuide($stage),
             'uploadedDocuments' => fn () => $this->getUploadedDocumentTypes($pr_number, $stage),
@@ -369,6 +373,7 @@ class PostProcurementController extends BaseController
         }
 
         try {
+            // Verify all required documents are uploaded
             $uploadedDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
             $documentGuide = $this->validationService->getStageDocumentGuide($stage);
 
@@ -376,8 +381,221 @@ class PostProcurementController extends BaseController
                 return back()->with('error', 'Cannot mark stage as complete. Please upload all required documents first.');
             }
 
-            // TODO: Implement actual stage completion logic
-            return back()->with('success', 'Stage marked as complete successfully!');
+            // Get procurement data
+            $procurement = app(\App\Repositories\ProcurementRepository::class)->findByProcurement($pr_number);
+            if (! $procurement) {
+                return back()->with('error', 'Procurement not found.');
+            }
+
+            $user = auth()->user();
+            $userAddress = $user->blockchain_address ?? $user->email;
+
+            // 1. Determine completion status based on stage
+            $completionStatus = $this->getCompletionStatusForStage($stage);
+
+            // 2. Publish status update to blockchain
+            $statusResult = $this->statusPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $procurement->title,
+                stage: $stage,
+                currentStatus: $completionStatus,
+                userAddress: $userAddress,
+                previousStatus: null,
+                metadata: [
+                    'documents_uploaded' => count($uploadedDocuments),
+                    'marked_complete_at' => now()->toIso8601String(),
+                ]
+            );
+
+            // 3. Publish completion event to blockchain
+            $eventResult = $this->eventPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $procurement->title,
+                stage: $stage->value,
+                eventType: 'stage_completed',
+                category: 'stage_transition',
+                severity: 'info',
+                details: "Stage {$stage->getDisplayName()} marked as complete with all required documents uploaded.",
+                documentCount: count($uploadedDocuments),
+                userAddress: $userAddress,
+                metadata: [
+                    'stage' => $stage->value,
+                    'completion_status' => $completionStatus->value,
+                ]
+            );
+
+            // 4. Handle automatic stage transitions for specific stages
+            if ($stage === StageEnums::NOTICE_OF_AWARD) {
+                // Automatically transition to PERFORMANCE_BOND_CONTRACT_AND_PO stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::NOTICE_OF_AWARD,
+                    toStage: StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                    currentStatus: StatusEnums::AWARDED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::NOTICE_OF_AWARD->value,
+                    toStage: StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Notice of Award marked as complete successfully! Proceeding to Performance Bond, Contract & PO stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            if ($stage === StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO) {
+                // Automatically transition to NOTICE_TO_PROCEED stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                    toStage: StageEnums::NOTICE_TO_PROCEED,
+                    currentStatus: StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->value,
+                    toStage: StageEnums::NOTICE_TO_PROCEED->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Performance Bond marked as complete successfully! Proceeding to Notice to Proceed stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            if ($stage === StageEnums::NOTICE_TO_PROCEED) {
+                // Automatically transition to MONITORING stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::NOTICE_TO_PROCEED,
+                    toStage: StageEnums::MONITORING,
+                    currentStatus: StatusEnums::NTP_RECORDED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::NOTICE_TO_PROCEED->value,
+                    toStage: StageEnums::MONITORING->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Notice to Proceed marked as complete successfully! Proceeding to Monitoring stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            if ($stage === StageEnums::MONITORING) {
+                // Automatically transition to COMPLETION stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::MONITORING,
+                    toStage: StageEnums::COMPLETION,
+                    currentStatus: StatusEnums::MONITORING_COMPLETED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::MONITORING->value,
+                    toStage: StageEnums::COMPLETION->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Monitoring marked as complete successfully! Proceeding to Completion stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            if ($stage === StageEnums::COMPLETION) {
+                // Automatically transition to COMPLETED stage (final stage)
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::COMPLETION,
+                    toStage: StageEnums::COMPLETED,
+                    currentStatus: StatusEnums::COMPLETED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::COMPLETION->value,
+                    toStage: StageEnums::COMPLETED->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Completion marked as complete successfully! Procurement is now fully completed.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            // 5. Determine next possible stages for other stages
+            $nextStages = $stage->getNextStages();
+            $nextStageMessage = '';
+            if (! empty($nextStages)) {
+                $nextStageNames = array_map(fn ($s) => $s->getDisplayName(), $nextStages);
+                if (count($nextStageNames) === 1) {
+                    $nextStageMessage = " Next stage: {$nextStageNames[0]}.";
+                } else {
+                    $nextStageMessage = ' Next possible stages: '.implode(', ', $nextStageNames).'.';
+                }
+            }
+
+            return back()->with('success', [
+                'message' => "Stage marked as complete successfully!{$nextStageMessage}",
+                'blockchain' => [
+                    'status_txid' => $statusResult['status_txid'] ?? null,
+                    'event_txid' => $eventResult['event_txid'] ?? null,
+                    'stage' => $stage->value,
+                    'completion_status' => $completionStatus->value,
+                ],
+            ]);
         } catch (\Exception $e) {
             Log::error('Error marking stage as complete', [
                 'pr_number' => $pr_number,

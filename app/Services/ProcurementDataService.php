@@ -130,6 +130,7 @@ class ProcurementDataService
                     'user_address' => $statusDto->userAddress,
                     'user' => $this->getUserName($statusDto->userAddress),
                     'document_count' => $documentCountMap[$statusDto->prNumber] ?? 0,
+                    'metadata' => $statusDto->metadata,
                 ];
             })
             ->groupBy('id')
@@ -137,8 +138,14 @@ class ProcurementDataService
                 return $group->sortByDesc(function ($item) {
                     // Handle both Carbon instance and string timestamp
                     $timestamp = $item['timestamp'] ?? '0';
+                    $unixTimestamp = $timestamp instanceof Carbon ? $timestamp->timestamp : strtotime($timestamp);
 
-                    return $timestamp instanceof Carbon ? $timestamp->timestamp : strtotime($timestamp);
+                    // If metadata indicates this is a transition, add a small offset to prioritize it
+                    // when timestamps are identical (auto-transitions publish completion + transition at same time)
+                    $isTransition = isset($item['metadata']['transition']) && $item['metadata']['transition'] === true;
+                    $priorityOffset = $isTransition ? 0.001 : 0;
+
+                    return $unixTimestamp + $priorityOffset;
                 })->first();
             })
             ->values()
@@ -185,9 +192,28 @@ class ProcurementDataService
                     'pr_number' => $statusDto->prNumber,
                     'procurement_title' => $statusDto->procurementTitle,
                     'user_address' => $statusDto->userAddress,
+                    'metadata' => $statusDto->metadata,
                 ];
             })
-            ->sortByDesc('timestamp');
+            ->sort(function ($a, $b) {
+                // Sort by timestamp descending
+                $timestampA = $a['timestamp'] instanceof Carbon ? $a['timestamp']->timestamp : strtotime($a['timestamp']);
+                $timestampB = $b['timestamp'] instanceof Carbon ? $b['timestamp']->timestamp : strtotime($b['timestamp']);
+                
+                if ($timestampA !== $timestampB) {
+                    return $timestampB <=> $timestampA;
+                }
+
+                // If timestamps are equal, prioritize transitions
+                $isTransitionA = isset($a['metadata']['transition']) && $a['metadata']['transition'] === true;
+                $isTransitionB = isset($b['metadata']['transition']) && $b['metadata']['transition'] === true;
+
+                if ($isTransitionA !== $isTransitionB) {
+                    return $isTransitionA ? -1 : 1; // Transition comes first (descending order)
+                }
+
+                return 0;
+            });
     }
 
     /**
@@ -270,6 +296,7 @@ class ProcurementDataService
                     'formatted_date_only' => $event->getFormattedDateOnly(),
                     'formatted_time_only' => $event->getFormattedTimeOnly(),
                     'event_type' => $event->eventType,
+                    'event_type_formatted' => $this->formatEventType($event->eventType),
                     'details' => $event->details,
                     'stage' => $stage,
                     'stage_formatted' => $this->formatStageName($stage),
@@ -279,6 +306,7 @@ class ProcurementDataService
                     'procurement_title' => $event->procurementTitle,
                     'user_address' => $event->userAddress,
                     'category' => $event->category,
+                    'category_formatted' => $this->formatEventCategory($event->category),
                     'severity' => $event->severity,
                 ];
             })
@@ -662,6 +690,71 @@ class ProcurementDataService
         }
 
         return ucwords(str_replace('_', ' ', $documentType));
+    }
+
+    /**
+     * Format event type to human-readable format
+     */
+    public function formatEventType(string $eventType): string
+    {
+        if (empty($eventType)) {
+            return 'Unknown Event';
+        }
+
+        // Map common event types to proper labels
+        $eventTypeMap = [
+            'document_upload' => 'Document Uploaded',
+            'document_uploaded' => 'Document Uploaded',
+            'stage_transition' => 'Stage Transition',
+            'phase_transition' => 'Phase Transition',
+            'stage_completed' => 'Stage Completed',
+            'procurement_created' => 'Procurement Created',
+            'procurement_completed' => 'Procurement Completed',
+            'status_update' => 'Status Update',
+            'document_verified' => 'Document Verified',
+            'document_rejected' => 'Document Rejected',
+            'approval_granted' => 'Approval Granted',
+            'approval_rejected' => 'Approval Rejected',
+        ];
+
+        // Check if we have a predefined mapping
+        $lowerEventType = strtolower($eventType);
+        if (isset($eventTypeMap[$lowerEventType])) {
+            return $eventTypeMap[$lowerEventType];
+        }
+
+        // Fallback: Convert underscores to spaces and capitalize words
+        return ucwords(str_replace('_', ' ', $eventType));
+    }
+
+    /**
+     * Format event category to human-readable format
+     */
+    public function formatEventCategory(string $category): string
+    {
+        if (empty($category)) {
+            return '';
+        }
+
+        // Map common categories to proper labels
+        $categoryMap = [
+            'stage_transition' => 'Workflow',
+            'document' => 'Document',
+            'procurement' => 'Procurement',
+            'workflow' => 'Workflow',
+            'milestone' => 'Milestone',
+            'approval' => 'Approval',
+            'notification' => 'Notification',
+        ];
+
+        // Check if we have a predefined mapping
+        $lowerCategory = strtolower($category);
+        if (isset($categoryMap[$lowerCategory])) {
+            return $categoryMap[$lowerCategory];
+        }
+
+        // Fallback: Convert underscores to spaces and capitalize words
+        return ucwords(str_replace('_', ' ', $category));
     }
 
     /**

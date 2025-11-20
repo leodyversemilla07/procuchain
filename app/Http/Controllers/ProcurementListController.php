@@ -46,7 +46,7 @@ class ProcurementListController extends BaseController
     /**
      * Display a listing of procurements
      */
-    public function indexProcurementsList(): Response
+    public function index(): Response
     {
         // Authorization: All authenticated users can view procurements list
         // (removed Procurement model dependency)
@@ -144,7 +144,7 @@ class ProcurementListController extends BaseController
     /**
      * Display the specified procurement
      */
-    public function showProcurement(string $pr_number): Response
+    public function show(string $pr_number): Response
     {
         // Authorization: All authenticated users can view procurement details
         // (removed Procurement model dependency)
@@ -273,12 +273,12 @@ class ProcurementListController extends BaseController
      *
      * Queries actual blockchain to retrieve document transaction status
      */
-    public function getBlockchainStatus(string $id): JsonResponse
+    public function getBlockchainStatus(string $pr_number): JsonResponse
     {
         try {
             // Fetch documents from blockchain for this procurement
             $documentRepository = app(\App\Repositories\DocumentRepository::class);
-            $documentDataArray = $documentRepository->findByProcurement($id);
+            $documentDataArray = $documentRepository->findByProcurement($pr_number);
 
             // Transform DocumentData objects to status response format
             $documents = array_map(function ($doc, $index) {
@@ -323,7 +323,7 @@ class ProcurementListController extends BaseController
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch blockchain status', [
-                'pr_number' => $id,
+                'pr_number' => $pr_number,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

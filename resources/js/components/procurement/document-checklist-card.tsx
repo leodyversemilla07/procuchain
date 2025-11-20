@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Circle, FileText, AlertCircle, Upload, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import type { DocumentGuide } from '@/types/document-guide';
 
@@ -24,6 +34,20 @@ export function DocumentChecklistCard({
     onUploadClick,
     canUpload = false,
 }: DocumentChecklistCardProps) {
+    const [confirmDialog, setConfirmDialog] = useState<{
+        open: boolean;
+        documentValue: string;
+        documentName: string;
+        isRequired: boolean;
+        isReplace: boolean;
+    }>({
+        open: false,
+        documentValue: '',
+        documentName: '',
+        isRequired: false,
+        isReplace: false,
+    });
+
     const isDocumentUploaded = (docValue: string) => uploadedDocuments.includes(docValue);
 
     const uploadedRequiredCount = documentGuide.required_documents.filter((doc) => isDocumentUploaded(doc.value)).length;
@@ -37,7 +61,29 @@ export function DocumentChecklistCard({
 
     const allRequiredUploaded = uploadedRequiredCount === documentGuide.counts.required_count;
 
+    const handleUploadClick = (documentValue: string, documentName: string, isRequired: boolean, isReplace: boolean) => {
+        setConfirmDialog({
+            open: true,
+            documentValue,
+            documentName,
+            isRequired,
+            isReplace,
+        });
+    };
+
+    const handleConfirmUpload = () => {
+        if (onUploadClick) {
+            onUploadClick(confirmDialog.documentValue, confirmDialog.documentName, confirmDialog.isRequired);
+        }
+        setConfirmDialog({ open: false, documentValue: '', documentName: '', isRequired: false, isReplace: false });
+    };
+
+    const handleCancelUpload = () => {
+        setConfirmDialog({ open: false, documentValue: '', documentName: '', isRequired: false, isReplace: false });
+    };
+
     return (
+        <>
         <Card className={cn('border-sidebar-border/70 dark:border-sidebar-border h-fit shadow-md', className)}>
             <CardHeader className="space-y-1 pb-2 sm:pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
@@ -114,7 +160,7 @@ export function DocumentChecklistCard({
                                                 size="sm"
                                                 variant={uploaded ? 'outline' : 'default'}
                                                 className="ml-2 h-7 shrink-0 text-xs"
-                                                onClick={() => onUploadClick(doc.value, doc.display_name, true)}
+                                                onClick={() => handleUploadClick(doc.value, doc.display_name, true, uploaded)}
                                             >
                                                 {uploaded ? (
                                                     <>
@@ -177,7 +223,7 @@ export function DocumentChecklistCard({
                                                 size="sm"
                                                 variant={uploaded ? 'outline' : 'secondary'}
                                                 className="ml-2 h-7 shrink-0 text-xs"
-                                                onClick={() => onUploadClick(doc.value, doc.display_name, false)}
+                                                onClick={() => handleUploadClick(doc.value, doc.display_name, false, uploaded)}
                                             >
                                                 {uploaded ? (
                                                     <>
@@ -212,5 +258,38 @@ export function DocumentChecklistCard({
                 </div>
             </CardContent>
         </Card>
+
+            <AlertDialog open={confirmDialog.open} onOpenChange={(open) => !open && handleCancelUpload()}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            {confirmDialog.isReplace ? 'Replace Document on Blockchain?' : 'Upload Document to Blockchain?'}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-2">
+                            <p>
+                                {confirmDialog.isReplace
+                                    ? 'You are about to replace the following document on the blockchain:'
+                                    : 'You are about to upload the following document to the blockchain:'}
+                            </p>
+                            <p className="font-semibold text-foreground">{confirmDialog.documentName}</p>
+                            <p className="text-sm">
+                                {confirmDialog.isReplace
+                                    ? 'This will create a new immutable record on the blockchain, replacing the current version. The previous version will remain in the blockchain history.'
+                                    : 'Once uploaded, this document will be permanently recorded on the blockchain and cannot be deleted.'}
+                            </p>
+                            <p className="text-sm font-medium">
+                                Document Type: <span className="text-muted-foreground">{confirmDialog.isRequired ? 'Required' : 'Optional'}</span>
+                            </p>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={handleCancelUpload}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmUpload}>
+                            {confirmDialog.isReplace ? 'Replace Document' : 'Upload Document'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }

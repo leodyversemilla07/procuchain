@@ -78,6 +78,7 @@ class ProcurementController extends BaseController
                 'status' => $procurement['current_status'] ?? '',
                 'stage' => $stage->getDisplayName(),
                 'stage_value' => $stage->value,
+                'current_stage' => $procurement['stage'] ?? '',
             ],
             'documentGuide' => $this->validationService->getStageDocumentGuide($stage),
             'uploadedDocuments' => fn () => $this->getUploadedDocumentTypes($pr_number, $stage),
@@ -282,7 +283,7 @@ class ProcurementController extends BaseController
                 ],
                 statusData: [
                     'stage' => $stage,
-                    'current_status' => StatusEnums::tryFrom($procurement->status) ?? StatusEnums::PROCUREMENT_SUBMITTED,
+                    'current_status' => StatusEnums::tryFrom($procurement->status) ?? $this->getOngoingStatusForStage($stage),
                     'metadata' => [
                         'documents_uploaded' => 1,
                         'uploaded_at' => now()->toIso8601String(),
@@ -357,6 +358,7 @@ class ProcurementController extends BaseController
         }
 
         try {
+            // Verify all required documents are uploaded
             $uploadedDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
             $documentGuide = $this->validationService->getStageDocumentGuide($stage);
 
@@ -364,8 +366,251 @@ class ProcurementController extends BaseController
                 return back()->with('error', 'Cannot mark stage as complete. Please upload all required documents first.');
             }
 
-            // TODO: Implement actual stage completion logic
-            return back()->with('success', 'Stage marked as complete successfully!');
+            // Get procurement data
+            $procurement = app(\App\Repositories\ProcurementRepository::class)->findByProcurement($pr_number);
+            if (! $procurement) {
+                return back()->with('error', 'Procurement not found.');
+            }
+
+            $user = auth()->user();
+            $userAddress = $user->blockchain_address ?? $user->email;
+
+            // 1. Determine completion status based on stage
+            $completionStatus = $this->getCompletionStatusForStage($stage);
+
+            // 2. Publish status update to blockchain
+            $statusResult = $this->statusPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $procurement->title,
+                stage: $stage,
+                currentStatus: $completionStatus,
+                userAddress: $userAddress,
+                previousStatus: null,
+                metadata: [
+                    'documents_uploaded' => count($uploadedDocuments),
+                    'marked_complete_at' => now()->toIso8601String(),
+                ]
+            );
+
+            // 3. Publish completion event to blockchain
+            $eventResult = $this->eventPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $procurement->title,
+                stage: $stage->value,
+                eventType: 'stage_completed',
+                category: 'stage_transition',
+                severity: 'info',
+                details: "Stage {$stage->getDisplayName()} marked as complete with all required documents uploaded.",
+                documentCount: count($uploadedDocuments),
+                userAddress: $userAddress,
+                metadata: [
+                    'stage' => $stage->value,
+                    'completion_status' => $completionStatus->value,
+                ]
+            );
+
+            // 4. Handle automatic stage transitions for specific stages
+            if ($stage === StageEnums::PRE_BID_CONFERENCE) {
+                // Automatically transition to SUPPLEMENTAL_BID_BULLETIN stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::PRE_BID_CONFERENCE,
+                    toStage: StageEnums::SUPPLEMENTAL_BID_BULLETIN,
+                    currentStatus: StatusEnums::PRE_BID_CONFERENCE_COMPLETED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::PRE_BID_CONFERENCE->value,
+                    toStage: StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Pre-Bid Conference marked as complete successfully! Proceeding to Supplemental Bid Bulletin stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            if ($stage === StageEnums::SUPPLEMENTAL_BID_BULLETIN) {
+                // Automatically transition to BID_OPENING stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::SUPPLEMENTAL_BID_BULLETIN,
+                    toStage: StageEnums::BID_OPENING,
+                    currentStatus: StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+                    toStage: StageEnums::BID_OPENING->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Supplemental Bid Bulletin marked as complete successfully! Proceeding to Bid Submission/Opening stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            if ($stage === StageEnums::BID_OPENING) {
+                // Automatically transition to BID_EVALUATION stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::BID_OPENING,
+                    toStage: StageEnums::BID_EVALUATION,
+                    currentStatus: StatusEnums::BIDS_OPENED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::BID_OPENING->value,
+                    toStage: StageEnums::BID_EVALUATION->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Bid Opening marked as complete successfully! Proceeding to Bid Evaluation stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            if ($stage === StageEnums::BID_EVALUATION) {
+                // Automatically transition to POST_QUALIFICATION stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::BID_EVALUATION,
+                    toStage: StageEnums::POST_QUALIFICATION,
+                    currentStatus: StatusEnums::BIDS_EVALUATED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::BID_EVALUATION->value,
+                    toStage: StageEnums::POST_QUALIFICATION->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Bid Evaluation marked as complete successfully! Proceeding to Post-Qualification stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            if ($stage === StageEnums::POST_QUALIFICATION) {
+                // Automatically transition to BAC_RESOLUTION stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::POST_QUALIFICATION,
+                    toStage: StageEnums::BAC_RESOLUTION,
+                    currentStatus: StatusEnums::POST_QUALIFICATION_VERIFIED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::POST_QUALIFICATION->value,
+                    toStage: StageEnums::BAC_RESOLUTION->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Post-Qualification marked as complete successfully! Proceeding to BAC Resolution stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            if ($stage === StageEnums::BAC_RESOLUTION) {
+                // Automatically transition to NOTICE_OF_AWARD stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::BAC_RESOLUTION,
+                    toStage: StageEnums::NOTICE_OF_AWARD,
+                    currentStatus: StatusEnums::RESOLUTION_RECORDED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::BAC_RESOLUTION->value,
+                    toStage: StageEnums::NOTICE_OF_AWARD->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'BAC Resolution marked as complete successfully! Proceeding to Notice of Award stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            // 5. Determine next possible stages for other stages
+            $nextStages = $stage->getNextStages();
+            $nextStageMessage = '';
+            if (! empty($nextStages)) {
+                $nextStageNames = array_map(fn ($s) => $s->getDisplayName(), $nextStages);
+                if (count($nextStageNames) === 1) {
+                    $nextStageMessage = " Next stage: {$nextStageNames[0]}.";
+                } else {
+                    $nextStageMessage = ' Next possible stages: '.implode(', ', $nextStageNames).'.';
+                }
+            }
+
+            return back()->with('success', [
+                'message' => "Stage marked as complete successfully!{$nextStageMessage}",
+                'blockchain' => [
+                    'status_txid' => $statusResult['status_txid'] ?? null,
+                    'event_txid' => $eventResult['event_txid'] ?? null,
+                    'stage' => $stage->value,
+                    'completion_status' => $completionStatus->value,
+                ],
+            ]);
         } catch (\Exception $e) {
             Log::error('Error marking stage as complete', [
                 'pr_number' => $pr_number,
@@ -491,6 +736,24 @@ class ProcurementController extends BaseController
         }
 
         return $documentType;
+    }
+
+    /**
+     * Get the ongoing status for a stage (used during document uploads).
+     */
+    protected function getOngoingStatusForStage(StageEnums $stage): StatusEnums
+    {
+        return match ($stage) {
+            StageEnums::PRE_BID_CONFERENCE => StatusEnums::PRE_BID_CONFERENCE_HELD,
+            StageEnums::SUPPLEMENTAL_BID_BULLETIN => StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
+            // For stages without dedicated "ongoing" statuses, use the previous stage's completion status
+            // Documents are uploaded during the stage, status changes only when stage is marked complete
+            StageEnums::BID_OPENING => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+            StageEnums::BID_EVALUATION => StatusEnums::BIDS_OPENED,
+            StageEnums::POST_QUALIFICATION => StatusEnums::BIDS_EVALUATED,
+            StageEnums::BAC_RESOLUTION => StatusEnums::POST_QUALIFICATION_VERIFIED,
+            default => StatusEnums::PROCUREMENT_SUBMITTED,
+        };
     }
 
     /**

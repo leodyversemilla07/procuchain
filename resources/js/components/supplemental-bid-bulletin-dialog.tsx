@@ -2,10 +2,12 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { router, useForm } from '@inertiajs/react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
+import { index as procurementsListIndex } from '@/routes/bac-secretariat/procurements';
 
 interface SupplementalBidDialogProps {
     open: boolean;
@@ -69,7 +71,10 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
     };
 
     const handleSelectionChange = (value: string) => {
-        form.setData('supplemental_bid_needed', value === 'true');
+        form.setData({
+            ...form.data,
+            supplemental_bid_needed: value === 'true',
+        });
     };
 
     return (
@@ -80,85 +85,127 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
             }}
         >
             <DialogContent
-                className="max-h-[90vh] w-[90%] overflow-y-auto p-4 sm:max-w-[500px] sm:p-6 md:max-w-[600px]"
+                className="max-h-[90vh] w-[90%] overflow-y-auto sm:max-w-[500px] md:max-w-[600px]"
                 onOpenAutoFocus={(e) => e.preventDefault()}
             >
-                <DialogHeader className="space-y-2 sm:space-y-3">
+                <DialogHeader className="space-y-3">
                     <DialogTitle className="text-xl font-semibold tracking-tight sm:text-2xl">Supplemental Bid Bulletin Decision</DialogTitle>
                     <DialogDescription className="text-sm leading-relaxed sm:text-base">
-                        Please indicate whether a supplemental bid bulletin is needed for this procurement:
+                        Please indicate whether a supplemental bid bulletin is needed for this procurement.
                     </DialogDescription>
-                    <div className="mt-2">
-                        <span className="block text-sm font-medium text-gray-700 sm:text-base dark:text-gray-300">Title: {procurementTitle}</span>
-                        <span className="mt-1 block text-xs text-gray-500 sm:text-sm dark:text-gray-400">ID: {pr_number}</span>
+                    <div className="rounded-lg border bg-muted/50 p-3 sm:p-4">
+                        <p className="text-sm font-medium text-foreground sm:text-base">
+                            <span className="text-muted-foreground">Title:</span> {procurementTitle}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                            <span className="font-medium">ID:</span> {pr_number}
+                        </p>
                     </div>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="mt-4 sm:mt-6">
-                    <div className="space-y-4 sm:space-y-6">
-                        <div className="space-y-3 sm:space-y-4">
-                            <Label className="text-sm font-medium sm:text-base">Is a supplemental bid bulletin needed?</Label>
-                            <RadioGroup
-                                value={form.data.supplemental_bid_needed === undefined ? undefined : form.data.supplemental_bid_needed.toString()}
-                                onValueChange={handleSelectionChange}
-                                className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2 sm:gap-4"
-                                aria-label="Supplemental bid bulletin status"
-                            >
-                                <Label htmlFor="supplemental-yes" className="m-0 w-full">
-                                    <div className="flex min-h-12 cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
-                                        <RadioGroupItem value="true" id="supplemental-yes" />
-                                        <span className="cursor-pointer">Yes</span>
-                                    </div>
-                                </Label>
-                                <Label htmlFor="supplemental-no" className="m-0 w-full">
-                                    <div className="flex min-h-12 cursor-pointer items-center space-x-3 rounded-lg border p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
-                                        <RadioGroupItem value="false" id="supplemental-no" />
-                                        <span className="cursor-pointer">No</span>
-                                    </div>
-                                </Label>
-                            </RadioGroup>
-                            {form.errors.supplemental_bid_needed && (
-                                <p className="mt-2 text-sm text-red-500" id="supplemental-error" aria-live="polite">
-                                    {form.errors.supplemental_bid_needed}
-                                </p>
-                            )}
-                        </div>
-
-                        {form.data.supplemental_bid_needed !== undefined && (
-                            <div
-                                className={`rounded-lg p-3 text-sm sm:p-4 sm:text-base ${
-                                    form.data.supplemental_bid_needed
-                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-                                        : 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
+                <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+                    <div className="space-y-4">
+                        <Label className="text-sm font-medium sm:text-base">
+                            Is a supplemental bid bulletin needed? <span className="text-destructive">*</span>
+                        </Label>
+                        <RadioGroup
+                            value={form.data.supplemental_bid_needed === undefined ? undefined : form.data.supplemental_bid_needed.toString()}
+                            onValueChange={handleSelectionChange}
+                            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+                            aria-label="Supplemental bid bulletin status"
+                        >
+                            <Label
+                                htmlFor="supplemental-yes"
+                                className={`m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all hover:border-primary/50 hover:bg-accent/50 ${
+                                    form.data.supplemental_bid_needed === true ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border'
                                 }`}
                             >
-                                {form.data.supplemental_bid_needed ? (
-                                    <p>You'll be directed to upload supplemental bid bulletin documents.</p>
-                                ) : (
-                                    <p>This will skip the supplemental bid bulletin stage and proceed to Bid Opening.</p>
-                                )}
+                                <RadioGroupItem value="true" id="supplemental-yes" />
+                                <div className="flex flex-1 items-center justify-between">
+                                    <span className="font-medium">Yes, Bulletin Needed</span>
+                                    {form.data.supplemental_bid_needed === true && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                                </div>
+                            </Label>
+                            <Label
+                                htmlFor="supplemental-no"
+                                className={`m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all hover:border-primary/50 hover:bg-accent/50 ${
+                                    form.data.supplemental_bid_needed === false ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border'
+                                }`}
+                            >
+                                <RadioGroupItem value="false" id="supplemental-no" />
+                                <div className="flex flex-1 items-center justify-between">
+                                    <span className="font-medium">No, Skip Bulletin</span>
+                                    {form.data.supplemental_bid_needed === false && <AlertCircle className="h-4 w-4 text-amber-500" />}
+                                </div>
+                            </Label>
+                        </RadioGroup>
+                        {form.errors.supplemental_bid_needed && (
+                            <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3">
+                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                                <p className="text-sm text-destructive" id="supplemental-error" aria-live="polite">
+                                    {form.errors.supplemental_bid_needed}
+                                </p>
                             </div>
                         )}
                     </div>
 
-                    <DialogFooter className="mt-6 flex-col gap-4 sm:mt-8 sm:flex-row sm:justify-end">
+                    {form.data.supplemental_bid_needed !== undefined && (
+                        <div
+                            className={`flex items-start gap-3 rounded-lg border p-4 ${
+                                form.data.supplemental_bid_needed
+                                    ? 'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30'
+                                    : 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30'
+                            }`}
+                        >
+                            {form.data.supplemental_bid_needed ? (
+                                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
+                            ) : (
+                                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                            )}
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-foreground sm:text-base">
+                                    {form.data.supplemental_bid_needed ? 'Next Step: Upload Bulletin' : 'Next Step: Skip to Bid Opening'}
+                                </p>
+                                <p
+                                    className={`mt-1 text-sm ${
+                                        form.data.supplemental_bid_needed
+                                            ? 'text-blue-700 dark:text-blue-300'
+                                            : 'text-amber-700 dark:text-amber-300'
+                                    }`}
+                                >
+                                    {form.data.supplemental_bid_needed
+                                        ? "You'll be directed to upload supplemental bid bulletin documents."
+                                        : 'This will skip the supplemental bid bulletin stage and proceed to Bid Opening.'}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <DialogFooter className="gap-3 sm:gap-4">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => onOpenChange(false)}
-                            className="min-h-11 w-full text-sm sm:w-auto sm:text-base"
+                            className="min-h-11 w-full sm:w-auto"
                             disabled={form.processing}
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={form.processing} className="min-h-11 w-full text-sm sm:w-auto sm:text-base">
+                        <Button
+                            type="submit"
+                            disabled={form.processing || form.data.supplemental_bid_needed === undefined}
+                            className="min-h-11 w-full sm:w-auto"
+                        >
                             {form.processing ? (
                                 <span className="flex items-center gap-2">
-                                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                                    <Spinner />
                                     Processing...
                                 </span>
                             ) : (
-                                'Submit Decision'
+                                <span className="flex items-center gap-2">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    Submit Decision
+                                </span>
                             )}
                         </Button>
                     </DialogFooter>

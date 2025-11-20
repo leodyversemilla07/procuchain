@@ -109,6 +109,7 @@ export interface Document {
 export interface Event {
     timestamp: string;
     event_type: string;
+    event_type_formatted?: string;
     details: string;
     stage?: string;
     stage_formatted?: string;
@@ -118,6 +119,7 @@ export interface Event {
     procurement_title?: string;
     user_address?: string;
     category?: string;
+    category_formatted?: string;
     severity?: string;
     formatted_date?: string;
     formatted_date_only?: string;

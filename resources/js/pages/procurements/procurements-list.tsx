@@ -14,7 +14,7 @@ import { SupplementalBidBulletinDialog } from '@/components/supplemental-bid-bul
 import { Button } from '@/components/ui/button';
 import { useProcurementList } from '@/hooks/use-procurement-list';
 import AppLayout from '@/layouts/app-layout';
-import { initiation as procurementInitiation } from '@/routes/bac-secretariat/procurement';
+import procurement from '@/routes/bac-secretariat/procurement';
 import { ProcurementListItem, SharedData, Status } from '@/types';
 import { getProcurementListBreadcrumbs } from '@/utils/breadcrumbs';
 import { toast } from 'sonner';
@@ -299,7 +299,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
             if (e.key === 'n' && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
                 if (auth?.permissions?.includes('create procurement')) {
-                    router.visit(procurementInitiation.url());
+                    router.visit(procurement.initiation.create.url());
                 }
             }
 
@@ -355,7 +355,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                             </div>
                             <Can permission="create procurement">
                                 <Button asChild className="w-full sm:w-auto shrink-0">
-                                    <Link href={procurementInitiation.url()} className="flex items-center justify-center gap-2">
+                                    <Link href={procurement.initiation.create.url()} className="flex items-center justify-center gap-2">
                                         <Plus className="h-4 w-4" />
                                         <span>New Procurement</span>
                                     </Link>

@@ -1,18 +1,18 @@
 import { Head, router } from '@inertiajs/react';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { type BreadcrumbItem } from '@/types';
 import type { DocumentGuide, DocumentItem } from '@/types/document-guide';
-import { buildBreadcrumbs } from '@/utils/breadcrumbs';
+import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 import { UserRole } from '@/types/enums';
 
 import AppLayout from '@/layouts/app-layout';
-import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Spinner } from '@/components/ui/spinner';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -31,12 +31,17 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import FileUploadArea from '@/components/file-upload-area';
-import { uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
+import { uploadSingleDocument, markStageComplete } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
 
-import { FileText, Info, AlertTriangle, CheckCircle2, Plus, X, Send, Upload, CheckCheck } from 'lucide-react';
+import { FileText, CheckCircle2, Plus, X, AlertCircle } from 'lucide-react';
 
 interface ProcurementInitiationShowProps {
-    pr_number: string;
+    procurement?: {
+        pr_number: string;
+        title: string;
+        status?: string;
+        stage?: string;
+    };
     documentGuide: DocumentGuide;
     uploadedDocuments: string[];
     currentStage?: string;
@@ -45,49 +50,52 @@ interface ProcurementInitiationShowProps {
 }
 
 export default function ProcurementInitiationShow({
-    pr_number,
+    procurement,
     documentGuide,
     uploadedDocuments,
+    currentStage,
     isStageComplete = false,
 }: ProcurementInitiationShowProps) {
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
-        { title: 'Procurements', href: '/bac-secretariat/procurements-list' },
-        { title: 'Upload Documents', href: '#' },
+        getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
+        { title: `Upload Documents - ${procurement?.pr_number || 'Unknown'}${procurement?.title ? ': ' + procurement.title : ''}`, href: '#' },
     ]);
+
+    // Determine if the stage is effectively complete (either marked complete or moved to next stage)
+    const isStageFinished = isStageComplete || (currentStage && currentStage !== 'procurement_initiation');
 
     // Track which optional documents have been added by the user
     const [addedOptionalDocs, setAddedOptionalDocs] = useState<string[]>([]);
     const [selectedOptionalDocType, setSelectedOptionalDocType] = useState<string>('');
-    const [showUploadDialog, setShowUploadDialog] = useState(false);
-    const [showCompleteDialog, setShowCompleteDialog] = useState(false);
-    const [uploadDialogData, setUploadDialogData] = useState<{
-        docValue: string;
-        docName: string;
+    const [confirmDialog, setConfirmDialog] = useState<{
+        open: boolean;
+        documentValue: string;
+        documentName: string;
         isRequired: boolean;
-    } | null>(null);
+    }>({
+        open: false,
+        documentValue: '',
+        documentName: '',
+        isRequired: false,
+    });
+    const [showCompleteDialog, setShowCompleteDialog] = useState(false);
     
     // Track drag states for file uploads
     const [dragStates, setDragStates] = useState<Record<string, boolean>>({});
     
     // Track file selections (before upload)
     const [selectedFiles, setSelectedFiles] = useState<Record<string, File | null>>({});
+    const [isUploading, setIsUploading] = useState(false);
+    const [isMarkingComplete, setIsMarkingComplete] = useState(false);
 
-    // Calculate mandatory document progress
-    const mandatoryProgress = useMemo(() => {
-        const uploadedMandatory = documentGuide.required_documents.filter((doc) =>
-            uploadedDocuments.includes(doc.value)
-        ).length;
-        const totalMandatory = documentGuide.required_documents.length;
-        const isComplete = uploadedMandatory === totalMandatory;
-        const percentage = totalMandatory > 0 ? Math.round((uploadedMandatory / totalMandatory) * 100) : 100;
-        
-        return {
-            uploaded: uploadedMandatory,
-            total: totalMandatory,
-            isComplete,
-            percentage,
-        };
-    }, [documentGuide.required_documents, uploadedDocuments]);
+    // Initialize addedOptionalDocs with already uploaded optional documents
+    useEffect(() => {
+        const optionalDocValues = documentGuide.optional_documents.map(doc => doc.value);
+        const uploadedOptionalDocs = uploadedDocuments.filter(docValue => 
+            optionalDocValues.includes(docValue)
+        );
+        setAddedOptionalDocs(uploadedOptionalDocs);
+    }, [documentGuide.optional_documents, uploadedDocuments]);
 
     // Calculate optional document progress
     const optionalProgress = useMemo(() => {
@@ -217,89 +225,80 @@ export default function ProcurementInitiationShow({
             return;
         }
 
-        setUploadDialogData({ docValue, docName, isRequired });
-        setShowUploadDialog(true);
+        setConfirmDialog({ open: true, documentValue: docValue, documentName: docName, isRequired });
     }, [selectedFiles]);
 
-    const handleUploadClick = useCallback(
-        async (documentValue: string, documentName: string, isRequired: boolean) => {
-            const file = selectedFiles[documentValue];
-            
-            if (!file) {
-                toast.error('No file selected', {
-                    description: 'Please select a file to upload.',
-                });
-                return;
-            }
-
-            const uploadToast = toast.loading(`Uploading ${isRequired ? 'mandatory' : 'optional'} document...`);
-            
-            try {
-                // Use Inertia router.post for file upload
-                router.post(
-                    uploadSingleDocument(pr_number).url,
-                    {
-                        document_file: file,
-                        document_type: documentValue,
-                        description: documentName,
-                    },
-                    {
-                        onSuccess: () => {
-                            toast.success(
-                                `${isRequired ? 'Mandatory' : 'Optional'} document uploaded successfully!`,
-                                {
-                                    id: uploadToast,
-                                    description: `${documentName} has been uploaded.`,
-                                }
-                            );
-                            // Clear the selected file after successful upload
-                            handleRemoveFile(documentValue);
-                            setShowUploadDialog(false);
-                            setUploadDialogData(null);
-                        },
-                        onError: (errors) => {
-                            const errorMessage = errors.message || Object.values(errors)[0] || 'Failed to upload document';
-                            toast.error('Upload failed', {
-                                id: uploadToast,
-                                description: errorMessage,
-                            });
-                        },
-                        preserveScroll: true,
-                        only: ['uploadedDocuments'],
-                    }
-                );
-                
-            } catch (error: unknown) {
-                const axiosError = error as { response?: { data?: { message?: string } } };
-                const errorMessage = axiosError.response?.data?.message || 'Failed to upload document';
-                toast.error('Upload failed', {
-                    id: uploadToast,
-                    description: errorMessage,
-                });
-            }
-        },
-        [pr_number, selectedFiles, handleRemoveFile],
-    );
-
-    const confirmUpload = useCallback(() => {
-        if (uploadDialogData) {
-            handleUploadClick(
-                uploadDialogData.docValue,
-                uploadDialogData.docName,
-                uploadDialogData.isRequired
-            );
+    const handleUploadClick = useCallback(() => {
+        const file = selectedFiles[confirmDialog.documentValue];
+        
+        if (!file) {
+            toast.error('No file selected', {
+                description: 'Please select a file to upload.',
+            });
+            return;
         }
-    }, [uploadDialogData, handleUploadClick]);
+
+        if (!procurement?.pr_number) {
+            toast.error('Procurement data missing', {
+                description: 'Unable to upload document. Please refresh the page.',
+            });
+            return;
+        }
+
+        const uploadToast = toast.loading('Uploading document...');
+        setIsUploading(true);
+        
+        // Use Inertia router.post for file upload with Wayfinder
+        router.post(
+            uploadSingleDocument.url(procurement.pr_number),
+            {
+                document_file: file,
+                document_type: confirmDialog.documentValue,
+                description: confirmDialog.documentName,
+            },
+            {
+                onSuccess: () => {
+                    toast.success('Document uploaded successfully!', {
+                        id: uploadToast,
+                        description: `${confirmDialog.documentName} has been uploaded.`,
+                    });
+                    // Clear the selected file after successful upload
+                    handleRemoveFile(confirmDialog.documentValue);
+                    setConfirmDialog({ open: false, documentValue: '', documentName: '', isRequired: false });
+                    setIsUploading(false);
+                },
+                onError: (errors) => {
+                    const errorMessage = errors.message || Object.values(errors)[0] || 'Failed to upload document';
+                    toast.error('Upload failed', {
+                        id: uploadToast,
+                        description: errorMessage,
+                    });
+                    setIsUploading(false);
+                },
+                preserveScroll: true,
+                only: ['uploadedDocuments'],
+                forceFormData: true,
+            }
+        );
+    }, [procurement?.pr_number, selectedFiles, confirmDialog, handleRemoveFile]);
 
     const handleMarkStageComplete = useCallback(() => {
         setShowCompleteDialog(true);
     }, []);
 
     const confirmMarkStageComplete = useCallback(() => {
+        if (!procurement?.pr_number) {
+            toast.error('Procurement data missing', {
+                description: 'Unable to mark stage complete. Please refresh the page.',
+            });
+            return;
+        }
+
         const completeToast = toast.loading('Marking stage as complete...');
+        setIsMarkingComplete(true);
 
         router.post(
-            `/bac-secretariat/procurement-initiation/${pr_number}/complete`,
+            markStageComplete.url(procurement.pr_number),
             {},
             {
                 onSuccess: () => {
@@ -308,6 +307,7 @@ export default function ProcurementInitiationShow({
                         description: 'The Procurement Initiation stage has been completed.',
                     });
                     setShowCompleteDialog(false);
+                    setIsMarkingComplete(false);
                 },
                 onError: (errors) => {
                     const errorMessage = errors.message || Object.values(errors)[0] || 'Failed to mark stage as complete';
@@ -315,449 +315,389 @@ export default function ProcurementInitiationShow({
                         id: completeToast,
                         description: errorMessage,
                     });
+                    setIsMarkingComplete(false);
                 },
+                preserveScroll: true,
             }
         );
-    }, [pr_number]);
+    }, [procurement?.pr_number]);
+
+    const uploadedRequiredCount = documentGuide
+        ? documentGuide.required_documents.filter((doc) => uploadedDocuments.includes(doc.value)).length
+        : 0;
+
+    const calculatedPercentage =
+        documentGuide && documentGuide.counts.required_count > 0
+            ? Math.round((uploadedRequiredCount / documentGuide.counts.required_count) * 100)
+            : 100;
+
+    const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
+
+    if (!procurement) {
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title="Upload Documents" />
+                <div className="flex h-full items-center justify-center">
+                    <p className="text-muted-foreground">Loading procurement data...</p>
+                </div>
+            </AppLayout>
+        );
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Upload Documents - ${pr_number}`} />
+            <Head title={`Upload Documents - ${procurement.pr_number}`} />
 
-            <div
-                className="w-full space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6 lg:p-8"
-                role="main"
-                aria-labelledby="page-title"
-            >
-                {/* Header Section */}
-                <HeroCard
-                    icon={FileText}
-                    title="Upload Procurement Documents"
-                    description="Upload mandatory and optional documents for this procurement. You can upload them progressively and return later to complete."
-                    actions={
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Badge className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary transition-colors duration-200 hover:bg-primary/20 md:px-3 md:py-1.5 md:text-sm">
-                                {pr_number}
-                            </Badge>
-                            <Badge className="rounded-md bg-chart-2/10 px-2 py-1 text-xs text-chart-2 dark:bg-chart-2/20 dark:text-chart-2 md:px-3 md:py-1.5 md:text-sm">
-                                Document Upload
-                            </Badge>
-                            <Badge 
-                                variant={mandatoryProgress.isComplete ? "default" : "destructive"}
-                                className="rounded-md px-2 py-1 text-xs md:px-3 md:py-1.5 md:text-sm"
-                            >
-                                {mandatoryProgress.uploaded} / {mandatoryProgress.total} Required
-                            </Badge>
-                        </div>
-                    }
-                />
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
+                <div className="flex flex-col gap-2">
+                    <div className="text-primary flex items-center gap-2">
+                        <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
+                        <h1 className="text-xl font-bold sm:text-2xl">Procurement Initiation</h1>
+                    </div>
+                    <p className="text-muted-foreground text-sm sm:text-base">
+                        Upload documents for procurement
+                        <span className="text-foreground font-medium"> #{procurement?.pr_number || 'Unknown'}</span>
+                        {procurement?.title && (
+                            <>
+                                :<span className="text-foreground font-medium italic"> {procurement.title}</span>
+                            </>
+                        )}
+                    </p>
+                </div>
 
-                {/* Mandatory Document Alert */}
-                {!mandatoryProgress.isComplete && (
-                    <Alert variant="destructive" className="border-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>
-                            <strong>Mandatory Documents Required:</strong> You must upload all{' '}
-                            {mandatoryProgress.total} mandatory documents before this procurement can proceed.
-                            Currently {mandatoryProgress.uploaded} of {mandatoryProgress.total} uploaded (
-                            {mandatoryProgress.percentage}% complete).
-                        </AlertDescription>
-                    </Alert>
-                )}
+                <div className="space-y-4 sm:space-y-6">
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+                        {/* Document Upload Progress */}
+                        {documentGuide && (
+                            <Card className="border-sidebar-border/70 dark:border-sidebar-border h-fit shadow-md">
+                                <CardHeader className="space-y-1 pb-2 sm:pb-4">
+                                    <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
+                                        <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                        Upload Progress
+                                    </CardTitle>
+                                    <CardDescription className="text-sm">Track your document upload progress</CardDescription>
+                                </CardHeader>
 
-                {/* Success Alert */}
-                {mandatoryProgress.isComplete && !isStageComplete && (
-                    <Alert className="border-2 border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
-                        <Info className="h-4 w-4 text-green-600 dark:text-green-500" />
-                        <AlertDescription className="text-green-700 dark:text-green-400">
-                            <strong>All Mandatory Documents Uploaded:</strong> You have successfully uploaded
-                            all required documents. You can now proceed with optional documents or mark this stage as complete.
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                {/* Stage Complete Alert */}
-                {isStageComplete && (
-                    <Alert className="border-2 border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
-                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500" />
-                        <AlertDescription className="text-green-700 dark:text-green-400">
-                            <strong>Stage Complete:</strong> The Procurement Initiation stage has been marked as complete.
-                            You can proceed to the Pre-Procurement Conference stage.
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                {/* Mark Stage as Complete Button */}
-                {mandatoryProgress.isComplete && !isStageComplete && (
-                    <Card className="border-2 border-green-500/50 bg-green-50/50 dark:border-green-900/50 dark:bg-green-950/20">
-                        <CardContent className="p-4 sm:p-6">
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex items-start gap-3">
-                                    <div className="rounded-lg bg-green-600/10 p-2 dark:bg-green-500/10">
-                                        <CheckCheck className="h-5 w-5 text-green-600 dark:text-green-500 sm:h-6 sm:w-6" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-base font-semibold text-green-700 dark:text-green-400 sm:text-lg">
-                                            Ready to Complete Stage
-                                        </h3>
-                                        <p className="mt-1 text-sm text-green-600/80 dark:text-green-400/80">
-                                            All mandatory documents have been uploaded. Click the button to mark this stage as complete and proceed to the next stage.
+                                <CardContent className="space-y-4">
+                                    {/* Progress Overview */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Completion</span>
+                                            <span className="font-semibold">
+                                                {uploadedRequiredCount}/{documentGuide.counts.required_count} required
+                                            </span>
+                                        </div>
+                                        <Progress value={calculatedPercentage} className="h-2" />
+                                        <p className="text-xs text-muted-foreground">
+                                            {allRequiredUploaded ? (
+                                                <span className="text-green-600 dark:text-green-500 flex items-center gap-1">
+                                                    <CheckCircle2 className="h-3 w-3" />
+                                                    All required documents uploaded
+                                                </span>
+                                            ) : (
+                                                <span className="text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                                                    <AlertCircle className="h-3 w-3" />
+                                                    {documentGuide.counts.required_count - uploadedRequiredCount} required document
+                                                    {documentGuide.counts.required_count - uploadedRequiredCount !== 1 ? 's' : ''} remaining
+                                                </span>
+                                            )}
                                         </p>
                                     </div>
-                                </div>
-                                <Button
-                                    onClick={handleMarkStageComplete}
-                                    className="w-full gap-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 sm:w-auto"
-                                    size="lg"
-                                >
-                                    <CheckCheck className="h-5 w-5" />
-                                    Mark Stage as Complete
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
 
-                {/* Mandatory Documents Section */}
-                <Card className="border-2 border-primary/20 bg-primary/5">
-                    <CardHeader className="p-4 sm:p-6">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-                            <div className="rounded-lg bg-primary/10 p-3">
-                                <Upload className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <h3 className="text-base font-semibold sm:text-lg">Required Documents</h3>
-                                    <Badge
-                                        variant={
-                                            mandatoryProgress.isComplete ? 'default' : 'outline'
-                                        }
-                                        className="w-fit"
-                                    >
-                                        {mandatoryProgress.uploaded} / {mandatoryProgress.total} Uploaded
-                                    </Badge>
-                                </div>
-                                <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                                    Upload all mandatory documents required by RA 9184. Files can be uploaded
-                                    progressively.
-                                </p>
-                            </div>
-                        </div>
-                    </CardHeader>
-                </Card>
-
-                {/* Mandatory Document Upload Areas */}
-                <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {documentGuide.required_documents.map((doc) => {
-                        const isUploaded = uploadedDocuments.includes(doc.value);
-                        const file = selectedFiles[doc.value];
-                        const isDragging = dragStates[doc.value] || false;
-
-                        return (
-                            <Card key={doc.value}>
-                                <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
-                                    <div className="flex items-start gap-3">
-                                        <FileText className="mt-0.5 h-5 w-5 text-primary" />
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <h4 className="font-medium">{doc.display_name}</h4>
-                                                <Badge variant="destructive" className="text-xs">
-                                                    Required
-                                                </Badge>
-                                                {isUploaded && (
-                                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                                )}
-                                            </div>
-                                            <p className="mt-1 text-sm text-muted-foreground">
-                                                {doc.description}
-                                            </p>
+                                    {/* Stage Info */}
+                                    <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Stage:</span>
+                                            <span className="font-medium">{documentGuide.stage_display_name}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Phase:</span>
+                                            <span className="font-medium capitalize">{documentGuide.phase.replace('_', ' ')}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Required:</span>
+                                            <Badge variant="secondary" className="text-xs">
+                                                {documentGuide.counts.required_count}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Optional:</span>
+                                            <Badge variant="outline" className="text-xs">
+                                                {documentGuide.counts.optional_count}
+                                            </Badge>
                                         </div>
                                     </div>
-                                </CardHeader>
-                                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                                    {isUploaded && !file ? (
-                                        <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 dark:border-green-900/50 dark:bg-green-950/20">
-                                            <div className="flex items-center gap-2">
-                                                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-500" />
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-green-700 dark:text-green-400">
-                                                        Document Uploaded
-                                                    </p>
-                                                    <p className="text-xs text-green-600/80 dark:text-green-400/80">
-                                                        This document has been successfully uploaded to the blockchain
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <FileUploadArea
-                                            label=""
-                                            file={file}
-                                            isDragging={isDragging}
-                                            onFileChange={(e) => handleFileChange(e, doc.value)}
-                                            onDragEnter={(e) => handleDragEnter(e, doc.value)}
-                                            onDragLeave={(e) => handleDragLeave(e, doc.value)}
-                                            onDragOver={handleDragOver}
-                                            onDrop={(e) => handleDrop(e, doc.value)}
-                                            onRemove={() => handleRemoveFile(doc.value)}
-                                            inputId={`file-${doc.value}`}
-                                            required={!isUploaded}
-                                        />
-                                    )}
+
                                 </CardContent>
-                                {file && (
-                                    <CardFooter className="p-4 pt-0 sm:p-6 sm:pt-0">
-                                        <Button
-                                            type="button"
-                                            onClick={() => openUploadDialog(doc.value, doc.display_name, true)}
-                                            className="w-full gap-2"
-                                        >
-                                            <Send className="h-4 w-4" />
-                                            {isUploaded ? 'Replace' : 'Upload'}
-                                        </Button>
-                                    </CardFooter>
-                                )}
                             </Card>
-                        );
-                    })}
-                </div>
+                        )}
 
-                {/* Optional Documents Section */}
-                <Card className="border-2 border-primary/20 bg-primary/5">
-                    <CardHeader className="p-4 sm:p-6">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-                            <div className="rounded-lg bg-primary/10 p-3">
-                                <FileText className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <h3 className="text-base font-semibold sm:text-lg">
-                                        Optional Supporting Documents
-                                    </h3>
-                                    <Badge variant="outline" className="w-fit">
-                                        {optionalProgress.uploaded} / {optionalProgress.total} Uploaded
-                                    </Badge>
-                                </div>
-                                <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                                    Add any additional supporting documents that may strengthen your
-                                    procurement request.
-                                </p>
-                            </div>
-                        </div>
-                    </CardHeader>
-                </Card>
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
+                            <CardHeader className="space-y-1 pb-2 sm:pb-4">
+                                <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
+                                    <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                    Document Upload
+                                </CardTitle>
+                                <CardDescription className="text-sm">
+                                    Upload required and optional documents for Procurement Initiation. Files will be permanently saved.
+                                </CardDescription>
+                            </CardHeader>
 
-                {/* Optional Document Upload Areas */}
-                <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {/* Add Optional Document Selector */}
-                    {availableOptionalDocs.length > 0 && (
-                        <Card>
-                            <CardContent className="p-4 pt-4 sm:p-6 sm:pt-6">
-                                <div className="flex flex-col gap-3">
-                                    <div className="flex-1">
-                                        <Select
-                                            value={selectedOptionalDocType}
-                                            onValueChange={setSelectedOptionalDocType}
-                                        >
-                                            <SelectTrigger className="h-auto min-h-10">
-                                                <SelectValue placeholder="Select document type to add" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {availableOptionalDocs.map((doc) => (
-                                                    <SelectItem
-                                                        key={doc.value}
-                                                        value={doc.value}
-                                                        className="py-3"
-                                                    >
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className="font-medium">
-                                                                {doc.display_name}
-                                                            </span>
-                                                            <span className="text-xs text-muted-foreground line-clamp-2">
-                                                                {doc.description}
-                                                            </span>
+                            <CardContent className="space-y-6">
+                                {/* Required Documents */}
+                                {documentGuide && documentGuide.required_documents.length > 0 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-semibold">Required Documents</h3>
+                                            <Badge variant="secondary" className="text-xs">
+                                                {documentGuide.counts.required_count}
+                                            </Badge>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {documentGuide.required_documents.map((doc) => {
+                                                const isUploaded = uploadedDocuments.includes(doc.value);
+                                                const file = selectedFiles[doc.value];
+                                                const isDragging = dragStates[doc.value] || false;
+
+                                                return (
+                                                    <div key={doc.value} className="space-y-2">
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-medium">{doc.display_name}</p>
+                                                                {doc.description && (
+                                                                    <p className="text-xs text-muted-foreground">{doc.description}</p>
+                                                                )}
+                                                            </div>
+                                                            {isUploaded && (
+                                                                <Badge variant="outline" className="text-xs text-green-600 dark:text-green-500">
+                                                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                    Uploaded
+                                                                </Badge>
+                                                            )}
                                                         </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                                        {!isUploaded && (
+                                                            <div className="flex gap-2">
+                                                                <div className="flex-1">
+                                                                    <FileUploadArea
+                                                                        label=""
+                                                                        file={file || null}
+                                                                        isDragging={isDragging}
+                                                                        onFileChange={(e) => handleFileChange(e, doc.value)}
+                                                                        onDragEnter={(e) => handleDragEnter(e, doc.value)}
+                                                                        onDragLeave={(e) => handleDragLeave(e, doc.value)}
+                                                                        onDragOver={handleDragOver}
+                                                                        onDrop={(e) => handleDrop(e, doc.value)}
+                                                                        onRemove={() => handleRemoveFile(doc.value)}
+                                                                        inputId={`file-${doc.value}`}
+                                                                        required
+                                                                    />
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={() => openUploadDialog(doc.value, doc.display_name, true)}
+                                                                    disabled={!file || isUploading}
+                                                                    className="self-start mt-0 h-[120px]"
+                                                                >
+                                                                    Upload
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
+                                )}
+
+                                {/* Optional Documents */}
+                                {documentGuide && documentGuide.optional_documents.length > 0 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-semibold">Optional Documents</h3>
+                                            <Badge variant="outline" className="text-xs">
+                                                {documentGuide.counts.optional_count}
+                                            </Badge>
+                                        </div>
+
+                                        {/* Add Optional Document Selector */}
+                                        {availableOptionalDocs.length > 0 && (
+                                            <div className="flex gap-2">
+                                                <Select
+                                                    value={selectedOptionalDocType}
+                                                    onValueChange={setSelectedOptionalDocType}
+                                                >
+                                                    <SelectTrigger className="flex-1">
+                                                        <SelectValue placeholder="Select document type to add" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {availableOptionalDocs.map((doc) => (
+                                                            <SelectItem key={doc.value} value={doc.value}>
+                                                                {doc.display_name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <Button
+                                                    type="button"
+                                                    onClick={addOptionalDocument}
+                                                    disabled={!selectedOptionalDocType}
+                                                    variant="outline"
+                                                >
+                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    Add
+                                                </Button>
+                                            </div>
+                                        )}
+
+                                        {/* Added Optional Documents */}
+                                        <div className="space-y-4">
+                                            {addedOptionalDocs.map((docValue) => {
+                                                const doc = getDocumentItem(docValue);
+                                                if (!doc) return null;
+
+                                                const isUploaded = uploadedDocuments.includes(docValue);
+                                                const file = selectedFiles[docValue];
+                                                const isDragging = dragStates[docValue] || false;
+
+                                                return (
+                                                    <div key={docValue} className="space-y-2">
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-medium">{doc.display_name}</p>
+                                                                {doc.description && (
+                                                                    <p className="text-xs text-muted-foreground">{doc.description}</p>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                {isUploaded && (
+                                                                    <Badge variant="outline" className="text-xs text-green-600 dark:text-green-500">
+                                                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                        Uploaded
+                                                                    </Badge>
+                                                                )}
+                                                                {!isUploaded && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => removeOptionalDocument(docValue)}
+                                                                    >
+                                                                        <X className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {!isUploaded && (
+                                                            <div className="flex gap-2">
+                                                                <div className="flex-1">
+                                                                    <FileUploadArea
+                                                                        label=""
+                                                                        file={file || null}
+                                                                        isDragging={isDragging}
+                                                                        onFileChange={(e) => handleFileChange(e, docValue)}
+                                                                        onDragEnter={(e) => handleDragEnter(e, docValue)}
+                                                                        onDragLeave={(e) => handleDragLeave(e, docValue)}
+                                                                        onDragOver={handleDragOver}
+                                                                        onDrop={(e) => handleDrop(e, docValue)}
+                                                                        onRemove={() => handleRemoveFile(docValue)}
+                                                                        inputId={`file-optional-${docValue}`}
+                                                                        required={false}
+                                                                    />
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="secondary"
+                                                                    onClick={() => openUploadDialog(docValue, doc.display_name, false)}
+                                                                    disabled={!file || isUploading}
+                                                                    className="self-start mt-0 h-[120px]"
+                                                                >
+                                                                    Upload
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+
+                            <CardFooter className="flex flex-col gap-3 border-t pt-4">
+                                {isStageFinished ? (
+                                    <div className="w-full rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                                            <CheckCircle2 className="h-5 w-5" />
+                                            <div>
+                                                <p className="font-semibold">Stage Completed</p>
+                                                <p className="text-sm">This stage has been marked as complete.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
                                     <Button
                                         type="button"
-                                        onClick={addOptionalDocument}
-                                        disabled={!selectedOptionalDocType}
-                                        className="w-full gap-2"
+                                        disabled={!allRequiredUploaded || isUploading || isMarkingComplete}
+                                        onClick={handleMarkStageComplete}
+                                        className="flex h-10 w-full items-center gap-2 text-sm sm:h-11 sm:text-base"
                                     >
-                                        <Plus className="h-4 w-4" />
-                                        Add Document
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Added Optional Documents */}
-                    {addedOptionalDocs.map((docValue) => {
-                        const doc = getDocumentItem(docValue);
-                        if (!doc) return null;
-
-                        const isUploaded = uploadedDocuments.includes(docValue);
-                        const file = selectedFiles[docValue];
-                        const isDragging = dragStates[docValue] || false;
-
-                        return (
-                            <Card key={docValue}>
-                                <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-4">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex items-start gap-3">
-                                            <FileText className="mt-0.5 h-5 w-5 text-primary" />
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <h4 className="font-medium">{doc.display_name}</h4>
-                                                    <Badge variant="outline" className="text-xs">
-                                                        Optional
-                                                    </Badge>
-                                                    {isUploaded && (
-                                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                                    )}
-                                                </div>
-                                                <p className="mt-1 text-sm text-muted-foreground">
-                                                    {doc.description}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => removeOptionalDocument(docValue)}
-                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                                    {isUploaded && !file ? (
-                                        <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+                                        {isMarkingComplete ? (
                                             <div className="flex items-center gap-2">
-                                                <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-blue-700 dark:text-blue-400">
-                                                        Document Uploaded
-                                                    </p>
-                                                    <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
-                                                        This document has been successfully uploaded to the blockchain
-                                                    </p>
-                                                </div>
+                                                <Spinner className="h-4 w-4" />
+                                                Marking Complete...
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <FileUploadArea
-                                            label=""
-                                            file={file}
-                                            isDragging={isDragging}
-                                            onFileChange={(e) => handleFileChange(e, docValue)}
-                                            onDragEnter={(e) => handleDragEnter(e, docValue)}
-                                            onDragLeave={(e) => handleDragLeave(e, docValue)}
-                                            onDragOver={handleDragOver}
-                                            onDrop={(e) => handleDrop(e, docValue)}
-                                            onRemove={() => handleRemoveFile(docValue)}
-                                            inputId={`file-optional-${docValue}`}
-                                            required={false}
-                                        />
-                                    )}
-                                </CardContent>
-                                {file && (
-                                    <CardFooter className="p-4 pt-0 sm:p-6 sm:pt-0">
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={() => openUploadDialog(docValue, doc.display_name, false)}
-                                            className="w-full gap-2"
-                                            size="sm"
-                                        >
-                                            <Send className="h-4 w-4" />
-                                            {isUploaded ? 'Replace' : 'Upload'}
-                                        </Button>
-                                    </CardFooter>
+                                        ) : isUploading ? (
+                                            <div className="flex items-center gap-2">
+                                                <Spinner className="h-4 w-4" />
+                                                Uploading...
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                Mark Stage as Complete
+                                            </>
+                                        )}
+                                    </Button>
                                 )}
-                            </Card>
-                        );
-                    })}
-
-                    {/* Empty State */}
-                    {addedOptionalDocs.length === 0 && availableOptionalDocs.length === 0 && (
-                        <Card className="md:col-span-2 lg:col-span-3">
-                            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                                <FileText className="mb-3 h-12 w-12 text-muted-foreground/50" />
-                                <p className="text-sm font-medium text-muted-foreground">
-                                    All optional document types have been added
-                                </p>
-                            </CardContent>
+                            </CardFooter>
                         </Card>
-                    )}
+                    </div>
                 </div>
 
-                {/* Info Alerts */}
-                <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                        <strong>RA 9184 Compliance:</strong> All mandatory documents must be uploaded in accordance
-                        with the Government Procurement Reform Act. All documents must be in PDF format. 
-                        Maximum file size: 10MB.
-                    </AlertDescription>
-                </Alert>
-
-                <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                        <strong>Optional Documents:</strong> While not required, additional documents can help
-                        expedite the procurement review process. Select document types from the dropdown to add them.
-                    </AlertDescription>
-                </Alert>
-
                 {/* Upload Confirmation Dialog */}
-                <AlertDialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+                <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>Confirm Document Upload</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Are you sure you want to upload this {uploadDialogData?.isRequired ? 'mandatory' : 'optional'} document?
+                                Are you sure you want to upload this {confirmDialog.isRequired ? 'required' : 'optional'} document?
                                 
-                                {uploadDialogData && selectedFiles[uploadDialogData.docValue] && (
+                                {selectedFiles[confirmDialog.documentValue] && (
                                     <div className="mt-4 space-y-2 rounded-lg bg-muted p-3">
                                         <div className="flex items-start justify-between text-sm">
                                             <span className="font-medium">Document Type:</span>
-                                            <span className="text-right">{uploadDialogData.docName}</span>
+                                            <span className="text-right">{confirmDialog.documentName}</span>
                                         </div>
                                         <div className="flex items-start justify-between text-sm">
                                             <span className="font-medium">File Name:</span>
                                             <span className="truncate text-right ml-2">
-                                                {selectedFiles[uploadDialogData.docValue]?.name}
+                                                {selectedFiles[confirmDialog.documentValue]?.name}
                                             </span>
                                         </div>
                                         <div className="flex items-start justify-between text-sm">
                                             <span className="font-medium">File Size:</span>
                                             <span>
-                                                {((selectedFiles[uploadDialogData.docValue]?.size || 0) / 1024 / 1024).toFixed(2)} MB
+                                                {((selectedFiles[confirmDialog.documentValue]?.size || 0) / 1024 / 1024).toFixed(2)} MB
                                             </span>
-                                        </div>
-                                        <div className="flex items-start justify-between text-sm">
-                                            <span className="font-medium">Type:</span>
-                                            <Badge variant={uploadDialogData.isRequired ? "destructive" : "outline"} className="text-xs">
-                                                {uploadDialogData.isRequired ? 'Required' : 'Optional'}
-                                            </Badge>
                                         </div>
                                     </div>
                                 )}
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={confirmUpload}>
-                                <Send className="mr-2 h-4 w-4" />
-                                Upload Document
+                            <AlertDialogCancel disabled={isUploading}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleUploadClick} disabled={isUploading}>
+                                {isUploading ? 'Uploading...' : 'Upload Document'}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
@@ -774,12 +714,12 @@ export default function ProcurementInitiationShow({
                                 <div className="mt-4 space-y-2 rounded-lg bg-muted p-3">
                                     <div className="flex items-start justify-between text-sm">
                                         <span className="font-medium">PR Number:</span>
-                                        <span>{pr_number}</span>
+                                        <span>{procurement.pr_number}</span>
                                     </div>
                                     <div className="flex items-start justify-between text-sm">
                                         <span className="font-medium">Required Documents:</span>
                                         <span className="text-green-600 dark:text-green-400 font-medium">
-                                            {mandatoryProgress.uploaded} / {mandatoryProgress.total} Uploaded ✓
+                                            {uploadedRequiredCount} / {documentGuide.counts.required_count} Uploaded ✓
                                         </span>
                                     </div>
                                     <div className="flex items-start justify-between text-sm">
@@ -789,15 +729,14 @@ export default function ProcurementInitiationShow({
                                 </div>
 
                                 <p className="mt-3 text-sm font-medium">
-                                    After completing this stage, you can proceed to the Pre-Procurement Conference stage.
+                                    After completing this stage, you can proceed to the next procurement phase.
                                 </p>
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={confirmMarkStageComplete} className="bg-green-600 hover:bg-green-700">
-                                <CheckCheck className="mr-2 h-4 w-4" />
-                                Mark as Complete
+                            <AlertDialogCancel disabled={isMarkingComplete}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={confirmMarkStageComplete} disabled={isMarkingComplete}>
+                                {isMarkingComplete ? 'Marking Complete...' : 'Mark as Complete'}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

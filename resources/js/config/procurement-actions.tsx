@@ -1,22 +1,9 @@
 import { Edit2Icon, UploadCloudIcon, BarChart4Icon } from 'lucide-react';
 import { Stage, Status } from '@/types';
 import { cn } from '@/lib/utils';
-import {
-    preProcurementConferenceUpload,
-    biddingDocumentsUpload,
-    preBidConferenceUpload,
-    bidOpeningUpload,
-    bidEvaluationUpload,
-    postQualificationUpload,
-    bacResolutionUpload,
-    noaUpload,
-    supplementalBidBulletinUpload,
-    performanceBondContractPoUpload,
-    ntpUpload,
-    monitoringUpload,
-    completionUpload,
-} from '@/routes/bac-secretariat/procurement';
-import { show as initiationShow } from '@/routes/bac-secretariat/procurement/initiation';
+import { show as preProcurementShow } from '@/routes/bac-secretariat/procurement/pre-procurement';
+import { show as biddingShow } from '@/routes/bac-secretariat/procurement/bidding';
+import { show as postProcurementShow } from '@/routes/bac-secretariat/procurement/post-procurement';
 
 export interface ActionConfig {
     icon: React.ReactNode;
@@ -50,30 +37,36 @@ const iconSize = 'h-4 w-4';
 export const ACTION_REGISTRY: ActionDefinition[] = [
     {
         condition: { stage: Stage.PROCUREMENT_INITIATION, status: Status.PROCUREMENT_SUBMITTED },
-        icon: UploadCloudIcon,
-        iconClassName: cn(iconSize, 'text-blue-600 dark:text-blue-400'),
-        tooltipText: 'Upload Initiation Documents',
-        bgClassName: 'bg-blue-50 dark:bg-blue-900/20',
-        getHref: (id) => initiationShow.url(id),
+        icon: Edit2Icon,
+        iconClassName: cn(iconSize, 'text-indigo-600 dark:text-indigo-400'),
+        tooltipText: 'Record Pre-Procurement Conference Decision',
+        bgClassName: 'bg-indigo-50 dark:bg-indigo-900/20',
+        action: 'pre-procurement',
     },
     {
-        condition: { stage: Stage.PRE_PROCUREMENT_CONFERENCE, status: Status.PRE_PROCUREMENT_CONFERENCE_HELD },
+        condition: { 
+            stage: Stage.PRE_PROCUREMENT_CONFERENCE, 
+            status: [Status.PRE_PROCUREMENT_CONFERENCE_HELD] 
+        },
         icon: UploadCloudIcon,
         iconClassName: cn(iconSize, 'text-green-600 dark:text-green-400'),
         tooltipText: 'Upload Pre-Procurement Conference Documents',
         bgClassName: 'bg-green-50 dark:bg-green-900/20',
-        getHref: (id) => preProcurementConferenceUpload.url(id),
+        getHref: (id) => preProcurementShow.url({ pr_number: id, stage: 'pre_procurement_conference' }),
     },
     {
         condition: {
             stage: Stage.BIDDING_DOCUMENTS,
-            status: [Status.PRE_PROCUREMENT_CONFERENCE_SKIPPED, Status.PRE_PROCUREMENT_CONFERENCE_COMPLETED],
+            status: [
+                Status.PRE_PROCUREMENT_CONFERENCE_SKIPPED, 
+                Status.PRE_PROCUREMENT_CONFERENCE_COMPLETED
+            ],
         },
         icon: UploadCloudIcon,
         iconClassName: cn(iconSize, 'text-amber-600 dark:text-amber-400'),
         tooltipText: 'Upload Bidding Documents',
         bgClassName: 'bg-amber-50 dark:bg-amber-900/20',
-        getHref: (id) => biddingDocumentsUpload.url(id),
+        getHref: (id) => preProcurementShow.url({ pr_number: id, stage: 'bidding_documents' }),
     },
     {
         condition: { stage: Stage.PRE_BID_CONFERENCE, status: Status.BIDDING_DOCUMENTS_PUBLISHED },
@@ -89,7 +82,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-indigo-600 dark:text-indigo-400'),
         tooltipText: 'Upload Pre-Bid Conference Documents',
         bgClassName: 'bg-indigo-50 dark:bg-indigo-900/20',
-        getHref: (id) => preBidConferenceUpload.url(id),
+        getHref: (id) => biddingShow.url({ pr_number: id, stage: 'pre_bid_conference' }),
     },
     {
         condition: { stage: Stage.BID_OPENING, status: Status.SUPPLEMENTAL_BID_BULLETINS_COMPLETED },
@@ -97,7 +90,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-blue-600 dark:text-blue-400'),
         tooltipText: 'Upload Bid Opening Documents',
         bgClassName: 'bg-blue-50 dark:bg-blue-900/20',
-        getHref: (id) => bidOpeningUpload.url(id),
+        getHref: (id) => biddingShow.url({ pr_number: id, stage: 'bid_opening' }),
     },
     {
         condition: { stage: Stage.BID_EVALUATION, status: Status.BIDS_OPENED },
@@ -105,7 +98,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-indigo-600 dark:text-indigo-400'),
         tooltipText: 'Upload Bid Evaluation Documents',
         bgClassName: 'bg-indigo-50 dark:bg-indigo-900/20',
-        getHref: (id) => bidEvaluationUpload.url(id),
+        getHref: (id) => biddingShow.url({ pr_number: id, stage: 'bid_evaluation' }),
     },
     {
         condition: { stage: Stage.POST_QUALIFICATION, status: Status.BIDS_EVALUATED },
@@ -113,7 +106,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-green-700 dark:text-green-400'),
         tooltipText: 'Upload Post-Qualification Report',
         bgClassName: 'bg-green-50 dark:bg-green-900/20',
-        getHref: (id) => postQualificationUpload.url(id),
+        getHref: (id) => biddingShow.url({ pr_number: id, stage: 'post_qualification' }),
     },
     {
         condition: { stage: Stage.NOTICE_OF_AWARD, status: Status.RESOLUTION_RECORDED },
@@ -121,7 +114,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-amber-600 dark:text-amber-400'),
         tooltipText: 'Upload Notice of Award',
         bgClassName: 'bg-amber-50 dark:bg-amber-900/20',
-        getHref: (id) => noaUpload.url(id),
+        getHref: (id) => postProcurementShow.url({ pr_number: id, stage: 'notice_of_award' }),
     },
     {
         condition: {
@@ -140,7 +133,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-blue-600 dark:text-blue-400'),
         tooltipText: 'Upload Supplemental Bid Bulletin Documents',
         bgClassName: 'bg-blue-50 dark:bg-blue-900/20',
-        getHref: (id) => supplementalBidBulletinUpload.url(id),
+        getHref: (id) => biddingShow.url({ pr_number: id, stage: 'supplemental_bid_bulletin' }),
     },
     {
         condition: { stage: Stage.PERFORMANCE_BOND_CONTRACT_AND_PO, status: Status.AWARDED },
@@ -148,7 +141,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-cyan-600 dark:text-cyan-400'),
         tooltipText: 'Upload Performance Bond, Contract, and PO',
         bgClassName: 'bg-cyan-50 dark:bg-cyan-900/20',
-        getHref: (id) => performanceBondContractPoUpload.url(id),
+        getHref: (id) => postProcurementShow.url({ pr_number: id, stage: 'performance_bond_contract_and_po' }),
     },
     {
         condition: { stage: Stage.BAC_RESOLUTION, status: Status.POST_QUALIFICATION_VERIFIED },
@@ -156,7 +149,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-purple-700 dark:text-purple-400'),
         tooltipText: 'Upload BAC Resolution Documents',
         bgClassName: 'bg-purple-50 dark:bg-purple-900/20',
-        getHref: (id) => bacResolutionUpload.url(id),
+        getHref: (id) => biddingShow.url({ pr_number: id, stage: 'bac_resolution' }),
     },
     {
         condition: { stage: Stage.NOTICE_TO_PROCEED, status: Status.PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED },
@@ -164,7 +157,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-green-600 dark:text-green-400'),
         tooltipText: 'Upload Notice to Proceed',
         bgClassName: 'bg-green-50 dark:bg-green-900/20',
-        getHref: (id) => ntpUpload.url(id),
+        getHref: (id) => postProcurementShow.url({ pr_number: id, stage: 'notice_to_proceed' }),
     },
     {
         condition: { stage: Stage.MONITORING, status: Status.NTP_RECORDED },
@@ -172,7 +165,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-teal-600 dark:text-teal-400'),
         tooltipText: 'Upload Monitoring Documents',
         bgClassName: 'bg-teal-50 dark:bg-teal-900/20',
-        getHref: (id) => monitoringUpload.url(id),
+        getHref: (id) => postProcurementShow.url({ pr_number: id, stage: 'monitoring' }),
     },
     {
         condition: { stage: Stage.COMPLETION, status: Status.MONITORING_COMPLETED },
@@ -180,7 +173,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         iconClassName: cn(iconSize, 'text-emerald-600 dark:text-emerald-400'),
         tooltipText: 'Upload Certificate of Completion',
         bgClassName: 'bg-emerald-50 dark:bg-emerald-900/20',
-        getHref: (id) => completionUpload.url(id),
+        getHref: (id) => postProcurementShow.url({ pr_number: id, stage: 'completion' }),
     },
 ];
 

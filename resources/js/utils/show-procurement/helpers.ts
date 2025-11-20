@@ -63,7 +63,7 @@ export const groupDocumentsByStage = (documents?: Document[]): Record<string, Do
 /**
  * Sorts stage keys according to the defined STAGE_ORDER (latest first)
  * @param documentsByStage - Object with stage names as keys
- * @returns Array of stage names sorted by stage order (reversed)
+ * @returns Array of stage names sorted by stage order (latest/highest index first)
  */
 export const sortStageKeys = (documentsByStage: Record<string, Document[]>): string[] => {
     const stageKeys = Object.keys(documentsByStage);
@@ -74,7 +74,9 @@ export const sortStageKeys = (documentsByStage: Record<string, Document[]>): str
         if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
         if (aIndex === -1) return 1;
         if (bIndex === -1) return -1;
-        return bIndex - aIndex; // Reversed to show latest stages first
+        
+        // Sort descending: higher stage index (later in procurement) appears first
+        return bIndex - aIndex;
     });
 };
 
