@@ -10,6 +10,7 @@ namespace App\Enums;
  */
 enum StatusEnums: string
 {
+    case PROCUREMENT_INITIATED = 'procurement_initiated';
     case PROCUREMENT_SUBMITTED = 'procurement_submitted';
     case PRE_PROCUREMENT_CONFERENCE_HELD = 'pre_procurement_conference_held';
     case PRE_PROCUREMENT_CONFERENCE_SKIPPED = 'pre_procurement_conference_skipped';
@@ -45,6 +46,7 @@ enum StatusEnums: string
     public function getDisplayName(): string
     {
         return match ($this) {
+            self::PROCUREMENT_INITIATED => 'Procurement Initiated',
             self::PROCUREMENT_SUBMITTED => 'Procurement Submitted',
             self::PRE_PROCUREMENT_CONFERENCE_HELD => 'Pre-Procurement Conference Held',
             self::PRE_PROCUREMENT_CONFERENCE_SKIPPED => 'Pre-Procurement Conference Skipped',
@@ -81,6 +83,7 @@ enum StatusEnums: string
     public function getStoragePathSegment(): string
     {
         return match ($this) {
+            self::PROCUREMENT_INITIATED => 'ProcurementInitiated',
             self::PROCUREMENT_SUBMITTED => 'ProcurementSubmitted',
             self::PRE_PROCUREMENT_CONFERENCE_HELD => 'PreProcurementConferenceHeld',
             self::PRE_PROCUREMENT_CONFERENCE_SKIPPED => 'PreProcurementConferenceSkipped',
@@ -117,6 +120,7 @@ enum StatusEnums: string
     public function getDescription(): string
     {
         return match ($this) {
+            self::PROCUREMENT_INITIATED => 'Procurement has been initiated and created in the system',
             self::PROCUREMENT_SUBMITTED => 'Initial procurement documents have been submitted',
             self::PRE_PROCUREMENT_CONFERENCE_HELD => 'Pre-procurement conference has been conducted',
             self::PRE_PROCUREMENT_CONFERENCE_SKIPPED => 'Pre-procurement conference was not required or was skipped',

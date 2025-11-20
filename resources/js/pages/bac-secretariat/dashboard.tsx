@@ -9,7 +9,7 @@ import { StatsGrid } from '@/components/stats-grid';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
-import { initiation as procurementInitiation } from '@/routes/bac-secretariat/procurement';
+import procurement from '@/routes/bac-secretariat/procurement';
 import { index as procurementsListIndex } from '@/routes/bac-secretariat/procurements';
 import type { SharedData, User } from '@/types';
 import { Stage, Status } from '@/types';
@@ -164,7 +164,7 @@ export default function BACSecretariatDashboard() {
                 </Link>
             </Button>
             <Button size="sm" asChild>
-                <Link href={procurementInitiation.url()} prefetch>
+                <Link href={procurement.initiation.url()} prefetch>
                     <PlusIcon className="mr-2 h-4 w-4" />
                     New Procurement
                 </Link>

@@ -429,4 +429,22 @@ enum StageEnums: string
 
         return $index + 1; // 1-based indexing
     }
+
+    /**
+     * Get the URL-friendly slug (kebab-case) for this stage
+     */
+    public function getSlug(): string
+    {
+        return str_replace('_', '-', $this->value);
+    }
+
+    /**
+     * Get stage from slug (kebab-case)
+     */
+    public static function fromSlug(string $slug): ?self
+    {
+        $value = str_replace('-', '_', $slug);
+
+        return self::tryFrom($value);
+    }
 }

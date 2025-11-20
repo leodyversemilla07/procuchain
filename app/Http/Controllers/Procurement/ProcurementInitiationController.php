@@ -9,6 +9,7 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
 use App\Http\Controllers\Procurement\Concerns\HasProcurementSupport;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
@@ -76,12 +77,8 @@ class ProcurementInitiationController extends BaseController
             // Get the latest status from blockchain to check if stage is complete
             $statusRepo = app(\App\Repositories\StatusRepository::class);
             $statuses = $statusRepo->findByProcurement($id);
-            $latestStatus = ! empty($statuses) ? end($statuses) : null; // Most recent status (last in array)
-
-            // Reset array pointer after using end()
-            if (! empty($statuses)) {
-                reset($statuses);
-            }
+            // findByProcurement returns statuses sorted by timestamp descending (newest first)
+            $latestStatus = ! empty($statuses) ? $statuses[0] : null;
 
             // Check if this stage has been marked complete
             // A stage is complete when there's a status record with marked_complete_at metadata
@@ -101,14 +98,25 @@ class ProcurementInitiationController extends BaseController
             ]);
 
             return Inertia::render('bac-secretariat/procurement-stage/procurement-initiation-show', [
-                'pr_number' => $id,
+                'procurement' => [
+                    'pr_number' => $id,
+                    'title' => $procurement->title,
+                    'status' => $procurement->status,
+                    'stage' => $latestStatus?->stage ?? StageEnums::PROCUREMENT_INITIATION->value,
+                ],
                 'documentGuide' => $this->validationService->getStageDocumentGuide(
                     StageEnums::PROCUREMENT_INITIATION
                 ),
-                'uploadedDocuments' => $this->getUploadedDocumentTypes(
+                'uploadedDocuments' => tap($this->getUploadedDocumentTypes(
                     $id,
                     StageEnums::PROCUREMENT_INITIATION
-                ),
+                ), function ($docs) use ($id) {
+                    Log::info('Uploaded documents for frontend', [
+                        'pr_number' => $id,
+                        'uploaded_documents' => $docs,
+                        'count' => count($docs),
+                    ]);
+                }),
                 'currentStage' => $latestStatus?->stage ?? StageEnums::PROCUREMENT_INITIATION->value,
                 'currentStatus' => $latestStatus?->currentStatus ?? $procurement->status,
                 'isStageComplete' => $isStageComplete,
@@ -473,11 +481,11 @@ class ProcurementInitiationController extends BaseController
             $user = auth()->user();
             $userAddress = $user->blockchain_address ?? $user->email;
 
-            // When Procurement Initiation is complete, transition to Pre-Procurement Conference stage
-            $nextStage = StageEnums::PRE_PROCUREMENT_CONFERENCE;
-            $completionStatus = \App\Enums\StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD;
+            // Transition to the next stage: PRE_PROCUREMENT_CONFERENCE
+            $nextStage = StageEnums::PROCUREMENT_INITIATION;
+            $completionStatus = StatusEnums::PROCUREMENT_SUBMITTED;
 
-            // 1. Publish status update to blockchain
+            // 1. Publish status update to blockchain with stage transition
             $this->statusPublisher->publish(
                 prNumber: $pr_number,
                 procurementTitle: $procurement->title,
@@ -489,6 +497,7 @@ class ProcurementInitiationController extends BaseController
                     'documents_uploaded' => count($uploadedDocuments),
                     'marked_complete_at' => now()->toIso8601String(),
                     'previous_stage' => StageEnums::PROCUREMENT_INITIATION->value,
+                    'stage_transition' => true,
                 ]
             );
 
@@ -496,21 +505,21 @@ class ProcurementInitiationController extends BaseController
             $this->eventPublisher->publish(
                 prNumber: $pr_number,
                 procurementTitle: $procurement->title,
-                stage: $stage->value,
+                stage: $nextStage->value,
                 eventType: 'stage_completed',
                 category: 'stage_transition',
                 severity: 'info',
-                details: "Stage {$stage->getDisplayName()} marked as complete with all required documents uploaded. Transitioned to {$nextStage->getDisplayName()}.",
+                details: "Stage {$stage->getDisplayName()} completed. Transitioned to {$nextStage->getDisplayName()} with status {$completionStatus->getDisplayName()}.",
                 documentCount: count($uploadedDocuments),
                 userAddress: $userAddress,
                 metadata: [
-                    'stage' => $stage->value,
-                    'next_stage' => $nextStage->value,
+                    'previous_stage' => $stage->value,
+                    'new_stage' => $nextStage->value,
                     'completion_status' => $completionStatus->value,
                 ]
             );
 
-            return back()->with('success', 'Procurement Initiation stage marked as complete! Next stage: Pre-Procurement Conference.');
+            return back()->with('success', "Procurement Initiation completed! Moved to {$nextStage->getDisplayName()} stage.");
         } catch (\Exception $e) {
             Log::error('Failed to mark Procurement Initiation stage as complete', [
                 'pr_number' => $pr_number,

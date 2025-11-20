@@ -54,12 +54,17 @@ class AppServiceProvider extends ServiceProvider
             // Uses database cache driver to avoid Redis dependency
             return \Illuminate\Cache\RateLimiting\Limit::perMinute($limit)
                 ->by($request->user()?->id ?: $request->ip())
-                ->response(function () use ($limit) {
+                ->response(function ($request, $headers) use ($limit) {
+                    // Handle Inertia requests by redirecting back with error message
+                    if ($request->header('X-Inertia')) {
+                        return back()->with('error', 'Too many blockchain operations. Please wait a moment before trying again.');
+                    }
+
                     return response()->json([
                         'error' => 'Too many blockchain operations. Please wait a moment before trying again.',
                         'retry_after' => 60,
                         'limit' => $limit,
-                    ], 429);
+                    ], 429, $headers);
                 });
         });
     }

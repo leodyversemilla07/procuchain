@@ -10,7 +10,7 @@ import { index as blockchainExplorerIndex } from '@/routes/admin/blockchain/expl
 
 interface BlockchainPublishingStatusPageProps {
     procurement: {
-        id: string;
+        pr_number: string;
         title: string;
     };
     stage: string;
@@ -49,10 +49,10 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
     const isPending = status?.status === 'pending';
     const hasTimedOut = pollAttempts >= MAX_ATTEMPTS;
 
-    const handleRedirect = useCallback(() => {
-        const destination = returnUrl || `/procurements/${procurement.id}`;
+        const handleRedirect = useCallback(() => {
+        const destination = returnUrl || `/procurements/${procurement.pr_number}`;
         router.visit(destination);
-    }, [returnUrl, procurement.id]);
+    }, [returnUrl, procurement.pr_number]);
 
     // Reload page data from server using Inertia
     const reloadStatus = useCallback(() => {
@@ -200,9 +200,9 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="bg-success/5 border-success/20 rounded-lg border p-4 text-center">
-                                    <p className="text-muted-foreground text-sm">
-                                        Procurement: <span className="text-foreground font-medium">#{procurement.id}</span>
-                                    </p>
+                                    <div className="text-muted-foreground text-sm">
+                                        Procurement: <span className="text-foreground font-medium">#{procurement.pr_number}</span>
+                                    </div>
                                     <p className="text-muted-foreground text-sm">
                                         Stage: <span className="text-foreground font-medium">{stage}</span>
                                     </p>
@@ -249,7 +249,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
                             <CardContent className="space-y-4">
                                 <div className="bg-destructive/5 border-destructive/20 rounded-lg border p-4">
                                     <p className="text-muted-foreground text-sm">
-                                        Procurement: <span className="text-foreground font-medium">#{procurement.id}</span>
+                                        Procurement: <span className="text-foreground font-medium">#{procurement.pr_number}</span>
                                     </p>
                                     <p className="text-muted-foreground text-sm">
                                         Stage: <span className="text-foreground font-medium">{stage}</span>
@@ -329,7 +329,7 @@ export default function BlockchainPublishingStatusPage({ procurement, stage, ret
                             <CardContent className="space-y-6">
                                 <div className="bg-primary/5 border-primary/20 rounded-lg border p-4">
                                     <p className="text-muted-foreground mb-1 text-sm">
-                                        Procurement: <span className="text-foreground font-medium">#{procurement.id}</span>
+                                        Procurement: <span className="text-foreground font-medium">#{procurement.pr_number}</span>
                                     </p>
                                     <p className="text-muted-foreground mb-4 text-sm">
                                         Stage: <span className="text-foreground font-medium">{stage}</span>

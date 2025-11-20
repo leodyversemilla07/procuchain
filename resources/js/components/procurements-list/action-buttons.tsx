@@ -1,6 +1,6 @@
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { ProcurementListItem, SharedData, Stage, Status } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { AlertCircle, EyeIcon } from 'lucide-react';
 import { getActionConfigs } from '@/config/procurement-actions';
 
@@ -48,21 +48,21 @@ const DropdownActionItem = ({
     onClick?: () => void;
     href?: string;
 }) => {
-    const content = href ? (
-        <DropdownMenuItem asChild>
-            <Link href={href} className="flex items-center gap-2">
-                {icon}
-                <span>{tooltipText}</span>
-            </Link>
-        </DropdownMenuItem>
-    ) : (
-        <DropdownMenuItem onClick={onClick} className="flex items-center gap-2">
+    const handleClick = (e: React.MouseEvent) => {
+        if (href) {
+            e.preventDefault();
+            router.visit(href);
+        } else if (onClick) {
+            onClick();
+        }
+    };
+
+    return (
+        <DropdownMenuItem onClick={handleClick} className="flex items-center gap-2 cursor-pointer">
             {icon}
             <span>{tooltipText}</span>
         </DropdownMenuItem>
     );
-
-    return content;
 };
 
 export const ActionButtons = ({

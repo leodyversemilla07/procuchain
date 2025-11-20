@@ -28,7 +28,6 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type, stag
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                            <h3 className="font-medium">Stage Transition</h3>
                             <Badge variant="secondary" className="text-xs">
                                 {stageItem.stage_formatted || stageItem.stage}
                             </Badge>
@@ -36,7 +35,7 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type, stag
                         <div className="bg-muted rounded-lg border p-3">
                             <div className="mb-1 flex items-center justify-between">
                                 <span className="text-sm font-medium">
-                                    Status: {stageItem.status_formatted || stageItem.status}
+                                    {stageItem.status_formatted || stageItem.status}
                                 </span>
                             </div>
                             <p className="text-muted-foreground text-sm">
@@ -78,15 +77,15 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type, stag
                 </div>
                 <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                        <h3 className="font-medium capitalize">{eventItem.event_type.replace(/_/g, ' ')}</h3>
+                        <h3 className="font-medium">{eventItem.event_type_formatted || eventItem.event_type.replace(/_/g, ' ')}</h3>
                         {eventItem.stage && (
                             <Badge variant="outline" className="text-xs">
                                 {eventItem.stage_formatted || eventItem.stage}
                             </Badge>
                         )}
-                        {eventItem.category && (
-                            <Badge variant="secondary" className="text-xs capitalize">
-                                {eventItem.category}
+                        {eventItem.category && eventItem.category_formatted && eventItem.category !== 'stage_transition' && (
+                            <Badge variant="secondary" className="text-xs">
+                                {eventItem.category_formatted}
                             </Badge>
                         )}
                     </div>

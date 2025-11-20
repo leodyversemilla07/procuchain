@@ -6,7 +6,9 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Http\Controllers\Procurement\Concerns\HasProcurementSupport;
+use App\Http\Requests\Procurement\PreBidConferenceDecisionRequest;
 use App\Http\Requests\Procurement\PreProcurementConferenceDecisionRequest;
+use App\Http\Requests\Procurement\SupplementalBidBulletinDecisionRequest;
 use App\Libraries\MultiChain\Manager;
 use App\Services\DocumentValidationService;
 use App\Services\ProcurementDataService;
@@ -19,6 +21,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -73,6 +76,7 @@ class PreProcurementController extends BaseController
                 'status' => $procurement['current_status'] ?? '',
                 'stage' => $stage->getDisplayName(),
                 'stage_value' => $stage->value,
+                'current_stage' => $procurement['stage'] ?? '',
             ],
             'documentGuide' => $this->validationService->getStageDocumentGuide($stage),
             'uploadedDocuments' => fn () => $this->getUploadedDocumentTypes($pr_number, $stage),
@@ -192,6 +196,7 @@ class PreProcurementController extends BaseController
 
                     $this->eventPublisher->publishStageTransition(
                         $pr_number,
+                        $procurementTitle,
                         $stage->value,
                         $nextStage->value,
                         $userAddress
@@ -373,13 +378,14 @@ class PreProcurementController extends BaseController
                 return back()->with('error', 'Procurement not found.');
             }
 
-            $userAddress = auth()->user()->wallet_address ?? config('multichain.admin_address');
+            $user = auth()->user();
+            $userAddress = $user->blockchain_address ?? $user->email;
 
             // 1. Determine completion status based on stage
             $completionStatus = $this->getCompletionStatusForStage($stage);
 
             // 2. Publish status update to blockchain
-            $this->statusPublisher->publish(
+            $statusResult = $this->statusPublisher->publish(
                 prNumber: $pr_number,
                 procurementTitle: $procurement->title,
                 stage: $stage,
@@ -393,7 +399,7 @@ class PreProcurementController extends BaseController
             );
 
             // 3. Publish completion event to blockchain
-            $this->eventPublisher->publish(
+            $eventResult = $this->eventPublisher->publish(
                 prNumber: $pr_number,
                 procurementTitle: $procurement->title,
                 stage: $stage->value,
@@ -409,7 +415,38 @@ class PreProcurementController extends BaseController
                 ]
             );
 
-            // 4. Determine next possible stages
+            // 4. Handle automatic stage transitions for specific stages
+            if ($stage === StageEnums::BIDDING_DOCUMENTS) {
+                // Automatically transition to PRE_BID_CONFERENCE stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::BIDDING_DOCUMENTS,
+                    toStage: StageEnums::PRE_BID_CONFERENCE,
+                    currentStatus: StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::BIDDING_DOCUMENTS->value,
+                    toStage: StageEnums::PRE_BID_CONFERENCE->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Bidding Documents marked as complete successfully! Proceeding to Pre-Bid Conference stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
+            // 5. Determine next possible stages for other stages
             $nextStages = $stage->getNextStages();
             $nextStageMessage = '';
             if (! empty($nextStages)) {
@@ -421,7 +458,7 @@ class PreProcurementController extends BaseController
                 }
             }
 
-            // 5. Notify relevant parties
+            // 6. Notify relevant parties
             try {
                 $this->notificationService->notifyStageUpdate(
                     pr_number: $pr_number,
@@ -443,7 +480,15 @@ class PreProcurementController extends BaseController
                 ]);
             }
 
-            return back()->with('success', "Stage marked as complete successfully!{$nextStageMessage}");
+            return back()->with('success', [
+                'message' => "Stage marked as complete successfully!{$nextStageMessage}",
+                'blockchain' => [
+                    'status_txid' => $statusResult['status_txid'] ?? null,
+                    'event_txid' => $eventResult['event_txid'] ?? null,
+                    'stage' => $stage->value,
+                    'completion_status' => $completionStatus->value,
+                ],
+            ]);
         } catch (\Exception $e) {
             Log::error('Error marking stage as complete', [
                 'pr_number' => $pr_number,
@@ -549,8 +594,9 @@ class PreProcurementController extends BaseController
             // Conference skipped - transition directly to BIDDING_DOCUMENTS
             $this->statusPublisher->publish(
                 $pr_number,
-                StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-                'Pre-Procurement Conference skipped',
+                $validated['procurement_title'],
+                StageEnums::PRE_PROCUREMENT_CONFERENCE,
+                StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED,
                 $userAddress
             );
 
@@ -575,11 +621,12 @@ class PreProcurementController extends BaseController
                 $procurement['title'] ?? $validated['procurement_title'],
                 $fromStage,
                 $toStage,
-                \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED,
+                \App\Enums\StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED,
                 $userAddress
             );
             $this->eventPublisher->publishStageTransition(
                 $pr_number,
+                $validated['procurement_title'],
                 StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
                 StageEnums::BIDDING_DOCUMENTS->value,
                 $userAddress
@@ -631,6 +678,196 @@ class PreProcurementController extends BaseController
         }
 
         return $documentType;
+    }
+
+    /**
+     * Handle Pre-Bid Conference decision (held or skipped).
+     * This is part of Stage 3 (Bidding Documents) workflow.
+     */
+    public function publishPreBidDecision(PreBidConferenceDecisionRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+        $pr_number = $validated['pr_number'];
+        $user = auth()->user();
+        $userAddress = $user->blockchain_address;
+
+        try {
+            if ($validated['conference_held']) {
+                // Conference held - publish status update and decision event, wait for documents
+                $this->statusPublisher->publish(
+                    $pr_number,
+                    $validated['procurement_title'],
+                    StageEnums::PRE_BID_CONFERENCE,
+                    StatusEnums::PRE_BID_CONFERENCE_HELD,
+                    $userAddress
+                );
+
+                $this->eventPublisher->publish(
+                    prNumber: $pr_number,
+                    procurementTitle: $validated['procurement_title'],
+                    stage: StageEnums::PRE_BID_CONFERENCE->value,
+                    eventType: 'conference_decision',
+                    category: 'Decision',
+                    severity: 'info',
+                    details: 'Pre-Bid Conference will be conducted. Awaiting documents upload.',
+                    documentCount: 0,
+                    userAddress: $userAddress
+                );
+
+                return redirect()->route('bac-secretariat.procurement.phase.show', [
+                    'pr_number' => $pr_number,
+                    'stage' => StageEnums::PRE_BID_CONFERENCE->getSlug(),
+                ])->with('success', 'Decision recorded. Please upload conference documents.');
+            }
+
+            // Conference skipped - transition directly to SUPPLEMENTAL_BID_BULLETIN
+            $this->statusPublisher->publish(
+                $pr_number,
+                $validated['procurement_title'],
+                StageEnums::PRE_BID_CONFERENCE,
+                StatusEnums::PRE_BID_CONFERENCE_SKIPPED,
+                $userAddress
+            );
+
+            $this->eventPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $validated['procurement_title'],
+                stage: StageEnums::PRE_BID_CONFERENCE->value,
+                eventType: 'conference_skipped',
+                category: 'Decision',
+                severity: 'info',
+                details: 'Pre-Bid Conference was not held. Proceeding to Supplemental Bid Bulletin stage.',
+                documentCount: 0,
+                userAddress: $userAddress
+            );
+
+            $fromStage = StageEnums::PRE_BID_CONFERENCE;
+            $toStage = StageEnums::SUPPLEMENTAL_BID_BULLETIN;
+
+            $procurement = $this->findProcurementById($pr_number);
+            $this->statusPublisher->publishTransition(
+                $pr_number,
+                $procurement['title'] ?? $validated['procurement_title'],
+                $fromStage,
+                $toStage,
+                StatusEnums::PRE_BID_CONFERENCE_SKIPPED,
+                $userAddress
+            );
+            $this->eventPublisher->publishStageTransition(
+                $pr_number,
+                $validated['procurement_title'],
+                StageEnums::PRE_BID_CONFERENCE->value,
+                StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+                $userAddress
+            );
+
+            return redirect()->route('bac-secretariat.procurements.index')
+                ->with('success', 'Pre-Bid Conference skipped. Proceeding to Supplemental Bid Bulletin stage.');
+        } catch (\Exception $e) {
+            \Log::error('Failed to publish Pre-Bid Conference decision', [
+                'pr_number' => $pr_number,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to publish decision to blockchain. Please try again.',
+            ]);
+        }
+    }
+
+    /**
+     * Handle Supplemental Bid Bulletin decision (needed or skipped).
+     * This is part of Stage 3 (Bidding Documents) workflow.
+     */
+    public function publishSupplementalBidBulletinDecision(SupplementalBidBulletinDecisionRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+        $pr_number = $validated['pr_number'];
+        $user = auth()->user();
+        $userAddress = $user->blockchain_address;
+
+        try {
+            if ($validated['supplemental_bid_needed']) {
+                // Supplemental bid bulletin needed - publish status update and decision event, wait for documents
+                $this->statusPublisher->publish(
+                    $pr_number,
+                    $validated['procurement_title'],
+                    StageEnums::SUPPLEMENTAL_BID_BULLETIN,
+                    StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
+                    $userAddress
+                );
+
+                $this->eventPublisher->publish(
+                    prNumber: $pr_number,
+                    procurementTitle: $validated['procurement_title'],
+                    stage: StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+                    eventType: 'bulletin_decision',
+                    category: 'Decision',
+                    severity: 'info',
+                    details: 'Supplemental Bid Bulletin will be issued. Awaiting documents upload.',
+                    documentCount: 0,
+                    userAddress: $userAddress
+                );
+
+                return redirect()->route('bac-secretariat.procurement.phase.show', [
+                    'pr_number' => $pr_number,
+                    'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->getSlug(),
+                ])->with('success', 'Decision recorded. Please upload supplemental bid bulletin documents.');
+            }
+
+            // Supplemental bid bulletin skipped - transition directly to BID_OPENING (Procurement Phase)
+            $this->statusPublisher->publish(
+                $pr_number,
+                $validated['procurement_title'],
+                StageEnums::SUPPLEMENTAL_BID_BULLETIN,
+                StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+                $userAddress
+            );
+
+            $this->eventPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $validated['procurement_title'],
+                stage: StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+                eventType: 'bulletin_skipped',
+                category: 'Decision',
+                severity: 'info',
+                details: 'Supplemental Bid Bulletin was not needed. Proceeding to Bid Opening.',
+                documentCount: 0,
+                userAddress: $userAddress
+            );
+
+            $fromStage = StageEnums::SUPPLEMENTAL_BID_BULLETIN;
+            $toStage = StageEnums::BID_OPENING;
+
+            $procurement = $this->findProcurementById($pr_number);
+            $this->statusPublisher->publishTransition(
+                $pr_number,
+                $procurement['title'] ?? $validated['procurement_title'],
+                $fromStage,
+                $toStage,
+                StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+                $userAddress
+            );
+            $this->eventPublisher->publishStageTransition(
+                $pr_number,
+                $validated['procurement_title'],
+                StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+                StageEnums::BID_OPENING->value,
+                $userAddress
+            );
+
+            return redirect()->route('bac-secretariat.procurements.index')
+                ->with('success', 'Supplemental Bid Bulletin skipped. Proceeding to Bid Opening stage.');
+        } catch (\Exception $e) {
+            \Log::error('Failed to publish Supplemental Bid Bulletin decision', [
+                'pr_number' => $pr_number,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to publish decision to blockchain. Please try again.',
+            ]);
+        }
     }
 
     /**

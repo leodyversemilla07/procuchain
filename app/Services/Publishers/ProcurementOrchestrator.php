@@ -291,7 +291,7 @@ class ProcurementOrchestrator
 
         // Validate required enums
         $stage = StageEnums::PROCUREMENT_INITIATION;
-        $status = StatusEnums::PROCUREMENT_SUBMITTED;
+        $status = StatusEnums::PROCUREMENT_INITIATED;
 
         try {
             // Step 1: Create procurement metadata (CRITICAL)

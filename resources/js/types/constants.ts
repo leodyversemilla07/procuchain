@@ -88,5 +88,5 @@ export const STAGE_ORDER = [
     'Performance Bond, Contract and PO',
     'Notice to Proceed',
     'Monitoring',
-    'Completed',
+    'Completion',
 ] as const;

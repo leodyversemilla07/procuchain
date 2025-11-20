@@ -1,23 +1,46 @@
 import { router } from '@inertiajs/react';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { uploadSingleDocument as uploadPreProcurement } from '@/actions/App/Http/Controllers/Procurement/PreProcurementController';
 import { uploadSingleDocument as uploadProcurement } from '@/actions/App/Http/Controllers/Procurement/ProcurementController';
 import { uploadSingleDocument as uploadPostProcurement } from '@/actions/App/Http/Controllers/Procurement/PostProcurementController';
 import { uploadSingleDocument as uploadInitiation } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
 
-interface ProgressiveUploadOptions {
-    procurementId: string;
-    stage: string;
-    phase: 'pre-procurement' | 'procurement' | 'post-procurement' | 'initiation';
-    onUploadStart?: (documentName: string) => void;
-    onUploadComplete?: (documentValue: string) => void;
-    onUploadError?: (error: string) => void;
-}
+type ProgressiveUploadOptions =
+    | {
+          procurementId: string;
+          phase: 'initiation';
+          onUploadStart?: (documentName: string) => void;
+          onUploadComplete?: (documentValue: string) => void;
+          onUploadError?: (error: string) => void;
+          onProgress?: (percentage: number) => void;
+      }
+    | {
+          procurementId: string;
+          stage: string;
+          phase: 'pre-procurement' | 'procurement' | 'post-procurement';
+          onUploadStart?: (documentName: string) => void;
+          onUploadComplete?: (documentValue: string) => void;
+          onUploadError?: (error: string) => void;
+          onProgress?: (percentage: number) => void;
+      };
 
 export function useProgressiveUpload(options: ProgressiveUploadOptions) {
     const [isUploading, setIsUploading] = useState(false);
     const [currentUpload, setCurrentUpload] = useState<string | null>(null);
+    const [uploadProgress, setUploadProgress] = useState<number>(0);
+    const activeRequestRef = useRef<(() => void) | null>(null);
+
+    // Cleanup on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            // Cancel any active upload when component unmounts
+            if (activeRequestRef.current) {
+                activeRequestRef.current();
+                activeRequestRef.current = null;
+            }
+        };
+    }, []);
 
     const validateFile = (file: File): boolean => {
         if (file.type !== 'application/pdf') {
@@ -37,73 +60,137 @@ export function useProgressiveUpload(options: ProgressiveUploadOptions) {
         return true;
     };
 
+    const getUploadRoute = () => {
+        if (options.phase === 'initiation') {
+            return {
+                route: uploadInitiation,
+                params: { pr_number: options.procurementId } as const,
+            };
+        }
+
+        if (options.phase === 'pre-procurement') {
+            return {
+                route: uploadPreProcurement,
+                params: { pr_number: options.procurementId, stage: options.stage } as const,
+            };
+        }
+
+        if (options.phase === 'procurement') {
+            return {
+                route: uploadProcurement,
+                params: { pr_number: options.procurementId, stage: options.stage } as const,
+            };
+        }
+
+        if (options.phase === 'post-procurement') {
+            return {
+                route: uploadPostProcurement,
+                params: { pr_number: options.procurementId, stage: options.stage } as const,
+            };
+        }
+
+        throw new Error(`Unknown phase: ${options.phase}`);
+    };
+
     const handleDocumentUpload = (documentValue: string, documentName: string) => {
-        // Create hidden file input
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = 'application/pdf';
+        fileInput.setAttribute('aria-label', `Upload ${documentName}`);
 
         fileInput.onchange = (e) => {
             const target = e.target as HTMLInputElement;
             const file = target.files?.[0];
 
-            if (!file) return;
+            if (!file) {
+                // Clean up file input after use
+                setTimeout(() => fileInput.remove(), 100);
+                return;
+            }
 
-            // Validate file
-            if (!validateFile(file)) return;
+            if (!validateFile(file)) {
+                // Clean up file input after validation failure
+                setTimeout(() => fileInput.remove(), 100);
+                return;
+            }
 
             setIsUploading(true);
             setCurrentUpload(documentName);
+            setUploadProgress(0);
             options.onUploadStart?.(documentName);
 
-            // Get the appropriate Wayfinder route based on phase/stage
-            let uploadRoute;
-            let routeParams;
+            const { route, params } = getUploadRoute();
 
-            if (options.phase === 'initiation' || options.stage === 'procurement_initiation') {
-                // Special case for procurement initiation (no stage parameter needed)
-                uploadRoute = uploadInitiation;
-                routeParams = { pr_number: options.procurementId };
-            } else {
-                // Standard phase-based routing
-                uploadRoute =
-                    options.phase === 'pre-procurement'
-                        ? uploadPreProcurement
-                        : options.phase === 'procurement'
-                          ? uploadProcurement
-                          : uploadPostProcurement;
-                routeParams = { pr_number: options.procurementId, stage: options.stage };
-            }
-
-            // Create FormData for Inertia file upload
             const formData = {
                 document_file: file,
                 document_type: documentValue,
                 description: `${documentName} for procurement ${options.procurementId}`,
             };
 
-            // Submit using Inertia router with file upload support
-            router.post(uploadRoute(routeParams).url, formData, {
+            const cancelToken = router.post(route(params as any).url, formData, {
                 preserveScroll: true,
-                forceFormData: true, // Ensure FormData encoding for file upload
+                forceFormData: true,
+                onProgress: (progress) => {
+                    if (progress?.percentage) {
+                        setUploadProgress(progress.percentage);
+                        options.onProgress?.(progress.percentage);
+                    }
+                },
                 onSuccess: () => {
                     toast.success('Document uploaded', {
                         description: `${documentName} has been uploaded successfully.`,
                     });
-                    options.onUploadComplete?.(documentValue);
-                    setIsUploading(false);
-                    setCurrentUpload(null);
+                    
+                    // Safely call onUploadComplete and ensure state cleanup
+                    try {
+                        options.onUploadComplete?.(documentValue);
+                    } catch (error) {
+                        console.error('Error in onUploadComplete callback:', error);
+                    }
                 },
                 onError: (errors) => {
-                    const errorMsg = Object.values(errors).flat().join(', ') || 'Failed to upload document.';
+                    let errorMsg = 'Failed to upload document.';
+                    
+                    if (typeof errors === 'object' && errors !== null) {
+                        // Handle various error object shapes
+                        const errorValues = Object.values(errors);
+                        if (errorValues.length > 0) {
+                            errorMsg = errorValues
+                                .flat()
+                                .filter((msg): msg is string => typeof msg === 'string')
+                                .join(', ') || errorMsg;
+                        }
+                    } else if (typeof errors === 'string') {
+                        errorMsg = errors;
+                    }
+                    
                     toast.error('Upload failed', {
                         description: errorMsg,
                     });
-                    options.onUploadError?.(errorMsg);
+                    
+                    // Safely call onUploadError and ensure state cleanup
+                    try {
+                        options.onUploadError?.(errorMsg);
+                    } catch (error) {
+                        console.error('Error in onUploadError callback:', error);
+                    }
+                },
+                onFinish: () => {
                     setIsUploading(false);
                     setCurrentUpload(null);
+                    setUploadProgress(0);
+                    activeRequestRef.current = null;
+                    // Clean up file input after upload completes
+                    setTimeout(() => fileInput.remove(), 100);
                 },
             });
+
+            // Store cancel function for cleanup on unmount
+            activeRequestRef.current = () => {
+                if (typeof cancelToken === 'object' && 'cancel' in cancelToken) {
+                    (cancelToken as { cancel: () => void }).cancel();
+                }
+            };
         };
 
         fileInput.click();
@@ -112,6 +199,7 @@ export function useProgressiveUpload(options: ProgressiveUploadOptions) {
     return {
         isUploading,
         currentUpload,
+        uploadProgress,
         handleDocumentUpload,
     };
 }
