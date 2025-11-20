@@ -44,8 +44,7 @@ export default function Home() {
     return (
         <>
             <Head title="ProcuChain: Blockchain Document Management for BAC Offices">
-                <link rel="preconnect" href="https://fonts.bunny.net" />
-                <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+
                 <meta
                     name="description"
                     content="ProcuChain is a blockchain-powered document management system for Bids and Awards Committee offices, providing secure archiving, storage, monitoring, and tracking of procurement documents simultaneously."
