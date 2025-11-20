@@ -8,8 +8,7 @@ export default function Contact() {
     return (
         <>
             <Head title="Contact Us">
-                <link rel="preconnect" href="https://fonts.bunny.net" />
-                <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+
                 <meta
                     name="description"
                     content="Contact the ProcuChain project team for inquiries, support, or feedback about our blockchain-powered procurement system."

@@ -9,8 +9,7 @@ export default function About() {
     return (
         <>
             <Head title="About">
-                <link rel="preconnect" href="https://fonts.bunny.net" />
-                <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+
                 <meta
                     name="description"
                     content="Learn about ProcuChain - an innovative blockchain-based system designed to bring transparency and efficiency to government procurement processes."
