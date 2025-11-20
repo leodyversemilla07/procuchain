@@ -39,31 +39,31 @@ export default function About() {
                 />
                 <meta property="twitter:image" content="/logo.png" />
             </Head>
-            <div className="bg-background text-foreground flex min-h-screen flex-col">
+            <div className="flex min-h-screen flex-col bg-background">
                 <Header />
 
-                <main className="flex-grow pt-16 pb-8 sm:pt-20 sm:pb-12 md:pt-24 md:pb-16 lg:pt-32 lg:pb-20">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+                <main className="flex-1">
+                    <div className="container mx-auto px-4 py-16 sm:px-12 lg:px-16 xl:px-20">
                         {/* Hero Section */}
-                        <div className="mb-8 sm:mb-12 md:mb-16 lg:mb-20">
-                            <h1 className="mb-3 text-center text-2xl font-medium sm:mb-4 sm:text-3xl md:mb-6 md:text-4xl">About ProcuChain</h1>
-                            <p className="text-muted-foreground mx-auto max-w-xl px-2 text-center text-sm sm:px-4 sm:text-base md:px-0">
+                        <div className="mx-auto max-w-4xl text-center mb-16">
+                            <h1 className="mb-4 text-4xl font-bold sm:text-5xl md:text-6xl">About ProcuChain</h1>
+                            <p className="text-lg text-muted-foreground">
                                 A blockchain-powered solution revolutionizing government procurement through transparency and efficiency.
                             </p>
                         </div>
 
                         {/* Overview Section */}
-                        <div className="mb-8 sm:mb-12 md:mb-16 lg:mb-20">
-                            <Card className="bg-muted border-0">
-                                <CardContent className="p-4 sm:p-6 md:p-8">
+                        <div className="mb-16">
+                            <Card className="border">
+                                <CardContent className="p-6">
                                     <div className="mx-auto max-w-3xl">
-                                        <h2 className="mb-3 text-lg font-medium sm:mb-4 sm:text-xl md:text-2xl">Project Overview</h2>
-                                        <p className="text-muted-foreground mb-3 text-sm sm:mb-4 sm:text-base">
+                                        <h2 className="mb-4 text-2xl font-semibold">Project Overview</h2>
+                                        <p className="mb-4 text-muted-foreground">
                                             ProcuChain is a capstone project developed by Information Technology student at Mindoro State University -
                                             Bongabong Campus. It leverages blockchain technology to address challenges in government procurement
                                             processes.
                                         </p>
-                                        <p className="text-muted-foreground text-sm sm:text-base">
+                                        <p className="text-muted-foreground">
                                             Our system creates an immutable record of procurement documents and activities, ensuring transparency,
                                             preventing fraud, and establishing a verifiable audit trail that can be trusted by all stakeholders.
                                         </p>
@@ -73,16 +73,16 @@ export default function About() {
                         </div>
 
                         {/* Problem & Solution */}
-                        <div className="mb-8 grid grid-cols-1 gap-4 sm:mb-12 sm:grid-cols-2 sm:gap-6 md:mb-16 lg:mb-20">
-                            <Card className="bg-muted border-0">
-                                <CardContent className="p-4 sm:p-6 md:p-8">
-                                    <div className="mb-3 flex items-center gap-2 sm:mb-4 sm:gap-3">
-                                        <div className="bg-destructive/10 rounded-lg p-2">
-                                            <AlertTriangle className="text-destructive h-4 w-4 sm:h-5 sm:w-5" />
+                        <div className="mb-16 grid gap-8 sm:grid-cols-2">
+                            <Card className="border">
+                                <CardContent className="p-6">
+                                    <div className="mb-4 flex items-center gap-3">
+                                        <div className="rounded-lg bg-destructive/10 p-2">
+                                            <AlertTriangle className="h-5 w-5 text-destructive" />
                                         </div>
-                                        <h2 className="text-lg font-medium sm:text-xl md:text-2xl">The Problem</h2>
+                                        <h2 className="text-2xl font-semibold">The Problem</h2>
                                     </div>
-                                    <ul className="space-y-2 sm:space-y-3">
+                                    <ul className="space-y-2">
                                         {[
                                             'Lack of transparency in government procurement processes',
                                             'Vulnerability to document tampering and fraud',
@@ -91,7 +91,7 @@ export default function About() {
                                             'Challenges in establishing accountability',
                                         ].map((item, index) => (
                                             <li key={index} className="text-muted-foreground flex items-start text-sm sm:text-base">
-                                                <XCircle className="text-destructive mt-1 mr-2 h-3.5 w-3.5 flex-shrink-0 sm:mr-3 sm:h-4 sm:w-4" />
+                                                <XCircle className="text-destructive mt-1 mr-2 h-3.5 w-3.5 shrink-0 sm:mr-3 sm:h-4 sm:w-4" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -99,15 +99,15 @@ export default function About() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="bg-muted border-0">
-                                <CardContent className="p-4 sm:p-6 md:p-8">
-                                    <div className="mb-3 flex items-center gap-2 sm:mb-4 sm:gap-3">
-                                        <div className="bg-primary/10 rounded-lg p-2">
-                                            <CheckCircle className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                            <Card className="border">
+                                <CardContent className="p-6">
+                                    <div className="mb-4 flex items-center gap-3">
+                                        <div className="rounded-lg bg-primary/10 p-2">
+                                            <CheckCircle className="h-5 w-5 text-primary" />
                                         </div>
-                                        <h2 className="text-lg font-medium sm:text-xl md:text-2xl">Our Solution</h2>
+                                        <h2 className="text-2xl font-semibold">Our Solution</h2>
                                     </div>
-                                    <ul className="space-y-2 sm:space-y-3">
+                                    <ul className="space-y-2">
                                         {[
                                             'Blockchain-based document verification and storage',
                                             'Immutable audit trail for all procurement activities',
@@ -126,18 +126,18 @@ export default function About() {
                         </div>
 
                         {/* Technologies Used */}
-                        <div className="mb-8 sm:mb-12 md:mb-16 lg:mb-20">
-                            <h2 className="mb-4 text-center text-lg font-medium sm:mb-6 sm:text-xl md:mb-8 md:text-2xl">Technologies Used</h2>
+                        <div className="mb-16">
+                            <h2 className="mb-8 text-center text-3xl font-bold">Technologies Used</h2>
 
                             <Tabs defaultValue="blockchain" className="mx-auto w-full max-w-4xl">
-                                <TabsList className="mb-4 grid w-full grid-cols-3 sm:mb-6">
-                                    <TabsTrigger value="blockchain" className="text-xs sm:text-sm">
+                                <TabsList className="mb-6 grid w-full grid-cols-3">
+                                    <TabsTrigger value="blockchain">
                                         Blockchain
                                     </TabsTrigger>
-                                    <TabsTrigger value="frontend" className="text-xs sm:text-sm">
+                                    <TabsTrigger value="frontend">
                                         Frontend
                                     </TabsTrigger>
-                                    <TabsTrigger value="backend" className="text-xs sm:text-sm">
+                                    <TabsTrigger value="backend">
                                         Backend
                                     </TabsTrigger>
                                 </TabsList>

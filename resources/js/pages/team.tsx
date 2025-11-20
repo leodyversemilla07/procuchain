@@ -79,25 +79,26 @@ export default function Team() {
                 />
                 <meta property="twitter:image" content="/logo.png" />
             </Head>{' '}
-            <div className="bg-background text-foreground flex min-h-screen flex-col">
+            <div className="flex min-h-screen flex-col bg-background">
                 <Header />
 
-                <main className="flex-grow pt-16 pb-8 sm:pt-20 sm:pb-12 md:pt-24 md:pb-16 lg:pt-32 lg:pb-20">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+                <main className="grow">
+                    <div className="container mx-auto px-4 py-16 sm:px-12 lg:px-16 xl:px-20">
                         {/* Hero Section */}
-                        <div className="mb-8 sm:mb-12 md:mb-16 lg:mb-20">
-                            <h1 className="mb-3 text-center text-2xl font-medium sm:mb-4 sm:text-3xl md:mb-6 md:text-4xl">Our Team</h1>
-                            <p className="text-muted-foreground mx-auto max-w-xl px-2 text-center text-sm sm:px-4 sm:text-base md:px-0">
+                        <div className="mx-auto max-w-4xl text-center mb-16">
+                            <h1 className="mb-4 text-4xl font-bold sm:text-5xl md:text-6xl">Our Team</h1>
+                            <p className="text-lg text-muted-foreground">
                                 Meet the dedicated individuals behind ProcuChain, working together to revolutionize government procurement.
                             </p>
                         </div>
-                        {/* Team Members Section */}{' '}
-                        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 md:gap-8">
+
+                        {/* Team Members Section */}
+                        <div className="grid gap-8 md:grid-cols-2">
                             {teamMembers.map((member, index) => (
-                                <Card key={index} className="bg-muted border-0">
-                                    <CardContent className="p-4 sm:p-6 md:p-8">
+                                <Card key={index} className="border">
+                                    <CardContent className="p-6">
                                         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6 md:gap-8">
-                                            <div className="bg-card h-20 w-20 flex-shrink-0 overflow-hidden rounded-full shadow-sm sm:h-24 sm:w-24 md:h-28 md:w-28">
+                                            <div className="bg-card h-20 w-20 shrink-0 overflow-hidden rounded-full shadow-sm sm:h-24 sm:w-24 md:h-28 md:w-28">
                                                 <img
                                                     src={member.image}
                                                     alt={member.name}
@@ -108,7 +109,7 @@ export default function Team() {
                                                 />
                                             </div>
                                             <div className="flex-1 text-center sm:text-left">
-                                                <h3 className="mb-1 text-base font-medium sm:mb-2 sm:text-lg md:text-xl">{member.name}</h3>{' '}
+                                                <h3 className="mb-2 text-xl font-semibold">{member.name}</h3>
                                                 <Badge className="bg-primary/10 text-primary mb-2 border-none text-xs sm:mb-3">{member.role}</Badge>
                                                 <p className="text-muted-foreground mb-3 text-xs sm:mb-4 sm:text-sm md:text-base">{member.bio}</p>
                                                 <div className="mb-3 flex flex-wrap gap-1.5 sm:mb-4 sm:gap-2">
@@ -118,7 +119,7 @@ export default function Team() {
                                                         </Badge>
                                                     ))}
                                                 </div>
-                                                <div className="border-border flex justify-center gap-3 border-t pt-3 sm:justify-start sm:pt-4">
+                                                <div className="flex justify-center gap-3 border-t pt-4 sm:justify-start">
                                                     {' '}
                                                     {member.github && (
                                                         <a
@@ -128,7 +129,7 @@ export default function Team() {
                                                             className="text-muted-foreground hover:text-primary transition-colors"
                                                             aria-label={`${member.name}'s Github Profile`}
                                                         >
-                                                            <Github className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                            <Github className="h-5 w-5" />
                                                         </a>
                                                     )}
                                                     {member.email && (
