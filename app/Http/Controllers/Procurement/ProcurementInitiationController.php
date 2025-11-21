@@ -60,9 +60,7 @@ class ProcurementInitiationController extends BaseController
 
     public function index(): Response
     {
-        return Inertia::render('bac-secretariat/procurement/procurement-initiation-list', [
-            'procurements' => $this->procurements->all(),
-        ]);
+        return Inertia::render('bac-secretariat/procurement-initiation');
     }
 
     public function show(?string $id = null): Response

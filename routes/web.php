@@ -163,8 +163,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('procurements.show');
 
         // Procurement Stage Upload Forms
-        Route::get('/procurement-initiation-list', [ProcurementInitiationController::class, 'index'])
-            ->name('procurement.initiation.index');
+        Route::get('/procurement-initiation', [ProcurementInitiationController::class, 'index'])
+            ->name('procurement.initiation');
         Route::get('/procurement-initiation/create', [ProcurementInitiationController::class, 'show'])
             ->name('procurement.initiation.create');
         Route::get('/procurement-initiation/{pr_number}', [ProcurementInitiationController::class, 'show'])
