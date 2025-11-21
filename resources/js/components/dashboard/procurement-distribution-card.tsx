@@ -101,11 +101,11 @@ export const ProcurementDistributionCard = ({
     }
 
     return (
-        <Card className={cn('py-0 shadow-sm', className)}>
-            <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
-                <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 sm:!py-0">
-                    <CardTitle>{title}</CardTitle>
-                    <CardDescription>{description}</CardDescription>
+        <Card className={cn('py-0 shadow-sm transition-shadow duration-300 hover:shadow-md', className)}>
+            <CardHeader className="flex flex-col items-stretch border-b p-0! sm:flex-row">
+                <div className="flex flex-1 flex-col justify-center gap-1 px-4 pt-4 pb-3 sm:px-6 sm:py-0!">
+                    <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">{description}</CardDescription>
                 </div>
                 <div className="flex">
                     {(['stage', 'status'] as DistributionKey[]).map((key) => {
@@ -116,19 +116,19 @@ export const ProcurementDistributionCard = ({
                             <button
                                 key={key}
                                 data-active={activeView === key}
-                                className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+                                className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-4 py-4 text-left transition-all duration-200 even:border-l hover:bg-muted/30 sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
                                 onClick={() => setActiveView(key)}
                                 type="button"
                             >
                                 <span className="text-muted-foreground text-xs capitalize">{key} Distribution</span>
-                                <span className="text-lg leading-none font-bold sm:text-3xl">{total.toLocaleString()}</span>
+                                <span className="text-lg font-bold leading-none sm:text-3xl">{total.toLocaleString()}</span>
                             </button>
                         );
                     })}
                 </div>
             </CardHeader>
             <CardContent className="px-2 sm:p-6">
-                <ChartContainer config={DEFAULT_CHART_CONFIG} className="aspect-auto h-[300px] w-full">
+                <ChartContainer config={DEFAULT_CHART_CONFIG} className="aspect-auto h-[200px] w-full sm:h-[250px] md:h-[300px]">
                     <BarChart
                         accessibilityLayer
                         data={Object.entries(activeDistribution).map(([key, count]) => ({

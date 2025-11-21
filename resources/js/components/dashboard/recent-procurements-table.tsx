@@ -58,20 +58,22 @@ export const RecentProcurementsTable = ({
     actionTooltip = DEFAULT_ACTION_TOOLTIP,
     errorState,
 }: RecentProcurementsTableProps) => {
-    const hasProcurements = procurements.length > 0;
+    // Ensure procurements is an array
+    const safeProcurements = Array.isArray(procurements) ? procurements : [];
+    const hasProcurements = safeProcurements.length > 0;
 
     return (
-        <Card className={cn(className)}>
+        <Card className={cn('shadow-sm transition-shadow duration-300 hover:shadow-md', className)}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="flex items-center text-base font-semibold md:text-lg">
-                    <Icon className="text-primary mr-2 h-4 w-4 md:h-5 md:w-5" />
+                    <Icon className="text-primary mr-2 h-4 w-4 transition-transform duration-200 group-hover:scale-110 md:h-5 md:w-5" />
                     {title}
-                    {hasProcurements ? ` (${procurements.length})` : ''}
+                    {hasProcurements ? ` (${safeProcurements.length})` : ''}
                 </CardTitle>
                 {hasProcurements && viewAllHref ? (
                     <Link
                         href={viewAllHref}
-                        className="text-primary ml-2 flex shrink-0 items-center text-xs hover:underline md:text-sm"
+                        className="text-primary ml-2 flex shrink-0 items-center text-xs transition-all duration-200 hover:translate-x-1 hover:underline md:text-sm"
                         prefetch="hover"
                         cacheFor="1m"
                     >
@@ -97,33 +99,34 @@ export const RecentProcurementsTable = ({
                         <EmptyDescription>{emptyStateDescription}</EmptyDescription>
                     </Empty>
                 ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>ID</TableHead>
-                                <TableHead>Title</TableHead>
-                                <TableHead>Stage</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="text-xs sm:text-sm whitespace-nowrap">ID</TableHead>
+                                    <TableHead className="text-xs sm:text-sm whitespace-nowrap">Title</TableHead>
+                                    <TableHead className="text-xs sm:text-sm whitespace-nowrap">Stage</TableHead>
+                                    <TableHead className="text-xs sm:text-sm whitespace-nowrap">Status</TableHead>
+                                    <TableHead className="text-xs sm:text-sm text-right whitespace-nowrap">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
                         <TableBody>
-                            {procurements.map((procurement) => (
-                                <TableRow key={procurement.id}>
+                            {safeProcurements.map((procurement) => (
+                                <TableRow key={procurement.id} className="transition-colors duration-200 hover:bg-muted/50">
                                     <TableCell className="font-medium">{procurement.id}</TableCell>
                                     <TableCell className="max-w-[140px] truncate" title={procurement.title}>
                                         {procurement.title}
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={stageBadgeVariant}>{procurement.stage}</Badge>
+                                        <Badge variant={stageBadgeVariant} className="transition-all duration-200 hover:shadow-sm">{procurement.stage}</Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={statusBadgeVariant}>{procurement.status}</Badge>
+                                        <Badge variant={statusBadgeVariant} className="transition-all duration-200 hover:shadow-sm">{procurement.status}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <Button variant="ghost" size="sm" asChild className="h-8 px-2">
+                                                <Button variant="ghost" size="sm" asChild className="h-8 px-2 transition-all duration-200 hover:scale-110">
                                                     <Link href={getViewProcurementHref(procurement)} prefetch="hover" cacheFor="1m">
                                                         <EyeIcon className="h-4 w-4" />
                                                     </Link>
@@ -138,6 +141,7 @@ export const RecentProcurementsTable = ({
                             ))}
                         </TableBody>
                     </Table>
+                    </div>
                 )}
             </CardContent>
         </Card>

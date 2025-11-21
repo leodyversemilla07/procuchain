@@ -60,7 +60,7 @@ final class EventData
             category: $data['category'],
             severity: $data['severity'],
             details: $data['details'],
-            documentCount: (int) $data['document_count'],
+            documentCount: (int) ($data['document_count'] ?? 0),
             userAddress: $data['user_address'],
             timestamp: Carbon::parse($data['timestamp']),
             metadata: $data['metadata'] ?? null,

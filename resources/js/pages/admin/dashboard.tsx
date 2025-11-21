@@ -7,13 +7,14 @@ import { StatsGrid } from '@/components/stats-grid';
 import AppLayout from '@/layouts/app-layout';
 import { Stage, Status, type BreadcrumbItem, type SharedData } from '@/types';
 import { PageProps } from '@inertiajs/core';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, router, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText, Shield, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Spinner } from '@/components/ui/spinner';
 import { show as procurementsShow } from '@/routes/admin/procurements';
 import { index as procurementsListIndex } from '@/routes/admin/procurements';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
@@ -200,16 +201,38 @@ export default function AdminDashboard() {
         [recentActivities],
     );
 
-    const recentProcurementItems = useMemo(
-        () =>
-            recentProcurements.map((procurement) => ({
-                id: procurement.id,
+    const recentProcurementItems = useMemo(() => {
+        if (!Array.isArray(recentProcurements)) {
+            return [];
+        }
+
+        const seen = new Set<string>();
+        return recentProcurements
+            .filter((procurement) => {
+                // Filter out null/undefined items
+                if (!procurement) {
+                    console.warn('Null/undefined procurement detected');
+                    return false;
+                }
+                // Filter out procurements without IDs first
+                if (!procurement.id) {
+                    console.warn('Procurement without ID detected:', procurement);
+                    return false;
+                }
+                if (seen.has(procurement.id)) {
+                    return false;
+                }
+                seen.add(procurement.id);
+                return true;
+            })
+            .map((procurement) => ({
+                id: procurement.id!,
                 title: procurement.title,
                 stage: procurement.stage,
                 status: procurement.status,
-            })),
-        [recentProcurements],
-    );
+            }))
+            .filter(Boolean); // Remove any falsy values from the final array
+    }, [recentProcurements]);
 
     // State for interactive login chart
     const [activeLoginChart, setActiveLoginChart] = useState<'logins' | 'success'>('logins');
@@ -258,48 +281,101 @@ export default function AdminDashboard() {
 
                 <StatsGrid items={statsItems} />
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <ProcurementDistributionCard
-                        className="lg:col-span-2"
-                        data={procurementDistribution}
-                        title="Procurement Distribution"
-                        description="Distribution of procurements across stages and statuses"
-                        errorState={buildErrorState('Unable to load procurement distribution')}
-                    />
-                    <StageDistributionCard
-                        className="lg:col-span-1"
-                        stageDistribution={stageDistribution}
-                        errorState={buildErrorState('Unable to load stage distribution')}
-                    />
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-5">
+                    <Deferred
+                        data="procurementDistribution"
+                        fallback={
+                            <Card className="xl:col-span-3 shadow-sm">
+                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                                    <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <ProcurementDistributionCard
+                            className="xl:col-span-3"
+                            data={procurementDistribution}
+                            title="Procurement Distribution"
+                            description="Distribution of procurements across stages and statuses"
+                            errorState={buildErrorState('Unable to load procurement distribution')}
+                        />
+                    </Deferred>
+                    <Deferred
+                        data="procurementDistribution"
+                        fallback={
+                            <Card className="xl:col-span-2 shadow-sm">
+                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                                    <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <StageDistributionCard
+                            className="xl:col-span-2"
+                            stageDistribution={stageDistribution}
+                            errorState={buildErrorState('Unable to load stage distribution')}
+                        />
+                    </Deferred>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3">
-                    <RecentActivitiesList
-                        className="md:col-span-1"
-                        title="System Activities"
-                        icon={Clock}
-                        activities={recentActivityItems}
-                        getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
-                        viewAllHref={recentActivityItems.length > 0 ? procurementsListIndex.url() : undefined}
-                        errorState={buildErrorState('Unable to load system activities')}
-                    />
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 xl:grid-cols-1">
+                    <Deferred
+                        data="recentActivities"
+                        fallback={
+                            <Card className="shadow-sm">
+                                <CardContent className="flex h-[200px] sm:h-[250px] items-center justify-center">
+                                    <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <RecentActivitiesList
+                            title="System Activities"
+                            icon={Clock}
+                            activities={recentActivityItems}
+                            getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
+                            viewAllHref={recentActivityItems.length > 0 ? procurementsListIndex.url() : undefined}
+                            errorState={buildErrorState('Unable to load system activities')}
+                        />
+                    </Deferred>
 
-                    <RecentProcurementsTable
-                        className="md:col-span-2"
-                        procurements={recentProcurementItems}
-                        getViewProcurementHref={(procurement) => procurementsShow.url({ id: procurement.id })}
-                        viewAllHref={recentProcurementItems.length > 0 ? procurementsListIndex.url() : undefined}
-                        errorState={buildErrorState('Unable to load recent procurements')}
-                    />
+                    <Deferred
+                        data="recentProcurements"
+                        fallback={
+                            <Card className="lg:col-span-2 xl:col-span-1 shadow-sm">
+                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                                    <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <RecentProcurementsTable
+                            className="lg:col-span-2 xl:col-span-1"
+                            procurements={recentProcurementItems}
+                            getViewProcurementHref={(procurement) => {
+                                if (!procurement) {
+                                    console.error('Undefined procurement in getViewProcurementHref');
+                                    return '#';
+                                }
+                                if (!procurement.id) {
+                                    console.error('Procurement without ID:', procurement);
+                                    return '#';
+                                }
+                                return procurementsShow.url({ pr_number: procurement.id });
+                            }}
+                            viewAllHref={recentProcurementItems.length > 0 ? procurementsListIndex.url() : undefined}
+                            errorState={buildErrorState('Unable to load recent procurements')}
+                        />
+                    </Deferred>
                 </div>
 
                 {/* Login Activity Trend */}
                 {userActivityAnalytics && userActivityAnalytics.login_patterns?.daily_login_trend && (
-                    <Card className="py-4 sm:py-0">
+                    <Card className="py-3 sm:py-4 md:py-0">
                         <CardHeader className="flex flex-col items-stretch border-b p-0! sm:flex-row">
-                            <div className="flex flex-1 flex-col justify-center gap-1 px-4 pb-3 sm:px-6 sm:pb-0">
-                                <CardTitle className="text-lg sm:text-xl">Login Activity Trend</CardTitle>
-                                <CardDescription className="text-sm">Daily login activity over selected time period</CardDescription>
+                            <div className="flex flex-1 flex-col justify-center gap-1 px-3 pb-2 sm:px-4 sm:pb-3 md:px-6 md:pb-0">
+                                <CardTitle className="text-base sm:text-lg md:text-xl">Login Activity Trend</CardTitle>
+                                <CardDescription className="text-xs sm:text-sm">Daily login activity over selected time period</CardDescription>
                             </div>
                             <div className="flex">
                                 {(['logins', 'success'] as const).map((key) => {
@@ -307,11 +383,11 @@ export default function AdminDashboard() {
                                         <button
                                             key={key}
                                             data-active={activeLoginChart === key}
-                                            className="data-[active=true]:bg-muted/50 flex flex-1 flex-col justify-center gap-1 border-t px-4 py-3 text-left even:border-l sm:border-t-0 sm:border-l sm:px-6 sm:py-4 md:px-8 md:py-6"
+                                            className="data-[active=true]:bg-muted/50 flex flex-1 flex-col justify-center gap-0.5 sm:gap-1 border-t px-3 py-2 text-left even:border-l sm:border-t-0 sm:border-l sm:px-4 sm:py-3 md:px-6 md:py-4 lg:px-8 lg:py-6"
                                             onClick={() => setActiveLoginChart(key)}
                                         >
-                                            <span className="text-muted-foreground text-xs">{interactiveLoginChartConfig[key].label}</span>
-                                            <span className="text-base leading-none font-bold sm:text-lg md:text-2xl lg:text-3xl">
+                                            <span className="text-muted-foreground text-[10px] sm:text-xs">{interactiveLoginChartConfig[key].label}</span>
+                                            <span className="text-sm leading-none font-bold sm:text-base md:text-lg lg:text-2xl xl:text-3xl">
                                                 {loginTotals[key].toLocaleString()}
                                             </span>
                                         </button>
@@ -319,8 +395,8 @@ export default function AdminDashboard() {
                                 })}
                             </div>
                         </CardHeader>
-                        <CardContent className="px-2 sm:p-6">
-                            <ChartContainer config={interactiveLoginChartConfig} className="aspect-auto h-[200px] w-full sm:h-[250px]">
+                        <CardContent className="px-2 py-3 sm:p-4 md:p-6">
+                            <ChartContainer config={interactiveLoginChartConfig} className="aspect-auto h-[180px] w-full sm:h-[200px] md:h-[250px]">
                                 <LineChart
                                     accessibilityLayer
                                     data={loginChartData}
@@ -377,31 +453,31 @@ export default function AdminDashboard() {
                 {/* User Activity Section */}
                 <div className="space-y-4 sm:space-y-6">
                     <div className="mb-2 flex items-center space-x-2 sm:mb-4">
-                        <h2 className="text-lg font-semibold sm:text-xl">User Activity Analytics</h2>
+                        <h2 className="text-base font-semibold sm:text-lg md:text-xl">User Activity Analytics</h2>
                     </div>
 
                     {userActivityAnalytics && (
-                        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
                             <Card>
-                                <CardHeader className="pb-3 sm:pb-4">
-                                    <CardTitle className="text-base sm:text-lg">Login Statistics</CardTitle>
+                                <CardHeader className="pb-2 sm:pb-3 md:pb-4">
+                                    <CardTitle className="text-sm sm:text-base md:text-lg">Login Statistics</CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-3 sm:space-y-4">
+                                <CardContent className="space-y-2 sm:space-y-3 md:space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm sm:text-base">Total Logins</span>
-                                        <Badge variant="secondary" className="text-xs sm:text-sm">
+                                        <span className="text-xs sm:text-sm md:text-base">Total Logins</span>
+                                        <Badge variant="secondary" className="text-[10px] sm:text-xs md:text-sm">
                                             {formatValue(userActivityAnalytics.login_patterns?.total_logins || 0)}
                                         </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm sm:text-base">Success Rate</span>
-                                        <Badge variant="default" className="text-xs sm:text-sm">
+                                        <span className="text-xs sm:text-sm md:text-base">Success Rate</span>
+                                        <Badge variant="default" className="text-[10px] sm:text-xs md:text-sm">
                                             {(userActivityAnalytics.login_patterns?.success_rate || 0).toFixed(1)}%
                                         </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm sm:text-base">Failed Logins</span>
-                                        <Badge variant="destructive" className="text-xs sm:text-sm">
+                                        <span className="text-xs sm:text-sm md:text-base">Failed Logins</span>
+                                        <Badge variant="destructive" className="text-[10px] sm:text-xs md:text-sm">
                                             {formatValue(userActivityAnalytics.login_patterns?.failed_logins || 0)}
                                         </Badge>
                                     </div>
@@ -409,29 +485,29 @@ export default function AdminDashboard() {
                             </Card>
 
                             <Card>
-                                <CardHeader className="pb-3 sm:pb-4">
-                                    <CardTitle className="text-base sm:text-lg">Security Metrics</CardTitle>
+                                <CardHeader className="pb-2 sm:pb-3 md:pb-4">
+                                    <CardTitle className="text-sm sm:text-base md:text-lg">Security Metrics</CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-3 sm:space-y-4">
+                                <CardContent className="space-y-2 sm:space-y-3 md:space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm sm:text-base">Security Score</span>
-                                        <Badge variant="default" className="text-xs sm:text-sm">
+                                        <span className="text-xs sm:text-sm md:text-base">Security Score</span>
+                                        <Badge variant="default" className="text-[10px] sm:text-xs md:text-sm">
                                             {(userActivityAnalytics.security_metrics?.security_score || 0).toFixed(1)}/100
                                         </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm sm:text-base">Failed Login Rate</span>
-                                        <Badge variant="secondary" className="text-xs sm:text-sm">
+                                        <span className="text-xs sm:text-sm md:text-base">Failed Login Rate</span>
+                                        <Badge variant="secondary" className="text-[10px] sm:text-xs md:text-sm">
                                             {(userActivityAnalytics.security_metrics?.failed_login_rate || 0).toFixed(1)}%
                                         </Badge>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="md:col-span-2 lg:col-span-1">
-                                <CardHeader className="pb-3 sm:pb-4">
-                                    <CardTitle className="text-base sm:text-lg">Role Activity</CardTitle>
-                                    <CardDescription className="text-xs sm:text-sm">Login activity by user role</CardDescription>
+                            <Card className="lg:col-span-1">
+                                <CardHeader className="pb-2 sm:pb-3 md:pb-4">
+                                    <CardTitle className="text-sm sm:text-base md:text-lg">Role Activity</CardTitle>
+                                    <CardDescription className="text-[10px] sm:text-xs md:text-sm">Login activity by user role</CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <ChartContainer
@@ -441,7 +517,7 @@ export default function AdminDashboard() {
                                                 color: 'var(--chart-1)',
                                             },
                                         }}
-                                        className="h-[180px] w-full sm:h-[200px]"
+                                        className="h-[150px] w-full sm:h-[180px] md:h-[200px]"
                                     >
                                         <BarChart
                                             accessibilityLayer
@@ -486,9 +562,9 @@ export default function AdminDashboard() {
                     {/* Daily Activity Chart */}
                     {userActivityAnalytics?.daily_activity && userActivityAnalytics.daily_activity.length > 0 && (
                         <Card>
-                            <CardHeader className="pb-3 sm:pb-4">
-                                <CardTitle className="text-lg sm:text-xl">Daily Active Users</CardTitle>
-                                <CardDescription className="text-sm">User activity over the selected time period</CardDescription>
+                            <CardHeader className="pb-2 sm:pb-3 md:pb-4">
+                                <CardTitle className="text-base sm:text-lg md:text-xl">Daily Active Users</CardTitle>
+                                <CardDescription className="text-xs sm:text-sm">User activity over the selected time period</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <ChartContainer
@@ -498,7 +574,7 @@ export default function AdminDashboard() {
                                             color: 'var(--chart-2)',
                                         },
                                     }}
-                                    className="h-[200px] w-full sm:h-[250px]"
+                                    className="h-[180px] w-full sm:h-[200px] md:h-[250px]"
                                 >
                                     <AreaChart
                                         accessibilityLayer

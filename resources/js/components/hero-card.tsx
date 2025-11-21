@@ -24,18 +24,18 @@ export const HeroCard = ({
 }: HeroCardProps) => {
     return (
         <Card className={cn(className)}>
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className={cn('rounded-lg p-2', iconWrapperClassName)}>
-                            <Icon className={cn('h-6 w-6', iconClassName)} />
+                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+                        <div className={cn('rounded-lg p-1.5 sm:p-2', iconWrapperClassName)}>
+                            <Icon className={cn('h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6', iconClassName)} />
                         </div>
                         <div>
-                            <h1 className="text-foreground text-2xl font-bold">{title}</h1>
-                            <p className="text-muted-foreground mt-1 text-sm">{description}</p>
+                            <h1 className="text-foreground text-lg sm:text-xl md:text-2xl font-bold">{title}</h1>
+                            <p className="text-muted-foreground mt-0.5 sm:mt-1 text-xs sm:text-sm">{description}</p>
                         </div>
                     </div>
-                    {actions ? <div className="flex items-center gap-4">{actions}</div> : null}
+                    {actions ? <div className="flex items-center gap-2 sm:gap-3 md:gap-4">{actions}</div> : null}
                 </div>
             </CardContent>
         </Card>

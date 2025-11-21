@@ -74,18 +74,20 @@ export const RecentActivitiesList = ({
     actionIconMap = DEFAULT_ACTION_ICON_MAP,
     errorState,
 }: RecentActivitiesListProps) => {
-    const hasActivities = activities.length > 0;
+    // Ensure activities is an array
+    const safeActivities = Array.isArray(activities) ? activities : [];
+    const hasActivities = safeActivities.length > 0;
 
     return (
-        <Card className={cn(className)}>
+        <Card className={cn('shadow-sm transition-shadow duration-300 hover:shadow-md', className)}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="flex items-center text-base font-semibold md:text-lg">
-                    <Icon className="text-primary mr-2 h-4 w-4 md:h-5 md:w-5" />
+                    <Icon className="text-primary mr-2 h-4 w-4 transition-transform duration-200 group-hover:scale-110 md:h-5 md:w-5" />
                     {title}
-                    {hasActivities ? <Fragment> ({activities.length})</Fragment> : null}
+                    {hasActivities ? <Fragment> ({safeActivities.length})</Fragment> : null}
                 </CardTitle>
                 {hasActivities && viewAllHref ? (
-                    <Link href={viewAllHref} className="text-primary ml-2 flex shrink-0 items-center text-xs hover:underline md:text-sm">
+                    <Link href={viewAllHref} className="text-primary ml-2 flex shrink-0 items-center text-xs transition-all duration-200 hover:translate-x-1 hover:underline md:text-sm">
                         {viewAllLabel} <ArrowRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
                     </Link>
                 ) : null}
@@ -108,16 +110,19 @@ export const RecentActivitiesList = ({
                     </Empty>
                 ) : (
                     <div className="space-y-3">
-                        {activities.map((activity, index) => {
+                        {safeActivities.map((activity, index) => {
                             const ActionIcon = resolveActionIcon(activity.action, actionIconMap);
-                            const isLast = index === activities.length - 1;
+                            const isLast = index === safeActivities.length - 1;
 
                             return (
-                                <div key={activity.id} className={!isLast ? 'border-b pb-3' : undefined}>
+                                <div key={`${activity.id}-${index}`} className={cn(
+                                    'group transition-all duration-200 hover:translate-x-1',
+                                    !isLast && 'border-b pb-3'
+                                )}>
                                     <div className="flex items-center justify-between">
                                         <Link
                                             href={getActivityHref(activity)}
-                                            className="text-primary max-w-[70%] truncate text-sm font-medium hover:underline"
+                                            className="text-primary max-w-[70%] truncate text-sm font-medium transition-colors duration-200 hover:underline group-hover:text-primary/80"
                                         >
                                             {activity.title || `Procurement #${activity.id}`}
                                         </Link>
@@ -125,7 +130,7 @@ export const RecentActivitiesList = ({
                                     </div>
                                     <div className="mt-1.5 flex items-center justify-between">
                                         <div className="flex items-center">
-                                            <Badge variant="secondary" className="mr-2 flex items-center gap-1 text-xs">
+                                            <Badge variant="secondary" className="mr-2 flex items-center gap-1 text-xs transition-all duration-200 group-hover:shadow-sm">
                                                 <ActionIcon className="h-3.5 w-3.5" />
                                                 <span>{activity.action}</span>
                                             </Badge>

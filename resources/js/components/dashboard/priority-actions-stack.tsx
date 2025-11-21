@@ -38,7 +38,10 @@ export const PriorityActionsStack = ({
         return <ErrorState {...errorState} />;
     }
 
-    if (!actions || actions.length === 0) {
+    // Ensure actions is an array
+    const safeActions = Array.isArray(actions) ? actions : [];
+
+    if (safeActions.length === 0) {
         const Icon = emptyStateIcon;
         return (
             <Empty>
@@ -54,13 +57,16 @@ export const PriorityActionsStack = ({
     }
 
     return (
-        <div className="space-y-4">
-            {actions.map((action) => (
-                <Card key={`${action.id}-${action.action}`} className="border-l-primary border-l-4 shadow-sm">
-                    <CardContent className="p-4">
-                        <h3 className="font-medium">{action.action}</h3>
-                        <p className="text-muted-foreground my-2 text-sm">For: {action.id}</p>
-                        <Button variant="secondary" size="sm" asChild className="mt-2 w-full">
+        <div className="space-y-3 sm:space-y-4">
+            {safeActions.map((action) => (
+                <Card 
+                    key={`${action.id}-${action.action}`} 
+                    className="border-l-primary group border-l-4 shadow-sm transition-all duration-300 hover:shadow-md"
+                >
+                    <CardContent className="p-3 sm:p-4">
+                        <h3 className="font-medium text-sm sm:text-base transition-colors duration-200 group-hover:text-primary truncate">{action.action}</h3>
+                        <p className="text-muted-foreground my-1.5 sm:my-2 text-xs sm:text-sm truncate">For: {action.id}</p>
+                        <Button variant="secondary" size="sm" asChild className="mt-2 w-full transition-all duration-200 hover:scale-[1.02]">
                             <Link href={action.route}>{actionLabel}</Link>
                         </Button>
                     </CardContent>

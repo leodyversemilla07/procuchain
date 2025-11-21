@@ -18,4 +18,14 @@ class HopeController extends BaseDashboardController
     {
         return 'hope/dashboard';
     }
+
+    protected function getAdditionalDashboardData($procurementsByKey, string $roleName): array
+    {
+        return [];
+    }
+
+    protected function getEmptyAdditionalData(): array
+    {
+        return [];
+    }
 }
