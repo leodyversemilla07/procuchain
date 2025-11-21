@@ -72,12 +72,13 @@ class DashboardService
                         'user_address' => $data['user_address'] ?? '',
                         'user' => $this->getUserName($data['user_address'] ?? ''),
                         'timestamp' => $data['timestamp'] ?? '',
+                        'blockchain_time' => $item['time'] ?? 0,
                     ];
                 })
                 ->filter()
                 ->groupBy('id')
                 ->map(function ($group) {
-                    return $group->sortByDesc('timestamp')->first();
+                    return $group->sortByDesc('blockchain_time')->first();
                 });
         } catch (\Exception $e) {
             Log::error('Error processing procurement data', ['error' => $e->getMessage()]);
@@ -97,11 +98,14 @@ class DashboardService
             ->take(config('dashboard.display_limits.recent_procurements'))
             ->values()
             ->map(function ($item) {
+                $stageEnum = \App\Enums\StageEnums::tryFrom($item['stage']);
+                $statusEnum = \App\Enums\StatusEnums::tryFrom($item['status']);
+
                 return [
                     'id' => $item['id'],
                     'title' => $item['title'],
-                    'stage' => $item['stage'],
-                    'status' => $item['status'],
+                    'stage' => $stageEnum ? $stageEnum->getDisplayName() : $item['stage'],
+                    'status' => $statusEnum ? $statusEnum->getDisplayName() : $item['status'],
                 ];
             })
             ->toArray();
@@ -118,11 +122,14 @@ class DashboardService
         return $procurementsByKey->sortByDesc('timestamp')
             ->values()
             ->map(function ($item) {
+                $stageEnum = \App\Enums\StageEnums::tryFrom($item['stage']);
+                $statusEnum = \App\Enums\StatusEnums::tryFrom($item['status']);
+
                 return [
                     'id' => $item['id'],
                     'title' => $item['title'],
-                    'stage' => $item['stage'],
-                    'status' => $item['status'],
+                    'stage' => $stageEnum ? $stageEnum->getDisplayName() : $item['stage'],
+                    'status' => $statusEnum ? $statusEnum->getDisplayName() : $item['status'],
                 ];
             })
             ->toArray();
@@ -153,7 +160,7 @@ class DashboardService
                     );
 
                     return [
-                        'id' => $event->pr_number,
+                        'id' => $event->prNumber,
                         'title' => $event->procurementTitle,
                         'action' => $actionLabel,
                         'details' => $event->details,
@@ -161,7 +168,7 @@ class DashboardService
                         'stage' => $event->stage,
                         'date' => $event->timestamp,
                         'user' => $this->getUserName($event->userAddress),
-                        'timestamp' => strtotime($event->timestamp),
+                        'timestamp' => $event->timestamp->timestamp,
                     ];
                 })
                 ->sortByDesc('timestamp')

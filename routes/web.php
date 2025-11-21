@@ -16,7 +16,6 @@ use App\Http\Controllers\Procurement\PreProcurementController;
 use App\Http\Controllers\Procurement\ProcurementController;
 use App\Http\Controllers\Procurement\ProcurementInitiationController;
 use App\Http\Controllers\ProcurementListController;
-use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -35,10 +34,6 @@ Route::get('/', fn () => Inertia::render('home'))->name('home');
 Route::inertia('/about', 'about')->name('about');
 Route::inertia('/team', 'team')->name('team');
 Route::inertia('/contact', 'contact')->name('contact');
-
-// Public Search
-Route::get('/search', [SearchController::class, 'index'])->name('search');
-Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
 
 // Public Document Downloads
 Route::get('/privacy.pdf', fn () => response()->file(public_path('docs/privacy.pdf')))->name('privacy.policy');

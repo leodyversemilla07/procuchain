@@ -4,12 +4,14 @@ import { RecentProcurementsTable } from '@/components/dashboard/recent-procureme
 import { StageDistributionCard } from '@/components/dashboard/stage-distribution-card';
 import { HeroCard } from '@/components/hero-card';
 import { StatsGrid } from '@/components/stats-grid';
+import { Card, CardContent } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import { show as procurementsShow } from '@/routes/bac-chairman/procurements';
 import { index as procurementsListIndex } from '@/routes/bac-chairman/procurements';
 import type { BreadcrumbItem, SharedData } from '@/types';
 import { Stage, Status } from '@/types';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';
 import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
@@ -111,16 +113,36 @@ export default function BACChairmanDashboard() {
         [recentActivities],
     );
 
-    const recentProcurementItems = useMemo(
-        () =>
-            recentProcurements.map((procurement) => ({
-                id: procurement.id,
+    const recentProcurementItems = useMemo(() => {
+        if (!Array.isArray(recentProcurements)) {
+            return [];
+        }
+
+        const seen = new Set<string>();
+        return recentProcurements
+            .filter((procurement) => {
+                // Filter out null/undefined items
+                if (!procurement) {
+                    return false;
+                }
+                // Filter out procurements without IDs first
+                if (!procurement.id) {
+                    return false;
+                }
+                if (seen.has(procurement.id)) {
+                    return false;
+                }
+                seen.add(procurement.id);
+                return true;
+            })
+            .map((procurement) => ({
+                id: procurement.id!,
                 title: procurement.title,
                 stage: procurement.stage,
                 status: procurement.status,
-            })),
-        [recentProcurements],
-    );
+            }))
+            .filter(Boolean); // Remove any falsy values
+    }, [recentProcurements]);
 
     const heroActions = (
         <div className="flex items-center gap-4">
@@ -137,48 +159,95 @@ export default function BACChairmanDashboard() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Bids and Awards Committee Chairman Dashboard" />
 
-            <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="flex h-full flex-1 flex-col space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6 lg:p-8">
                 <HeroCard
                     icon={FileText}
-                    title="Bids and Awards Committee Chairman Dashboard"
+                    title="BAC Chairman Dashboard"
                     description="Overview of procurement activities and committee tasks"
                     actions={heroActions}
                 />
 
                 <StatsGrid items={statsItems} />
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-                    <ProcurementDistributionCard
-                        className="xl:col-span-3"
-                        data={procurementDistribution}
-                        title="Procurement Distribution"
-                        description="Distribution of procurements across stages and statuses"
-                        errorState={buildErrorState('Unable to load procurement distribution')}
-                    />
-                    <StageDistributionCard
-                        className="xl:col-span-2"
-                        stageDistribution={stageDistribution}
-                        errorState={buildErrorState('Unable to load stage distribution')}
-                    />
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-5">
+                    <Deferred
+                        data="procurementDistribution"
+                        fallback={
+                            <Card className="xl:col-span-3 shadow-sm">
+                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                                    <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <ProcurementDistributionCard
+                            className="xl:col-span-3"
+                            data={procurementDistribution}
+                            title="Procurement Distribution"
+                            description="Distribution of procurements across stages and statuses"
+                            errorState={buildErrorState('Unable to load procurement distribution')}
+                        />
+                    </Deferred>
+                    <Deferred
+                        data="procurementDistribution"
+                        fallback={
+                            <Card className="xl:col-span-2 shadow-sm">
+                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                                    <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <StageDistributionCard
+                            className="xl:col-span-2"
+                            stageDistribution={stageDistribution}
+                            errorState={buildErrorState('Unable to load stage distribution')}
+                        />
+                    </Deferred>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <RecentActivitiesList
-                        className="lg:col-span-2"
-                        title="Recent Activities"
-                        icon={Clock}
-                        activities={recentActivityItems}
-                        getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
-                        viewAllHref={recentActivityItems.length > 0 ? procurementsListIndex.url() : undefined}
-                        errorState={buildErrorState('Unable to load recent activities')}
-                    />
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 xl:grid-cols-1">
+                    <Deferred
+                        data="recentActivities"
+                        fallback={
+                            <Card className="shadow-sm">
+                                <CardContent className="flex h-[200px] sm:h-[250px] items-center justify-center">
+                                    <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <RecentActivitiesList
+                            title="Recent Activities"
+                            icon={Clock}
+                            activities={recentActivityItems}
+                            getActivityHref={(activity) => `/bac-secretariat/procurements-list/${activity.id}`}
+                            viewAllHref={recentActivityItems.length > 0 ? procurementsListIndex.url() : undefined}
+                            errorState={buildErrorState('Unable to load recent activities')}
+                        />
+                    </Deferred>
 
-                    <RecentProcurementsTable
-                        procurements={recentProcurementItems}
-                        getViewProcurementHref={(procurement) => procurementsShow.url({ id: procurement.id })}
-                        viewAllHref={recentProcurementItems.length > 0 ? procurementsListIndex.url() : undefined}
-                        errorState={buildErrorState('Unable to load recent procurements')}
-                    />
+                    <Deferred
+                        data="recentProcurements"
+                        fallback={
+                            <Card className="lg:col-span-2 xl:col-span-1 shadow-sm">
+                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                                    <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <RecentProcurementsTable
+                            className="lg:col-span-2 xl:col-span-1"
+                            procurements={recentProcurementItems}
+                            getViewProcurementHref={(procurement) => {
+                                if (!procurement?.id) return '#';
+                                return procurementsShow.url({ pr_number: procurement.id });
+                            }}
+                            viewAllHref={recentProcurementItems.length > 0 ? procurementsListIndex.url() : undefined}
+                            errorState={buildErrorState('Unable to load recent procurements')}
+                        />
+                    </Deferred>
                 </div>
             </div>
         </AppLayout>

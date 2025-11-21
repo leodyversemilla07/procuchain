@@ -105,7 +105,7 @@ abstract class BaseDashboardController extends Controller
             now()->addMinutes(config('dashboard.cache_ttl.procurements')),
             function () use ($roleLabel) {
                 Log::info("Cache miss: Recalculating procurementsByKey for {$roleLabel} Dashboard");
-                $states = $this->multichainService->listStreamItems(
+                $states = $this->multichain->liststreamitems(
                     StreamEnums::STATUS->value,
                     true,
                     config('dashboard.stream_limits.status_items'),

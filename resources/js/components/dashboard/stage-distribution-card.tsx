@@ -113,13 +113,13 @@ export const StageDistributionCard = ({
     }
 
     return (
-        <Card className={cn('flex flex-col shadow-sm', className)}>
+        <Card className={cn('flex flex-col shadow-sm transition-shadow duration-300 hover:shadow-md', className)}>
             <CardHeader className="items-center pb-0">
-                <CardTitle>{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
+                <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">{description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-0">
-                <ChartContainer config={stageChartConfig} className="mx-auto aspect-square">
+                <ChartContainer config={stageChartConfig} className="mx-auto aspect-square max-h-[200px] sm:max-h-[250px] md:max-h-[300px]">
                     <PieChart>
                         <ChartTooltip
                             content={({ active, payload }) => {

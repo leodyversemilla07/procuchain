@@ -85,8 +85,8 @@ class ProcurementStageTransitionService
     private function getInitiationAction(): array
     {
         return [
-            'stage' => StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
-            'status' => StatusEnums::PROCUREMENT_SUBMITTED->getDisplayName(),
+            'stage' => StageEnums::PROCUREMENT_INITIATION->value,
+            'status' => StatusEnums::PROCUREMENT_SUBMITTED->value,
             'action' => 'Continue Procurement Processing',
             'routeTemplate' => '/bac-secretariat/procurements-list',
         ];
@@ -95,8 +95,8 @@ class ProcurementStageTransitionService
     private function getPreProcurementAction(): array
     {
         return [
-            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName(),
-            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->getDisplayName(),
+            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->value,
             'action' => 'Upload Pre-Procurement Conference Documents',
             'routeTemplate' => '/bac-secretariat/pre-procurement-conference-upload/%s',
         ];
@@ -105,10 +105,10 @@ class ProcurementStageTransitionService
     private function getBiddingDocumentsAction(): array
     {
         return [
-            'stage' => StageEnums::BIDDING_DOCUMENTS->getDisplayName(),
+            'stage' => StageEnums::BIDDING_DOCUMENTS->value,
             'status' => [
-                StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED->getDisplayName(),
-                StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED->getDisplayName(),
+                StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED->value,
+                StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED->value,
             ],
             'action' => 'Upload Bidding Documents',
             'routeTemplate' => '/bac-secretariat/bidding-documents-upload/%s',
@@ -118,8 +118,8 @@ class ProcurementStageTransitionService
     private function getPreBidConferenceAction(): array
     {
         return [
-            'stage' => StageEnums::PRE_BID_CONFERENCE->getDisplayName(),
-            'status' => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED->getDisplayName(),
+            'stage' => StageEnums::PRE_BID_CONFERENCE->value,
+            'status' => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED->value,
             'action' => 'Upload Pre-Bid Conference Documents',
             'routeTemplate' => '/bac-secretariat/pre-bid-conference-upload/%s',
         ];
@@ -128,8 +128,8 @@ class ProcurementStageTransitionService
     private function getSupplementalBidBulletinAction(): array
     {
         return [
-            'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->getDisplayName(),
-            'status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED->getDisplayName(),
+            'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
+            'status' => StatusEnums::PRE_BID_CONFERENCE_COMPLETED->value,
             'action' => 'Upload Supplemental Bid Bulletin Documents',
             'routeTemplate' => '/bac-secretariat/supplemental-bid-bulletin-upload/%s',
         ];
@@ -138,8 +138,8 @@ class ProcurementStageTransitionService
     private function getBidOpeningAction(): array
     {
         return [
-            'stage' => StageEnums::BID_OPENING->getDisplayName(),
-            'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->getDisplayName(), // Fixed enum value
+            'stage' => StageEnums::BID_OPENING->value,
+            'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED->value,
             'action' => 'Upload Bid Opening Documents',
             'routeTemplate' => '/bac-secretariat/bid-opening-upload/%s',
         ];
@@ -148,8 +148,8 @@ class ProcurementStageTransitionService
     private function getBidEvaluationAction(): array
     {
         return [
-            'stage' => StageEnums::BID_EVALUATION->getDisplayName(),
-            'status' => StatusEnums::BIDS_OPENED->getDisplayName(),
+            'stage' => StageEnums::BID_EVALUATION->value,
+            'status' => StatusEnums::BIDS_OPENED->value,
             'action' => 'Upload Bid Evaluation Documents',
             'routeTemplate' => '/bac-secretariat/bid-evaluation-upload/%s',
         ];
@@ -158,8 +158,8 @@ class ProcurementStageTransitionService
     private function getPostQualificationAction(): array
     {
         return [
-            'stage' => StageEnums::POST_QUALIFICATION->getDisplayName(),
-            'status' => StatusEnums::BIDS_EVALUATED->getDisplayName(),
+            'stage' => StageEnums::POST_QUALIFICATION->value,
+            'status' => StatusEnums::BIDS_EVALUATED->value,
             'action' => 'Upload Post-Qualification Documents',
             'routeTemplate' => '/bac-secretariat/post-qualification-upload/%s',
         ];
@@ -168,8 +168,8 @@ class ProcurementStageTransitionService
     private function getBacResolutionAction(): array
     {
         return [
-            'stage' => StageEnums::BAC_RESOLUTION->getDisplayName(),
-            'status' => StatusEnums::POST_QUALIFICATION_VERIFIED->getDisplayName(),
+            'stage' => StageEnums::BAC_RESOLUTION->value,
+            'status' => StatusEnums::POST_QUALIFICATION_VERIFIED->value,
             'action' => 'Record BAC Resolution Documents',
             'routeTemplate' => '/bac-secretariat/bac-resolution-upload/%s',
         ];
@@ -178,8 +178,8 @@ class ProcurementStageTransitionService
     private function getNoticeOfAwardAction(): array
     {
         return [
-            'stage' => StageEnums::NOTICE_OF_AWARD->getDisplayName(),
-            'status' => StatusEnums::RESOLUTION_RECORDED->getDisplayName(),
+            'stage' => StageEnums::NOTICE_OF_AWARD->value,
+            'status' => StatusEnums::RESOLUTION_RECORDED->value,
             'action' => 'Upload Notice of Award Documents',
             'routeTemplate' => '/bac-secretariat/noa-upload/%s',
         ];
@@ -188,8 +188,8 @@ class ProcurementStageTransitionService
     private function getPerformanceBondAction(): array
     {
         return [
-            'stage' => StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->getDisplayName(),
-            'status' => StatusEnums::AWARDED->getDisplayName(),
+            'stage' => StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO->value,
+            'status' => StatusEnums::AWARDED->value,
             'action' => 'Upload Performance Bond, Contract, and PO Documents',
             'routeTemplate' => '/bac-secretariat/performance-bond-contract-po-upload/%s',
         ];
@@ -198,8 +198,8 @@ class ProcurementStageTransitionService
     private function getNoticeToProceedAction(): array
     {
         return [
-            'stage' => StageEnums::NOTICE_TO_PROCEED->getDisplayName(),
-            'status' => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED->getDisplayName(),
+            'stage' => StageEnums::NOTICE_TO_PROCEED->value,
+            'status' => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED->value,
             'action' => 'Upload Notice to Proceed Documents',
             'routeTemplate' => '/bac-secretariat/ntp-upload/%s',
         ];
@@ -208,19 +208,19 @@ class ProcurementStageTransitionService
     private function getMonitoringAction(): array
     {
         return [
-            'stage' => StageEnums::MONITORING->getDisplayName(),
+            'stage' => StageEnums::MONITORING->value,
             'status' => null,
             'action' => 'Mark Procurement as Complete',
             'routeTemplate' => '/bac-secretariat/procurements-list',
-            'statusCheck' => fn ($status) => $status !== StatusEnums::COMPLETED->getDisplayName(),
+            'statusCheck' => fn ($status) => $status !== StatusEnums::COMPLETED->value,
         ];
     }
 
     private function getCompletionAction(): array
     {
         return [
-            'stage' => StageEnums::COMPLETION->getDisplayName(),
-            'status' => StatusEnums::MONITORING_COMPLETED->getDisplayName(),
+            'stage' => StageEnums::COMPLETION->value,
+            'status' => StatusEnums::MONITORING_COMPLETED->value,
             'action' => 'Upload Completion Documents',
             'routeTemplate' => '/bac-secretariat/completion-upload/%s',
         ];

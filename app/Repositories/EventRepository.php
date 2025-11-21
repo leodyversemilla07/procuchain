@@ -75,7 +75,7 @@ final readonly class EventRepository
     {
         $allEvents = $this->all();
 
-        usort($allEvents, fn ($a, $b) => strtotime($b->timestamp) - strtotime($a->timestamp));
+        usort($allEvents, fn ($a, $b) => $b->timestamp->timestamp - $a->timestamp->timestamp);
 
         return array_slice($allEvents, 0, $limit);
     }
