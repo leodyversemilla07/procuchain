@@ -199,23 +199,6 @@ Route::middleware(['auth'])->group(function () {
             ->name('procurement.post-procurement.check-completion');
         Route::post('/post-procurement/{pr_number}/{stage}/validate-upload', [PostProcurementController::class, 'validateUpload'])
             ->name('procurement.post-procurement.validate-upload');
-
-        // Blockchain Publishing Status Page
-        Route::get('/blockchain/publishing-status/{pr_number}', function (string $pr_number) {
-            // Fetch procurement data and blockchain status
-            $statusResponse = app(\App\Http\Controllers\ProcurementListController::class)->getBlockchainStatus($pr_number);
-            $initialStatus = $statusResponse->getData(true);
-
-            return Inertia::render('blockchain-publishing-status', [
-                'procurement' => [
-                    'pr_number' => $pr_number,
-                    'title' => 'Procurement '.$pr_number, // Will be fetched from blockchain in future
-                ],
-                'stage' => request('stage', 'Document Upload'),
-                'returnUrl' => request('return_url'),
-                'initialStatus' => $initialStatus,
-            ]);
-        })->name('blockchain.publishing-status');
     });
 
     /*
