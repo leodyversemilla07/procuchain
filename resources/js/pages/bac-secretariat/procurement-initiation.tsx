@@ -353,7 +353,7 @@ export default function ProcurementInitiationForm({
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                                 {/* PR Number */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="pr_prefix">
                                         Purchase Request Number
                                         <span className="ml-1 text-xs text-destructive">*</span>
                                     </FieldLabel>
@@ -362,6 +362,8 @@ export default function ProcurementInitiationForm({
                                     </FieldDescription>
                                     <div className="mt-2 flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                         <Input
+                                            id="pr_prefix"
+                                            name="pr_prefix"
                                             value={prPrefix}
                                             onChange={(e) =>
                                                 handlePrPartChange('prefix', e.target.value)
@@ -378,6 +380,8 @@ export default function ProcurementInitiationForm({
                                         />
                                         <span className="text-muted-foreground">-</span>
                                         <Input
+                                            id="pr_year"
+                                            name="pr_year"
                                             value={prYear}
                                             onChange={(e) => handlePrPartChange('year', e.target.value)}
                                             className={
@@ -392,6 +396,8 @@ export default function ProcurementInitiationForm({
                                         />
                                         <span className="text-muted-foreground">-</span>
                                         <Input
+                                            id="pr_sequence1"
+                                            name="pr_sequence1"
                                             value={prSequence1}
                                             onChange={(e) => handlePrPartChange('seq1', e.target.value)}
                                             className={
@@ -404,6 +410,8 @@ export default function ProcurementInitiationForm({
                                         />
                                         <span className="text-muted-foreground">-</span>
                                         <Input
+                                            id="pr_sequence2"
+                                            name="pr_sequence2"
                                             value={prSequence2}
                                             onChange={(e) => handlePrPartChange('seq2', e.target.value)}
                                             className={
@@ -422,7 +430,7 @@ export default function ProcurementInitiationForm({
 
                                 {/* PPMP Reference */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="ppmp_reference">
                                         PPMP Reference
                                         <span className="ml-1 text-xs text-destructive">*</span>
                                     </FieldLabel>
@@ -430,6 +438,8 @@ export default function ProcurementInitiationForm({
                                         Reference number from the Project Procurement Management Plan
                                     </FieldDescription>
                                     <Input
+                                        id="ppmp_reference"
+                                        name="ppmp_reference"
                                         value={data.ppmp_reference}
                                         onChange={(e) =>
                                             handleFieldChange('ppmp_reference', e.target.value)
@@ -451,7 +461,7 @@ export default function ProcurementInitiationForm({
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                                 {/* Title */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="title">
                                         Procurement Title
                                         <span className="ml-1 text-xs text-destructive">*</span>
                                     </FieldLabel>
@@ -459,6 +469,8 @@ export default function ProcurementInitiationForm({
                                         A clear and concise title for this procurement
                                     </FieldDescription>
                                     <Input
+                                        id="title"
+                                        name="title"
                                         value={data.title}
                                         onChange={(e) => handleFieldChange('title', e.target.value)}
                                         className={
@@ -473,7 +485,7 @@ export default function ProcurementInitiationForm({
 
                                 {/* Description */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="description">
                                         Description
                                         <span className="ml-1 text-xs text-destructive">*</span>
                                     </FieldLabel>
@@ -481,6 +493,8 @@ export default function ProcurementInitiationForm({
                                         Detailed description of the items/services to be procured
                                     </FieldDescription>
                                     <Textarea
+                                        id="description"
+                                        name="description"
                                         value={data.description}
                                         onChange={(e) =>
                                             handleFieldChange('description', e.target.value)
@@ -521,7 +535,7 @@ export default function ProcurementInitiationForm({
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                                 {/* Category */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="category">
                                         Category
                                         <span className="text-destructive">*</span>
                                     </FieldLabel>
@@ -570,7 +584,7 @@ export default function ProcurementInitiationForm({
 
                                 {/* Procurement Mode */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="procurement_mode">
                                         Procurement Mode
                                         <span className="ml-1 text-xs text-destructive">*</span>
                                     </FieldLabel>
@@ -625,7 +639,7 @@ export default function ProcurementInitiationForm({
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                                 {/* ABC Amount */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="abc_amount">
                                         ABC Amount (₱)
                                         <span className="ml-1 text-xs text-destructive">*</span>
                                     </FieldLabel>
@@ -633,6 +647,8 @@ export default function ProcurementInitiationForm({
                                         Approved Budget for the Contract - the maximum amount allocated
                                     </FieldDescription>
                                     <Input
+                                        id="abc_amount"
+                                        name="abc_amount"
                                         type="number"
                                         value={data.abc_amount}
                                         onChange={(e) =>
@@ -663,7 +679,7 @@ export default function ProcurementInitiationForm({
 
                                 {/* Funding Source */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="funding_source">
                                         Funding Source
                                         <span className="ml-1 text-xs text-destructive">*</span>
                                     </FieldLabel>
@@ -767,7 +783,7 @@ export default function ProcurementInitiationForm({
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                                 {/* Office */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="office">
                                         Office
                                         <span className="text-destructive">*</span>
                                     </FieldLabel>
@@ -800,11 +816,13 @@ export default function ProcurementInitiationForm({
 
                                 {/* End User */}
                                 <Field>
-                                    <FieldLabel>End User (Optional)</FieldLabel>
+                                    <FieldLabel htmlFor="end_user">End User (Optional)</FieldLabel>
                                     <FieldDescription>
                                         If different from the office, specify the actual end user
                                     </FieldDescription>
                                     <Input
+                                        id="end_user"
+                                        name="end_user"
                                         value={data.end_user}
                                         onChange={(e) => handleFieldChange('end_user', e.target.value)}
                                         placeholder="e.g., Accounting Department"
@@ -816,7 +834,7 @@ export default function ProcurementInitiationForm({
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                                 {/* Purpose */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="purpose">
                                         Purpose
                                         <span className="ml-1 text-xs text-destructive">*</span>
                                     </FieldLabel>
@@ -824,6 +842,8 @@ export default function ProcurementInitiationForm({
                                         Explain the purpose and justification for this procurement
                                     </FieldDescription>
                                     <Textarea
+                                        id="purpose"
+                                        name="purpose"
                                         value={data.purpose}
                                         onChange={(e) => handleFieldChange('purpose', e.target.value)}
                                         className={`flex min-h-[120px] w-full rounded-md border bg-background px-3 py-2 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${hasError('purpose')
@@ -837,7 +857,7 @@ export default function ProcurementInitiationForm({
 
                                 {/* Prepared By */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="prepared_by">
                                         Prepared By
                                         <span className="ml-1 text-xs text-destructive">*</span>
                                     </FieldLabel>
@@ -845,6 +865,8 @@ export default function ProcurementInitiationForm({
                                         Name of the person preparing this request
                                     </FieldDescription>
                                     <Input
+                                        id="prepared_by"
+                                        name="prepared_by"
                                         value={data.prepared_by}
                                         onChange={(e) =>
                                             handleFieldChange('prepared_by', e.target.value)
@@ -896,7 +918,7 @@ export default function ProcurementInitiationForm({
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
                                 {/* Delivery Location */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="delivery_location">
                                         Delivery Location
                                         <span className="text-destructive">*</span>
                                     </FieldLabel>
@@ -904,6 +926,8 @@ export default function ProcurementInitiationForm({
                                         Where should the goods/services be delivered?
                                     </FieldDescription>
                                     <Input
+                                        id="delivery_location"
+                                        name="delivery_location"
                                         value={data.delivery_location}
                                         onChange={(e) =>
                                             handleFieldChange('delivery_location', e.target.value)
@@ -922,7 +946,7 @@ export default function ProcurementInitiationForm({
 
                                 {/* Delivery Date */}
                                 <Field>
-                                    <FieldLabel>
+                                    <FieldLabel htmlFor="delivery_date">
                                         Delivery Date
                                         <span className="text-destructive">*</span>
                                     </FieldLabel>
@@ -930,6 +954,7 @@ export default function ProcurementInitiationForm({
                                         Expected date for delivery or completion
                                     </FieldDescription>
                                     <DatePicker
+                                        id="delivery_date"
                                         date={data.delivery_date}
                                         onDateChange={(date: Date | undefined) =>
                                             handleFieldChange('delivery_date', date)
@@ -948,12 +973,14 @@ export default function ProcurementInitiationForm({
 
                                 {/* Delivery Term Days */}
                                 <Field>
-                                    <FieldLabel>Delivery Term (Days)</FieldLabel>
+                                    <FieldLabel htmlFor="delivery_term_days">Delivery Term (Days)</FieldLabel>
                                     <FieldDescription>
                                         Number of calendar days for delivery from contract signing
                                         (optional)
                                     </FieldDescription>
                                     <Input
+                                        id="delivery_term_days"
+                                        name="delivery_term_days"
                                         type="number"
                                         value={data.delivery_term_days}
                                         onChange={(e) =>

@@ -27,6 +27,7 @@ export const DEFAULT_STATUS_BADGE_STYLE = 'bg-[#CEDDDD] text-[#014D4E] border bo
 export const DEFAULT_STAGE_BADGE_STYLE = DEFAULT_STATUS_BADGE_STYLE;
 
 export const STATUS_BADGE_STYLES: Record<Status, string> = {
+    [Status.PROCUREMENT_INITIATED]: 'bg-[#014D4E] text-white border border-[#014D4E] hover:bg-[#235E6F]',
     [Status.PROCUREMENT_SUBMITTED]: 'bg-[#014D4E] text-white border border-[#014D4E] hover:bg-[#235E6F]',
     [Status.PRE_PROCUREMENT_CONFERENCE_HELD]: 'bg-[#005F5F] text-white border border-[#005F5F] hover:bg-[#007C91]',
     [Status.PRE_PROCUREMENT_CONFERENCE_SKIPPED]: 'bg-[#4C9085] text-white border border-[#4C9085] hover:bg-[#3C9D9B]',
@@ -69,6 +70,7 @@ export const STAGE_BADGE_STYLES: Record<Stage, string> = {
 };
 
 export const STATUS_BADGE_ICONS: Record<Status, ReactNode> = {
+    [Status.PROCUREMENT_INITIATED]: buildIcon(Check),
     [Status.PROCUREMENT_SUBMITTED]: buildIcon(Check),
     [Status.PRE_PROCUREMENT_CONFERENCE_HELD]: buildIcon(Milestone),
     [Status.PRE_PROCUREMENT_CONFERENCE_SKIPPED]: buildIcon(Milestone, 'text-gray-500'),
