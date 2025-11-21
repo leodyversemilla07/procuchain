@@ -36,6 +36,14 @@ const iconSize = 'h-4 w-4';
  */
 export const ACTION_REGISTRY: ActionDefinition[] = [
     {
+        condition: { stage: Stage.PROCUREMENT_INITIATION, status: Status.PROCUREMENT_INITIATED },
+        icon: UploadCloudIcon,
+        iconClassName: cn(iconSize, 'text-blue-600 dark:text-blue-400'),
+        tooltipText: 'Upload Procurement Initiation Documents',
+        bgClassName: 'bg-blue-50 dark:bg-blue-900/20',
+        getHref: (id) => `/bac-secretariat/procurement-initiation/${id}`,
+    },
+    {
         condition: { stage: Stage.PROCUREMENT_INITIATION, status: Status.PROCUREMENT_SUBMITTED },
         icon: Edit2Icon,
         iconClassName: cn(iconSize, 'text-indigo-600 dark:text-indigo-400'),

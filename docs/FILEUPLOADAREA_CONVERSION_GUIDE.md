@@ -1,7 +1,7 @@
 # FileUploadArea Conversion Guide
 
 ## Summary
-Converting 10 remaining upload pages from DocumentChecklistCard to FileUploadArea pattern.
+Converting 10 remaining upload pages to use FileUploadArea pattern with inline progress tracking.
 
 ## Completed
 ✅ supplemental-bid-bulletin-upload.tsx - Fully converted with FileUploadArea pattern
@@ -14,10 +14,6 @@ All conversions follow the same structure as `supplemental-bid-bulletin-upload.t
 
 #### 1. Imports Section (Lines 1-27)
 ```typescript
-// REMOVE:
-import { useProgressiveUpload } from '@/hooks/use-progressive-upload';
-import { DocumentChecklistCard } from '@/components/procurement/document-checklist-card';
-
 // ADD:
 import { useState, useCallback } from 'react'; // Add to React import
 import FileUploadArea from '@/components/file-upload-area';
@@ -360,7 +356,7 @@ const handleConfirmUpload = useCallback(() => {
 ## Verification Checklist
 
 After each conversion, verify:
-- [ ] All imports updated (removed DocumentChecklistCard, useProgressiveUpload; added FileUploadArea, AlertDialog, etc.)
+- [ ] All imports updated (added FileUploadArea, AlertDialog, etc.)
 - [ ] Interface changed from `id` to `pr_number`
 - [ ] All 5 useState hooks added
 - [ ] All event handlers added (fileChange, dragEnter, dragLeave, dragOver, drop, remove, uploadClick, confirmUpload)

@@ -275,7 +275,7 @@ class ProcurementInitiationController extends BaseController
 
             // Success - redirect to publishing status page
             return redirect()->route('bac-secretariat.blockchain.publishing-status', [
-                'id' => $prNumber,
+                'pr_number' => $prNumber,
                 'stage' => StageEnums::PROCUREMENT_INITIATION->value,
                 'return_url' => route('bac-secretariat.procurements.show', $prNumber),
             ])->with('success', $result['message']);

@@ -30,6 +30,7 @@ export enum Stage {
 }
 
 export enum Status {
+    PROCUREMENT_INITIATED = 'procurement_initiated',
     PROCUREMENT_SUBMITTED = 'procurement_submitted',
     PRE_PROCUREMENT_CONFERENCE_HELD = 'pre_procurement_conference_held',
     PRE_PROCUREMENT_CONFERENCE_SKIPPED = 'pre_procurement_conference_skipped',

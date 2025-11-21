@@ -3,14 +3,14 @@
  * Contains interfaces for procurement data structures
  */
 
-import type { Status } from './enums';
+import type { Stage, Status } from './enums';
 import type { Document, Event } from './document';
 
 export interface ProcurementListItem {
     id: string;
     title: string;
-    stage: string;
-    current_status: Status;
+    stage: Stage | string;
+    current_status: Status | string;
     user_address: string;
     timestamp: string;
     document_count: number;
