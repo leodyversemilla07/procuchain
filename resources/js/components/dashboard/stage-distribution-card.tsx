@@ -159,7 +159,7 @@ export const StageDistributionCard = ({
                         />
                         <ChartLegend
                             content={<ChartLegendContent nameKey="stage" />}
-                            className="flex -translate-y-2 flex-wrap justify-center gap-4 [&>*]:flex [&>*]:items-center"
+                            className="flex -translate-y-2 flex-wrap justify-center gap-4 *:flex *:items-center"
                         />
                     </PieChart>
                 </ChartContainer>

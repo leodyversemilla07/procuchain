@@ -273,12 +273,9 @@ class ProcurementInitiationController extends BaseController
                 ])->withInput();
             }
 
-            // Success - redirect to publishing status page
-            return redirect()->route('bac-secretariat.blockchain.publishing-status', [
-                'pr_number' => $prNumber,
-                'stage' => StageEnums::PROCUREMENT_INITIATION->value,
-                'return_url' => route('bac-secretariat.procurements.show', $prNumber),
-            ])->with('success', $result['message']);
+            // Success - redirect to procurement list
+            return redirect()->route('bac-secretariat.procurements.index')
+                ->with('success', $result['message'] . ' Documents are being published to blockchain in the background.');
         } catch (\Exception $e) {
             \Log::error('Failed to initiate procurement', [
                 'pr_number' => $prNumber,

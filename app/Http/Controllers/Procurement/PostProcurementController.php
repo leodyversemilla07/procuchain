@@ -212,9 +212,8 @@ class PostProcurementController extends BaseController
                     );
                 }
 
-                return redirect()->route('bac-secretariat.blockchain.publishing-status', [
-                    'id' => $pr_number,
-                ])->with('success', 'Documents uploaded and stage completed successfully.');
+                return redirect()->route('bac-secretariat.procurements.index')
+                    ->with('success', 'Documents uploaded and stage completed successfully. Publishing to blockchain in the background.');
             }
 
             return redirect()->back()->with('success', 'Documents uploaded successfully. Please upload remaining required documents.');
