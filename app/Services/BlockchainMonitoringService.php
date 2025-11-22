@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Libraries\MultiChain\Manager;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;

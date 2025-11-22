@@ -44,14 +44,14 @@ interface LoginLog {
     logout_at?: string;
 }
 
-interface LoginLogDetailsDialogProps {
+interface LoginLogDetailsSheetProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     log: LoginLog | null;
     category?: 'recent' | 'suspicious';
 }
 
-export default function LoginLogDetailsDialog({ open, onOpenChange, log, category }: LoginLogDetailsDialogProps) {
+export default function LoginLogDetailsSheet({ open, onOpenChange, log, category }: LoginLogDetailsSheetProps) {
     if (!log) return null;
 
     const getDeviceIcon = (deviceType?: string) => {

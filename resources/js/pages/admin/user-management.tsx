@@ -63,8 +63,8 @@ import CreateUserDialog from '@/components/admin/create-user-dialog';
 import DeleteUserDialog from '@/components/admin/delete-user-dialog';
 import EditUserDialog from '@/components/admin/edit-user-dialog';
 import ResetPasswordDialog from '@/components/admin/reset-password-dialog';
-import UserDetailsDialog from '@/components/admin/user-details-dialog';
-import UserLoginHistoryDialog from '@/components/admin/user-login-history-dialog';
+import UserDetailsSheet from '@/components/admin/user-details-sheet';
+import UserLoginHistorySheet from '@/components/admin/user-login-history-sheet';
 import { HeroCard } from '@/components/hero-card';
 import { Pagination } from '@/components/pagination';
 import { StatsGrid } from '@/components/stats-grid';
@@ -146,7 +146,11 @@ export default function AdminUserManagement() {
     // Table state
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+        blockchain_address: false,
+        created_at: false,
+        updated_at: false,
+    });
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
     const resetForm = () => {
@@ -498,7 +502,7 @@ export default function AdminUserManagement() {
             accessorKey: 'name',
             header: ({ column }) => {
                 return (
-                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="-ml-4 h-8">
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="-ml-4 h-10 md:h-8">
                         Name
                         {column.getIsSorted() === 'asc' ? (
                             <ArrowUp className="ml-2 h-4 w-4" />
@@ -516,7 +520,7 @@ export default function AdminUserManagement() {
             accessorKey: 'email',
             header: ({ column }) => {
                 return (
-                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="-ml-4 h-8">
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="-ml-4 h-10 md:h-8">
                         Email
                         {column.getIsSorted() === 'asc' ? (
                             <ArrowUp className="ml-2 h-4 w-4" />
@@ -534,7 +538,7 @@ export default function AdminUserManagement() {
             accessorKey: 'role',
             header: ({ column }) => {
                 return (
-                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="-ml-4 h-8">
+                    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="-ml-4 h-10 md:h-8">
                         Role
                         {column.getIsSorted() === 'asc' ? (
                             <ArrowUp className="ml-2 h-4 w-4" />
@@ -567,6 +571,9 @@ export default function AdminUserManagement() {
                         )}
                     </div>
                 );
+            },
+            meta: {
+                hideBelow: 'xl',
             },
         },
         {
@@ -655,6 +662,9 @@ export default function AdminUserManagement() {
                     </div>
                 );
             },
+            meta: {
+                hideBelow: 'xl',
+            },
         },
         {
             accessorKey: 'updated_at',
@@ -689,6 +699,9 @@ export default function AdminUserManagement() {
                     </div>
                 );
             },
+            meta: {
+                hideBelow: 'xl',
+            },
         },
         {
             id: 'actions',
@@ -699,7 +712,7 @@ export default function AdminUserManagement() {
                 return (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <Button variant="ghost" className="h-10 w-10 p-0 md:h-8 md:w-8">
                                 <span className="sr-only">Open menu</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
@@ -791,7 +804,7 @@ export default function AdminUserManagement() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="User Management" />
-            <div className="flex h-full flex-1 flex-col gap-6 p-6 md:p-8">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6 md:p-8">
                 {/* Header Section */}
                 <HeroCard
                     icon={Users}
@@ -799,7 +812,7 @@ export default function AdminUserManagement() {
                     description="Manage system users and their roles"
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
-                            <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" size="sm" className="gap-2">
+                            <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" size="sm" className="h-9 gap-1 sm:h-8 sm:gap-2">
                                 <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                                 <span className="hidden sm:inline">Refresh</span>
                             </Button>
@@ -807,13 +820,13 @@ export default function AdminUserManagement() {
                                 onClick={() => setAutoRefresh(!autoRefresh)}
                                 variant={autoRefresh ? 'default' : 'outline'}
                                 size="sm"
-                                className="gap-2"
+                                className="h-9 gap-1 sm:h-8 sm:gap-2"
                             >
                                 <Clock className="h-4 w-4" />
                                 <span className="hidden sm:inline">Auto</span>
                             </Button>
                             <Can permission="create users">
-                                <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="gap-2">
+                                <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="h-9 gap-1 sm:h-8 sm:gap-2">
                                     <Plus className="h-4 w-4" />
                                     <span className="hidden sm:inline">Add User</span>
                                 </Button>
@@ -853,25 +866,25 @@ export default function AdminUserManagement() {
                 />
 
                 {/* Data Table Section */}
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-3 sm:space-y-4">
                     {/* Search and Advanced Filters */}
                     <Card>
-                        <CardContent className="p-4">
-                            <div className="space-y-4">
+                        <CardContent className="p-3 sm:p-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 {/* Search and Filter Row */}
-                                <div className="flex flex-col gap-4 md:flex-row">
+                                <div className="flex flex-col gap-3 lg:flex-row lg:gap-4">
                                     <div className="relative flex-1">
                                         <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                                         <Input
-                                            placeholder="Search by name, email, or blockchain address..."
+                                            placeholder="Search users..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="h-10 pl-9"
+                                            className="h-10 pl-9 text-sm"
                                         />
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3 lg:flex lg:gap-2">
                                         <Select value={roleFilter} onValueChange={setRoleFilter}>
-                                            <SelectTrigger className="w-[180px]">
+                                            <SelectTrigger className="h-10 w-full text-sm md:w-[200px] lg:w-[180px]">
                                                 <SelectValue placeholder="Filter by role" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -883,7 +896,7 @@ export default function AdminUserManagement() {
                                             </SelectContent>
                                         </Select>
                                         <Select value={verificationFilter} onValueChange={setVerificationFilter}>
-                                            <SelectTrigger className="w-[180px]">
+                                            <SelectTrigger className="h-10 w-full text-sm md:w-[200px] lg:w-[180px]">
                                                 <SelectValue placeholder="Email status" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -893,7 +906,7 @@ export default function AdminUserManagement() {
                                             </SelectContent>
                                         </Select>
                                         <Select value={twoFactorFilter} onValueChange={setTwoFactorFilter}>
-                                            <SelectTrigger className="w-[180px]">
+                                            <SelectTrigger className="h-10 w-full text-sm md:w-[200px] lg:w-[180px]">
                                                 <SelectValue placeholder="2FA status" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -906,49 +919,51 @@ export default function AdminUserManagement() {
                                 </div>
 
                                 {/* Quick Filter Chips */}
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-muted-foreground text-sm">Quick filters:</span>
-                                    <Button
-                                        variant={activeQuickFilter === 'verified' ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={() => handleQuickFilter('verified')}
-                                        className="h-7 gap-1 text-xs"
-                                    >
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        Verified
-                                    </Button>
-                                    <Button
-                                        variant={activeQuickFilter === '2fa' ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={() => handleQuickFilter('2fa')}
-                                        className="h-7 gap-1 text-xs"
-                                    >
-                                        <Shield className="h-3 w-3" />
-                                        2FA Enabled
-                                    </Button>
-                                    <Button
-                                        variant={activeQuickFilter === 'admin' ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={() => handleQuickFilter('admin')}
-                                        className="h-7 gap-1 text-xs"
-                                    >
-                                        <UserCheck className="h-3 w-3" />
-                                        Admins
-                                    </Button>
-                                    <Button
-                                        variant={activeQuickFilter === 'unverified' ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={() => handleQuickFilter('unverified')}
-                                        className="h-7 gap-1 text-xs"
-                                    >
-                                        <X className="h-3 w-3" />
-                                        Unverified
-                                    </Button>
+                                <div className="-mx-3 flex items-center gap-2 overflow-x-auto px-3 pb-2 scrollbar-hide sm:mx-0 sm:gap-3 sm:px-0 sm:pb-0">
+                                    <span className="text-muted-foreground shrink-0 text-xs font-medium sm:text-sm">Quick filters:</span>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant={activeQuickFilter === 'verified' ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => handleQuickFilter('verified')}
+                                            className="h-8 shrink-0 gap-1 whitespace-nowrap px-3 text-xs"
+                                        >
+                                            <CheckCircle2 className="h-3 w-3" />
+                                            <span className="hidden xs:inline">Verified</span>
+                                        </Button>
+                                        <Button
+                                            variant={activeQuickFilter === '2fa' ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => handleQuickFilter('2fa')}
+                                            className="h-8 shrink-0 gap-1 whitespace-nowrap px-3 text-xs"
+                                        >
+                                            <Shield className="h-3 w-3" />
+                                            <span className="hidden xs:inline">2FA</span>
+                                        </Button>
+                                        <Button
+                                            variant={activeQuickFilter === 'admin' ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => handleQuickFilter('admin')}
+                                            className="h-8 shrink-0 gap-1 whitespace-nowrap px-3 text-xs"
+                                        >
+                                            <UserCheck className="h-3 w-3" />
+                                            <span className="hidden xs:inline">Admin</span>
+                                        </Button>
+                                        <Button
+                                            variant={activeQuickFilter === 'unverified' ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => handleQuickFilter('unverified')}
+                                            className="h-8 shrink-0 gap-1 whitespace-nowrap px-3 text-xs"
+                                        >
+                                            <X className="h-3 w-3" />
+                                            <span className="hidden xs:inline">Unverified</span>
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 {/* Filter Info */}
                                 {(searchQuery || roleFilter !== 'all' || verificationFilter !== 'all' || twoFactorFilter !== 'all') && (
-                                    <div className="text-muted-foreground text-sm">
+                                    <div className="text-muted-foreground text-xs sm:text-sm">
                                         Showing {filteredUsers.length} of {users.length} user(s)
                                         {table.getFilteredSelectedRowModel().rows.length > 0 &&
                                             ` • ${table.getFilteredSelectedRowModel().rows.length} selected`}
@@ -960,35 +975,35 @@ export default function AdminUserManagement() {
 
                     {/* Bulk Actions Bar */}
                     {table.getFilteredSelectedRowModel().rows.length > 0 && (
-                        <div className="bg-accent/50 dark:bg-accent/20 border-accent dark:border-accent/40 flex items-center justify-between rounded-lg border px-4 py-3">
+                        <div className="bg-accent/50 dark:bg-accent/20 border-accent dark:border-accent/40 flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
                             <div className="flex items-center gap-2">
-                                <span className="text-accent-foreground dark:text-accent-foreground text-sm font-medium">
-                                    {table.getFilteredSelectedRowModel().rows.length} user(s) selected
+                                <span className="text-accent-foreground dark:text-accent-foreground text-xs font-medium sm:text-sm">
+                                    {table.getFilteredSelectedRowModel().rows.length} selected
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={exportSelectedToCSV}
-                                    className="border-primary/20 dark:border-primary/30 text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 h-8"
+                                    className="border-primary/20 dark:border-primary/30 text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 h-9 w-full justify-center text-xs sm:h-8 sm:w-auto"
                                 >
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Export to CSV
+                                    <Download className="mr-1.5 h-3.5 w-3.5" />
+                                    <span>Export CSV</span>
                                 </Button>
                                 {hasPermission('delete users') && (
-                                    <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="h-8">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Selected
+                                    <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="h-9 w-full justify-center text-xs sm:h-8 sm:w-auto">
+                                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                                        <span>Delete</span>
                                     </Button>
                                 )}
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => table.toggleAllPageRowsSelected(false)}
-                                    className="text-muted-foreground hover:bg-muted hover:text-muted-foreground h-8"
+                                    className="text-muted-foreground hover:bg-muted hover:text-muted-foreground h-9 w-full justify-center text-xs sm:h-8 sm:w-auto"
                                 >
-                                    Clear Selection
+                                    <span>Clear</span>
                                 </Button>
                             </div>
                         </div>
@@ -997,11 +1012,11 @@ export default function AdminUserManagement() {
                     {/* Table - Desktop View */}
                     {filteredUsers.length === 0 && !isLoading && !isRefreshing ? (
                         <Card>
-                            <CardContent className="flex justify-center px-6 py-12">
+                            <CardContent className="flex justify-center px-4 py-8 sm:px-6 sm:py-10 md:py-12">
                                 <Empty>
                                     <EmptyHeader>
                                         <EmptyMedia variant="icon">
-                                            <Users className="h-8 w-8" />
+                                            <Users className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                         </EmptyMedia>
                                     </EmptyHeader>
                                     <EmptyTitle>No users found</EmptyTitle>
@@ -1104,7 +1119,7 @@ export default function AdminUserManagement() {
 
                     {/* Mobile Card View */}
                     {filteredUsers.length > 0 && (
-                        <div className="md:hidden">
+                        <div className="space-y-3 md:hidden">
                             <div className="space-y-4">
                                 {isLoading || isRefreshing
                                     ? Array.from({ length: 3 }).map((_, index) => (
@@ -1131,21 +1146,23 @@ export default function AdminUserManagement() {
                                           const user = row.original;
                                           return (
                                               <Card key={user.id}>
-                                                  <CardHeader className="pb-3">
-                                                      <div className="flex items-start justify-between">
-                                                          <div className="flex flex-1 items-start gap-3">
-                                                              <Checkbox
-                                                                  checked={row.getIsSelected()}
-                                                                  onCheckedChange={(value) => row.toggleSelected(!!value)}
-                                                              />
-                                                              <div className="flex-1 space-y-1">
-                                                                  <CardTitle className="text-base">{user.name}</CardTitle>
-                                                                  <p className="text-muted-foreground text-sm">{user.email}</p>
+                                                  <CardHeader className="p-3 pb-2 sm:px-4 sm:py-3">
+                                                      <div className="flex items-start justify-between gap-2">
+                                                          <div className="flex min-w-0 flex-1 items-start gap-2">
+                                                              <div className="flex h-9 w-9 shrink-0 items-center justify-center">
+                                                                  <Checkbox
+                                                                      checked={row.getIsSelected()}
+                                                                      onCheckedChange={(value) => row.toggleSelected(!!value)}
+                                                                  />
+                                                              </div>
+                                                              <div className="min-w-0 flex-1 space-y-0.5">
+                                                                  <CardTitle className="truncate text-sm leading-tight">{user.name}</CardTitle>
+                                                                  <p className="text-muted-foreground truncate text-xs">{user.email}</p>
                                                               </div>
                                                           </div>
                                                           <DropdownMenu>
                                                               <DropdownMenuTrigger asChild>
-                                                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                  <Button variant="ghost" size="icon" className="h-10 w-10 md:h-8 md:w-8">
                                                                       <MoreHorizontal className="h-4 w-4" />
                                                                   </Button>
                                                               </DropdownMenuTrigger>
@@ -1210,12 +1227,12 @@ export default function AdminUserManagement() {
                                                           </DropdownMenu>
                                                       </div>
                                                   </CardHeader>
-                                                  <CardContent className="space-y-3 pt-0">
-                                                      <div className="flex items-center justify-between text-sm">
+                                                  <CardContent className="space-y-2.5 p-3 pt-0 sm:px-4">
+                                                      <div className="flex items-center justify-between text-xs sm:text-sm">
                                                           <span className="text-muted-foreground">Role</span>
                                                           <Badge className={getRoleBadgeColor(user.role)}>{getRoleDisplayName(user.role)}</Badge>
                                                       </div>
-                                                      <div className="flex items-center justify-between text-sm">
+                                                      <div className="flex items-center justify-between text-xs sm:text-sm">
                                                           <span className="text-muted-foreground">Email Status</span>
                                                           {user.email_verified_at ? (
                                                               <Badge className="border border-green-200 bg-green-100 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
@@ -1227,30 +1244,30 @@ export default function AdminUserManagement() {
                                                               </Badge>
                                                           )}
                                                       </div>
-                                                      <div className="flex items-center justify-between text-sm">
+                                                      <div className="flex items-center justify-between text-xs sm:text-sm">
                                                           <span className="text-muted-foreground">2FA Status</span>
                                                           {user.two_factor_enabled ? (
-                                                              <div className="flex items-center gap-2">
+                                                              <div className="flex items-center gap-1.5">
                                                                   <Badge className="border border-green-200 bg-green-100 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
                                                                       <QrCode className="mr-1 h-3 w-3" />
-                                                                      Enabled
+                                                                      On
                                                                   </Badge>
                                                                   {user.backup_codes && user.backup_codes.length > 0 && (
-                                                                      <span className="text-muted-foreground text-xs">
-                                                                          ({user.backup_codes.length} codes)
+                                                                      <span className="text-muted-foreground text-[10px]">
+                                                                          ({user.backup_codes.length})
                                                                       </span>
                                                                   )}
                                                               </div>
                                                           ) : (
                                                               <Badge className="border border-gray-200 bg-gray-100 text-xs text-gray-800 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-300">
-                                                                  Disabled
+                                                                  Off
                                                               </Badge>
                                                           )}
                                                       </div>
                                                       {user.blockchain_address && (
-                                                          <div className="bg-muted/50 rounded-md p-2">
-                                                              <div className="text-muted-foreground mb-1 text-xs font-medium">Blockchain Address</div>
-                                                              <div className="font-mono text-xs break-all">{user.blockchain_address}</div>
+                                                          <div className="bg-muted/50 rounded p-2">
+                                                              <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-wide">Blockchain</div>
+                                                              <div className="break-all font-mono text-[10px] leading-relaxed">{user.blockchain_address}</div>
                                                           </div>
                                                       )}
                                                   </CardContent>
@@ -1302,13 +1319,13 @@ export default function AdminUserManagement() {
                     onConfirm={confirmBulkDelete}
                 />
 
-                <UserDetailsDialog
+                <UserDetailsSheet
                     open={isDetailsDialogOpen}
                     onOpenChange={setIsDetailsDialogOpen}
                     user={selectedUser ? { ...selectedUser } : null}
                 />
 
-                <UserLoginHistoryDialog
+                <UserLoginHistorySheet
                     open={isLoginHistoryDialogOpen}
                     onOpenChange={setIsLoginHistoryDialogOpen}
                     userId={selectedUser?.id ?? null}

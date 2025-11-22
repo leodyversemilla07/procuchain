@@ -1,4 +1,15 @@
 import { HeroCard } from '@/components/hero-card';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -151,6 +162,7 @@ export default function BlockchainExplorer({
     const [isSearching, setIsSearching] = useState(false);
     const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
     const [expandedPeers, setExpandedPeers] = useState<Set<number>>(new Set());
+    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
     const isHealthy = health?.status === 'healthy';
     const isCircuitOpen = health?.circuit_breaker?.is_open ?? false;
@@ -249,23 +261,23 @@ export default function BlockchainExplorer({
     };
 
     const handleResetCircuitBreaker = () => {
-        if (confirm('Are you sure you want to reset the circuit breaker? This will allow blockchain requests to resume immediately.')) {
-            router.post(
-                blockchain.explorer.reset.url(),
-                {},
-                {
-                    onSuccess: () => {
-                        toast.success('Circuit breaker reset', {
-                            description: 'Blockchain requests will now resume normally',
-                        });
-                        router.reload({ only: ['health'] });
-                    },
-                    onError: () => {
-                        toast.error('Failed to reset circuit breaker');
-                    },
+        router.post(
+            blockchain.explorer.reset.url(),
+            {},
+            {
+                onSuccess: () => {
+                    toast.success('Circuit breaker reset', {
+                        description: 'Blockchain requests will now resume normally',
+                    });
+                    router.reload({ only: ['health'] });
+                    setIsResetDialogOpen(false);
                 },
-            );
-        }
+                onError: () => {
+                    toast.error('Failed to reset circuit breaker');
+                    setIsResetDialogOpen(false);
+                },
+            },
+        );
     };
 
     const handleRefresh = () => {
@@ -376,16 +388,16 @@ export default function BlockchainExplorer({
 
                 {/* Search Bar */}
                 <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex flex-col gap-2 sm:flex-row">
+                    <CardContent>
+                        <div className="flex flex-col gap-3 sm:flex-row">
                             <div className="relative flex-1">
-                                <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
+                                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                                 <Input
-                                    placeholder="Search by block height, hash, transaction ID, or address..."
+                                    placeholder="Search blocks, transactions, addresses..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    className="pl-9"
+                                    className="pl-10"
                                     disabled={isSearching}
                                 />
                             </div>
@@ -421,7 +433,7 @@ export default function BlockchainExplorer({
                                 </>
                             ) : (
                                 <>
-                                    <div className="text-2xl font-bold">{overview.blocks.toLocaleString()}</div>
+                                    <div className="text-xl font-bold sm:text-2xl">{overview.blocks.toLocaleString()}</div>
                                     <p className="text-muted-foreground mt-1 text-xs">
                                         {overview.chain} | {overview.protocol}
                                     </p>
@@ -443,7 +455,7 @@ export default function BlockchainExplorer({
                                 </>
                             ) : (
                                 <>
-                                    <div className="text-2xl font-bold">{overview.connections}</div>
+                                    <div className="text-xl font-bold sm:text-2xl">{overview.connections}</div>
                                     <p className="text-muted-foreground mt-1 text-xs">Active peers</p>
                                 </>
                             )}
@@ -463,7 +475,7 @@ export default function BlockchainExplorer({
                                 </>
                             ) : (
                                 <>
-                                    <div className="text-2xl font-bold">{streams.length}</div>
+                                    <div className="text-xl font-bold sm:text-2xl">{streams.length}</div>
                                     <p className="text-muted-foreground mt-1 text-xs">
                                         {streams.filter((s: StreamInfo) => s.subscribed).length} subscribed
                                     </p>
@@ -485,7 +497,7 @@ export default function BlockchainExplorer({
                                 </>
                             ) : (
                                 <>
-                                    <div className="text-2xl font-bold">{addresses.length}</div>
+                                    <div className="text-xl font-bold sm:text-2xl">{addresses.length}</div>
                                     <p className="text-muted-foreground mt-1 text-xs">Managed addresses</p>
                                 </>
                             )}
@@ -581,40 +593,36 @@ export default function BlockchainExplorer({
                                         <CardDescription>Current blockchain state and parameters</CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="overflow-x-auto">
-                                            <Table>
-                                                <TableBody>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Chain Name</TableCell>
-                                                        <TableCell className="text-right">{overview.chain}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Protocol Version</TableCell>
-                                                        <TableCell className="text-right">{overview.protocol}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Blocks</TableCell>
-                                                        <TableCell className="text-right font-mono">{overview.blocks.toLocaleString()}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Difficulty</TableCell>
-                                                        <TableCell className="text-right font-mono">{overview.difficulty.toFixed(8)}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Connections</TableCell>
-                                                        <TableCell className="text-right">{overview.connections}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Streams</TableCell>
-                                                        <TableCell className="text-right">{streams.length}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Addresses</TableCell>
-                                                        <TableCell className="text-right">{addresses.length}</TableCell>
-                                                    </TableRow>
-                                                </TableBody>
-                                            </Table>
-                                        </div>
+                                        <dl className="space-y-3 text-sm">
+                                            <div className="flex justify-between gap-4 sm:grid sm:grid-cols-[140px_1fr]">
+                                                <dt className="text-muted-foreground font-medium">Chain Name</dt>
+                                                <dd className="text-right sm:text-left">{overview.chain}</dd>
+                                            </div>
+                                            <div className="flex justify-between gap-4 sm:grid sm:grid-cols-[140px_1fr]">
+                                                <dt className="text-muted-foreground font-medium">Protocol Version</dt>
+                                                <dd className="text-right sm:text-left">{overview.protocol}</dd>
+                                            </div>
+                                            <div className="flex justify-between gap-4 sm:grid sm:grid-cols-[140px_1fr]">
+                                                <dt className="text-muted-foreground font-medium">Blocks</dt>
+                                                <dd className="text-right font-mono sm:text-left">{overview.blocks.toLocaleString()}</dd>
+                                            </div>
+                                            <div className="flex justify-between gap-4 sm:grid sm:grid-cols-[140px_1fr]">
+                                                <dt className="text-muted-foreground font-medium">Difficulty</dt>
+                                                <dd className="text-right font-mono sm:text-left">{overview.difficulty.toFixed(8)}</dd>
+                                            </div>
+                                            <div className="flex justify-between gap-4 sm:grid sm:grid-cols-[140px_1fr]">
+                                                <dt className="text-muted-foreground font-medium">Connections</dt>
+                                                <dd className="text-right sm:text-left">{overview.connections}</dd>
+                                            </div>
+                                            <div className="flex justify-between gap-4 sm:grid sm:grid-cols-[140px_1fr]">
+                                                <dt className="text-muted-foreground font-medium">Streams</dt>
+                                                <dd className="text-right sm:text-left">{streams.length}</dd>
+                                            </div>
+                                            <div className="flex justify-between gap-4 sm:grid sm:grid-cols-[140px_1fr]">
+                                                <dt className="text-muted-foreground font-medium">Addresses</dt>
+                                                <dd className="text-right sm:text-left">{addresses.length}</dd>
+                                            </div>
+                                        </dl>
                                     </CardContent>
                                 </Card>
 
@@ -625,22 +633,16 @@ export default function BlockchainExplorer({
                                         <CardDescription>Local node details and configuration</CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="overflow-x-auto">
-                                            <Table>
-                                                <TableBody>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Version</TableCell>
-                                                        <TableCell className="text-right">{overview.version}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell className="font-medium">Node Address</TableCell>
-                                                        <TableCell className="text-right font-mono text-xs break-all">
-                                                            {overview.nodeaddress}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                </TableBody>
-                                            </Table>
-                                        </div>
+                                        <dl className="space-y-3 text-sm">
+                                            <div className="flex justify-between gap-4 sm:grid sm:grid-cols-[140px_1fr]">
+                                                <dt className="text-muted-foreground font-medium">Version</dt>
+                                                <dd className="text-right sm:text-left">{overview.version}</dd>
+                                            </div>
+                                            <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[140px_1fr] sm:gap-4">
+                                                <dt className="text-muted-foreground font-medium">Node Address</dt>
+                                                <dd className="break-all font-mono text-xs">{overview.nodeaddress}</dd>
+                                            </div>
+                                        </dl>
                                     </CardContent>
                                 </Card>
 
@@ -651,7 +653,38 @@ export default function BlockchainExplorer({
                                         <CardDescription>Latest blocks added to the blockchain</CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="overflow-x-auto">
+                                        {/* Mobile Card View */}
+                                        <div className="space-y-3 md:hidden">
+                                            {latestBlocks.slice(0, 10).map((block: BlockInfo) => (
+                                                <Card key={block.hash} className="p-3">
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <Badge variant="outline" className="text-xs">#{block.height}</Badge>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true })}
+                                                            </span>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <div className="text-xs text-muted-foreground">Hash</div>
+                                                            <div className="break-all font-mono text-xs">{truncateHash(block.hash, 20)}</div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                                            <div>
+                                                                <div className="text-xs text-muted-foreground">Transactions</div>
+                                                                <div className="font-medium">{block.tx_count}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-xs text-muted-foreground">Size</div>
+                                                                <div className="font-medium">{formatBytes(block.size)}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Card>
+                                            ))}
+                                        </div>
+
+                                        {/* Desktop Table View */}
+                                        <div className="hidden overflow-x-auto md:block">
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
@@ -691,7 +724,67 @@ export default function BlockchainExplorer({
                                 <CardDescription>Latest blocks mined on the blockchain</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="overflow-x-auto">
+                                {/* Mobile Card View */}
+                                <div className="space-y-3 md:hidden">
+                                    {latestBlocks.map((block: BlockInfo) => (
+                                        <Card key={block.hash} className="p-4">
+                                            <button
+                                                onClick={() => toggleBlockExpansion(block.hash)}
+                                                className="w-full touch-manipulation"
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex-1 space-y-2 text-left">
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="outline">#{block.height}</Badge>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true })}
+                                                            </span>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <div className="text-xs text-muted-foreground">Hash</div>
+                                                            <div className="break-all font-mono text-xs">{truncateHash(block.hash, 20)}</div>
+                                                        </div>
+                                                        <div className="flex gap-4 text-sm">
+                                                            <div>
+                                                                <span className="text-muted-foreground">Txs: </span>
+                                                                <span className="font-medium">{block.tx_count}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-muted-foreground">Size: </span>
+                                                                <span className="font-medium">{formatBytes(block.size)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronRight
+                                                        className={cn(
+                                                            'text-muted-foreground h-5 w-5 shrink-0 transition-transform',
+                                                            expandedBlocks.has(block.hash) && 'rotate-90',
+                                                        )}
+                                                    />
+                                                </div>
+                                            </button>
+                                            {expandedBlocks.has(block.hash) && (
+                                                <div className="mt-3 space-y-3 border-t pt-3">
+                                                    <div>
+                                                        <div className="text-xs text-muted-foreground">Full Hash</div>
+                                                        <div className="mt-1 break-all font-mono text-xs">{block.hash}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs text-muted-foreground">Miner Address</div>
+                                                        <div className="mt-1 break-all font-mono text-xs">{block.miner}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs text-muted-foreground">Time</div>
+                                                        <div className="mt-1 text-sm">{formatDate(block.time)}</div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </Card>
+                                    ))}
+                                </div>
+
+                                {/* Desktop Table View */}
+                                <div className="hidden overflow-x-auto md:block">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -802,35 +895,73 @@ export default function BlockchainExplorer({
                                         </EmptyHeader>
                                     </Empty>
                                 ) : (
-                                    <div className="overflow-x-auto">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Stream Name</TableHead>
-                                                    <TableHead>Items</TableHead>
-                                                    <TableHead>Keys</TableHead>
-                                                    <TableHead>Publishers</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {streams.map((stream: StreamInfo) => (
-                                                    <TableRow key={stream.name}>
-                                                        <TableCell className="font-medium">{stream.name}</TableCell>
-                                                        <TableCell>{stream.items.toLocaleString()}</TableCell>
-                                                        <TableCell>{stream.keys.toLocaleString()}</TableCell>
-                                                        <TableCell>{stream.publishers}</TableCell>
-                                                        <TableCell>
+                                    <>
+                                        {/* Mobile Card View */}
+                                        <div className="space-y-3 md:hidden">
+                                            {streams.map((stream: StreamInfo) => (
+                                                <Card key={stream.name} className="p-4">
+                                                    <div className="space-y-3">
+                                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                            <h3 className="break-all font-medium">{stream.name}</h3>
                                                             <div className="flex flex-wrap gap-1">
-                                                                {stream.subscribed && <Badge variant="default">Subscribed</Badge>}
-                                                                {stream.synchronized && <Badge variant="secondary">Synced</Badge>}
+                                                                {stream.subscribed && <Badge variant="default" className="text-xs">Subscribed</Badge>}
+                                                                {stream.synchronized && <Badge variant="secondary" className="text-xs">Synced</Badge>}
                                                             </div>
-                                                        </TableCell>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                                            <div>
+                                                                <div className="text-xs text-muted-foreground">Items</div>
+                                                                <div className="font-medium">{stream.items.toLocaleString()}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-xs text-muted-foreground">Keys</div>
+                                                                <div className="font-medium">{stream.keys.toLocaleString()}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-xs text-muted-foreground">Publishers</div>
+                                                                <div className="font-medium">{stream.publishers}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-xs text-muted-foreground">Confirmed</div>
+                                                                <div className="font-medium">{stream.confirmed.toLocaleString()}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Card>
+                                            ))}
+                                        </div>
+
+                                        {/* Desktop Table View */}
+                                        <div className="hidden overflow-x-auto md:block">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Stream Name</TableHead>
+                                                        <TableHead>Items</TableHead>
+                                                        <TableHead>Keys</TableHead>
+                                                        <TableHead>Publishers</TableHead>
+                                                        <TableHead>Status</TableHead>
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {streams.map((stream: StreamInfo) => (
+                                                        <TableRow key={stream.name}>
+                                                            <TableCell className="font-medium">{stream.name}</TableCell>
+                                                            <TableCell>{stream.items.toLocaleString()}</TableCell>
+                                                            <TableCell>{stream.keys.toLocaleString()}</TableCell>
+                                                            <TableCell>{stream.publishers}</TableCell>
+                                                            <TableCell>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {stream.subscribed && <Badge variant="default">Subscribed</Badge>}
+                                                                    {stream.synchronized && <Badge variant="secondary">Synced</Badge>}
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </>
                                 )}
                             </CardContent>
                         </Card>
@@ -858,24 +989,42 @@ export default function BlockchainExplorer({
                                         </EmptyHeader>
                                     </Empty>
                                 ) : (
-                                    <div className="overflow-x-auto">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Address</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {addresses.map((address: AddressInfo) => (
-                                                    <TableRow key={address.address}>
-                                                        <TableCell className="font-mono text-sm">{address.address}</TableCell>
-                                                        <TableCell>{address.ismine && <Badge variant="default">Mine</Badge>}</TableCell>
+                                    <>
+                                        {/* Mobile Card View */}
+                                        <div className="space-y-3 md:hidden">
+                                            {addresses.map((address: AddressInfo) => (
+                                                <Card key={address.address} className="p-4">
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="text-xs text-muted-foreground">Address</div>
+                                                            {address.ismine && <Badge variant="default" className="text-xs">Mine</Badge>}
+                                                        </div>
+                                                        <div className="break-all font-mono text-sm">{address.address}</div>
+                                                    </div>
+                                                </Card>
+                                            ))}
+                                        </div>
+
+                                        {/* Desktop Table View */}
+                                        <div className="hidden overflow-x-auto md:block">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Address</TableHead>
+                                                        <TableHead>Status</TableHead>
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {addresses.map((address: AddressInfo) => (
+                                                        <TableRow key={address.address}>
+                                                            <TableCell className="font-mono text-sm">{address.address}</TableCell>
+                                                            <TableCell>{address.ismine && <Badge variant="default">Mine</Badge>}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </>
                                 )}
                             </CardContent>
                         </Card>
@@ -890,8 +1039,95 @@ export default function BlockchainExplorer({
                             </CardHeader>
                             <CardContent>
                                 {peers.length > 0 ? (
-                                    <div className="overflow-x-auto">
-                                        <Table>
+                                    <>
+                                        {/* Mobile Card View */}
+                                        <div className="space-y-3 md:hidden">
+                                            {peers.map((peer: PeerInfo) => (
+                                                <Card key={peer.id} className="p-4">
+                                                    <button
+                                                        onClick={() => {
+                                                            setExpandedPeers((prev) => {
+                                                                const next = new Set(prev);
+                                                                if (next.has(peer.id)) {
+                                                                    next.delete(peer.id);
+                                                                } else {
+                                                                    next.add(peer.id);
+                                                                }
+                                                                return next;
+                                                            });
+                                                        }}
+                                                        className="w-full touch-manipulation"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="flex-1 space-y-2 text-left">
+                                                                <div className="break-all font-mono text-sm">{peer.addr}</div>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    <Badge variant={peer.inbound ? 'secondary' : 'default'} className="text-xs">
+                                                                        {peer.inbound ? 'Inbound' : 'Outbound'}
+                                                                    </Badge>
+                                                                    <Badge
+                                                                        variant={peer.synced_blocks >= (peer.startingheight || 0) ? 'default' : 'secondary'}
+                                                                        className="text-xs"
+                                                                    >
+                                                                        {getSyncStatus(peer.synced_blocks || 0, peer.startingheight || 0)}
+                                                                    </Badge>
+                                                                </div>
+                                                                <div className="flex gap-4 text-xs text-muted-foreground">
+                                                                    <span>Ping: {formatPingTime(peer.pingtime)}</span>
+                                                                    <span>Score: {peer.banscore || 0}</span>
+                                                                </div>
+                                                            </div>
+                                                            <ChevronRight
+                                                                className={cn(
+                                                                    'text-muted-foreground h-5 w-5 shrink-0 transition-transform',
+                                                                    expandedPeers.has(peer.id) && 'rotate-90',
+                                                                )}
+                                                            />
+                                                        </div>
+                                                    </button>
+                                                    {expandedPeers.has(peer.id) && (
+                                                        <div className="mt-3 space-y-3 border-t pt-3">
+                                                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                                                <div>
+                                                                    <div className="text-xs text-muted-foreground">Version</div>
+                                                                    <div className="mt-1">{peer.subver}</div>
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-xs text-muted-foreground">Time Offset</div>
+                                                                    <div className="mt-1">{peer.timeoffset || 0}s</div>
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-xs text-muted-foreground">Data Sent</div>
+                                                                    <div className="mt-1">{formatBytes(peer.bytessent || 0)}</div>
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-xs text-muted-foreground">Data Received</div>
+                                                                    <div className="mt-1">{formatBytes(peer.bytesrecv || 0)}</div>
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-xs text-muted-foreground">Connected</div>
+                                                                    <div className="mt-1">
+                                                                        {peer.conntime
+                                                                            ? formatDistanceToNow(new Date(peer.conntime * 1000), {
+                                                                                  addSuffix: true,
+                                                                              })
+                                                                            : 'Unknown'}
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-xs text-muted-foreground">Starting Height</div>
+                                                                    <div className="mt-1">{(peer.startingheight || 0).toLocaleString()}</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </Card>
+                                            ))}
+                                        </div>
+
+                                        {/* Desktop Table View */}
+                                        <div className="hidden overflow-x-auto md:block">
+                                            <Table>
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead className="w-12"></TableHead>
@@ -1063,8 +1299,9 @@ export default function BlockchainExplorer({
                                                     </React.Fragment>
                                                 ))}
                                             </TableBody>
-                                        </Table>
-                                    </div>
+                                            </Table>
+                                        </div>
+                                    </>
                                 ) : (
                                     <Empty>
                                         <EmptyHeader>
@@ -1130,7 +1367,7 @@ export default function BlockchainExplorer({
                                             </div>
                                             <CardDescription>Protects system from cascading failures</CardDescription>
                                         </CardHeader>
-                                        <CardContent className="space-y-4">
+                                        <CardContent className="space-y-4 p-4 sm:p-6">
                                             <div className="space-y-2">
                                                 <div className="flex justify-between text-sm">
                                                     <span className="text-muted-foreground">Status</span>
@@ -1151,9 +1388,9 @@ export default function BlockchainExplorer({
                                             </div>
 
                                             {isCircuitOpen && (
-                                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/20">
+                                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/20 sm:p-4">
                                                     <div className="flex gap-2">
-                                                        <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                                                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
                                                         <div className="flex-1 space-y-2">
                                                             <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                                                                 Circuit breaker is open
@@ -1162,9 +1399,27 @@ export default function BlockchainExplorer({
                                                                 All blockchain requests are currently blocked due to repeated failures. The system
                                                                 will automatically retry after the recovery time.
                                                             </p>
-                                                            <Button onClick={handleResetCircuitBreaker} variant="outline" size="sm" className="mt-2">
-                                                                Reset Circuit Breaker
-                                                            </Button>
+                                                            <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="outline" size="sm" className="mt-2">
+                                                                        Reset Circuit Breaker
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Reset Circuit Breaker?</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            This will allow blockchain requests to resume immediately. Are you sure you want to proceed?
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={handleResetCircuitBreaker}>
+                                                                            Reset
+                                                                        </AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1181,7 +1436,7 @@ export default function BlockchainExplorer({
                                             </div>
                                             <CardDescription>Background job processing metrics</CardDescription>
                                         </CardHeader>
-                                        <CardContent className="space-y-3">
+                                        <CardContent className="space-y-3 p-4 sm:p-6">
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-muted-foreground">Pending Jobs</span>
                                                 <Badge variant="secondary">{health.queue.pending_jobs}</Badge>
@@ -1194,7 +1449,7 @@ export default function BlockchainExplorer({
                                             </div>
 
                                             {health.queue.failed_jobs_24h > 0 && (
-                                                <div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/20">
+                                                <div className="wrap-break-word rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/20">
                                                     <p className="text-sm text-red-900 dark:text-red-100">
                                                         {health.queue.failed_jobs_24h} job{health.queue.failed_jobs_24h !== 1 ? 's' : ''} failed in
                                                         the last 24 hours. Check the failed jobs queue for details.
@@ -1255,8 +1510,8 @@ export default function BlockchainExplorer({
                                                 <CardTitle>Recommended Actions</CardTitle>
                                             </div>
                                         </CardHeader>
-                                        <CardContent>
-                                            <ul className="list-inside list-disc space-y-2 text-sm">
+                                        <CardContent className="p-4 sm:p-6">
+                                            <ul className="list-inside list-disc space-y-2 wrap-break-word text-sm">
                                                 {isCircuitOpen && (
                                                     <li>Circuit breaker is open - check blockchain node connectivity at 159.65.12.99:6487</li>
                                                 )}

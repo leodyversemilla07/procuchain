@@ -79,12 +79,12 @@ class BlockchainExplorerController extends Controller
 
             // Get addresses - cache for 60 seconds (addresses don't change often)
             $addressesList = Cache::remember('blockchain:addresses', 60, function () {
-                $addresses = $this->multichain->getaddresses();
+                $addresses = $this->multichain->listaddresses();
 
                 return array_map(function ($address) {
                     return [
-                        'address' => $address,
-                        'ismine' => true,
+                        'address' => is_array($address) ? $address['address'] : $address,
+                        'ismine' => is_array($address) ? ($address['ismine'] ?? true) : true,
                     ];
                 }, $addresses);
             });

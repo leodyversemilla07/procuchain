@@ -1,5 +1,5 @@
 import BlockIpConfirmationDialog from '@/components/admin/block-ip-confirmation-dialog';
-import LoginLogDetailsDialog from '@/components/admin/login-log-details-dialog';
+import LoginLogDetailsSheet from '@/components/admin/login-log-details-sheet';
 import { HeroCard } from '@/components/hero-card';
 import { Pagination } from '@/components/pagination';
 import { StatsGrid } from '@/components/stats-grid';
@@ -65,7 +65,7 @@ interface LoginLog {
         id: number;
         name: string;
         email: string;
-        role: string;
+        primary_role: string;
         two_factor_enabled?: boolean;
         two_factor_confirmed_at?: string;
     };
@@ -234,7 +234,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     log.platform?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
                 // Role filter
-                const matchesRole = selectedRole === 'all' || log.user?.role === selectedRole;
+                const matchesRole = selectedRole === 'all' || log.user?.primary_role === selectedRole;
 
                 // Status filter
                 const matchesStatus =
@@ -329,7 +329,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     formatDateTime(log.login_at),
                     log.user?.name || 'Unknown',
                     log.user?.email || 'Unknown',
-                    log.user?.role || '-',
+                    log.user?.primary_role || '-',
                     log.user?.two_factor_enabled ? 'Enabled' : 'Disabled',
                     log.successful ? 'Success' : 'Failed',
                     log.ip_address,
@@ -449,7 +449,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     const getUniqueRoles = useMemo(() => {
         const roles = new Set<string>();
         [...recentLogins, ...(suspiciousActivities || [])].forEach((log) => {
-            if (log.user?.role) roles.add(log.user.role);
+            if (log.user?.primary_role) roles.add(log.user.primary_role);
         });
         return Array.from(roles).sort();
     }, [recentLogins, suspiciousActivities]);
@@ -637,21 +637,21 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     title="Login Logs"
                     description="Monitor user login activities and security events"
                     actions={
-                        <div className="flex gap-2">
-                            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} size="default">
-                                <RefreshCw className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')} />
-                                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} size="sm">
+                                <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
+                                <span className="hidden sm:inline sm:ml-2">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
                             </Button>
-                            <Button onClick={() => setAutoRefresh(!autoRefresh)} variant={autoRefresh ? 'default' : 'outline'} size="default">
+                            <Button onClick={() => setAutoRefresh(!autoRefresh)} variant={autoRefresh ? 'default' : 'outline'} size="sm">
                                 {autoRefresh ? (
                                     <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Auto-refresh On
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span className="hidden sm:inline sm:ml-2">Auto-refresh On</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Clock className="mr-2 h-4 w-4" />
-                                        Enable Auto-refresh
+                                        <Clock className="h-4 w-4" />
+                                        <span className="hidden sm:inline sm:ml-2">Enable Auto-refresh</span>
                                     </>
                                 )}
                             </Button>
@@ -659,16 +659,17 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 onClick={() => exportToCSV()}
                                 variant="outline"
                                 disabled={isExporting || combinedFilteredAndSortedLogs.length === 0}
+                                size="sm"
                             >
                                 {isExporting ? (
                                     <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Exporting...
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span className="hidden sm:inline sm:ml-2">Exporting...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Download className="mr-2 h-4 w-4" />
-                                        Export CSV
+                                        <Download className="h-4 w-4" />
+                                        <span className="hidden sm:inline sm:ml-2">Export CSV</span>
                                     </>
                                 )}
                             </Button>
@@ -732,13 +733,13 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 )}
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className="whitespace-nowrap">
+                                <Button variant="outline" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} size="sm" className="whitespace-nowrap">
                                     <Filter className="mr-2 h-4 w-4" />
                                     Filters
                                     <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
                                 </Button>
                                 {hasActiveFilters && (
-                                    <Button variant="outline" onClick={clearAllFilters}>
+                                    <Button variant="outline" onClick={clearAllFilters} size="sm">
                                         <X className="mr-2 h-4 w-4" />
                                         Clear
                                     </Button>
@@ -829,10 +830,18 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                             {dateRange?.from ? (
                                                 dateRange.to ? (
                                                     <>
-                                                        {format(dateRange.from, 'MMM dd')} - {format(dateRange.to, 'MMM dd')}
+                                                        <span className="hidden sm:inline">
+                                                            {format(dateRange.from, 'MMM dd')} - {format(dateRange.to, 'MMM dd')}
+                                                        </span>
+                                                        <span className="sm:hidden">
+                                                            {format(dateRange.from, 'M/d')} - {format(dateRange.to, 'M/d')}
+                                                        </span>
                                                     </>
                                                 ) : (
-                                                    format(dateRange.from, 'MMM dd, y')
+                                                    <>
+                                                        <span className="hidden sm:inline">{format(dateRange.from, 'MMM dd, y')}</span>
+                                                        <span className="sm:hidden">{format(dateRange.from, 'M/d/yy')}</span>
+                                                    </>
                                                 )
                                             ) : (
                                                 <span>Date Range</span>
@@ -916,7 +925,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                         {/* Bulk Actions Bar */}
                         {selectedLogs.size > 0 && (
-                            <div className="bg-muted/50 flex items-center justify-between rounded-lg border p-3">
+                            <div className="bg-muted/50 flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex items-center gap-2">
                                     <Badge variant="default">{selectedLogs.size} selected</Badge>
                                     <Button variant="ghost" size="sm" onClick={() => setSelectedLogs(new Set())}>
@@ -945,27 +954,27 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     <CardContent>
                         <div className="grid gap-4 md:grid-cols-3">
                             <div className="space-y-2">
-                                <p className="text-muted-foreground text-sm">This Week</p>
+                                <p className="text-muted-foreground text-xs sm:text-sm">This Week</p>
                                 <div className="flex items-baseline gap-2">
-                                    <p className="text-2xl font-bold">{statistics.this_week_logins?.toLocaleString() || '0'}</p>
+                                    <p className="text-xl font-bold sm:text-2xl">{statistics.this_week_logins?.toLocaleString() || '0'}</p>
                                     <Badge variant="secondary" className="text-xs">
                                         Logins
                                     </Badge>
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <p className="text-muted-foreground text-sm">This Month</p>
+                                <p className="text-muted-foreground text-xs sm:text-sm">This Month</p>
                                 <div className="flex items-baseline gap-2">
-                                    <p className="text-2xl font-bold">{statistics.this_month_logins?.toLocaleString() || '0'}</p>
+                                    <p className="text-xl font-bold sm:text-2xl">{statistics.this_month_logins?.toLocaleString() || '0'}</p>
                                     <Badge variant="secondary" className="text-xs">
                                         Logins
                                     </Badge>
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <p className="text-muted-foreground text-sm">Success Rate</p>
+                                <p className="text-muted-foreground text-xs sm:text-sm">Success Rate</p>
                                 <div className="flex items-baseline gap-2">
-                                    <p className="text-2xl font-bold">
+                                    <p className="text-xl font-bold sm:text-2xl">
                                         {statistics.total_logins > 0
                                             ? `${Math.round((statistics.successful_logins / statistics.total_logins) * 100)}%`
                                             : '0%'}
@@ -1068,6 +1077,10 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         <p className="font-medium">{log.user?.name || 'Unknown User'}</p>
                                                         <p className="text-muted-foreground text-sm">{log.user?.email || 'Unknown Email'}</p>
                                                     </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-muted-foreground text-xs">Role:</span>
+                                                        {getRoleBadge(log.user?.primary_role)}
+                                                    </div>
                                                     <div className="grid grid-cols-2 gap-2 text-sm">
                                                         <div>
                                                             <p className="text-muted-foreground text-xs">IP Address</p>
@@ -1077,7 +1090,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                             <p className="text-muted-foreground text-xs">Device</p>
                                                             <div className="flex items-center gap-1">
                                                                 {getDeviceIcon(log.device_type)}
-                                                                <span>{log.device_type || 'Unknown'}</span>
+                                                                <span className="text-xs sm:text-sm">{log.device_type || 'Unknown'}</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1232,7 +1245,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                             </div>
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell>{getRoleBadge(log.user?.role)}</TableCell>
+                                                    <TableCell>{getRoleBadge(log.user?.primary_role)}</TableCell>
                                                     <TableCell>
                                                         <div className="flex items-center space-x-1">
                                                             {log.user?.two_factor_enabled ? (
@@ -1381,8 +1394,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     </div>
                 </Deferred>
 
-                {/* Login Log Details Dialog */}
-                <LoginLogDetailsDialog
+                {/* Login Log Details Sheet */}
+                <LoginLogDetailsSheet
                     open={isDetailsDialogOpen}
                     onOpenChange={setIsDetailsDialogOpen}
                     log={selectedLog}
