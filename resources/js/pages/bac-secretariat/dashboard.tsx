@@ -16,6 +16,28 @@ import { useMemo } from 'react';
 import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
 import { UserRole } from '@/types/enums';
 
+/**
+ * Format stage name from snake_case to Title Case
+ */
+const formatStageName = (stage: string): string => {
+    if (!stage) return stage;
+    
+    return stage
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+};
+
+/**
+ * Format user name, handling unknown users
+ */
+const formatUserName = (user: string): string => {
+    if (!user || user === 'Unknown' || user === 'System' || user.trim() === '') {
+        return 'System Process';
+    }
+    return user;
+};
+
 interface DashboardStats {
     ongoingProjects: number;
     pendingActions: number;
@@ -134,8 +156,8 @@ export default function BACSecretariatDashboard() {
                 title: activity.title,
                 action: activity.action,
                 date: activity.date,
-                user: activity.user,
-                stage: activity.stage,
+                user: formatUserName(activity.user),
+                stage: activity.stage ? formatStageName(activity.stage) : undefined,
                 userRole: activity.user_role,
             })),
         [recentActivities],

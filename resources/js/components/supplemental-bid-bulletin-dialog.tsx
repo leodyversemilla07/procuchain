@@ -3,11 +3,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Spinner } from '@/components/ui/spinner';
-import { router, useForm } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
-import { index as procurementsListIndex } from '@/routes/bac-secretariat/procurements';
 
 interface SupplementalBidDialogProps {
     open: boolean;

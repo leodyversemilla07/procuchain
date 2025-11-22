@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace App\DataTransferObjects;
 
 use Carbon\Carbon;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Event Data Transfer Object
  *
  * Represents audit event data from blockchain.
- * Issue #15 fix: TypeScript attribute enables automatic type generation
  */
-#[TypeScript]
 final class EventData
 {
     public function __construct(

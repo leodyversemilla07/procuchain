@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace App\DataTransferObjects;
 
 use Carbon\Carbon;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Document Data Transfer Object
  *
  * Represents immutable document metadata stored on blockchain (procurement.documents stream)
- * Issue #15 fix: TypeScript attribute enables automatic type generation
  */
-#[TypeScript]
 final class DocumentData
 {
     public function __construct(

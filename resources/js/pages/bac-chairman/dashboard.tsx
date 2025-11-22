@@ -17,6 +17,19 @@ import { useMemo } from 'react';
 import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
 import { UserRole } from '@/types/enums';
 
+const formatStageName = (stage: string | undefined): string => {
+    if (!stage) return '';
+    return stage
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+};
+
+const formatUserName = (user: string | undefined): string => {
+    if (!user || user === 'Unknown' || user === 'System') return 'System Process';
+    return user;
+};
+
 interface DashboardStats {
     ongoingProjects: number;
     completedBiddings: number;
@@ -107,8 +120,8 @@ export default function BACChairmanDashboard() {
                 title: activity.title,
                 action: activity.action,
                 date: activity.date,
-                user: activity.user,
-                stage: activity.stage,
+                user: formatUserName(activity.user),
+                stage: formatStageName(activity.stage),
             })),
         [recentActivities],
     );

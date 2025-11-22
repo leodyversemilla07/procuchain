@@ -21,7 +21,7 @@ class UserService
      * Get user name from blockchain address with caching
      *
      * @param  string  $address  Blockchain address
-     * @return string User name or 'Unknown'
+     * @return string User name or 'System' for unknown addresses
      */
     public function getUserNameByAddress(string $address): string
     {
@@ -30,12 +30,12 @@ class UserService
         }
 
         try {
-            $name = User::where('blockchain_address', $address)->first()?->name ?? 'Unknown';
+            $name = User::where('blockchain_address', $address)->first()?->name ?? 'System';
         } catch (\Exception $e) {
             Log::warning("Failed to retrieve user name for address: {$address}", [
                 'error' => $e->getMessage(),
             ]);
-            $name = 'Unknown';
+            $name = 'System';
         }
 
         return $this->userNameCache[$address] = $name;

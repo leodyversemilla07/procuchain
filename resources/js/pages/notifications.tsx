@@ -16,7 +16,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { AlertCircle, Bell, Check, CheckCheck, Clock, Filter, Loader2, RotateCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { markAsRead, markAllAsRead, page as notificationsPage } from '@/actions/App/Http/Controllers/NotificationController';
+import { markAsRead, markAllAsRead } from '@/actions/App/Http/Controllers/NotificationController';
 
 // Import Wayfinder route helpers for each role
 import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';

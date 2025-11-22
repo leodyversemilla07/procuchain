@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace App\DataTransferObjects;
 
 use Carbon\Carbon;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Status Data Transfer Object
  *
  * Represents procurement status data from blockchain.
- * Issue #15 fix: TypeScript attribute enables automatic type generation
  */
-#[TypeScript]
 final class StatusData
 {
     public function __construct(
