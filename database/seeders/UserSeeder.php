@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Enums\UserRoleEnums;
-use App\Libraries\MultiChain\Manager;
 use App\Models\User;
+use App\Services\Manager;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;

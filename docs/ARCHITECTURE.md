@@ -270,46 +270,9 @@ Stores procurement project data with blockchain integration.
 - Primary: `id`
 - Index: `stage`, `current_status`, `last_updated`, `blockchain_status`
 
-**Note:** No procurement documents stored in this table - see `procurement_documents`
+**Note:** Procurement documents are stored directly in blockchain streams for single source of truth. No database storage is used for document metadata.
 
-#### 3. `procurement_documents` (Document Management)
-
-Stores document metadata with blockchain references.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | bigint PK | Primary key |
-| procurement_id | varchar FK | Reference to procurement |
-| file_key | varchar | Storage identifier |
-| file_name | varchar | Original filename |
-| document_type | varchar | Type enum |
-| stage | varchar | Stage enum |
-| metadata | json | Additional metadata |
-| blockchain_txid | varchar | Document txid |
-| data_txid | varchar | File data txid |
-| metadata_txid | varchar | File metadata txid |
-| blockchain_status | enum | pending/published/failed |
-| blockchain_status_updated_at | timestamp | Status update time |
-| blockchain_error | text | Error message |
-| blockchain_retry_count | tinyint | Retry attempts |
-| is_corrected | tinyint | Correction flag |
-| correction_reason | text | Why corrected |
-| corrected_at | timestamp | Correction time |
-| corrected_by | varchar | Who corrected |
-| correction_txid | varchar | Correction txid |
-
-**Indexes:**
-- Primary: `id`
-- Foreign: `procurement_id` → `procurements.id` (cascade delete)
-- Index: `file_key`, `stage`, `created_at`, `blockchain_status`
-- Composite: `(procurement_id, blockchain_status)`
-
-**Blockchain Integration:**
-- Documents published to `procurement.documents` stream
-- File data stored in `file.data` stream
-- Corrections tracked in `procurement.corrections` stream
-
-#### 4. `user_login_logs` (Security Audit Trail)
+#### 3. `user_login_logs` (Security Audit Trail)
 
 Comprehensive login activity logging with device detection.
 

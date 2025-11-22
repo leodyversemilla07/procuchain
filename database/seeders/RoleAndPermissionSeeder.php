@@ -85,9 +85,11 @@ class RoleAndPermissionSeeder extends Seeder
 
         // Create roles and assign permissions
 
-        // Admin role - has all permissions
+        // Admin role - has all permissions except procurement creation
         $adminRole = Role::create(['name' => 'admin']);
-        $adminRole->givePermissionTo(Permission::all());
+        $adminRole->givePermissionTo(
+            Permission::where('name', '!=', 'create procurement')->get()
+        );
 
         // BAC Secretariat role - manages procurement workflow
         $bacSecretariatRole = Role::create(['name' => 'bac_secretariat']);

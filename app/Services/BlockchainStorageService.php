@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\DataTransferObjects\FileMetadata;
 use App\Enums\StreamEnums;
-use App\Libraries\MultiChain\Manager;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
@@ -179,12 +178,12 @@ final class BlockchainStorageService
             // Verbose mode - need to use gettxoutdata to get raw hex
             $txid = $dataItem['txid'] ?? $dataItem['data']['txid'] ?? null;
             $vout = $dataItem['vout'] ?? $dataItem['data']['vout'] ?? 0;
-            
+
             if ($txid) {
                 $fileHex = $this->multichain->gettxoutdata($txid, $vout);
             }
         }
-        
+
         if (! $fileHex) {
             throw new Exception('File data not found in blockchain item');
         }

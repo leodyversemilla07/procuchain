@@ -1458,47 +1458,6 @@ export default function BlockchainExplorer({
                                             )}
                                         </CardContent>
                                     </Card>
-
-                                    {/* Document Metrics */}
-                                    <Card className="md:col-span-2">
-                                        <CardHeader>
-                                            <div className="flex items-center gap-2">
-                                                <Activity className="h-5 w-5" />
-                                                <CardTitle>Document Blockchain Status</CardTitle>
-                                            </div>
-                                            <CardDescription>Blockchain publication status for procurement documents</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className="text-muted-foreground">Pending (Last Hour)</span>
-                                                        <Badge variant={health.documents.pending_1h > 10 ? 'destructive' : 'secondary'}>
-                                                            {health.documents.pending_1h}
-                                                        </Badge>
-                                                    </div>
-                                                    {health.documents.pending_1h > 10 && (
-                                                        <p className="text-muted-foreground text-xs">
-                                                            Consider running the reconciliation command to check for stuck records
-                                                        </p>
-                                                    )}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className="text-muted-foreground">Failed (Last 24h)</span>
-                                                        <Badge variant={health.documents.failed_24h > 0 ? 'destructive' : 'secondary'}>
-                                                            {health.documents.failed_24h}
-                                                        </Badge>
-                                                    </div>
-                                                    {health.documents.failed_24h > 0 && (
-                                                        <p className="text-muted-foreground text-xs">
-                                                            Review failed documents and retry if blockchain is now available
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
                                 </div>
 
                                 {/* Recommendations */}
@@ -1522,17 +1481,6 @@ export default function BlockchainExplorer({
                                                             php artisan queue:failed
                                                         </code>
                                                     </li>
-                                                )}
-                                                {health.documents.pending_1h > 10 && (
-                                                    <li>
-                                                        Run reconciliation:{' '}
-                                                        <code className="rounded bg-black/10 px-1 py-0.5 text-xs dark:bg-white/10">
-                                                            php artisan blockchain:reconcile
-                                                        </code>
-                                                    </li>
-                                                )}
-                                                {health.documents.failed_24h > 0 && (
-                                                    <li>Investigate blockchain publication failures in application logs</li>
                                                 )}
                                             </ul>
                                         </CardContent>

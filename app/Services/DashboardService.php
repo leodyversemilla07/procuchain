@@ -203,7 +203,7 @@ class DashboardService
             }
 
             $documentCountMap = collect($documentDtos)
-                ->groupBy(fn (DocumentData $doc) => $doc->pr_number)
+                ->groupBy(fn (DocumentData $doc) => $doc->prNumber)
                 ->map(function ($docs) {
                     return collect($docs)->pluck('hash')->unique()->count();
                 });

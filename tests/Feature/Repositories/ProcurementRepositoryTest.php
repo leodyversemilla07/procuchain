@@ -4,10 +4,10 @@ use App\DataTransferObjects\ProcurementData;
 use App\Enums\ProcurementCategory;
 use App\Enums\ProcurementMode;
 use App\Repositories\ProcurementRepository;
-use App\Services\MultichainService;
+use App\Services\Manager;
 
 beforeEach(function () {
-    $this->mockMultichain = Mockery::mock(MultichainService::class);
+    $this->mockMultichain = Mockery::mock(Manager::class);
     $this->repository = new ProcurementRepository($this->mockMultichain);
 });
 

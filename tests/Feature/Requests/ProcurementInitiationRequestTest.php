@@ -50,20 +50,24 @@ describe('InitiateProcurementRequest', function () {
     describe('validation rules', function () {
         test('it passes with valid data', function () {
             $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
+                'pr_number' => 'PR-2024-0001-0001',
+                'ppmp_reference' => 'PPMP-2024-001',
+                'title' => 'Construction of Municipal Building',
+                'description' => 'Construction project for municipal building',
+                'abc_amount' => 1000000.00,
+                'funding_source' => 'Local Government Fund',
+                'category' => 'infrastructure_projects',
+                'procurement_mode' => 'public_bidding',
+                'office' => 'Engineering Office',
+                'purpose' => 'To construct a new municipal building',
+                'delivery_location' => 'Municipal Hall',
+                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+                'prepared_by' => 'John Doe',
                 'files' => [
                     UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
                 ],
-                'metadata' => [
-                    [
-                        'document_type' => 'Project Proposal',
-                        'submission_date' => '2024-01-15',
-                        'municipal_offices' => 'Engineering Office',
-                        'signatories' => [
-                            ['name' => 'John Doe', 'position' => 'BAC Chairman'],
-                        ],
-                    ],
+                'document_types' => [
+                    'project_proposal',
                 ],
             ];
 
@@ -75,16 +79,19 @@ describe('InitiateProcurementRequest', function () {
 
         test('it passes without optional fields', function () {
             $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [
-                    UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
-                ],
-                'metadata' => [
-                    [
-                        'document_type' => 'Project Proposal',
-                    ],
-                ],
+                'pr_number' => 'PR-2024-0001-0001',
+                'ppmp_reference' => 'PPMP-2024-001',
+                'title' => 'Construction of Municipal Building',
+                'description' => 'Construction project for municipal building',
+                'abc_amount' => 1000000.00,
+                'funding_source' => 'Local Government Fund',
+                'category' => 'infrastructure_projects',
+                'procurement_mode' => 'public_bidding',
+                'office' => 'Engineering Office',
+                'purpose' => 'To construct a new municipal building',
+                'delivery_location' => 'Municipal Hall',
+                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+                'prepared_by' => 'John Doe',
             ];
 
             $request = new InitiateProcurementRequest;
@@ -97,13 +104,18 @@ describe('InitiateProcurementRequest', function () {
     describe('pr_number validation', function () {
         test('it requires pr_number', function () {
             $data = [
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf')],
-                'metadata' => [
-                    [
-                        'document_type' => 'Project Proposal',
-                    ],
-                ],
+                'ppmp_reference' => 'PPMP-2024-001',
+                'title' => 'Construction of Municipal Building',
+                'description' => 'Construction project for municipal building',
+                'abc_amount' => 1000000.00,
+                'funding_source' => 'Local Government Fund',
+                'category' => 'infrastructure_projects',
+                'procurement_mode' => 'public_bidding',
+                'office' => 'Engineering Office',
+                'purpose' => 'To construct a new municipal building',
+                'delivery_location' => 'Municipal Hall',
+                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+                'prepared_by' => 'John Doe',
             ];
 
             $request = new InitiateProcurementRequest;
@@ -113,12 +125,21 @@ describe('InitiateProcurementRequest', function () {
             expect($validator->errors()->has('pr_number'))->toBeTrue();
         });
 
-        test('it requires pr_number to be a string', function () {
+        test('it validates pr_number format', function () {
             $data = [
-                'pr_number' => 12345,
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [['document_type' => 'Project Proposal']],
+                'pr_number' => 'INVALID-123',
+                'ppmp_reference' => 'PPMP-2024-001',
+                'title' => 'Construction of Municipal Building',
+                'description' => 'Construction project for municipal building',
+                'abc_amount' => 1000000.00,
+                'funding_source' => 'Local Government Fund',
+                'category' => 'infrastructure_projects',
+                'procurement_mode' => 'public_bidding',
+                'office' => 'Engineering Office',
+                'purpose' => 'To construct a new municipal building',
+                'delivery_location' => 'Municipal Hall',
+                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+                'prepared_by' => 'John Doe',
             ];
 
             $request = new InitiateProcurementRequest;
@@ -128,106 +149,130 @@ describe('InitiateProcurementRequest', function () {
             expect($validator->errors()->has('pr_number'))->toBeTrue();
         });
 
-        test('it rejects pr_number exceeding 50 characters', function () {
+        test('it accepts valid pr_number format', function () {
             $data = [
-                'pr_number' => str_repeat('A', 51),
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [['document_type' => 'Project Proposal']],
+                'pr_number' => 'PR-2024-0001-0001',
+                'ppmp_reference' => 'PPMP-2024-001',
+                'title' => 'Construction of Municipal Building',
+                'description' => 'Construction project for municipal building',
+                'abc_amount' => 1000000.00,
+                'funding_source' => 'Local Government Fund',
+                'category' => 'infrastructure_projects',
+                'procurement_mode' => 'public_bidding',
+                'office' => 'Engineering Office',
+                'purpose' => 'To construct a new municipal building',
+                'delivery_location' => 'Municipal Hall',
+                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+                'prepared_by' => 'John Doe',
             ];
 
             $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('pr_number'))->toBeTrue();
+            expect($validator->passes())->toBeTrue();
         });
     });
 
-    describe('procurement_title validation', function () {
-        test('it requires procurement_title', function () {
+    describe('title validation', function () {
+        test('it requires title', function () {
             $data = [
-                'pr_number' => 'PROC-2024-001',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [['document_type' => 'Project Proposal']],
+                'pr_number' => 'PR-2024-0001-0001',
+                'ppmp_reference' => 'PPMP-2024-001',
+                'description' => 'Construction project for municipal building',
+                'abc_amount' => 1000000.00,
+                'funding_source' => 'Local Government Fund',
+                'category' => 'infrastructure_projects',
+                'procurement_mode' => 'public_bidding',
+                'office' => 'Engineering Office',
+                'purpose' => 'To construct a new municipal building',
+                'delivery_location' => 'Municipal Hall',
+                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+                'prepared_by' => 'John Doe',
             ];
 
             $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('procurement_title'))->toBeTrue();
+            expect($validator->errors()->has('title'))->toBeTrue();
         });
 
-        test('it requires minimum 5 characters', function () {
+        test('it rejects title exceeding 255 characters', function () {
             $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Test',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [['document_type' => 'Project Proposal']],
+                'pr_number' => 'PR-2024-0001-0001',
+                'ppmp_reference' => 'PPMP-2024-001',
+                'title' => str_repeat('A', 256),
+                'description' => 'Construction project for municipal building',
+                'abc_amount' => 1000000.00,
+                'funding_source' => 'Local Government Fund',
+                'category' => 'infrastructure_projects',
+                'procurement_mode' => 'public_bidding',
+                'office' => 'Engineering Office',
+                'purpose' => 'To construct a new municipal building',
+                'delivery_location' => 'Municipal Hall',
+                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+                'prepared_by' => 'John Doe',
             ];
 
             $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('procurement_title'))->toBeTrue();
-        });
-
-        test('it rejects procurement_title exceeding 255 characters', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => str_repeat('A', 256),
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [['document_type' => 'Project Proposal']],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('procurement_title'))->toBeTrue();
+            expect($validator->errors()->has('title'))->toBeTrue();
         });
     });
 
     describe('files validation', function () {
-        test('it requires files array', function () {
+        test('it accepts valid PDF files', function () {
             $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'metadata' => [['document_type' => 'Project Proposal']],
+                'pr_number' => 'PR-2024-0001-0001',
+                'ppmp_reference' => 'PPMP-2024-001',
+                'title' => 'Construction of Municipal Building',
+                'description' => 'Construction project for municipal building',
+                'abc_amount' => 1000000.00,
+                'funding_source' => 'Local Government Fund',
+                'category' => 'infrastructure',
+                'procurement_mode' => 'public_bidding',
+                'office' => 'Engineering Office',
+                'purpose' => 'To construct a new municipal building',
+                'delivery_location' => 'Municipal Hall',
+                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+                'prepared_by' => 'John Doe',
+                'files' => [
+                    UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
+                ],
+                'document_types' => [
+                    'project_proposal',
+                ],
             ];
 
             $request = new InitiateProcurementRequest;
             $validator = Validator::make($data, $request->rules());
 
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('files'))->toBeTrue();
-        });
-
-        test('it requires at least one file', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [],
-                'metadata' => [['document_type' => 'Project Proposal']],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('files'))->toBeTrue();
+            expect($validator->passes())->toBeTrue();
         });
 
         test('it rejects non-PDF files', function () {
             $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
+                'pr_number' => 'PR-2024-0001-0001',
+                'ppmp_reference' => 'PPMP-2024-001',
+                'title' => 'Construction of Municipal Building',
+                'description' => 'Construction project for municipal building',
+                'abc_amount' => 1000000.00,
+                'funding_source' => 'Local Government Fund',
+                'category' => 'infrastructure',
+                'procurement_mode' => 'public_bidding',
+                'office' => 'Engineering Office',
+                'purpose' => 'To construct a new municipal building',
+                'delivery_location' => 'Municipal Hall',
+                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+                'prepared_by' => 'John Doe',
                 'files' => [
                     UploadedFile::fake()->create('document1.docx', 1024),
                 ],
-                'metadata' => [['document_type' => 'Project Proposal']],
+                'document_types' => [
+                    'project_proposal',
+                ],
             ];
 
             $request = new InitiateProcurementRequest;
@@ -237,14 +282,27 @@ describe('InitiateProcurementRequest', function () {
             expect($validator->errors()->has('files.0'))->toBeTrue();
         });
 
-        test('it rejects files exceeding 10MB', function () {
+        test('it rejects files exceeding 50MB', function () {
             $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
+                'pr_number' => 'PR-2024-0001-0001',
+                'ppmp_reference' => 'PPMP-2024-001',
+                'title' => 'Construction of Municipal Building',
+                'description' => 'Construction project for municipal building',
+                'abc_amount' => 1000000.00,
+                'funding_source' => 'Local Government Fund',
+                'category' => 'infrastructure',
+                'procurement_mode' => 'public_bidding',
+                'office' => 'Engineering Office',
+                'purpose' => 'To construct a new municipal building',
+                'delivery_location' => 'Municipal Hall',
+                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+                'prepared_by' => 'John Doe',
                 'files' => [
-                    UploadedFile::fake()->create('document1.pdf', 10241, 'application/pdf'),
+                    UploadedFile::fake()->create('document1.pdf', 51201, 'application/pdf'),
                 ],
-                'metadata' => [['document_type' => 'Project Proposal']],
+                'document_types' => [
+                    'project_proposal',
+                ],
             ];
 
             $request = new InitiateProcurementRequest;
@@ -252,278 +310,6 @@ describe('InitiateProcurementRequest', function () {
 
             expect($validator->fails())->toBeTrue();
             expect($validator->errors()->has('files.0'))->toBeTrue();
-        });
-
-        test('it accepts multiple PDF files', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [
-                    UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
-                    UploadedFile::fake()->create('document2.pdf', 2048, 'application/pdf'),
-                ],
-                'metadata' => [
-                    ['document_type' => 'Project Proposal'],
-                    ['document_type' => 'Budget Breakdown'],
-                ],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->passes())->toBeTrue();
-        });
-    });
-
-    describe('metadata validation', function () {
-        test('it requires metadata array', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('metadata'))->toBeTrue();
-        });
-
-        test('it requires at least one metadata entry', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('metadata'))->toBeTrue();
-        });
-
-        test('it requires document_type in metadata', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [
-                    ['submission_date' => '2024-01-15'],
-                ],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('metadata.0.document_type'))->toBeTrue();
-        });
-
-        test('it rejects document_type exceeding 255 characters', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [
-                    ['document_type' => str_repeat('A', 256)],
-                ],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('metadata.0.document_type'))->toBeTrue();
-        });
-    });
-
-    describe('submission_date validation', function () {
-        test('it accepts valid date in Y-m-d format', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [
-                    [
-                        'document_type' => 'Project Proposal',
-                        'submission_date' => '2024-01-15',
-                    ],
-                ],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->passes())->toBeTrue();
-        });
-
-        test('it rejects future dates', function () {
-            $futureDate = now()->addDays(1)->format('Y-m-d');
-
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [
-                    [
-                        'document_type' => 'Project Proposal',
-                        'submission_date' => $futureDate,
-                    ],
-                ],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('metadata.0.submission_date'))->toBeTrue();
-        });
-
-        test('it rejects invalid date format', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [
-                    [
-                        'document_type' => 'Project Proposal',
-                        'submission_date' => '15-01-2024',
-                    ],
-                ],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('metadata.0.submission_date'))->toBeTrue();
-        });
-    });
-
-    describe('signatories validation', function () {
-        test('it accepts valid signatories', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [
-                    [
-                        'document_type' => 'Project Proposal',
-                        'signatories' => [
-                            ['name' => 'John Doe', 'position' => 'BAC Chairman'],
-                            ['name' => 'Jane Smith', 'position' => 'BAC Member'],
-                        ],
-                    ],
-                ],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->passes())->toBeTrue();
-        });
-
-        test('it requires name for each signatory', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [
-                    [
-                        'document_type' => 'Project Proposal',
-                        'signatories' => [
-                            ['position' => 'BAC Chairman'],
-                        ],
-                    ],
-                ],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('metadata.0.signatories.0.name'))->toBeTrue();
-        });
-
-        test('it requires position for each signatory', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [
-                    [
-                        'document_type' => 'Project Proposal',
-                        'signatories' => [
-                            ['name' => 'John Doe'],
-                        ],
-                    ],
-                ],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('metadata.0.signatories.0.position'))->toBeTrue();
-        });
-
-        test('it rejects signatory name exceeding 255 characters', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [UploadedFile::fake()->create('document1.pdf', 1024)],
-                'metadata' => [
-                    [
-                        'document_type' => 'Project Proposal',
-                        'signatories' => [
-                            ['name' => str_repeat('A', 256), 'position' => 'BAC Chairman'],
-                        ],
-                    ],
-                ],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules());
-
-            expect($validator->fails())->toBeTrue();
-            expect($validator->errors()->has('metadata.0.signatories.0.name'))->toBeTrue();
-        });
-    });
-
-    describe('custom error messages', function () {
-        test('it provides custom message for file size', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [
-                    UploadedFile::fake()->create('document1.pdf', 10241, 'application/pdf'),
-                ],
-                'metadata' => [['document_type' => 'Project Proposal']],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules(), $request->messages());
-
-            expect($validator->errors()->first('files.0'))->toContain('8MB');
-        });
-
-        test('it provides custom message for file type', function () {
-            $data = [
-                'pr_number' => 'PROC-2024-001',
-                'procurement_title' => 'Construction of Municipal Building',
-                'files' => [
-                    UploadedFile::fake()->create('document1.docx', 1024),
-                ],
-                'metadata' => [['document_type' => 'Project Proposal']],
-            ];
-
-            $request = new InitiateProcurementRequest;
-            $validator = Validator::make($data, $request->rules(), $request->messages());
-
-            expect($validator->errors()->first('files.0'))->toContain('PDF');
         });
     });
 });

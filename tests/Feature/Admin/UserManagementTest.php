@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\Manager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 
@@ -34,6 +35,13 @@ test('admin can access user management page', function () {
 test('admin can create new user', function () {
     // Create the role first
     Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+
+    // Mock the Manager service
+    $managerMock = Mockery::mock(Manager::class);
+    $managerMock->shouldReceive('getnewaddress')
+        ->once()
+        ->andReturn('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2');
+    $this->app->instance(Manager::class, $managerMock);
 
     $userData = [
         'name' => 'Test User',

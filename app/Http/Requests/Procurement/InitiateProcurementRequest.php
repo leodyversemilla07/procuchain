@@ -51,7 +51,7 @@ class InitiateProcurementRequest extends FormRequest
 
             // Documents - Optional to support progressive upload (can upload after initiation)
             'files' => ['nullable', 'array'],
-            'files.*' => ['file', 'mimes:pdf', 'max:51200'], // 50MB max
+            'files.*' => ['mimes:pdf', 'max:51200'], // 50MB max
             'document_types' => ['nullable', 'array'],
             'document_types.*' => ['required_with:files.*', Rule::enum(DocumentTypeEnums::class)],
             'document_descriptions' => ['nullable', 'array'],

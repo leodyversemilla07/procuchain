@@ -2,7 +2,7 @@
 
 use App\Enums\StreamEnums;
 use App\Libraries\MultiChain\Client;
-use App\Libraries\MultiChain\Manager;
+use App\Services\Manager;
 use Illuminate\Support\Facades\Config;
 
 /**

@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\StreamEnums;
 use App\Enums\UserRoleEnums;
-use App\Libraries\MultiChain\Contracts\MultiChainManagerInterface as Manager;
+use App\Services\Manager;
 use App\Models\User;
 use App\Services\BlockchainStorageService;
 use Exception;
@@ -388,7 +388,7 @@ class MultichainSetup extends Command
                 $this->line("Subscribed to stream '{$displayName}' ({$streamConfig['name']})");
                 $subscribed++;
             } catch (Exception $e) {
-                if (!str_contains($e->getMessage(), 'already subscribed')) {
+                if (! str_contains($e->getMessage(), 'already subscribed')) {
                     $this->warn("Failed to subscribe to '{$displayName}': {$e->getMessage()}");
                 }
             }

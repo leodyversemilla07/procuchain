@@ -28,7 +28,7 @@
 | Category | Tables | Purpose |
 |----------|--------|---------|
 | **User Management** | users, user_login_logs | User accounts and login tracking |
-| **Procurement** | procurements, procurement_documents | Procurement data with blockchain references |
+| **Procurement** | procurements | Procurement data with blockchain references |
 | **Security** | blocked_ips, document_views | IP blocking and access tracking |
 | **Permissions** | roles, permissions, model_has_roles, role_has_permissions, model_has_permissions | Spatie RBAC |
 | **Laravel System** | cache, cache_locks, sessions, jobs, failed_jobs, job_batches, notifications, push_subscriptions, password_reset_tokens, migrations | Framework tables |
@@ -136,74 +136,7 @@ CREATE TABLE procurements (
 - `procurement.status` - Status transition history
 - `procurement.events` - Workflow events
 
-**Note:** This table stores references to blockchain data, not the actual documents. Documents are in `procurement_documents` table.
-
-### Table: `procurement_documents`
-
-Document metadata with blockchain references and correction tracking.
-
-```sql
-CREATE TABLE procurement_documents (
-    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    procurement_id VARCHAR(255) NOT NULL,
-    file_key VARCHAR(255) NOT NULL,
-    file_name VARCHAR(255) NOT NULL,
-    document_type VARCHAR(255) NOT NULL,  -- DocumentTypeEnums value
-    stage VARCHAR(255) NOT NULL,  -- StageEnums value
-    metadata JSON NULL,
-    
-    -- Blockchain Integration
-    blockchain_txid VARCHAR(255) NULL,  -- Document record txid
-    data_txid VARCHAR(255) NULL,  -- File data txid
-    metadata_txid VARCHAR(255) NULL,  -- File metadata txid
-    blockchain_status ENUM('pending', 'published', 'failed') DEFAULT 'pending',
-    blockchain_status_updated_at TIMESTAMP NULL,
-    blockchain_error TEXT NULL,
-    blockchain_retry_count TINYINT DEFAULT 0,
-    
-    -- Correction Tracking
-    is_corrected TINYINT(1) DEFAULT 0,
-    correction_reason TEXT NULL,
-    corrected_at TIMESTAMP NULL,
-    corrected_by VARCHAR(255) NULL,
-    correction_txid VARCHAR(255) NULL,
-    
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    
-    INDEX idx_file_key (file_key),
-    INDEX idx_stage (stage),
-    INDEX idx_created_at (created_at),
-    INDEX idx_blockchain_status (blockchain_status),
-    INDEX idx_proc_docs_blockchain_status (procurement_id, blockchain_status),
-    
-    FOREIGN KEY (procurement_id) REFERENCES procurements(id) ON DELETE CASCADE
-);
-```
-
-**Key Features:**
-- **Multiple Transaction IDs:** Separate txids for document, file data, and metadata
-- **Correction Tracking:** Non-destructive correction history
-- **File Storage:** Files stored on blockchain, `file_key` references blockchain location
-
-**Blockchain Streams Used:**
-- `procurement.documents` - Document metadata
-- `file.data` - Raw file content (hex-encoded)
-- `file.metadata` - File integrity data (SHA-256 hash)
-- `procurement.corrections` - Correction records
-
-**Document Lifecycle:**
-1. Upload: File saved locally, record created with `blockchain_status = 'pending'`
-2. Queue: Background job dispatched to publish to blockchain
-3. Publish: File written to blockchain, txids recorded
-4. Complete: Status updated to `'published'`, txids stored
-
-**Correction Flow:**
-1. User submits correction for document
-2. Original document marked `is_corrected = 1`
-3. Correction published to `procurement.corrections` stream
-4. New document version created (if needed)
-5. Original document preserved (immutable)
+**Note:** Procurement documents are stored directly in blockchain streams for single source of truth. No database storage is used for document metadata.
 
 ---
 
@@ -701,7 +634,7 @@ mysql -u root -p procuchain < backup-20251115.sql
 
 ```sql
 -- Optimize all tables
-OPTIMIZE TABLE users, procurements, procurement_documents;
+OPTIMIZE TABLE users, procurements;
 
 -- Analyze for query optimizer
 ANALYZE TABLE users, procurements;

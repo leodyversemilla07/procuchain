@@ -764,7 +764,6 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 ### Core Tables (22 total)
 - **users** (19 columns): User accounts with blockchain addresses, 2FA, account lockout
 - **procurements** (13 columns): Core procurement records with blockchain integration
-- **procurement_documents** (21 columns): Document metadata with blockchain anchors including `data_txid` and `metadata_txid` for on-chain file retrieval
 - **user_login_logs** (13 columns): Comprehensive login audit trail
 - **document_views** (13 columns): Document access tracking
 - **blocked_ips** (8 columns): IP blocking system

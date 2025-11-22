@@ -72,6 +72,7 @@ return [
 
     'connection_timeout' => env('MULTICHAIN_CONNECTION_TIMEOUT', 30),
     'max_retries' => env('MULTICHAIN_MAX_RETRIES', 3),
+    'retry_delay' => env('MULTICHAIN_RETRY_DELAY', 2),
 
     // Web-request specific caps to avoid hitting PHP's 60s max execution time
     'web_connection_timeout' => env('MULTICHAIN_WEB_CONNECTION_TIMEOUT', 12),

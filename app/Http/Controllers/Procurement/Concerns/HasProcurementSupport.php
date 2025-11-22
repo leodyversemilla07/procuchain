@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Procurement\Concerns;
 
-use App\Libraries\MultiChain\Manager;
+use App\Services\Manager;
 use App\Services\ProcurementDataService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;

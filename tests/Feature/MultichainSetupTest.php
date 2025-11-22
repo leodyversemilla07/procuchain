@@ -1,10 +1,8 @@
 <?php
 
-use App\Libraries\MultiChain\Contracts\MultiChainManagerInterface as MultiChainManager;
-
 beforeEach(function () {
-    $this->multichain = mock(MultiChainManager::class);
-    $this->app->instance(MultiChainManager::class, $this->multichain);
+    $this->multichain = mock(\App\Services\Manager::class);
+    $this->app->instance(\App\Services\Manager::class, $this->multichain);
 });
 
 it('checks connection with correct RPC method name', function () {
