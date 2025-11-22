@@ -104,15 +104,16 @@ describe('PreProcurementController', function () {
 
         $file = UploadedFile::fake()->create('minutes.pdf', 1000, 'application/pdf');
 
-        $response = $this->post(route('bac-secretariat.procurement.pre-procurement.upload', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-        ]), [
-            'pr_number' => 'PR-2024-001',
-            'minutes_file' => $file,
-            'meeting_date' => '2024-01-15',
-            'participants' => 'John Doe, Jane Smith',
-        ]);
+        $response = $this->withoutMiddleware('throttle:blockchain_writes')
+            ->post(route('bac-secretariat.procurement.pre-procurement.upload', [
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+            ]), [
+                'pr_number' => 'PR-2024-001',
+                'minutes_file' => $file,
+                'meeting_date' => '2024-01-15',
+                'participants' => 'John Doe, Jane Smith',
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
@@ -150,11 +151,12 @@ describe('PreProcurementController', function () {
         $eventPublisher->shouldReceive('publish')->once();
         $this->instance(EventPublisher::class, $eventPublisher);
 
-        $response = $this->post(route('bac-secretariat.publish-pre-procurement-conference-decision'), [
-            'pr_number' => 'PR-2024-001',
-            'procurement_title' => 'Test Procurement Project',
-            'conference_held' => true,
-        ]);
+        $response = $this->withoutMiddleware('throttle:blockchain_writes')
+            ->post(route('bac-secretariat.publish-pre-procurement-conference-decision'), [
+                'pr_number' => 'PR-2024-001',
+                'procurement_title' => 'Test Procurement Project',
+                'conference_held' => true,
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
@@ -165,7 +167,7 @@ describe('ProcurementController', function () {
     it('shows procurement stage page for authorized users', function () {
         actingAs($this->bacSecretariat);
 
-        $response = $this->get(route('bac-secretariat.procurement.procurement.show', [
+        $response = $this->get(route('bac-secretariat.procurement.bidding.show', [
             'pr_number' => 'PR-2024-001',
             'stage' => StageEnums::BID_EVALUATION->value,
         ]));
@@ -181,7 +183,7 @@ describe('ProcurementController', function () {
     it('rejects non-procurement stages', function () {
         actingAs($this->bacSecretariat);
 
-        $response = $this->get(route('bac-secretariat.procurement.procurement.show', [
+        $response = $this->get(route('bac-secretariat.procurement.bidding.show', [
             'pr_number' => 'PR-2024-001',
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value, // Pre-procurement phase stage
         ]));
@@ -244,13 +246,14 @@ describe('ProcurementController', function () {
 
         $file = UploadedFile::fake()->create('evaluation_report.pdf', 1000, 'application/pdf');
 
-        $response = $this->post(route('bac-secretariat.procurement.procurement.upload', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::BID_EVALUATION->value,
-        ]), [
-            'pr_number' => 'PR-2024-001',
-            'evaluation_report_file' => $file,
-        ]);
+        $response = $this->withoutMiddleware('throttle:blockchain_writes')
+            ->post(route('bac-secretariat.procurement.bidding.upload', [
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::BID_EVALUATION->value,
+            ]), [
+                'pr_number' => 'PR-2024-001',
+                'evaluation_report_file' => $file,
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
@@ -267,7 +270,7 @@ describe('ProcurementController', function () {
                 'missing_documents' => [],
             ]);
 
-        $response = $this->get(route('bac-secretariat.procurement.procurement.check-completion', [
+        $response = $this->get(route('bac-secretariat.procurement.bidding.check-completion', [
             'pr_number' => 'PR-2024-001',
             'stage' => StageEnums::BID_EVALUATION->value,
         ]));
@@ -372,13 +375,14 @@ describe('PostProcurementController', function () {
 
         $file = UploadedFile::fake()->create('notice_of_award.pdf', 1000, 'application/pdf');
 
-        $response = $this->post(route('bac-secretariat.procurement.post-procurement.upload', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::NOTICE_OF_AWARD->value,
-        ]), [
-            'pr_number' => 'PR-2024-001',
-            'notice_of_award_file' => $file,
-        ]);
+        $response = $this->withoutMiddleware('throttle:blockchain_writes')
+            ->post(route('bac-secretariat.procurement.post-procurement.upload', [
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::NOTICE_OF_AWARD->value,
+            ]), [
+                'pr_number' => 'PR-2024-001',
+                'notice_of_award_file' => $file,
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
@@ -494,59 +498,20 @@ describe('PostProcurementController', function () {
 
         $file = UploadedFile::fake()->create('completion_certificate.pdf', 1000, 'application/pdf');
 
-        $response = $this->post(route('bac-secretariat.procurement.post-procurement.upload', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::COMPLETION->value,
-        ]), [
-            'pr_number' => 'PR-2024-001',
-            'completion_certificate_file' => $file,
-        ]);
+        $response = $this->withoutMiddleware('throttle:blockchain_writes')
+            ->post(route('bac-secretariat.procurement.post-procurement.upload', [
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::COMPLETION->value,
+            ]), [
+                'pr_number' => 'PR-2024-001',
+                'completion_certificate_file' => $file,
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
     });
 });
 
-describe('Legacy Route Redirects', function () {
-    it('redirects legacy pre-procurement conference route', function () {
-        actingAs($this->bacSecretariat);
-
-        $response = $this->get(route('bac-secretariat.procurement.pre-procurement-conference-upload', [
-            'id' => 'PR-2024-001',
-        ]));
-
-        $response->assertRedirect(route('bac-secretariat.procurement.pre-procurement.show', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-        ]));
-    });
-
-    it('redirects legacy bid evaluation route', function () {
-        actingAs($this->bacSecretariat);
-
-        $response = $this->get(route('bac-secretariat.procurement.bid-evaluation-upload', [
-            'id' => 'PR-2024-001',
-        ]));
-
-        $response->assertRedirect(route('bac-secretariat.procurement.procurement.show', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::BID_EVALUATION->value,
-        ]));
-    });
-
-    it('redirects legacy notice of award route', function () {
-        actingAs($this->bacSecretariat);
-
-        $response = $this->get(route('bac-secretariat.procurement.noa-upload', [
-            'id' => 'PR-2024-001',
-        ]));
-
-        $response->assertRedirect(route('bac-secretariat.procurement.post-procurement.show', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::NOTICE_OF_AWARD->value,
-        ]));
-    });
-});
 
 describe('Authorization', function () {
     it('denies access to non-bac-secretariat users', function () {

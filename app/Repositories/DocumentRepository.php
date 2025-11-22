@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Repository for managing procurement.documents stream
  */
-final readonly class DocumentRepository
+class DocumentRepository
 {
     public function __construct(
         private Manager $multichain

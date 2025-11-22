@@ -22,7 +22,7 @@ describe('ProcurementListController', function () {
         it('returns procurements list page for bac secretariat', function () {
             actingAs($this->user);
 
-            get(route('bac-secretariat.procurements-list.index'))
+            get(route('bac-secretariat.procurements.index'))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->component('procurements/procurements-list')
@@ -34,7 +34,7 @@ describe('ProcurementListController', function () {
             $chairman->assignRole('bac_chairman');
             actingAs($chairman);
 
-            get(route('bac-chairman.procurements-list.index'))
+            get(route('bac-chairman.procurements.index'))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->component('procurements/procurements-list')
@@ -46,7 +46,7 @@ describe('ProcurementListController', function () {
             $hope->assignRole('hope');
             actingAs($hope);
 
-            get(route('hope.procurements-list.index'))
+            get(route('hope.procurements.index'))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->component('procurements/procurements-list')
@@ -58,7 +58,7 @@ describe('ProcurementListController', function () {
             $admin->assignRole('admin');
             actingAs($admin);
 
-            get(route('admin.procurements-list.index'))
+            get(route('admin.procurements.index'))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->component('procurements/procurements-list')
@@ -68,7 +68,7 @@ describe('ProcurementListController', function () {
         it('passes procurements data to view', function () {
             actingAs($this->user);
 
-            get(route('bac-secretariat.procurements-list.index'))
+            get(route('bac-secretariat.procurements.index'))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->has('procurements')
@@ -80,7 +80,7 @@ describe('ProcurementListController', function () {
         it('shows single procurement for bac secretariat', function () {
             actingAs($this->user);
 
-            get(route('bac-secretariat.procurements.show', ['id' => 'TEST-001']))
+            get(route('bac-secretariat.procurements.show', ['pr_number' => 'TEST-001']))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->component('procurements/show-procurement')
@@ -92,7 +92,7 @@ describe('ProcurementListController', function () {
             $chairman->assignRole('bac_chairman');
             actingAs($chairman);
 
-            get(route('bac-chairman.procurements.show', ['id' => 'TEST-001']))
+            get(route('bac-chairman.procurements.show', ['pr_number' => 'TEST-001']))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->component('procurements/show-procurement')
@@ -104,7 +104,7 @@ describe('ProcurementListController', function () {
             $hope->assignRole('hope');
             actingAs($hope);
 
-            get(route('hope.procurements.show', ['id' => 'TEST-001']))
+            get(route('hope.procurements.show', ['pr_number' => 'TEST-001']))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->component('procurements/show-procurement')
@@ -116,7 +116,7 @@ describe('ProcurementListController', function () {
             $admin->assignRole('admin');
             actingAs($admin);
 
-            get(route('admin.procurements.show', ['id' => 'TEST-001']))
+            get(route('admin.procurements.show', ['pr_number' => 'TEST-001']))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->component('procurements/show-procurement')
@@ -126,7 +126,7 @@ describe('ProcurementListController', function () {
         it('loads procurement show page successfully', function () {
             actingAs($this->user);
 
-            get(route('bac-secretariat.procurements.show', ['id' => 'TEST-001']))
+            get(route('bac-secretariat.procurements.show', ['pr_number' => 'TEST-001']))
                 ->assertOk()
                 ->assertInertia(fn ($page) => $page
                     ->component('procurements/show-procurement')
@@ -136,12 +136,12 @@ describe('ProcurementListController', function () {
 
     describe('authorization', function () {
         it('requires authentication to view procurements list', function () {
-            get(route('bac-secretariat.procurements-list.index'))
+            get(route('bac-secretariat.procurements.index'))
                 ->assertRedirect(route('login'));
         });
 
         it('requires authentication to view single procurement', function () {
-            get(route('bac-secretariat.procurements.show', ['id' => 'TEST-001']))
+            get(route('bac-secretariat.procurements.show', ['pr_number' => 'TEST-001']))
                 ->assertRedirect(route('login'));
         });
 
@@ -150,14 +150,14 @@ describe('ProcurementListController', function () {
             $chairman->assignRole('bac_chairman');
             actingAs($chairman);
 
-            get(route('bac-secretariat.procurements-list.index'))
+            get(route('bac-secretariat.procurements.index'))
                 ->assertForbidden();
         });
 
         it('requires correct role to access bac chairman procurements list', function () {
             actingAs($this->user); // bac_secretariat
 
-            get(route('bac-chairman.procurements-list.index'))
+            get(route('bac-chairman.procurements.index'))
                 ->assertForbidden();
         });
     });

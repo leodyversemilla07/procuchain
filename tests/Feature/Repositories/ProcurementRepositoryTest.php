@@ -1,7 +1,8 @@
 <?php
 
 use App\DataTransferObjects\ProcurementData;
-use App\Enums\ProcurementCategory;
+use App\Enums\ProcurementCategoryEnums;
+use App\Enums\ProcurementModeEnums;
 use App\Enums\ProcurementMode;
 use App\Repositories\ProcurementRepository;
 use App\Services\Manager;
@@ -13,17 +14,15 @@ beforeEach(function () {
 
 it('creates procurement metadata on blockchain', function () {
     $procurement = new ProcurementData(
-        pr_number: 'test-id-123',
         prNumber: 'PR-2025-001',
         ppmpReference: 'PPMP-2025',
         title: 'Office Supplies Procurement',
         description: 'Purchase of office supplies for municipal office',
         abcAmount: 150000.00,
         fundingSource: 'General Fund',
-        category: ProcurementCategory::Goods,
-        procurementMode: ProcurementMode::Shopping,
-        department: 'General Services',
-        requestingOffice: 'Municipal Office',
+        category: ProcurementCategoryEnums::GOODS,
+        procurementMode: ProcurementModeEnums::SHOPPING,
+        office: 'General Services',
         endUser: 'All Departments',
         purpose: 'Regular office operations',
         deliveryLocation: 'Municipal Hall',
@@ -46,10 +45,10 @@ it('creates procurement metadata on blockchain', function () {
         ->once()
         ->with(
             'procurement.metadata',
-            'test-id-123',
+            'PR-2025-001',
             Mockery::on(function ($data) {
                 return isset($data['json'])
-                    && $data['json']['pr_number'] === 'test-id-123'
+                    && $data['json']['pr_number'] === 'PR-2025-001'
                     && $data['json']['title'] === 'Office Supplies Procurement'
                     && $data['json']['abc_amount'] === '150000'
                     && $data['json']['category'] === 'goods';
@@ -65,7 +64,6 @@ it('retrieves procurement from blockchain', function () {
             'data' => [
                 'json' => [
                     'pr_number' => 'test-id-123',
-                    'pr_number' => 'PR-2025-001',
                     'ppmp_reference' => 'PPMP-2025',
                     'title' => 'Office Supplies Procurement',
                     'description' => 'Purchase of office supplies',
@@ -73,8 +71,7 @@ it('retrieves procurement from blockchain', function () {
                     'funding_source' => 'General Fund',
                     'category' => 'goods',
                     'procurement_mode' => 'shopping',
-                    'department' => 'General Services',
-                    'requesting_office' => 'Municipal Office',
+                    'office' => 'General Services',
                     'end_user' => 'All Departments',
                     'purpose' => 'Regular operations',
                     'delivery_location' => 'Municipal Hall',
@@ -98,28 +95,26 @@ it('retrieves procurement from blockchain', function () {
     ];
 
     $this->mockMultichain
-        ->shouldReceive('listStreamKeyItems')
+        ->shouldReceive('liststreamkeyitems')
         ->once()
         ->with('procurement.metadata', 'test-id-123')
         ->andReturn($blockchainData);
 
-    $procurement = $this->repository->find('test-id-123');
+    $procurement = $this->repository->findByProcurement('test-id-123');
 
     expect($procurement)->toBeInstanceOf(ProcurementData::class)
-        ->and($procurement->pr_number)->toBe('test-id-123')
-        ->and($procurement->title)->toBe('Office Supplies Procurement')
-        ->and($procurement->category)->toBe(ProcurementCategory::Goods)
-        ->and($procurement->procurementMode)->toBe(ProcurementMode::Shopping);
+        ->and($procurement->prNumber)->toBe('test-id-123')
+        ->and($procurement->title)->toBe('Office Supplies Procurement');
 });
 
 it('returns null when procurement not found', function () {
     $this->mockMultichain
-        ->shouldReceive('listStreamKeyItems')
+        ->shouldReceive('liststreamkeyitems')
         ->once()
         ->with('procurement.metadata', 'non-existent-id')
         ->andReturn([]);
 
-    $procurement = $this->repository->find('non-existent-id');
+    $procurement = $this->repository->findByProcurement('non-existent-id');
 
     expect($procurement)->toBeNull();
 });

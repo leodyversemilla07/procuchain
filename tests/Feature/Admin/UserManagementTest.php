@@ -1,8 +1,11 @@
 <?php
 
+namespace Tests\Feature\Admin; // <--- 1. ADD THIS LINE
+
 use App\Models\User;
 use App\Services\Manager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery; // <--- 2. This line is now valid and necessary!
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
