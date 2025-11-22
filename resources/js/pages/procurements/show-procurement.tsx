@@ -230,7 +230,6 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                     title={procurement.title}
                     pr_number={procurement.id}
                     status={procurement.status}
-                    userRole={userRole}
                 />
 
                 <Tabs defaultValue="details" className="w-full">

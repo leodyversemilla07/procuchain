@@ -1,8 +1,6 @@
-import { Calendar, Clock, FileCheck, Hash, ArrowRight } from 'lucide-react';
-import { router } from '@inertiajs/react';
+import { Calendar, Clock, FileCheck, Hash } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { STAGE_ORDER } from '@/types/constants';
 
@@ -29,44 +27,13 @@ interface ProcurementHeaderProps {
     title: string;
     pr_number: string;
     status: ProcurementStatus;
-    userRole?: string;
 }
 
-export function ProcurementHeader({ title, pr_number, status, userRole }: ProcurementHeaderProps) {
+export function ProcurementHeader({ title, pr_number, status }: ProcurementHeaderProps) {
     const stageToSearch = (status?.stage_formatted || status?.stage) as typeof STAGE_ORDER[number];
     const stageIndex = stageToSearch ? STAGE_ORDER.indexOf(stageToSearch) + 1 : 0;
     const totalStages = STAGE_ORDER.length;
     const progress = calculateProgress(status?.stage_formatted || status?.stage);
-
-    // Map stage to next action route
-    const getNextStageRoute = () => {
-        const stage = status?.stage || '';
-        const routes: Record<string, string> = {
-            'procurement_initiation': `/bac-secretariat/pre-procurement-conference-upload/${pr_number}`,
-            'pre_procurement_conference': `/bac-secretariat/bidding-documents-upload/${pr_number}`,
-            'bidding_documents': `/bac-secretariat/pre-bid-conference-upload/${pr_number}`,
-            'pre_bid_conference': `/bac-secretariat/supplemental-bid-bulletin-upload/${pr_number}`,
-            'supplemental_bid_bulletin': `/bac-secretariat/bid-opening-upload/${pr_number}`,
-            'bid_opening': `/bac-secretariat/bid-evaluation-upload/${pr_number}`,
-            'bid_evaluation': `/bac-secretariat/post-qualification-upload/${pr_number}`,
-            'post_qualification': `/bac-secretariat/bac-resolution-upload/${pr_number}`,
-            'bac_resolution': `/bac-secretariat/noa-upload/${pr_number}`,
-            'notice_of_award': `/bac-secretariat/performance-bond-contract-po-upload/${pr_number}`,
-            'performance_bond_contract_and_po': `/bac-secretariat/ntp-upload/${pr_number}`,
-            'notice_to_proceed': `/bac-secretariat/monitoring-upload/${pr_number}`,
-            'monitoring': `/bac-secretariat/completion-upload/${pr_number}`,
-        };
-        return routes[stage];
-    };
-
-    const handleNextStage = () => {
-        const nextRoute = getNextStageRoute();
-        if (nextRoute) {
-            router.visit(nextRoute);
-        }
-    };
-
-    const canProceedToNextStage = userRole === 'bac_secretariat' && status?.current_status && getNextStageRoute();
 
     return (
         <Card className="mb-4 overflow-hidden border shadow-sm transition-shadow duration-200 hover:shadow-md sm:mb-6">
@@ -154,29 +121,12 @@ export function ProcurementHeader({ title, pr_number, status, userRole }: Procur
                                 <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                 Last Updated
                             </div>
-                            <time
-                                dateTime={status.timestamp}
-                                className="block text-xs font-medium sm:text-sm"
-                            >
+                            <time className="text-xs font-medium text-foreground sm:text-sm">
                                 {status.formatted_date}
                             </time>
                         </div>
                     )}
                 </div>
-
-                {/* Action Button for Next Stage */}
-                {canProceedToNextStage && (
-                    <div className="pt-2">
-                        <Button 
-                            onClick={handleNextStage}
-                            className="w-full sm:w-auto"
-                            size="lg"
-                        >
-                            Proceed to Next Stage
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                    </div>
-                )}
             </CardHeader>
         </Card>
     );
