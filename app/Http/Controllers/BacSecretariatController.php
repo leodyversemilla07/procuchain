@@ -90,9 +90,16 @@ class BacSecretariatController extends BaseDashboardController
 
             foreach ($procurementsByKey as $procurement) {
                 try {
+                    // Convert enum values to display names for priority action matching
+                    $stageEnum = \App\Enums\StageEnums::tryFrom($procurement['stage']);
+                    $statusEnum = \App\Enums\StatusEnums::tryFrom($procurement['status']);
+
+                    $displayStage = $stageEnum ? $stageEnum->getDisplayName() : $procurement['stage'];
+                    $displayStatus = $statusEnum ? $statusEnum->getDisplayName() : $procurement['status'];
+
                     $action = $this->stageTransitionService->getPriorityAction(
-                        $procurement['stage'],
-                        $procurement['status'],
+                        $displayStage,
+                        $displayStatus,
                         $procurement['id'],
                         $procurement['title']
                     );

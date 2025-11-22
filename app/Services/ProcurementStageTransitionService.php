@@ -67,6 +67,7 @@ class ProcurementStageTransitionService
         return [
             $this->getInitiationAction(),
             $this->getPreProcurementAction(),
+            $this->getPreProcurementCompletedAction(),
             $this->getBiddingDocumentsAction(),
             $this->getPreBidConferenceAction(),
             $this->getSupplementalBidBulletinAction(),
@@ -99,6 +100,16 @@ class ProcurementStageTransitionService
             'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD->getDisplayName(),
             'action' => 'Upload Pre-Procurement Conference Documents',
             'routeTemplate' => '/bac-secretariat/pre-procurement-conference-upload/%s',
+        ];
+    }
+
+    private function getPreProcurementCompletedAction(): array
+    {
+        return [
+            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->getDisplayName(),
+            'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED->getDisplayName(),
+            'action' => 'Upload Bidding Documents',
+            'routeTemplate' => '/bac-secretariat/bidding-documents-upload/%s',
         ];
     }
 

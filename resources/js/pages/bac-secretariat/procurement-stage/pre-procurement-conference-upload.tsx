@@ -367,7 +367,7 @@ export default function PreProcurementConferenceUpload({ procurement, documentGu
                                                             )}
                                                         </div>
                                                         {!isUploaded && (
-                                                            <div className="flex gap-2">
+                                                            <div className="flex flex-col sm:flex-row gap-2">
                                                                 <div className="flex-1">
                                                                     <FileUploadArea
                                                                         label=""
@@ -387,7 +387,7 @@ export default function PreProcurementConferenceUpload({ procurement, documentGu
                                                                     type="button"
                                                                     onClick={() => handleUploadClick(doc.value, doc.display_name)}
                                                                     disabled={!files[doc.value] || isUploading}
-                                                                    className="self-start mt-0 h-[120px]"
+                                                                    className="self-start mt-0 h-12 sm:h-[120px] w-full sm:w-auto"
                                                                 >
                                                                     Upload
                                                                 </Button>
@@ -429,7 +429,7 @@ export default function PreProcurementConferenceUpload({ procurement, documentGu
                                                             )}
                                                         </div>
                                                         {!isUploaded && (
-                                                            <div className="flex gap-2">
+                                                            <div className="flex flex-col sm:flex-row gap-2">
                                                                 <div className="flex-1">
                                                                     <FileUploadArea
                                                                         label=""
@@ -449,7 +449,7 @@ export default function PreProcurementConferenceUpload({ procurement, documentGu
                                                                     onClick={() => handleUploadClick(doc.value, doc.display_name)}
                                                                     disabled={!files[doc.value] || isUploading}
                                                                     variant="secondary"
-                                                                    className="self-start mt-0 h-[120px]"
+                                                                    className="self-start mt-0 h-12 sm:h-[120px] w-full sm:w-auto"
                                                                 >
                                                                     Upload
                                                                 </Button>

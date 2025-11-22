@@ -7,7 +7,6 @@ namespace App\DataTransferObjects;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use Carbon\Carbon;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Procurement Data Transfer Object
@@ -17,11 +16,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  * across all three phases (Pre-Procurement, Procurement, Post-Procurement).
  * Fields are populated progressively as the procurement advances through stages.
  *
- * Issue #15 fix: TypeScript attribute enables automatic type generation
- *
  * @see \App\Enums\StageEnums For the complete procurement workflow stages
  */
-#[TypeScript]
 final class ProcurementData
 {
     public function __construct(

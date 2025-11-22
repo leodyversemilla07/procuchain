@@ -40,7 +40,6 @@
         "spatie/browsershot": "^5.0",
         "spatie/crawler": "^8.4",
         "spatie/laravel-sitemap": "^7.3",
-        "spatie/laravel-typescript-transformer": "*",
         "spatie/robots-txt": "^2.5"
     },
     "autoload": {

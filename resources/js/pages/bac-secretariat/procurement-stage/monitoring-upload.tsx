@@ -14,7 +14,6 @@ import type { DocumentGuide } from '@/types/document-guide';
 import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PostProcurementController';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Spinner } from '@/components/ui/spinner';
 import { AlertCircle } from 'lucide-react';
 import {
     AlertDialog,
@@ -342,7 +341,6 @@ export default function MonitoringUpload({ procurement, documentGuide, uploadedD
                                         <div className="space-y-4">
                                             {documentGuide.required_documents.map((doc) => {
                                                 const isUploaded = uploadedDocuments.includes(doc.value);
-                                                const hasFile = files[doc.value];
 
                                                 return (
                                                     <div key={doc.value} className="space-y-2">
@@ -361,7 +359,7 @@ export default function MonitoringUpload({ procurement, documentGuide, uploadedD
                                                             )}
                                                         </div>
                                                         {!isUploaded && (
-                                                            <div className="flex gap-2">
+                                                            <div className="flex flex-col sm:flex-row gap-2">
                                                                 <div className="flex-1">
                                                                     <FileUploadArea
                                                                         label=""
@@ -381,7 +379,7 @@ export default function MonitoringUpload({ procurement, documentGuide, uploadedD
                                                                     type="button"
                                                                     onClick={() => handleUploadClick(doc.value, doc.display_name)}
                                                                     disabled={!files[doc.value] || isUploading}
-                                                                    className="self-start mt-0 h-[120px]"
+                                                                    className="self-start mt-0 h-12 sm:h-[120px] w-full sm:w-auto"
                                                                 >
                                                                     Upload
                                                                 </Button>
@@ -406,7 +404,6 @@ export default function MonitoringUpload({ procurement, documentGuide, uploadedD
                                         <div className="space-y-4">
                                             {documentGuide.optional_documents.map((doc) => {
                                                 const isUploaded = uploadedDocuments.includes(doc.value);
-                                                const hasFile = files[doc.value];
 
                                                 return (
                                                     <div key={doc.value} className="space-y-2">
@@ -425,7 +422,7 @@ export default function MonitoringUpload({ procurement, documentGuide, uploadedD
                                                             )}
                                                         </div>
                                                         {!isUploaded && (
-                                                            <div className="flex gap-2">
+                                                            <div className="flex flex-col sm:flex-row gap-2">
                                                                 <div className="flex-1">
                                                                     <FileUploadArea
                                                                         label=""
@@ -444,7 +441,7 @@ export default function MonitoringUpload({ procurement, documentGuide, uploadedD
                                                                     type="button"
                                                                     onClick={() => handleUploadClick(doc.value, doc.display_name)}
                                                                     disabled={!files[doc.value] || isUploading}
-                                                                    className="self-start mt-0 h-[120px]"
+                                                                    className="self-start mt-0 h-12 sm:h-[120px] w-full sm:w-auto"
                                                                 >
                                                                     Upload
                                                                 </Button>
