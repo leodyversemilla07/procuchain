@@ -65,6 +65,7 @@ test('can initiate procurement with all required documents for goods', function 
     ];
 
     $response = $this->actingAs($this->user)
+        ->withoutMiddleware('throttle:blockchain_writes')
         ->post('/bac-secretariat/initiate-procurement', [
             // Basic Information
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
@@ -130,6 +131,7 @@ test('consulting services requires terms of reference not technical specificatio
     ];
 
     $response = $this->actingAs($this->user)
+        ->withoutMiddleware('throttle:blockchain_writes')
         ->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-002',
@@ -170,6 +172,7 @@ test('consulting services requires terms of reference not technical specificatio
  */
 test('validation fails without pr number', function () {
     $response = $this->actingAs($this->user)
+        ->withoutMiddleware('throttle:blockchain_writes')
         ->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => '', // Missing PR number
             'ppmp_reference' => 'PPMP-2025-003',
@@ -185,7 +188,8 @@ test('validation fails without pr number', function () {
             'delivery_date' => now()->addDays(30)->format('Y-m-d'),
         ]);
 
-    $response->assertSessionHasErrors(['pr_number']);
+    $response->assertRedirect()
+        ->assertSessionHasErrors(['pr_number']);
 });
 
 /**
@@ -193,6 +197,7 @@ test('validation fails without pr number', function () {
  */
 test('validation fails with invalid pr number format', function () {
     $response = $this->actingAs($this->user)
+        ->withoutMiddleware('throttle:blockchain_writes')
         ->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => '2025-001', // Invalid format (should be PR-YYYY-####-####)
             'ppmp_reference' => 'PPMP-2025-004',
@@ -208,7 +213,8 @@ test('validation fails with invalid pr number format', function () {
             'delivery_date' => now()->addDays(30)->format('Y-m-d'),
         ]);
 
-    $response->assertSessionHasErrors(['pr_number']);
+    $response->assertRedirect()
+        ->assertSessionHasErrors(['pr_number']);
 });
 
 /**
@@ -222,6 +228,7 @@ test('validation fails when mandatory documents are missing', function () {
     ];
 
     $response = $this->actingAs($this->user)
+        ->withoutMiddleware('throttle:blockchain_writes')
         ->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-005',
@@ -245,9 +252,10 @@ test('validation fails when mandatory documents are missing', function () {
             'document_descriptions' => ['PR', 'PPMP'],
         ]);
 
-    $response->assertSessionHasErrors(['document_types']);
+    $response->assertRedirect()
+        ->assertSessionHasErrors(['document_types']);
     expect($response->getSession()->get('errors')->first('document_types'))
-        ->toContain('Certificate of Availability of Funds')
+        ->toContain('Certificate of Availability of Funds (CAF)')
         ->toContain('Technical Specifications');
 });
 
@@ -263,6 +271,7 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
     ];
 
     $response = $this->actingAs($this->user)
+        ->withoutMiddleware('throttle:blockchain_writes')
         ->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-006',
@@ -287,7 +296,8 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
             'document_descriptions' => ['PR', 'Certificate', 'PPMP', 'Specs'],
         ]);
 
-    $response->assertSessionHasErrors(['procurement_mode']);
+    $response->assertRedirect()
+        ->assertSessionHasErrors(['procurement_mode']);
     expect($response->getSession()->get('errors')->first('procurement_mode'))
         ->toContain('threshold')
         ->toContain('RA 9184');
@@ -305,6 +315,7 @@ test('validation fails for non-pdf files', function () {
     ];
 
     $response = $this->actingAs($this->user)
+        ->withoutMiddleware('throttle:blockchain_writes')
         ->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-007',
@@ -329,7 +340,8 @@ test('validation fails for non-pdf files', function () {
             'document_descriptions' => ['PR', 'Certificate', 'PPMP', 'Specs'],
         ]);
 
-    $response->assertSessionHasErrors(['files.0']);
+    $response->assertRedirect()
+        ->assertSessionHasErrors(['files.0']);
 });
 
 /**
@@ -348,6 +360,7 @@ test('can add optional supporting documents', function () {
     ];
 
     $response = $this->actingAs($this->user)
+        ->withoutMiddleware('throttle:blockchain_writes')
         ->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-008',
@@ -416,29 +429,37 @@ test('users without permission cannot initiate procurement', function () {
 test('can mark procurement initiation stage as complete when all documents uploaded', function () {
     // Mock the required services
     $statusPublisher = Mockery::mock(\App\Services\Publishers\StatusPublisher::class);
-    $eventPublisher = Mockery::mock(\App\Services\Publishers\EventPublisher::class);
-    
+    $statusPublisher->shouldReceive('publish')->andReturn([
+        'success' => true,
+        'status_txid' => 'test_txid_123',
+        'stage' => 'procurement_initiation',
+        'current_status' => 'procurement_submitted',
+        'previous_status' => null,
+    ]);
     $this->app->instance(\App\Services\Publishers\StatusPublisher::class, $statusPublisher);
-    $this->app->instance(\App\Services\Publishers\EventPublisher::class, $eventPublisher);
-
-    // Setup mocks to expect publish calls
-    $statusPublisher->shouldReceive('publish')
-        ->once()
-        ->andReturn(true);
     
-    $eventPublisher->shouldReceive('publish')
-        ->once()
-        ->andReturn(true);
+    $eventPublisher = Mockery::mock(\App\Services\Publishers\EventPublisher::class);
+    $eventPublisher->shouldReceive('publish')->andReturn([
+        'success' => true,
+        'event_txid' => 'test_event_txid_123',
+        'event_type' => 'stage_completed',
+        'category' => 'stage_transition',
+    ]);
+    $this->app->instance(\App\Services\Publishers\EventPublisher::class, $eventPublisher);
 
     $prNumber = 'PR-2025-TEST-0001';
     
     // Mock document repository to return uploaded documents
-    $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class);
+    $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class)->makePartial();
     $documentRepo->shouldReceive('findByProcurement')
         ->with($prNumber)
         ->andReturn([
             (object) ['stage' => 'procurement_initiation', 'documentType' => 'purchase_request'],
             (object) ['stage' => 'procurement_initiation', 'documentType' => 'ppmp'],
+            (object) ['stage' => 'procurement_initiation', 'documentType' => 'app'],
+            (object) ['stage' => 'procurement_initiation', 'documentType' => 'certificate_of_funds'],
+            (object) ['stage' => 'procurement_initiation', 'documentType' => 'approved_budget_contract'],
+            (object) ['stage' => 'procurement_initiation', 'documentType' => 'technical_specifications'],
         ]);
     $this->app->instance(\App\Repositories\DocumentRepository::class, $documentRepo);
 
@@ -446,13 +467,40 @@ test('can mark procurement initiation stage as complete when all documents uploa
     $procurementRepo = Mockery::mock(\App\Repositories\ProcurementRepository::class);
     $procurementRepo->shouldReceive('findByProcurement')
         ->with($prNumber)
-        ->andReturn((object) ['title' => 'Test Procurement', 'pr_number' => $prNumber]);
+        ->andReturn(new \App\DataTransferObjects\ProcurementData(
+            prNumber: $prNumber,
+            ppmpReference: 'PPMP-2025-TEST',
+            title: 'Test Procurement',
+            description: 'Test procurement for stage completion',
+            abcAmount: 150000.00,
+            fundingSource: 'General Fund',
+            category: \App\Enums\ProcurementCategoryEnums::GOODS,
+            procurementMode: \App\Enums\ProcurementModeEnums::SHOPPING,
+            office: 'Test Office',
+            endUser: 'Test Department',
+            purpose: 'Test purpose',
+            deliveryLocation: 'Test Location',
+            deliveryDate: now()->addDays(30),
+            deliveryTermDays: 30,
+            preparedBy: 'Test User',
+            bacResolutionNumber: null,
+            bacResolutionDate: null,
+            philgepsReference: null,
+            philgepsPostingDate: null,
+            approvedBy: null,
+            approvalDate: null,
+            status: 'procurement_initiation',
+            userId: '1',
+            createdAt: now(),
+        ));
     $this->app->instance(\App\Repositories\ProcurementRepository::class, $procurementRepo);
 
     $response = $this->actingAs($this->user)
+        ->withoutMiddleware('throttle:blockchain_writes')
         ->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
 
-    $response->assertSessionHas('success');
+    $response->assertRedirect()
+        ->assertSessionHas('success');
 });
 
 /**
@@ -462,15 +510,17 @@ test('cannot mark procurement initiation stage as complete without required docu
     $prNumber = 'PR-2025-TEST-0002';
     
     // Mock document repository to return no documents
-    $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class);
+    $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class)->makePartial();
     $documentRepo->shouldReceive('findByProcurement')
         ->with($prNumber)
         ->andReturn([]);
     $this->app->instance(\App\Repositories\DocumentRepository::class, $documentRepo);
 
     $response = $this->actingAs($this->user)
+        ->withoutMiddleware('throttle:blockchain_writes')
         ->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
 
-    $response->assertSessionHas('error');
+    $response->assertRedirect()
+        ->assertSessionHas('error');
 });
 

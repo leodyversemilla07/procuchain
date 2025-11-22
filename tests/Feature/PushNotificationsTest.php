@@ -34,8 +34,8 @@ it('subscribes the user to push notifications and avoids duplicates', function (
     ];
 
     // First subscribe should create a record and redirect with success flash
-    $first = $this->post('/settings/push/subscribe', $payload);
-    $first->assertRedirect(route('push-notification.edit'));
+    $first = $this->post('/settings/push-notification/subscribe', $payload);
+    $first->assertRedirect(route('settings.push-notification.edit'));
     $first->assertSessionHas('flash.message', 'Successfully subscribed to push notifications!');
     $first->assertSessionHas('flash.type', 'success');
 
@@ -43,8 +43,8 @@ it('subscribes the user to push notifications and avoids duplicates', function (
         ->toBe(1);
 
     // Second subscribe with same endpoint should not duplicate and redirect with info flash
-    $second = $this->post('/settings/push/subscribe', $payload);
-    $second->assertRedirect(route('push-notification.edit'));
+    $second = $this->post('/settings/push-notification/subscribe', $payload);
+    $second->assertRedirect(route('settings.push-notification.edit'));
     $second->assertSessionHas('flash.message', 'You are already subscribed to push notifications');
     $second->assertSessionHas('flash.type', 'info');
 
@@ -64,7 +64,7 @@ it('lists the current user subscriptions', function () {
         'content_encoding' => 'aesgcm',
     ]);
 
-    $response = $this->get('/settings/push/subscriptions');
+    $response = $this->get('/settings/push-notification/subscriptions');
     $response->assertSuccessful();
     $response->assertJson([
         'count' => 1,
@@ -86,8 +86,8 @@ it('unsubscribes the user from push notifications', function () {
 
     expect(PushSubscription::query()->where('endpoint', $endpoint)->exists())->toBeTrue();
 
-    $response = $this->delete('/settings/push/unsubscribe', ['endpoint' => $endpoint]);
-    $response->assertRedirect(route('push-notification.edit'));
+    $response = $this->delete('/settings/push-notification/unsubscribe', ['endpoint' => $endpoint]);
+    $response->assertRedirect(route('settings.push-notification.edit'));
     $response->assertSessionHas('flash.message', 'Successfully unsubscribed from push notifications');
     $response->assertSessionHas('flash.type', 'success');
 
@@ -98,8 +98,8 @@ it('returns an error flash when unsubscribing a non-existent endpoint', function
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    $response = $this->delete('/settings/push/unsubscribe', ['endpoint' => 'https://push.example.com/missing']);
-    $response->assertRedirect(route('push-notification.edit'));
+    $response = $this->delete('/settings/push-notification/unsubscribe', ['endpoint' => 'https://push.example.com/missing']);
+    $response->assertRedirect(route('settings.push-notification.edit'));
     $response->assertSessionHas('flash.message', 'Push subscription not found');
     $response->assertSessionHas('flash.type', 'error');
 });

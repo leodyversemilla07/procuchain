@@ -35,7 +35,7 @@ class PushNotificationController extends Controller
 
         if (! $user) {
             return redirect()
-                ->route('push-notification.edit')
+                ->route('settings.push-notification.edit')
                 ->with('flash', [
                     'message' => 'User not authenticated',
                     'type' => 'error',
@@ -49,7 +49,7 @@ class PushNotificationController extends Controller
 
         if ($existingSubscription) {
             return redirect()
-                ->route('push-notification.edit')
+                ->route('settings.push-notification.edit')
                 ->with('flash', [
                     'message' => 'You are already subscribed to push notifications',
                     'type' => 'info',
@@ -65,7 +65,7 @@ class PushNotificationController extends Controller
         ]);
 
         return redirect()
-            ->route('push-notification.edit')
+            ->route('settings.push-notification.edit')
             ->with('flash', [
                 'message' => 'Successfully subscribed to push notifications!',
                 'type' => 'success',
@@ -85,7 +85,7 @@ class PushNotificationController extends Controller
 
         if (! $user) {
             return redirect()
-                ->route('push-notification.edit')
+                ->route('settings.push-notification.edit')
                 ->with('flash', [
                     'message' => 'User not authenticated',
                     'type' => 'error',
@@ -98,7 +98,7 @@ class PushNotificationController extends Controller
 
         if ($deleted) {
             return redirect()
-                ->route('push-notification.edit')
+                ->route('settings.push-notification.edit')
                 ->with('flash', [
                     'message' => 'Successfully unsubscribed from push notifications',
                     'type' => 'success',
@@ -106,7 +106,7 @@ class PushNotificationController extends Controller
         }
 
         return redirect()
-            ->route('push-notification.edit')
+            ->route('settings.push-notification.edit')
             ->with('flash', [
                 'message' => 'Push subscription not found',
                 'type' => 'error',

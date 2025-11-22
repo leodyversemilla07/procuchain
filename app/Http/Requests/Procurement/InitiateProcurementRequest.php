@@ -14,7 +14,7 @@ class InitiateProcurementRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage procurement initiation');
+        return $this->user() && $this->user()->can('manage procurement initiation');
     }
 
     public function rules(): array
@@ -78,11 +78,6 @@ class InitiateProcurementRequest extends FormRequest
     {
         $documentTypes = $this->input('document_types', []);
         $files = $this->input('files', []);
-
-        // Skip validation for progressive upload workflow (no files provided initially)
-        if (empty($files)) {
-            return;
-        }
 
         $category = ProcurementCategoryEnums::tryFrom($this->input('category'));
 

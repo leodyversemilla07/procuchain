@@ -28,11 +28,12 @@ describe('InitiateProcurementRequest', function () {
 
         test('it denies unauthorized users', function () {
             $unauthorizedUser = User::factory()->create();
-            $unauthorizedUser->assignRole('admin');
+            // No role assigned
 
             $this->actingAs($unauthorizedUser);
 
             $request = new InitiateProcurementRequest;
+            $request->setUserResolver(fn () => $unauthorizedUser);
 
             expect($request->authorize())->toBeFalse();
         });
@@ -72,6 +73,7 @@ describe('InitiateProcurementRequest', function () {
             ];
 
             $request = new InitiateProcurementRequest;
+            $request->setUserResolver(fn () => $this->user);
             $validator = Validator::make($data, $request->rules());
 
             expect($validator->passes())->toBeTrue();
@@ -231,7 +233,7 @@ describe('InitiateProcurementRequest', function () {
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
-                'category' => 'infrastructure',
+                'category' => 'infrastructure_projects',
                 'procurement_mode' => 'public_bidding',
                 'office' => 'Engineering Office',
                 'purpose' => 'To construct a new municipal building',
@@ -240,9 +242,15 @@ describe('InitiateProcurementRequest', function () {
                 'prepared_by' => 'John Doe',
                 'files' => [
                     UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
+                    UploadedFile::fake()->create('document2.pdf', 1024, 'application/pdf'),
+                    UploadedFile::fake()->create('document3.pdf', 1024, 'application/pdf'),
+                    UploadedFile::fake()->create('document4.pdf', 1024, 'application/pdf'),
                 ],
                 'document_types' => [
-                    'project_proposal',
+                    'purchase_request',
+                    'certificate_of_funds',
+                    'ppmp_entry',
+                    'technical_specifications',
                 ],
             ];
 
@@ -260,7 +268,7 @@ describe('InitiateProcurementRequest', function () {
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
-                'category' => 'infrastructure',
+                'category' => 'infrastructure_projects',
                 'procurement_mode' => 'public_bidding',
                 'office' => 'Engineering Office',
                 'purpose' => 'To construct a new municipal building',
@@ -290,7 +298,7 @@ describe('InitiateProcurementRequest', function () {
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
-                'category' => 'infrastructure',
+                'category' => 'infrastructure_projects',
                 'procurement_mode' => 'public_bidding',
                 'office' => 'Engineering Office',
                 'purpose' => 'To construct a new municipal building',
