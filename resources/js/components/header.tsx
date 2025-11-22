@@ -7,7 +7,7 @@ import { dashboard as hopeDashboard } from '@/routes/hope';
 import { type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { Menu, Monitor, Moon, Sun, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppLogoIcon from './app-logo-icon';
 
 const getDashboardRouteByRole = (role: string): string => {
@@ -25,6 +25,18 @@ export default function Header() {
     const { auth } = page.props;
     const { appearance, updateAppearance } = useAppearance();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    useEffect(() => {
+        if (mobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [mobileMenuOpen]);
 
     const isRouteActive = (routeUrl: string): boolean => {
         return page.url === routeUrl || page.url.startsWith(routeUrl + '?');
