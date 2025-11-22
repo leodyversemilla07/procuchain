@@ -40,14 +40,14 @@ describe('User Model - Configuration', function () {
         expect($array)->not->toHaveKey('remember_token');
     });
 
-    test('appends role attribute', function () {
+    test('appends primary_role attribute', function () {
         $user = User::factory()->create();
         $user->assignRole('admin');
 
         $array = $user->toArray();
 
-        expect($array)->toHaveKey('role');
-        expect($array['role'])->toBe('admin');
+        expect($array)->toHaveKey('primary_role');
+        expect($array['primary_role'])->toBe('admin');
     });
 
     test('casts attributes correctly', function () {

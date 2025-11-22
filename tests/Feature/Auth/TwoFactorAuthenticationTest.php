@@ -53,7 +53,7 @@ test('two factor settings page can be rendered', function () {
 
     $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('two-factor.show'))
+        ->get(route('settings.two-factor.show'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/two-factor', false)
@@ -74,7 +74,7 @@ test('two factor settings page requires password confirmation when enabled', fun
     ]);
 
     $response = $this->actingAs($user)
-        ->get(route('two-factor.show'));
+        ->get(route('settings.two-factor.show'));
 
     $response->assertRedirect(route('password.confirm'));
 });
@@ -92,7 +92,7 @@ test('two factor settings page does not requires password confirmation when disa
     ]);
 
     $this->actingAs($user)
-        ->get(route('two-factor.show'))
+        ->get(route('settings.two-factor.show'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/two-factor', false)
@@ -110,6 +110,6 @@ test('two factor settings page returns forbidden response when two factor is dis
 
     $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('two-factor.show'))
+        ->get(route('settings.two-factor.show'))
         ->assertForbidden();
 });

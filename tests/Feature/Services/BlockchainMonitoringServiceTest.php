@@ -1,7 +1,7 @@
 <?php
 
 use App\Services\BlockchainMonitoringService;
-use App\Services\MultichainService;
+use App\Services\Manager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -13,14 +13,14 @@ beforeEach(function () {
     Cache::flush();
     Log::spy();
 
-    $this->multichainService = mock(MultichainService::class);
-    $this->service = new BlockchainMonitoringService($this->multichainService);
+    $this->multichainManager = mock(Manager::class);
+    $this->service = new BlockchainMonitoringService($this->multichainManager);
 });
 
 describe('BlockchainMonitoringService', function () {
     describe('isHealthy', function () {
         test('it returns true when blockchain is responsive', function () {
-            $this->multichainService
+            $this->multichainManager
                 ->shouldReceive('getInfo')
                 ->once()
                 ->andReturn([
@@ -35,7 +35,7 @@ describe('BlockchainMonitoringService', function () {
         });
 
         test('it returns false when blockchain is unresponsive', function () {
-            $this->multichainService
+            $this->multichainManager
                 ->shouldReceive('getInfo')
                 ->once()
                 ->andThrow(new Exception('Connection refused'));
@@ -60,7 +60,7 @@ describe('BlockchainMonitoringService', function () {
         });
 
         test('it caches health check results', function () {
-            $this->multichainService
+            $this->multichainManager
                 ->shouldReceive('getInfo')
                 ->once() // Should only be called once due to caching
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
@@ -75,7 +75,7 @@ describe('BlockchainMonitoringService', function () {
         });
 
         test('it returns false when getInfo response is malformed', function () {
-            $this->multichainService
+            $this->multichainManager
                 ->shouldReceive('getInfo')
                 ->once()
                 ->andReturn(['chainname' => 'procuchain']); // Missing nodeaddress
@@ -235,7 +235,7 @@ describe('BlockchainMonitoringService', function () {
 
     describe('getHealthStatus', function () {
         test('it returns comprehensive health data when healthy', function () {
-            $this->multichainService
+            $this->multichainManager
                 ->shouldReceive('getInfo')
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
 
@@ -286,91 +286,6 @@ describe('BlockchainMonitoringService', function () {
             expect($status['circuit_breaker']['failures'])->toBe(5);
             expect($status['circuit_breaker']['recovery_time'])->not->toBeNull();
         });
-
-        test('it counts pending documents from last hour', function () {
-            $this->multichainService
-                ->shouldReceive('getInfo')
-                ->andReturn(['nodeaddress' => '1ABC123XYZ']);
-
-            // Create procurements first (foreign key requirement)
-            DB::table('procurements')->insert([
-                ['id' => 'PR-001', 'title' => 'Test 1', 'stage' => 'test', 'current_status' => 'test', 'user_address' => 'addr1', 'last_updated' => now()],
-                ['id' => 'PR-002', 'title' => 'Test 2', 'stage' => 'test', 'current_status' => 'test', 'user_address' => 'addr2', 'last_updated' => now()],
-            ]);
-
-            // Create documents
-            DB::table('procurement_documents')->insert([
-                [
-                    'pr_number' => 'PR-001',
-                    'file_key' => 'file1.pdf',
-                    'file_name' => 'file1.pdf',
-                    'document_type' => 'test',
-                    'stage' => 'test',
-                    'metadata' => json_encode([]),
-                    'blockchain_status' => 'pending',
-                    'created_at' => now()->subMinutes(30),
-                    'updated_at' => now(),
-                ],
-                [
-                    'pr_number' => 'PR-002',
-                    'file_key' => 'file2.pdf',
-                    'file_name' => 'file2.pdf',
-                    'document_type' => 'test',
-                    'stage' => 'test',
-                    'metadata' => json_encode([]),
-                    'blockchain_status' => 'pending',
-                    'created_at' => now()->subHours(2), // Too old
-                    'updated_at' => now(),
-                ],
-            ]);
-
-            $status = $this->service->getHealthStatus();
-
-            expect($status['documents']['pending_1h'])->toBe(1);
-        });
-
-        test('it counts failed documents from last 24 hours', function () {
-            $this->multichainService
-                ->shouldReceive('getInfo')
-                ->andReturn(['nodeaddress' => '1ABC123XYZ']);
-
-            // Create procurements first (foreign key requirement)
-            DB::table('procurements')->insert([
-                ['id' => 'PR-001', 'title' => 'Test 1', 'stage' => 'test', 'current_status' => 'test', 'user_address' => 'addr1', 'last_updated' => now()],
-                ['id' => 'PR-002', 'title' => 'Test 2', 'stage' => 'test', 'current_status' => 'test', 'user_address' => 'addr2', 'last_updated' => now()],
-            ]);
-
-            DB::table('procurement_documents')->insert([
-                [
-                    'pr_number' => 'PR-001',
-                    'file_key' => 'failed1.pdf',
-                    'file_name' => 'failed1.pdf',
-                    'document_type' => 'test',
-                    'stage' => 'test',
-                    'metadata' => json_encode([]),
-                    'blockchain_status' => 'failed',
-                    'blockchain_status_updated_at' => now()->subHours(12),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ],
-                [
-                    'pr_number' => 'PR-002',
-                    'file_key' => 'failed2.pdf',
-                    'file_name' => 'failed2.pdf',
-                    'document_type' => 'test',
-                    'stage' => 'test',
-                    'metadata' => json_encode([]),
-                    'blockchain_status' => 'failed',
-                    'blockchain_status_updated_at' => now()->subDays(2), // Too old
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ],
-            ]);
-
-            $status = $this->service->getHealthStatus();
-
-            expect($status['documents']['failed_24h'])->toBe(1);
-        });
     });
 
     describe('resetCircuitBreaker', function () {
@@ -407,7 +322,7 @@ describe('BlockchainMonitoringService', function () {
     describe('integration scenarios', function () {
         test('it handles complete failure and recovery cycle', function () {
             // 1. Start healthy
-            $this->multichainService
+            $this->multichainManager
                 ->shouldReceive('getInfo')
                 ->once()
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
@@ -424,7 +339,7 @@ describe('BlockchainMonitoringService', function () {
             expect($this->service->isHealthy())->toBeFalse();
 
             // 3. Verify circuit breaker blocks requests during recovery period
-            $this->multichainService
+            $this->multichainManager
                 ->shouldNotReceive('getInfo'); // Should not attempt to call blockchain
 
             expect($this->service->isHealthy())->toBeFalse();
@@ -437,7 +352,7 @@ describe('BlockchainMonitoringService', function () {
             ], 360);
 
             // 5. Next check should allow attempt and succeed
-            $this->multichainService
+            $this->multichainManager
                 ->shouldReceive('getInfo')
                 ->once()
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);

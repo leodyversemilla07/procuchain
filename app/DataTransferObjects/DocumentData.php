@@ -39,7 +39,6 @@ final class DocumentData
     public function toBlockchainArray(): array
     {
         return [
-            'pr_number' => $this->prNumber, // Required by blockchain stream filter
             'pr_number' => $this->prNumber,
             'procurement_title' => $this->procurementTitle,
             'user_address' => $this->userAddress,
@@ -63,27 +62,31 @@ final class DocumentData
     public static function fromBlockchainArray(array $data): self
     {
         // Backward compatibility: try pr_number first, fall back to pr_number
-        $prNumber = $data['pr_number'] ?? $data['pr_number'] ?? '';
+        $prNumber = $data['pr_number'] ?? '';
 
-        return new self(
-            prNumber: $prNumber,
-            procurementTitle: $data['procurement_title'],
-            userAddress: $data['user_address'],
-            stage: $data['stage'],
-            status: $data['status'],
-            documentType: $data['document_type'],
-            fileKey: $data['file_key'],
-            fileName: $data['file_name'],
-            fileSize: (int) $data['file_size'],
-            mimeType: $data['mime_type'],
-            hash: $data['hash'],
-            dataTxid: $data['data_txid'],
-            metadataTxid: $data['metadata_txid'],
-            uploadedBy: $data['uploaded_by'],
-            timestamp: Carbon::parse($data['timestamp']),
-            description: $data['description'] ?? null,
-            stageMetadata: $data['stage_metadata'] ?? null,
-        );
+        try {
+            return new self(
+                prNumber: $prNumber,
+                procurementTitle: $data['procurement_title'],
+                userAddress: $data['user_address'],
+                stage: $data['stage'],
+                status: $data['status'],
+                documentType: $data['document_type'],
+                fileKey: $data['file_key'],
+                fileName: $data['file_name'],
+                fileSize: (int) $data['file_size'],
+                mimeType: $data['mime_type'],
+                hash: $data['hash'],
+                dataTxid: $data['data_txid'],
+                metadataTxid: $data['metadata_txid'],
+                uploadedBy: $data['uploaded_by'],
+                timestamp: isset($data['timestamp']) ? Carbon::parse($data['timestamp']) : Carbon::now(),
+                description: $data['description'] ?? null,
+                stageMetadata: $data['stage_metadata'] ?? null,
+            );
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to create DocumentData from blockchain array: '.$e->getMessage());
+        }
     }
 
     /**

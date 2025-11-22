@@ -10,7 +10,6 @@ use App\DataTransferObjects\StatusData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
-use App\Libraries\MultiChain\Manager;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
@@ -199,7 +198,7 @@ class ProcurementDataService
                 // Sort by timestamp descending
                 $timestampA = $a['timestamp'] instanceof Carbon ? $a['timestamp']->timestamp : strtotime($a['timestamp']);
                 $timestampB = $b['timestamp'] instanceof Carbon ? $b['timestamp']->timestamp : strtotime($b['timestamp']);
-                
+
                 if ($timestampA !== $timestampB) {
                     return $timestampB <=> $timestampA;
                 }

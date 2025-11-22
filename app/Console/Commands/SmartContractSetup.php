@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\StreamEnums;
-use App\Libraries\MultiChain\Contracts\MultiChainManagerInterface as Manager;
+use App\Services\Manager;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -40,7 +40,7 @@ class SmartContractSetup extends Command
 
     protected $description = 'Deploy smart contract libraries and filters to MultiChain blockchain';
 
-    private Manager $multichain;
+    private Manager $multichainService;
 
     private array $deploymentResults = [];
 

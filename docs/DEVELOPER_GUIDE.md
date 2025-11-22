@@ -328,6 +328,23 @@ class YourService
 }
 ```
 
+**Manager Access (Recommended):**
+```php
+use App\Libraries\MultiChain\Manager;
+
+$manager = app(Manager::class);
+
+// List streams
+$streams = $manager->listStreams();
+
+// Publish to stream
+$txid = $manager->publish(
+    'procurement.documents',
+    'PR-2025-001',
+    ['json' => $data]
+);
+```
+
 **Direct Client Access (Rarely Needed):**
 ```php
 use App\Libraries\MultiChain\Client;
@@ -383,25 +400,24 @@ $table->tinyInteger('blockchain_retry_count')->default(0);
 
 namespace App\Services\Publishers;
 
-use App\Libraries\MultiChain\Client;
+use App\Libraries\MultiChain\Manager;
 use App\Enums\StreamEnums;
 
 class YourPublisher
 {
     public function __construct(
-        private Client $blockchain
+        private Manager $blockchain
     ) {}
-    
+
     public function publish(array $data): array
     {
         try {
             $txid = $this->blockchain->publish(
-                stream: StreamEnums::YOUR_STREAM->value,
-                key: $data['key'],
-                data: json_encode($data),
-                address: $data['user_address']
+                StreamEnums::YOUR_STREAM->value,
+                $data['key'],
+                ['json' => $data]
             );
-            
+
             return [
                 'success' => true,
                 'txid' => $txid,
@@ -414,9 +430,7 @@ class YourPublisher
         }
     }
 }
-```
-
----
+```---
 
 ## Adding New Features
 

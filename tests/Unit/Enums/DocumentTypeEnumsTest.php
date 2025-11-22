@@ -4,11 +4,11 @@ use App\Enums\DocumentTypeEnums;
 
 it('can get display names for all document types', function () {
     expect(DocumentTypeEnums::BAC_RESOLUTION->getDisplayName())->toBe('BAC Resolution');
-    expect(DocumentTypeEnums::NOTICE_OF_AWARD->getDisplayName())->toBe('Notice of Award');
-    expect(DocumentTypeEnums::PERFORMANCE_BOND->getDisplayName())->toBe('Performance Bond');
-    expect(DocumentTypeEnums::CONTRACT->getDisplayName())->toBe('Contract');
-    expect(DocumentTypeEnums::PURCHASE_ORDER->getDisplayName())->toBe('Purchase Order');
-    expect(DocumentTypeEnums::NOTICE_TO_PROCEED->getDisplayName())->toBe('Notice to Proceed');
+    expect(DocumentTypeEnums::NOTICE_OF_AWARD->getDisplayName())->toBe('Notice of Award (NOA)');
+    expect(DocumentTypeEnums::PERFORMANCE_BOND->getDisplayName())->toBe('Performance Security/Bond');
+    expect(DocumentTypeEnums::CONTRACT->getDisplayName())->toBe('Contract Agreement');
+    expect(DocumentTypeEnums::PURCHASE_ORDER->getDisplayName())->toBe('Purchase Order (PO)');
+    expect(DocumentTypeEnums::NOTICE_TO_PROCEED->getDisplayName())->toBe('Notice to Proceed (NTP)');
     expect(DocumentTypeEnums::COMPLIANCE_REPORT->getDisplayName())->toBe('Compliance Report');
     expect(DocumentTypeEnums::CERTIFICATE_OF_COMPLETION->getDisplayName())->toBe('Certificate of Completion');
 });

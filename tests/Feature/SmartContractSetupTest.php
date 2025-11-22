@@ -1,12 +1,12 @@
 <?php
 
-use App\Libraries\MultiChain\Contracts\MultiChainManagerInterface;
+use App\Services\Manager;
 use Illuminate\Support\Facades\File;
 
 describe('SmartContractSetup Command', function () {
     beforeEach(function () {
-        $this->multichainManager = mock(MultiChainManagerInterface::class);
-        $this->app->instance(MultiChainManagerInterface::class, $this->multichainManager);
+        $this->multichainManager = mock(Manager::class);
+        $this->app->instance(Manager::class, $this->multichainManager);
     });
 
     it('checks multichain connection before deployment', function () {

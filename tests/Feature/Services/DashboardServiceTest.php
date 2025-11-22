@@ -1,9 +1,14 @@
 <?php
 
+use App\DataTransferObjects\EventData;
+use App\Enums\StreamEnums;
 use App\Models\User;
+use App\Repositories\DocumentRepository;
+use App\Repositories\EventRepository;
 use App\Services\DashboardService;
-use App\Services\EventTypeLabelMapper;
-use App\Services\MultichainService;
+use App\Services\Manager;
+use App\Services\UserService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 
@@ -12,21 +17,24 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     Log::spy();
 
-    $this->multichainService = mock(MultichainService::class);
-    $this->eventTypeLabelMapper = mock(EventTypeLabelMapper::class);
+    $this->manager = mock(Manager::class);
+    $this->eventRepository = new EventRepository($this->manager);
+    $this->documentRepository = new DocumentRepository($this->manager);
+    $this->userService = mock(UserService::class)->makePartial(); // Allow real calls
     $this->service = new DashboardService(
-        $this->multichainService,
-        $this->eventTypeLabelMapper
+        $this->manager,
+        $this->eventRepository,
+        $this->documentRepository,
+        $this->userService
     );
 });
-
 describe('DashboardService', function () {
     describe('getUserName', function () {
         test('it retrieves user name from database', function () {
-            $user = User::factory()->create([
-                'name' => 'John Doe',
-                'blockchain_address' => '1ABC123XYZ',
-            ]);
+            $this->userService
+                ->shouldReceive('getUserNameByAddress')
+                ->with('1ABC123XYZ')
+                ->andReturn('John Doe');
 
             $result = $this->service->getUserName('1ABC123XYZ');
 
@@ -40,18 +48,15 @@ describe('DashboardService', function () {
         });
 
         test('it caches user names for performance', function () {
-            $user = User::factory()->create([
-                'name' => 'Jane Smith',
-                'blockchain_address' => '1DEF456ABC',
-            ]);
+            $this->userService
+                ->shouldReceive('getUserNameByAddress')
+                ->with('1DEF456ABC')
+                ->andReturn('Jane Smith');
 
-            // First call - hits database
+            // First call
             $result1 = $this->service->getUserName('1DEF456ABC');
 
-            // Delete user to verify cache is used (not database)
-            $user->delete();
-
-            // Second call - should return cached value even though user deleted
+            // Second call - should use cached value
             $result2 = $this->service->getUserName('1DEF456ABC');
 
             expect($result1)->toBe('Jane Smith');
@@ -59,27 +64,23 @@ describe('DashboardService', function () {
         });
 
         test('it handles database exceptions gracefully', function () {
-            // Force database error by using invalid table access
-            $this->service = new class($this->multichainService, $this->eventTypeLabelMapper) extends DashboardService
-            {
-                public function getUserName(string $address): string
-                {
-                    throw new Exception('Database connection lost');
-                }
-            };
+            $this->userService
+                ->shouldReceive('getUserNameByAddress')
+                ->with('1ABC123XYZ')
+                ->andThrow(new Exception('Database connection lost'));
 
             expect(fn () => $this->service->getUserName('1ABC123XYZ'))->toThrow(Exception::class);
         });
 
         test('it caches multiple different addresses', function () {
-            $user1 = User::factory()->create([
-                'name' => 'Alice',
-                'blockchain_address' => '1ALICE123',
-            ]);
-            $user2 = User::factory()->create([
-                'name' => 'Bob',
-                'blockchain_address' => '1BOB456',
-            ]);
+            $this->userService
+                ->shouldReceive('getUserNameByAddress')
+                ->with('1ALICE123')
+                ->andReturn('Alice');
+            $this->userService
+                ->shouldReceive('getUserNameByAddress')
+                ->with('1BOB456')
+                ->andReturn('Bob');
 
             $result1 = $this->service->getUserName('1ALICE123');
             $result2 = $this->service->getUserName('1BOB456');
@@ -125,6 +126,7 @@ describe('DashboardService', function () {
         test('it groups multiple entries by procurement ID and returns latest', function () {
             $streamData = [
                 [
+                    'time' => 1705312800, // 2024-01-15T10:00:00Z
                     'data' => [
                         'json' => [
                             'pr_number' => 'PR-001',
@@ -137,6 +139,7 @@ describe('DashboardService', function () {
                     ],
                 ],
                 [
+                    'time' => 1705413600, // 2024-01-16T14:00:00Z
                     'data' => [
                         'json' => [
                             'pr_number' => 'PR-001',
@@ -430,35 +433,28 @@ describe('DashboardService', function () {
 
     describe('getRecentActivities', function () {
         test('it retrieves and formats recent activities from blockchain', function () {
-            User::factory()->create([
-                'name' => 'Jane Doe',
-                'blockchain_address' => '1ABC123XYZ',
-            ]);
+            $this->userService
+                ->shouldReceive('getUserNameByAddress')
+                ->with('1ABC123XYZ')
+                ->andReturn('Jane Doe');
 
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->with('procurement.events', true, 20, -20, true)
-                ->once()
-                ->andReturn([
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-001',
-                                'procurement_title' => 'Test Procurement',
-                                'event_type' => 'document_uploaded',
-                                'details' => 'Contract signed',
-                                'stage_identifier' => 'Contract And PO',
-                                'timestamp' => '2024-01-15T10:00:00Z',
-                                'user_address' => '1ABC123XYZ',
-                            ],
-                        ],
-                    ],
-                ]);
+            $eventData = new EventData(
+                prNumber: 'PR-001',
+                procurementTitle: 'Test Procurement',
+                stage: 'Contract And PO',
+                eventType: 'document_uploaded',
+                category: 'document',
+                severity: 'info',
+                details: 'Contract signed',
+                documentCount: 1,
+                userAddress: '1ABC123XYZ',
+                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
+            );
 
-            $this->eventTypeLabelMapper
-                ->shouldReceive('getLabel')
-                ->with('document_uploaded', 'Contract signed')
-                ->andReturn('Document Uploaded');
+            $this->manager
+                ->shouldReceive('liststreamitems')
+                ->with(StreamEnums::EVENTS->value, true, 1000, 0, false)
+                ->andReturn([['data' => ['json' => $eventData->toBlockchainArray()]]]);
 
             $result = $this->service->getRecentActivities();
 
@@ -470,33 +466,23 @@ describe('DashboardService', function () {
         });
 
         test('it filters out invalid activity items', function () {
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->once()
-                ->andReturn([
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-001',
-                                'procurement_title' => 'Valid',
-                                'event_type' => 'test',
-                                'timestamp' => '2024-01-15T10:00:00Z',
-                            ],
-                        ],
-                    ],
-                    [
-                        'data' => [
-                            'json' => [
-                                // Missing pr_number
-                                'procurement_title' => 'Invalid',
-                            ],
-                        ],
-                    ],
-                ]);
+            $validEvent = new EventData(
+                prNumber: 'PR-001',
+                procurementTitle: 'Valid',
+                stage: 'Pre-Procurement',
+                eventType: 'test',
+                category: 'test',
+                severity: 'info',
+                details: 'test',
+                documentCount: 0,
+                userAddress: '1ABC123XYZ',
+                timestamp: Carbon::now(),
+            );
 
-            $this->eventTypeLabelMapper
-                ->shouldReceive('getLabel')
-                ->andReturn('Test Action');
+            $this->manager
+                ->shouldReceive('liststreamitems')
+                ->with(StreamEnums::EVENTS->value, true, 1000, 0, false)
+                ->andReturn([['data' => ['json' => $validEvent->toBlockchainArray()]]]);
 
             $result = $this->service->getRecentActivities();
 
@@ -504,57 +490,68 @@ describe('DashboardService', function () {
         });
 
         test('it returns empty array when no events found', function () {
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->once()
-                ->andReturn(null);
+            $this->manager
+                ->shouldReceive('liststreamitems')
+                ->with(StreamEnums::EVENTS->value, true, 1000, 0, false)
+                ->andReturn([]);
 
             $result = $this->service->getRecentActivities();
 
             expect($result)->toBeEmpty();
 
             Log::shouldHaveReceived('warning')
-                ->with('No events found in stream')
+                ->with('No events found in repository')
                 ->once();
         });
 
         test('it sorts activities by timestamp descending', function () {
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->once()
-                ->andReturn([
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-001',
-                                'procurement_title' => 'Oldest',
-                                'timestamp' => '2024-01-10T10:00:00Z',
-                            ],
-                        ],
-                    ],
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-002',
-                                'procurement_title' => 'Newest',
-                                'timestamp' => '2024-01-20T10:00:00Z',
-                            ],
-                        ],
-                    ],
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-003',
-                                'procurement_title' => 'Middle',
-                                'timestamp' => '2024-01-15T10:00:00Z',
-                            ],
-                        ],
-                    ],
-                ]);
+            $event1 = new EventData(
+                prNumber: 'PR-001',
+                procurementTitle: 'Oldest',
+                stage: 'Pre-Procurement',
+                eventType: 'test',
+                category: 'test',
+                severity: 'info',
+                details: 'test',
+                documentCount: 0,
+                userAddress: '1ABC123XYZ',
+                timestamp: Carbon::parse('2024-01-10T10:00:00Z'),
+            );
+            $event2 = new EventData(
+                prNumber: 'PR-002',
+                procurementTitle: 'Newest',
+                stage: 'Bidding',
+                eventType: 'test',
+                category: 'test',
+                severity: 'info',
+                details: 'test',
+                documentCount: 0,
+                userAddress: '1ABC123XYZ',
+                timestamp: Carbon::parse('2024-01-20T10:00:00Z'),
+            );
+            $event3 = new EventData(
+                prNumber: 'PR-003',
+                procurementTitle: 'Middle',
+                stage: 'Post-Qualification',
+                eventType: 'test',
+                category: 'test',
+                severity: 'info',
+                details: 'test',
+                documentCount: 0,
+                userAddress: '1ABC123XYZ',
+                timestamp: Carbon::parse('2024-01-15T10:00:00Z'),
+            );
 
-            $this->eventTypeLabelMapper
-                ->shouldReceive('getLabel')
-                ->andReturn('Action');
+            $blockchainItems = [
+                ['data' => ['json' => $event1->toBlockchainArray()]],
+                ['data' => ['json' => $event2->toBlockchainArray()]],
+                ['data' => ['json' => $event3->toBlockchainArray()]],
+            ];
+
+            $this->manager
+                ->shouldReceive('liststreamitems')
+                ->with(StreamEnums::EVENTS->value, true, 1000, 0, false)
+                ->andReturn($blockchainItems);
 
             $result = $this->service->getRecentActivities();
 
@@ -565,27 +562,29 @@ describe('DashboardService', function () {
 
         test('it limits results to configured display limit', function () {
             // Generate more activities than display limit (8)
-            $activities = [];
+            $events = [];
+            $blockchainItems = [];
             for ($i = 1; $i <= 15; $i++) {
-                $activities[] = [
-                    'data' => [
-                        'json' => [
-                            'pr_number' => "PR-{$i}",
-                            'procurement_title' => "Procurement {$i}",
-                            'timestamp' => "2024-01-{$i}T10:00:00Z",
-                        ],
-                    ],
-                ];
+                $event = new EventData(
+                    prNumber: "PR-{$i}",
+                    procurementTitle: "Procurement {$i}",
+                    stage: 'Pre-Procurement',
+                    eventType: 'test',
+                    category: 'test',
+                    severity: 'info',
+                    details: 'test',
+                    documentCount: 0,
+                    userAddress: '1ABC123XYZ',
+                    timestamp: Carbon::parse("2024-01-{$i}T10:00:00Z"),
+                );
+                $events[] = $event;
+                $blockchainItems[] = ['data' => ['json' => $event->toBlockchainArray()]];
             }
 
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->once()
-                ->andReturn($activities);
-
-            $this->eventTypeLabelMapper
-                ->shouldReceive('getLabel')
-                ->andReturn('Action');
+            $this->manager
+                ->shouldReceive('liststreamitems')
+                ->with(StreamEnums::EVENTS->value, true, 1000, 0, false)
+                ->andReturn($blockchainItems);
 
             $result = $this->service->getRecentActivities();
 
@@ -593,17 +592,17 @@ describe('DashboardService', function () {
         });
 
         test('it handles blockchain service exceptions', function () {
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->once()
-                ->andThrow(new Exception('Connection failed'));
+            $this->manager
+                ->shouldReceive('liststreamitems')
+                ->with(StreamEnums::EVENTS->value, true, 1000, 0, false)
+                ->andThrow(new Exception('Repository failed'));
 
             $result = $this->service->getRecentActivities();
 
             expect($result)->toBeEmpty();
 
             Log::shouldHaveReceived('error')
-                ->with('Failed to retrieve recent activities', \Mockery::type('array'))
+                ->with('Failed to retrieve all events', \Mockery::type('array'))
                 ->once();
         });
     });
@@ -611,48 +610,67 @@ describe('DashboardService', function () {
     describe('getTotalDocuments', function () {
         test('it calculates total documents for dashboard procurements', function () {
             $procurements = collect([
-                'PR-001' => ['id' => 'PR-001'],
-                'PR-002' => ['id' => 'PR-002'],
+                'PR-001' => ['prNumber' => 'PR-001'],
+                'PR-002' => ['prNumber' => 'PR-002'],
             ]);
 
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->with('procurement.documents', true, 2000, 0, false)
-                ->once()
-                ->andReturn([
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-001',
-                                'hash' => 'hash1',
-                            ],
-                        ],
-                    ],
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-001',
-                                'hash' => 'hash2',
-                            ],
-                        ],
-                    ],
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-002',
-                                'hash' => 'hash3',
-                            ],
-                        ],
-                    ],
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-003', // Not in dashboard
-                                'hash' => 'hash4',
-                            ],
-                        ],
-                    ],
-                ]);
+            $blockchainItems = [
+                ['data' => ['json' => [
+                    'pr_number' => 'PR-001',
+                    'procurement_title' => 'Test Procurement 1',
+                    'user_address' => '1ABC123XYZ',
+                    'stage' => 'Pre-Procurement',
+                    'status' => 'Active',
+                    'document_type' => 'Contract',
+                    'file_key' => 'key1',
+                    'file_name' => 'doc1.pdf',
+                    'file_size' => 1000,
+                    'mime_type' => 'application/pdf',
+                    'hash' => 'hash1',
+                    'data_txid' => 'tx1',
+                    'metadata_txid' => 'mtx1',
+                    'uploaded_by' => 'user1',
+                    'timestamp' => '2024-01-15T10:00:00Z',
+                ]]],
+                ['data' => ['json' => [
+                    'pr_number' => 'PR-001',
+                    'procurement_title' => 'Test Procurement 1',
+                    'user_address' => '1ABC123XYZ',
+                    'stage' => 'Pre-Procurement',
+                    'status' => 'Active',
+                    'document_type' => 'Contract',
+                    'file_key' => 'key2',
+                    'file_name' => 'doc2.pdf',
+                    'file_size' => 1000,
+                    'mime_type' => 'application/pdf',
+                    'hash' => 'hash2',
+                    'data_txid' => 'tx2',
+                    'metadata_txid' => 'mtx2',
+                    'uploaded_by' => 'user1',
+                    'timestamp' => '2024-01-15T10:00:00Z',
+                ]]],
+                ['data' => ['json' => [
+                    'pr_number' => 'PR-002',
+                    'procurement_title' => 'Test Procurement 2',
+                    'user_address' => '1DEF456ABC',
+                    'stage' => 'Bidding',
+                    'status' => 'Active',
+                    'document_type' => 'Bid',
+                    'file_key' => 'key3',
+                    'file_name' => 'doc3.pdf',
+                    'file_size' => 1000,
+                    'mime_type' => 'application/pdf',
+                    'hash' => 'hash3',
+                    'data_txid' => 'tx3',
+                    'metadata_txid' => 'mtx3',
+                    'uploaded_by' => 'user2',
+                    'timestamp' => '2024-01-15T10:00:00Z',
+                ]]],
+            ];
+
+            $this->manager->shouldReceive('liststreamitems')
+                ->with(StreamEnums::DOCUMENTS->value, true, 10000, 0, false)
+                ->andReturn($blockchainItems);
 
             $result = $this->service->getTotalDocuments($procurements);
 
@@ -666,30 +684,49 @@ describe('DashboardService', function () {
 
         test('it handles duplicate document hashes correctly', function () {
             $procurements = collect([
-                'PR-001' => ['id' => 'PR-001'],
+                'PR-001' => ['prNumber' => 'PR-001'],
             ]);
 
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->once()
-                ->andReturn([
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-001',
-                                'hash' => 'duplicate_hash',
-                            ],
-                        ],
-                    ],
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-001',
-                                'hash' => 'duplicate_hash', // Same hash
-                            ],
-                        ],
-                    ],
-                ]);
+            $blockchainItems = [
+                ['data' => ['json' => [
+                    'pr_number' => 'PR-001',
+                    'procurement_title' => 'Test Procurement',
+                    'user_address' => '1ABC123XYZ',
+                    'stage' => 'Pre-Procurement',
+                    'status' => 'Active',
+                    'document_type' => 'Contract',
+                    'file_key' => 'key1',
+                    'file_name' => 'doc1.pdf',
+                    'file_size' => 1000,
+                    'mime_type' => 'application/pdf',
+                    'hash' => 'duplicate_hash',
+                    'data_txid' => 'tx1',
+                    'metadata_txid' => 'mtx1',
+                    'uploaded_by' => 'user1',
+                    'timestamp' => '2024-01-15T10:00:00Z',
+                ]]],
+                ['data' => ['json' => [
+                    'pr_number' => 'PR-001',
+                    'procurement_title' => 'Test Procurement',
+                    'user_address' => '1ABC123XYZ',
+                    'stage' => 'Pre-Procurement',
+                    'status' => 'Active',
+                    'document_type' => 'Contract',
+                    'file_key' => 'key2',
+                    'file_name' => 'doc2.pdf',
+                    'file_size' => 1000,
+                    'mime_type' => 'application/pdf',
+                    'hash' => 'duplicate_hash', // Same hash
+                    'data_txid' => 'tx2',
+                    'metadata_txid' => 'mtx2',
+                    'uploaded_by' => 'user1',
+                    'timestamp' => '2024-01-15T10:00:00Z',
+                ]]],
+            ];
+
+            $this->manager->shouldReceive('liststreamitems')
+                ->with(StreamEnums::DOCUMENTS->value, true, 10000, 0, false)
+                ->andReturn($blockchainItems);
 
             $result = $this->service->getTotalDocuments($procurements);
 
@@ -698,13 +735,12 @@ describe('DashboardService', function () {
 
         test('it returns zero when document stream is empty', function () {
             $procurements = collect([
-                'PR-001' => ['id' => 'PR-001'],
+                'PR-001' => ['prNumber' => 'PR-001'],
             ]);
 
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->once()
-                ->andReturn(null);
+            $this->manager->shouldReceive('liststreamitems')
+                ->with(StreamEnums::DOCUMENTS->value, true, 10000, 0, false)
+                ->andReturn([]);
 
             $result = $this->service->getTotalDocuments($procurements);
 
@@ -717,38 +753,32 @@ describe('DashboardService', function () {
 
         test('it filters documents missing required fields', function () {
             $procurements = collect([
-                'PR-001' => ['id' => 'PR-001'],
+                'PR-001' => ['prNumber' => 'PR-001'],
             ]);
 
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->once()
-                ->andReturn([
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-001',
-                                'hash' => 'valid_hash',
-                            ],
-                        ],
-                    ],
-                    [
-                        'data' => [
-                            'json' => [
-                                'pr_number' => 'PR-001',
-                                // Missing hash
-                            ],
-                        ],
-                    ],
-                    [
-                        'data' => [
-                            'json' => [
-                                // Missing pr_number
-                                'hash' => 'invalid_hash',
-                            ],
-                        ],
-                    ],
-                ]);
+            $blockchainItems = [
+                ['data' => ['json' => [
+                    'pr_number' => 'PR-001',
+                    'procurement_title' => 'Test Procurement',
+                    'user_address' => '1ABC123XYZ',
+                    'stage' => 'Pre-Procurement',
+                    'status' => 'Active',
+                    'document_type' => 'Contract',
+                    'file_key' => 'key1',
+                    'file_name' => 'doc1.pdf',
+                    'file_size' => 1000,
+                    'mime_type' => 'application/pdf',
+                    'hash' => 'valid_hash',
+                    'data_txid' => 'tx1',
+                    'metadata_txid' => 'mtx1',
+                    'uploaded_by' => 'user1',
+                    'timestamp' => '2024-01-15T10:00:00Z',
+                ]]],
+            ];
+
+            $this->manager->shouldReceive('liststreamitems')
+                ->with(StreamEnums::DOCUMENTS->value, true, 10000, 0, false)
+                ->andReturn($blockchainItems);
 
             $result = $this->service->getTotalDocuments($procurements);
 
@@ -757,20 +787,19 @@ describe('DashboardService', function () {
 
         test('it handles exceptions gracefully', function () {
             $procurements = collect([
-                'PR-001' => ['id' => 'PR-001'],
+                'PR-001' => ['prNumber' => 'PR-001'],
             ]);
 
-            $this->multichainService
-                ->shouldReceive('listStreamItems')
-                ->once()
-                ->andThrow(new Exception('Blockchain error'));
+            $this->manager->shouldReceive('liststreamitems')
+                ->with(StreamEnums::DOCUMENTS->value, true, 10000, 0, false)
+                ->andThrow(new Exception('Repository error'));
 
             $result = $this->service->getTotalDocuments($procurements);
 
             expect($result)->toBe(0);
 
-            Log::shouldHaveReceived('error')
-                ->with('Failed to calculate total documents for dashboard', \Mockery::type('array'))
+            Log::shouldHaveReceived('warning')
+                ->with('Failed to retrieve document stream items for dashboard stats.')
                 ->once();
         });
     });

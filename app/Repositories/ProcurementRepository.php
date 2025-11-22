@@ -6,7 +6,7 @@ namespace App\Repositories;
 
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\StreamEnums;
-use App\Libraries\MultiChain\Manager;
+use App\Services\Manager;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 

@@ -13,9 +13,9 @@ use App\Enums\StatusEnums;
 use App\Http\Controllers\Procurement\Concerns\HasProcurementSupport;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
-use App\Libraries\MultiChain\Manager;
 use App\Repositories\ProcurementRepository;
 use App\Services\DocumentValidationService;
+use App\Services\Manager;
 use App\Services\ProcurementDataService;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
@@ -56,11 +56,6 @@ class ProcurementInitiationController extends BaseController
         );
 
         $this->applyProcurementMiddleware();
-    }
-
-    public function index(): Response
-    {
-        return Inertia::render('bac-secretariat/procurement-initiation');
     }
 
     public function show(?string $id = null): Response
@@ -275,7 +270,7 @@ class ProcurementInitiationController extends BaseController
 
             // Success - redirect to procurement list
             return redirect()->route('bac-secretariat.procurements.index')
-                ->with('success', $result['message'] . ' Documents are being published to blockchain in the background.');
+                ->with('success', $result['message'].' Documents are being published to blockchain in the background.');
         } catch (\Exception $e) {
             \Log::error('Failed to initiate procurement', [
                 'pr_number' => $prNumber,

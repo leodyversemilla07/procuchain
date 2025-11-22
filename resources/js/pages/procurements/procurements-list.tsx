@@ -299,7 +299,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
             if (e.key === 'n' && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
                 if (auth?.permissions?.includes('create procurement')) {
-                    router.visit(procurement.initiation.create.url());
+                    router.visit(procurement.initiation.index.url());
                 }
             }
 
@@ -355,7 +355,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                             </div>
                             <Can permission="create procurement">
                                 <Button asChild className="w-full sm:w-auto shrink-0">
-                                    <Link href={procurement.initiation.create.url()} className="flex items-center justify-center gap-2">
+                                    <Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2">
                                         <Plus className="h-4 w-4" />
                                         <span>New Procurement</span>
                                     </Link>

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
-use App\Libraries\MultiChain\Manager;
 use App\Services\DashboardService;
+use App\Services\Manager;
 use App\Services\ProcurementStageTransitionService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;

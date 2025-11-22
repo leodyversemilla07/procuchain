@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Libraries\MultiChain\Manager;
 use App\Services\BlockchainMonitoringService;
+use App\Services\Manager;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

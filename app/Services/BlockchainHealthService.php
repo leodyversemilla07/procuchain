@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Libraries\MultiChain\Manager;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -214,16 +213,6 @@ class BlockchainHealthService
             ->where('failed_at', '>=', now()->subDay())
             ->count();
 
-        $pendingDocuments = DB::table('procurement_documents')
-            ->where('blockchain_status', 'pending')
-            ->where('created_at', '>=', now()->subHour())
-            ->count();
-
-        $failedDocuments = DB::table('procurement_documents')
-            ->where('blockchain_status', 'failed')
-            ->where('blockchain_status_updated_at', '>=', now()->subDay())
-            ->count();
-
         return [
             'status' => $isHealthy ? 'healthy' : 'unhealthy',
             'circuit_breaker' => [
@@ -236,10 +225,6 @@ class BlockchainHealthService
             'queue' => [
                 'pending_jobs' => $pendingJobs,
                 'failed_jobs_24h' => $failedJobs,
-            ],
-            'documents' => [
-                'pending_1h' => $pendingDocuments,
-                'failed_24h' => $failedDocuments,
             ],
             'checked_at' => now()->toIso8601String(),
         ];

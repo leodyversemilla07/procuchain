@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
-use App\Libraries\MultiChain\Manager;
 use App\Services\AdminAnalyticsService;
 use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
+use App\Services\Manager;
 use Illuminate\Support\Facades\Cache;
 
 class AdminController extends BaseDashboardController

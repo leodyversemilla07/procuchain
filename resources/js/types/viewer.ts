@@ -83,4 +83,5 @@ export interface ProcurementDocument {
     stage: string;
     hash: string;
     timestamp: string;
+    // Note: Documents are stored in blockchain only, no database records
 }

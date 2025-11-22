@@ -13,7 +13,7 @@ import adminUsers from '@/routes/admin/users';
 import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
 import { index as bacChairmanProcurementsList } from '@/routes/bac-chairman/procurements';
 import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
-import { create as bacSecretariatProcurementInitiationCreate } from '@/routes/bac-secretariat/procurement/initiation';
+import { index as bacSecretariatProcurementInitiation } from '@/routes/bac-secretariat/procurement/initiation';
 import { index as bacSecretariatProcurementsList } from '@/routes/bac-secretariat/procurements';
 import { dashboard as hopeDashboard } from '@/routes/hope';
 import { index as hopeProcurementsList } from '@/routes/hope/procurements';
@@ -98,7 +98,7 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
     if (role === 'bac_secretariat' && can.manageProcurement) {
         items.push({
             title: 'Procurement Initiation',
-            href: bacSecretariatProcurementInitiationCreate.url(),
+            href: bacSecretariatProcurementInitiation.url(),
             icon: Upload,
         });
     }
