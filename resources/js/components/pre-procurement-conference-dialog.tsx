@@ -3,11 +3,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Spinner } from '@/components/ui/spinner';
+import { index as procurementsListIndex } from '@/routes/bac-secretariat/procurements';
 import { router, useForm } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
-import { index as procurementsListIndex } from '@/routes/bac-secretariat/procurements';
 
 interface PreProcurementDialogProps {
     open: boolean;
@@ -97,11 +97,11 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
                     <DialogDescription className="text-sm leading-relaxed sm:text-base">
                         Please indicate whether a pre-procurement conference was held for this procurement.
                     </DialogDescription>
-                    <div className="rounded-lg border bg-muted/50 p-3 sm:p-4">
-                        <p className="text-sm font-medium text-foreground sm:text-base">
+                    <div className="bg-muted/50 rounded-lg border p-3 sm:p-4">
+                        <p className="text-foreground text-sm font-medium sm:text-base">
                             <span className="text-muted-foreground">Title:</span> {procurementTitle}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                        <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
                             <span className="font-medium">ID:</span> {pr_number}
                         </p>
                     </div>
@@ -120,20 +120,20 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
                         >
                             <Label
                                 htmlFor="conference-yes"
-                                className={`m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all hover:border-primary/50 hover:bg-accent/50 ${
-                                    form.data.conference_held === true ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border'
+                                className={`hover:border-primary/50 hover:bg-accent/50 m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all ${
+                                    form.data.conference_held === true ? 'border-primary bg-primary/5 ring-primary/20 ring-2' : 'border-border'
                                 }`}
                             >
                                 <RadioGroupItem value="true" id="conference-yes" />
                                 <div className="flex flex-1 items-center justify-between">
                                     <span className="font-medium">Yes, Conference Held</span>
-                                    {form.data.conference_held === true && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                                    {form.data.conference_held === true && <CheckCircle2 className="text-primary h-4 w-4" />}
                                 </div>
                             </Label>
                             <Label
                                 htmlFor="conference-no"
-                                className={`m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all hover:border-primary/50 hover:bg-accent/50 ${
-                                    form.data.conference_held === false ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border'
+                                className={`hover:border-primary/50 hover:bg-accent/50 m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all ${
+                                    form.data.conference_held === false ? 'border-primary bg-primary/5 ring-primary/20 ring-2' : 'border-border'
                                 }`}
                             >
                                 <RadioGroupItem value="false" id="conference-no" />
@@ -144,9 +144,9 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
                             </Label>
                         </RadioGroup>
                         {form.errors.conference_held && (
-                            <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3">
-                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                                <p className="text-sm text-destructive" id="conference-error" aria-live="polite">
+                            <div className="border-destructive/50 bg-destructive/10 flex items-start gap-2 rounded-lg border p-3">
+                                <AlertCircle className="text-destructive mt-0.5 h-4 w-4 shrink-0" />
+                                <p className="text-destructive text-sm" id="conference-error" aria-live="polite">
                                     {form.errors.conference_held}
                                 </p>
                             </div>
@@ -167,14 +167,12 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
                                 <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
                             )}
                             <div className="flex-1">
-                                <p className="text-sm font-medium text-foreground sm:text-base">
+                                <p className="text-foreground text-sm font-medium sm:text-base">
                                     {form.data.conference_held ? 'Next Step: Upload Documents' : 'Next Step: Skip to Bidding Documents'}
                                 </p>
                                 <p
                                     className={`mt-1 text-sm ${
-                                        form.data.conference_held
-                                            ? 'text-blue-700 dark:text-blue-300'
-                                            : 'text-amber-700 dark:text-amber-300'
+                                        form.data.conference_held ? 'text-blue-700 dark:text-blue-300' : 'text-amber-700 dark:text-amber-300'
                                     }`}
                                 >
                                     {form.data.conference_held

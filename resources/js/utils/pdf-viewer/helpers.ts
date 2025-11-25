@@ -1,18 +1,5 @@
 import { UserRole } from '@/types';
-import {
-    Activity,
-    Award,
-    BarChart3,
-    CheckCircle,
-    Clock,
-    FileCheck,
-    FileText,
-    Flag,
-    Gavel,
-    PlayCircle,
-    Target,
-    Users2,
-} from 'lucide-react';
+import { Activity, Award, BarChart3, CheckCircle, Clock, FileCheck, FileText, Flag, Gavel, PlayCircle, Target, Users2 } from 'lucide-react';
 import React from 'react';
 
 export const formatFileSize = (bytes?: number): string => {

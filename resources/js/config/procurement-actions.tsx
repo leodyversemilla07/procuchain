@@ -1,9 +1,9 @@
-import { Edit2Icon, UploadCloudIcon, BarChart4Icon } from 'lucide-react';
-import { Stage, Status } from '@/types';
 import { cn } from '@/lib/utils';
-import { show as preProcurementShow } from '@/routes/bac-secretariat/procurement/pre-procurement';
 import { show as biddingShow } from '@/routes/bac-secretariat/procurement/bidding';
 import { show as postProcurementShow } from '@/routes/bac-secretariat/procurement/post-procurement';
+import { show as preProcurementShow } from '@/routes/bac-secretariat/procurement/pre-procurement';
+import { Stage, Status } from '@/types';
+import { BarChart4Icon, Edit2Icon, UploadCloudIcon } from 'lucide-react';
 
 export interface ActionConfig {
     icon: React.ReactNode;
@@ -52,9 +52,9 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
         action: 'pre-procurement',
     },
     {
-        condition: { 
-            stage: Stage.PRE_PROCUREMENT_CONFERENCE, 
-            status: [Status.PRE_PROCUREMENT_CONFERENCE_HELD] 
+        condition: {
+            stage: Stage.PRE_PROCUREMENT_CONFERENCE,
+            status: [Status.PRE_PROCUREMENT_CONFERENCE_HELD],
         },
         icon: UploadCloudIcon,
         iconClassName: cn(iconSize, 'text-green-600 dark:text-green-400'),
@@ -65,10 +65,7 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
     {
         condition: {
             stage: Stage.BIDDING_DOCUMENTS,
-            status: [
-                Status.PRE_PROCUREMENT_CONFERENCE_SKIPPED, 
-                Status.PRE_PROCUREMENT_CONFERENCE_COMPLETED
-            ],
+            status: [Status.PRE_PROCUREMENT_CONFERENCE_SKIPPED, Status.PRE_PROCUREMENT_CONFERENCE_COMPLETED],
         },
         icon: UploadCloudIcon,
         iconClassName: cn(iconSize, 'text-amber-600 dark:text-amber-400'),
@@ -189,12 +186,10 @@ export const ACTION_REGISTRY: ActionDefinition[] = [
  * Check if a stage and status match the condition
  */
 const matchesCondition = (condition: ActionCondition, stage: Stage, status: Status): boolean => {
-    const stageMatches = !condition.stage || 
-        (Array.isArray(condition.stage) ? condition.stage.includes(stage) : condition.stage === stage);
-    
-    const statusMatches = !condition.status || 
-        (Array.isArray(condition.status) ? condition.status.includes(status) : condition.status === status);
-    
+    const stageMatches = !condition.stage || (Array.isArray(condition.stage) ? condition.stage.includes(stage) : condition.stage === stage);
+
+    const statusMatches = !condition.status || (Array.isArray(condition.status) ? condition.status.includes(status) : condition.status === status);
+
     return stageMatches && statusMatches;
 };
 
@@ -209,34 +204,32 @@ export const getActionConfigs = (
         onPreProcurement?: () => void;
         onPreBid?: () => void;
         onSupplementalBidBulletin?: () => void;
-    }
+    },
 ): ActionConfig[] => {
-    return ACTION_REGISTRY
-        .filter(def => matchesCondition(def.condition, stage, status))
-        .map(def => {
-            const Icon = def.icon;
-            const config: ActionConfig = {
-                icon: <Icon className={def.iconClassName} />,
-                tooltipText: def.tooltipText,
-                className: def.bgClassName,
-            };
+    return ACTION_REGISTRY.filter((def) => matchesCondition(def.condition, stage, status)).map((def) => {
+        const Icon = def.icon;
+        const config: ActionConfig = {
+            icon: <Icon className={def.iconClassName} />,
+            tooltipText: def.tooltipText,
+            className: def.bgClassName,
+        };
 
-            if (def.getHref) {
-                config.href = def.getHref(pr_number);
-            } else if (def.action) {
-                switch (def.action) {
-                    case 'pre-procurement':
-                        config.onClick = handlers.onPreProcurement;
-                        break;
-                    case 'pre-bid':
-                        config.onClick = handlers.onPreBid;
-                        break;
-                    case 'supplemental-bid-bulletin':
-                        config.onClick = handlers.onSupplementalBidBulletin;
-                        break;
-                }
+        if (def.getHref) {
+            config.href = def.getHref(pr_number);
+        } else if (def.action) {
+            switch (def.action) {
+                case 'pre-procurement':
+                    config.onClick = handlers.onPreProcurement;
+                    break;
+                case 'pre-bid':
+                    config.onClick = handlers.onPreBid;
+                    break;
+                case 'supplemental-bid-bulletin':
+                    config.onClick = handlers.onSupplementalBidBulletin;
+                    break;
             }
+        }
 
-            return config;
-        });
+        return config;
+    });
 };

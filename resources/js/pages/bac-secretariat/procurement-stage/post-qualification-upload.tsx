@@ -1,14 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Head, router } from '@inertiajs/react';
-import { CheckSquare, CheckCircle2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementController';
 import FileUploadArea from '@/components/file-upload-area';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Spinner } from '@/components/ui/spinner';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -19,12 +10,20 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementController';
-import type { DocumentGuide } from '@/types/document-guide';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Spinner } from '@/components/ui/spinner';
+import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { buildBreadcrumbs } from '@/utils/breadcrumbs';
+import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
-import { getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
+import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
+import { Head, router } from '@inertiajs/react';
+import { AlertCircle, CheckCircle2, CheckSquare } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
 interface PostQualificationUploadProps {
     procurement: {
@@ -54,7 +53,10 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
 
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
         getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
-        { title: `Upload Post Qualification - ${procurement?.pr_number || 'Unknown'}${procurement?.title ? ': ' + procurement.title : ''}`, href: '#' },
+        {
+            title: `Upload Post Qualification - ${procurement?.pr_number || 'Unknown'}${procurement?.title ? ': ' + procurement.title : ''}`,
+            href: '#',
+        },
     ]);
 
     const handleMarkComplete = () => {
@@ -71,12 +73,8 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
                         toast.success(message, {
                             description: (
                                 <div className="space-y-1 text-xs">
-                                    {blockchain.status_txid && (
-                                        <p>Status TX: {blockchain.status_txid}</p>
-                                    )}
-                                    {blockchain.event_txid && (
-                                        <p>Event TX: {blockchain.event_txid}</p>
-                                    )}
+                                    {blockchain.status_txid && <p>Status TX: {blockchain.status_txid}</p>}
+                                    {blockchain.event_txid && <p>Event TX: {blockchain.event_txid}</p>}
                                 </div>
                             ),
                         });
@@ -98,9 +96,7 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
         );
     };
 
-    const uploadedRequiredCount = documentGuide
-        ? documentGuide.required_documents.filter((doc) => uploadedDocuments.includes(doc.value)).length
-        : 0;
+    const uploadedRequiredCount = documentGuide ? documentGuide.required_documents.filter((doc) => uploadedDocuments.includes(doc.value)).length : 0;
 
     const calculatedPercentage =
         documentGuide && documentGuide.counts.required_count > 0
@@ -108,8 +104,9 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    const isStageCompleted = procurement.stage_value === 'bac_resolution' || 
-                              (procurement.stage_value === 'post_qualification' && procurement.status === 'post_qualification_verified');
+    const isStageCompleted =
+        procurement.stage_value === 'bac_resolution' ||
+        (procurement.stage_value === 'post_qualification' && procurement.status === 'post_qualification_verified');
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {
@@ -192,7 +189,7 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
 
     const handleConfirmUpload = useCallback(() => {
         const file = files[confirmDialog.documentValue];
-        
+
         if (!file) {
             toast.error('No file selected', {
                 description: 'Please select a file to upload.',
@@ -231,10 +228,9 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
                 preserveScroll: true,
                 only: ['uploadedDocuments'],
                 forceFormData: true,
-            }
+            },
         );
     }, [confirmDialog, files, procurement.pr_number]);
-
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -267,7 +263,7 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
                                         <CheckSquare className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
                                         Upload Progress
                                     </CardTitle>
-                                    <p className="text-sm text-muted-foreground">Track your document upload progress</p>
+                                    <p className="text-muted-foreground text-sm">Track your document upload progress</p>
                                 </CardHeader>
 
                                 <CardContent className="space-y-4">
@@ -279,14 +275,14 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
                                             </span>
                                         </div>
                                         <Progress value={calculatedPercentage} className="h-2" />
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-muted-foreground text-xs">
                                             {allRequiredUploaded ? (
-                                                <span className="text-green-600 dark:text-green-500 flex items-center gap-1">
+                                                <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
                                                     <CheckCircle2 className="h-3 w-3" />
                                                     All required documents uploaded
                                                 </span>
                                             ) : (
-                                                <span className="text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                                                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-500">
                                                     <AlertCircle className="h-3 w-3" />
                                                     {documentGuide.counts.required_count - uploadedRequiredCount} required document
                                                     {documentGuide.counts.required_count - uploadedRequiredCount !== 1 ? 's' : ''} remaining
@@ -295,7 +291,7 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
                                         </p>
                                     </div>
 
-                                    <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1">
+                                    <div className="bg-muted/50 space-y-1 rounded-lg p-3 text-xs">
                                         <div className="flex justify-between">
                                             <span className="text-muted-foreground">Stage:</span>
                                             <span className="font-medium">{documentGuide.stage_display_name}</span>
@@ -321,181 +317,181 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
                             </Card>
                         )}
 
-                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
-                    <CardHeader className="space-y-1 pb-2 sm:pb-4">
-                        <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                            <CheckSquare className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
-                            Document Upload
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                            Upload required and optional documents for Post Qualification. Files will be permanently saved.
-                        </p>
-                    </CardHeader>
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
+                            <CardHeader className="space-y-1 pb-2 sm:pb-4">
+                                <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
+                                    <CheckSquare className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                    Document Upload
+                                </CardTitle>
+                                <p className="text-muted-foreground text-sm">
+                                    Upload required and optional documents for Post Qualification. Files will be permanently saved.
+                                </p>
+                            </CardHeader>
 
-                    <CardContent className="space-y-6">
-                        {/* Required Documents */}
-                        {documentGuide && documentGuide.required_documents.length > 0 && (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <h3 className="text-sm font-semibold">Required Documents</h3>
-                                    <Badge variant="secondary" className="text-xs">
-                                        {documentGuide.counts.required_count}
-                                    </Badge>
-                                </div>
-                                <div className="space-y-4">
-                                    {documentGuide.required_documents.map((doc) => {
-                                        const isUploaded = uploadedDocuments.includes(doc.value);
-                                        return (
-                                            <div key={doc.value} className="space-y-2">
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium">{doc.display_name}</p>
-                                                        {doc.description && (
-                                                            <p className="text-xs text-muted-foreground">{doc.description}</p>
+                            <CardContent className="space-y-6">
+                                {/* Required Documents */}
+                                {documentGuide && documentGuide.required_documents.length > 0 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-semibold">Required Documents</h3>
+                                            <Badge variant="secondary" className="text-xs">
+                                                {documentGuide.counts.required_count}
+                                            </Badge>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {documentGuide.required_documents.map((doc) => {
+                                                const isUploaded = uploadedDocuments.includes(doc.value);
+                                                return (
+                                                    <div key={doc.value} className="space-y-2">
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-medium">{doc.display_name}</p>
+                                                                {doc.description && (
+                                                                    <p className="text-muted-foreground text-xs">{doc.description}</p>
+                                                                )}
+                                                            </div>
+                                                            {isUploaded && (
+                                                                <Badge variant="outline" className="text-xs text-green-600 dark:text-green-500">
+                                                                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                                                                    Uploaded
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        {!isUploaded && (
+                                                            <div className="flex flex-col gap-2 sm:flex-row">
+                                                                <div className="flex-1">
+                                                                    <FileUploadArea
+                                                                        label=""
+                                                                        file={files[doc.value] || null}
+                                                                        isDragging={dragging[doc.value] || false}
+                                                                        onFileChange={handleFileChange(doc.value)}
+                                                                        onDragEnter={handleDragEnter(doc.value)}
+                                                                        onDragLeave={handleDragLeave(doc.value)}
+                                                                        onDragOver={handleDragOver}
+                                                                        onDrop={handleDrop(doc.value)}
+                                                                        onRemove={handleRemove(doc.value)}
+                                                                        inputId={`file-${doc.value}`}
+                                                                        required
+                                                                    />
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={() => handleUploadClick(doc.value, doc.display_name)}
+                                                                    disabled={!files[doc.value] || isUploading}
+                                                                    className="mt-0 h-12 w-full self-start sm:h-[120px] sm:w-auto"
+                                                                >
+                                                                    Upload
+                                                                </Button>
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    {isUploaded && (
-                                                        <Badge variant="outline" className="text-xs text-green-600 dark:text-green-500">
-                                                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                                                            Uploaded
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                {!isUploaded && (
-                                                    <div className="flex flex-col sm:flex-row gap-2">
-                                                        <div className="flex-1">
-                                                            <FileUploadArea
-                                                                label=""
-                                                                file={files[doc.value] || null}
-                                                                isDragging={dragging[doc.value] || false}
-                                                                onFileChange={handleFileChange(doc.value)}
-                                                                onDragEnter={handleDragEnter(doc.value)}
-                                                                onDragLeave={handleDragLeave(doc.value)}
-                                                                onDragOver={handleDragOver}
-                                                                onDrop={handleDrop(doc.value)}
-                                                                onRemove={handleRemove(doc.value)}
-                                                                inputId={`file-${doc.value}`}
-                                                                required
-                                                            />
-                                                        </div>
-                                                        <Button
-                                                            type="button"
-                                                            onClick={() => handleUploadClick(doc.value, doc.display_name)}
-                                                            disabled={!files[doc.value] || isUploading}
-                                                            className="self-start mt-0 h-12 sm:h-[120px] w-full sm:w-auto"
-                                                        >
-                                                            Upload
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
 
-                        {/* Optional Documents */}
-                        {documentGuide && documentGuide.optional_documents.length > 0 && (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <h3 className="text-sm font-semibold">Optional Documents</h3>
-                                    <Badge variant="outline" className="text-xs">
-                                        {documentGuide.counts.optional_count}
-                                    </Badge>
-                                </div>
-                                <div className="space-y-4">
-                                    {documentGuide.optional_documents.map((doc) => {
-                                        const isUploaded = uploadedDocuments.includes(doc.value);
-                                        return (
-                                            <div key={doc.value} className="space-y-2">
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium">{doc.display_name}</p>
-                                                        {doc.description && (
-                                                            <p className="text-xs text-muted-foreground">{doc.description}</p>
+                                {/* Optional Documents */}
+                                {documentGuide && documentGuide.optional_documents.length > 0 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-semibold">Optional Documents</h3>
+                                            <Badge variant="outline" className="text-xs">
+                                                {documentGuide.counts.optional_count}
+                                            </Badge>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {documentGuide.optional_documents.map((doc) => {
+                                                const isUploaded = uploadedDocuments.includes(doc.value);
+                                                return (
+                                                    <div key={doc.value} className="space-y-2">
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-medium">{doc.display_name}</p>
+                                                                {doc.description && (
+                                                                    <p className="text-muted-foreground text-xs">{doc.description}</p>
+                                                                )}
+                                                            </div>
+                                                            {isUploaded && (
+                                                                <Badge variant="outline" className="text-xs text-blue-600 dark:text-blue-500">
+                                                                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                                                                    Uploaded
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        {!isUploaded && (
+                                                            <div className="flex flex-col gap-2 sm:flex-row">
+                                                                <div className="flex-1">
+                                                                    <FileUploadArea
+                                                                        label=""
+                                                                        file={files[doc.value] || null}
+                                                                        isDragging={dragging[doc.value] || false}
+                                                                        onFileChange={handleFileChange(doc.value)}
+                                                                        onDragEnter={handleDragEnter(doc.value)}
+                                                                        onDragLeave={handleDragLeave(doc.value)}
+                                                                        onDragOver={handleDragOver}
+                                                                        onDrop={handleDrop(doc.value)}
+                                                                        onRemove={handleRemove(doc.value)}
+                                                                        inputId={`file-${doc.value}`}
+                                                                    />
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={() => handleUploadClick(doc.value, doc.display_name)}
+                                                                    disabled={!files[doc.value] || isUploading}
+                                                                    variant="secondary"
+                                                                    className="mt-0 h-12 w-full self-start sm:h-[120px] sm:w-auto"
+                                                                >
+                                                                    Upload
+                                                                </Button>
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    {isUploaded && (
-                                                        <Badge variant="outline" className="text-xs text-blue-600 dark:text-blue-500">
-                                                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                                                            Uploaded
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                {!isUploaded && (
-                                                    <div className="flex flex-col sm:flex-row gap-2">
-                                                        <div className="flex-1">
-                                                            <FileUploadArea
-                                                                label=""
-                                                                file={files[doc.value] || null}
-                                                                isDragging={dragging[doc.value] || false}
-                                                                onFileChange={handleFileChange(doc.value)}
-                                                                onDragEnter={handleDragEnter(doc.value)}
-                                                                onDragLeave={handleDragLeave(doc.value)}
-                                                                onDragOver={handleDragOver}
-                                                                onDrop={handleDrop(doc.value)}
-                                                                onRemove={handleRemove(doc.value)}
-                                                                inputId={`file-${doc.value}`}
-                                                            />
-                                                        </div>
-                                                        <Button
-                                                            type="button"
-                                                            onClick={() => handleUploadClick(doc.value, doc.display_name)}
-                                                            disabled={!files[doc.value] || isUploading}
-                                                            variant="secondary"
-                                                            className="self-start mt-0 h-12 sm:h-[120px] w-full sm:w-auto"
-                                                        >
-                                                            Upload
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
 
-                    <CardFooter className="flex flex-col gap-3 border-t pt-4">
-                        {isStageCompleted ? (
-                            <div className="w-full rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
-                                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                                    <CheckCircle2 className="h-5 w-5" />
-                                    <div>
-                                        <p className="font-semibold">Stage Completed</p>
-                                        <p className="text-sm">This stage has been marked as complete.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <Button
-                                type="button"
-                                disabled={!allRequiredUploaded || isUploading || isMarkingComplete}
-                                onClick={handleMarkComplete}
-                                className="flex h-10 w-full items-center gap-2 text-sm sm:h-11 sm:text-base"
-                            >
-                                {isMarkingComplete ? (
-                                    <div className="flex items-center gap-2">
-                                        <Spinner className="h-4 w-4" />
-                                        Marking Complete...
-                                    </div>
-                                ) : isUploading ? (
-                                    <div className="flex items-center gap-2">
-                                        <Spinner className="h-4 w-4" />
-                                        Uploading...
+                            <CardFooter className="flex flex-col gap-3 border-t pt-4">
+                                {isStageCompleted ? (
+                                    <div className="w-full rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
+                                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                                            <CheckCircle2 className="h-5 w-5" />
+                                            <div>
+                                                <p className="font-semibold">Stage Completed</p>
+                                                <p className="text-sm">This stage has been marked as complete.</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <>
-                                        <CheckCircle2 className="h-4 w-4" />
-                                        Mark Stage as Complete
-                                    </>
+                                    <Button
+                                        type="button"
+                                        disabled={!allRequiredUploaded || isUploading || isMarkingComplete}
+                                        onClick={handleMarkComplete}
+                                        className="flex h-10 w-full items-center gap-2 text-sm sm:h-11 sm:text-base"
+                                    >
+                                        {isMarkingComplete ? (
+                                            <div className="flex items-center gap-2">
+                                                <Spinner className="h-4 w-4" />
+                                                Marking Complete...
+                                            </div>
+                                        ) : isUploading ? (
+                                            <div className="flex items-center gap-2">
+                                                <Spinner className="h-4 w-4" />
+                                                Uploading...
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                Mark Stage as Complete
+                                            </>
+                                        )}
+                                    </Button>
                                 )}
-                            </Button>
-                        )}
-                    </CardFooter>
-                </Card>
+                            </CardFooter>
+                        </Card>
                     </div>
                 </div>
             </div>

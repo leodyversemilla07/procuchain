@@ -34,9 +34,7 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type, stag
                         </div>
                         <div className="bg-muted rounded-lg border p-2 sm:p-3">
                             <div className="mb-1 flex items-center justify-between">
-                                <span className="text-xs font-medium sm:text-sm">
-                                    {stageItem.status_formatted || stageItem.status}
-                                </span>
+                                <span className="text-xs font-medium sm:text-sm">{stageItem.status_formatted || stageItem.status}</span>
                             </div>
                             <p className="text-muted-foreground text-xs sm:text-sm">
                                 Procurement moved to <strong>{stageItem.stage_formatted || stageItem.stage}</strong> stage
@@ -77,7 +75,9 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type, stag
                 </div>
                 <div className="space-y-1 sm:space-y-2">
                     <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                        <h3 className="text-sm font-medium sm:text-base">{eventItem.event_type_formatted || eventItem.event_type.replace(/_/g, ' ')}</h3>
+                        <h3 className="text-sm font-medium sm:text-base">
+                            {eventItem.event_type_formatted || eventItem.event_type.replace(/_/g, ' ')}
+                        </h3>
                         {eventItem.stage && (
                             <Badge variant="outline" className="text-xs">
                                 {eventItem.stage_formatted || eventItem.stage}

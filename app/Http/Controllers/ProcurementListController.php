@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\StageEnums;
 use App\Services\ProcurementDataService;
 use Exception;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -88,6 +89,7 @@ class ProcurementListController extends BaseController
                     'page' => $page,
                     'per_page' => $perPage,
                 ],
+                'stageOptions' => StageEnums::options(),
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve procurements list', [
@@ -103,6 +105,7 @@ class ProcurementListController extends BaseController
                     'per_page' => (int) request()->input('per_page', 10),
                 ],
                 'error' => 'Unable to connect to the blockchain node right now. Please try again shortly.',
+                'stageOptions' => StageEnums::options(),
             ]);
         }
     }
@@ -212,6 +215,32 @@ class ProcurementListController extends BaseController
                     'created_at' => $procurementDetails->createdAt->toIso8601String(),
                     'created_at_formatted' => $procurementDetails->getFormattedCreatedAt(),
                 ];
+
+                // Add correction information
+                $procurementCorrectionRepository = app(\App\Repositories\ProcurementCorrectionRepository::class);
+                $hasCorrections = $procurementCorrectionRepository->hasCorrections($pr_number);
+                $latestCorrection = $hasCorrections ? $procurementCorrectionRepository->getLatest($pr_number) : null;
+                $allCorrections = $hasCorrections ? $procurementCorrectionRepository->findByProcurement($pr_number) : [];
+
+                $procurementData['details']['has_corrections'] = $hasCorrections;
+                $procurementData['details']['latest_correction'] = $latestCorrection ? [
+                    'timestamp' => $latestCorrection->timestamp->toIso8601String(),
+                    'corrected_by' => $latestCorrection->correctedBy,
+                    'reason' => $latestCorrection->reason,
+                    'changed_fields' => $latestCorrection->getChangedFields(),
+                ] : null;
+                $procurementData['details']['corrections'] = array_map(function ($correction) {
+                    return [
+                        'pr_number' => $correction->prNumber,
+                        'timestamp' => $correction->timestamp->toIso8601String(),
+                        'reason' => $correction->reason,
+                        'corrected_by' => $correction->correctedBy,
+                        'correction_type' => $correction->correctionType,
+                        'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType)),
+                        'changed_fields' => $correction->getChangedFields(),
+                        'metadata' => $correction->toBlockchainArray(),
+                    ];
+                }, $allCorrections);
             }
 
             Log::debug('Current status data', [

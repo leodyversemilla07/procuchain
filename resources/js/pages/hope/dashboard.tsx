@@ -7,8 +7,7 @@ import { StatsGrid } from '@/components/stats-grid';
 import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
-import { show as procurementsShow } from '@/routes/hope/procurements';
-import { index as procurementsListIndex } from '@/routes/hope/procurements';
+import { index as procurementsListIndex, show as procurementsShow } from '@/routes/hope/procurements';
 import type { SharedData } from '@/types';
 import { Stage, Status, UserRole } from '@/types';
 import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
@@ -20,7 +19,7 @@ const formatStageName = (stage: string | undefined): string => {
     if (!stage) return '';
     return stage
         .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
 };
 
@@ -61,7 +60,7 @@ interface DashboardProps extends SharedData {
 
 export default function HOPEDashboard() {
     const { recentProcurements = [], procurementDistribution = [], recentActivities = [], stats, error } = usePage<DashboardProps>().props;
-    
+
     const breadcrumbs = [getDashboardBreadcrumb(UserRole.HOPE)];
 
     // Calculate distribution from procurementDistribution data (separate from recent procurements)
@@ -170,11 +169,7 @@ export default function HOPEDashboard() {
             <Head title="Head of Procuring Entity Dashboard" />
 
             <div className="flex h-full flex-1 flex-col space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6 lg:p-8">
-                <HeroCard
-                    icon={FileText}
-                    title="HOPE Dashboard"
-                    description="High-level overview of procurement status and activities"
-                />
+                <HeroCard icon={FileText} title="HOPE Dashboard" description="High-level overview of procurement status and activities" />
 
                 <StatsGrid items={statsItems} gridClassName={gridColsClass} />
 
@@ -182,8 +177,8 @@ export default function HOPEDashboard() {
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="xl:col-span-3 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm xl:col-span-3">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
                             </Card>
@@ -200,8 +195,8 @@ export default function HOPEDashboard() {
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="xl:col-span-2 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm xl:col-span-2">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
                             </Card>
@@ -220,7 +215,7 @@ export default function HOPEDashboard() {
                         data="recentActivities"
                         fallback={
                             <Card className="shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] items-center justify-center">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
                                 </CardContent>
                             </Card>
@@ -239,8 +234,8 @@ export default function HOPEDashboard() {
                     <Deferred
                         data="recentProcurements"
                         fallback={
-                            <Card className="lg:col-span-2 xl:col-span-1 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm lg:col-span-2 xl:col-span-1">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
                                 </CardContent>
                             </Card>

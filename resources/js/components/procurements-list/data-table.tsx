@@ -3,7 +3,6 @@ import {
     ColumnDef,
     flexRender,
     getCoreRowModel,
-    getPaginationRowModel,
     getSortedRowModel,
     useReactTable,
     type Column,
@@ -19,8 +18,9 @@ import { Pagination } from '@/components/pagination';
 import { LoadingSkeleton } from '@/components/procurements-list/loading-skeleton';
 import { MobileCardView } from '@/components/procurements-list/mobile-card-view';
 import { ProcurementBulkActionsBar } from '@/components/procurements-list/procurement-bulk-actions-bar';
+import { ProcurementFiltersToolbar, type ProcurementFilterOption } from '@/components/procurements-list/procurement-filters-toolbar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { ProcurementListItem } from '@/types';
 
 // Re-export cell components for backwards compatibility
-export { IdCell, TitleCell, BadgeCell, StageCell, StatusCell, DocumentCountCell, LastUpdatedCell } from './cells';
+export { BadgeCell, DocumentCountCell, IdCell, LastUpdatedCell, StageCell, StatusCell, TitleCell } from './cells';
 
 interface DataTableCheckboxProps {
     checked: boolean | 'indeterminate';
@@ -59,6 +59,16 @@ export interface ProcurementsDataTableProps {
     pageSize?: number;
     onNavigatePage?: (pageIndex: number) => void;
     onChangePageSize?: (pageSize: number) => void;
+    // Optional filter toolbar props
+    searchValue?: string;
+    onSearchChange?: (value: string) => void;
+    stageValue?: string;
+    onStageChange?: (value: string) => void;
+    stageOptions?: ProcurementFilterOption[];
+    onRefresh?: () => void;
+    refreshDisabled?: boolean;
+    isRefreshing?: boolean;
+    lastRefreshed?: Date;
 }
 
 export function DataTableCheckbox({ checked, onCheckedChange, disabled = false, title }: DataTableCheckboxProps) {
@@ -114,6 +124,15 @@ export function ProcurementsDataTable({
     pageSize,
     onNavigatePage,
     onChangePageSize,
+    searchValue,
+    onSearchChange,
+    stageValue,
+    onStageChange,
+    stageOptions,
+    onRefresh,
+    refreshDisabled,
+    isRefreshing,
+    lastRefreshed,
 }: ProcurementsDataTableProps) {
     const [sorting, setSorting] = useState<SortingState>([{ id: 'last_updated', desc: true }]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -124,7 +143,6 @@ export function ProcurementsDataTable({
         columns,
         onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
@@ -134,23 +152,8 @@ export function ProcurementsDataTable({
             rowSelection,
         },
         enableRowSelection: true,
-        initialState: {
-            pagination: {
-                pageSize: pageSize ?? 10,
-            },
-        },
+        manualPagination: true,
     });
-
-    // Keep table page index in sync with server-controlled page index if provided
-    useEffect(() => {
-        if (typeof pageIndex === 'number') {
-            table.setPageIndex(pageIndex);
-        }
-        if (typeof pageSize === 'number') {
-            table.setPageSize(pageSize);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pageIndex, pageSize]);
 
     useEffect(() => {
         if (onRowSelectionChange) {
@@ -160,7 +163,7 @@ export function ProcurementsDataTable({
     }, [rowSelection, onRowSelectionChange, table]);
 
     const handleRetry = React.useCallback(() => {
-        router.reload({ only: ['procurements'] });
+        router.reload();
     }, []);
 
     const { selectedRows, selectedRowCount } = useMemo(() => {
@@ -191,10 +194,9 @@ export function ProcurementsDataTable({
         // Check URL params for active filters
         const params = new URLSearchParams(window.location.search);
         const hasSearch = Boolean(params.get('search'));
-        const hasStatus = params.get('status') && params.get('status') !== 'all';
         const hasStage = params.get('stage') && params.get('stage') !== 'all';
-        const hasFilters = hasSearch || hasStatus || hasStage;
-        
+        const hasFilters = hasSearch || hasStage;
+
         const title = hasFilters ? 'No procurements match your search' : 'No procurements available yet';
         const description = hasFilters
             ? 'Try adjusting your search or filters to find the procurements you need.'
@@ -256,17 +258,17 @@ export function ProcurementsDataTable({
                         userRole={userRole}
                     />
                 ))}
-                
+
                 {/* Mobile Pagination */}
                 {table.getRowModel().rows.length > 0 && (
                     <div className="flex justify-center pt-4">
                         <Pagination
-                            pageIndex={typeof pageIndex === 'number' ? pageIndex : table.getState().pagination.pageIndex}
-                            pageSize={typeof pageSize === 'number' ? pageSize : table.getState().pagination.pageSize}
-                            pageCount={serverTotal ? Math.max(1, Math.ceil(serverTotal / (typeof pageSize === 'number' ? pageSize : table.getState().pagination.pageSize))) : table.getPageCount()}
-                            totalItems={serverTotal ?? table.getFilteredRowModel().rows.length}
-                            onPageChange={onNavigatePage ?? table.setPageIndex}
-                            onPageSizeChange={onChangePageSize ?? table.setPageSize}
+                            pageIndex={pageIndex ?? 0}
+                            pageSize={pageSize ?? 10}
+                            pageCount={serverTotal ? Math.max(1, Math.ceil(serverTotal / (pageSize ?? 10))) : 1}
+                            totalItems={serverTotal ?? 0}
+                            onPageChange={onNavigatePage!}
+                            onPageSizeChange={onChangePageSize!}
                         />
                     </div>
                 )}
@@ -274,6 +276,21 @@ export function ProcurementsDataTable({
 
             {/* Desktop Table View (hidden on small screens) */}
             <Card className="hidden overflow-hidden md:block">
+                <CardHeader className="pb-4">
+                    {searchValue !== undefined && onSearchChange && stageValue !== undefined && onStageChange && stageOptions && onRefresh && (
+                        <ProcurementFiltersToolbar
+                            searchValue={searchValue}
+                            onSearchChange={onSearchChange}
+                            stageValue={stageValue}
+                            onStageChange={onStageChange}
+                            stageOptions={stageOptions}
+                            onRefresh={onRefresh}
+                            refreshDisabled={refreshDisabled}
+                            isRefreshing={isRefreshing}
+                            lastRefreshed={lastRefreshed}
+                        />
+                    )}
+                </CardHeader>
                 <CardContent className="px-0 py-0">
                     <div className="overflow-x-auto">
                         <Table role="table" aria-label="Procurements table">
@@ -322,12 +339,12 @@ export function ProcurementsDataTable({
                 </CardContent>
                 <CardFooter className="justify-end border-t">
                     <Pagination
-                        pageIndex={typeof pageIndex === 'number' ? pageIndex : table.getState().pagination.pageIndex}
-                        pageSize={typeof pageSize === 'number' ? pageSize : table.getState().pagination.pageSize}
-                        pageCount={serverTotal ? Math.max(1, Math.ceil(serverTotal / (typeof pageSize === 'number' ? pageSize : table.getState().pagination.pageSize))) : table.getPageCount()}
-                        totalItems={serverTotal ?? table.getFilteredRowModel().rows.length}
-                        onPageChange={onNavigatePage ?? table.setPageIndex}
-                        onPageSizeChange={onChangePageSize ?? table.setPageSize}
+                        pageIndex={pageIndex ?? 0}
+                        pageSize={pageSize ?? 10}
+                        pageCount={serverTotal ? Math.max(1, Math.ceil(serverTotal / (pageSize ?? 10))) : 1}
+                        totalItems={serverTotal ?? 0}
+                        onPageChange={onNavigatePage!}
+                        onPageSizeChange={onChangePageSize!}
                     />
                 </CardFooter>
             </Card>

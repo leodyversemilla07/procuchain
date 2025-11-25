@@ -15,6 +15,7 @@ use App\Http\Controllers\Procurement\PostProcurementController;
 use App\Http\Controllers\Procurement\PreProcurementController;
 use App\Http\Controllers\Procurement\ProcurementController;
 use App\Http\Controllers\Procurement\ProcurementInitiationController;
+use App\Http\Controllers\ProcurementCorrectionController;
 use App\Http\Controllers\ProcurementListController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
@@ -76,16 +77,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/procurements/{pr_number}/blockchain-status', [ProcurementListController::class, 'getBlockchainStatus'])
         ->name('procurements.blockchain-status');
 
-    // Document Corrections - View Only (All Authenticated Users)
-    Route::get('/procurements/{pr_number}/corrections', [DocumentCorrectionController::class, 'showCorrectionsPage'])
-        ->name('procurements.corrections.page');
-    Route::get('/procurements/{procurement}/corrections-history', [DocumentCorrectionController::class, 'getCorrectionHistory'])
-        ->name('procurements.corrections');
-    Route::get('/corrections/check/{txid}', [DocumentCorrectionController::class, 'checkCorrection'])
-        ->name('corrections.check');
+    // Procurement Corrections - Management (BAC Secretariat only)
+    Route::middleware(['role:bac_secretariat'])->group(function () {
+        Route::get('/procurements/{pr_number}/corrections', [ProcurementCorrectionController::class, 'showProcurementCorrectionsPage'])
+            ->name('procurements.corrections.show');
+        Route::post('/procurements/{pr_number}/corrections', [ProcurementCorrectionController::class, 'correctProcurement'])
+            ->name('procurements.corrections.submit');
+    });
+
+    Route::get('/procurements/{pr_number}/corrections/history', [ProcurementCorrectionController::class, 'getProcurementCorrectionHistory'])
+        ->name('procurements.corrections.history');
+    Route::get('/procurements/{pr_number}/corrections/check', [ProcurementCorrectionController::class, 'checkProcurementCorrection'])
+        ->name('procurements.corrections.check');
 
     // Document Corrections - Management (Admin, BAC Chairman, BAC Secretariat)
-    Route::middleware(['role:admin,bac_chairman,bac_secretariat'])->group(function () {
+    Route::middleware(['role:admin|bac_chairman|bac_secretariat'])->group(function () {
+        Route::get('/documents/corrections/{id}', [DocumentCorrectionController::class, 'showCorrectionsPage'])
+            ->name('documents.corrections.show');
         Route::post('/documents/{document}/correct', [DocumentCorrectionController::class, 'correctDocument'])
             ->name('documents.correct');
     });

@@ -640,18 +640,18 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                         <div className="flex flex-wrap items-center gap-2">
                             <Button onClick={handleRefresh} variant="outline" disabled={isRefreshing} size="sm">
                                 <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
-                                <span className="hidden sm:inline sm:ml-2">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+                                <span className="hidden sm:ml-2 sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
                             </Button>
                             <Button onClick={() => setAutoRefresh(!autoRefresh)} variant={autoRefresh ? 'default' : 'outline'} size="sm">
                                 {autoRefresh ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span className="hidden sm:inline sm:ml-2">Auto-refresh On</span>
+                                        <span className="hidden sm:ml-2 sm:inline">Auto-refresh On</span>
                                     </>
                                 ) : (
                                     <>
                                         <Clock className="h-4 w-4" />
-                                        <span className="hidden sm:inline sm:ml-2">Enable Auto-refresh</span>
+                                        <span className="hidden sm:ml-2 sm:inline">Enable Auto-refresh</span>
                                     </>
                                 )}
                             </Button>
@@ -664,12 +664,12 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 {isExporting ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span className="hidden sm:inline sm:ml-2">Exporting...</span>
+                                        <span className="hidden sm:ml-2 sm:inline">Exporting...</span>
                                     </>
                                 ) : (
                                     <>
                                         <Download className="h-4 w-4" />
-                                        <span className="hidden sm:inline sm:ml-2">Export CSV</span>
+                                        <span className="hidden sm:ml-2 sm:inline">Export CSV</span>
                                     </>
                                 )}
                             </Button>
@@ -733,7 +733,12 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                 )}
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} size="sm" className="whitespace-nowrap">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                    size="sm"
+                                    className="whitespace-nowrap"
+                                >
                                     <Filter className="mr-2 h-4 w-4" />
                                     Filters
                                     <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />

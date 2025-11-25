@@ -22,14 +22,17 @@ export const shortenHash = (hash?: string, startLength = 5, endLength = 5): stri
 export const groupDocumentsByStage = (documents?: Document[]): Record<string, Document[]> => {
     if (!documents) return {};
 
-    const grouped = documents.reduce((acc: Record<string, Document[]>, doc) => {
-        const stage = doc.stage_formatted || doc.stage || 'Procurement Initiation';
-        if (!acc[stage]) {
-            acc[stage] = [];
-        }
-        acc[stage].push(doc);
-        return acc;
-    }, {} as Record<string, Document[]>);
+    const grouped = documents.reduce(
+        (acc: Record<string, Document[]>, doc) => {
+            const stage = doc.stage_formatted || doc.stage || 'Procurement Initiation';
+            if (!acc[stage]) {
+                acc[stage] = [];
+            }
+            acc[stage].push(doc);
+            return acc;
+        },
+        {} as Record<string, Document[]>,
+    );
 
     // Sort and deduplicate documents within each stage
     Object.keys(grouped).forEach((stage) => {
@@ -68,13 +71,13 @@ export const groupDocumentsByStage = (documents?: Document[]): Record<string, Do
 export const sortStageKeys = (documentsByStage: Record<string, Document[]>): string[] => {
     const stageKeys = Object.keys(documentsByStage);
     return stageKeys.sort((a, b) => {
-        const aIndex = STAGE_ORDER.indexOf(a as typeof STAGE_ORDER[number]);
-        const bIndex = STAGE_ORDER.indexOf(b as typeof STAGE_ORDER[number]);
+        const aIndex = STAGE_ORDER.indexOf(a as (typeof STAGE_ORDER)[number]);
+        const bIndex = STAGE_ORDER.indexOf(b as (typeof STAGE_ORDER)[number]);
 
         if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
         if (aIndex === -1) return 1;
         if (bIndex === -1) return -1;
-        
+
         // Sort descending: higher stage index (later in procurement) appears first
         return bIndex - aIndex;
     });
@@ -87,7 +90,7 @@ export const sortStageKeys = (documentsByStage: Record<string, Document[]>): str
  */
 export const calculateProgress = (stage?: string): number => {
     if (!stage) return 0;
-    const stageIndex = STAGE_ORDER.indexOf(stage as typeof STAGE_ORDER[number]) + 1;
+    const stageIndex = STAGE_ORDER.indexOf(stage as (typeof STAGE_ORDER)[number]) + 1;
     const totalStages = STAGE_ORDER.length;
     return stageIndex > 0 ? (stageIndex / totalStages) * 100 : 0;
 };

@@ -99,7 +99,7 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
         <div className="space-y-6 p-4 sm:px-6 sm:py-4">
             {/* Basic Information */}
             <div className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wide">Basic Information</h3>
+                <h3 className="text-sm font-semibold tracking-wide uppercase">Basic Information</h3>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-2">
@@ -117,7 +117,7 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
 
                     <div className="space-y-2 md:col-span-2">
                         <label className="text-muted-foreground text-xs font-medium">Email Address</label>
-                        <p className="flex items-center gap-2 break-all text-sm">
+                        <p className="flex items-center gap-2 text-sm break-all">
                             <Mail className="h-4 w-4 shrink-0" />
                             <span className="break-all">{user.email}</span>
                         </p>
@@ -146,7 +146,7 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
 
             {/* Role & Permissions */}
             <div className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wide">Role & Permissions</h3>
+                <h3 className="text-sm font-semibold tracking-wide uppercase">Role & Permissions</h3>
                 <div className="space-y-2">
                     <label className="text-muted-foreground text-xs font-medium">Assigned Role</label>
                     <div className="flex flex-wrap gap-2">
@@ -173,7 +173,7 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
 
             {/* Security */}
             <div className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wide">Security</h3>
+                <h3 className="text-sm font-semibold tracking-wide uppercase">Security</h3>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-2">
@@ -196,7 +196,7 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
                     {user.two_factor_confirmed_at && (
                         <div className="space-y-2">
                             <label className="text-muted-foreground text-xs font-medium">2FA Confirmed At</label>
-                            <p className="wrap-break-word text-sm">{formatDateTime(user.two_factor_confirmed_at)}</p>
+                            <p className="text-sm wrap-break-word">{formatDateTime(user.two_factor_confirmed_at)}</p>
                         </div>
                     )}
 
@@ -215,12 +215,12 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
             {user.blockchain_address && (
                 <>
                     <div className="space-y-4">
-                        <h3 className="text-sm font-semibold uppercase tracking-wide">Blockchain</h3>
+                        <h3 className="text-sm font-semibold tracking-wide uppercase">Blockchain</h3>
                         <div className="space-y-2">
                             <label className="text-muted-foreground text-xs font-medium">Blockchain Address</label>
                             <div className="bg-muted flex items-start gap-2 rounded-md p-3">
                                 <Link2 className="mt-0.5 h-4 w-4 shrink-0" />
-                                <span className="break-all font-mono text-sm">{user.blockchain_address}</span>
+                                <span className="font-mono text-sm break-all">{user.blockchain_address}</span>
                             </div>
                         </div>
                     </div>
@@ -230,12 +230,12 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
 
             {/* Account Dates */}
             <div className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wide">Account Information</h3>
+                <h3 className="text-sm font-semibold tracking-wide uppercase">Account Information</h3>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                         <label className="text-muted-foreground text-xs font-medium">Account Created</label>
-                        <p className="wrap-break-word text-sm">
+                        <p className="text-sm wrap-break-word">
                             {formatDateTime(user.created_at) !== 'N/A' ? (
                                 formatDateTime(user.created_at)
                             ) : (
@@ -246,7 +246,7 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
 
                     <div className="space-y-2">
                         <label className="text-muted-foreground text-xs font-medium">Last Updated</label>
-                        <p className="wrap-break-word text-sm">
+                        <p className="text-sm wrap-break-word">
                             {formatDateTime(user.updated_at) !== 'N/A' ? (
                                 formatDateTime(user.updated_at)
                             ) : (
@@ -258,21 +258,21 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
                     {user.email_verified_at && (
                         <div className="space-y-2">
                             <label className="text-muted-foreground text-xs font-medium">Email Verified At</label>
-                            <p className="wrap-break-word text-sm">{formatDateTime(user.email_verified_at)}</p>
+                            <p className="text-sm wrap-break-word">{formatDateTime(user.email_verified_at)}</p>
                         </div>
                     )}
 
                     {user.locked_at && (
                         <div className="space-y-2">
                             <label className="text-muted-foreground text-xs font-medium">Account Locked</label>
-                            <p className="wrap-break-word text-sm">{formatDateTime(user.locked_at)}</p>
+                            <p className="text-sm wrap-break-word">{formatDateTime(user.locked_at)}</p>
                         </div>
                     )}
 
                     {user.lock_expires_at && (
                         <div className="space-y-2">
                             <label className="text-muted-foreground text-xs font-medium">Lock Expires</label>
-                            <p className="wrap-break-word text-sm">{formatDateTime(user.lock_expires_at)}</p>
+                            <p className="text-sm wrap-break-word">{formatDateTime(user.lock_expires_at)}</p>
                         </div>
                     )}
                 </div>
@@ -291,9 +291,7 @@ export default function UserDetailsSheet({ open, onOpenChange, user }: UserDetai
                         </div>
                         <div>
                             <SheetTitle className="text-foreground text-xl font-semibold">User Details</SheetTitle>
-                            <SheetDescription className="text-muted-foreground mt-1 text-sm">
-                                Complete information for {user.name}
-                            </SheetDescription>
+                            <SheetDescription className="text-muted-foreground mt-1 text-sm">Complete information for {user.name}</SheetDescription>
                         </div>
                     </div>
                 </SheetHeader>

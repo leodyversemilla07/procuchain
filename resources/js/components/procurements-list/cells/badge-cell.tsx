@@ -1,8 +1,8 @@
-import { useRef } from 'react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsTruncated } from '@/hooks/use-is-truncated';
+import { cn } from '@/lib/utils';
+import { useRef } from 'react';
 
 interface BadgeCellProps<T extends string> {
     value: T;
@@ -17,15 +17,11 @@ const defaultFormatLabel = (value: string): string => {
         .join(' ');
 };
 
-export const BadgeCell = <T extends string>({ 
-    value, 
-    getStyle,
-    formatLabel = defaultFormatLabel 
-}: BadgeCellProps<T>) => {
+export const BadgeCell = <T extends string>({ value, getStyle, formatLabel = defaultFormatLabel }: BadgeCellProps<T>) => {
     const textRef = useRef<HTMLSpanElement>(null);
     const displayValue = formatLabel(value);
     const isTruncated = useIsTruncated(textRef, displayValue);
-    
+
     const badge = (
         <Badge
             variant="outline"
@@ -42,7 +38,7 @@ export const BadgeCell = <T extends string>({
             </span>
         </Badge>
     );
-    
+
     return isTruncated ? (
         <Tooltip>
             <TooltipTrigger asChild>{badge}</TooltipTrigger>

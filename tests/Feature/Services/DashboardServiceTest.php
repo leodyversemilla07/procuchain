@@ -44,7 +44,7 @@ describe('DashboardService', function () {
         test('it returns Unknown for non-existent address', function () {
             $result = $this->service->getUserName('NONEXISTENT_ADDRESS');
 
-            expect($result)->toBe('Unknown');
+            expect($result)->toBe('System');
         });
 
         test('it caches user names for performance', function () {

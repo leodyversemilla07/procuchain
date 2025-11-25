@@ -104,7 +104,13 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                         <div className="grid gap-2">
                             <Label htmlFor="role">Role</Label>
 
-                            <Input id="role" value={getRoleName(auth.roles?.[0] || auth.user.role)} className="bg-muted mt-1 block w-full" readOnly disabled />
+                            <Input
+                                id="role"
+                                value={getRoleName(auth.roles?.[0] || auth.user.role)}
+                                className="bg-muted mt-1 block w-full"
+                                readOnly
+                                disabled
+                            />
                         </div>
 
                         <div className="grid gap-2">

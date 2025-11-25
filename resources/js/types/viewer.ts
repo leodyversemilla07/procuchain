@@ -35,6 +35,7 @@ export interface ViewStats {
 }
 
 export interface PdfDocument {
+    id?: number | string;
     pr_number: string;
     procurement_title: string;
     document_type: string;
@@ -44,9 +45,12 @@ export interface PdfDocument {
     file_size?: number;
     timestamp: string;
     hash?: string;
+    blockchain_txid?: string;
     user_address: string;
     current_status?: string;
     status_timestamp?: string;
+    phase?: string;
+    phase_display_name?: string;
 }
 
 // ============================================================================

@@ -1,17 +1,17 @@
 import { DocumentCorrectionAlert } from '@/components/documents/document-correction-alert';
-import { DocumentCorrectionSheet } from '@/components/documents/document-correction-sheet';
 import { CorrectionHistorySheet } from '@/components/documents/document-correction-history-sheet';
+import { DocumentCorrectionSheet } from '@/components/documents/document-correction-sheet';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
-import { Head, usePage } from '@inertiajs/react';
-import { AlertCircle, FileText, History, Info } from 'lucide-react';
-import { useState } from 'react';
 import type { SharedData } from '@/types';
 import { UserRole } from '@/types';
 import { getDocumentCorrectionsBreadcrumbs } from '@/utils/breadcrumbs';
+import { Head, usePage } from '@inertiajs/react';
+import { AlertCircle, FileText, History, Info } from 'lucide-react';
+import { useState } from 'react';
 
 interface ProcurementDocument {
     id: number | string;
@@ -54,7 +54,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
     const { auth: pageAuth } = usePage<SharedData>().props;
     const userRole = pageAuth?.roles?.[0] || auth?.roles?.[0] || pageAuth?.user?.role || 'guest';
     const breadcrumbs = getDocumentCorrectionsBreadcrumbs(userRole, procurement.title);
-    
+
     const [selectedDocument, setSelectedDocument] = useState<ProcurementDocument | null>(null);
     const [showCorrectionSheet, setShowCorrectionSheet] = useState(false);
     const [showHistorySheet, setShowHistorySheet] = useState(false);
@@ -62,8 +62,8 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
 
     // Check if user can correct documents
     const allowedRoles = [UserRole.ADMIN, UserRole.BAC_CHAIRMAN, UserRole.BAC_SECRETARIAT];
-    const canCorrectDocuments = 
-        auth.user.roles.some((role) => allowedRoles.includes(role as UserRole)) || 
+    const canCorrectDocuments =
+        auth.user.roles.some((role) => allowedRoles.includes(role as UserRole)) ||
         (pageAuth?.user?.role && allowedRoles.includes(pageAuth.user.role as UserRole));
 
     // Handle clicking "Correct Document" on a specific document
@@ -103,11 +103,11 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
 
                 {/* Info Alert */}
                 <Alert className="border-primary/20 bg-primary/5 dark:border-primary/30 dark:bg-primary/10">
-                    <Info className="h-4 w-4 text-primary" />
+                    <Info className="text-primary h-4 w-4" />
                     <AlertTitle>About Document Corrections</AlertTitle>
                     <AlertDescription>
-                        You can correct document mistakes while maintaining blockchain immutability. Both the original and correction records
-                        remain permanently on the blockchain for a complete audit trail.
+                        You can correct document mistakes while maintaining blockchain immutability. Both the original and correction records remain
+                        permanently on the blockchain for a complete audit trail.
                     </AlertDescription>
                 </Alert>
 
@@ -151,11 +151,13 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
 
                                         {/* Document Info */}
                                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                            <div className="flex-1 min-w-0">
+                                            <div className="min-w-0 flex-1">
                                                 <div className="mb-2 flex flex-wrap items-center gap-2">
                                                     <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
-                                                    <h3 className="truncate font-semibold text-sm sm:text-base">{document.file_name}</h3>
-                                                    <Badge variant="outline" className="text-xs">{document.document_type_display || document.document_type}</Badge>
+                                                    <h3 className="truncate text-sm font-semibold sm:text-base">{document.file_name}</h3>
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {document.document_type_display || document.document_type}
+                                                    </Badge>
                                                     {document.is_corrected && (
                                                         <Badge variant="secondary" className="gap-1 text-xs">
                                                             <AlertCircle className="h-3 w-3" />
@@ -178,7 +180,9 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                                                     {document.blockchain_txid && (
                                                         <div className="col-span-full">
                                                             <strong>Blockchain TXID:</strong>{' '}
-                                                            <span className="font-mono text-xs break-all">{document.blockchain_txid.substring(0, 24)}...</span>
+                                                            <span className="font-mono text-xs break-all">
+                                                                {document.blockchain_txid.substring(0, 24)}...
+                                                            </span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -204,7 +208,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                                                         className="w-full gap-2 sm:w-auto"
                                                     >
                                                         <AlertCircle className="h-4 w-4" />
-                                                        Correct
+                                                        Correct Document
                                                     </Button>
                                                 )}
                                             </div>
@@ -222,8 +226,8 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                         <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         <AlertTitle>Limited Permissions</AlertTitle>
                         <AlertDescription>
-                            Only administrators and BAC members can submit document corrections. You can view correction history but cannot
-                            submit corrections.
+                            Only administrators and BAC members can submit document corrections. You can view correction history but cannot submit
+                            corrections.
                         </AlertDescription>
                     </Alert>
                 )}

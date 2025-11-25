@@ -84,7 +84,7 @@ final readonly class StatusRepository
             return null;
         }
 
-        usort($statuses, fn ($a, $b) => strtotime($b->timestamp) - strtotime($a->timestamp));
+        usort($statuses, fn ($a, $b) => $b->timestamp->timestamp - $a->timestamp->timestamp);
 
         return $statuses[0];
     }

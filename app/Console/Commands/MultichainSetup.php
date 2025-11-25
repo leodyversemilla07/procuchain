@@ -4,9 +4,9 @@ namespace App\Console\Commands;
 
 use App\Enums\StreamEnums;
 use App\Enums\UserRoleEnums;
-use App\Services\Manager;
 use App\Models\User;
 use App\Services\BlockchainStorageService;
+use App\Services\Manager;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Http\UploadedFile;
@@ -37,6 +37,7 @@ class MultichainSetup extends Command
         StreamEnums::EVENTS->value,
         StreamEnums::CORRECTIONS->value,
         StreamEnums::METADATA->value,
+        StreamEnums::PROCUREMENTS_CORRECTIONS->value,
     ];
 
     /**

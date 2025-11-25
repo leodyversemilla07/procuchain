@@ -92,11 +92,11 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
                     <DialogDescription className="text-sm leading-relaxed sm:text-base">
                         Please indicate whether a supplemental bid bulletin is needed for this procurement.
                     </DialogDescription>
-                    <div className="rounded-lg border bg-muted/50 p-3 sm:p-4">
-                        <p className="text-sm font-medium text-foreground sm:text-base">
+                    <div className="bg-muted/50 rounded-lg border p-3 sm:p-4">
+                        <p className="text-foreground text-sm font-medium sm:text-base">
                             <span className="text-muted-foreground">Title:</span> {procurementTitle}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                        <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
                             <span className="font-medium">ID:</span> {pr_number}
                         </p>
                     </div>
@@ -115,20 +115,24 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
                         >
                             <Label
                                 htmlFor="supplemental-yes"
-                                className={`m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all hover:border-primary/50 hover:bg-accent/50 ${
-                                    form.data.supplemental_bid_needed === true ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border'
+                                className={`hover:border-primary/50 hover:bg-accent/50 m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all ${
+                                    form.data.supplemental_bid_needed === true
+                                        ? 'border-primary bg-primary/5 ring-primary/20 ring-2'
+                                        : 'border-border'
                                 }`}
                             >
                                 <RadioGroupItem value="true" id="supplemental-yes" />
                                 <div className="flex flex-1 items-center justify-between">
                                     <span className="font-medium">Yes, Bulletin Needed</span>
-                                    {form.data.supplemental_bid_needed === true && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                                    {form.data.supplemental_bid_needed === true && <CheckCircle2 className="text-primary h-4 w-4" />}
                                 </div>
                             </Label>
                             <Label
                                 htmlFor="supplemental-no"
-                                className={`m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all hover:border-primary/50 hover:bg-accent/50 ${
-                                    form.data.supplemental_bid_needed === false ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border'
+                                className={`hover:border-primary/50 hover:bg-accent/50 m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all ${
+                                    form.data.supplemental_bid_needed === false
+                                        ? 'border-primary bg-primary/5 ring-primary/20 ring-2'
+                                        : 'border-border'
                                 }`}
                             >
                                 <RadioGroupItem value="false" id="supplemental-no" />
@@ -139,9 +143,9 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
                             </Label>
                         </RadioGroup>
                         {form.errors.supplemental_bid_needed && (
-                            <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3">
-                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                                <p className="text-sm text-destructive" id="supplemental-error" aria-live="polite">
+                            <div className="border-destructive/50 bg-destructive/10 flex items-start gap-2 rounded-lg border p-3">
+                                <AlertCircle className="text-destructive mt-0.5 h-4 w-4 shrink-0" />
+                                <p className="text-destructive text-sm" id="supplemental-error" aria-live="polite">
                                     {form.errors.supplemental_bid_needed}
                                 </p>
                             </div>
@@ -162,14 +166,12 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
                                 <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
                             )}
                             <div className="flex-1">
-                                <p className="text-sm font-medium text-foreground sm:text-base">
+                                <p className="text-foreground text-sm font-medium sm:text-base">
                                     {form.data.supplemental_bid_needed ? 'Next Step: Upload Bulletin' : 'Next Step: Skip to Bid Opening'}
                                 </p>
                                 <p
                                     className={`mt-1 text-sm ${
-                                        form.data.supplemental_bid_needed
-                                            ? 'text-blue-700 dark:text-blue-300'
-                                            : 'text-amber-700 dark:text-amber-300'
+                                        form.data.supplemental_bid_needed ? 'text-blue-700 dark:text-blue-300' : 'text-amber-700 dark:text-amber-300'
                                     }`}
                                 >
                                     {form.data.supplemental_bid_needed

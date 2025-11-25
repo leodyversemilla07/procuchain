@@ -1,23 +1,19 @@
-import { Link } from '@inertiajs/react';
-import { CalendarIcon, FileIcon, MoreVertical } from 'lucide-react';
+import { ActionButtons } from '@/components/procurements-list/action-buttons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ActionButtons } from '@/components/procurements-list/action-buttons';
-import { ProcurementListItem } from '@/types';
-import type { Stage, Status } from '@/types';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { getStageBadgeStyle, getStatusBadgeStyle } from '@/constants/procurement-badges';
 import { cn } from '@/lib/utils';
-import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
-import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
-import { show as hopeShow } from '@/routes/hope/procurements';
 import { show as adminShow } from '@/routes/admin/procurements';
+import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
+import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
+import { show as hopeShow } from '@/routes/hope/procurements';
+import type { Stage, Status } from '@/types';
+import { ProcurementListItem } from '@/types';
+import { Link } from '@inertiajs/react';
+import { CalendarIcon, FileIcon, MoreVertical } from 'lucide-react';
 
 interface MobileCardViewProps {
     procurement: ProcurementListItem;
@@ -72,12 +68,7 @@ export const MobileCardView = ({
     };
 
     return (
-        <Card 
-            className={cn(
-                'transition-all duration-200',
-                selected && 'ring-2 ring-primary bg-muted/50'
-            )}
-        >
+        <Card className={cn('transition-all duration-200', selected && 'ring-primary bg-muted/50 ring-2')}>
             <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                     {/* Selection Checkbox */}
@@ -91,12 +82,12 @@ export const MobileCardView = ({
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0 space-y-3">
+                    <div className="min-w-0 flex-1 space-y-3">
                         {/* ID and Actions */}
                         <div className="flex items-start justify-between gap-2">
-                            <Link 
+                            <Link
                                 href={getProcurementUrl(procurement.id)}
-                                className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                                className="font-medium text-blue-600 hover:underline dark:text-blue-400"
                                 aria-label={`View procurement ${procurement.id}`}
                             >
                                 <span className="rounded border border-blue-100 bg-blue-50 px-2 py-1 font-mono text-xs dark:border-blue-800/60 dark:bg-blue-900/30">
@@ -107,12 +98,7 @@ export const MobileCardView = ({
                             {/* Actions Dropdown */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-8 w-8 p-0"
-                                        aria-label="Open actions menu"
-                                    >
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Open actions menu">
                                         <MoreVertical className="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -129,9 +115,9 @@ export const MobileCardView = ({
 
                         {/* Title */}
                         <div>
-                            <Link 
+                            <Link
                                 href={getProcurementUrl(procurement.id)}
-                                className="font-medium text-gray-900 hover:text-blue-600 hover:underline dark:text-gray-100 line-clamp-2"
+                                className="line-clamp-2 font-medium text-gray-900 hover:text-blue-600 hover:underline dark:text-gray-100"
                             >
                                 {procurement.title}
                             </Link>
@@ -141,19 +127,13 @@ export const MobileCardView = ({
                         <div className="flex flex-wrap gap-2">
                             <Badge
                                 variant="outline"
-                                className={cn(
-                                    getStageBadgeStyle(procurement.stage as Stage),
-                                    'border font-medium shadow-sm text-xs'
-                                )}
+                                className={cn(getStageBadgeStyle(procurement.stage as Stage), 'border text-xs font-medium shadow-sm')}
                             >
                                 {formatLabel(procurement.stage)}
                             </Badge>
                             <Badge
                                 variant="outline"
-                                className={cn(
-                                    getStatusBadgeStyle(procurement.current_status as Status),
-                                    'border font-medium shadow-sm text-xs'
-                                )}
+                                className={cn(getStatusBadgeStyle(procurement.current_status as Status), 'border text-xs font-medium shadow-sm')}
                             >
                                 {formatLabel(procurement.current_status)}
                             </Badge>
@@ -167,9 +147,7 @@ export const MobileCardView = ({
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <CalendarIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                                <time dateTime={procurement.last_updated}>
-                                    {formatDate(procurement.last_updated)}
-                                </time>
+                                <time dateTime={procurement.last_updated}>{formatDate(procurement.last_updated)}</time>
                             </div>
                         </div>
                     </div>

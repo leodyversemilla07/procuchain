@@ -1,31 +1,25 @@
-﻿import { Head, router, useForm, usePage } from '@inertiajs/react';
+﻿import { initiate } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
+import { index as procurementListIndex } from '@/actions/App/Http/Controllers/ProcurementListController';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import React, { useCallback } from 'react';
 import { toast } from 'sonner';
-import { initiate } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
-import { index as procurementListIndex } from '@/actions/App/Http/Controllers/ProcurementListController';
 
 import { type BreadcrumbItem } from '@/types';
-import { buildBreadcrumbs } from '@/utils/breadcrumbs';
 import { UserRole } from '@/types/enums';
+import { buildBreadcrumbs } from '@/utils/breadcrumbs';
 
 import AppLayout from '@/layouts/app-layout';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
 
-import { FileText, DollarSign, Building2, MapPin, Info, Upload } from 'lucide-react';
+import { Building2, DollarSign, FileText, Info, MapPin, Upload } from 'lucide-react';
 
 import { FUNDING_SOURCES, MUNICIPAL_OFFICES } from '@/types/constants';
 
@@ -87,16 +81,10 @@ interface HeaderProps {
     procurementModes?: ProcurementModeOption[];
 }
 
-export default function ProcurementInitiationForm({
-    formState,
-    categories = [],
-    procurementModes = [],
-}: HeaderProps) {
+export default function ProcurementInitiationForm({ formState, categories = [], procurementModes = [] }: HeaderProps) {
     const { auth } = usePage<{ auth: { user: { name: string; email: string } } }>().props;
 
-    const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
-        { title: 'Procurement Initiation', href: '#' },
-    ]);
+    const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [{ title: 'Procurement Initiation', href: '#' }]);
 
     const { data, setData, processing, errors, clearErrors } = useForm<UseFormData>({
         // Basic Information
@@ -131,9 +119,7 @@ export default function ProcurementInitiationForm({
 
     const hasError = useCallback(
         (field: string) => {
-            return Object.keys(errors).some(
-                (error) => error === field || error.startsWith(`${field}.`),
-            );
+            return Object.keys(errors).some((error) => error === field || error.startsWith(`${field}.`));
         },
         [errors],
     );
@@ -242,9 +228,7 @@ export default function ProcurementInitiationForm({
             end_user: data.end_user,
             purpose: data.purpose,
             delivery_location: data.delivery_location,
-            delivery_date: data.delivery_date
-                ? data.delivery_date.toISOString().split('T')[0]
-                : '',
+            delivery_date: data.delivery_date ? data.delivery_date.toISOString().split('T')[0] : '',
             delivery_term_days: data.delivery_term_days,
             prepared_by: data.prepared_by,
         };
@@ -253,8 +237,7 @@ export default function ProcurementInitiationForm({
             onSuccess: () => {
                 toast.success('Procurement created successfully!', {
                     id: submissionToast,
-                    description:
-                        'Redirecting to procurement list. You can upload documents from there.',
+                    description: 'Redirecting to procurement list. You can upload documents from there.',
                 });
 
                 // Always redirect to procurement list after creation
@@ -289,18 +272,16 @@ export default function ProcurementInitiationForm({
 
             <div className="mx-auto max-w-7xl space-y-4 p-3 sm:space-y-6 sm:p-6 lg:p-8">
                 {/* Modern Header */}
-                <div className="relative overflow-hidden rounded-xl border bg-linear-to-br from-primary/5 via-primary/3 to-background p-4 shadow-sm sm:rounded-2xl sm:p-6 lg:p-8">
+                <div className="from-primary/5 via-primary/3 to-background relative overflow-hidden rounded-xl border bg-linear-to-br p-4 shadow-sm sm:rounded-2xl sm:p-6 lg:p-8">
                     <div className="relative z-10">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                             <div className="flex gap-3 sm:gap-4">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20 sm:h-12 sm:w-12 sm:rounded-xl lg:h-14 lg:w-14">
-                                    <FileText className="h-5 w-5 text-primary sm:h-6 sm:w-6 lg:h-7 lg:w-7" />
+                                <div className="bg-primary/10 ring-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 sm:h-12 sm:w-12 sm:rounded-xl lg:h-14 lg:w-14">
+                                    <FileText className="text-primary h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <h1 className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">
-                                        New Procurement
-                                    </h1>
-                                    <p className="mt-1 text-xs text-muted-foreground sm:mt-1.5 sm:max-w-2xl sm:text-sm lg:text-base">
+                                    <h1 className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">New Procurement</h1>
+                                    <p className="text-muted-foreground mt-1 text-xs sm:mt-1.5 sm:max-w-2xl sm:text-sm lg:text-base">
                                         Create a new procurement request with all required information.
                                         <span className="hidden sm:inline"> Documents will be uploaded progressively after creation.</span>
                                     </p>
@@ -309,8 +290,8 @@ export default function ProcurementInitiationForm({
                                             variant="secondary"
                                             className="rounded-full px-2 py-0.5 text-[10px] font-medium sm:px-3 sm:py-1 sm:text-xs"
                                         >
-                                            <span className="mr-1 inline-block h-1 w-1 rounded-full bg-primary sm:mr-1.5 sm:h-1.5 sm:w-1.5"></span>
-                                            <span className="hidden xs:inline">Procurement </span>Initiation
+                                            <span className="bg-primary mr-1 inline-block h-1 w-1 rounded-full sm:mr-1.5 sm:h-1.5 sm:w-1.5"></span>
+                                            <span className="xs:inline hidden">Procurement </span>Initiation
                                         </Badge>
                                         {formState?.reference && (
                                             <Badge
@@ -326,25 +307,21 @@ export default function ProcurementInitiationForm({
                         </div>
                     </div>
                     {/* Decorative background elements - hidden on mobile */}
-                    <div className="absolute -right-8 -top-8 hidden h-32 w-32 rounded-full bg-primary/5 blur-3xl sm:block"></div>
-                    <div className="absolute -bottom-8 -left-8 hidden h-32 w-32 rounded-full bg-primary/5 blur-3xl sm:block"></div>
+                    <div className="bg-primary/5 absolute -top-8 -right-8 hidden h-32 w-32 rounded-full blur-3xl sm:block"></div>
+                    <div className="bg-primary/5 absolute -bottom-8 -left-8 hidden h-32 w-32 rounded-full blur-3xl sm:block"></div>
                 </div>
 
                 <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
                     {/* Section 1: Basic Information */}
-                    <Card className="overflow-hidden rounded-lg border-0 shadow-sm ring-1 ring-border/50 sm:rounded-xl">
-                        <CardHeader className="border-l-3 border-l-primary bg-primary/2 px-4 py-4 sm:border-l-4 sm:px-6 sm:py-5">
+                    <Card className="ring-border/50 overflow-hidden rounded-lg border-0 shadow-sm ring-1 sm:rounded-xl">
+                        <CardHeader className="border-l-primary bg-primary/2 border-l-3 px-4 py-4 sm:border-l-4 sm:px-6 sm:py-5">
                             <div className="flex items-center gap-2.5 sm:gap-3">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20 sm:h-10 sm:w-10">
-                                    <FileText className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
+                                <div className="bg-primary/10 ring-primary/20 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1 sm:h-10 sm:w-10">
+                                    <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
                                 </div>
                                 <div className="min-w-0 space-y-1">
-                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">
-                                        Basic Information
-                                    </CardTitle>
-                                    <CardDescription className="hidden text-sm xs:block">
-                                        Required procurement details per RA 9184
-                                    </CardDescription>
+                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">Basic Information</CardTitle>
+                                    <CardDescription className="xs:block hidden text-sm">Required procurement details per RA 9184</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
@@ -355,24 +332,16 @@ export default function ProcurementInitiationForm({
                                 <Field>
                                     <FieldLabel htmlFor="pr_prefix">
                                         Purchase Request Number
-                                        <span className="ml-1 text-xs text-destructive">*</span>
+                                        <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Format: PR-YYYY-####-#### (e.g., PR-2025-0001-0001)
-                                    </FieldDescription>
+                                    <FieldDescription>Format: PR-YYYY-####-#### (e.g., PR-2025-0001-0001)</FieldDescription>
                                     <div className="mt-2 flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                         <Input
                                             id="pr_prefix"
                                             name="pr_prefix"
                                             value={prPrefix}
-                                            onChange={(e) =>
-                                                handlePrPartChange('prefix', e.target.value)
-                                            }
-                                            className={
-                                                hasError('pr_number')
-                                                    ? 'w-14 border-destructive ring-destructive/30 sm:w-16'
-                                                    : 'w-14 sm:w-16'
-                                            }
+                                            onChange={(e) => handlePrPartChange('prefix', e.target.value)}
+                                            className={hasError('pr_number') ? 'border-destructive ring-destructive/30 w-14 sm:w-16' : 'w-14 sm:w-16'}
                                             maxLength={3}
                                             placeholder="PR"
                                             disabled
@@ -384,11 +353,7 @@ export default function ProcurementInitiationForm({
                                             name="pr_year"
                                             value={prYear}
                                             onChange={(e) => handlePrPartChange('year', e.target.value)}
-                                            className={
-                                                hasError('pr_number')
-                                                    ? 'w-16 border-destructive ring-destructive/30 sm:w-20'
-                                                    : 'w-16 sm:w-20'
-                                            }
+                                            className={hasError('pr_number') ? 'border-destructive ring-destructive/30 w-16 sm:w-20' : 'w-16 sm:w-20'}
                                             maxLength={4}
                                             placeholder="YYYY"
                                             disabled
@@ -400,11 +365,7 @@ export default function ProcurementInitiationForm({
                                             name="pr_sequence1"
                                             value={prSequence1}
                                             onChange={(e) => handlePrPartChange('seq1', e.target.value)}
-                                            className={
-                                                hasError('pr_number')
-                                                    ? 'w-16 border-destructive ring-destructive/30 sm:w-20'
-                                                    : 'w-16 sm:w-20'
-                                            }
+                                            className={hasError('pr_number') ? 'border-destructive ring-destructive/30 w-16 sm:w-20' : 'w-16 sm:w-20'}
                                             maxLength={4}
                                             placeholder="0000"
                                         />
@@ -414,46 +375,30 @@ export default function ProcurementInitiationForm({
                                             name="pr_sequence2"
                                             value={prSequence2}
                                             onChange={(e) => handlePrPartChange('seq2', e.target.value)}
-                                            className={
-                                                hasError('pr_number')
-                                                    ? 'w-16 border-destructive ring-destructive/30 sm:w-20'
-                                                    : 'w-16 sm:w-20'
-                                            }
+                                            className={hasError('pr_number') ? 'border-destructive ring-destructive/30 w-16 sm:w-20' : 'w-16 sm:w-20'}
                                             maxLength={4}
                                             placeholder="0000"
                                         />
                                     </div>
-                                    {hasError('pr_number') && (
-                                        <FieldError>{errors.pr_number}</FieldError>
-                                    )}
+                                    {hasError('pr_number') && <FieldError>{errors.pr_number}</FieldError>}
                                 </Field>
 
                                 {/* PPMP Reference */}
                                 <Field>
                                     <FieldLabel htmlFor="ppmp_reference">
                                         PPMP Reference
-                                        <span className="ml-1 text-xs text-destructive">*</span>
+                                        <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Reference number from the Project Procurement Management Plan
-                                    </FieldDescription>
+                                    <FieldDescription>Reference number from the Project Procurement Management Plan</FieldDescription>
                                     <Input
                                         id="ppmp_reference"
                                         name="ppmp_reference"
                                         value={data.ppmp_reference}
-                                        onChange={(e) =>
-                                            handleFieldChange('ppmp_reference', e.target.value)
-                                        }
-                                        className={
-                                            hasError('ppmp_reference')
-                                                ? 'border-destructive ring-destructive/30'
-                                                : ''
-                                        }
+                                        onChange={(e) => handleFieldChange('ppmp_reference', e.target.value)}
+                                        className={hasError('ppmp_reference') ? 'border-destructive ring-destructive/30' : ''}
                                         placeholder="e.g., PPMP-2025-001"
                                     />
-                                    {hasError('ppmp_reference') && (
-                                        <FieldError>{errors.ppmp_reference}</FieldError>
-                                    )}
+                                    {hasError('ppmp_reference') && <FieldError>{errors.ppmp_reference}</FieldError>}
                                 </Field>
                             </div>
 
@@ -463,21 +408,15 @@ export default function ProcurementInitiationForm({
                                 <Field>
                                     <FieldLabel htmlFor="title">
                                         Procurement Title
-                                        <span className="ml-1 text-xs text-destructive">*</span>
+                                        <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        A clear and concise title for this procurement
-                                    </FieldDescription>
+                                    <FieldDescription>A clear and concise title for this procurement</FieldDescription>
                                     <Input
                                         id="title"
                                         name="title"
                                         value={data.title}
                                         onChange={(e) => handleFieldChange('title', e.target.value)}
-                                        className={
-                                            hasError('title')
-                                                ? 'border-destructive ring-destructive/30'
-                                                : ''
-                                        }
+                                        className={hasError('title') ? 'border-destructive ring-destructive/30' : ''}
                                         placeholder="e.g., Procurement of Office Supplies"
                                     />
                                     {hasError('title') && <FieldError>{errors.title}</FieldError>}
@@ -487,44 +426,35 @@ export default function ProcurementInitiationForm({
                                 <Field>
                                     <FieldLabel htmlFor="description">
                                         Description
-                                        <span className="ml-1 text-xs text-destructive">*</span>
+                                        <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Detailed description of the items/services to be procured
-                                    </FieldDescription>
+                                    <FieldDescription>Detailed description of the items/services to be procured</FieldDescription>
                                     <Textarea
                                         id="description"
                                         name="description"
                                         value={data.description}
-                                        onChange={(e) =>
-                                            handleFieldChange('description', e.target.value)
-                                        }
-                                        className={`flex min-h-[120px] w-full rounded-md border bg-background px-3 py-2 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${hasError('description')
-                                            ? 'border-destructive ring-destructive/30'
-                                            : 'border-input'
-                                            }`}
+                                        onChange={(e) => handleFieldChange('description', e.target.value)}
+                                        className={`bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[120px] w-full rounded-md border px-3 py-2 text-base shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+                                            hasError('description') ? 'border-destructive ring-destructive/30' : 'border-input'
+                                        }`}
                                         placeholder="Provide a detailed description of what needs to be procured..."
                                     />
-                                    {hasError('description') && (
-                                        <FieldError>{errors.description}</FieldError>
-                                    )}
+                                    {hasError('description') && <FieldError>{errors.description}</FieldError>}
                                 </Field>
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Section 2: Classification & Budget */}
-                    <Card className="overflow-hidden rounded-lg border-0 shadow-sm ring-1 ring-border/50 sm:rounded-xl">
+                    <Card className="ring-border/50 overflow-hidden rounded-lg border-0 shadow-sm ring-1 sm:rounded-xl">
                         <CardHeader className="border-l-3 border-l-emerald-500 bg-emerald-500/2 px-4 py-4 sm:border-l-4 sm:px-6 sm:py-5">
                             <div className="flex items-center gap-2.5 sm:gap-3">
                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 ring-1 ring-emerald-500/20 sm:h-10 sm:w-10">
-                                    <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-500 sm:h-5 sm:w-5" />
+                                    <DollarSign className="h-4 w-4 text-emerald-600 sm:h-5 sm:w-5 dark:text-emerald-500" />
                                 </div>
                                 <div className="min-w-0 space-y-1">
-                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">
-                                        Classification & Budget
-                                    </CardTitle>
-                                    <CardDescription className="hidden text-sm xs:block">
+                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">Classification & Budget</CardTitle>
+                                    <CardDescription className="xs:block hidden text-sm">
                                         Procurement type and approved contract budget
                                     </CardDescription>
                                 </div>
@@ -539,68 +469,41 @@ export default function ProcurementInitiationForm({
                                         Category
                                         <span className="text-destructive">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Select the type of procurement (Goods, Services, or
-                                        Infrastructure)
-                                    </FieldDescription>
-                                    <Select
-                                        value={data.category}
-                                        onValueChange={(value) =>
-                                            handleFieldChange('category', value)
-                                        }
-                                    >
+                                    <FieldDescription>Select the type of procurement (Goods, Services, or Infrastructure)</FieldDescription>
+                                    <Select value={data.category} onValueChange={(value) => handleFieldChange('category', value)}>
                                         <SelectTrigger
                                             className={
-                                                hasError('category')
-                                                    ? 'h-auto min-h-10 border-destructive ring-destructive/30'
-                                                    : 'h-auto min-h-10'
+                                                hasError('category') ? 'border-destructive ring-destructive/30 h-auto min-h-10' : 'h-auto min-h-10'
                                             }
                                         >
                                             <SelectValue placeholder="Select category" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {categories.map((category) => (
-                                                <SelectItem
-                                                    key={category.value}
-                                                    value={category.value}
-                                                    className="py-3"
-                                                >
+                                                <SelectItem key={category.value} value={category.value} className="py-3">
                                                     <div className="flex flex-col gap-1">
-                                                        <span className="font-medium">
-                                                            {category.label}
-                                                        </span>
-                                                        <span className="line-clamp-2 text-xs text-muted-foreground">
-                                                            {category.description}
-                                                        </span>
+                                                        <span className="font-medium">{category.label}</span>
+                                                        <span className="text-muted-foreground line-clamp-2 text-xs">{category.description}</span>
                                                     </div>
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {hasError('category') && (
-                                        <FieldError>{errors.category}</FieldError>
-                                    )}
+                                    {hasError('category') && <FieldError>{errors.category}</FieldError>}
                                 </Field>
 
                                 {/* Procurement Mode */}
                                 <Field>
                                     <FieldLabel htmlFor="procurement_mode">
                                         Procurement Mode
-                                        <span className="ml-1 text-xs text-destructive">*</span>
+                                        <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Select the appropriate procurement method per RA 9184
-                                    </FieldDescription>
-                                    <Select
-                                        value={data.procurement_mode}
-                                        onValueChange={(value) =>
-                                            handleFieldChange('procurement_mode', value)
-                                        }
-                                    >
+                                    <FieldDescription>Select the appropriate procurement method per RA 9184</FieldDescription>
+                                    <Select value={data.procurement_mode} onValueChange={(value) => handleFieldChange('procurement_mode', value)}>
                                         <SelectTrigger
                                             className={
                                                 hasError('procurement_mode')
-                                                    ? 'h-auto min-h-10 border-destructive ring-destructive/30'
+                                                    ? 'border-destructive ring-destructive/30 h-auto min-h-10'
                                                     : 'h-auto min-h-10'
                                             }
                                         >
@@ -608,20 +511,13 @@ export default function ProcurementInitiationForm({
                                         </SelectTrigger>
                                         <SelectContent>
                                             {procurementModes.map((mode) => (
-                                                <SelectItem
-                                                    key={mode.value}
-                                                    value={mode.value}
-                                                    className="py-3"
-                                                >
+                                                <SelectItem key={mode.value} value={mode.value} className="py-3">
                                                     <div className="flex flex-col gap-1">
                                                         <span className="font-medium">{mode.label}</span>
-                                                        <span className="line-clamp-2 text-xs text-muted-foreground">
-                                                            {mode.description}
-                                                        </span>
+                                                        <span className="text-muted-foreground line-clamp-2 text-xs">{mode.description}</span>
                                                         {mode.threshold && (
-                                                            <span className="text-xs text-muted-foreground">
-                                                                Threshold: ₱
-                                                                {mode.threshold.toLocaleString()}
+                                                            <span className="text-muted-foreground text-xs">
+                                                                Threshold: ₱{mode.threshold.toLocaleString()}
                                                             </span>
                                                         )}
                                                     </div>
@@ -629,9 +525,7 @@ export default function ProcurementInitiationForm({
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {hasError('procurement_mode') && (
-                                        <FieldError>{errors.procurement_mode}</FieldError>
-                                    )}
+                                    {hasError('procurement_mode') && <FieldError>{errors.procurement_mode}</FieldError>}
                                 </Field>
                             </div>
 
@@ -641,33 +535,23 @@ export default function ProcurementInitiationForm({
                                 <Field>
                                     <FieldLabel htmlFor="abc_amount">
                                         ABC Amount (₱)
-                                        <span className="ml-1 text-xs text-destructive">*</span>
+                                        <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Approved Budget for the Contract - the maximum amount allocated
-                                    </FieldDescription>
+                                    <FieldDescription>Approved Budget for the Contract - the maximum amount allocated</FieldDescription>
                                     <Input
                                         id="abc_amount"
                                         name="abc_amount"
                                         type="number"
                                         value={data.abc_amount}
-                                        onChange={(e) =>
-                                            handleFieldChange('abc_amount', e.target.value)
-                                        }
-                                        className={
-                                            hasError('abc_amount')
-                                                ? 'border-destructive ring-destructive/30'
-                                                : ''
-                                        }
+                                        onChange={(e) => handleFieldChange('abc_amount', e.target.value)}
+                                        className={hasError('abc_amount') ? 'border-destructive ring-destructive/30' : ''}
                                         placeholder="0.00"
                                         step="0.01"
                                         min="0"
                                     />
-                                    {hasError('abc_amount') && (
-                                        <FieldError>{errors.abc_amount}</FieldError>
-                                    )}
+                                    {hasError('abc_amount') && <FieldError>{errors.abc_amount}</FieldError>}
                                     {data.abc_amount && parseFloat(data.abc_amount) > 0 && (
-                                        <div className="mt-2 text-sm text-muted-foreground">
+                                        <div className="text-muted-foreground mt-2 text-sm">
                                             Formatted: ₱
                                             {parseFloat(data.abc_amount).toLocaleString('en-PH', {
                                                 minimumFractionDigits: 2,
@@ -681,24 +565,11 @@ export default function ProcurementInitiationForm({
                                 <Field>
                                     <FieldLabel htmlFor="funding_source">
                                         Funding Source
-                                        <span className="ml-1 text-xs text-destructive">*</span>
+                                        <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Select the source of funds for this procurement
-                                    </FieldDescription>
-                                    <Select
-                                        value={data.funding_source}
-                                        onValueChange={(value) =>
-                                            handleFieldChange('funding_source', value)
-                                        }
-                                    >
-                                        <SelectTrigger
-                                            className={
-                                                hasError('funding_source')
-                                                    ? 'border-destructive ring-destructive/30'
-                                                    : ''
-                                            }
-                                        >
+                                    <FieldDescription>Select the source of funds for this procurement</FieldDescription>
+                                    <Select value={data.funding_source} onValueChange={(value) => handleFieldChange('funding_source', value)}>
+                                        <SelectTrigger className={hasError('funding_source') ? 'border-destructive ring-destructive/30' : ''}>
                                             <SelectValue placeholder="Select funding source" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -709,27 +580,24 @@ export default function ProcurementInitiationForm({
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {hasError('funding_source') && (
-                                        <FieldError>{errors.funding_source}</FieldError>
-                                    )}
+                                    {hasError('funding_source') && <FieldError>{errors.funding_source}</FieldError>}
                                 </Field>
                             </div>
-
                         </CardContent>
-                        <CardFooter className="border-t bg-muted/30 px-4 py-3 sm:px-6 sm:py-4">
+                        <CardFooter className="bg-muted/30 border-t px-4 py-3 sm:px-6 sm:py-4">
                             <div className="space-y-3">
                                 <div className="flex items-start gap-2">
-                                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                                    <p className="text-xs text-muted-foreground sm:text-sm">
-                                        <strong className="font-medium text-foreground">ABC:</strong> The ABC must be determined based on prevailing
+                                    <Info className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                                    <p className="text-muted-foreground text-xs sm:text-sm">
+                                        <strong className="text-foreground font-medium">ABC:</strong> The ABC must be determined based on prevailing
                                         market prices and should not exceed the appropriated budget.
                                     </p>
                                 </div>
                                 {selectedCategory && (
                                     <div className="flex items-start gap-2 border-t pt-3">
                                         <Info className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-500" />
-                                        <p className="text-xs text-muted-foreground sm:text-sm">
-                                            <strong className="font-medium text-foreground">Category:</strong> {selectedCategory.description}
+                                        <p className="text-muted-foreground text-xs sm:text-sm">
+                                            <strong className="text-foreground font-medium">Category:</strong> {selectedCategory.description}
                                         </p>
                                     </div>
                                 )}
@@ -737,8 +605,8 @@ export default function ProcurementInitiationForm({
                                     <div className="space-y-2 border-t pt-3">
                                         <div className="flex items-start gap-2">
                                             <Info className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-500" />
-                                            <p className="text-xs text-muted-foreground sm:text-sm">
-                                                <strong className="font-medium text-foreground">Mode:</strong> {selectedMode.description}
+                                            <p className="text-muted-foreground text-xs sm:text-sm">
+                                                <strong className="text-foreground font-medium">Mode:</strong> {selectedMode.description}
                                             </p>
                                         </div>
                                         {(selectedMode.requires_philgeps || selectedMode.requires_bac_resolution) && (
@@ -762,17 +630,15 @@ export default function ProcurementInitiationForm({
                     </Card>
 
                     {/* Section 3: Office & Purpose */}
-                    <Card className="overflow-hidden rounded-lg border-0 shadow-sm ring-1 ring-border/50 sm:rounded-xl">
+                    <Card className="ring-border/50 overflow-hidden rounded-lg border-0 shadow-sm ring-1 sm:rounded-xl">
                         <CardHeader className="border-l-3 border-l-blue-500 bg-blue-500/2 px-4 py-4 sm:border-l-4 sm:px-6 sm:py-5">
                             <div className="flex items-center gap-2.5 sm:gap-3">
                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 ring-1 ring-blue-500/20 sm:h-10 sm:w-10">
-                                    <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-500 sm:h-5 sm:w-5" />
+                                    <Building2 className="h-4 w-4 text-blue-600 sm:h-5 sm:w-5 dark:text-blue-500" />
                                 </div>
                                 <div className="min-w-0 space-y-1">
-                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">
-                                        Office & Purpose
-                                    </CardTitle>
-                                    <CardDescription className="hidden text-sm xs:block">
+                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">Office & Purpose</CardTitle>
+                                    <CardDescription className="xs:block hidden text-sm">
                                         Requesting office and procurement justification
                                     </CardDescription>
                                 </div>
@@ -787,20 +653,9 @@ export default function ProcurementInitiationForm({
                                         Office
                                         <span className="text-destructive">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Select the office requesting this procurement
-                                    </FieldDescription>
-                                    <Select
-                                        value={data.office}
-                                        onValueChange={(value) => handleFieldChange('office', value)}
-                                    >
-                                        <SelectTrigger
-                                            className={
-                                                hasError('office')
-                                                    ? 'border-destructive ring-destructive/30'
-                                                    : ''
-                                            }
-                                        >
+                                    <FieldDescription>Select the office requesting this procurement</FieldDescription>
+                                    <Select value={data.office} onValueChange={(value) => handleFieldChange('office', value)}>
+                                        <SelectTrigger className={hasError('office') ? 'border-destructive ring-destructive/30' : ''}>
                                             <SelectValue placeholder="Select office" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -817,9 +672,7 @@ export default function ProcurementInitiationForm({
                                 {/* End User */}
                                 <Field>
                                     <FieldLabel htmlFor="end_user">End User (Optional)</FieldLabel>
-                                    <FieldDescription>
-                                        If different from the office, specify the actual end user
-                                    </FieldDescription>
+                                    <FieldDescription>If different from the office, specify the actual end user</FieldDescription>
                                     <Input
                                         id="end_user"
                                         name="end_user"
@@ -836,20 +689,17 @@ export default function ProcurementInitiationForm({
                                 <Field>
                                     <FieldLabel htmlFor="purpose">
                                         Purpose
-                                        <span className="ml-1 text-xs text-destructive">*</span>
+                                        <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Explain the purpose and justification for this procurement
-                                    </FieldDescription>
+                                    <FieldDescription>Explain the purpose and justification for this procurement</FieldDescription>
                                     <Textarea
                                         id="purpose"
                                         name="purpose"
                                         value={data.purpose}
                                         onChange={(e) => handleFieldChange('purpose', e.target.value)}
-                                        className={`flex min-h-[120px] w-full rounded-md border bg-background px-3 py-2 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${hasError('purpose')
-                                            ? 'border-destructive ring-destructive/30'
-                                            : 'border-input'
-                                            }`}
+                                        className={`bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[120px] w-full rounded-md border px-3 py-2 text-base shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+                                            hasError('purpose') ? 'border-destructive ring-destructive/30' : 'border-input'
+                                        }`}
                                         placeholder="Describe the purpose and necessity of this procurement..."
                                     />
                                     {hasError('purpose') && <FieldError>{errors.purpose}</FieldError>}
@@ -859,57 +709,42 @@ export default function ProcurementInitiationForm({
                                 <Field>
                                     <FieldLabel htmlFor="prepared_by">
                                         Prepared By
-                                        <span className="ml-1 text-xs text-destructive">*</span>
+                                        <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Name of the person preparing this request
-                                    </FieldDescription>
+                                    <FieldDescription>Name of the person preparing this request</FieldDescription>
                                     <Input
                                         id="prepared_by"
                                         name="prepared_by"
                                         value={data.prepared_by}
-                                        onChange={(e) =>
-                                            handleFieldChange('prepared_by', e.target.value)
-                                        }
-                                        className={
-                                            hasError('prepared_by')
-                                                ? 'border-destructive ring-destructive/30'
-                                                : ''
-                                        }
+                                        onChange={(e) => handleFieldChange('prepared_by', e.target.value)}
+                                        className={hasError('prepared_by') ? 'border-destructive ring-destructive/30' : ''}
                                         placeholder="Full Name"
                                     />
-                                    {hasError('prepared_by') && (
-                                        <FieldError>{errors.prepared_by}</FieldError>
-                                    )}
+                                    {hasError('prepared_by') && <FieldError>{errors.prepared_by}</FieldError>}
                                 </Field>
                             </div>
-
                         </CardContent>
-                        <CardFooter className="border-t bg-muted/30 px-4 py-3 sm:px-6 sm:py-4">
+                        <CardFooter className="bg-muted/30 border-t px-4 py-3 sm:px-6 sm:py-4">
                             <div className="flex items-start gap-2">
-                                <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                                <p className="text-xs text-muted-foreground sm:text-sm">
-                                    <strong className="font-medium text-foreground">Note:</strong> The purpose statement should clearly justify
-                                    why this procurement is necessary for government operations.
+                                <Info className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                                <p className="text-muted-foreground text-xs sm:text-sm">
+                                    <strong className="text-foreground font-medium">Note:</strong> The purpose statement should clearly justify why
+                                    this procurement is necessary for government operations.
                                 </p>
                             </div>
                         </CardFooter>
                     </Card>
 
                     {/* Section 4: Delivery Details */}
-                    <Card className="overflow-hidden rounded-lg border-0 shadow-sm ring-1 ring-border/50 sm:rounded-xl">
+                    <Card className="ring-border/50 overflow-hidden rounded-lg border-0 shadow-sm ring-1 sm:rounded-xl">
                         <CardHeader className="border-l-3 border-l-amber-500 bg-amber-500/2 px-4 py-4 sm:border-l-4 sm:px-6 sm:py-5">
                             <div className="flex items-center gap-2.5 sm:gap-3">
                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 ring-1 ring-amber-500/20 sm:h-10 sm:w-10">
-                                    <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-500 sm:h-5 sm:w-5" />
+                                    <MapPin className="h-4 w-4 text-amber-600 sm:h-5 sm:w-5 dark:text-amber-500" />
                                 </div>
                                 <div className="min-w-0 space-y-1">
-                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">
-                                        Delivery Details
-                                    </CardTitle>
-                                    <CardDescription className="hidden text-sm xs:block">
-                                        Delivery location, timeline, and terms
-                                    </CardDescription>
+                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">Delivery Details</CardTitle>
+                                    <CardDescription className="xs:block hidden text-sm">Delivery location, timeline, and terms</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
@@ -922,26 +757,16 @@ export default function ProcurementInitiationForm({
                                         Delivery Location
                                         <span className="text-destructive">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Where should the goods/services be delivered?
-                                    </FieldDescription>
+                                    <FieldDescription>Where should the goods/services be delivered?</FieldDescription>
                                     <Input
                                         id="delivery_location"
                                         name="delivery_location"
                                         value={data.delivery_location}
-                                        onChange={(e) =>
-                                            handleFieldChange('delivery_location', e.target.value)
-                                        }
-                                        className={
-                                            hasError('delivery_location')
-                                                ? 'border-destructive ring-destructive/30'
-                                                : ''
-                                        }
+                                        onChange={(e) => handleFieldChange('delivery_location', e.target.value)}
+                                        className={hasError('delivery_location') ? 'border-destructive ring-destructive/30' : ''}
                                         placeholder="e.g., Municipal Hall, Main Office"
                                     />
-                                    {hasError('delivery_location') && (
-                                        <FieldError>{errors.delivery_location}</FieldError>
-                                    )}
+                                    {hasError('delivery_location') && <FieldError>{errors.delivery_location}</FieldError>}
                                 </Field>
 
                                 {/* Delivery Date */}
@@ -950,76 +775,58 @@ export default function ProcurementInitiationForm({
                                         Delivery Date
                                         <span className="text-destructive">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>
-                                        Expected date for delivery or completion
-                                    </FieldDescription>
+                                    <FieldDescription>Expected date for delivery or completion</FieldDescription>
                                     <DatePicker
                                         id="delivery_date"
                                         date={data.delivery_date}
-                                        onDateChange={(date: Date | undefined) =>
-                                            handleFieldChange('delivery_date', date)
-                                        }
+                                        onDateChange={(date: Date | undefined) => handleFieldChange('delivery_date', date)}
                                         minDate={new Date()}
-                                        className={
-                                            hasError('delivery_date')
-                                                ? 'border-destructive ring-destructive/30'
-                                                : ''
-                                        }
+                                        className={hasError('delivery_date') ? 'border-destructive ring-destructive/30' : ''}
                                     />
-                                    {hasError('delivery_date') && (
-                                        <FieldError>{errors.delivery_date}</FieldError>
-                                    )}
+                                    {hasError('delivery_date') && <FieldError>{errors.delivery_date}</FieldError>}
                                 </Field>
 
                                 {/* Delivery Term Days */}
                                 <Field>
                                     <FieldLabel htmlFor="delivery_term_days">Delivery Term (Days)</FieldLabel>
-                                    <FieldDescription>
-                                        Number of calendar days for delivery from contract signing
-                                        (optional)
-                                    </FieldDescription>
+                                    <FieldDescription>Number of calendar days for delivery from contract signing (optional)</FieldDescription>
                                     <Input
                                         id="delivery_term_days"
                                         name="delivery_term_days"
                                         type="number"
                                         value={data.delivery_term_days}
-                                        onChange={(e) =>
-                                            handleFieldChange('delivery_term_days', e.target.value)
-                                        }
+                                        onChange={(e) => handleFieldChange('delivery_term_days', e.target.value)}
                                         placeholder="e.g., 30"
                                         min="0"
                                     />
                                 </Field>
                             </div>
-
                         </CardContent>
-                        <CardFooter className="border-t bg-muted/30 px-4 py-3 sm:px-6 sm:py-4">
+                        <CardFooter className="bg-muted/30 border-t px-4 py-3 sm:px-6 sm:py-4">
                             <div className="flex items-start gap-2">
-                                <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                                <p className="text-xs text-muted-foreground sm:text-sm">
-                                    <strong className="font-medium text-foreground">Timeline:</strong> Ensure the delivery date allows
-                                    sufficient time for the procurement process and contractor
-                                    preparation.
+                                <Info className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                                <p className="text-muted-foreground text-xs sm:text-sm">
+                                    <strong className="text-foreground font-medium">Timeline:</strong> Ensure the delivery date allows sufficient time
+                                    for the procurement process and contractor preparation.
                                 </p>
                             </div>
                         </CardFooter>
                     </Card>
 
                     {/* Next Steps Info */}
-                    <Card className="overflow-hidden rounded-lg border-0 bg-linear-to-br from-blue-50 to-indigo-50 shadow-sm ring-1 ring-blue-200/50 dark:from-blue-950/20 dark:to-indigo-950/20 dark:ring-blue-800/30 sm:rounded-xl">
+                    <Card className="overflow-hidden rounded-lg border-0 bg-linear-to-br from-blue-50 to-indigo-50 shadow-sm ring-1 ring-blue-200/50 sm:rounded-xl dark:from-blue-950/20 dark:to-indigo-950/20 dark:ring-blue-800/30">
                         <CardContent className="p-4 sm:p-6">
                             <div className="flex gap-3 sm:gap-4">
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 ring-1 ring-blue-500/20 sm:h-12 sm:w-12 sm:rounded-xl">
-                                    <Upload className="h-5 w-5 text-blue-600 dark:text-blue-400 sm:h-6 sm:w-6" />
+                                    <Upload className="h-5 w-5 text-blue-600 sm:h-6 sm:w-6 dark:text-blue-400" />
                                 </div>
                                 <div className="min-w-0 flex-1 space-y-1 sm:space-y-2">
-                                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 sm:text-base">
+                                    <h3 className="text-sm font-semibold text-blue-900 sm:text-base dark:text-blue-100">
                                         Next: Progressive Document Upload
                                     </h3>
-                                    <p className="text-xs leading-relaxed text-blue-700/90 dark:text-blue-300/90 sm:text-sm">
-                                        After creating this procurement, you'll be redirected to upload
-                                        required documents progressively. <span className="hidden sm:inline">You can upload them one at a
-                                            time and save your progress.</span>
+                                    <p className="text-xs leading-relaxed text-blue-700/90 sm:text-sm dark:text-blue-300/90">
+                                        After creating this procurement, you'll be redirected to upload required documents progressively.{' '}
+                                        <span className="hidden sm:inline">You can upload them one at a time and save your progress.</span>
                                     </p>
                                 </div>
                             </div>
@@ -1027,9 +834,9 @@ export default function ProcurementInitiationForm({
                     </Card>
 
                     {/* Submit Button - Sticky on mobile */}
-                    <div className="sticky bottom-0 left-0 right-0 z-20 -mx-3 border-t bg-background/95 px-3 py-3 shadow-lg backdrop-blur-md supports-backdrop-filter:bg-background/80 sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:shadow-none sm:backdrop-blur-none">
+                    <div className="bg-background/95 supports-backdrop-filter:bg-background/80 sticky right-0 bottom-0 left-0 z-20 -mx-3 border-t px-3 py-3 shadow-lg backdrop-blur-md sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:shadow-none sm:backdrop-blur-none">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                            <p className="hidden text-sm text-muted-foreground lg:block">
+                            <p className="text-muted-foreground hidden text-sm lg:block">
                                 All fields marked with <span className="text-destructive">*</span> are required
                             </p>
                             <Button

@@ -1,8 +1,10 @@
+import { DocumentCorrectionSheet } from '@/components/documents/document-correction-sheet';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { PdfDocument, ViewStats } from '@/types';
+import { PdfDocument, SharedData, ViewStats } from '@/types';
 import {
     formatFileSize,
     formatStatus,
@@ -12,21 +14,9 @@ import {
     getStatusBadgeColor,
     getStatusIcon,
 } from '@/utils/pdf-viewer/helpers';
-import {
-    Activity,
-    Building2,
-    CalendarDays,
-    Clock,
-    Eye,
-    FileText,
-    Globe,
-    HardDrive,
-    Hash,
-    Shield,
-    Target,
-    Users,
-} from 'lucide-react';
-import React from 'react';
+import { usePage } from '@inertiajs/react';
+import { Activity, AlertTriangle, Building2, CalendarDays, Clock, Eye, FileText, Globe, HardDrive, Hash, Shield, Target, Users } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface Props {
     document: PdfDocument;
@@ -35,6 +25,13 @@ interface Props {
 }
 
 export default function DocumentInfoCard({ document, fileKey, viewStats }: Props) {
+    const [showCorrectionSheet, setShowCorrectionSheet] = useState(false);
+    const { auth } = usePage<SharedData>().props;
+
+    // Check if user can correct documents
+    const allowedRoles = ['admin', 'bac_chairman', 'bac_secretariat'];
+    const canCorrectDocuments =
+        auth?.roles?.some((role: string) => allowedRoles.includes(role)) || (auth?.user?.role && allowedRoles.includes(auth.user.role));
     return (
         <Card>
             <CardHeader>
@@ -82,6 +79,18 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                             <span className="max-w-[100px] truncate sm:max-w-none">{document.stage_display}</span>
                         </Badge>
                     </div>
+
+                    {document.phase && (
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
+                                <Target className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                Current Phase:
+                            </span>
+                            <Badge variant="secondary" className="text-xs font-medium">
+                                {document.phase_display_name}
+                            </Badge>
+                        </div>
+                    )}
 
                     {document.current_status && (
                         <div className="flex items-center justify-between gap-2">
@@ -139,7 +148,7 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                                     </span>
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-md">
-                                    <p className="break-all font-mono text-xs">{fileKey}</p>
+                                    <p className="font-mono text-xs break-all">{fileKey}</p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -164,7 +173,7 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                                                 </span>
                                             </TooltipTrigger>
                                             <TooltipContent className="max-w-md">
-                                                <p className="break-all font-mono text-xs">{document.hash}</p>
+                                                <p className="font-mono text-xs break-all">{document.hash}</p>
                                             </TooltipContent>
                                         </Tooltip>
                                         <p className="text-muted-foreground mt-1 text-xs">Blockchain verified</p>
@@ -231,7 +240,37 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                         </div>
                     </div>
                 </div>
+
+                {/* Correction Button */}
+                {canCorrectDocuments && (
+                    <div className="space-y-3 border-t pt-4">
+                        <div className="grid grid-cols-1 gap-2">
+                            <Button
+                                variant="outline"
+                                className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                                onClick={() => setShowCorrectionSheet(true)}
+                            >
+                                <AlertTriangle className="mr-2 h-4 w-4" />
+                                Quick Correct
+                            </Button>
+                        </div>
+                        <p className="text-muted-foreground text-center text-xs">Submit corrections while maintaining blockchain immutability</p>
+                    </div>
+                )}
             </CardContent>
+
+            {/* Document Correction Sheet */}
+            {canCorrectDocuments && (
+                <DocumentCorrectionSheet
+                    open={showCorrectionSheet}
+                    onOpenChange={setShowCorrectionSheet}
+                    documentId={document.blockchain_txid || document.id || ''}
+                    pr_number={document.pr_number}
+                    procurementTitle={document.procurement_title}
+                    originalDocumentHash={document.hash || ''}
+                    originalTxid={document.blockchain_txid}
+                />
+            )}
         </Card>
     );
 }

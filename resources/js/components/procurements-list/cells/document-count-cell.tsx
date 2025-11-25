@@ -7,7 +7,7 @@ interface DocumentCountCellProps {
 export const DocumentCountCell = ({ count }: DocumentCountCellProps) => (
     <div className="flex items-center gap-1.5">
         {count !== undefined ? (
-            <div 
+            <div
                 className="flex items-center rounded-full bg-blue-50 py-0.5 pr-2 pl-1 dark:bg-blue-900/20"
                 role="status"
                 aria-label={`${count} ${count === 1 ? 'document' : 'documents'}`}
@@ -17,7 +17,7 @@ export const DocumentCountCell = ({ count }: DocumentCountCellProps) => (
             </div>
         ) : (
             // Skeleton loader for deferred document counts
-            <div 
+            <div
                 className="flex animate-pulse items-center rounded-full bg-gray-100 py-0.5 pr-2 pl-1 dark:bg-gray-800"
                 role="status"
                 aria-label="Loading document count"

@@ -332,6 +332,10 @@ class ProcurementDataService
         $stage = $currentStatus['stage'] ?? '';
         $progress = $this->calculateProgress($stage);
 
+        // Get phase information from stage
+        $phase = $this->getStagePhase($stage);
+        $phaseDisplayName = $this->getStagePhaseDisplayName($stage);
+
         return [
             'id' => $pr_number,
             'title' => $currentStatus['procurement_title'] ?? 'N/A',
@@ -350,6 +354,8 @@ class ProcurementDataService
                 'user_address' => $currentStatus['user_address'] ?? '',
                 'progress' => $progress,
                 'total_stages' => $this->getTotalStages(),
+                'phase' => $phase,
+                'phase_display_name' => $phaseDisplayName,
             ],
             'documents' => $documents,
             'events' => $events,
@@ -651,6 +657,46 @@ class ProcurementDataService
     }
 
     /**
+     * Get stage phase
+     */
+    public function getStagePhase(string $stage): string
+    {
+        $stageEnum = StageEnums::tryFrom(strtolower(str_replace([' ', '-'], '_', $stage)));
+
+        if ($stageEnum !== null) {
+            return $stageEnum->getPhase();
+        }
+
+        foreach (StageEnums::cases() as $case) {
+            if (strcasecmp($case->getDisplayName(), $stage) === 0) {
+                return $case->getPhase();
+            }
+        }
+
+        return 'pre_procurement'; // Default fallback
+    }
+
+    /**
+     * Get stage phase display name
+     */
+    public function getStagePhaseDisplayName(string $stage): string
+    {
+        $stageEnum = StageEnums::tryFrom(strtolower(str_replace([' ', '-'], '_', $stage)));
+
+        if ($stageEnum !== null) {
+            return $stageEnum->getPhaseDisplayName();
+        }
+
+        foreach (StageEnums::cases() as $case) {
+            if (strcasecmp($case->getDisplayName(), $stage) === 0) {
+                return $case->getPhaseDisplayName();
+            }
+        }
+
+        return 'Pre-Procurement'; // Default fallback
+    }
+
+    /**
      * Get total number of stages
      */
     public function getTotalStages(): int
@@ -890,13 +936,17 @@ class ProcurementDataService
             $latestStatus = $statusItems->first();
 
             if ($latestStatus) {
+                $stage = $latestStatus['stage'] ?? '';
+
                 return [
                     'current_status' => $latestStatus['current_status'] ?? '',
-                    'stage' => $latestStatus['stage'] ?? '',
+                    'stage' => $stage,
                     'timestamp' => $latestStatus['timestamp'] ?? '',
                     'pr_number' => $latestStatus['pr_number'] ?? '',
                     'procurement_title' => $latestStatus['procurement_title'] ?? '',
                     'user_address' => $latestStatus['user_address'] ?? '',
+                    'phase' => $this->getStagePhase($stage),
+                    'phase_display_name' => $this->getStagePhaseDisplayName($stage),
                 ];
             }
 

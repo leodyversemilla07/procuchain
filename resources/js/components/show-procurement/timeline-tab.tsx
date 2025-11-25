@@ -2,7 +2,7 @@ import { Calendar, CheckCircle, Clock } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import type { Event, TimelineItem } from '@/types';
 import { TimelineEventItem } from './timeline-event-item';
@@ -71,9 +71,7 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                                 <Clock className="text-muted-foreground" />
                             </EmptyMedia>
                             <EmptyTitle>No Timeline Events</EmptyTitle>
-                            <EmptyDescription>
-                                Timeline events will appear here as the procurement progresses.
-                            </EmptyDescription>
+                            <EmptyDescription>Timeline events will appear here as the procurement progresses.</EmptyDescription>
                         </EmptyHeader>
                     </Empty>
                 </CardContent>
@@ -86,14 +84,12 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
             <CardHeader>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 sm:h-10 sm:w-10">
-                            <Clock className="h-4 w-4 text-primary sm:h-5 sm:w-5" aria-hidden="true" />
+                        <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg sm:h-10 sm:w-10">
+                            <Clock className="text-primary h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                         </div>
                         <div>
                             <CardTitle className="text-base sm:text-lg">Event Timeline</CardTitle>
-                            <CardDescription className="text-xs sm:text-sm">
-                                Chronological history of procurement events
-                            </CardDescription>
+                            <CardDescription className="text-xs sm:text-sm">Chronological history of procurement events</CardDescription>
                         </div>
                     </div>
                     <Badge variant="outline" className="w-fit font-medium">
@@ -109,18 +105,11 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                             const isFirstDate = dateIndex === 0;
 
                             return (
-                                <section
-                                    key={date}
-                                    className="border-b last:border-b-0"
-                                    role="listitem"
-                                >
-                                    <div className="sticky top-0 z-10 border-b bg-muted/80 p-3 backdrop-blur-sm sm:p-4">
+                                <section key={date} className="border-b last:border-b-0" role="listitem">
+                                    <div className="bg-muted/80 sticky top-0 z-10 border-b p-3 backdrop-blur-sm sm:p-4">
                                         <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-primary" aria-hidden="true" />
-                                            <time
-                                                dateTime={date}
-                                                className="text-sm font-semibold sm:text-base"
-                                            >
+                                            <Calendar className="text-primary h-4 w-4" aria-hidden="true" />
+                                            <time dateTime={date} className="text-sm font-semibold sm:text-base">
                                                 {date}
                                             </time>
                                             {isFirstDate && (
@@ -135,15 +124,8 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                                         {timelineItemsByDate[date]
                                             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                                             .map((item, itemIndex) => (
-                                                <div
-                                                    key={`${item.timestamp}-${itemIndex}`}
-                                                    className="border-b p-3 last:border-b-0 sm:p-4"
-                                                >
-                                                    <TimelineEventItem 
-                                                        item={item.raw} 
-                                                        type={item.type} 
-                                                        stageOrder={item.stageOrder} 
-                                                    />
+                                                <div key={`${item.timestamp}-${itemIndex}`} className="border-b p-3 last:border-b-0 sm:p-4">
+                                                    <TimelineEventItem item={item.raw} type={item.type} stageOrder={item.stageOrder} />
                                                 </div>
                                             ))}
                                     </div>
@@ -153,7 +135,7 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                 </div>
             </CardContent>
             <CardFooter className="justify-center border-t py-4 sm:py-6">
-                <span className="inline-flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
+                <span className="text-muted-foreground inline-flex items-center gap-2 text-xs sm:text-sm">
                     <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
                     Beginning of Timeline
                 </span>

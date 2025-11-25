@@ -49,7 +49,7 @@ function filterstreamitem() {
             return 'Missing required field: ' + field;
         }
     }
-    
+
     // PR Number format validation (if provided)
     if (data.pr_number && data.pr_number !== '') {
         // PR-YYYY-####-#### format (e.g., PR-2025-0001-0042)

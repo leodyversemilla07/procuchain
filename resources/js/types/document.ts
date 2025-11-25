@@ -145,4 +145,3 @@ export interface TimelineItem {
     procurement_title?: string;
     user_address?: string;
 }
-

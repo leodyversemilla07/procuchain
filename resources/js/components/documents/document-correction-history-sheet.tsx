@@ -2,7 +2,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { corrections as correctionsRoute } from '@/routes/procurements';
+import procurements from '@/routes/procurements';
 import { AlertCircle, FileCheck, FileX, History } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -46,7 +46,7 @@ export function CorrectionHistorySheet({ open, onOpenChange, pr_number, document
         setError(null);
 
         try {
-            const url = correctionsRoute.url(pr_number);
+            const url = procurements.corrections.history.url(pr_number);
             const response = await fetch(url);
 
             if (!response.ok) {
@@ -88,8 +88,8 @@ export function CorrectionHistorySheet({ open, onOpenChange, pr_number, document
                         {documentHash ? 'Document Correction History' : 'All Corrections History'}
                     </SheetTitle>
                     <SheetDescription className="text-sm">
-                        {documentHash 
-                            ? 'Correction timeline for this specific document' 
+                        {documentHash
+                            ? 'Correction timeline for this specific document'
                             : 'Complete timeline of all corrections across all documents in this procurement'}
                     </SheetDescription>
                 </SheetHeader>
@@ -117,8 +117,8 @@ export function CorrectionHistorySheet({ open, onOpenChange, pr_number, document
                             <FileCheck className="text-muted-foreground mx-auto mb-4 h-16 w-16" />
                             <p className="text-muted-foreground text-lg font-medium">No corrections found</p>
                             <p className="text-muted-foreground mt-2 text-sm">
-                                {documentHash 
-                                    ? 'This document has not been corrected yet' 
+                                {documentHash
+                                    ? 'This document has not been corrected yet'
                                     : 'No documents in this procurement have been corrected yet'}
                             </p>
                         </div>
@@ -156,7 +156,10 @@ export function CorrectionHistorySheet({ open, onOpenChange, pr_number, document
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <Badge variant={correction.action === 'replace' ? 'default' : 'secondary'} className="w-fit shrink-0 text-xs">
+                                                <Badge
+                                                    variant={correction.action === 'replace' ? 'default' : 'secondary'}
+                                                    className="w-fit shrink-0 text-xs"
+                                                >
                                                     {correction.correction_type_display || correction.correction_type}
                                                 </Badge>
                                             </div>
@@ -164,36 +167,48 @@ export function CorrectionHistorySheet({ open, onOpenChange, pr_number, document
                                             {/* Reason */}
                                             <div className="mb-4 grid gap-2">
                                                 <p className="text-sm font-semibold">Reason:</p>
-                                                <p className="text-muted-foreground bg-muted rounded-lg p-3 text-sm leading-relaxed">{correction.reason}</p>
+                                                <p className="text-muted-foreground bg-muted rounded-lg p-3 text-sm leading-relaxed">
+                                                    {correction.reason}
+                                                </p>
                                             </div>
 
                                             {/* Metadata Grid */}
                                             <div className="mb-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
                                                 <div className="bg-muted/50 grid gap-1.5 rounded-lg p-3">
-                                                    <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Corrected By</p>
+                                                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Corrected By</p>
                                                     <p className="text-xs font-medium sm:text-sm">{correction.corrected_by}</p>
                                                 </div>
                                                 <div className="bg-muted/50 grid gap-1.5 rounded-lg p-3">
-                                                    <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Blockchain TXID</p>
+                                                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                                        Blockchain TXID
+                                                    </p>
                                                     <p className="font-mono text-xs break-all">{correction.txid.substring(0, 16)}...</p>
                                                 </div>
                                             </div>
 
                                             {/* Original Reference */}
                                             <div className="grid gap-3 border-t pt-4">
-                                                <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">References Original</p>
+                                                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                                    References Original
+                                                </p>
                                                 <div className="grid gap-3 sm:grid-cols-2">
                                                     {correction.original_txid && (
                                                         <div className="bg-muted/30 grid gap-1 rounded-lg p-2 sm:p-3">
                                                             <span className="text-xs font-medium">TXID:</span>
-                                                            <span className="font-mono text-xs break-all">{correction.original_txid.substring(0, 20)}...</span>
+                                                            <span className="font-mono text-xs break-all">
+                                                                {correction.original_txid.substring(0, 20)}...
+                                                            </span>
                                                         </div>
                                                     )}
                                                     {(correction.original_document_hash || correction.document_hash) && (
                                                         <div className="bg-muted/30 grid gap-1 rounded-lg p-2 sm:p-3">
                                                             <span className="text-xs font-medium">Hash:</span>
                                                             <span className="font-mono text-xs break-all">
-                                                                {(correction.original_document_hash || correction.document_hash || '').substring(0, 20)}...
+                                                                {(correction.original_document_hash || correction.document_hash || '').substring(
+                                                                    0,
+                                                                    20,
+                                                                )}
+                                                                ...
                                                             </span>
                                                         </div>
                                                     )}
@@ -202,14 +217,14 @@ export function CorrectionHistorySheet({ open, onOpenChange, pr_number, document
 
                                             {/* Corrected File Info (if replacement) */}
                                             {correction.action === 'replace' && correction.corrected_metadata && (
-                                                <div className="-mx-4 mt-4 -mb-4 grid gap-3 rounded-b-lg border-t bg-emerald-50 px-4 py-4 dark:bg-emerald-950/20 sm:-mx-5 sm:-mb-5 sm:px-5">
-                                                    <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-100 sm:text-sm">
+                                                <div className="-mx-4 mt-4 -mb-4 grid gap-3 rounded-b-lg border-t bg-emerald-50 px-4 py-4 sm:-mx-5 sm:-mb-5 sm:px-5 dark:bg-emerald-950/20">
+                                                    <p className="text-xs font-semibold text-emerald-900 sm:text-sm dark:text-emerald-100">
                                                         New Document Information
                                                     </p>
                                                     <div className="grid gap-2 text-xs sm:text-sm">
                                                         {correction.corrected_metadata.file_name && (
                                                             <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
-                                                                <strong className="min-w-[60px]">File:</strong> 
+                                                                <strong className="min-w-[60px]">File:</strong>
                                                                 <span className="break-all">{correction.corrected_metadata.file_name}</span>
                                                             </div>
                                                         )}

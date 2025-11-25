@@ -116,12 +116,12 @@ export const ProcurementDistributionCard = ({
                             <button
                                 key={key}
                                 data-active={activeView === key}
-                                className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-4 py-4 text-left transition-all duration-200 even:border-l hover:bg-muted/30 sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+                                className="data-[active=true]:bg-muted/50 hover:bg-muted/30 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-4 py-4 text-left transition-all duration-200 even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
                                 onClick={() => setActiveView(key)}
                                 type="button"
                             >
                                 <span className="text-muted-foreground text-xs capitalize">{key} Distribution</span>
-                                <span className="text-lg font-bold leading-none sm:text-3xl">{total.toLocaleString()}</span>
+                                <span className="text-lg leading-none font-bold sm:text-3xl">{total.toLocaleString()}</span>
                             </button>
                         );
                     })}

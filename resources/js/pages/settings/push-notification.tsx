@@ -4,12 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { subscribe, unsubscribe } from '@/routes/settings/push-notification';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { AlertCircle, Bell, BellOff, CheckCircle2, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { subscribe, unsubscribe } from '@/routes/settings/push-notification';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

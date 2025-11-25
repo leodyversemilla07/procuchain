@@ -15,8 +15,6 @@ export default function SEO({ title, description, keywords = '', image = '/logo.
 
     return (
         <Head title={title}>
-
-
             {/* Basic Meta Tags */}
             <meta name="description" content={description} />
             {keywords && <meta name="keywords" content={keywords} />}

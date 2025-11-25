@@ -8,7 +8,6 @@ export default function Contact() {
     return (
         <>
             <Head title="Contact Us">
-
                 <meta
                     name="description"
                     content="Contact the ProcuChain project team for inquiries, support, or feedback about our blockchain-powered procurement system."
@@ -35,15 +34,15 @@ export default function Contact() {
                 />
                 <meta property="twitter:image" content="/logo.png" />
             </Head>{' '}
-            <div className="flex min-h-screen flex-col bg-background">
+            <div className="bg-background flex min-h-screen flex-col">
                 <Header />
 
                 <main className="flex-1">
                     <div className="container mx-auto px-4 py-16 sm:px-12 lg:px-16 xl:px-20">
                         {/* Hero Section */}
-                        <div className="mx-auto max-w-4xl text-center mb-16">
+                        <div className="mx-auto mb-16 max-w-4xl text-center">
                             <h1 className="mb-4 text-4xl font-bold sm:text-5xl md:text-6xl">Contact Us</h1>
-                            <p className="text-lg text-muted-foreground">
+                            <p className="text-muted-foreground text-lg">
                                 Have questions? We're here to help. Reach out to us through the following channels.
                             </p>
                         </div>
@@ -53,8 +52,8 @@ export default function Contact() {
                             <Card className="border">
                                 <CardContent className="p-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <div className="mb-4 rounded-full bg-primary/10 p-3">
-                                            <Mail className="h-6 w-6 text-primary" />
+                                        <div className="bg-primary/10 mb-4 rounded-full p-3">
+                                            <Mail className="text-primary h-6 w-6" />
                                         </div>
                                         <h3 className="mb-2 font-semibold">Email</h3>
                                         <a
@@ -70,11 +69,11 @@ export default function Contact() {
                             <Card className="border">
                                 <CardContent className="p-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <div className="mb-4 rounded-full bg-primary/10 p-3">
-                                            <Phone className="h-6 w-6 text-primary" />
+                                        <div className="bg-primary/10 mb-4 rounded-full p-3">
+                                            <Phone className="text-primary h-6 w-6" />
                                         </div>
                                         <h3 className="mb-2 font-semibold">Phone</h3>
-                                        <a href="tel:+639777616265" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                                        <a href="tel:+639777616265" className="text-muted-foreground hover:text-primary text-sm transition-colors">
                                             +63 977 761 6365
                                         </a>
                                     </div>
@@ -84,11 +83,11 @@ export default function Contact() {
                             <Card className="border">
                                 <CardContent className="p-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <div className="mb-4 rounded-full bg-primary/10 p-3">
-                                            <MapPin className="h-6 w-6 text-primary" />
+                                        <div className="bg-primary/10 mb-4 rounded-full p-3">
+                                            <MapPin className="text-primary h-6 w-6" />
                                         </div>
                                         <h3 className="mb-2 font-semibold">Location</h3>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-muted-foreground text-sm">
                                             Mindoro State University
                                             <br />
                                             Bongabong Campus
@@ -100,11 +99,11 @@ export default function Contact() {
                             <Card className="border">
                                 <CardContent className="p-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <div className="mb-4 rounded-full bg-primary/10 p-3">
-                                            <Building className="h-6 w-6 text-primary" />
+                                        <div className="bg-primary/10 mb-4 rounded-full p-3">
+                                            <Building className="text-primary h-6 w-6" />
                                         </div>
                                         <h3 className="mb-2 font-semibold">Department</h3>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-muted-foreground text-sm">
                                             Information Technology
                                             <br />
                                             Capstone Project
