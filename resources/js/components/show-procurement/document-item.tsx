@@ -2,13 +2,13 @@ import { Calendar, Download, Eye, FileText, HardDrive, Hash, Lock, TrendingUp } 
 import { useCallback, type FC } from 'react';
 
 import { Button } from '@/components/ui/button';
-import type { Document } from '@/types';
 import files from '@/routes/files';
 import pdf from '@/routes/pdf';
-import { shortenHash } from '../../utils/show-procurement/helpers';
-import { DocumentMetadataCard } from './document-metadata-card';
+import type { Document } from '@/types';
 import { Link } from '@inertiajs/react';
 import { toast } from 'sonner';
+import { shortenHash } from '../../utils/show-procurement/helpers';
+import { DocumentMetadataCard } from './document-metadata-card';
 
 interface DocumentItemProps {
     doc: Document;
@@ -26,17 +26,17 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
     }, [doc.hash]);
 
     return (
-        <li className="group border-b p-3 transition-all duration-200 last:border-b-0 hover:bg-muted/30 sm:p-4">
+        <li className="group hover:bg-muted/30 border-b p-3 transition-all duration-200 last:border-b-0 sm:p-4">
             <div className="flex flex-col gap-3 sm:gap-4">
                 {/* Document Header */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-start gap-2 sm:gap-3">
-                        <div className="rounded-lg border p-1.5 transition-all duration-200 group-hover:border-primary/30 group-hover:bg-primary/5 sm:p-2">
+                        <div className="group-hover:border-primary/30 group-hover:bg-primary/5 rounded-lg border p-1.5 transition-all duration-200 sm:p-2">
                             <FileText className="text-destructive h-5 w-5 sm:h-6 sm:w-6" />
                         </div>
                         <div className="min-w-0 flex-1">
                             <h4
-                                className="mb-1.5 text-sm font-medium transition-colors duration-200 group-hover:text-primary sm:mb-2 sm:text-base"
+                                className="group-hover:text-primary mb-1.5 text-sm font-medium transition-colors duration-200 sm:mb-2 sm:text-base"
                                 title={doc.document_type_formatted || doc.document_type}
                             >
                                 {doc.document_type_formatted || doc.document_type || 'Unnamed Document'}
@@ -45,13 +45,9 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 <span className="flex items-center gap-1" aria-label={`File key: ${doc.file_key || 'N/A'}`}>
                                     <Hash className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden="true" />
                                     {/* Mobile: Shortened file key */}
-                                    <span className="truncate md:hidden">
-                                        {shortenHash(doc.file_key, 5, 3)}
-                                    </span>
+                                    <span className="truncate md:hidden">{shortenHash(doc.file_key, 5, 3)}</span>
                                     {/* Desktop: Full file key */}
-                                    <span className="hidden break-all md:inline">
-                                        {doc.file_key || 'N/A'}
-                                    </span>
+                                    <span className="hidden break-all md:inline">{doc.file_key || 'N/A'}</span>
                                 </span>
                                 {doc.file_size_formatted && (
                                     <span className="flex items-center gap-1" aria-label={`File size: ${doc.file_size_formatted}`}>
@@ -75,7 +71,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                             variant="outline"
                             size="sm"
                             asChild
-                            className="h-8 flex-1 text-xs font-medium shadow-sm transition-all duration-200 hover:border-primary hover:bg-primary/5 hover:shadow focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:h-9 sm:flex-none sm:text-sm"
+                            className="hover:border-primary hover:bg-primary/5 focus-visible:ring-primary h-8 flex-1 text-xs font-medium shadow-sm transition-all duration-200 hover:shadow focus-visible:ring-2 focus-visible:ring-offset-2 sm:h-9 sm:flex-none sm:text-sm"
                         >
                             <Link
                                 href={pdf.viewer.url({ fileKey: encodeURIComponent(doc.file_key) })}
@@ -92,7 +88,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                             variant="outline"
                             size="sm"
                             asChild
-                            className="h-8 text-xs font-medium shadow-sm transition-all duration-200 hover:border-primary hover:bg-primary/5 hover:shadow focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:h-9 sm:text-sm"
+                            className="hover:border-primary hover:bg-primary/5 focus-visible:ring-primary h-8 text-xs font-medium shadow-sm transition-all duration-200 hover:shadow focus-visible:ring-2 focus-visible:ring-offset-2 sm:h-9 sm:text-sm"
                         >
                             <a
                                 href={files.download.url({ fileKey: encodeURIComponent(doc.file_key) })}
@@ -110,23 +106,19 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                 </div>
 
                 {/* Hash Section */}
-                <div className="rounded-lg border bg-muted/30 p-2.5 transition-all duration-200 group-hover:border-primary/30 sm:p-3">
+                <div className="bg-muted/30 group-hover:border-primary/30 rounded-lg border p-2.5 transition-all duration-200 sm:p-3">
                     <div className="flex items-center justify-between gap-2 sm:gap-3">
                         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
                             <Lock className="text-muted-foreground h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden="true" />
                             <div className="min-w-0 flex-1">
                                 <div className="text-muted-foreground mb-0.5 text-[10px] font-medium sm:mb-1 sm:text-xs">Document Hash</div>
                                 {/* Mobile: Shortened hash */}
-                                <code
-                                    className="block truncate font-mono text-xs md:hidden"
-                                    title={doc.hash}
-                                    aria-label={`Full hash: ${doc.hash}`}
-                                >
+                                <code className="block truncate font-mono text-xs md:hidden" title={doc.hash} aria-label={`Full hash: ${doc.hash}`}>
                                     {shortenHash(doc.hash)}
                                 </code>
                                 {/* Desktop: Full hash with word break */}
                                 <code
-                                    className="hidden break-all font-mono text-xs md:block md:text-sm"
+                                    className="hidden font-mono text-xs break-all md:block md:text-sm"
                                     title={doc.hash}
                                     aria-label={`Full hash: ${doc.hash}`}
                                 >
@@ -138,7 +130,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                             variant="ghost"
                             size="sm"
                             onClick={handleCopyHash}
-                            className="h-7 shrink-0 text-xs transition-all duration-200 hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:h-8 sm:text-sm"
+                            className="hover:bg-primary/10 focus-visible:ring-primary h-7 shrink-0 text-xs transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 sm:h-8 sm:text-sm"
                             aria-label="Copy hash to clipboard"
                         >
                             <Download className="mr-1 h-3 w-3 sm:mr-1.5 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
@@ -149,12 +141,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                 </div>
 
                 {/* Metadata Section */}
-                {doc.stage_metadata && (
-                    <DocumentMetadataCard 
-                        metadata={doc.stage_metadata} 
-                        documentType={doc.stage_metadata.document_type}
-                    />
-                )}
+                {doc.stage_metadata && <DocumentMetadataCard metadata={doc.stage_metadata} documentType={doc.stage_metadata.document_type} />}
             </div>
         </li>
     );

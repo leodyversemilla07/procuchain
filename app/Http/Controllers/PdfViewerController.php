@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Models\DocumentView;
+use App\Repositories\DocumentRepository;
 use App\Services\ProcurementDataService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -16,7 +17,8 @@ use Inertia\Response;
 class PdfViewerController extends BaseController
 {
     public function __construct(
-        private ProcurementDataService $procurementDataService
+        private ProcurementDataService $procurementDataService,
+        private DocumentRepository $documentRepository
     ) {
         $this->middleware('auth');
         $this->middleware('role:bac_chairman|bac_secretariat|hope|admin');
@@ -30,6 +32,17 @@ class PdfViewerController extends BaseController
         Log::info('PDF Viewer requested', ['file_key' => $fileKey]);
 
         $documentData = $this->procurementDataService->getDocumentDataByFileKey($fileKey);
+
+        // Map data_txid to blockchain_txid for frontend compatibility
+        // But only if the document actually exists in blockchain
+        if ($documentData && isset($documentData['data_txid'])) {
+            // Validate that the document exists in blockchain before showing correction button
+            // Use validateDocumentExistsInBlockchain instead of findByTxid since findByTxid has issues
+            $documentExists = $this->procurementDataService->validateDocumentExistsInBlockchain($fileKey);
+            if ($documentExists) {
+                $documentData['blockchain_txid'] = $documentData['data_txid'];
+            }
+        }
 
         // Format the stage and document_type if document data exists
         if ($documentData) {
@@ -48,10 +61,14 @@ class PdfViewerController extends BaseController
             if ($currentStatus) {
                 $documentData['current_status'] = $currentStatus['current_status'] ?? null;
                 $documentData['status_timestamp'] = $currentStatus['timestamp'] ?? null;
+                $documentData['phase'] = $currentStatus['phase'] ?? null;
+                $documentData['phase_display_name'] = $currentStatus['phase_display_name'] ?? null;
                 Log::info('Procurement status found', [
                     'pr_number' => $documentData['pr_number'],
                     'current_status' => $documentData['current_status'],
                     'status_timestamp' => $documentData['status_timestamp'],
+                    'phase' => $documentData['phase'],
+                    'phase_display_name' => $documentData['phase_display_name'],
                 ]);
             } else {
                 Log::info('No procurement status found', ['pr_number' => $documentData['pr_number']]);
@@ -135,10 +152,14 @@ class PdfViewerController extends BaseController
                 if ($currentStatus) {
                     $documentData['current_status'] = $currentStatus['current_status'] ?? null;
                     $documentData['status_timestamp'] = $currentStatus['timestamp'] ?? null;
+                    $documentData['phase'] = $currentStatus['phase'] ?? null;
+                    $documentData['phase_display_name'] = $currentStatus['phase_display_name'] ?? null;
                     Log::info('Procurement status found for fallback data', [
                         'pr_number' => $pr_number,
                         'current_status' => $documentData['current_status'],
                         'status_timestamp' => $documentData['status_timestamp'],
+                        'phase' => $documentData['phase'],
+                        'phase_display_name' => $documentData['phase_display_name'],
                     ]);
                 } else {
                     Log::info('No procurement status found for fallback data', ['pr_number' => $pr_number]);

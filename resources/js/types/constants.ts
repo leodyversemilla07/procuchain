@@ -47,7 +47,7 @@ export const MUNICIPAL_OFFICES = [
     { value: 'BAMBOO - Bamboo Plantation', label: 'BAMBOO - Bamboo Plantation' },
 ] as const;
 
-export type MunicipalOffice = typeof MUNICIPAL_OFFICES[number]['value'];
+export type MunicipalOffice = (typeof MUNICIPAL_OFFICES)[number]['value'];
 
 /**
  * LGU Funding Sources per Local Government Code of 1991
@@ -69,7 +69,7 @@ export const FUNDING_SOURCES = [
     { value: 'Other Sources', label: 'Other Sources', description: 'Other legitimate funding sources' },
 ] as const;
 
-export type FundingSource = typeof FUNDING_SOURCES[number]['value'];
+export type FundingSource = (typeof FUNDING_SOURCES)[number]['value'];
 
 /**
  * Ordered list of procurement stages for workflow progression

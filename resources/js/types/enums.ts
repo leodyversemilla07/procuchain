@@ -96,56 +96,56 @@ export enum DocumentType {
     DEPARTMENT_ENDORSEMENT = 'department_endorsement',
     BUDGET_ALLOCATION = 'budget_allocation',
     PROJECT_PROPOSAL = 'project_proposal',
-    
+
     // Legacy - Keep for backwards compatibility
     PROCUREMENT_INITIATION_DOCUMENT = 'procurement_initiation_document',
-    
+
     // Pre-Procurement Conference
     PRE_PROCUREMENT_MINUTES = 'pre_procurement_minutes',
     PRE_PROCUREMENT_ATTENDANCE = 'pre_procurement_attendance',
-    
+
     // Bidding Documents
     BIDDING_DOCUMENT = 'bidding_document',
-    
+
     // Pre-Bid Conference
     PRE_BID_MINUTES = 'pre_bid_minutes',
     PRE_BID_ATTENDANCE = 'pre_bid_attendance',
-    
+
     // Supplemental Bid Bulletin
     SUPPLEMENTAL_BID_BULLETIN = 'supplemental_bid_bulletin',
-    
+
     // Bid Opening
     BID_DOCUMENT = 'bid_document',
-    
+
     // Bid Evaluation
     EVALUATION_SUMMARY = 'evaluation_summary',
     ABSTRACT = 'abstract',
-    
+
     // Post Qualification
     POST_QUALIFICATION_REPORT = 'post_qualification_report',
     TWG_CERTIFICATION = 'twg_certification',
     NOTICE_OF_POST_QUALIFICATION = 'notice_of_post_qualification',
-    
+
     // BAC Resolution
     BAC_RESOLUTION = 'bac_resolution',
-    
+
     // Notice of Award
     NOTICE_OF_AWARD = 'notice_of_award',
-    
+
     // Performance Bond, Contract & PO
     PERFORMANCE_BOND = 'performance_bond',
     CONTRACT = 'contract',
     PURCHASE_ORDER = 'purchase_order',
-    
+
     // Notice to Proceed
     NOTICE_TO_PROCEED = 'notice_to_proceed',
-    
+
     // Monitoring
     COMPLIANCE_REPORT = 'compliance_report',
-    
+
     // Completion
     CERTIFICATE_OF_COMPLETION = 'certificate_of_completion',
-    
+
     // Unknown/Fallback
     UNKNOWN = 'unknown',
 }

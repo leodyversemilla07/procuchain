@@ -1,3 +1,4 @@
+import { update } from '@/actions/App/Http/Controllers/Settings/EmailNotificationController';
 import HeadingSmall from '@/components/heading-small';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -8,7 +9,6 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { update } from '@/actions/App/Http/Controllers/Settings/EmailNotificationController';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

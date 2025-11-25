@@ -8,28 +8,28 @@ import { useEffect, useState } from 'react';
  */
 export function useIsTruncated<T extends HTMLElement>(ref: React.RefObject<T | null>, depKey?: unknown) {
     const [isTruncated, setIsTruncated] = useState(false);
-    
+
     useEffect(() => {
         const el = ref.current;
         if (!el) return;
-        
+
         const check = () => setIsTruncated(el.scrollWidth > el.clientWidth);
         check();
-        
+
         let ro: ResizeObserver | null = null;
         if (typeof ResizeObserver !== 'undefined') {
             ro = new ResizeObserver(() => check());
             ro.observe(el);
         }
-        
+
         const onResize = () => check();
         window.addEventListener('resize', onResize);
-        
+
         return () => {
             window.removeEventListener('resize', onResize);
             if (ro) ro.disconnect();
         };
     }, [ref, depKey]);
-    
+
     return isTruncated;
 }

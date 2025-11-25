@@ -65,8 +65,7 @@ test('can initiate procurement with all required documents for goods', function 
     ];
 
     $response = $this->actingAs($this->user)
-        ->withoutMiddleware('throttle:blockchain_writes')
-        ->post('/bac-secretariat/initiate-procurement', [
+        ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             // Basic Information
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-001',
@@ -131,8 +130,7 @@ test('consulting services requires terms of reference not technical specificatio
     ];
 
     $response = $this->actingAs($this->user)
-        ->withoutMiddleware('throttle:blockchain_writes')
-        ->post('/bac-secretariat/initiate-procurement', [
+        ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-002',
             'title' => 'IT Consulting Services',
@@ -172,8 +170,7 @@ test('consulting services requires terms of reference not technical specificatio
  */
 test('validation fails without pr number', function () {
     $response = $this->actingAs($this->user)
-        ->withoutMiddleware('throttle:blockchain_writes')
-        ->post('/bac-secretariat/initiate-procurement', [
+        ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => '', // Missing PR number
             'ppmp_reference' => 'PPMP-2025-003',
             'title' => 'Test Procurement',
@@ -197,8 +194,7 @@ test('validation fails without pr number', function () {
  */
 test('validation fails with invalid pr number format', function () {
     $response = $this->actingAs($this->user)
-        ->withoutMiddleware('throttle:blockchain_writes')
-        ->post('/bac-secretariat/initiate-procurement', [
+        ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => '2025-001', // Invalid format (should be PR-YYYY-####-####)
             'ppmp_reference' => 'PPMP-2025-004',
             'title' => 'Test Procurement',
@@ -228,8 +224,7 @@ test('validation fails when mandatory documents are missing', function () {
     ];
 
     $response = $this->actingAs($this->user)
-        ->withoutMiddleware('throttle:blockchain_writes')
-        ->post('/bac-secretariat/initiate-procurement', [
+        ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-005',
             'title' => 'Test Procurement',
@@ -271,8 +266,7 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
     ];
 
     $response = $this->actingAs($this->user)
-        ->withoutMiddleware('throttle:blockchain_writes')
-        ->post('/bac-secretariat/initiate-procurement', [
+        ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-006',
             'title' => 'Large Procurement',
@@ -315,8 +309,7 @@ test('validation fails for non-pdf files', function () {
     ];
 
     $response = $this->actingAs($this->user)
-        ->withoutMiddleware('throttle:blockchain_writes')
-        ->post('/bac-secretariat/initiate-procurement', [
+        ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-007',
             'title' => 'Test Procurement',
@@ -360,8 +353,7 @@ test('can add optional supporting documents', function () {
     ];
 
     $response = $this->actingAs($this->user)
-        ->withoutMiddleware('throttle:blockchain_writes')
-        ->post('/bac-secretariat/initiate-procurement', [
+        ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
             'ppmp_reference' => 'PPMP-2025-008',
             'title' => 'Office Supplies with Supporting Docs',
@@ -437,7 +429,7 @@ test('can mark procurement initiation stage as complete when all documents uploa
         'previous_status' => null,
     ]);
     $this->app->instance(\App\Services\Publishers\StatusPublisher::class, $statusPublisher);
-    
+
     $eventPublisher = Mockery::mock(\App\Services\Publishers\EventPublisher::class);
     $eventPublisher->shouldReceive('publish')->andReturn([
         'success' => true,
@@ -448,7 +440,7 @@ test('can mark procurement initiation stage as complete when all documents uploa
     $this->app->instance(\App\Services\Publishers\EventPublisher::class, $eventPublisher);
 
     $prNumber = 'PR-2025-TEST-0001';
-    
+
     // Mock document repository to return uploaded documents
     $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class)->makePartial();
     $documentRepo->shouldReceive('findByProcurement')
@@ -496,8 +488,7 @@ test('can mark procurement initiation stage as complete when all documents uploa
     $this->app->instance(\App\Repositories\ProcurementRepository::class, $procurementRepo);
 
     $response = $this->actingAs($this->user)
-        ->withoutMiddleware('throttle:blockchain_writes')
-        ->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
+        ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
 
     $response->assertRedirect()
         ->assertSessionHas('success');
@@ -508,7 +499,7 @@ test('can mark procurement initiation stage as complete when all documents uploa
  */
 test('cannot mark procurement initiation stage as complete without required documents', function () {
     $prNumber = 'PR-2025-TEST-0002';
-    
+
     // Mock document repository to return no documents
     $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class)->makePartial();
     $documentRepo->shouldReceive('findByProcurement')
@@ -517,10 +508,8 @@ test('cannot mark procurement initiation stage as complete without required docu
     $this->app->instance(\App\Repositories\DocumentRepository::class, $documentRepo);
 
     $response = $this->actingAs($this->user)
-        ->withoutMiddleware('throttle:blockchain_writes')
-        ->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
+        ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
 
     $response->assertRedirect()
         ->assertSessionHas('error');
 });
-

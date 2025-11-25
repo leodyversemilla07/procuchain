@@ -51,16 +51,7 @@ function filterstreamitem() {
         return 'Missing required field: pr_number or pr_number (at least one must be provided)';
     }
 
-    var requiredFields = [
-        'procurement_title',
-        'hash',
-        'file_key',
-        'document_type',
-        'file_size',
-        'stage',
-        'timestamp',
-        'user_address',
-    ];
+    var requiredFields = ['procurement_title', 'hash', 'file_key', 'document_type', 'file_size', 'stage', 'timestamp', 'user_address'];
 
     for (var i = 0; i < requiredFields.length; i++) {
         var field = requiredFields[i];

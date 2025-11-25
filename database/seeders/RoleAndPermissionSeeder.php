@@ -30,6 +30,7 @@ class RoleAndPermissionSeeder extends Seeder
             'edit procurement',
             'delete procurement',
             'publish procurement',
+            'manage procurements',
 
             // Document management permissions
             'upload documents',
@@ -80,7 +81,7 @@ class RoleAndPermissionSeeder extends Seeder
 
         // Create all permissions
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission]);
         }
 
         // Create roles and assign permissions
@@ -99,6 +100,7 @@ class RoleAndPermissionSeeder extends Seeder
             'view procurement',
             'edit procurement',
             'publish procurement',
+            'manage procurements',
             'upload documents',
             'view documents',
             'download documents',

@@ -3,15 +3,14 @@ import { Activity, Archive, Clock, FileText, Plus } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Can } from '@/components/auth/can';
-import { Card, CardContent } from '@/components/ui/card';
 import { PreBidConferenceDialog } from '@/components/pre-bid-conference-dialog';
 import { PreProcurementDialog } from '@/components/pre-procurement-conference-dialog';
 import { createColumns } from '@/components/procurements-list/columns';
 import { ProcurementsDataTable } from '@/components/procurements-list/data-table';
-import { ProcurementFiltersToolbar, type ProcurementFilterOption } from '@/components/procurements-list/procurement-filters-toolbar';
 import { StatsGrid, type StatsGridItem } from '@/components/stats-grid';
 import { SupplementalBidBulletinDialog } from '@/components/supplemental-bid-bulletin-dialog';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useProcurementList } from '@/hooks/use-procurement-list';
 import AppLayout from '@/layouts/app-layout';
 import procurement from '@/routes/bac-secretariat/procurement';
@@ -29,24 +28,8 @@ interface ShowProps {
     procurements: ProcurementListItem[];
     pagination?: PaginationMeta;
     error?: string;
+    stageOptions?: Record<string, string>;
 }
-
-const STATUS_FILTER_OPTIONS: ProcurementFilterOption[] = [
-    { label: 'All Status', value: 'all' },
-    { label: 'Submitted', value: 'PROCUREMENT_SUBMITTED' },
-    { label: 'Pre-Procurement', value: 'PRE_PROCUREMENT_SCHEDULED' },
-    { label: 'Bidding Docs', value: 'BIDDING_DOCUMENTS_PREPARED' },
-    { label: 'Pre-Bid Conference', value: 'PRE_BID_CONFERENCE_SCHEDULED' },
-    { label: 'Bid Submission', value: 'BID_SUBMISSION_ONGOING' },
-    { label: 'Bid Opening', value: 'BID_OPENING_SCHEDULED' },
-    { label: 'Bid Evaluation', value: 'BID_EVALUATION_ONGOING' },
-    { label: 'Post Qualification', value: 'POST_QUALIFICATION_ONGOING' },
-    { label: 'Notice of Award', value: 'NOTICE_OF_AWARD_ISSUED' },
-    { label: 'Notice to Proceed', value: 'NOTICE_TO_PROCEED_ISSUED' },
-    { label: 'Performance Bond', value: 'PERFORMANCE_BOND_RECEIVED' },
-    { label: 'Monitoring', value: 'MONITORING_ONGOING' },
-    { label: 'Completed', value: 'COMPLETED' },
-];
 
 const STAGE_FILTER_OPTIONS: ProcurementFilterOption[] = [
     { label: 'All Stages', value: 'all' },
@@ -64,6 +47,12 @@ const STAGE_FILTER_OPTIONS: ProcurementFilterOption[] = [
     { label: 'Monitoring', value: 'MONITORING' },
     { label: 'Completion', value: 'COMPLETION' },
 ];
+
+// Transform enum options to filter options
+const transformEnumOptions = (options: Record<string, string> | undefined): ProcurementFilterOption[] => {
+    if (!options) return [];
+    return [{ label: 'All', value: 'all' }, ...Object.entries(options).map(([value, label]) => ({ label, value }))];
+};
 
 interface ProcurementStatsSummaryProps {
     total: number;
@@ -109,13 +98,12 @@ const ProcurementStatsSummary = ({ total, inProgress, completed, documentTotal, 
     return <StatsGrid items={items} userRole={userRole} className={className} gridClassName="sm:grid-cols-2 lg:grid-cols-4" />;
 };
 
-export default function ProcurementsList({ procurements: initialProcurements, pagination, error: initialError }: ShowProps) {
+export default function ProcurementsList({ procurements: initialProcurements, pagination, error: initialError, stageOptions }: ShowProps) {
     const { auth } = usePage<SharedData>().props;
     const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
     const breadcrumbs = getProcurementListBreadcrumbs(userRole);
 
     const [searchValue, setSearchValue] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
     const [stageFilter, setStageFilter] = useState('all');
     const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
     const [pageIndex, setPageIndex] = useState<number>((pagination?.page ?? 1) - 1);
@@ -155,11 +143,9 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const urlSearch = params.get('search') || '';
-        const urlStatus = params.get('status') || 'all';
         const urlStage = params.get('stage') || 'all';
 
         setSearchValue(urlSearch);
-        setStatusFilter(urlStatus);
         setStageFilter(urlStage);
     }, []);
 
@@ -189,36 +175,40 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
         }, 0);
     };
 
-    const handleFilterChange = useCallback((filterType: 'search' | 'status' | 'stage', value: string) => {
-        const params = new URLSearchParams(window.location.search);
+    const handleFilterChange = useCallback(
+        (filterType: 'search' | 'stage', value: string) => {
+            const params = new URLSearchParams(window.location.search);
 
-        if (value && value !== 'all') {
-            params.set(filterType, value);
-        } else {
-            params.delete(filterType);
-        }
+            if (value && value !== 'all') {
+                params.set(filterType, value);
+            } else {
+                params.delete(filterType);
+            }
 
-        // Reset to first page when filters change
-        params.delete('page');
-        params.set('per_page', String(pageSize));
+            // Reset to first page when filters change
+            params.delete('page');
+            params.set('per_page', String(pageSize));
 
-        router.visit(`${window.location.pathname}?${params.toString()}`, {
-            only: ['procurements'],
-            replace: true,
-        });
-    }, [pageSize]);
+            router.visit(`${window.location.pathname}?${params.toString()}`, {
+                replace: true,
+            });
+        },
+        [pageSize],
+    );
 
-    const handlePageNavigate = useCallback((nextPageIndex: number) => {
-        const params = new URLSearchParams(window.location.search);
-        params.set('page', String(nextPageIndex + 1));
-        params.set('per_page', String(pageSize));
+    const handlePageNavigate = useCallback(
+        (nextPageIndex: number) => {
+            const params = new URLSearchParams(window.location.search);
+            params.set('page', String(nextPageIndex + 1));
+            params.set('per_page', String(pageSize));
 
-        router.visit(`${window.location.pathname}?${params.toString()}`, {
-            only: ['procurements'],
-            replace: true,
-            onSuccess: () => setPageIndex(nextPageIndex),
-        });
-    }, [pageSize]);
+            router.visit(`${window.location.pathname}?${params.toString()}`, {
+                replace: true,
+                onSuccess: () => setPageIndex(nextPageIndex),
+            });
+        },
+        [pageSize],
+    );
 
     const handlePageSizeChange = useCallback((nextPageSize: number) => {
         const params = new URLSearchParams(window.location.search);
@@ -226,7 +216,6 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
         params.set('per_page', String(nextPageSize));
 
         router.visit(`${window.location.pathname}?${params.toString()}`, {
-            only: ['procurements'],
             replace: true,
             onSuccess: () => {
                 setPageIndex(0);
@@ -237,7 +226,6 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
 
     const handleRefresh = useCallback(() => {
         router.reload({
-            only: ['procurements'],
             onStart: () => {
                 setIsPolling(true);
                 toast.info('Refreshing procurement data...', {
@@ -321,8 +309,8 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
         onOpenSupplementalBidBulletinDialog: handleOpenSupplementalBidBulletinDialog,
     });
 
-    // No client-side filtering - data is already filtered by the server
-    // based on URL parameters (search, status, stage)
+    // Transform enum options to filter options
+    const stageFilterOptions = stageOptions ? transformEnumOptions(stageOptions) : STAGE_FILTER_OPTIONS;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -332,21 +320,21 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                     <CardContent className="p-4 sm:p-6">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-start gap-3 sm:gap-4">
-                                <div className="rounded-lg bg-primary/10 p-2 shrink-0">
-                                    <FileText className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+                                <div className="bg-primary/10 shrink-0 rounded-lg p-2">
+                                    <FileText className="text-primary h-5 w-5 sm:h-6 sm:w-6" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <h1 className="text-xl font-bold text-foreground sm:text-2xl">Procurement List</h1>
+                                    <h1 className="text-foreground text-xl font-bold sm:text-2xl">Procurement List</h1>
                                     <div className="mt-1 space-y-1">
-                                        <p className="text-sm text-muted-foreground">View and manage procurement items across all stages</p>
-                                        <p className="hidden text-xs text-muted-foreground sm:block">
-                                            Shortcuts: <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs">R</kbd> Refresh
+                                        <p className="text-muted-foreground text-sm">View and manage procurement items across all stages</p>
+                                        <p className="text-muted-foreground hidden text-xs sm:block">
+                                            Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">R</kbd> Refresh
                                             {' · '}
-                                            <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs">/</kbd> Search
+                                            <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">/</kbd> Search
                                             {auth?.permissions?.includes('create procurement') && (
                                                 <>
                                                     {' · '}
-                                                    <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs">N</kbd> New
+                                                    <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">N</kbd> New
                                                 </>
                                             )}
                                         </p>
@@ -354,7 +342,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                                 </div>
                             </div>
                             <Can permission="create procurement">
-                                <Button asChild className="w-full sm:w-auto shrink-0">
+                                <Button asChild className="w-full shrink-0 sm:w-auto">
                                     <Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2">
                                         <Plus className="h-4 w-4" />
                                         <span>New Procurement</span>
@@ -374,26 +362,6 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                     className="gap-3 sm:gap-4"
                 />
                 <div className="pb-4">
-                    <ProcurementFiltersToolbar
-                        searchValue={searchValue}
-                        onSearchChange={(value) => setSearchValue(value)}
-                        statusValue={statusFilter}
-                        statusOptions={STATUS_FILTER_OPTIONS}
-                        onStatusChange={(value) => {
-                            setStatusFilter(value);
-                            handleFilterChange('status', value);
-                        }}
-                        stageValue={stageFilter}
-                        stageOptions={STAGE_FILTER_OPTIONS}
-                        onStageChange={(value) => {
-                            setStageFilter(value);
-                            handleFilterChange('stage', value);
-                        }}
-                        onRefresh={handleRefresh}
-                        refreshDisabled={loading}
-                        isRefreshing={isPolling}
-                        lastRefreshed={lastRefreshed}
-                    />
                     <ProcurementsDataTable
                         columns={columns}
                         data={procurements}
@@ -409,6 +377,18 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                         pageSize={pageSize}
                         onNavigatePage={handlePageNavigate}
                         onChangePageSize={handlePageSizeChange}
+                        searchValue={searchValue}
+                        onSearchChange={(value) => setSearchValue(value)}
+                        stageValue={stageFilter}
+                        onStageChange={(value) => {
+                            setStageFilter(value);
+                            handleFilterChange('stage', value);
+                        }}
+                        stageOptions={stageFilterOptions}
+                        onRefresh={handleRefresh}
+                        refreshDisabled={loading}
+                        isRefreshing={isPolling}
+                        lastRefreshed={lastRefreshed}
                     />
                 </div>
             </div>

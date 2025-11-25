@@ -54,6 +54,7 @@ class SecurityHeaders
             "img-src 'self' data: https: blob:", // blob: for PDF viewer
             "font-src 'self' data: https:",
             "connect-src 'self' https: wss:", // wss: for WebSockets if used
+            "worker-src 'self' blob:", // blob: for PDF.js worker, 'self' for local worker
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

@@ -1,8 +1,9 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { correct } from '@/routes/documents';
 import { router } from '@inertiajs/react';
@@ -145,24 +146,26 @@ export function DocumentCorrectionSheet({
                             <Label htmlFor="corrected_file" className="text-base font-semibold">
                                 Corrected Document <span className="text-destructive">*</span>
                             </Label>
-                            <div className="hover:bg-accent rounded-lg border-2 border-dashed p-6 text-center transition-colors sm:p-8">
-                                <input
-                                    type="file"
-                                    id="corrected_file"
-                                    onChange={handleFileChange}
-                                    className="hidden"
-                                    accept=".pdf,application/pdf"
-                                />
+                            <div className="hover:bg-accent rounded-lg border-2 border-dashed transition-colors">
+                                <input type="file" id="corrected_file" onChange={handleFileChange} className="hidden" accept=".pdf,application/pdf" />
                                 <Label htmlFor="corrected_file" className="cursor-pointer">
-                                    <Upload className="text-muted-foreground mx-auto mb-3 h-10 w-10 sm:h-12 sm:w-12" />
-                                    <p className="text-xs font-medium sm:text-sm">
-                                        {correctedFile ? (
-                                            <span className="break-all">{correctedFile.name}</span>
-                                        ) : (
-                                            'Click to upload corrected document'
-                                        )}
-                                    </p>
-                                    <p className="text-muted-foreground mt-2 text-xs">PDF only (max 10MB)</p>
+                                    {!correctedFile ? (
+                                        <Empty className="min-h-0 gap-3 border-0 p-6">
+                                            <EmptyMedia variant="icon">
+                                                <Upload className="h-5 w-5" />
+                                            </EmptyMedia>
+                                            <div className="flex flex-col gap-1">
+                                                <EmptyTitle className="text-sm">Click to upload corrected document</EmptyTitle>
+                                                <EmptyDescription className="text-xs">PDF only (max 10MB)</EmptyDescription>
+                                            </div>
+                                        </Empty>
+                                    ) : (
+                                        <div className="flex min-h-[120px] flex-col items-center justify-center p-6 text-center">
+                                            <FileText className="mb-3 h-10 w-10 text-green-600" />
+                                            <p className="max-w-full text-sm font-medium break-all">{correctedFile.name}</p>
+                                            <p className="text-muted-foreground mt-1 text-xs">{(correctedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                                        </div>
+                                    )}
                                 </Label>
                             </div>
                             {errors.corrected_file && <p className="text-destructive text-sm">{errors.corrected_file}</p>}
@@ -203,8 +206,8 @@ export function DocumentCorrectionSheet({
                     <Button type="button" variant="outline" onClick={handleCancel} disabled={processing} className="w-full sm:w-auto">
                         Cancel
                     </Button>
-                    <Button 
-                        type="submit" 
+                    <Button
+                        type="submit"
                         onClick={handleSubmit}
                         disabled={processing || !correctionReason || (correctionType === 'replace' && !correctedFile)}
                         className="w-full sm:w-auto"

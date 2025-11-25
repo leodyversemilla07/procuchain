@@ -65,13 +65,16 @@ describe('Document Upload Validation Workflow', function () {
 
         $file = UploadedFile::fake()->create('invalid_doc.pdf', 1000, 'application/pdf');
 
-        $response = $this->post(route('bac-secretariat.procurement.pre-procurement.upload', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-        ]), [
-            'pr_number' => 'PR-2024-001',
-            'invalid_document_file' => $file,
-        ]);
+        $response = $this->withoutMiddleware('throttle:blockchain_writes')
+            ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class)
+            ->startSession()
+            ->post(route('bac-secretariat.procurement.pre-procurement.upload', [
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+            ]), [
+                'pr_number' => 'PR-2024-001',
+                'invalid_document_file' => $file,
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHasErrors();
@@ -90,13 +93,15 @@ describe('Document Upload Validation Workflow', function () {
 
         $file = UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf');
 
-        $response = $this->post(route('bac-secretariat.procurement.pre-procurement.validate-upload', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-        ]), [
-            'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value, // Wrong stage
-            'file' => $file,
-        ]);
+        $response = $this->withoutMiddleware('throttle:blockchain_writes')
+            ->startSession()
+            ->post(route('bac-secretariat.procurement.pre-procurement.validate-upload', [
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+            ]), [
+                'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value, // Wrong stage
+                'file' => $file,
+            ]);
 
         $response->assertSuccessful();
         $response->assertJsonPath('warnings.0', 'This document is not typically required for this stage');
@@ -217,14 +222,16 @@ describe('Progressive Upload Workflow', function () {
 
         $file = UploadedFile::fake()->create('minutes.pdf', 1000, 'application/pdf');
 
-        $response = $this->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-        ]), [
-            'document_file' => $file,
-            'document_type' => DocumentTypeEnums::PRE_PROCUREMENT_MINUTES->value,
-            'description' => 'Meeting minutes for pre-procurement conference',
-        ]);
+        $response = $this->withoutMiddleware('throttle:blockchain_writes')
+            ->startSession()
+            ->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+            ]), [
+                'document_file' => $file,
+                'document_type' => DocumentTypeEnums::PRE_PROCUREMENT_MINUTES->value,
+                'description' => 'Meeting minutes for pre-procurement conference',
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
@@ -375,6 +382,7 @@ describe('Progressive Upload Workflow', function () {
         $file = UploadedFile::fake()->create('noa.pdf', 1000, 'application/pdf');
 
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
+            ->startSession()
             ->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
                 'pr_number' => 'PR-2024-001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,

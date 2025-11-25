@@ -16,10 +16,6 @@ describe('AdminAnalyticsService', function () {
 
     describe('getUserActivityAnalytics', function () {
 
-
-
-
-
         test('it returns empty analytics when exception occurs', function () {
             // Force an exception by passing invalid parameters to internal methods
             // This is a simplified test - in production you'd use more sophisticated mocking
@@ -80,8 +76,6 @@ describe('AdminAnalyticsService', function () {
             }
         });
 
-
-
         test('it returns peak hours with formatted time', function () {
             $user = User::factory()->create();
 
@@ -108,8 +102,7 @@ describe('AdminAnalyticsService', function () {
         });
     });
 
-    describe('getRoleActivityBreakdown', function () {
-    });
+    describe('getRoleActivityBreakdown', function () {});
 
     describe('getSessionAnalytics', function () {
         test('it retrieves session analytics', function () {

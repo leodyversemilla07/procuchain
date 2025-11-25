@@ -52,7 +52,6 @@ export default function Team() {
     return (
         <>
             <Head title="Our Team">
-
                 <meta
                     name="description"
                     content="Meet the talented professionals behind ProcuChain - revolutionizing government procurement through blockchain technology and innovative solutions."
@@ -79,15 +78,15 @@ export default function Team() {
                 />
                 <meta property="twitter:image" content="/logo.png" />
             </Head>{' '}
-            <div className="flex min-h-screen flex-col bg-background">
+            <div className="bg-background flex min-h-screen flex-col">
                 <Header />
 
                 <main className="grow">
                     <div className="container mx-auto px-4 py-16 sm:px-12 lg:px-16 xl:px-20">
                         {/* Hero Section */}
-                        <div className="mx-auto max-w-4xl text-center mb-16">
+                        <div className="mx-auto mb-16 max-w-4xl text-center">
                             <h1 className="mb-4 text-4xl font-bold sm:text-5xl md:text-6xl">Our Team</h1>
-                            <p className="text-lg text-muted-foreground">
+                            <p className="text-muted-foreground text-lg">
                                 Meet the dedicated individuals behind ProcuChain, working together to revolutionize government procurement.
                             </p>
                         </div>

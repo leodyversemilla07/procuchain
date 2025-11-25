@@ -173,16 +173,12 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                         <CardContent className="p-4">
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <Badge variant={log.successful ? 'default' : 'destructive'}>
-                                        {log.successful ? 'Success' : 'Failed'}
-                                    </Badge>
-                                    <Badge variant={log.logout_at ? 'secondary' : 'default'}>
-                                        {getSessionDuration(log.login_at, log.logout_at)}
-                                    </Badge>
+                                    <Badge variant={log.successful ? 'default' : 'destructive'}>{log.successful ? 'Success' : 'Failed'}</Badge>
+                                    <Badge variant={log.logout_at ? 'secondary' : 'default'}>{getSessionDuration(log.login_at, log.logout_at)}</Badge>
                                 </div>
-                                
+
                                 <Separator />
-                                
+
                                 <div className="space-y-2">
                                     <div className="flex items-start gap-2">
                                         <Clock className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
@@ -191,7 +187,7 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                                             <div className="text-sm">{formatDateTime(log.login_at)}</div>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex items-start gap-2">
                                         <DeviceIcon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                                         <div className="min-w-0 flex-1">
@@ -200,12 +196,12 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                                             {log.browser && <div className="text-muted-foreground text-xs">{log.browser}</div>}
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex items-start gap-2">
                                         <Globe className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                                         <div className="min-w-0 flex-1">
                                             <div className="text-muted-foreground text-xs font-medium">Location</div>
-                                            <div className="break-all font-mono text-sm">{log.ip_address}</div>
+                                            <div className="font-mono text-sm break-all">{log.ip_address}</div>
                                             {log.location && (
                                                 <div className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
                                                     <MapPin className="h-3 w-3 shrink-0" />
@@ -249,14 +245,14 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                                 <TableCell>
                                     <div className="flex items-center space-x-2">
                                         <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
-                                        <span className="whitespace-nowrap text-sm">{formatDateTime(log.login_at)}</span>
+                                        <span className="text-sm whitespace-nowrap">{formatDateTime(log.login_at)}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">
                                     <div className="flex items-center space-x-2">
                                         <DeviceIcon className="text-muted-foreground h-4 w-4 shrink-0" />
                                         <div className="min-w-0 space-y-1">
-                                            <div className="whitespace-nowrap text-sm capitalize">{log.device_type || 'Unknown'}</div>
+                                            <div className="text-sm whitespace-nowrap capitalize">{log.device_type || 'Unknown'}</div>
                                             {log.browser && <div className="text-muted-foreground text-xs">{log.browser}</div>}
                                         </div>
                                     </div>
@@ -265,7 +261,7 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                                     <div className="space-y-1">
                                         <div className="flex items-center space-x-2">
                                             <Globe className="text-muted-foreground h-4 w-4 shrink-0" />
-                                            <span className="whitespace-nowrap font-mono text-sm">{log.ip_address}</span>
+                                            <span className="font-mono text-sm whitespace-nowrap">{log.ip_address}</span>
                                         </div>
                                         {log.location && (
                                             <div className="flex items-center space-x-1">

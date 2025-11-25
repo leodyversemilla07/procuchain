@@ -59,13 +59,15 @@ export const PriorityActionsStack = ({
     return (
         <div className="space-y-3 sm:space-y-4">
             {safeActions.map((action) => (
-                <Card 
-                    key={`${action.id}-${action.action}`} 
+                <Card
+                    key={`${action.id}-${action.action}`}
                     className="border-l-primary group border-l-4 shadow-sm transition-all duration-300 hover:shadow-md"
                 >
                     <CardContent className="p-3 sm:p-4">
-                        <h3 className="font-medium text-sm sm:text-base transition-colors duration-200 group-hover:text-primary truncate">{action.action}</h3>
-                        <p className="text-muted-foreground my-1.5 sm:my-2 text-xs sm:text-sm truncate">For: {action.id}</p>
+                        <h3 className="group-hover:text-primary truncate text-sm font-medium transition-colors duration-200 sm:text-base">
+                            {action.action}
+                        </h3>
+                        <p className="text-muted-foreground my-1.5 truncate text-xs sm:my-2 sm:text-sm">For: {action.id}</p>
                         <Button variant="secondary" size="sm" asChild className="mt-2 w-full transition-all duration-200 hover:scale-[1.02]">
                             <Link href={action.route}>{actionLabel}</Link>
                         </Button>

@@ -87,7 +87,10 @@ export const RecentActivitiesList = ({
                     {hasActivities ? <Fragment> ({safeActivities.length})</Fragment> : null}
                 </CardTitle>
                 {hasActivities && viewAllHref ? (
-                    <Link href={viewAllHref} className="text-primary ml-2 flex shrink-0 items-center text-xs transition-all duration-200 hover:translate-x-1 hover:underline md:text-sm">
+                    <Link
+                        href={viewAllHref}
+                        className="text-primary ml-2 flex shrink-0 items-center text-xs transition-all duration-200 hover:translate-x-1 hover:underline md:text-sm"
+                    >
                         {viewAllLabel} <ArrowRight className="ml-1 h-3 w-3 md:h-4 md:w-4" />
                     </Link>
                 ) : null}
@@ -115,14 +118,14 @@ export const RecentActivitiesList = ({
                             const isLast = index === safeActivities.length - 1;
 
                             return (
-                                <div key={`${activity.id}-${index}`} className={cn(
-                                    'group transition-all duration-200 hover:translate-x-1',
-                                    !isLast && 'border-b pb-3'
-                                )}>
+                                <div
+                                    key={`${activity.id}-${index}`}
+                                    className={cn('group transition-all duration-200 hover:translate-x-1', !isLast && 'border-b pb-3')}
+                                >
                                     <div className="flex items-center justify-between">
                                         <Link
                                             href={getActivityHref(activity)}
-                                            className="text-primary max-w-[70%] truncate text-sm font-medium transition-colors duration-200 hover:underline group-hover:text-primary/80"
+                                            className="text-primary group-hover:text-primary/80 max-w-[70%] truncate text-sm font-medium transition-colors duration-200 hover:underline"
                                         >
                                             {activity.title || `Procurement #${activity.id}`}
                                         </Link>
@@ -130,7 +133,10 @@ export const RecentActivitiesList = ({
                                     </div>
                                     <div className="mt-1.5 flex items-center justify-between">
                                         <div className="flex items-center">
-                                            <Badge variant="secondary" className="mr-2 flex items-center gap-1 text-xs transition-all duration-200 group-hover:shadow-sm">
+                                            <Badge
+                                                variant="secondary"
+                                                className="mr-2 flex items-center gap-1 text-xs transition-all duration-200 group-hover:shadow-sm"
+                                            >
                                                 <ActionIcon className="h-3.5 w-3.5" />
                                                 <span>{activity.action}</span>
                                             </Badge>

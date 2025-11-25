@@ -21,6 +21,8 @@ interface ProcurementStatus {
     user_address?: string;
     progress: number;
     total_stages: number;
+    phase: string;
+    phase_display_name: string;
 }
 
 interface ProcurementHeaderProps {
@@ -30,7 +32,7 @@ interface ProcurementHeaderProps {
 }
 
 export function ProcurementHeader({ title, pr_number, status }: ProcurementHeaderProps) {
-    const stageToSearch = (status?.stage_formatted || status?.stage) as typeof STAGE_ORDER[number];
+    const stageToSearch = (status?.stage_formatted || status?.stage) as (typeof STAGE_ORDER)[number];
     const stageIndex = stageToSearch ? STAGE_ORDER.indexOf(stageToSearch) + 1 : 0;
     const totalStages = STAGE_ORDER.length;
     const progress = calculateProgress(status?.stage_formatted || status?.stage);
@@ -38,7 +40,7 @@ export function ProcurementHeader({ title, pr_number, status }: ProcurementHeade
     return (
         <Card className="mb-4 overflow-hidden border shadow-sm transition-shadow duration-200 hover:shadow-md sm:mb-6">
             {/* Header Accent Bar */}
-            <div className="h-1 w-full bg-primary sm:h-1.5" aria-hidden="true"></div>
+            <div className="bg-primary h-1 w-full sm:h-1.5" aria-hidden="true"></div>
 
             <CardHeader className="space-y-4 p-4 pb-4 sm:space-y-6 sm:p-6 sm:pb-6">
                 {/* Title and ID Section */}
@@ -64,9 +66,9 @@ export function ProcurementHeader({ title, pr_number, status }: ProcurementHeade
                             <span>Overall Progress</span>
                             <span className="font-semibold">{progress.toFixed(0)}%</span>
                         </div>
-                        <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted sm:h-3">
+                        <div className="bg-muted relative h-2.5 w-full overflow-hidden rounded-full sm:h-3">
                             <div
-                                className="absolute inset-y-0 left-0 rounded-full bg-primary shadow-sm transition-all duration-500 ease-out"
+                                className="bg-primary absolute inset-y-0 left-0 rounded-full shadow-sm transition-all duration-500 ease-out"
                                 style={{ width: `${progress}%` }}
                             >
                                 <div className="absolute inset-0 animate-pulse bg-white/20"></div>
@@ -76,11 +78,24 @@ export function ProcurementHeader({ title, pr_number, status }: ProcurementHeade
                 )}
 
                 {/* Status Information Grid */}
-                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+                    {/* Current Phase */}
+                    {status?.phase && (
+                        <div className="bg-muted rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+                            <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
+                                <FileCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+                                Current Phase
+                            </div>
+                            <Badge variant="outline" className="mb-1.5 text-xs font-medium sm:mb-2 sm:text-sm">
+                                {status.phase_display_name}
+                            </Badge>
+                        </div>
+                    )}
+
                     {/* Current Stage */}
                     {status?.stage && (
-                        <div className="rounded-lg border bg-muted p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
-                            <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:mb-2 sm:gap-2 sm:text-sm">
+                        <div className="bg-muted rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+                            <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
                                 <FileCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                 Current Stage
                             </div>
@@ -88,11 +103,9 @@ export function ProcurementHeader({ title, pr_number, status }: ProcurementHeade
                                 {status.stage_formatted || status.stage}
                             </Badge>
                             {status.stage_description && (
-                                <p className="line-clamp-2 text-[11px] italic text-muted-foreground sm:text-xs">
-                                    {status.stage_description}
-                                </p>
+                                <p className="text-muted-foreground line-clamp-2 text-[11px] italic sm:text-xs">{status.stage_description}</p>
                             )}
-                            <div className="mt-1.5 text-[11px] text-muted-foreground sm:mt-2 sm:text-xs">
+                            <div className="text-muted-foreground mt-1.5 text-[11px] sm:mt-2 sm:text-xs">
                                 Stage {stageIndex} of {totalStages}
                             </div>
                         </div>
@@ -100,15 +113,12 @@ export function ProcurementHeader({ title, pr_number, status }: ProcurementHeade
 
                     {/* Current Status */}
                     {status?.status_formatted && (
-                        <div className="rounded-lg border bg-muted p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
-                            <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:mb-2 sm:gap-2 sm:text-sm">
+                        <div className="bg-muted rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+                            <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
                                 <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                 Status
                             </div>
-                            <Badge
-                                variant="default"
-                                className="inline-flex w-fit items-center gap-1 text-xs font-medium sm:gap-1.5 sm:text-sm"
-                            >
+                            <Badge variant="default" className="inline-flex w-fit items-center gap-1 text-xs font-medium sm:gap-1.5 sm:text-sm">
                                 {status.status_formatted}
                             </Badge>
                         </div>
@@ -116,14 +126,12 @@ export function ProcurementHeader({ title, pr_number, status }: ProcurementHeade
 
                     {/* Last Updated */}
                     {status?.timestamp && (
-                        <div className="rounded-lg border bg-muted p-3 transition-all duration-200 hover:shadow-sm sm:col-span-2 sm:p-4 lg:col-span-1">
-                            <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:mb-2 sm:gap-2 sm:text-sm">
+                        <div className="bg-muted rounded-lg border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
+                            <div className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium sm:mb-2 sm:gap-2 sm:text-sm">
                                 <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                                 Last Updated
                             </div>
-                            <time className="text-xs font-medium text-foreground sm:text-sm">
-                                {status.formatted_date}
-                            </time>
+                            <time className="text-foreground text-xs font-medium sm:text-sm">{status.formatted_date}</time>
                         </div>
                     )}
                 </div>
@@ -131,4 +139,3 @@ export function ProcurementHeader({ title, pr_number, status }: ProcurementHeade
         </Card>
     );
 }
-

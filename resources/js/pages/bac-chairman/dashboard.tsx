@@ -7,21 +7,20 @@ import { StatsGrid } from '@/components/stats-grid';
 import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
-import { show as procurementsShow } from '@/routes/bac-chairman/procurements';
-import { index as procurementsListIndex } from '@/routes/bac-chairman/procurements';
+import { index as procurementsListIndex, show as procurementsShow } from '@/routes/bac-chairman/procurements';
 import type { BreadcrumbItem, SharedData } from '@/types';
 import { Stage, Status } from '@/types';
+import { UserRole } from '@/types/enums';
+import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
 import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import { CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';
-import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
-import { UserRole } from '@/types/enums';
 
 const formatStageName = (stage: string | undefined): string => {
     if (!stage) return '';
     return stage
         .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
 };
 
@@ -186,8 +185,8 @@ export default function BACChairmanDashboard() {
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="xl:col-span-3 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm xl:col-span-3">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
                             </Card>
@@ -204,8 +203,8 @@ export default function BACChairmanDashboard() {
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="xl:col-span-2 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm xl:col-span-2">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
                             </Card>
@@ -224,7 +223,7 @@ export default function BACChairmanDashboard() {
                         data="recentActivities"
                         fallback={
                             <Card className="shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] items-center justify-center">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
                                 </CardContent>
                             </Card>
@@ -243,8 +242,8 @@ export default function BACChairmanDashboard() {
                     <Deferred
                         data="recentProcurements"
                         fallback={
-                            <Card className="lg:col-span-2 xl:col-span-1 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm lg:col-span-2 xl:col-span-1">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
                                 </CardContent>
                             </Card>

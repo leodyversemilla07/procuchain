@@ -9,7 +9,6 @@ export default function About() {
     return (
         <>
             <Head title="About">
-
                 <meta
                     name="description"
                     content="Learn about ProcuChain - an innovative blockchain-based system designed to bring transparency and efficiency to government procurement processes."
@@ -39,15 +38,15 @@ export default function About() {
                 />
                 <meta property="twitter:image" content="/logo.png" />
             </Head>
-            <div className="flex min-h-screen flex-col bg-background">
+            <div className="bg-background flex min-h-screen flex-col">
                 <Header />
 
                 <main className="flex-1">
                     <div className="container mx-auto px-4 py-16 sm:px-12 lg:px-16 xl:px-20">
                         {/* Hero Section */}
-                        <div className="mx-auto max-w-4xl text-center mb-16">
+                        <div className="mx-auto mb-16 max-w-4xl text-center">
                             <h1 className="mb-4 text-4xl font-bold sm:text-5xl md:text-6xl">About ProcuChain</h1>
-                            <p className="text-lg text-muted-foreground">
+                            <p className="text-muted-foreground text-lg">
                                 A blockchain-powered solution revolutionizing government procurement through transparency and efficiency.
                             </p>
                         </div>
@@ -58,7 +57,7 @@ export default function About() {
                                 <CardContent className="p-6">
                                     <div className="mx-auto max-w-3xl">
                                         <h2 className="mb-4 text-2xl font-semibold">Project Overview</h2>
-                                        <p className="mb-4 text-muted-foreground">
+                                        <p className="text-muted-foreground mb-4">
                                             ProcuChain is a capstone project developed by Information Technology student at Mindoro State University -
                                             Bongabong Campus. It leverages blockchain technology to address challenges in government procurement
                                             processes.
@@ -77,8 +76,8 @@ export default function About() {
                             <Card className="border">
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
-                                        <div className="rounded-lg bg-destructive/10 p-2">
-                                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                                        <div className="bg-destructive/10 rounded-lg p-2">
+                                            <AlertTriangle className="text-destructive h-5 w-5" />
                                         </div>
                                         <h2 className="text-2xl font-semibold">The Problem</h2>
                                     </div>
@@ -102,8 +101,8 @@ export default function About() {
                             <Card className="border">
                                 <CardContent className="p-6">
                                     <div className="mb-4 flex items-center gap-3">
-                                        <div className="rounded-lg bg-primary/10 p-2">
-                                            <CheckCircle className="h-5 w-5 text-primary" />
+                                        <div className="bg-primary/10 rounded-lg p-2">
+                                            <CheckCircle className="text-primary h-5 w-5" />
                                         </div>
                                         <h2 className="text-2xl font-semibold">Our Solution</h2>
                                     </div>
@@ -131,15 +130,9 @@ export default function About() {
 
                             <Tabs defaultValue="blockchain" className="mx-auto w-full max-w-4xl">
                                 <TabsList className="mb-6 grid w-full grid-cols-3">
-                                    <TabsTrigger value="blockchain">
-                                        Blockchain
-                                    </TabsTrigger>
-                                    <TabsTrigger value="frontend">
-                                        Frontend
-                                    </TabsTrigger>
-                                    <TabsTrigger value="backend">
-                                        Backend
-                                    </TabsTrigger>
+                                    <TabsTrigger value="blockchain">Blockchain</TabsTrigger>
+                                    <TabsTrigger value="frontend">Frontend</TabsTrigger>
+                                    <TabsTrigger value="backend">Backend</TabsTrigger>
                                 </TabsList>
 
                                 <TabsContent value="blockchain">

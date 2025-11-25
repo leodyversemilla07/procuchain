@@ -21,6 +21,7 @@ interface DatePickerProps {
   className?: string
   id?: string
   required?: boolean
+  showMonthYearDropdown?: boolean
 }
 
 export function DatePicker({
@@ -33,6 +34,7 @@ export function DatePicker({
   className,
   id,
   required = false,
+  showMonthYearDropdown = true,
 }: DatePickerProps) {
   return (
     <Popover>
@@ -61,10 +63,79 @@ export function DatePicker({
             if (maxDate && date > maxDate) return true
             return false
           }}
+          captionLayout={showMonthYearDropdown ? "dropdown" : "label"}
           initialFocus
           required={required}
         />
       </PopoverContent>
     </Popover>
+  )
+}
+
+interface DatePickerInputProps {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  label?: string;
+  disabled?: boolean;
+  required?: boolean;
+  className?: string;
+  showMonthYearDropdown?: boolean;
+}
+
+export function DatePickerInput({
+  id,
+  value,
+  onChange,
+  placeholder = "Select date",
+  label,
+  disabled = false,
+  required = false,
+  className,
+  showMonthYearDropdown = true,
+}: DatePickerInputProps) {
+  const [date, setDate] = React.useState<Date | undefined>(
+    value ? new Date(value) : undefined
+  )
+
+  React.useEffect(() => {
+    if (value) {
+      const parsedDate = new Date(value)
+      if (!isNaN(parsedDate.getTime())) {
+        setDate(parsedDate)
+      }
+    } else {
+      setDate(undefined)
+    }
+  }, [value])
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    setDate(selectedDate)
+    // Convert to YYYY-MM-DD format for form submission
+    const formattedValue = selectedDate
+      ? selectedDate.toISOString().split('T')[0]
+      : ""
+    onChange(formattedValue)
+  }
+
+  return (
+    <div className="space-y-2">
+      {label && (
+        <label htmlFor={id} className="text-sm font-medium text-muted-foreground">
+          {label}
+        </label>
+      )}
+      <DatePicker
+        id={id}
+        date={date}
+        onDateChange={handleDateSelect}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={className}
+        required={required}
+        showMonthYearDropdown={showMonthYearDropdown}
+      />
+    </div>
   )
 }

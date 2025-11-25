@@ -10,21 +10,21 @@ import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import type { SharedData, User } from '@/types';
 import { Stage, Status } from '@/types';
+import { UserRole } from '@/types/enums';
+import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
 import { Deferred, Head, router, usePage } from '@inertiajs/react';
 import { ActivityIcon, Bell, CheckCircle, Clock, FileIcon, FileText } from 'lucide-react';
 import { useMemo } from 'react';
-import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
-import { UserRole } from '@/types/enums';
 
 /**
  * Format stage name from snake_case to Title Case
  */
 const formatStageName = (stage: string): string => {
     if (!stage) return stage;
-    
+
     return stage
         .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
 };
 
@@ -199,11 +199,7 @@ export default function BACSecretariatDashboard() {
             <Head title="Bids and Awards Committee Secretariat Dashboard" />
 
             <div className="flex h-full flex-1 flex-col space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6 lg:p-8">
-                <HeroCard
-                    icon={ActivityIcon}
-                    title="BAC Secretariat Dashboard"
-                    description="Overview of procurement activities and tasks"
-                />
+                <HeroCard icon={ActivityIcon} title="BAC Secretariat Dashboard" description="Overview of procurement activities and tasks" />
 
                 <StatsGrid items={statsItems} userRole={userRole} />
 
@@ -211,8 +207,8 @@ export default function BACSecretariatDashboard() {
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="xl:col-span-3 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm xl:col-span-3">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
                             </Card>
@@ -229,8 +225,8 @@ export default function BACSecretariatDashboard() {
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="xl:col-span-2 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm xl:col-span-2">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
                             </Card>
@@ -250,12 +246,12 @@ export default function BACSecretariatDashboard() {
                         fallback={
                             <Card className="shadow-sm">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="flex items-center text-sm sm:text-base font-semibold md:text-lg">
+                                    <CardTitle className="flex items-center text-sm font-semibold sm:text-base md:text-lg">
                                         <Bell className="text-primary mr-2 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                                         Priority Actions
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="flex h-[150px] sm:h-[200px] items-center justify-center">
+                                <CardContent className="flex h-[150px] items-center justify-center sm:h-[200px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
                                 </CardContent>
                             </Card>
@@ -263,7 +259,7 @@ export default function BACSecretariatDashboard() {
                     >
                         <Card className="shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="flex items-center text-sm sm:text-base font-semibold md:text-lg">
+                                <CardTitle className="flex items-center text-sm font-semibold sm:text-base md:text-lg">
                                     <Bell className="text-primary mr-2 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                                     Priority Actions
                                 </CardTitle>
@@ -278,7 +274,7 @@ export default function BACSecretariatDashboard() {
                         data="recentActivities"
                         fallback={
                             <Card className="shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] items-center justify-center">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
                                 </CardContent>
                             </Card>
@@ -298,8 +294,8 @@ export default function BACSecretariatDashboard() {
                     <Deferred
                         data="recentProcurements"
                         fallback={
-                            <Card className="lg:col-span-3 xl:col-span-2 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm lg:col-span-3 xl:col-span-2">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
                                 </CardContent>
                             </Card>

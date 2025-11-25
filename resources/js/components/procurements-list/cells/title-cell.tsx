@@ -1,12 +1,12 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsTruncated } from '@/hooks/use-is-truncated';
+import { show as adminShow } from '@/routes/admin/procurements';
+import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
+import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
+import { show as hopeShow } from '@/routes/hope/procurements';
+import { ProcurementListItem, SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { useRef } from 'react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { SharedData, ProcurementListItem } from '@/types';
-import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
-import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
-import { show as hopeShow } from '@/routes/hope/procurements';
-import { show as adminShow } from '@/routes/admin/procurements';
-import { useIsTruncated } from '@/hooks/use-is-truncated';
 
 interface TitleCellProps {
     procurement: ProcurementListItem;
@@ -33,7 +33,7 @@ export const TitleCell = ({ procurement }: TitleCellProps) => {
     const { auth } = usePage<SharedData>().props;
     const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
     const procurementUrl = getProcurementShowUrl(userRole, procurement.id);
-    
+
     const titleContent = (
         <div ref={textRef} className="max-w-[280px] truncate font-medium" title={procurement.title}>
             <Link
@@ -47,7 +47,7 @@ export const TitleCell = ({ procurement }: TitleCellProps) => {
             </Link>
         </div>
     );
-    
+
     return isTruncated ? (
         <Tooltip>
             <TooltipTrigger asChild>{titleContent}</TooltipTrigger>

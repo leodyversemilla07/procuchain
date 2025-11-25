@@ -919,44 +919,44 @@ export default function AdminUserManagement() {
                                 </div>
 
                                 {/* Quick Filter Chips */}
-                                <div className="-mx-3 flex items-center gap-2 overflow-x-auto px-3 pb-2 scrollbar-hide sm:mx-0 sm:gap-3 sm:px-0 sm:pb-0">
+                                <div className="scrollbar-hide -mx-3 flex items-center gap-2 overflow-x-auto px-3 pb-2 sm:mx-0 sm:gap-3 sm:px-0 sm:pb-0">
                                     <span className="text-muted-foreground shrink-0 text-xs font-medium sm:text-sm">Quick filters:</span>
                                     <div className="flex gap-2">
                                         <Button
                                             variant={activeQuickFilter === 'verified' ? 'default' : 'outline'}
                                             size="sm"
                                             onClick={() => handleQuickFilter('verified')}
-                                            className="h-8 shrink-0 gap-1 whitespace-nowrap px-3 text-xs"
+                                            className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                         >
                                             <CheckCircle2 className="h-3 w-3" />
-                                            <span className="hidden xs:inline">Verified</span>
+                                            <span className="xs:inline hidden">Verified</span>
                                         </Button>
                                         <Button
                                             variant={activeQuickFilter === '2fa' ? 'default' : 'outline'}
                                             size="sm"
                                             onClick={() => handleQuickFilter('2fa')}
-                                            className="h-8 shrink-0 gap-1 whitespace-nowrap px-3 text-xs"
+                                            className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                         >
                                             <Shield className="h-3 w-3" />
-                                            <span className="hidden xs:inline">2FA</span>
+                                            <span className="xs:inline hidden">2FA</span>
                                         </Button>
                                         <Button
                                             variant={activeQuickFilter === 'admin' ? 'default' : 'outline'}
                                             size="sm"
                                             onClick={() => handleQuickFilter('admin')}
-                                            className="h-8 shrink-0 gap-1 whitespace-nowrap px-3 text-xs"
+                                            className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                         >
                                             <UserCheck className="h-3 w-3" />
-                                            <span className="hidden xs:inline">Admin</span>
+                                            <span className="xs:inline hidden">Admin</span>
                                         </Button>
                                         <Button
                                             variant={activeQuickFilter === 'unverified' ? 'default' : 'outline'}
                                             size="sm"
                                             onClick={() => handleQuickFilter('unverified')}
-                                            className="h-8 shrink-0 gap-1 whitespace-nowrap px-3 text-xs"
+                                            className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                         >
                                             <X className="h-3 w-3" />
-                                            <span className="hidden xs:inline">Unverified</span>
+                                            <span className="xs:inline hidden">Unverified</span>
                                         </Button>
                                     </div>
                                 </div>
@@ -992,7 +992,12 @@ export default function AdminUserManagement() {
                                     <span>Export CSV</span>
                                 </Button>
                                 {hasPermission('delete users') && (
-                                    <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="h-9 w-full justify-center text-xs sm:h-8 sm:w-auto">
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={handleBulkDelete}
+                                        className="h-9 w-full justify-center text-xs sm:h-8 sm:w-auto"
+                                    >
                                         <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                                         <span>Delete</span>
                                     </Button>
@@ -1266,8 +1271,12 @@ export default function AdminUserManagement() {
                                                       </div>
                                                       {user.blockchain_address && (
                                                           <div className="bg-muted/50 rounded p-2">
-                                                              <div className="text-muted-foreground mb-1 text-[10px] font-medium uppercase tracking-wide">Blockchain</div>
-                                                              <div className="break-all font-mono text-[10px] leading-relaxed">{user.blockchain_address}</div>
+                                                              <div className="text-muted-foreground mb-1 text-[10px] font-medium tracking-wide uppercase">
+                                                                  Blockchain
+                                                              </div>
+                                                              <div className="font-mono text-[10px] leading-relaxed break-all">
+                                                                  {user.blockchain_address}
+                                                              </div>
                                                           </div>
                                                       )}
                                                   </CardContent>
@@ -1319,11 +1328,7 @@ export default function AdminUserManagement() {
                     onConfirm={confirmBulkDelete}
                 />
 
-                <UserDetailsSheet
-                    open={isDetailsDialogOpen}
-                    onOpenChange={setIsDetailsDialogOpen}
-                    user={selectedUser ? { ...selectedUser } : null}
-                />
+                <UserDetailsSheet open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen} user={selectedUser ? { ...selectedUser } : null} />
 
                 <UserLoginHistorySheet
                     open={isLoginHistoryDialogOpen}

@@ -19,23 +19,17 @@ interface Props {
 }
 
 export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recentViews }: Props) {
-    const [pdfLoading, setPdfLoading] = useState(true);
-    const [pdfError, setPdfError] = useState(false);
     const [pdfHeight, setPdfHeight] = useState(600);
 
     const statisticsPanelRef = useRef<HTMLDivElement>(null);
 
     const { auth } = usePage<SharedData>().props;
     const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
-    
+
     // Build breadcrumbs using centralized utility
     const procurementsListBreadcrumb = getProcurementsListBreadcrumb(userRole);
     const procurementDetailBreadcrumb = getProcurementDetailBreadcrumb(userRole, document.pr_number);
-    const breadcrumbs = buildBreadcrumbs(userRole, [
-        procurementsListBreadcrumb,
-        procurementDetailBreadcrumb,
-        { title: 'PDF Viewer', href: '#' },
-    ]);
+    const breadcrumbs = buildBreadcrumbs(userRole, [procurementsListBreadcrumb, procurementDetailBreadcrumb, { title: 'PDF Viewer', href: '#' }]);
 
     useEffect(() => {
         const updateHeight = () => {
@@ -88,16 +82,16 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
             <Head title={`PDF Viewer - ${document.document_type_display}`} />
 
             <div className="p-3 sm:p-4 md:p-6 lg:p-8">
-                <PdfViewerHeader document={document} pdfUrl={pdfUrl} viewStats={viewStats} pdfError={pdfError} />
+                <PdfViewerHeader document={document} pdfUrl={pdfUrl} viewStats={viewStats} pdfError={false} />
                 <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-5 lg:grid-cols-3 lg:gap-6">
                     <div className="order-2 lg:order-1 lg:col-span-2">
                         <PdfViewerPane
                             pdfUrl={pdfUrl}
                             pdfHeight={pdfHeight}
-                            pdfLoading={pdfLoading}
-                            pdfError={pdfError}
-                            onLoadingChange={setPdfLoading}
-                            onErrorChange={setPdfError}
+                            pdfLoading={false}
+                            pdfError={false}
+                            onLoadingChange={() => {}}
+                            onErrorChange={() => {}}
                         />
                     </div>
                     <div ref={statisticsPanelRef} className="order-1 space-y-3 sm:space-y-4 md:space-y-5 lg:order-2 lg:space-y-6">

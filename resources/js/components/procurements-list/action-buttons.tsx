@@ -1,14 +1,17 @@
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { getActionConfigs } from '@/config/procurement-actions';
 import { ProcurementListItem, SharedData, Stage, Status } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { AlertCircle, EyeIcon } from 'lucide-react';
-import { getActionConfigs } from '@/config/procurement-actions';
 
 // Import Wayfinder route helpers for each role (from /procurements-list routes)
-import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
-import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
-import { show as hopeShow } from '@/routes/hope/procurements';
 import { show as adminShow } from '@/routes/admin/procurements';
+import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
+import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
+import { show as hopeShow } from '@/routes/hope/procurements';
+
+// Import corrections route helper
+import { show as correctionsShow } from '@/routes/procurements/corrections';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
@@ -58,7 +61,7 @@ const DropdownActionItem = ({
     };
 
     return (
-        <DropdownMenuItem onClick={handleClick} className="flex items-center gap-2 cursor-pointer">
+        <DropdownMenuItem onClick={handleClick} className="flex cursor-pointer items-center gap-2">
             {icon}
             <span>{tooltipText}</span>
         </DropdownMenuItem>
@@ -73,37 +76,37 @@ export const ActionButtons = ({
 }: ActionButtonsProps) => {
     const { id, stage, current_status } = procurement;
     const { auth } = usePage<SharedData>().props;
-    
+
     // Extract role from roles array (roles[0]) instead of user.role
     const userRole = auth.roles?.[0] || auth.user?.role || 'guest';
     const isBacSecretariat = userRole === 'bac_secretariat';
 
     // Get workflow actions from the centralized configuration
-    const workflowActions = isBacSecretariat ? getActionConfigs(
-        id,
-        stage as Stage,
-        current_status as Status,
-        {
-            onPreProcurement: () => onOpenPreProcurementDialog?.(procurement),
-            onPreBid: () => onOpenPreBidDialog?.(procurement),
-            onSupplementalBidBulletin: () => onOpenSupplementalBidBulletinDialog?.(procurement),
-        }
-    ) : [];
+    const workflowActions = isBacSecretariat
+        ? getActionConfigs(id, stage as Stage, current_status as Status, {
+              onPreProcurement: () => onOpenPreProcurementDialog?.(procurement),
+              onPreBid: () => onOpenPreBidDialog?.(procurement),
+              onSupplementalBidBulletin: () => onOpenSupplementalBidBulletinDialog?.(procurement),
+          })
+        : [];
 
-    // Always include View Details and View Corrections actions
+    // Always include View Details action
     const viewDetailsConfig = {
         icon: <EyeIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
         tooltipText: 'View Details',
         href: getProcurementShowUrl(userRole, id),
     };
 
-    const viewCorrectionsConfig = {
-        icon: <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />,
-        tooltipText: 'View Corrections',
-        href: `/procurements/${id}/corrections`,
-    };
+    // Only show View Corrections for BAC Secretariat users
+    const viewCorrectionsConfig = isBacSecretariat
+        ? {
+              icon: <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />,
+              tooltipText: 'View Corrections',
+              href: correctionsShow.url(id),
+          }
+        : null;
 
-    const allConfigs = [viewDetailsConfig, viewCorrectionsConfig, ...workflowActions];
+    const allConfigs = [viewDetailsConfig, ...(viewCorrectionsConfig ? [viewCorrectionsConfig] : []), ...workflowActions];
 
     return (
         <>

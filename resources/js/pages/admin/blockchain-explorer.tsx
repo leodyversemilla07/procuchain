@@ -640,7 +640,7 @@ export default function BlockchainExplorer({
                                             </div>
                                             <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[140px_1fr] sm:gap-4">
                                                 <dt className="text-muted-foreground font-medium">Node Address</dt>
-                                                <dd className="break-all font-mono text-xs">{overview.nodeaddress}</dd>
+                                                <dd className="font-mono text-xs break-all">{overview.nodeaddress}</dd>
                                             </div>
                                         </dl>
                                     </CardContent>
@@ -659,22 +659,24 @@ export default function BlockchainExplorer({
                                                 <Card key={block.hash} className="p-3">
                                                     <div className="space-y-2">
                                                         <div className="flex items-center justify-between gap-2">
-                                                            <Badge variant="outline" className="text-xs">#{block.height}</Badge>
-                                                            <span className="text-xs text-muted-foreground">
+                                                            <Badge variant="outline" className="text-xs">
+                                                                #{block.height}
+                                                            </Badge>
+                                                            <span className="text-muted-foreground text-xs">
                                                                 {formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true })}
                                                             </span>
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <div className="text-xs text-muted-foreground">Hash</div>
-                                                            <div className="break-all font-mono text-xs">{truncateHash(block.hash, 20)}</div>
+                                                            <div className="text-muted-foreground text-xs">Hash</div>
+                                                            <div className="font-mono text-xs break-all">{truncateHash(block.hash, 20)}</div>
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-3 text-sm">
                                                             <div>
-                                                                <div className="text-xs text-muted-foreground">Transactions</div>
+                                                                <div className="text-muted-foreground text-xs">Transactions</div>
                                                                 <div className="font-medium">{block.tx_count}</div>
                                                             </div>
                                                             <div>
-                                                                <div className="text-xs text-muted-foreground">Size</div>
+                                                                <div className="text-muted-foreground text-xs">Size</div>
                                                                 <div className="font-medium">{formatBytes(block.size)}</div>
                                                             </div>
                                                         </div>
@@ -728,21 +730,18 @@ export default function BlockchainExplorer({
                                 <div className="space-y-3 md:hidden">
                                     {latestBlocks.map((block: BlockInfo) => (
                                         <Card key={block.hash} className="p-4">
-                                            <button
-                                                onClick={() => toggleBlockExpansion(block.hash)}
-                                                className="w-full touch-manipulation"
-                                            >
+                                            <button onClick={() => toggleBlockExpansion(block.hash)} className="w-full touch-manipulation">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="flex-1 space-y-2 text-left">
                                                         <div className="flex items-center gap-2">
                                                             <Badge variant="outline">#{block.height}</Badge>
-                                                            <span className="text-xs text-muted-foreground">
+                                                            <span className="text-muted-foreground text-xs">
                                                                 {formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true })}
                                                             </span>
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <div className="text-xs text-muted-foreground">Hash</div>
-                                                            <div className="break-all font-mono text-xs">{truncateHash(block.hash, 20)}</div>
+                                                            <div className="text-muted-foreground text-xs">Hash</div>
+                                                            <div className="font-mono text-xs break-all">{truncateHash(block.hash, 20)}</div>
                                                         </div>
                                                         <div className="flex gap-4 text-sm">
                                                             <div>
@@ -766,15 +765,15 @@ export default function BlockchainExplorer({
                                             {expandedBlocks.has(block.hash) && (
                                                 <div className="mt-3 space-y-3 border-t pt-3">
                                                     <div>
-                                                        <div className="text-xs text-muted-foreground">Full Hash</div>
-                                                        <div className="mt-1 break-all font-mono text-xs">{block.hash}</div>
+                                                        <div className="text-muted-foreground text-xs">Full Hash</div>
+                                                        <div className="mt-1 font-mono text-xs break-all">{block.hash}</div>
                                                     </div>
                                                     <div>
-                                                        <div className="text-xs text-muted-foreground">Miner Address</div>
-                                                        <div className="mt-1 break-all font-mono text-xs">{block.miner}</div>
+                                                        <div className="text-muted-foreground text-xs">Miner Address</div>
+                                                        <div className="mt-1 font-mono text-xs break-all">{block.miner}</div>
                                                     </div>
                                                     <div>
-                                                        <div className="text-xs text-muted-foreground">Time</div>
+                                                        <div className="text-muted-foreground text-xs">Time</div>
                                                         <div className="mt-1 text-sm">{formatDate(block.time)}</div>
                                                     </div>
                                                 </div>
@@ -902,27 +901,35 @@ export default function BlockchainExplorer({
                                                 <Card key={stream.name} className="p-4">
                                                     <div className="space-y-3">
                                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                                            <h3 className="break-all font-medium">{stream.name}</h3>
+                                                            <h3 className="font-medium break-all">{stream.name}</h3>
                                                             <div className="flex flex-wrap gap-1">
-                                                                {stream.subscribed && <Badge variant="default" className="text-xs">Subscribed</Badge>}
-                                                                {stream.synchronized && <Badge variant="secondary" className="text-xs">Synced</Badge>}
+                                                                {stream.subscribed && (
+                                                                    <Badge variant="default" className="text-xs">
+                                                                        Subscribed
+                                                                    </Badge>
+                                                                )}
+                                                                {stream.synchronized && (
+                                                                    <Badge variant="secondary" className="text-xs">
+                                                                        Synced
+                                                                    </Badge>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-3 text-sm">
                                                             <div>
-                                                                <div className="text-xs text-muted-foreground">Items</div>
+                                                                <div className="text-muted-foreground text-xs">Items</div>
                                                                 <div className="font-medium">{stream.items.toLocaleString()}</div>
                                                             </div>
                                                             <div>
-                                                                <div className="text-xs text-muted-foreground">Keys</div>
+                                                                <div className="text-muted-foreground text-xs">Keys</div>
                                                                 <div className="font-medium">{stream.keys.toLocaleString()}</div>
                                                             </div>
                                                             <div>
-                                                                <div className="text-xs text-muted-foreground">Publishers</div>
+                                                                <div className="text-muted-foreground text-xs">Publishers</div>
                                                                 <div className="font-medium">{stream.publishers}</div>
                                                             </div>
                                                             <div>
-                                                                <div className="text-xs text-muted-foreground">Confirmed</div>
+                                                                <div className="text-muted-foreground text-xs">Confirmed</div>
                                                                 <div className="font-medium">{stream.confirmed.toLocaleString()}</div>
                                                             </div>
                                                         </div>
@@ -996,10 +1003,14 @@ export default function BlockchainExplorer({
                                                 <Card key={address.address} className="p-4">
                                                     <div className="space-y-2">
                                                         <div className="flex items-start justify-between gap-2">
-                                                            <div className="text-xs text-muted-foreground">Address</div>
-                                                            {address.ismine && <Badge variant="default" className="text-xs">Mine</Badge>}
+                                                            <div className="text-muted-foreground text-xs">Address</div>
+                                                            {address.ismine && (
+                                                                <Badge variant="default" className="text-xs">
+                                                                    Mine
+                                                                </Badge>
+                                                            )}
                                                         </div>
-                                                        <div className="break-all font-mono text-sm">{address.address}</div>
+                                                        <div className="font-mono text-sm break-all">{address.address}</div>
                                                     </div>
                                                 </Card>
                                             ))}
@@ -1060,19 +1071,21 @@ export default function BlockchainExplorer({
                                                     >
                                                         <div className="flex items-start justify-between gap-3">
                                                             <div className="flex-1 space-y-2 text-left">
-                                                                <div className="break-all font-mono text-sm">{peer.addr}</div>
+                                                                <div className="font-mono text-sm break-all">{peer.addr}</div>
                                                                 <div className="flex flex-wrap gap-2">
                                                                     <Badge variant={peer.inbound ? 'secondary' : 'default'} className="text-xs">
                                                                         {peer.inbound ? 'Inbound' : 'Outbound'}
                                                                     </Badge>
                                                                     <Badge
-                                                                        variant={peer.synced_blocks >= (peer.startingheight || 0) ? 'default' : 'secondary'}
+                                                                        variant={
+                                                                            peer.synced_blocks >= (peer.startingheight || 0) ? 'default' : 'secondary'
+                                                                        }
                                                                         className="text-xs"
                                                                     >
                                                                         {getSyncStatus(peer.synced_blocks || 0, peer.startingheight || 0)}
                                                                     </Badge>
                                                                 </div>
-                                                                <div className="flex gap-4 text-xs text-muted-foreground">
+                                                                <div className="text-muted-foreground flex gap-4 text-xs">
                                                                     <span>Ping: {formatPingTime(peer.pingtime)}</span>
                                                                     <span>Score: {peer.banscore || 0}</span>
                                                                 </div>
@@ -1089,23 +1102,23 @@ export default function BlockchainExplorer({
                                                         <div className="mt-3 space-y-3 border-t pt-3">
                                                             <div className="grid grid-cols-2 gap-3 text-sm">
                                                                 <div>
-                                                                    <div className="text-xs text-muted-foreground">Version</div>
+                                                                    <div className="text-muted-foreground text-xs">Version</div>
                                                                     <div className="mt-1">{peer.subver}</div>
                                                                 </div>
                                                                 <div>
-                                                                    <div className="text-xs text-muted-foreground">Time Offset</div>
+                                                                    <div className="text-muted-foreground text-xs">Time Offset</div>
                                                                     <div className="mt-1">{peer.timeoffset || 0}s</div>
                                                                 </div>
                                                                 <div>
-                                                                    <div className="text-xs text-muted-foreground">Data Sent</div>
+                                                                    <div className="text-muted-foreground text-xs">Data Sent</div>
                                                                     <div className="mt-1">{formatBytes(peer.bytessent || 0)}</div>
                                                                 </div>
                                                                 <div>
-                                                                    <div className="text-xs text-muted-foreground">Data Received</div>
+                                                                    <div className="text-muted-foreground text-xs">Data Received</div>
                                                                     <div className="mt-1">{formatBytes(peer.bytesrecv || 0)}</div>
                                                                 </div>
                                                                 <div>
-                                                                    <div className="text-xs text-muted-foreground">Connected</div>
+                                                                    <div className="text-muted-foreground text-xs">Connected</div>
                                                                     <div className="mt-1">
                                                                         {peer.conntime
                                                                             ? formatDistanceToNow(new Date(peer.conntime * 1000), {
@@ -1115,7 +1128,7 @@ export default function BlockchainExplorer({
                                                                     </div>
                                                                 </div>
                                                                 <div>
-                                                                    <div className="text-xs text-muted-foreground">Starting Height</div>
+                                                                    <div className="text-muted-foreground text-xs">Starting Height</div>
                                                                     <div className="mt-1">{(peer.startingheight || 0).toLocaleString()}</div>
                                                                 </div>
                                                             </div>
@@ -1128,177 +1141,193 @@ export default function BlockchainExplorer({
                                         {/* Desktop Table View */}
                                         <div className="hidden overflow-x-auto md:block">
                                             <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="w-12"></TableHead>
-                                                    <TableHead>Address</TableHead>
-                                                    <TableHead>Version</TableHead>
-                                                    <TableHead>Direction</TableHead>
-                                                    <TableHead>Ping</TableHead>
-                                                    <TableHead>Sync Status</TableHead>
-                                                    <TableHead>Ban Score</TableHead>
-                                                    <TableHead>Connected</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {peers.map((peer: PeerInfo) => (
-                                                    <React.Fragment key={peer.id}>
-                                                        <TableRow
-                                                            className="hover:bg-muted/50 cursor-pointer"
-                                                            onClick={() => {
-                                                                setExpandedPeers((prev) => {
-                                                                    const next = new Set(prev);
-                                                                    if (next.has(peer.id)) {
-                                                                        next.delete(peer.id);
-                                                                    } else {
-                                                                        next.add(peer.id);
-                                                                    }
-                                                                    return next;
-                                                                });
-                                                            }}
-                                                        >
-                                                            <TableCell>
-                                                                <ChevronRight
-                                                                    className={cn(
-                                                                        'text-muted-foreground h-4 w-4 transition-transform',
-                                                                        expandedPeers.has(peer.id) && 'rotate-90',
-                                                                    )}
-                                                                />
-                                                            </TableCell>
-                                                            <TableCell className="font-mono text-sm">{peer.addr}</TableCell>
-                                                            <TableCell>{peer.subver}</TableCell>
-                                                            <TableCell>
-                                                                <Badge variant={peer.inbound ? 'secondary' : 'default'}>
-                                                                    {peer.inbound ? 'Inbound' : 'Outbound'}
-                                                                </Badge>
-                                                            </TableCell>
-                                                            <TableCell className="font-mono text-sm">{formatPingTime(peer.pingtime)}</TableCell>
-                                                            <TableCell>
-                                                                <Badge
-                                                                    variant={
-                                                                        peer.synced_blocks >= (peer.startingheight || 0) ? 'default' : 'secondary'
-                                                                    }
-                                                                >
-                                                                    {getSyncStatus(peer.synced_blocks || 0, peer.startingheight || 0)}
-                                                                </Badge>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant={(peer.banscore || 0) > 0 ? 'destructive' : 'outline'}>
-                                                                    {peer.banscore || 0}
-                                                                </Badge>
-                                                            </TableCell>
-                                                            <TableCell className="text-muted-foreground text-xs">
-                                                                {peer.conntime
-                                                                    ? formatDistanceToNow(new Date(peer.conntime * 1000), { addSuffix: true })
-                                                                    : 'Unknown'}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                        {expandedPeers.has(peer.id) && (
-                                                            <TableRow>
-                                                                <TableCell colSpan={8} className="bg-muted/20">
-                                                                    <Collapsible open={expandedPeers.has(peer.id)}>
-                                                                        <CollapsibleContent className="px-4 py-3">
-                                                                            <div className="space-y-3">
-                                                                                <p className="text-sm font-medium">Detailed Connection Information</p>
-                                                                                <div className="grid gap-4 md:grid-cols-2">
-                                                                                    <div className="space-y-2">
-                                                                                        <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">
-                                                                                                Local Address:
-                                                                                            </span>
-                                                                                            <span className="font-mono text-xs">
-                                                                                                {peer.addrlocal || 'N/A'}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                        <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">Services:</span>
-                                                                                            <span className="font-mono text-xs">
-                                                                                                {peer.services || 'N/A'}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                        <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">
-                                                                                                Time Offset:
-                                                                                            </span>
-                                                                                            <span>{peer.timeoffset || 0}s</span>
-                                                                                        </div>
-                                                                                        <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">Min Ping:</span>
-                                                                                            <span>{formatPingTime(peer.minping)}</span>
-                                                                                        </div>
-                                                                                        <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">
-                                                                                                Starting Height:
-                                                                                            </span>
-                                                                                            <span>{(peer.startingheight || 0).toLocaleString()}</span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="space-y-2">
-                                                                                        <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">Last Send:</span>
-                                                                                            <span>
-                                                                                                {peer.lastsend
-                                                                                                    ? formatDistanceToNow(
-                                                                                                          new Date(peer.lastsend * 1000),
-                                                                                                          { addSuffix: true },
-                                                                                                      )
-                                                                                                    : 'Never'}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                        <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">
-                                                                                                Last Receive:
-                                                                                            </span>
-                                                                                            <span>
-                                                                                                {peer.lastrecv
-                                                                                                    ? formatDistanceToNow(
-                                                                                                          new Date(peer.lastrecv * 1000),
-                                                                                                          { addSuffix: true },
-                                                                                                      )
-                                                                                                    : 'Never'}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                        <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">Data Sent:</span>
-                                                                                            <span>{formatBytes(peer.bytessent || 0)}</span>
-                                                                                        </div>
-                                                                                        <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">
-                                                                                                Data Received:
-                                                                                            </span>
-                                                                                            <span>{formatBytes(peer.bytesrecv || 0)}</span>
-                                                                                        </div>
-                                                                                        <div className="flex justify-between text-sm">
-                                                                                            <span className="text-muted-foreground">Relay TX:</span>
-                                                                                            <span>{peer.relaytxes ? 'Yes' : 'No'}</span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                                {peer.inflight.length > 0 && (
-                                                                                    <div className="mt-3">
-                                                                                        <p className="mb-2 text-sm font-medium">Blocks in Flight:</p>
-                                                                                        <div className="flex flex-wrap gap-1">
-                                                                                            {peer.inflight.map((block) => (
-                                                                                                <Badge
-                                                                                                    key={block}
-                                                                                                    variant="outline"
-                                                                                                    className="text-xs"
-                                                                                                >
-                                                                                                    {block}
-                                                                                                </Badge>
-                                                                                            ))}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        </CollapsibleContent>
-                                                                    </Collapsible>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="w-12"></TableHead>
+                                                        <TableHead>Address</TableHead>
+                                                        <TableHead>Version</TableHead>
+                                                        <TableHead>Direction</TableHead>
+                                                        <TableHead>Ping</TableHead>
+                                                        <TableHead>Sync Status</TableHead>
+                                                        <TableHead>Ban Score</TableHead>
+                                                        <TableHead>Connected</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {peers.map((peer: PeerInfo) => (
+                                                        <React.Fragment key={peer.id}>
+                                                            <TableRow
+                                                                className="hover:bg-muted/50 cursor-pointer"
+                                                                onClick={() => {
+                                                                    setExpandedPeers((prev) => {
+                                                                        const next = new Set(prev);
+                                                                        if (next.has(peer.id)) {
+                                                                            next.delete(peer.id);
+                                                                        } else {
+                                                                            next.add(peer.id);
+                                                                        }
+                                                                        return next;
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <TableCell>
+                                                                    <ChevronRight
+                                                                        className={cn(
+                                                                            'text-muted-foreground h-4 w-4 transition-transform',
+                                                                            expandedPeers.has(peer.id) && 'rotate-90',
+                                                                        )}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell className="font-mono text-sm">{peer.addr}</TableCell>
+                                                                <TableCell>{peer.subver}</TableCell>
+                                                                <TableCell>
+                                                                    <Badge variant={peer.inbound ? 'secondary' : 'default'}>
+                                                                        {peer.inbound ? 'Inbound' : 'Outbound'}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell className="font-mono text-sm">{formatPingTime(peer.pingtime)}</TableCell>
+                                                                <TableCell>
+                                                                    <Badge
+                                                                        variant={
+                                                                            peer.synced_blocks >= (peer.startingheight || 0) ? 'default' : 'secondary'
+                                                                        }
+                                                                    >
+                                                                        {getSyncStatus(peer.synced_blocks || 0, peer.startingheight || 0)}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Badge variant={(peer.banscore || 0) > 0 ? 'destructive' : 'outline'}>
+                                                                        {peer.banscore || 0}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell className="text-muted-foreground text-xs">
+                                                                    {peer.conntime
+                                                                        ? formatDistanceToNow(new Date(peer.conntime * 1000), { addSuffix: true })
+                                                                        : 'Unknown'}
                                                                 </TableCell>
                                                             </TableRow>
-                                                        )}
-                                                    </React.Fragment>
-                                                ))}
-                                            </TableBody>
+                                                            {expandedPeers.has(peer.id) && (
+                                                                <TableRow>
+                                                                    <TableCell colSpan={8} className="bg-muted/20">
+                                                                        <Collapsible open={expandedPeers.has(peer.id)}>
+                                                                            <CollapsibleContent className="px-4 py-3">
+                                                                                <div className="space-y-3">
+                                                                                    <p className="text-sm font-medium">
+                                                                                        Detailed Connection Information
+                                                                                    </p>
+                                                                                    <div className="grid gap-4 md:grid-cols-2">
+                                                                                        <div className="space-y-2">
+                                                                                            <div className="flex justify-between text-sm">
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    Local Address:
+                                                                                                </span>
+                                                                                                <span className="font-mono text-xs">
+                                                                                                    {peer.addrlocal || 'N/A'}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            <div className="flex justify-between text-sm">
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    Services:
+                                                                                                </span>
+                                                                                                <span className="font-mono text-xs">
+                                                                                                    {peer.services || 'N/A'}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            <div className="flex justify-between text-sm">
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    Time Offset:
+                                                                                                </span>
+                                                                                                <span>{peer.timeoffset || 0}s</span>
+                                                                                            </div>
+                                                                                            <div className="flex justify-between text-sm">
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    Min Ping:
+                                                                                                </span>
+                                                                                                <span>{formatPingTime(peer.minping)}</span>
+                                                                                            </div>
+                                                                                            <div className="flex justify-between text-sm">
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    Starting Height:
+                                                                                                </span>
+                                                                                                <span>
+                                                                                                    {(peer.startingheight || 0).toLocaleString()}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="space-y-2">
+                                                                                            <div className="flex justify-between text-sm">
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    Last Send:
+                                                                                                </span>
+                                                                                                <span>
+                                                                                                    {peer.lastsend
+                                                                                                        ? formatDistanceToNow(
+                                                                                                              new Date(peer.lastsend * 1000),
+                                                                                                              { addSuffix: true },
+                                                                                                          )
+                                                                                                        : 'Never'}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            <div className="flex justify-between text-sm">
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    Last Receive:
+                                                                                                </span>
+                                                                                                <span>
+                                                                                                    {peer.lastrecv
+                                                                                                        ? formatDistanceToNow(
+                                                                                                              new Date(peer.lastrecv * 1000),
+                                                                                                              { addSuffix: true },
+                                                                                                          )
+                                                                                                        : 'Never'}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            <div className="flex justify-between text-sm">
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    Data Sent:
+                                                                                                </span>
+                                                                                                <span>{formatBytes(peer.bytessent || 0)}</span>
+                                                                                            </div>
+                                                                                            <div className="flex justify-between text-sm">
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    Data Received:
+                                                                                                </span>
+                                                                                                <span>{formatBytes(peer.bytesrecv || 0)}</span>
+                                                                                            </div>
+                                                                                            <div className="flex justify-between text-sm">
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    Relay TX:
+                                                                                                </span>
+                                                                                                <span>{peer.relaytxes ? 'Yes' : 'No'}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    {peer.inflight.length > 0 && (
+                                                                                        <div className="mt-3">
+                                                                                            <p className="mb-2 text-sm font-medium">
+                                                                                                Blocks in Flight:
+                                                                                            </p>
+                                                                                            <div className="flex flex-wrap gap-1">
+                                                                                                {peer.inflight.map((block) => (
+                                                                                                    <Badge
+                                                                                                        key={block}
+                                                                                                        variant="outline"
+                                                                                                        className="text-xs"
+                                                                                                    >
+                                                                                                        {block}
+                                                                                                    </Badge>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            </CollapsibleContent>
+                                                                        </Collapsible>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            )}
+                                                        </React.Fragment>
+                                                    ))}
+                                                </TableBody>
                                             </Table>
                                         </div>
                                     </>
@@ -1388,7 +1417,7 @@ export default function BlockchainExplorer({
                                             </div>
 
                                             {isCircuitOpen && (
-                                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/20 sm:p-4">
+                                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 sm:p-4 dark:border-amber-900 dark:bg-amber-950/20">
                                                     <div className="flex gap-2">
                                                         <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
                                                         <div className="flex-1 space-y-2">
@@ -1409,7 +1438,8 @@ export default function BlockchainExplorer({
                                                                     <AlertDialogHeader>
                                                                         <AlertDialogTitle>Reset Circuit Breaker?</AlertDialogTitle>
                                                                         <AlertDialogDescription>
-                                                                            This will allow blockchain requests to resume immediately. Are you sure you want to proceed?
+                                                                            This will allow blockchain requests to resume immediately. Are you sure
+                                                                            you want to proceed?
                                                                         </AlertDialogDescription>
                                                                     </AlertDialogHeader>
                                                                     <AlertDialogFooter>
@@ -1449,7 +1479,7 @@ export default function BlockchainExplorer({
                                             </div>
 
                                             {health.queue.failed_jobs_24h > 0 && (
-                                                <div className="wrap-break-word rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/20">
+                                                <div className="rounded-lg border border-red-200 bg-red-50 p-3 wrap-break-word dark:border-red-900 dark:bg-red-950/20">
                                                     <p className="text-sm text-red-900 dark:text-red-100">
                                                         {health.queue.failed_jobs_24h} job{health.queue.failed_jobs_24h !== 1 ? 's' : ''} failed in
                                                         the last 24 hours. Check the failed jobs queue for details.
@@ -1470,7 +1500,7 @@ export default function BlockchainExplorer({
                                             </div>
                                         </CardHeader>
                                         <CardContent className="p-4 sm:p-6">
-                                            <ul className="list-inside list-disc space-y-2 wrap-break-word text-sm">
+                                            <ul className="list-inside list-disc space-y-2 text-sm wrap-break-word">
                                                 {isCircuitOpen && (
                                                     <li>Circuit breaker is open - check blockchain node connectivity at 159.65.12.99:6487</li>
                                                 )}

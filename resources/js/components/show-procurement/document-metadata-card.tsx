@@ -119,10 +119,7 @@ export const DocumentMetadataCard: FC<DocumentMetadataCardProps> = ({ metadata, 
         { key: 'completion_notes', label: 'Completion Notes', icon: <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> },
     ];
 
-    const renderMetadataItem = (
-        key: keyof StageMetadata,
-        item: { label: string; icon: JSX.Element; useFormatted?: boolean },
-    ) => {
+    const renderMetadataItem = (key: keyof StageMetadata, item: { label: string; icon: JSX.Element; useFormatted?: boolean }) => {
         if (key === 'validity_period' && metadata.validity_period) {
             const startFormatted = metadata.validity_period.start_date_formatted || 'Invalid Date';
             const endFormatted = metadata.validity_period.end_date_formatted || 'Invalid Date';
@@ -150,18 +147,18 @@ export const DocumentMetadataCard: FC<DocumentMetadataCardProps> = ({ metadata, 
 
         if ((key === 'bidder_name' || key === 'bid_value') && documentType === 'Bid Document') {
             const formattedKey = `${key}_formatted` as keyof StageMetadata;
-            const value = (item.useFormatted && metadata[formattedKey]) ? metadata[formattedKey] : metadata[key];
+            const value = item.useFormatted && metadata[formattedKey] ? metadata[formattedKey] : metadata[key];
 
             if (!value || String(value).trim() === '') {
                 return null;
             }
 
             return (
-                <div key={`${key}-${metadata[key]}`} className="flex items-start gap-3 border-b p-3 last:border-b-0 bg-primary/5 border-primary/20">
+                <div key={`${key}-${metadata[key]}`} className="bg-primary/5 border-primary/20 flex items-start gap-3 border-b p-3 last:border-b-0">
                     <div className="text-muted-foreground mt-0.5">{item.icon}</div>
                     <div className="min-w-0 flex-1">
                         <div className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">{item.label}</div>
-                        <div className="text-sm wrap-break-word text-primary font-semibold">{value as string}</div>
+                        <div className="text-primary text-sm font-semibold wrap-break-word">{value as string}</div>
                     </div>
                 </div>
             );
@@ -169,7 +166,7 @@ export const DocumentMetadataCard: FC<DocumentMetadataCardProps> = ({ metadata, 
 
         if (metadata[key]) {
             const formattedKey = `${key}_formatted` as keyof StageMetadata;
-            const value = (item.useFormatted && metadata[formattedKey]) ? metadata[formattedKey] : metadata[key];
+            const value = item.useFormatted && metadata[formattedKey] ? metadata[formattedKey] : metadata[key];
 
             if (!value || String(value).trim() === '') {
                 return null;
@@ -180,7 +177,7 @@ export const DocumentMetadataCard: FC<DocumentMetadataCardProps> = ({ metadata, 
                     <div className="text-muted-foreground mt-0.5">{item.icon}</div>
                     <div className="min-w-0 flex-1">
                         <div className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">{item.label}</div>
-                        <div className="text-sm wrap-break-word text-foreground">{value as string}</div>
+                        <div className="text-foreground text-sm wrap-break-word">{value as string}</div>
                     </div>
                 </div>
             );
@@ -204,17 +201,22 @@ export const DocumentMetadataCard: FC<DocumentMetadataCardProps> = ({ metadata, 
             </CardHeader>
             <CardContent className="p-3 pt-0 sm:p-4 md:p-5">
                 <div className="grid grid-cols-1 gap-x-4 gap-y-3">
-                    {documentType === 'Bid Document' && metadata.opening_date && (metadata.opening_date_formatted && metadata.opening_date_formatted.trim() !== '') && (
-                        <div className="flex items-start gap-3 border-b p-3 last:border-b-0 bg-primary/5 border-primary/20">
-                            <div className="text-muted-foreground mt-0.5">
-                                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    {documentType === 'Bid Document' &&
+                        metadata.opening_date &&
+                        metadata.opening_date_formatted &&
+                        metadata.opening_date_formatted.trim() !== '' && (
+                            <div className="bg-primary/5 border-primary/20 flex items-start gap-3 border-b p-3 last:border-b-0">
+                                <div className="text-muted-foreground mt-0.5">
+                                    <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">Opening Date</div>
+                                    <div className="text-primary text-sm font-semibold wrap-break-word">
+                                        {metadata.opening_date_formatted || 'Invalid Date'}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="min-w-0 flex-1">
-                                <div className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">Opening Date</div>
-                                <div className="text-sm wrap-break-word text-primary font-semibold">{metadata.opening_date_formatted || 'Invalid Date'}</div>
-                            </div>
-                        </div>
-                    )}
+                        )}
 
                     {metadataMap.map((item) => renderMetadataItem(item.key, item))}
 

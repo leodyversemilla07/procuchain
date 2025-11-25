@@ -13,9 +13,6 @@ export type ProcurementFilterOption = {
 export interface ProcurementFiltersToolbarProps {
     searchValue: string;
     onSearchChange: (value: string) => void;
-    statusValue: string;
-    onStatusChange: (value: string) => void;
-    statusOptions: ProcurementFilterOption[];
     stageValue: string;
     onStageChange: (value: string) => void;
     stageOptions: ProcurementFilterOption[];
@@ -28,25 +25,22 @@ export interface ProcurementFiltersToolbarProps {
 
 const formatTimeAgo = (date: Date): string => {
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    
+
     if (seconds < 10) return 'just now';
     if (seconds < 60) return `${seconds}s ago`;
-    
+
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes}m ago`;
-    
+
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours}h ago`;
-    
+
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 };
 
 export function ProcurementFiltersToolbar({
     searchValue,
     onSearchChange,
-    statusValue,
-    onStatusChange,
-    statusOptions,
     stageValue,
     onStageChange,
     stageOptions,
@@ -76,18 +70,6 @@ export function ProcurementFiltersToolbar({
                         </div>
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <Select value={statusValue} onValueChange={onStatusChange}>
-                            <SelectTrigger className="h-10 w-full sm:w-[180px]">
-                                <SelectValue placeholder={statusOptions[0]?.label ?? 'Select status'} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {statusOptions.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
                         <Select value={stageValue} onValueChange={onStageChange}>
                             <SelectTrigger className="h-10 w-full sm:w-[180px]">
                                 <SelectValue placeholder={stageOptions[0]?.label ?? 'Select stage'} />

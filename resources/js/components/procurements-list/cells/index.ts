@@ -1,7 +1,7 @@
-export { IdCell } from './id-cell';
-export { TitleCell } from './title-cell';
 export { BadgeCell } from './badge-cell';
+export { DocumentCountCell } from './document-count-cell';
+export { IdCell } from './id-cell';
+export { LastUpdatedCell } from './last-updated-cell';
 export { StageCell } from './stage-cell';
 export { StatusCell } from './status-cell';
-export { DocumentCountCell } from './document-count-cell';
-export { LastUpdatedCell } from './last-updated-cell';
+export { TitleCell } from './title-cell';

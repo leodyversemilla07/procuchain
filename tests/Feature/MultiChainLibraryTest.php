@@ -291,7 +291,7 @@ describe('Stream Operations', function () {
         $streams = StreamEnums::cases();
 
         expect($streams)->toBeArray()
-            ->toHaveCount(8);  // 5 procurement + 3 file streams
+            ->toHaveCount(9);  // 6 procurement + 3 file streams
 
         $values = array_map(fn ($case) => $case->value, $streams);
 
@@ -300,6 +300,7 @@ describe('Stream Operations', function () {
             ->toContain('procurement.status')
             ->toContain('procurement.events')
             ->toContain('procurement.corrections')
+            ->toContain('procurement.metadata.corrections')
             ->toContain('file.data')
             ->toContain('file.metadata')
             ->toContain('file.chunks');
@@ -317,9 +318,9 @@ describe('Stream Operations', function () {
                 ->toBeTrue("Stream {$stream->value} should start with 'procurement.' or 'file.'");
 
             if ($isProcurement) {
-                expect($stream->value)->toMatch('/^procurement\.[a-z_]+$/');
+                expect($stream->value)->toMatch('/^procurement\.([a-z_]+\.?)+$/');
             } elseif ($isFile) {
-                expect($stream->value)->toMatch('/^file\.[a-z_]+$/');
+                expect($stream->value)->toMatch('/^file\.([a-z_]+\.?)+$/');
             }
         }
     });
@@ -351,7 +352,8 @@ describe('Stream Operations', function () {
             ->and(StreamEnums::DOCUMENTS->isProcurementStream())->toBeTrue()
             ->and(StreamEnums::STATUS->isProcurementStream())->toBeTrue()
             ->and(StreamEnums::EVENTS->isProcurementStream())->toBeTrue()
-            ->and(StreamEnums::CORRECTIONS->isProcurementStream())->toBeTrue();
+            ->and(StreamEnums::CORRECTIONS->isProcurementStream())->toBeTrue()
+            ->and(StreamEnums::PROCUREMENTS_CORRECTIONS->isProcurementStream())->toBeTrue();
     });
 
     it('correctly identifies file streams', function () {
@@ -371,7 +373,7 @@ describe('Stream Operations', function () {
         $values = StreamEnums::values();
 
         expect($values)->toBeArray()
-            ->toHaveCount(8)
+            ->toHaveCount(9)
             ->toContain('procurement.metadata')
             ->toContain('file.data');
     });
@@ -380,7 +382,7 @@ describe('Stream Operations', function () {
         $options = StreamEnums::options();
 
         expect($options)->toBeArray()
-            ->toHaveCount(8)
+            ->toHaveCount(9)
             ->toHaveKey('procurement.metadata')
             ->toHaveKey('file.data');
 
@@ -441,6 +443,16 @@ describe('Individual Stream Coverage', function () {
             ->and($stream->isFileStream())->toBeFalse();
     });
 
+    it('tests PROCUREMENTS_CORRECTIONS stream', function () {
+        $stream = StreamEnums::PROCUREMENTS_CORRECTIONS;
+
+        expect($stream->value)->toBe('procurement.metadata.corrections')
+            ->and($stream->getDisplayName())->toBe('Procurement Metadata Corrections')
+            ->and($stream->getDescription())->toContain('correction')
+            ->and($stream->isProcurementStream())->toBeTrue()
+            ->and($stream->isFileStream())->toBeFalse();
+    });
+
     it('tests FILE_DATA stream', function () {
         $stream = StreamEnums::FILE_DATA;
 
@@ -478,6 +490,7 @@ describe('Individual Stream Coverage', function () {
             StreamEnums::STATUS,
             StreamEnums::EVENTS,
             StreamEnums::CORRECTIONS,
+            StreamEnums::PROCUREMENTS_CORRECTIONS,
         ];
 
         $descriptions = array_map(fn ($s) => $s->getDescription(), $procurementStreams);
@@ -513,7 +526,7 @@ describe('Individual Stream Coverage', function () {
             }
         }
 
-        expect($procurementCount)->toBe(5)
+        expect($procurementCount)->toBe(6)
             ->and($fileCount)->toBe(3);
     });
 });
@@ -571,6 +584,7 @@ describe('Integration Requirements', function () {
             'procurement.status',
             'procurement.events',
             'procurement.corrections',
+            'procurement.metadata.corrections',
             'file.data',
             'file.metadata',
             'file.chunks',

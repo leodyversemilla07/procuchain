@@ -1,10 +1,12 @@
+import { DocumentCorrectionSheet } from '@/components/documents/document-correction-sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { PdfDocument, ViewStats } from '@/types';
+import { PdfDocument, SharedData, UserRole, ViewStats } from '@/types';
 import { formatStatus, getStageIcon, getStatusBadgeColor, getStatusIcon } from '@/utils/pdf-viewer/helpers';
-import { Download, Eye, FileText, Users } from 'lucide-react';
-import React from 'react';
+import { usePage } from '@inertiajs/react';
+import { AlertTriangle, Download, Eye, FileText, Users } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface Props {
     document: PdfDocument;
@@ -14,6 +16,14 @@ interface Props {
 }
 
 export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError }: Props) {
+    const [showCorrectionSheet, setShowCorrectionSheet] = useState(false);
+    const { auth } = usePage<SharedData>().props;
+
+    // Check if user can correct documents
+    const allowedRoles = [UserRole.ADMIN, UserRole.BAC_CHAIRMAN, UserRole.BAC_SECRETARIAT];
+    const canCorrectDocuments =
+        auth?.roles?.some((role: string) => allowedRoles.includes(role as UserRole)) ||
+        (auth?.user?.role && allowedRoles.includes(auth.user.role as UserRole));
     return (
         <div className="mb-4 sm:mb-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -21,6 +31,11 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
                     <h1 className="text-primary text-xl font-bold sm:text-2xl">{document.document_type_display}</h1>
                     <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{document.procurement_title}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        {document.phase_display_name && (
+                            <Badge variant="secondary" className="text-xs font-medium">
+                                {document.phase_display_name}
+                            </Badge>
+                        )}
                         <Badge variant="outline" className="flex items-center gap-1 text-xs sm:gap-1.5">
                             {React.createElement(getStageIcon(document.stage), { className: 'h-3 w-3 sm:h-3.5 sm:w-3.5' })}
                             <span className="font-medium">{document.stage_display}</span>
@@ -28,7 +43,10 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
                         {document.current_status && (
                             <Badge
                                 variant="outline"
-                                className={cn('flex items-center gap-1 px-2 py-1 text-xs sm:gap-1.5 sm:px-3', getStatusBadgeColor(document.current_status))}
+                                className={cn(
+                                    'flex items-center gap-1 px-2 py-1 text-xs sm:gap-1.5 sm:px-3',
+                                    getStatusBadgeColor(document.current_status),
+                                )}
                             >
                                 {React.createElement(getStatusIcon(document.current_status), { className: 'h-3 w-3 sm:h-3.5 sm:w-3.5' })}
                                 <span className="font-medium">{formatStatus(document.current_status)}</span>
@@ -54,6 +72,18 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
                             <span className="sm:hidden">Blocked</span>
                         </Badge>
                     )}
+                    {canCorrectDocuments && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-amber-200 text-xs text-amber-700 hover:bg-amber-50"
+                            onClick={() => setShowCorrectionSheet(true)}
+                        >
+                            <AlertTriangle className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Correct Document</span>
+                            <span className="sm:hidden">Correct</span>
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" className="text-xs" asChild>
                         <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
                             <Eye className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
@@ -69,6 +99,19 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
                     </Button>
                 </div>
             </div>
+
+            {/* Document Correction Sheet */}
+            {canCorrectDocuments && document.hash && (
+                <DocumentCorrectionSheet
+                    open={showCorrectionSheet}
+                    onOpenChange={setShowCorrectionSheet}
+                    documentId={document.blockchain_txid || document.id || document.pr_number}
+                    pr_number={document.pr_number}
+                    procurementTitle={document.procurement_title}
+                    originalDocumentHash={document.hash}
+                    originalTxid={document.blockchain_txid}
+                />
+            )}
         </div>
     );
 }

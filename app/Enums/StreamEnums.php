@@ -15,6 +15,7 @@ enum StreamEnums: string
     case STATUS = 'procurement.status';
     case EVENTS = 'procurement.events';
     case CORRECTIONS = 'procurement.corrections';
+    case PROCUREMENTS_CORRECTIONS = 'procurement.metadata.corrections';
     case FILE_DATA = 'file.data';
     case FILE_METADATA = 'file.metadata';
     case FILE_CHUNKS = 'file.chunks';
@@ -30,6 +31,7 @@ enum StreamEnums: string
             self::STATUS => 'Procurement Status',
             self::EVENTS => 'Procurement Events',
             self::CORRECTIONS => 'Procurement Corrections',
+            self::PROCUREMENTS_CORRECTIONS => 'Procurement Metadata Corrections',
             self::FILE_DATA => 'File Data',
             self::FILE_METADATA => 'File Metadata',
             self::FILE_CHUNKS => 'File Chunks',
@@ -47,6 +49,7 @@ enum StreamEnums: string
             self::STATUS => 'Tracks status changes throughout the procurement process',
             self::EVENTS => 'Records procurement events and activities',
             self::CORRECTIONS => 'Maintains correction records and amendments',
+            self::PROCUREMENTS_CORRECTIONS => 'Maintains corrections to procurement metadata',
             self::FILE_DATA => 'Stores raw file data and binary content',
             self::FILE_METADATA => 'Stores file metadata, hashes, and storage information',
             self::FILE_CHUNKS => 'Stores chunked file data for large files',
@@ -64,6 +67,7 @@ enum StreamEnums: string
             self::STATUS,
             self::EVENTS,
             self::CORRECTIONS,
+            self::PROCUREMENTS_CORRECTIONS,
         ]);
     }
 

@@ -1,30 +1,30 @@
+import admin from '@/routes/admin';
+import bacChairman from '@/routes/bac-chairman';
+import bacSecretariat from '@/routes/bac-secretariat';
+import hope from '@/routes/hope';
 import type { BreadcrumbItem } from '@/types';
 import { UserRole } from '@/types';
-import bacSecretariat from '@/routes/bac-secretariat';
-import bacChairman from '@/routes/bac-chairman';
-import hope from '@/routes/hope';
-import admin from '@/routes/admin';
 
 /**
  * Breadcrumb Utilities for the Procurement System
- * 
+ *
  * This module provides centralized breadcrumb generation functions that ensure
  * consistent navigation across all pages based on user roles.
- * 
+ *
  * @example Basic Usage
  * ```tsx
  * import { getDocumentCorrectionsBreadcrumbs } from '@/utils/breadcrumbs';
  * import { usePage } from '@inertiajs/react';
- * 
+ *
  * const { auth } = usePage<SharedData>().props;
  * const userRole = auth?.user?.role;
  * const breadcrumbs = getDocumentCorrectionsBreadcrumbs(userRole, procurement.title);
  * ```
- * 
+ *
  * @example Custom Breadcrumbs
  * ```tsx
  * import { buildBreadcrumbs } from '@/utils/breadcrumbs';
- * 
+ *
  * const breadcrumbs = buildBreadcrumbs(userRole, [
  *   { title: 'Procurements', href: '/procurements-list' },
  *   { title: 'My Procurement', href: '#' },
@@ -84,7 +84,7 @@ export const getProcurementDetailBreadcrumb = (role?: string, pr_number?: string
     if (!pr_number) {
         return { title: 'Procurement Details', href: '#' };
     }
-    
+
     switch (role) {
         case UserRole.BAC_SECRETARIAT:
             return { title: 'Procurement Details', href: bacSecretariat.procurements.show.url(pr_number) };
@@ -103,37 +103,24 @@ export const getProcurementDetailBreadcrumb = (role?: string, pr_number?: string
  * Get breadcrumbs for procurement list page
  */
 export const getProcurementListBreadcrumbs = (role?: string): BreadcrumbItem[] => {
-    return [
-        getDashboardBreadcrumb(role),
-        getProcurementsListBreadcrumb(role),
-    ];
+    return [getDashboardBreadcrumb(role), getProcurementsListBreadcrumb(role)];
 };
 
 /**
  * Get breadcrumbs for procurement detail page
  */
-export const getProcurementDetailBreadcrumbs = (
-    role?: string,
-    procurementTitle?: string
-): BreadcrumbItem[] => {
+export const getProcurementDetailBreadcrumbs = (role?: string, procurementTitle?: string): BreadcrumbItem[] => {
     const procurementName = procurementTitle || 'Procurement';
-    
-    return [
-        getDashboardBreadcrumb(role),
-        getProcurementsListBreadcrumb(role),
-        { title: procurementName, href: '#' },
-    ];
+
+    return [getDashboardBreadcrumb(role), getProcurementsListBreadcrumb(role), { title: procurementName, href: '#' }];
 };
 
 /**
  * Get breadcrumbs for document corrections page
  */
-export const getDocumentCorrectionsBreadcrumbs = (
-    role?: string,
-    procurementTitle?: string
-): BreadcrumbItem[] => {
+export const getDocumentCorrectionsBreadcrumbs = (role?: string, procurementTitle?: string): BreadcrumbItem[] => {
     const procurementName = procurementTitle || 'Procurement';
-    
+
     return [
         getDashboardBreadcrumb(role),
         getProcurementsListBreadcrumb(role),
@@ -145,12 +132,9 @@ export const getDocumentCorrectionsBreadcrumbs = (
 /**
  * Get breadcrumbs for document upload page
  */
-export const getDocumentUploadBreadcrumbs = (
-    role?: string,
-    procurementTitle?: string
-): BreadcrumbItem[] => {
+export const getDocumentUploadBreadcrumbs = (role?: string, procurementTitle?: string): BreadcrumbItem[] => {
     const procurementName = procurementTitle || 'Procurement';
-    
+
     return [
         getDashboardBreadcrumb(role),
         getProcurementsListBreadcrumb(role),
@@ -162,12 +146,9 @@ export const getDocumentUploadBreadcrumbs = (
 /**
  * Get breadcrumbs for workflow page
  */
-export const getWorkflowBreadcrumbs = (
-    role?: string,
-    procurementTitle?: string
-): BreadcrumbItem[] => {
+export const getWorkflowBreadcrumbs = (role?: string, procurementTitle?: string): BreadcrumbItem[] => {
     const procurementName = procurementTitle || 'Procurement';
-    
+
     return [
         getDashboardBreadcrumb(role),
         getProcurementsListBreadcrumb(role),
@@ -180,50 +161,31 @@ export const getWorkflowBreadcrumbs = (
  * Get breadcrumbs for procurement initiation page
  */
 export const getProcurementInitiationBreadcrumbs = (role?: string): BreadcrumbItem[] => {
-    return [
-        getDashboardBreadcrumb(role),
-        getProcurementsListBreadcrumb(role),
-        { title: 'Procurement Initiation', href: '#' },
-    ];
+    return [getDashboardBreadcrumb(role), getProcurementsListBreadcrumb(role), { title: 'Procurement Initiation', href: '#' }];
 };
 
 /**
  * Get breadcrumbs for document upload pages (generic)
  */
-export const getDocumentUploadPageBreadcrumbs = (
-    role?: string,
-    procurementTitle?: string,
-    stageName?: string
-): BreadcrumbItem[] => {
+export const getDocumentUploadPageBreadcrumbs = (role?: string, procurementTitle?: string, stageName?: string): BreadcrumbItem[] => {
     const procurementName = procurementTitle || 'Procurement';
     const stage = stageName || 'Upload Documents';
-    
-    return [
-        getDashboardBreadcrumb(role),
-        getProcurementsListBreadcrumb(role),
-        { title: procurementName, href: '#' },
-        { title: stage, href: '#' },
-    ];
+
+    return [getDashboardBreadcrumb(role), getProcurementsListBreadcrumb(role), { title: procurementName, href: '#' }, { title: stage, href: '#' }];
 };
 
 /**
  * Get breadcrumbs for settings page
  */
 export const getSettingsBreadcrumbs = (role?: string): BreadcrumbItem[] => {
-    return [
-        getDashboardBreadcrumb(role),
-        { title: 'Settings', href: '#' },
-    ];
+    return [getDashboardBreadcrumb(role), { title: 'Settings', href: '#' }];
 };
 
 /**
  * Get breadcrumbs for users management page
  */
 export const getUsersManagementBreadcrumbs = (role?: string): BreadcrumbItem[] => {
-    return [
-        getDashboardBreadcrumb(role),
-        { title: 'User Management', href: '#' },
-    ];
+    return [getDashboardBreadcrumb(role), { title: 'User Management', href: '#' }];
 };
 
 /**
@@ -231,30 +193,24 @@ export const getUsersManagementBreadcrumbs = (role?: string): BreadcrumbItem[] =
  */
 export const getCustomBreadcrumbs = (config: BreadcrumbConfig): BreadcrumbItem[] => {
     const { role, customSegments = [] } = config;
-    
-    return [
-        getDashboardBreadcrumb(role),
-        ...customSegments,
-    ];
+
+    return [getDashboardBreadcrumb(role), ...customSegments];
 };
 
 /**
  * Generic breadcrumb builder for any page
  */
-export const buildBreadcrumbs = (
-    role?: string,
-    segments?: Array<{ title: string; href?: string }>
-): BreadcrumbItem[] => {
+export const buildBreadcrumbs = (role?: string, segments?: Array<{ title: string; href?: string }>): BreadcrumbItem[] => {
     const breadcrumbs: BreadcrumbItem[] = [getDashboardBreadcrumb(role)];
-    
+
     if (segments && segments.length > 0) {
-        segments.forEach(segment => {
+        segments.forEach((segment) => {
             breadcrumbs.push({
                 title: segment.title,
                 href: segment.href || '#',
             });
         });
     }
-    
+
     return breadcrumbs;
 };

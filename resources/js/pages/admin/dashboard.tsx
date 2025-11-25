@@ -15,21 +15,20 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Spinner } from '@/components/ui/spinner';
-import { show as procurementsShow } from '@/routes/admin/procurements';
-import { index as procurementsListIndex } from '@/routes/admin/procurements';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
-import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
+import { index as procurementsListIndex, show as procurementsShow } from '@/routes/admin/procurements';
 import { UserRole } from '@/types/enums';
+import { getDashboardBreadcrumb } from '@/utils/breadcrumbs';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 /**
  * Format stage name from snake_case to Title Case
  */
 const formatStageName = (stage: string): string => {
     if (!stage) return stage;
-    
+
     return stage
         .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
 };
 
@@ -307,8 +306,8 @@ export default function AdminDashboard() {
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="xl:col-span-3 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm xl:col-span-3">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
                             </Card>
@@ -325,8 +324,8 @@ export default function AdminDashboard() {
                     <Deferred
                         data="procurementDistribution"
                         fallback={
-                            <Card className="xl:col-span-2 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm xl:col-span-2">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
                                 </CardContent>
                             </Card>
@@ -345,7 +344,7 @@ export default function AdminDashboard() {
                         data="recentActivities"
                         fallback={
                             <Card className="shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] items-center justify-center">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
                                 </CardContent>
                             </Card>
@@ -364,8 +363,8 @@ export default function AdminDashboard() {
                     <Deferred
                         data="recentProcurements"
                         fallback={
-                            <Card className="lg:col-span-2 xl:col-span-1 shadow-sm">
-                                <CardContent className="flex h-[200px] sm:h-[250px] md:h-[300px] items-center justify-center">
+                            <Card className="shadow-sm lg:col-span-2 xl:col-span-1">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
                                     <Spinner className="h-6 w-6 sm:h-8 sm:w-8" />
                                 </CardContent>
                             </Card>
@@ -405,10 +404,12 @@ export default function AdminDashboard() {
                                         <button
                                             key={key}
                                             data-active={activeLoginChart === key}
-                                            className="data-[active=true]:bg-muted/50 flex flex-1 flex-col justify-center gap-0.5 sm:gap-1 border-t px-3 py-2 text-left even:border-l sm:border-t-0 sm:border-l sm:px-4 sm:py-3 md:px-6 md:py-4 lg:px-8 lg:py-6"
+                                            className="data-[active=true]:bg-muted/50 flex flex-1 flex-col justify-center gap-0.5 border-t px-3 py-2 text-left even:border-l sm:gap-1 sm:border-t-0 sm:border-l sm:px-4 sm:py-3 md:px-6 md:py-4 lg:px-8 lg:py-6"
                                             onClick={() => setActiveLoginChart(key)}
                                         >
-                                            <span className="text-muted-foreground text-[10px] sm:text-xs">{interactiveLoginChartConfig[key].label}</span>
+                                            <span className="text-muted-foreground text-[10px] sm:text-xs">
+                                                {interactiveLoginChartConfig[key].label}
+                                            </span>
                                             <span className="text-sm leading-none font-bold sm:text-base md:text-lg lg:text-2xl xl:text-3xl">
                                                 {loginTotals[key].toLocaleString()}
                                             </span>

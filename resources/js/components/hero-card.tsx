@@ -31,8 +31,8 @@ export const HeroCard = ({
                             <Icon className={cn('h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6', iconClassName)} />
                         </div>
                         <div>
-                            <h1 className="text-foreground text-lg sm:text-xl md:text-2xl font-bold">{title}</h1>
-                            <p className="text-muted-foreground mt-0.5 sm:mt-1 text-xs sm:text-sm">{description}</p>
+                            <h1 className="text-foreground text-lg font-bold sm:text-xl md:text-2xl">{title}</h1>
+                            <p className="text-muted-foreground mt-0.5 text-xs sm:mt-1 sm:text-sm">{description}</p>
                         </div>
                     </div>
                     {actions ? <div className="flex items-center gap-2 sm:gap-3 md:gap-4">{actions}</div> : null}

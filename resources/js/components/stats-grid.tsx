@@ -45,7 +45,7 @@ export const StatsGrid = ({ items, userRole, className, gridClassName }: StatsGr
             : 'md:grid-cols-2';
 
     return (
-        <div className={cn('grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2', columnClassName, className)}>
+        <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4', columnClassName, className)}>
             {visibleItems.map((item) => {
                 const IconComponent = item.icon;
 
@@ -54,8 +54,8 @@ export const StatsGrid = ({ items, userRole, className, gridClassName }: StatsGr
                         <CardContent className="p-3 sm:p-4">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-muted-foreground text-xs sm:text-sm font-medium">{item.label}</p>
-                                    <p className="text-xl sm:text-2xl font-bold">{item.value}</p>
+                                    <p className="text-muted-foreground text-xs font-medium sm:text-sm">{item.label}</p>
+                                    <p className="text-xl font-bold sm:text-2xl">{item.value}</p>
                                 </div>
                                 <div className={cn('rounded-full p-1.5 sm:p-2', item.iconClassName)}>
                                     <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" />

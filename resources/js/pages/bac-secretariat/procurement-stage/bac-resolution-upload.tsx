@@ -1,14 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Head, router } from '@inertiajs/react';
-import { FileCheck2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementController';
 import FileUploadArea from '@/components/file-upload-area';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Spinner } from '@/components/ui/spinner';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -19,12 +10,20 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementController';
-import type { DocumentGuide } from '@/types/document-guide';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Spinner } from '@/components/ui/spinner';
+import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { buildBreadcrumbs } from '@/utils/breadcrumbs';
+import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
-import { getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
+import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
+import { Head, router } from '@inertiajs/react';
+import { AlertCircle, CheckCircle2, FileCheck2 } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
 interface BacResolutionUploadProps {
     procurement: {
@@ -67,12 +66,8 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
                         toast.success(message, {
                             description: (
                                 <div className="space-y-1 text-xs">
-                                    {blockchain.status_txid && (
-                                        <p>Status TX: {blockchain.status_txid}</p>
-                                    )}
-                                    {blockchain.event_txid && (
-                                        <p>Event TX: {blockchain.event_txid}</p>
-                                    )}
+                                    {blockchain.status_txid && <p>Status TX: {blockchain.status_txid}</p>}
+                                    {blockchain.event_txid && <p>Event TX: {blockchain.event_txid}</p>}
                                 </div>
                             ),
                         });
@@ -94,9 +89,7 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
         );
     };
 
-    const uploadedRequiredCount = documentGuide
-        ? documentGuide.required_documents.filter((doc) => uploadedDocuments.includes(doc.value)).length
-        : 0;
+    const uploadedRequiredCount = documentGuide ? documentGuide.required_documents.filter((doc) => uploadedDocuments.includes(doc.value)).length : 0;
 
     const calculatedPercentage =
         documentGuide && documentGuide.counts.required_count > 0
@@ -104,8 +97,9 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    const isStageCompleted = procurement.stage_value === 'notice_of_award' || 
-                              (procurement.stage_value === 'bac_resolution' && procurement.status?.includes('resolution_recorded'));
+    const isStageCompleted =
+        procurement.stage_value === 'notice_of_award' ||
+        (procurement.stage_value === 'bac_resolution' && procurement.status?.includes('resolution_recorded'));
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {
@@ -188,7 +182,7 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
 
     const handleConfirmUpload = useCallback(() => {
         const file = files[confirmDialog.documentValue];
-        
+
         if (!file) {
             toast.error('No file selected', {
                 description: 'Please select a file to upload.',
@@ -227,7 +221,7 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
                 preserveScroll: true,
                 only: ['uploadedDocuments'],
                 forceFormData: true,
-            }
+            },
         );
     }, [confirmDialog, files, procurement.pr_number]);
 
@@ -262,7 +256,7 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
                                         <FileCheck2 className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
                                         Upload Progress
                                     </CardTitle>
-                                    <p className="text-sm text-muted-foreground">Track your document upload progress</p>
+                                    <p className="text-muted-foreground text-sm">Track your document upload progress</p>
                                 </CardHeader>
 
                                 <CardContent className="space-y-4">
@@ -274,14 +268,14 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
                                             </span>
                                         </div>
                                         <Progress value={calculatedPercentage} className="h-2" />
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-muted-foreground text-xs">
                                             {allRequiredUploaded ? (
-                                                <span className="text-green-600 dark:text-green-500 flex items-center gap-1">
+                                                <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
                                                     <CheckCircle2 className="h-3 w-3" />
                                                     All required documents uploaded
                                                 </span>
                                             ) : (
-                                                <span className="text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                                                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-500">
                                                     <AlertCircle className="h-3 w-3" />
                                                     {documentGuide.counts.required_count - uploadedRequiredCount} required document
                                                     {documentGuide.counts.required_count - uploadedRequiredCount !== 1 ? 's' : ''} remaining
@@ -290,7 +284,7 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
                                         </p>
                                     </div>
 
-                                    <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1">
+                                    <div className="bg-muted/50 space-y-1 rounded-lg p-3 text-xs">
                                         <div className="flex justify-between">
                                             <span className="text-muted-foreground">Stage:</span>
                                             <span className="font-medium">{documentGuide.stage_display_name}</span>
@@ -322,7 +316,7 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
                                     <FileCheck2 className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
                                     Document Upload
                                 </CardTitle>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-muted-foreground text-sm">
                                     Upload required and optional documents for BAC Resolution. Files will be permanently saved.
                                 </p>
                             </CardHeader>
@@ -346,18 +340,18 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
                                                             <div className="flex-1">
                                                                 <p className="text-sm font-medium">{doc.display_name}</p>
                                                                 {doc.description && (
-                                                                    <p className="text-xs text-muted-foreground">{doc.description}</p>
+                                                                    <p className="text-muted-foreground text-xs">{doc.description}</p>
                                                                 )}
                                                             </div>
                                                             {isUploaded && (
                                                                 <Badge variant="outline" className="text-xs text-green-600 dark:text-green-500">
-                                                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                    <CheckCircle2 className="mr-1 h-3 w-3" />
                                                                     Uploaded
                                                                 </Badge>
                                                             )}
                                                         </div>
                                                         {!isUploaded && (
-                                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                            <div className="flex flex-col gap-2 sm:flex-row">
                                                                 <div className="flex-1">
                                                                     <FileUploadArea
                                                                         label=""
@@ -377,7 +371,7 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
                                                                     type="button"
                                                                     onClick={() => handleUploadClick(doc.value, doc.display_name)}
                                                                     disabled={!files[doc.value] || isUploading}
-                                                                    className="self-start mt-0 h-12 sm:h-[120px] w-full sm:w-auto"
+                                                                    className="mt-0 h-12 w-full self-start sm:h-[120px] sm:w-auto"
                                                                 >
                                                                     Upload
                                                                 </Button>
@@ -408,18 +402,18 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
                                                             <div className="flex-1">
                                                                 <p className="text-sm font-medium">{doc.display_name}</p>
                                                                 {doc.description && (
-                                                                    <p className="text-xs text-muted-foreground">{doc.description}</p>
+                                                                    <p className="text-muted-foreground text-xs">{doc.description}</p>
                                                                 )}
                                                             </div>
                                                             {isUploaded && (
                                                                 <Badge variant="outline" className="text-xs text-blue-600 dark:text-blue-500">
-                                                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                    <CheckCircle2 className="mr-1 h-3 w-3" />
                                                                     Uploaded
                                                                 </Badge>
                                                             )}
                                                         </div>
                                                         {!isUploaded && (
-                                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                            <div className="flex flex-col gap-2 sm:flex-row">
                                                                 <div className="flex-1">
                                                                     <FileUploadArea
                                                                         label=""
@@ -439,7 +433,7 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
                                                                     onClick={() => handleUploadClick(doc.value, doc.display_name)}
                                                                     disabled={!files[doc.value] || isUploading}
                                                                     variant="secondary"
-                                                                    className="self-start mt-0 h-12 sm:h-[120px] w-full sm:w-auto"
+                                                                    className="mt-0 h-12 w-full self-start sm:h-[120px] sm:w-auto"
                                                                 >
                                                                     Upload
                                                                 </Button>
@@ -455,7 +449,7 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
 
                             <CardFooter className="flex flex-col gap-3 border-t pt-4">
                                 {isStageCompleted ? (
-                                    <div className="w-full rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                                    <div className="w-full rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
                                         <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
                                             <CheckCircle2 className="h-5 w-5" />
                                             <div>

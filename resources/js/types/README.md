@@ -7,6 +7,7 @@ This folder contains all reusable TypeScript type definitions for the ProcuChain
 ### Core Types
 
 #### `index.ts` / `index.d.ts`
+
 Barrel files that re-export all types from individual modules. Import from `@/types` to access all types.
 
 ```typescript
@@ -16,35 +17,43 @@ import { User, Stage, DashboardStats } from '@/types';
 ### Domain-Specific Types
 
 #### `auth.ts`
+
 Authentication and user-related types.
 
 **Types:**
+
 - `Auth` - Authentication context with user, roles, and permissions
 - `User` - User model with account details and locking fields
 
 **Usage:**
+
 ```typescript
 import type { User, Auth } from '@/types';
 ```
 
 #### `blockchain.ts`
+
 Blockchain-specific data structures.
 
 **Types:**
+
 - `BlockchainProcurementDocument` - Document stored on blockchain
 - `BlockchainProcurementState` - Procurement state on blockchain
 - `BlockchainProcurementEvent` - Events published to blockchain
 - `StreamPublication` - MultiChain stream publication structure
 
 **Usage:**
+
 ```typescript
 import type { BlockchainProcurementDocument } from '@/types';
 ```
 
 #### `document.ts`
+
 Document metadata and related structures.
 
 **Types:**
+
 - `Document` - Procurement document with metadata
 - `DocumentMetadata` - Document metadata fields
 - `SignatoryDetails` - Signatory information
@@ -53,14 +62,17 @@ Document metadata and related structures.
 - `TimelineItem` - Timeline tracking item
 
 **Usage:**
+
 ```typescript
 import type { Document, StageMetadata } from '@/types';
 ```
 
 #### `procurement.ts`
+
 Procurement-related types.
 
 **Types:**
+
 - `Procurement` - Complete procurement data
 - `ProcurementListItem` - Procurement list item
 - `PrInitiationResponse` - PR initiation response
@@ -69,14 +81,17 @@ Procurement-related types.
 - `ProcurementInitiationDocumentData` - PR document with file
 
 **Usage:**
+
 ```typescript
 import type { Procurement, ProcurementListItem } from '@/types';
 ```
 
 #### `enums.ts`
+
 All application enums.
 
 **Enums:**
+
 - `StreamType` - Blockchain stream types
 - `Stage` - Procurement stages
 - `Status` - Procurement statuses
@@ -87,6 +102,7 @@ All application enums.
 - `DocumentType` - Document types
 
 **Usage:**
+
 ```typescript
 import { Stage, Status, UserRole } from '@/types';
 ```
@@ -94,9 +110,11 @@ import { Stage, Status, UserRole } from '@/types';
 ### Feature-Specific Types
 
 #### `admin.ts`
+
 Admin panel and user management types.
 
 **Types:**
+
 - `LoginLog` - Login attempt record
 - `LoginStatistics` - Login statistics
 - `UserActivityAnalytics` - User activity analytics
@@ -106,14 +124,17 @@ Admin panel and user management types.
 - `BlockchainOverview`, `BlockInfo`, `StreamInfo`, etc.
 
 **Usage:**
+
 ```typescript
 import type { LoginLog, UserActivityAnalytics } from '@/types';
 ```
 
 #### `dashboard.ts`
+
 Dashboard-related types.
 
 **Types:**
+
 - `DashboardStats` - Dashboard statistics
 - `RecentActivity` - Recent activity item
 - `RecentProcurement` - Recent procurement item
@@ -123,26 +144,32 @@ Dashboard-related types.
 - `StageDistributionItem` - Stage distribution data
 
 **Usage:**
+
 ```typescript
 import type { DashboardStats, RecentActivity } from '@/types';
 ```
 
 #### `notification.ts`
+
 Notification system types.
 
 **Types:**
+
 - `Notification` - User notification
 - `NotificationFilterType` - Notification filter options
 
 **Usage:**
+
 ```typescript
 import type { Notification, NotificationFilterType } from '@/types';
 ```
 
 #### `viewer.ts`
+
 Document viewer and viewing statistics.
 
 **Types:**
+
 - `PdfDocument` - PDF document data
 - `DocumentView` - Document view record
 - `ViewStats` - Viewing statistics
@@ -152,18 +179,22 @@ Document viewer and viewing statistics.
 - `ProcurementDocument` - Procurement document reference
 
 **Usage:**
+
 ```typescript
 import type { PdfDocument, ViewStats } from '@/types';
 ```
 
 #### `search.ts`
+
 Search functionality types.
 
 **Types:**
+
 - `SearchResult` - Search result item
 - `SearchSuggestion` - Search suggestion
 
 **Usage:**
+
 ```typescript
 import type { SearchResult, SearchSuggestion } from '@/types';
 ```
@@ -171,9 +202,11 @@ import type { SearchResult, SearchSuggestion } from '@/types';
 ### UI Component Types
 
 #### `components.ts`
+
 Reusable component prop types.
 
 **Types:**
+
 - `PersonData`, `AffiliationType` - People input component
 - `PaginationConfig` - Pagination component
 - `FileUploadConfig` - File upload component
@@ -183,20 +216,24 @@ Reusable component prop types.
 - `ChartConfig` - Chart configuration
 
 **Usage:**
+
 ```typescript
 import type { PaginationConfig, ErrorStateConfig } from '@/types';
 ```
 
 #### `navigation.ts`
+
 Navigation and UI structure types.
 
 **Types:**
+
 - `BreadcrumbItem` - Breadcrumb item
 - `NavGroup` - Navigation group
 - `NavItem` - Navigation item
 - `SharedData` - Shared Inertia page props
 
 **Usage:**
+
 ```typescript
 import type { BreadcrumbItem, NavItem, SharedData } from '@/types';
 ```
@@ -204,9 +241,11 @@ import type { BreadcrumbItem, NavItem, SharedData } from '@/types';
 ### Utility Types
 
 #### `utils.ts`
+
 General utility types.
 
 **Types:**
+
 - `Appearance` - Theme appearance mode
 - `CopiedValue`, `CopyFn` - Clipboard utilities
 - `OSInfo`, `NavigatorUAData` - Device detection
@@ -216,18 +255,22 @@ General utility types.
 - `DateRange`, `ValidityPeriod` - Date utilities
 
 **Usage:**
+
 ```typescript
 import type { Appearance, DateRange, OSInfo } from '@/types';
 ```
 
 #### `constants.ts`
+
 Application constants.
 
 **Constants:**
+
 - `MUNICIPAL_OFFICES` - List of municipal offices
 - `MunicipalOffice` - Municipal office type
 
 **Usage:**
+
 ```typescript
 import { MUNICIPAL_OFFICES, type MunicipalOffice } from '@/types';
 ```
@@ -235,6 +278,7 @@ import { MUNICIPAL_OFFICES, type MunicipalOffice } from '@/types';
 ## Best Practices
 
 ### 1. Import from the Barrel File
+
 Always import from `@/types` instead of individual files:
 
 ```typescript
@@ -247,6 +291,7 @@ import { Stage } from '@/types/enums';
 ```
 
 ### 2. Use Type Imports When Possible
+
 Use `type` imports for better tree-shaking:
 
 ```typescript
@@ -255,6 +300,7 @@ import { Stage, Status } from '@/types'; // Enums need regular imports
 ```
 
 ### 3. Extend Types When Needed
+
 Extend existing types for page-specific props:
 
 ```typescript
@@ -267,6 +313,7 @@ interface PageProps extends SharedData {
 ```
 
 ### 4. Keep Component Props Local
+
 Only extract component props to the types folder if they're reused across multiple files. Local component props can stay inline:
 
 ```typescript
@@ -281,6 +328,7 @@ import type { PaginationConfig } from '@/types';
 ```
 
 ### 5. Document Complex Types
+
 Add JSDoc comments for complex types:
 
 ```typescript
@@ -323,14 +371,14 @@ When migrating inline types to this folder:
 
 ## Type Categories Summary
 
-| Category | Files | Purpose |
-|----------|-------|---------|
-| **Core** | `auth`, `user`, `navigation` | Essential app types |
-| **Domain** | `procurement`, `document`, `blockchain` | Business logic types |
-| **Features** | `admin`, `dashboard`, `notification`, `viewer` | Feature-specific types |
-| **UI** | `components`, `navigation` | Component props and UI types |
-| **Utils** | `utils`, `constants` | Helpers and shared utilities |
-| **System** | `enums` | Application-wide enumerations |
+| Category     | Files                                          | Purpose                       |
+| ------------ | ---------------------------------------------- | ----------------------------- |
+| **Core**     | `auth`, `user`, `navigation`                   | Essential app types           |
+| **Domain**   | `procurement`, `document`, `blockchain`        | Business logic types          |
+| **Features** | `admin`, `dashboard`, `notification`, `viewer` | Feature-specific types        |
+| **UI**       | `components`, `navigation`                     | Component props and UI types  |
+| **Utils**    | `utils`, `constants`                           | Helpers and shared utilities  |
+| **System**   | `enums`                                        | Application-wide enumerations |
 
 ---
 

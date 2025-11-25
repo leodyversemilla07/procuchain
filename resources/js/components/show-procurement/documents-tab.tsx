@@ -27,9 +27,7 @@ export const DocumentsTab: FC<DocumentsTabProps> = ({ documents }) => {
                                 <FileText className="text-muted-foreground" />
                             </EmptyMedia>
                             <EmptyTitle>No Documents Yet</EmptyTitle>
-                            <EmptyDescription>
-                                Documents will appear here once they are uploaded to this procurement.
-                            </EmptyDescription>
+                            <EmptyDescription>Documents will appear here once they are uploaded to this procurement.</EmptyDescription>
                         </EmptyHeader>
                     </Empty>
                 </CardContent>
@@ -42,14 +40,12 @@ export const DocumentsTab: FC<DocumentsTabProps> = ({ documents }) => {
             <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 sm:h-10 sm:w-10">
-                            <FileText className="h-4 w-4 text-primary sm:h-5 sm:w-5" aria-hidden="true" />
+                        <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10">
+                            <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                         </div>
                         <div className="min-w-0">
                             <CardTitle className="truncate text-base sm:text-lg">Procurement Documents</CardTitle>
-                            <CardDescription className="truncate text-xs sm:text-sm">
-                                Documents organized by procurement stage
-                            </CardDescription>
+                            <CardDescription className="truncate text-xs sm:text-sm">Documents organized by procurement stage</CardDescription>
                         </div>
                     </div>
                     <Badge variant="outline" className="hidden font-medium sm:inline-flex">
@@ -69,13 +65,13 @@ export const DocumentsTab: FC<DocumentsTabProps> = ({ documents }) => {
                                 className="border-b last:border-b-0"
                                 aria-labelledby={`stage-${stage.replace(/\s+/g, '-').toLowerCase()}`}
                             >
-                                <div className="sticky top-0 z-10 border-b bg-muted/80 p-3 backdrop-blur-sm sm:p-4">
+                                <div className="bg-muted/80 sticky top-0 z-10 border-b p-3 backdrop-blur-sm sm:p-4">
                                     <div className="flex items-center justify-between gap-2">
                                         <h3
                                             id={`stage-${stage.replace(/\s+/g, '-').toLowerCase()}`}
                                             className="flex flex-wrap items-center gap-1.5 text-sm font-semibold sm:gap-2 sm:text-base"
                                         >
-                                            <FileCheck className="h-3.5 w-3.5 shrink-0 text-primary sm:h-4 sm:w-4" aria-hidden="true" />
+                                            <FileCheck className="text-primary h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden="true" />
                                             <span className="truncate">{stage}</span>
                                             <Badge variant="outline" className="ml-0.5 shrink-0 text-[10px] sm:ml-1 sm:text-xs">
                                                 {stageDocuments.length}

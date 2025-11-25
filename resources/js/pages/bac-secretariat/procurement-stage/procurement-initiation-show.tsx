@@ -4,15 +4,11 @@ import { toast } from 'sonner';
 
 import { type BreadcrumbItem } from '@/types';
 import type { DocumentGuide, DocumentItem } from '@/types/document-guide';
-import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 import { UserRole } from '@/types/enums';
+import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 
-import AppLayout from '@/layouts/app-layout';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Spinner } from '@/components/ui/spinner';
+import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
+import FileUploadArea from '@/components/file-upload-area';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -23,17 +19,15 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import FileUploadArea from '@/components/file-upload-area';
-import { uploadSingleDocument, markStageComplete } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import AppLayout from '@/layouts/app-layout';
 
-import { FileText, CheckCircle2, Plus, X, AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, FileText, Plus, X } from 'lucide-react';
 
 interface ProcurementInitiationShowProps {
     procurement?: {
@@ -79,10 +73,10 @@ export default function ProcurementInitiationShow({
         isRequired: false,
     });
     const [showCompleteDialog, setShowCompleteDialog] = useState(false);
-    
+
     // Track drag states for file uploads
     const [dragStates, setDragStates] = useState<Record<string, boolean>>({});
-    
+
     // Track file selections (before upload)
     const [selectedFiles, setSelectedFiles] = useState<Record<string, File | null>>({});
     const [isUploading, setIsUploading] = useState(false);
@@ -90,19 +84,15 @@ export default function ProcurementInitiationShow({
 
     // Initialize addedOptionalDocs with already uploaded optional documents
     useEffect(() => {
-        const optionalDocValues = documentGuide.optional_documents.map(doc => doc.value);
-        const uploadedOptionalDocs = uploadedDocuments.filter(docValue => 
-            optionalDocValues.includes(docValue)
-        );
+        const optionalDocValues = documentGuide.optional_documents.map((doc) => doc.value);
+        const uploadedOptionalDocs = uploadedDocuments.filter((docValue) => optionalDocValues.includes(docValue));
         setAddedOptionalDocs(uploadedOptionalDocs);
     }, [documentGuide.optional_documents, uploadedDocuments]);
 
     // Calculate optional document progress
     const optionalProgress = useMemo(() => {
-        const uploadedOptional = addedOptionalDocs.filter((docValue) =>
-            uploadedDocuments.includes(docValue)
-        ).length;
-        
+        const uploadedOptional = addedOptionalDocs.filter((docValue) => uploadedDocuments.includes(docValue)).length;
+
         return {
             uploaded: uploadedOptional,
             total: addedOptionalDocs.length,
@@ -111,14 +101,12 @@ export default function ProcurementInitiationShow({
 
     // Available optional documents (not yet added)
     const availableOptionalDocs = useMemo(() => {
-        return documentGuide.optional_documents.filter(
-            (doc) => !addedOptionalDocs.includes(doc.value)
-        );
+        return documentGuide.optional_documents.filter((doc) => !addedOptionalDocs.includes(doc.value));
     }, [documentGuide.optional_documents, addedOptionalDocs]);
 
     const addOptionalDocument = useCallback(() => {
         if (!selectedOptionalDocType) return;
-        
+
         setAddedOptionalDocs((prev) => [...prev, selectedOptionalDocType]);
         setSelectedOptionalDocType('');
     }, [selectedOptionalDocType]);
@@ -131,7 +119,7 @@ export default function ProcurementInitiationShow({
         (docValue: string): DocumentItem | undefined => {
             return documentGuide.optional_documents.find((doc) => doc.value === docValue);
         },
-        [documentGuide.optional_documents]
+        [documentGuide.optional_documents],
     );
 
     const validateFile = useCallback((file: File): boolean => {
@@ -167,26 +155,20 @@ export default function ProcurementInitiationShow({
 
             setSelectedFiles((prev) => ({ ...prev, [docValue]: newFile }));
         },
-        [validateFile]
+        [validateFile],
     );
 
-    const handleDragEnter = useCallback(
-        (e: React.DragEvent, docValue: string) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setDragStates((prev) => ({ ...prev, [docValue]: true }));
-        },
-        []
-    );
+    const handleDragEnter = useCallback((e: React.DragEvent, docValue: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragStates((prev) => ({ ...prev, [docValue]: true }));
+    }, []);
 
-    const handleDragLeave = useCallback(
-        (e: React.DragEvent, docValue: string) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setDragStates((prev) => ({ ...prev, [docValue]: false }));
-        },
-        []
-    );
+    const handleDragLeave = useCallback((e: React.DragEvent, docValue: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragStates((prev) => ({ ...prev, [docValue]: false }));
+    }, []);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -204,7 +186,7 @@ export default function ProcurementInitiationShow({
                 setSelectedFiles((prev) => ({ ...prev, [docValue]: file }));
             }
         },
-        [validateFile]
+        [validateFile],
     );
 
     const handleRemoveFile = useCallback((docValue: string) => {
@@ -215,22 +197,25 @@ export default function ProcurementInitiationShow({
         });
     }, []);
 
-    const openUploadDialog = useCallback((docValue: string, docName: string, isRequired: boolean) => {
-        const file = selectedFiles[docValue];
-        
-        if (!file) {
-            toast.error('No file selected', {
-                description: 'Please select a file to upload.',
-            });
-            return;
-        }
+    const openUploadDialog = useCallback(
+        (docValue: string, docName: string, isRequired: boolean) => {
+            const file = selectedFiles[docValue];
 
-        setConfirmDialog({ open: true, documentValue: docValue, documentName: docName, isRequired });
-    }, [selectedFiles]);
+            if (!file) {
+                toast.error('No file selected', {
+                    description: 'Please select a file to upload.',
+                });
+                return;
+            }
+
+            setConfirmDialog({ open: true, documentValue: docValue, documentName: docName, isRequired });
+        },
+        [selectedFiles],
+    );
 
     const handleUploadClick = useCallback(() => {
         const file = selectedFiles[confirmDialog.documentValue];
-        
+
         if (!file) {
             toast.error('No file selected', {
                 description: 'Please select a file to upload.',
@@ -247,7 +232,7 @@ export default function ProcurementInitiationShow({
 
         const uploadToast = toast.loading('Uploading document...');
         setIsUploading(true);
-        
+
         // Use Inertia router.post for file upload with Wayfinder
         router.post(
             uploadSingleDocument.url(procurement.pr_number),
@@ -278,7 +263,7 @@ export default function ProcurementInitiationShow({
                 preserveScroll: true,
                 only: ['uploadedDocuments'],
                 forceFormData: true,
-            }
+            },
         );
     }, [procurement?.pr_number, selectedFiles, confirmDialog, handleRemoveFile]);
 
@@ -318,13 +303,11 @@ export default function ProcurementInitiationShow({
                     setIsMarkingComplete(false);
                 },
                 preserveScroll: true,
-            }
+            },
         );
     }, [procurement?.pr_number]);
 
-    const uploadedRequiredCount = documentGuide
-        ? documentGuide.required_documents.filter((doc) => uploadedDocuments.includes(doc.value)).length
-        : 0;
+    const uploadedRequiredCount = documentGuide ? documentGuide.required_documents.filter((doc) => uploadedDocuments.includes(doc.value)).length : 0;
 
     const calculatedPercentage =
         documentGuide && documentGuide.counts.required_count > 0
@@ -388,14 +371,14 @@ export default function ProcurementInitiationShow({
                                             </span>
                                         </div>
                                         <Progress value={calculatedPercentage} className="h-2" />
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-muted-foreground text-xs">
                                             {allRequiredUploaded ? (
-                                                <span className="text-green-600 dark:text-green-500 flex items-center gap-1">
+                                                <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
                                                     <CheckCircle2 className="h-3 w-3" />
                                                     All required documents uploaded
                                                 </span>
                                             ) : (
-                                                <span className="text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                                                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-500">
                                                     <AlertCircle className="h-3 w-3" />
                                                     {documentGuide.counts.required_count - uploadedRequiredCount} required document
                                                     {documentGuide.counts.required_count - uploadedRequiredCount !== 1 ? 's' : ''} remaining
@@ -405,7 +388,7 @@ export default function ProcurementInitiationShow({
                                     </div>
 
                                     {/* Stage Info */}
-                                    <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1">
+                                    <div className="bg-muted/50 space-y-1 rounded-lg p-3 text-xs">
                                         <div className="flex justify-between">
                                             <span className="text-muted-foreground">Stage:</span>
                                             <span className="font-medium">{documentGuide.stage_display_name}</span>
@@ -427,7 +410,6 @@ export default function ProcurementInitiationShow({
                                             </Badge>
                                         </div>
                                     </div>
-
                                 </CardContent>
                             </Card>
                         )}
@@ -465,18 +447,18 @@ export default function ProcurementInitiationShow({
                                                             <div className="flex-1">
                                                                 <p className="text-sm font-medium">{doc.display_name}</p>
                                                                 {doc.description && (
-                                                                    <p className="text-xs text-muted-foreground">{doc.description}</p>
+                                                                    <p className="text-muted-foreground text-xs">{doc.description}</p>
                                                                 )}
                                                             </div>
                                                             {isUploaded && (
                                                                 <Badge variant="outline" className="text-xs text-green-600 dark:text-green-500">
-                                                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                    <CheckCircle2 className="mr-1 h-3 w-3" />
                                                                     Uploaded
                                                                 </Badge>
                                                             )}
                                                         </div>
                                                         {!isUploaded && (
-                                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                            <div className="flex flex-col gap-2 sm:flex-row">
                                                                 <div className="flex-1">
                                                                     <FileUploadArea
                                                                         label=""
@@ -496,7 +478,7 @@ export default function ProcurementInitiationShow({
                                                                     type="button"
                                                                     onClick={() => openUploadDialog(doc.value, doc.display_name, true)}
                                                                     disabled={!file || isUploading}
-                                                                    className="self-start mt-0 h-12 sm:h-[120px] w-full sm:w-auto"
+                                                                    className="mt-0 h-12 w-full self-start sm:h-[120px] sm:w-auto"
                                                                 >
                                                                     Upload
                                                                 </Button>
@@ -522,10 +504,7 @@ export default function ProcurementInitiationShow({
                                         {/* Add Optional Document Selector */}
                                         {availableOptionalDocs.length > 0 && (
                                             <div className="flex gap-2">
-                                                <Select
-                                                    value={selectedOptionalDocType}
-                                                    onValueChange={setSelectedOptionalDocType}
-                                                >
+                                                <Select value={selectedOptionalDocType} onValueChange={setSelectedOptionalDocType}>
                                                     <SelectTrigger className="flex-1">
                                                         <SelectValue placeholder="Select document type to add" />
                                                     </SelectTrigger>
@@ -543,7 +522,7 @@ export default function ProcurementInitiationShow({
                                                     disabled={!selectedOptionalDocType}
                                                     variant="outline"
                                                 >
-                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    <Plus className="mr-2 h-4 w-4" />
                                                     Add
                                                 </Button>
                                             </div>
@@ -565,13 +544,13 @@ export default function ProcurementInitiationShow({
                                                             <div className="flex-1">
                                                                 <p className="text-sm font-medium">{doc.display_name}</p>
                                                                 {doc.description && (
-                                                                    <p className="text-xs text-muted-foreground">{doc.description}</p>
+                                                                    <p className="text-muted-foreground text-xs">{doc.description}</p>
                                                                 )}
                                                             </div>
                                                             <div className="flex items-center gap-2">
                                                                 {isUploaded && (
                                                                     <Badge variant="outline" className="text-xs text-green-600 dark:text-green-500">
-                                                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                        <CheckCircle2 className="mr-1 h-3 w-3" />
                                                                         Uploaded
                                                                     </Badge>
                                                                 )}
@@ -588,7 +567,7 @@ export default function ProcurementInitiationShow({
                                                             </div>
                                                         </div>
                                                         {!isUploaded && (
-                                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                            <div className="flex flex-col gap-2 sm:flex-row">
                                                                 <div className="flex-1">
                                                                     <FileUploadArea
                                                                         label=""
@@ -609,7 +588,7 @@ export default function ProcurementInitiationShow({
                                                                     variant="secondary"
                                                                     onClick={() => openUploadDialog(docValue, doc.display_name, false)}
                                                                     disabled={!file || isUploading}
-                                                                    className="self-start mt-0 h-12 sm:h-[120px] w-full sm:w-auto"
+                                                                    className="mt-0 h-12 w-full self-start sm:h-[120px] sm:w-auto"
                                                                 >
                                                                     Upload
                                                                 </Button>
@@ -625,7 +604,7 @@ export default function ProcurementInitiationShow({
 
                             <CardFooter className="flex flex-col gap-3 border-t pt-4">
                                 {isStageFinished ? (
-                                    <div className="w-full rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4">
+                                    <div className="w-full rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
                                         <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
                                             <CheckCircle2 className="h-5 w-5" />
                                             <div>
@@ -671,24 +650,19 @@ export default function ProcurementInitiationShow({
                             <AlertDialogTitle>Confirm Document Upload</AlertDialogTitle>
                             <AlertDialogDescription>
                                 Are you sure you want to upload this {confirmDialog.isRequired ? 'required' : 'optional'} document?
-                                
                                 {selectedFiles[confirmDialog.documentValue] && (
-                                    <div className="mt-4 space-y-2 rounded-lg bg-muted p-3">
+                                    <div className="bg-muted mt-4 space-y-2 rounded-lg p-3">
                                         <div className="flex items-start justify-between text-sm">
                                             <span className="font-medium">Document Type:</span>
                                             <span className="text-right">{confirmDialog.documentName}</span>
                                         </div>
                                         <div className="flex items-start justify-between text-sm">
                                             <span className="font-medium">File Name:</span>
-                                            <span className="truncate text-right ml-2">
-                                                {selectedFiles[confirmDialog.documentValue]?.name}
-                                            </span>
+                                            <span className="ml-2 truncate text-right">{selectedFiles[confirmDialog.documentValue]?.name}</span>
                                         </div>
                                         <div className="flex items-start justify-between text-sm">
                                             <span className="font-medium">File Size:</span>
-                                            <span>
-                                                {((selectedFiles[confirmDialog.documentValue]?.size || 0) / 1024 / 1024).toFixed(2)} MB
-                                            </span>
+                                            <span>{((selectedFiles[confirmDialog.documentValue]?.size || 0) / 1024 / 1024).toFixed(2)} MB</span>
                                         </div>
                                     </div>
                                 )}
@@ -710,24 +684,24 @@ export default function ProcurementInitiationShow({
                             <AlertDialogTitle>Mark Stage as Complete</AlertDialogTitle>
                             <AlertDialogDescription>
                                 Are you sure you want to mark the Procurement Initiation stage as complete?
-                                
-                                <div className="mt-4 space-y-2 rounded-lg bg-muted p-3">
+                                <div className="bg-muted mt-4 space-y-2 rounded-lg p-3">
                                     <div className="flex items-start justify-between text-sm">
                                         <span className="font-medium">PR Number:</span>
                                         <span>{procurement.pr_number}</span>
                                     </div>
                                     <div className="flex items-start justify-between text-sm">
                                         <span className="font-medium">Required Documents:</span>
-                                        <span className="text-green-600 dark:text-green-400 font-medium">
+                                        <span className="font-medium text-green-600 dark:text-green-400">
                                             {uploadedRequiredCount} / {documentGuide.counts.required_count} Uploaded ✓
                                         </span>
                                     </div>
                                     <div className="flex items-start justify-between text-sm">
                                         <span className="font-medium">Optional Documents:</span>
-                                        <span>{optionalProgress.uploaded} / {optionalProgress.total} Uploaded</span>
+                                        <span>
+                                            {optionalProgress.uploaded} / {optionalProgress.total} Uploaded
+                                        </span>
                                     </div>
                                 </div>
-
                                 <p className="mt-3 text-sm font-medium">
                                     After completing this stage, you can proceed to the next procurement phase.
                                 </p>

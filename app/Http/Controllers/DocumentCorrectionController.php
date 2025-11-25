@@ -3,33 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Enums\DocumentTypeEnums;
-use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Http\Requests\Document\CorrectDocumentRequest;
-use App\Repositories\CorrectionRepository;
-use App\Repositories\DocumentRepository;
-use App\Repositories\StatusRepository;
-use App\Services\BlockchainStorageService;
-use App\Services\Manager;
 use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
 use Inertia\Response;
 
 class DocumentCorrectionController extends Controller
 {
-    public function __construct(
-        private readonly CorrectionPublisher $correctionPublisher,
-        private readonly Manager $multichain,
-        private readonly BlockchainStorageService $fileStorageService,
-        private readonly DocumentRepository $documentRepository,
-        private readonly CorrectionRepository $correctionRepository,
-        private readonly StatusRepository $statusRepository
-    ) {}
-
     /**
      * Submit a correction for a document (Pure Blockchain Implementation).
      *
@@ -63,7 +46,7 @@ class DocumentCorrectionController extends Controller
             }
 
             // Get user's blockchain address
-            $userAddress = auth()->user()->blockchain_address ?? config('multichain.admin_address');
+            $userAddress = auth()->user()->blockchain_address ?? '';
 
             // Determine action and correction type based on request
             $action = $validated['correction_type'] === 'replace' ? 'replace' : 'invalidate';
@@ -228,74 +211,6 @@ class DocumentCorrectionController extends Controller
                 'success' => false,
                 'message' => 'Failed to check correction: '.$e->getMessage(),
             ], 500);
-        }
-    }
-
-    /**
-     * Show the document corrections page for a procurement.
-     */
-    public function showCorrectionsPage(string $id): Response
-    {
-        try {
-            // Fetch the latest status for this procurement using repository
-            $latestStatus = $this->statusRepository->getLatest($id);
-
-            if (! $latestStatus) {
-                abort(404, 'Procurement not found in blockchain');
-            }
-
-            // Fetch documents for this procurement using repository
-            $documentDtos = $this->documentRepository->findByProcurement($id);
-
-            $documents = collect($documentDtos)
-                ->map(function ($doc) {
-                    // Get formatted document type
-                    $documentTypeEnum = DocumentTypeEnums::fromString($doc->documentType);
-                    $documentTypeDisplay = $documentTypeEnum?->getDisplayName() ?? $doc->documentType;
-
-                    return [
-                        'id' => $doc->dataTxid, // Use data txid as unique identifier
-                        'file_name' => $doc->fileName,
-                        'file_key' => $doc->fileKey,
-                        'document_type' => $doc->documentType,
-                        'document_type_display' => $documentTypeDisplay,
-                        'hash' => $doc->hash,
-                        'file_size' => $doc->fileSize,
-                        'uploaded_at' => $doc->timestamp->toIso8601String(),
-                        'blockchain_txid' => $doc->dataTxid,
-                        'is_corrected' => false, // Would need to check corrections repository
-                        'correction_reason' => null,
-                        'corrected_by' => null,
-                        'corrected_at' => null,
-                        'correction_txid' => null,
-                    ];
-                })
-                ->values()
-                ->all();
-
-            // Get formatted status and stage
-            $statusEnum = StatusEnums::tryFrom($latestStatus->currentStatus);
-            $stageEnum = StageEnums::tryFrom($latestStatus->stage);
-
-            return Inertia::render('documents/document-corrections', [
-                'procurement' => [
-                    'id' => $id,
-                    'title' => $latestStatus->procurementTitle,
-                    'reference_number' => $id,
-                    'status' => $latestStatus->currentStatus,
-                    'status_display' => $statusEnum?->getDisplayName() ?? $latestStatus->currentStatus,
-                    'stage' => $latestStatus->stage,
-                    'stage_display' => $stageEnum?->getDisplayName() ?? $latestStatus->stage,
-                    'documents' => $documents,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to fetch procurement correction data from blockchain', [
-                'pr_number' => $id,
-                'error' => $e->getMessage(),
-            ]);
-
-            abort(500, 'Failed to load procurement data from blockchain');
         }
     }
 }

@@ -66,10 +66,11 @@ final class CorrectionPublisher
             // If replacing, upload the new file
             if ($action === 'replace' && $correctedFile !== null) {
                 $fileResult = $this->fileStorage->uploadFile(
-                    file: $correctedFile,
-                    path: 'procurement_documents/'.$prNumber,
-                    suffix: 'corrected_'.time(),
-                    metadata: [
+                    $correctedFile,
+                    $prNumber,
+                    1, // Use stage 1 as default for corrections
+                    'corrected_document',
+                    [
                         'pr_number' => $prNumber,
                         'correction_type' => 'replace',
                         'original_txid' => $originalTxid,
@@ -93,13 +94,14 @@ final class CorrectionPublisher
                 prNumber: $prNumber,
                 procurementTitle: $procurementTitle,
                 originalTxid: $originalTxid,
+                originalDocumentHash: $originalDocumentHash,
+                correctionType: $correctionType,
                 action: $action,
                 reason: $reason,
                 correctedBy: $correctedBy,
                 correctedMetadata: $correctedMetadata,
                 userAddress: $userAddress,
                 timestamp: now(),
-                originalDocumentData: $originalDocumentData,
             );
 
             $txid = $this->corrections->create($correction);
@@ -131,33 +133,36 @@ final class CorrectionPublisher
      * @param  string  $prNumber  PR Number
      * @param  string  $procurementTitle  Procurement title
      * @param  string  $originalTxid  Original document transaction ID
+     * @param  string  $originalDocumentHash  Original document hash
+     * @param  string  $correctionType  Correction type
      * @param  string  $reason  Reason for replacement
      * @param  string  $correctedBy  Who made the correction
      * @param  string  $userAddress  User blockchain address
      * @param  UploadedFile  $correctedFile  New file
-     * @param  array|null  $originalDocumentData  Original document metadata
      * @return array Correction transaction information
      */
     public function publishReplacement(
         string $prNumber,
         string $procurementTitle,
         string $originalTxid,
+        string $originalDocumentHash,
+        string $correctionType,
         string $reason,
         string $correctedBy,
         string $userAddress,
-        UploadedFile $correctedFile,
-        ?array $originalDocumentData = null
+        UploadedFile $correctedFile
     ): array {
         return $this->publish(
             prNumber: $prNumber,
             procurementTitle: $procurementTitle,
             originalTxid: $originalTxid,
+            originalDocumentHash: $originalDocumentHash,
+            correctionType: $correctionType,
             action: 'replace',
             reason: $reason,
             correctedBy: $correctedBy,
             userAddress: $userAddress,
             correctedFile: $correctedFile,
-            originalDocumentData: $originalDocumentData,
         );
     }
 
@@ -167,6 +172,8 @@ final class CorrectionPublisher
      * @param  string  $prNumber  PR Number
      * @param  string  $procurementTitle  Procurement title
      * @param  string  $originalTxid  Original document transaction ID
+     * @param  string  $originalDocumentHash  Original document hash
+     * @param  string  $correctionType  Correction type
      * @param  string  $reason  Reason for invalidation
      * @param  string  $correctedBy  Who made the correction
      * @param  string  $userAddress  User blockchain address
@@ -177,6 +184,8 @@ final class CorrectionPublisher
         string $prNumber,
         string $procurementTitle,
         string $originalTxid,
+        string $originalDocumentHash,
+        string $correctionType,
         string $reason,
         string $correctedBy,
         string $userAddress,
@@ -186,12 +195,13 @@ final class CorrectionPublisher
             prNumber: $prNumber,
             procurementTitle: $procurementTitle,
             originalTxid: $originalTxid,
+            originalDocumentHash: $originalDocumentHash,
+            correctionType: $correctionType,
             action: 'invalidate',
             reason: $reason,
             correctedBy: $correctedBy,
             userAddress: $userAddress,
             correctedFile: null,
-            originalDocumentData: $originalDocumentData,
         );
     }
 }

@@ -68,25 +68,15 @@ class DocumentRepository
      */
     public function findByTxid(string $txid): ?DocumentData
     {
-        try {
-            $data = $this->multichain->getstreamitem(
-                StreamEnums::DOCUMENTS->value,
-                $txid
-            );
+        $allDocuments = $this->all();
 
-            if (! $data || ! isset($data['data']['json'])) {
-                return null;
+        foreach ($allDocuments as $document) {
+            if ($document->dataTxid === $txid) {
+                return $document;
             }
-
-            return DocumentData::fromBlockchainArray($data['data']['json']);
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve document by txid', [
-                'txid' => $txid,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
         }
+
+        return null;
     }
 
     /**
