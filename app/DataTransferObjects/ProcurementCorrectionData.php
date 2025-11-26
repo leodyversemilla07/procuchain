@@ -18,6 +18,7 @@ use Carbon\Carbon;
 final class ProcurementCorrectionData
 {
     public function __construct(
+        public readonly string $txid,
         public readonly string $prNumber,
         public readonly string $procurementTitle,
         public readonly string $correctionType, // 'metadata', 'financial', 'dates', 'approval'
@@ -120,9 +121,10 @@ final class ProcurementCorrectionData
         ];
     }
 
-    public static function fromBlockchainArray(array $data): self
+    public static function fromBlockchainArray(array $data, string $txid): self
     {
         return new self(
+            txid: $txid,
             prNumber: $data['pr_number'],
             procurementTitle: $data['procurement_title'],
             correctionType: $data['correction_type'],

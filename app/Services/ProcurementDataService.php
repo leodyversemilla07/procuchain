@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\DataTransferObjects\CorrectionData;
 use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\EventData;
 use App\DataTransferObjects\StatusData;
@@ -11,6 +12,7 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Models\User;
+use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
 use App\Repositories\StatusRepository;
@@ -34,6 +36,8 @@ class ProcurementDataService
 
     private EventRepository $eventRepository;
 
+    private CorrectionRepository $correctionRepository;
+
     private UserService $userService;
 
     /**
@@ -51,12 +55,14 @@ class ProcurementDataService
         StatusRepository $statusRepository,
         DocumentRepository $documentRepository,
         EventRepository $eventRepository,
+        CorrectionRepository $correctionRepository,
         UserService $userService
     ) {
         $this->multichain = $multichain;
         $this->statusRepository = $statusRepository;
         $this->documentRepository = $documentRepository;
         $this->eventRepository = $eventRepository;
+        $this->correctionRepository = $correctionRepository;
         $this->userService = $userService;
 
         // Load configuration values (Issue #20 fix)
@@ -233,8 +239,14 @@ class ProcurementDataService
             'total_after_filtering_by_id' => $totalAfterFilter,
         ]);
 
+        // Fetch corrections for this procurement
+        $correctionDtos = $this->correctionRepository->findByProcurement($pr_number);
+
+        // Group corrections by original transaction ID for precise document matching
+        $correctionsByTxid = collect($correctionDtos)->groupBy(fn (CorrectionData $correction) => $correction->originalTxid);
+
         return collect($documentDtos)
-            ->map(function (DocumentData $doc) {
+            ->map(function (DocumentData $doc) use ($correctionsByTxid) {
                 $fileKey = $doc->fileKey;
                 $hash = $doc->hash;
                 $stage = $doc->stage;
@@ -246,6 +258,38 @@ class ProcurementDataService
                 $stageMetadata = $doc->stageMetadata;
                 if ($stageMetadata && is_array($stageMetadata)) {
                     $stageMetadata = $this->formatStageMetadata($stageMetadata);
+                }
+
+                // Check for corrections for this specific document by TXID
+                $documentCorrections = $correctionsByTxid->get($doc->dataTxid, collect());
+                $hasCorrections = $documentCorrections->isNotEmpty();
+                $latestCorrection = null;
+
+                if ($hasCorrections) {
+                    // Get the most recent correction
+                    $latestCorrectionData = $documentCorrections->sortByDesc(fn (CorrectionData $c) => $c->timestamp)->first();
+
+                    if ($latestCorrectionData) {
+                        // Format correction type for display
+                        $correctionTypeDisplay = match ($latestCorrectionData->correctionType) {
+                            'replace' => 'Document Replacement',
+                            'invalidate' => 'Document Invalidation',
+                            'metadata' => 'Metadata Correction',
+                            'document_correction' => 'Document Correction',
+                            default => ucwords(str_replace('_', ' ', $latestCorrectionData->correctionType)),
+                        };
+
+                        $latestCorrection = [
+                            'txid' => $latestCorrectionData->txid,
+                            'timestamp' => $latestCorrectionData->timestamp->toIso8601String(),
+                            'correction_type' => $latestCorrectionData->correctionType,
+                            'correction_type_display' => $correctionTypeDisplay,
+                            'action' => $latestCorrectionData->action,
+                            'reason' => $latestCorrectionData->reason,
+                            'corrected_by' => $latestCorrectionData->correctedBy,
+                            'corrected_metadata' => $latestCorrectionData->correctedMetadata,
+                        ];
+                    }
                 }
 
                 return [
@@ -268,6 +312,11 @@ class ProcurementDataService
                     'formatted_date' => $doc->getFormattedDateTime(),
                     'formatted_date_only' => $doc->getFormattedDateOnly(),
                     'formatted_time_only' => $doc->getFormattedTimeOnly(),
+                    'metadata_txid' => $doc->metadataTxid,
+                    'data_txid' => $doc->dataTxid,
+                    // Correction information
+                    'has_corrections' => $hasCorrections,
+                    'latest_correction' => $latestCorrection,
                 ];
             })
             ->sortByDesc('timestamp')

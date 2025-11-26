@@ -83,7 +83,8 @@ export interface Document {
     file_key: string;
     document_type: string;
     document_type_formatted?: string;
-    metadata_txid: string;
+    metadata_txid?: string;
+    data_txid?: string;
     hash?: string;
     hash_short?: string;
     hash_medium?: string;
@@ -101,6 +102,22 @@ export interface Document {
     formatted_time_only?: string;
     spaces_url?: string;
     document_index?: number;
+    // Correction information
+    has_corrections?: boolean;
+    latest_correction?: {
+        txid: string;
+        timestamp: string;
+        correction_type: string;
+        action: 'replace' | 'invalidate';
+        reason: string;
+        corrected_by: string;
+        corrected_metadata?: {
+            file_name?: string;
+            hash?: string;
+            file_size?: number;
+            [key: string]: unknown;
+        };
+    };
 }
 
 /**

@@ -2,11 +2,13 @@ import { Calendar, Download, Eye, FileText, HardDrive, Hash, Lock, TrendingUp } 
 import { useCallback, type FC } from 'react';
 
 import { Button } from '@/components/ui/button';
+import CorrectionDetailsSheet from '@/components/documents/correction-details-sheet';
 import files from '@/routes/files';
 import pdf from '@/routes/pdf';
 import type { Document } from '@/types';
 import { Link } from '@inertiajs/react';
 import { toast } from 'sonner';
+import { useState } from 'react';
 import { shortenHash } from '../../utils/show-procurement/helpers';
 import { DocumentMetadataCard } from './document-metadata-card';
 
@@ -15,6 +17,9 @@ interface DocumentItemProps {
 }
 
 export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
+    const [showCorrectionHistory, setShowCorrectionHistory] = useState(false);
+    const [showCorrectionDetails, setShowCorrectionDetails] = useState(false);
+
     const handleCopyHash = useCallback(async () => {
         if (!doc.hash) return;
         try {
@@ -102,6 +107,20 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 <span className="sm:hidden">View</span>
                             </a>
                         </Button>
+
+                        {doc.has_corrections && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowCorrectionDetails(true)}
+                                className="hover:border-primary hover:bg-primary/5 focus-visible:ring-primary h-8 text-xs font-medium shadow-sm transition-all duration-200 hover:shadow focus-visible:ring-2 focus-visible:ring-offset-2 sm:h-9 sm:text-sm"
+                                aria-label="View correction details"
+                            >
+                                <FileText className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+                                <span className="hidden sm:inline">View Corrections</span>
+                                <span className="sm:hidden">Corrections</span>
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -143,6 +162,41 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                 {/* Metadata Section */}
                 {doc.stage_metadata && <DocumentMetadataCard metadata={doc.stage_metadata} documentType={doc.stage_metadata.document_type} />}
             </div>
+
+            {/* Correction History Sheet */}
+            <CorrectionDetailsSheet
+                open={showCorrectionHistory}
+                onOpenChange={setShowCorrectionHistory}
+                pr_number={doc.pr_number || ''}
+                documentHash={doc.hash}
+            />
+
+            {/* Correction Details Sheet */}
+            {doc.has_corrections && doc.latest_correction && (
+                <CorrectionDetailsSheet
+                    open={showCorrectionDetails}
+                    onOpenChange={setShowCorrectionDetails}
+                    correction={{
+                        txid: doc.latest_correction.txid,
+                        timestamp: doc.latest_correction.timestamp,
+                        correction_type: doc.latest_correction.correction_type,
+                        correction_type_display: doc.latest_correction.correction_type_display,
+                        action: doc.latest_correction.action as 'replace' | 'invalidate',
+                        reason: doc.latest_correction.reason,
+                        corrected_by: doc.latest_correction.corrected_by,
+                        original_txid: doc.data_txid || '',
+                        original_document_hash: doc.hash || '',
+                        document_hash: doc.latest_correction.corrected_metadata?.hash || '',
+                        file_name: doc.latest_correction.corrected_metadata?.file_name || '',
+                        file_key: String(doc.latest_correction.corrected_metadata?.file_key || ''),
+                        document_type: doc.document_type || '',
+                        document_type_display: doc.document_type_formatted || doc.document_type || '',
+                        corrected_metadata: doc.latest_correction.corrected_metadata,
+                    }}
+                    pr_number={doc.pr_number || ''}
+                    documentHash={doc.hash}
+                />
+            )}
         </li>
     );
 };

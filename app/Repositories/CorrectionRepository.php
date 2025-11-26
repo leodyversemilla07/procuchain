@@ -101,7 +101,7 @@ final readonly class CorrectionRepository
             $corrections = [];
             foreach ($items as $item) {
                 if (isset($item['data']['json'])) {
-                    $corrections[] = CorrectionData::fromBlockchainArray($item['data']['json']);
+                    $corrections[] = CorrectionData::fromBlockchainArray($item['data']['json'], $item['txid']);
                 }
             }
 
@@ -138,7 +138,7 @@ final readonly class CorrectionRepository
             $history = [];
             foreach ($items as $item) {
                 if (isset($item['data']['json'])) {
-                    $correction = CorrectionData::fromBlockchainArray($item['data']['json']);
+                    $correction = CorrectionData::fromBlockchainArray($item['data']['json'], $item['txid']);
                     if ($correction->prNumber === $prNumber) {
                         $history[] = $correction;
                     }
