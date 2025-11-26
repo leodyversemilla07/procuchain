@@ -45,6 +45,17 @@ interface ProcurementData {
     };
 }
 
+interface ProcurementCorrection {
+    pr_number: string;
+    timestamp: string;
+    reason: string;
+    corrected_by: string;
+    correction_type: string;
+    correction_type_display: string;
+    changed_fields: string[];
+    metadata: Record<string, unknown>;
+}
+
 interface DocumentData {
     id: number;
     pr_number: string;
@@ -63,10 +74,11 @@ interface DocumentData {
 
 interface ShowProps {
     procurement: ProcurementData;
+    corrections: ProcurementCorrection[];
     documents: DocumentData[];
 }
 
-export default function ProcurementCorrections({ procurement, documents }: ShowProps) {
+export default function ProcurementCorrections({ procurement, corrections, documents }: ShowProps) {
     const { auth } = usePage<SharedData>().props;
     // Extract role from roles array (roles[0]) instead of user.role
     const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
@@ -165,6 +177,7 @@ export default function ProcurementCorrections({ procurement, documents }: ShowP
                     prNumber={procurement.pr_number}
                     hasCorrections={procurement.has_corrections}
                     latestCorrection={procurement.latest_correction}
+                    corrections={corrections}
                     procurement={{
                         title: procurement.title,
                         description: procurement.description,
@@ -241,7 +254,7 @@ export default function ProcurementCorrections({ procurement, documents }: ShowP
                 <DocumentCorrectionSheet
                     open={showDocumentCorrectionSheet}
                     onOpenChange={setShowDocumentCorrectionSheet}
-                    documentId={selectedDocument.blockchain_txid}
+                    documentId={selectedDocument.id.toString()}
                     pr_number={selectedDocument.pr_number}
                     procurementTitle={procurement.title}
                     originalDocumentHash={selectedDocument.hash}

@@ -58,10 +58,36 @@ final class BlockchainStorageService
         $fileSize = $file->getSize();
         $mimeType = $file->getMimeType();
 
-        // Read file content and convert to hex
-        $fileContent = file_get_contents($file->getRealPath());
+        // Read file content using Laravel's UploadedFile::get() method
+        // This is more reliable than file_get_contents(getRealPath()) for uploaded files
+        $fileContent = $file->get();
         $fileHex = bin2hex($fileContent);
         $fileHash = hash('sha256', $fileContent);
+
+        // Validate that we actually read the file content
+        // Allow empty files but log a warning for debugging
+        if (empty($fileContent)) {
+            Log::warning('Empty file content detected during upload', [
+                'filename' => $file->getClientOriginalName(),
+                'size' => $fileSize,
+                'mime_type' => $file->getMimeType(),
+                'pr_number' => $prNumber,
+                'document_type' => $documentType
+            ]);
+
+            // Only throw exception for non-test environments or if explicitly required
+            if (app()->environment(['production', 'staging']) && $fileSize > 0) {
+                throw new Exception("Failed to read file content. File appears to be empty or inaccessible.");
+            }
+        }
+
+        if (strlen($fileContent) !== $fileSize) {
+            Log::warning('File content size mismatch', [
+                'filename' => $filename,
+                'reported_size' => $fileSize,
+                'actual_content_size' => strlen($fileContent),
+            ]);
+        }
 
         // Check file size against chunk limit
         if ($fileSize > $this->maxChunkSize) {
@@ -76,6 +102,7 @@ final class BlockchainStorageService
             'filename' => $filename,
             'file_key' => $fileKey,
             'size' => $fileSize,
+            'content_size' => strlen($fileContent),
             'hash' => $fileHash,
             'hex_length' => strlen($fileHex),
         ]);

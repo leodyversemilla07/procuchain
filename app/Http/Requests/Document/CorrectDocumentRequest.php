@@ -26,7 +26,7 @@ class CorrectDocumentRequest extends FormRequest
             'correction_reason' => ['required', 'string', 'min:10', 'max:1000'],
             'correction_type' => ['required', Rule::in(['replace', 'invalidate'])],
             'corrected_file' => ['required_if:correction_type,replace', 'file', 'mimes:pdf', 'max:8192'],
-            'pr_number' => ['required', 'string', 'exists:procurements,id'],
+            'pr_number' => ['required', 'string'],
             'procurement_title' => ['required', 'string'],
             'original_document_hash' => ['required', 'string'],
             'original_txid' => ['nullable', 'string'],

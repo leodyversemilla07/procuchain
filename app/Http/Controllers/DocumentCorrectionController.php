@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\DocumentTypeEnums;
 use App\Http\Requests\Document\CorrectDocumentRequest;
+use App\Repositories\CorrectionRepository;
+use App\Repositories\DocumentRepository;
 use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +15,12 @@ use Inertia\Response;
 
 class DocumentCorrectionController extends Controller
 {
+    public function __construct(
+        protected DocumentRepository $documentRepository,
+        protected CorrectionRepository $correctionRepository,
+        protected CorrectionPublisher $correctionPublisher
+    ) {}
+
     /**
      * Submit a correction for a document (Pure Blockchain Implementation).
      *
@@ -33,7 +41,7 @@ class DocumentCorrectionController extends Controller
 
             // Convert DTO to array for compatibility
             $documentData = [
-                'pr_number' => $originalDocument->pr_number,
+                'pr_number' => $originalDocument->prNumber,
                 'procurement_title' => $originalDocument->procurementTitle,
                 'stage' => $originalDocument->stage,
                 'hash' => $originalDocument->hash,
@@ -104,7 +112,7 @@ class DocumentCorrectionController extends Controller
 
             // Create a map of document info keyed by pr_number for quick lookup
             $documentsMap = collect($allDocuments)
-                ->keyBy(fn ($doc) => $doc->pr_number.'_'.$doc->fileKey)
+                ->keyBy(fn ($doc) => $doc->prNumber.'_'.$doc->fileKey)
                 ->mapWithKeys(function ($doc) {
                     // Get formatted document type
                     $documentTypeEnum = DocumentTypeEnums::fromString($doc->documentType);
@@ -143,10 +151,10 @@ class DocumentCorrectionController extends Controller
                     };
 
                     return [
-                        'txid' => $correctionDto->originalTxid,
+                        'txid' => $correctionDto->txid,
                         'timestamp' => $correctionDto->timestamp->toIso8601String(),
                         'original_txid' => $correctionDto->originalTxid,
-                        'correction_txid' => $correctionDto->originalTxid,
+                        'correction_txid' => $correctionDto->txid,
                         'reason' => $correctionDto->reason,
                         'corrected_by' => $correctionDto->correctedBy,
                         'correction_type' => $correctionDto->correctionType,
@@ -157,7 +165,7 @@ class DocumentCorrectionController extends Controller
                         'file_key' => $originalDoc['file_key'] ?? null,
                         'document_type' => $originalDoc['document_type'] ?? '',
                         'document_type_display' => $originalDoc['document_type_display'] ?? null,
-                        'pr_number' => $correctionDto->pr_number,
+                        'pr_number' => $correctionDto->prNumber,
                         'procurement_title' => $correctionDto->procurementTitle,
                         'action' => $correctionDto->action,
                         'metadata' => $correctionDto->toBlockchainArray(),

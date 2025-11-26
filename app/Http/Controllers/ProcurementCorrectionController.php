@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Procurement\CorrectProcurementRequest;
+use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementCorrectionRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\Publishers\ProcurementCorrectionPublisher;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
@@ -20,6 +21,7 @@ class ProcurementCorrectionController extends Controller
         private readonly ProcurementCorrectionPublisher $procurementCorrectionPublisher,
         private readonly ProcurementRepository $procurementRepository,
         private readonly ProcurementCorrectionRepository $procurementCorrectionRepository,
+        private readonly CorrectionRepository $correctionRepository,
         private readonly DocumentRepository $documentRepository
     ) {}
 
@@ -60,7 +62,7 @@ class ProcurementCorrectionController extends Controller
             ]);
 
             // Send notification to relevant stakeholders
-            $this->sendCorrectionNotification($originalProcurement, $result, $validated['correction_reason']);
+            // $this->sendCorrectionNotification($originalProcurement, $result, $validated['correction_reason']);
 
             return redirect()->back()->with('success', 'Procurement correction submitted successfully. Correction TX: '.$result['correction_txid']);
         } catch (\Exception $e) {
@@ -77,25 +79,70 @@ class ProcurementCorrectionController extends Controller
     /**
      * Get correction history for a procurement.
      */
-    public function getProcurementCorrectionHistory(Request $request, string $procurement): JsonResponse
+    public function getProcurementCorrectionHistory(Request $request, string $pr_number): JsonResponse
     {
         try {
-            // Fetch corrections for this procurement using repository
-            $correctionDtos = $this->procurementCorrectionRepository->findByProcurement($procurement);
+            Log::info('Fetching correction history', ['pr_number' => $pr_number, 'user' => auth()->id()]);
 
-            // Map corrections to response format
-            $corrections = collect($correctionDtos)
-                ->map(function ($correctionDto) {
-                    return [
-                        'pr_number' => $correctionDto->prNumber,
-                        'timestamp' => $correctionDto->timestamp->toIso8601String(),
-                        'reason' => $correctionDto->reason,
-                        'corrected_by' => $correctionDto->correctedBy,
-                        'correction_type' => $correctionDto->correctionType,
-                        'correction_type_display' => ucwords(str_replace('_', ' ', $correctionDto->correctionType)),
-                        'changed_fields' => $correctionDto->getChangedFields(),
-                        'metadata' => $correctionDto->toBlockchainArray(),
-                    ];
+            // Fetch both procurement corrections and document corrections
+            $procurementCorrections = $this->procurementCorrectionRepository->findByProcurement($pr_number);
+            $documentCorrections = $this->correctionRepository->findByProcurement($pr_number);
+
+            Log::info('Found corrections', [
+                'pr_number' => $pr_number,
+                'procurement_corrections' => count($procurementCorrections),
+                'document_corrections' => count($documentCorrections),
+            ]);
+
+            // Combine and format all corrections
+            $allCorrections = collect([...$procurementCorrections, ...$documentCorrections])
+                ->map(function ($correction) {
+                    // Handle both CorrectionData and ProcurementCorrectionData
+                    if (method_exists($correction, 'getChangedFields')) {
+                        // ProcurementCorrectionData
+                        return [
+                            'pr_number' => $correction->prNumber,
+                            'timestamp' => $correction->timestamp->toIso8601String(),
+                            'reason' => $correction->reason,
+                            'corrected_by' => $correction->correctedBy,
+                            'correction_type' => $correction->correctionType ?? 'procurement_metadata',
+                            'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType ?? 'procurement_metadata')),
+                            'action' => $correction->action ?? 'replace', // Add action field for consistency
+                            'txid' => $correction->txid ?? '', // Add txid field
+                            'original_txid' => $correction->originalTxid ?? '',
+                            'original_document_hash' => $correction->originalDocumentHash ?? '',
+                            'document_hash' => $correction->documentHash ?? '',
+                            'file_name' => $correction->fileName ?? '',
+                            'file_key' => $correction->fileKey ?? '',
+                            'document_type' => $correction->documentType ?? '',
+                            'document_type_display' => $correction->documentTypeDisplay ?? '',
+                            'changed_fields' => $correction->getChangedFields(),
+                            'corrected_metadata' => $correction->correctedMetadata ?? null,
+                            'metadata' => $correction->toBlockchainArray(),
+                        ];
+                    } else {
+                        // CorrectionData (document corrections)
+                        return [
+                            'pr_number' => $correction->prNumber,
+                            'timestamp' => $correction->timestamp->toIso8601String(),
+                            'reason' => $correction->reason,
+                            'corrected_by' => $correction->correctedBy,
+                            'correction_type' => $correction->correctionType,
+                            'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType)),
+                            'action' => $correction->action ?? 'replace', // Add action field
+                            'txid' => $correction->txid ?? '', // Add txid field
+                            'original_txid' => $correction->originalTxid ?? '',
+                            'original_document_hash' => $correction->originalDocumentHash ?? '',
+                            'document_hash' => $correction->documentHash ?? '',
+                            'file_name' => $correction->fileName ?? '',
+                            'file_key' => $correction->fileKey ?? '',
+                            'document_type' => $correction->documentType ?? '',
+                            'document_type_display' => $correction->documentTypeDisplay ?? '',
+                            'changed_fields' => [], // Document corrections don't have changed fields in the same way
+                            'corrected_metadata' => $correction->correctedMetadata ?? null,
+                            'metadata' => $correction->toBlockchainArray(),
+                        ];
+                    }
                 })
                 ->sortByDesc('timestamp')
                 ->values()
@@ -103,12 +150,12 @@ class ProcurementCorrectionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'corrections' => $corrections,
-                'count' => count($corrections),
+                'corrections' => $allCorrections,
+                'count' => count($allCorrections),
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve procurement correction history from blockchain', [
-                'pr_number' => $procurement,
+                'pr_number' => $pr_number,
                 'error' => $e->getMessage(),
             ]);
 
@@ -162,6 +209,44 @@ class ProcurementCorrectionController extends Controller
             // Check if procurement has corrections
             $hasCorrections = $this->procurementCorrectionRepository->hasCorrections($prNumber);
             $latestCorrection = $hasCorrections ? $this->procurementCorrectionRepository->getLatest($prNumber) : null;
+
+            // Load all corrections (both procurement metadata and document corrections)
+            $procurementCorrections = $this->procurementCorrectionRepository->findByProcurement($prNumber);
+            $documentCorrections = $this->correctionRepository->findByProcurement($prNumber);
+
+            // Combine and format all corrections
+            $allCorrections = collect([...$procurementCorrections, ...$documentCorrections])
+                ->map(function ($correction) {
+                    // Handle both CorrectionData and ProcurementCorrectionData
+                    if (method_exists($correction, 'getChangedFields')) {
+                        // ProcurementCorrectionData
+                        return [
+                            'pr_number' => $correction->prNumber,
+                            'timestamp' => $correction->timestamp->toIso8601String(),
+                            'reason' => $correction->reason,
+                            'corrected_by' => $correction->correctedBy,
+                            'correction_type' => $correction->correctionType ?? 'procurement_metadata',
+                            'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType ?? 'procurement_metadata')),
+                            'changed_fields' => $correction->getChangedFields(),
+                            'metadata' => $correction->toBlockchainArray(),
+                        ];
+                    } else {
+                        // CorrectionData (document corrections)
+                        return [
+                            'pr_number' => $correction->prNumber,
+                            'timestamp' => $correction->timestamp->toIso8601String(),
+                            'reason' => $correction->reason,
+                            'corrected_by' => $correction->correctedBy,
+                            'correction_type' => $correction->correctionType,
+                            'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType)),
+                            'changed_fields' => [], // Document corrections don't have changed fields in the same way
+                            'metadata' => $correction->toBlockchainArray(),
+                        ];
+                    }
+                })
+                ->sortByDesc('timestamp')
+                ->values()
+                ->all();
 
             // Fetch documents for this procurement
             $documents = $this->documentRepository->findByProcurement($prNumber);
@@ -223,6 +308,7 @@ class ProcurementCorrectionController extends Controller
                         'changed_fields' => $latestCorrection->getChangedFields(),
                     ] : null,
                 ],
+                'corrections' => $allCorrections,
                 'documents' => $formattedDocuments,
             ]);
         } catch (\Exception $e) {

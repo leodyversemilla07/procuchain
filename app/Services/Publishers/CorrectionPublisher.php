@@ -91,6 +91,7 @@ final class CorrectionPublisher
 
             // Create correction record
             $correction = new CorrectionData(
+                txid: null, // Will be set when published to blockchain
                 prNumber: $prNumber,
                 procurementTitle: $procurementTitle,
                 originalTxid: $originalTxid,

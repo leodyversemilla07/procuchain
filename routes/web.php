@@ -85,10 +85,12 @@ Route::middleware(['auth'])->group(function () {
             ->name('procurements.corrections.submit');
     });
 
-    Route::get('/procurements/{pr_number}/corrections/history', [ProcurementCorrectionController::class, 'getProcurementCorrectionHistory'])
-        ->name('procurements.corrections.history');
-    Route::get('/procurements/{pr_number}/corrections/check', [ProcurementCorrectionController::class, 'checkProcurementCorrection'])
-        ->name('procurements.corrections.check');
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/procurements/{pr_number}/corrections/history', [ProcurementCorrectionController::class, 'getProcurementCorrectionHistory'])
+            ->name('procurements.corrections.history');
+        Route::get('/procurements/{pr_number}/corrections/check', [ProcurementCorrectionController::class, 'checkProcurementCorrection'])
+            ->name('procurements.corrections.check');
+    });
 
     // Document Corrections - Management (Admin, BAC Chairman, BAC Secretariat)
     Route::middleware(['role:admin|bac_chairman|bac_secretariat'])->group(function () {

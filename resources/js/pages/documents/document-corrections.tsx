@@ -1,6 +1,5 @@
-import { DocumentCorrectionAlert } from '@/components/documents/document-correction-alert';
-import { CorrectionHistorySheet } from '@/components/documents/document-correction-history-sheet';
 import { DocumentCorrectionSheet } from '@/components/documents/document-correction-sheet';
+import CorrectionDetailsSheet from '@/components/documents/correction-details-sheet';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,19 +13,18 @@ import { AlertCircle, FileText, History, Info } from 'lucide-react';
 import { useState } from 'react';
 
 interface ProcurementDocument {
-    id: number | string;
+    id: string;
     file_name: string;
-    document_type: string;
-    document_type_display?: string;
-    hash: string;
     file_size: number;
+    hash: string;
     uploaded_at: string;
     blockchain_txid?: string;
-    is_corrected: boolean;
+    document_type: string;
+    document_type_display?: string;
+    is_corrected?: boolean;
     correction_reason?: string;
     corrected_by?: string;
     corrected_at?: string;
-    correction_txid?: string;
 }
 
 interface Procurement {
@@ -52,13 +50,15 @@ interface DocumentCorrectionsProps {
 
 export default function DocumentCorrections({ procurement, auth }: DocumentCorrectionsProps) {
     const { auth: pageAuth } = usePage<SharedData>().props;
-    const userRole = pageAuth?.roles?.[0] || auth?.roles?.[0] || pageAuth?.user?.role || 'guest';
+    const userRole = pageAuth?.roles?.[0] || auth?.user?.roles?.[0] || 'guest';
     const breadcrumbs = getDocumentCorrectionsBreadcrumbs(userRole, procurement.title);
 
     const [selectedDocument, setSelectedDocument] = useState<ProcurementDocument | null>(null);
     const [showCorrectionSheet, setShowCorrectionSheet] = useState(false);
+
+    // History sheet state
     const [showHistorySheet, setShowHistorySheet] = useState(false);
-    const [historyDocumentHash, setHistoryDocumentHash] = useState<string | undefined>(undefined);
+    const [historyDocumentHash, setHistoryDocumentHash] = useState<string | undefined>();
 
     // Check if user can correct documents
     const allowedRoles = [UserRole.ADMIN, UserRole.BAC_CHAIRMAN, UserRole.BAC_SECRETARIAT];
@@ -80,7 +80,7 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
 
     // Handle clicking "View All Corrections" for the entire procurement
     const handleViewAllCorrections = () => {
-        setHistoryDocumentHash(undefined); // Show all corrections, not filtered by document
+        setHistoryDocumentHash(undefined);
         setShowHistorySheet(true);
     };
 
@@ -137,18 +137,6 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                                 {procurement.documents.map((document) => (
                                     <div key={document.id} className="rounded-lg border p-3 sm:p-4">
                                         {/* Correction Alert (if document is corrected) */}
-                                        {document.is_corrected && (
-                                            <div className="mb-4">
-                                                <DocumentCorrectionAlert
-                                                    isCorrected={document.is_corrected}
-                                                    correctionReason={document.correction_reason}
-                                                    correctedBy={document.corrected_by}
-                                                    correctedAt={document.corrected_at}
-                                                    onViewHistory={() => handleViewDocumentHistory(document)}
-                                                />
-                                            </div>
-                                        )}
-
                                         {/* Document Info */}
                                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                             <div className="min-w-0 flex-1">
@@ -246,8 +234,8 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
                 />
             )}
 
-            {/* Correction History Sheet */}
-            <CorrectionHistorySheet
+            {/* History Sheet */}
+            <CorrectionDetailsSheet
                 open={showHistorySheet}
                 onOpenChange={setShowHistorySheet}
                 pr_number={procurement.id}

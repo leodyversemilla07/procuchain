@@ -1,14 +1,15 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
-import { Label } from '@/components/ui/label';
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
-import { correct } from '@/routes/documents';
-import { router } from '@inertiajs/react';
-import { AlertTriangle, FileText, Upload } from 'lucide-react';
-import { useState } from 'react';
+import FileUploadArea from '@/components/file-upload-area';
+import { correctDocument } from '@/actions/App/Http/Controllers/DocumentCorrectionController';
+import { Form, useForm, usePage } from '@inertiajs/react';
+import { AlertTriangle, FileText } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 interface DocumentCorrectionSheetProps {
     open: boolean;
@@ -29,43 +30,76 @@ export function DocumentCorrectionSheet({
     originalDocumentHash,
     originalTxid,
 }: DocumentCorrectionSheetProps) {
-    const [correctionType, setCorrectionType] = useState<'replace' | 'invalidate'>('replace');
-    const [correctionReason, setCorrectionReason] = useState('');
+    const { props } = usePage();
     const [correctedFile, setCorrectedFile] = useState<File | null>(null);
-    const [processing, setProcessing] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [isDragging, setIsDragging] = useState(false);
+    const formRef = useRef<ReturnType<typeof useForm>>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setProcessing(true);
-        setErrors({});
+    // Initialize Inertia form with initial values
+    const form = useForm({
+        correction_reason: '',
+        correction_type: 'replace' as 'replace' | 'invalidate',
+        pr_number: pr_number.toString(),
+        procurement_title: procurementTitle,
+        original_document_hash: originalDocumentHash,
+        original_txid: originalTxid || '',
+        corrected_file: null as File | null,
+    });
 
-        const formData = new FormData();
-        formData.append('correction_reason', correctionReason);
-        formData.append('correction_type', correctionType);
-        formData.append('pr_number', pr_number.toString());
-        formData.append('procurement_title', procurementTitle);
-        formData.append('original_document_hash', originalDocumentHash);
-        if (originalTxid) {
-            formData.append('original_txid', originalTxid);
+    // Store form reference to avoid dependency issues
+    useEffect(() => {
+        formRef.current = form;
+    }, [form]);
+
+    // Sync correctedFile state with form data
+    useEffect(() => {
+        if (formRef.current) {
+            formRef.current.setData('corrected_file', correctedFile);
         }
+    }, [correctedFile]);
 
-        if (correctionType === 'replace' && correctedFile) {
-            formData.append('corrected_file', correctedFile);
+    // Handle flash messages from backend
+    const handleFlashMessages = useCallback(() => {
+        const flash = props.flash as Record<string, unknown> | undefined;
+        if (flash?.success) {
+            const message = flash.success as string;
+            toast.success(message, {
+                description: 'The correction has been submitted to the blockchain.',
+                onAutoClose: () => {
+                    onOpenChange(false);
+                },
+            });
+            // Also close after a delay as backup
+            setTimeout(() => {
+                onOpenChange(false);
+            }, 3000);
         }
+        if (flash?.error) {
+            const message = flash.error as string;
+            toast.error(message, {
+                description: 'Please check the form and try again.',
+            });
+        }
+    }, [props.flash, onOpenChange]);
 
-        router.post(correct.url(typeof documentId === 'string' ? parseInt(documentId) : documentId), formData, {
+    useEffect(() => {
+        handleFlashMessages();
+    }, [handleFlashMessages]);
+
+    const handleSubmit = () => {
+        // Submit using Wayfinder object directly
+        form.submit(correctDocument(documentId), {
             preserveScroll: true,
             onSuccess: () => {
-                setCorrectionReason('');
+                // Reset form on success
+                form.reset();
                 setCorrectedFile(null);
-                onOpenChange(false);
-            },
-            onError: (responseErrors) => {
-                setErrors(responseErrors);
-            },
-            onFinish: () => {
-                setProcessing(false);
+                // Reset the input value
+                const fileInput = document.getElementById('corrected_file') as HTMLInputElement;
+                if (fileInput) {
+                    fileInput.value = '';
+                }
+                // Don't close the sheet immediately - let the flash message handler show the toast
             },
         });
     };
@@ -76,11 +110,48 @@ export function DocumentCorrectionSheet({
         }
     };
 
-    const handleCancel = () => {
-        setCorrectionReason('');
+    const handleRemoveFile = () => {
         setCorrectedFile(null);
-        setErrors({});
+        // Reset the input value so the same file can be selected again if needed
+        const fileInput = document.getElementById('corrected_file') as HTMLInputElement;
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    };
+
+    const handleDragEnter = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        const files = e.dataTransfer.files;
+        if (files && files[0]) {
+            setCorrectedFile(files[0]);
+        }
+    };
+
+    const handleCancel = () => {
+        form.reset();
+        setCorrectedFile(null);
         onOpenChange(false);
+        // Reset the input value
+        const fileInput = document.getElementById('corrected_file') as HTMLInputElement;
+        if (fileInput) {
+            fileInput.value = '';
+        }
     };
 
     return (
@@ -96,80 +167,81 @@ export function DocumentCorrectionSheet({
                     </SheetDescription>
                 </SheetHeader>
 
-                <form onSubmit={handleSubmit} className="grid flex-1 auto-rows-min gap-6 px-4 py-6">
+                <Form
+                    as="div"
+                    className="grid flex-1 auto-rows-min gap-6 px-4 py-6"
+                >
                     {/* Correction Type */}
-                    <div className="grid gap-3">
-                        <Label className="text-base font-semibold">Correction Type</Label>
-                        <RadioGroup
-                            value={correctionType}
-                            onValueChange={(value) => {
-                                setCorrectionType(value as 'replace' | 'invalidate');
-                            }}
-                            className="grid gap-3"
-                        >
-                            <div className="hover:bg-accent flex items-start gap-3 rounded-lg border p-3 transition-colors sm:items-center sm:p-4">
-                                <RadioGroupItem value="replace" id="replace" className="mt-1 sm:mt-0" />
-                                <Label htmlFor="replace" className="flex-1 cursor-pointer">
-                                    <div className="text-sm font-semibold sm:text-base">Replace Document</div>
-                                    <div className="text-muted-foreground text-xs sm:text-sm">Upload a corrected version of the document</div>
-                                </Label>
-                            </div>
-                            <div className="hover:bg-accent flex items-start gap-3 rounded-lg border p-3 transition-colors sm:items-center sm:p-4">
-                                <RadioGroupItem value="invalidate" id="invalidate" className="mt-1 sm:mt-0" />
-                                <Label htmlFor="invalidate" className="flex-1 cursor-pointer">
-                                    <div className="text-sm font-semibold sm:text-base">Invalidate Document</div>
-                                    <div className="text-muted-foreground text-xs sm:text-sm">Mark the document as invalid without replacement</div>
-                                </Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
+                    <Field>
+                        <FieldLabel className="text-base font-semibold">Correction Type</FieldLabel>
+                        <FieldContent>
+                            <RadioGroup
+                                value={form.data.correction_type}
+                                onValueChange={(value) => {
+                                    form.setData('correction_type', value as 'replace' | 'invalidate');
+                                }}
+                                className="grid gap-3"
+                            >
+                                <div className="hover:bg-accent flex items-start gap-3 rounded-lg border p-3 transition-colors sm:items-center sm:p-4">
+                                    <RadioGroupItem value="replace" id="replace" className="mt-1 sm:mt-0" />
+                                    <FieldLabel htmlFor="replace" className="flex-1 cursor-pointer">
+                                        <div className="text-sm font-semibold sm:text-base">Replace Document</div>
+                                        <FieldDescription className="text-xs sm:text-sm">Upload a corrected version of the document</FieldDescription>
+                                    </FieldLabel>
+                                </div>
+                                <div className="hover:bg-accent flex items-start gap-3 rounded-lg border p-3 transition-colors sm:items-center sm:p-4">
+                                    <RadioGroupItem value="invalidate" id="invalidate" className="mt-1 sm:mt-0" />
+                                    <FieldLabel htmlFor="invalidate" className="flex-1 cursor-pointer">
+                                        <div className="text-sm font-semibold sm:text-base">Invalidate Document</div>
+                                        <FieldDescription className="text-xs sm:text-sm">Mark the document as invalid without replacement</FieldDescription>
+                                    </FieldLabel>
+                                </div>
+                            </RadioGroup>
+                        </FieldContent>
+                    </Field>
 
                     {/* Reason for Correction */}
-                    <div className="grid gap-3">
-                        <Label htmlFor="correction_reason" className="text-base font-semibold">
+                    <Field>
+                        <FieldLabel htmlFor="correction_reason" className="text-base font-semibold">
                             Reason for Correction <span className="text-destructive">*</span>
-                        </Label>
-                        <Textarea
-                            id="correction_reason"
-                            placeholder="Explain why this document needs to be corrected..."
-                            value={correctionReason}
-                            onChange={(e) => setCorrectionReason(e.target.value)}
-                            rows={4}
-                            className={errors.correction_reason ? 'border-destructive' : ''}
-                        />
-                        {errors.correction_reason && <p className="text-destructive text-sm">{errors.correction_reason}</p>}
-                    </div>
+                        </FieldLabel>
+                        <FieldContent>
+                            <Textarea
+                                id="correction_reason"
+                                placeholder="Explain why this document needs to be corrected..."
+                                value={form.data.correction_reason}
+                                onChange={(e) => form.setData('correction_reason', e.target.value)}
+                                rows={4}
+                                className={form.errors.correction_reason ? 'border-destructive' : ''}
+                            />
+                            <FieldError>{form.errors.correction_reason}</FieldError>
+                        </FieldContent>
+                    </Field>
 
                     {/* File Upload (only for replacement) */}
-                    {correctionType === 'replace' && (
-                        <div className="grid gap-3">
-                            <Label htmlFor="corrected_file" className="text-base font-semibold">
+                    {form.data.correction_type === 'replace' && (
+                        <Field>
+                            <FieldLabel htmlFor="corrected_file" className="text-base font-semibold">
                                 Corrected Document <span className="text-destructive">*</span>
-                            </Label>
-                            <div className="hover:bg-accent rounded-lg border-2 border-dashed transition-colors">
-                                <input type="file" id="corrected_file" onChange={handleFileChange} className="hidden" accept=".pdf,application/pdf" />
-                                <Label htmlFor="corrected_file" className="cursor-pointer">
-                                    {!correctedFile ? (
-                                        <Empty className="min-h-0 gap-3 border-0 p-6">
-                                            <EmptyMedia variant="icon">
-                                                <Upload className="h-5 w-5" />
-                                            </EmptyMedia>
-                                            <div className="flex flex-col gap-1">
-                                                <EmptyTitle className="text-sm">Click to upload corrected document</EmptyTitle>
-                                                <EmptyDescription className="text-xs">PDF only (max 10MB)</EmptyDescription>
-                                            </div>
-                                        </Empty>
-                                    ) : (
-                                        <div className="flex min-h-[120px] flex-col items-center justify-center p-6 text-center">
-                                            <FileText className="mb-3 h-10 w-10 text-green-600" />
-                                            <p className="max-w-full text-sm font-medium break-all">{correctedFile.name}</p>
-                                            <p className="text-muted-foreground mt-1 text-xs">{(correctedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                                        </div>
-                                    )}
-                                </Label>
-                            </div>
-                            {errors.corrected_file && <p className="text-destructive text-sm">{errors.corrected_file}</p>}
-                        </div>
+                            </FieldLabel>
+                            <FieldContent>
+                                <FileUploadArea
+                                    label=""
+                                    file={correctedFile}
+                                    error={form.errors.corrected_file}
+                                    isDragging={isDragging}
+                                    onFileChange={handleFileChange}
+                                    onDragEnter={handleDragEnter}
+                                    onDragLeave={handleDragLeave}
+                                    onDragOver={handleDragOver}
+                                    onDrop={handleDrop}
+                                    onRemove={handleRemoveFile}
+                                    inputId="corrected_file"
+                                    accept=".pdf,application/pdf"
+                                    required
+                                />
+                            </FieldContent>
+                        </Field>
                     )}
 
                     {/* Information Alert */}
@@ -200,19 +272,19 @@ export function DocumentCorrectionSheet({
                             )}
                         </div>
                     </div>
-                </form>
+                </Form>
 
                 <SheetFooter className="flex-col gap-2 sm:flex-row">
-                    <Button type="button" variant="outline" onClick={handleCancel} disabled={processing} className="w-full sm:w-auto">
+                    <Button type="button" variant="outline" onClick={handleCancel} disabled={form.processing} className="w-full sm:w-auto">
                         Cancel
                     </Button>
                     <Button
-                        type="submit"
+                        type="button"
                         onClick={handleSubmit}
-                        disabled={processing || !correctionReason || (correctionType === 'replace' && !correctedFile)}
+                        disabled={form.processing || !form.data.correction_reason || (form.data.correction_type === 'replace' && !form.data.corrected_file)}
                         className="w-full sm:w-auto"
                     >
-                        {processing ? 'Submitting...' : 'Submit Correction'}
+                        {form.processing ? 'Submitting...' : 'Submit Correction'}
                     </Button>
                 </SheetFooter>
             </SheetContent>

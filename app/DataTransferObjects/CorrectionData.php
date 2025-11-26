@@ -14,6 +14,7 @@ use Carbon\Carbon;
 final class CorrectionData
 {
     public function __construct(
+        public readonly ?string $txid,
         public readonly string $prNumber,
         public readonly string $procurementTitle,
         public readonly string $originalTxid,
@@ -44,12 +45,13 @@ final class CorrectionData
         ];
     }
 
-    public static function fromBlockchainArray(array $data): self
+    public static function fromBlockchainArray(array $data, string $txid): self
     {
         // Backward compatibility: try pr_number first, fall back to pr_number
         $prNumber = $data['pr_number'] ?? $data['pr_number'] ?? '';
 
         return new self(
+            txid: $txid,
             prNumber: $prNumber,
             procurementTitle: $data['procurement_title'],
             originalTxid: $data['original_txid'],
