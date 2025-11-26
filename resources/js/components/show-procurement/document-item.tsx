@@ -17,7 +17,6 @@ interface DocumentItemProps {
 }
 
 export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
-    const [showCorrectionHistory, setShowCorrectionHistory] = useState(false);
     const [showCorrectionDetails, setShowCorrectionDetails] = useState(false);
 
     const handleCopyHash = useCallback(async () => {
@@ -163,14 +162,6 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                 {doc.stage_metadata && <DocumentMetadataCard metadata={doc.stage_metadata} documentType={doc.stage_metadata.document_type} />}
             </div>
 
-            {/* Correction History Sheet */}
-            <CorrectionDetailsSheet
-                open={showCorrectionHistory}
-                onOpenChange={setShowCorrectionHistory}
-                pr_number={doc.pr_number || ''}
-                documentHash={doc.hash}
-            />
-
             {/* Correction Details Sheet */}
             {doc.has_corrections && doc.latest_correction && (
                 <CorrectionDetailsSheet
@@ -180,7 +171,6 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                         txid: doc.latest_correction.txid,
                         timestamp: doc.latest_correction.timestamp,
                         correction_type: doc.latest_correction.correction_type,
-                        correction_type_display: doc.latest_correction.correction_type_display,
                         action: doc.latest_correction.action as 'replace' | 'invalidate',
                         reason: doc.latest_correction.reason,
                         corrected_by: doc.latest_correction.corrected_by,
