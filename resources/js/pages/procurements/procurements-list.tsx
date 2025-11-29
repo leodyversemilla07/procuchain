@@ -7,6 +7,7 @@ import { PreBidConferenceDialog } from '@/components/pre-bid-conference-dialog';
 import { PreProcurementDialog } from '@/components/pre-procurement-conference-dialog';
 import { createColumns } from '@/components/procurements-list/columns';
 import { ProcurementsDataTable } from '@/components/procurements-list/data-table';
+import { type ProcurementFilterOption } from '@/components/procurements-list/procurement-filters-toolbar';
 import { StatsGrid, type StatsGridItem } from '@/components/stats-grid';
 import { SupplementalBidBulletinDialog } from '@/components/supplemental-bid-bulletin-dialog';
 import { Button } from '@/components/ui/button';
@@ -191,6 +192,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
 
             router.visit(`${window.location.pathname}?${params.toString()}`, {
                 replace: true,
+                preserveScroll: true,
             });
         },
         [pageSize],
@@ -204,6 +206,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
 
             router.visit(`${window.location.pathname}?${params.toString()}`, {
                 replace: true,
+                preserveScroll: true,
                 onSuccess: () => setPageIndex(nextPageIndex),
             });
         },
@@ -217,6 +220,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
 
         router.visit(`${window.location.pathname}?${params.toString()}`, {
             replace: true,
+            preserveScroll: true,
             onSuccess: () => {
                 setPageIndex(0);
                 setPageSize(nextPageSize);

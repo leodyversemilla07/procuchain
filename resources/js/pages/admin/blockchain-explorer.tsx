@@ -112,6 +112,12 @@ interface PeerInfo {
     bytesent_per_msg: Record<string, number>;
 }
 
+interface SearchResults {
+    block?: object;
+    transaction?: object;
+    address?: object;
+}
+
 interface CircuitBreakerState {
     is_open: boolean;
     failures: number;
@@ -160,6 +166,7 @@ export default function BlockchainExplorer({
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
+    const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
     const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
     const [expandedPeers, setExpandedPeers] = useState<Set<number>>(new Set());
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
@@ -234,30 +241,33 @@ export default function BlockchainExplorer({
         return `${synced_blocks}/${startingheight} blocks`;
     };
 
-    const handleSearch = () => {
+    const handleSearch = async () => {
         if (!searchQuery.trim()) {
             toast.error('Please enter a search query');
             return;
         }
 
         setIsSearching(true);
-        router.get(
-            blockchain.explorer.search.url(),
-            { query: searchQuery },
-            {
-                preserveState: true,
-                onSuccess: () => {
-                    toast.success('Search completed');
-                    setIsSearching(false);
-                },
-                onError: () => {
-                    toast.error('Search failed', {
-                        description: 'Unable to complete the search. Please try again.',
-                    });
-                    setIsSearching(false);
-                },
-            },
-        );
+        try {
+            const response = await fetch(`${blockchain.explorer.search.url()}?query=${encodeURIComponent(searchQuery)}`);
+            const data = await response.json();
+
+            if (data.success) {
+                setSearchResults(data.results);
+                setSelectedTab('search'); // Switch to search tab
+                toast.success('Search completed');
+            } else {
+                toast.error('Search failed', {
+                    description: data.error || 'Unable to complete the search. Please try again.',
+                });
+            }
+        } catch {
+            toast.error('Search failed', {
+                description: 'Unable to complete the search. Please try again.',
+            });
+        } finally {
+            setIsSearching(false);
+        }
     };
 
     const handleResetCircuitBreaker = () => {
@@ -544,6 +554,12 @@ export default function BlockchainExplorer({
                                         Peers
                                     </div>
                                 </SelectItem>
+                                <SelectItem value="search">
+                                    <div className="flex items-center">
+                                        <Search className="mr-2 h-4 w-4" />
+                                        Search
+                                    </div>
+                                </SelectItem>
                                 <SelectItem value="health">
                                     <div className="flex items-center">
                                         <Shield className="mr-2 h-4 w-4" />
@@ -555,7 +571,7 @@ export default function BlockchainExplorer({
                     </div>
 
                     {/* Desktop Tab Navigation - Tab List */}
-                    <TabsList className="hidden w-full grid-cols-6 md:grid">
+                    <TabsList className="hidden w-full grid-cols-7 md:grid">
                         <TabsTrigger value="overview">
                             <Activity className="mr-2 h-4 w-4" />
                             Overview
@@ -575,6 +591,10 @@ export default function BlockchainExplorer({
                         <TabsTrigger value="peers">
                             <Users className="mr-2 h-4 w-4" />
                             Peers
+                        </TabsTrigger>
+                        <TabsTrigger value="search">
+                            <Search className="mr-2 h-4 w-4" />
+                            Search
                         </TabsTrigger>
                         <TabsTrigger value="health">
                             <Shield className="mr-2 h-4 w-4" />
@@ -1347,6 +1367,62 @@ export default function BlockchainExplorer({
                                 )}
                             </CardContent>
                         </Card>
+                    </TabsContent>
+
+                    {/* Search Results Tab */}
+                    <TabsContent value="search" className="mt-6">
+                        {searchResults ? (
+                            <div className="space-y-6">
+                                {searchResults.block && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Block</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(searchResults.block, null, 2)}</pre>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                                {searchResults.transaction && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Transaction</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(searchResults.transaction, null, 2)}</pre>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                                {searchResults.address && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Address</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(searchResults.address, null, 2)}</pre>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                                {!searchResults.block && !searchResults.transaction && !searchResults.address && (
+                                    <Card>
+                                        <CardContent>
+                                            <p className="text-muted-foreground">No results found for "{searchQuery}"</p>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </div>
+                        ) : (
+                            <Card>
+                                <CardContent className="py-12">
+                                    <Empty>
+                                        <EmptyHeader>
+                                            <EmptyTitle>Search Blockchain</EmptyTitle>
+                                            <EmptyDescription>Enter a block hash, height, transaction ID, or address to search</EmptyDescription>
+                                        </EmptyHeader>
+                                    </Empty>
+                                </CardContent>
+                            </Card>
+                        )}
                     </TabsContent>
 
                     {/* Health & Monitoring Tab */}

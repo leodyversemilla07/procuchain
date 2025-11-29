@@ -49,18 +49,17 @@ class DocumentRepository
     }
 
     /**
-     * Find documents by procurement ID
+     * Find recent documents (limit)
      *
      * @return DocumentData[]
      */
-    public function findByProcurement(string $prNumber): array
+    public function findRecent(int $limit = 10): array
     {
         $allDocuments = $this->all();
 
-        return array_filter(
-            $allDocuments,
-            fn (DocumentData $doc) => $doc->prNumber === $prNumber
-        );
+        usort($allDocuments, fn ($a, $b) => $b->timestamp->timestamp - $a->timestamp->timestamp);
+
+        return array_slice($allDocuments, 0, $limit);
     }
 
     /**
