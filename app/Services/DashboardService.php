@@ -137,6 +137,7 @@ class DashboardService
 
     /**
      * Get recent activities from blockchain events stream
+     * Optimized with pagination and limits
      *
      * @return array Array of recent activities
      */
@@ -144,11 +145,12 @@ class DashboardService
     {
         try {
             $limit = config('dashboard.display_limits.recent_activities_display');
-            $eventDtos = $this->eventRepository->findRecent($limit * 2); // Fetch extra to allow for filtering
+            // Fetch only the required amount plus some buffer for filtering
+            $fetchLimit = min($limit * 2, config('dashboard.stream_limits.recent_activities'));
+            $eventDtos = $this->eventRepository->findRecent($fetchLimit);
 
             if (empty($eventDtos)) {
                 Log::warning('No events found in repository');
-
                 return [];
             }
 
@@ -187,6 +189,7 @@ class DashboardService
 
     /**
      * Get total document count for procurements on dashboard
+     * Optimized with limits and better performance
      *
      * @param  Collection  $procurementsByKey  Procurements collection
      * @return int Total document count
@@ -194,26 +197,33 @@ class DashboardService
     public function getTotalDocuments(Collection $procurementsByKey): int
     {
         try {
-            $documentDtos = $this->documentRepository->all();
+            // Only fetch recent documents to improve performance
+            $documentLimit = config('dashboard.stream_limits.document_items', 500);
+            $documentDtos = $this->documentRepository->findRecent($documentLimit);
 
             if (empty($documentDtos)) {
                 Log::warning('Failed to retrieve document stream items for dashboard stats.');
-
                 return 0;
             }
 
+            // Get unique procurement IDs from dashboard procurements
+            $dashboardPrNumbers = $procurementsByKey->keys()->toArray();
+
+            // Count unique documents per procurement, but only for dashboard procurements
             $documentCountMap = collect($documentDtos)
+                ->filter(fn (DocumentData $doc) => in_array($doc->prNumber, $dashboardPrNumbers))
                 ->groupBy(fn (DocumentData $doc) => $doc->prNumber)
                 ->map(function ($docs) {
                     return collect($docs)->pluck('hash')->unique()->count();
                 });
 
-            $dashboardpr_numbers = $procurementsByKey->keys();
-            $totalDocuments = $documentCountMap
-                ->filter(fn ($count, $pr_number) => $dashboardpr_numbers->contains($pr_number))
-                ->sum();
+            $totalDocuments = $documentCountMap->sum();
 
-            Log::info('Dashboard document count calculated', ['total_documents' => $totalDocuments]);
+            Log::info('Dashboard document count calculated', [
+                'total_documents' => $totalDocuments,
+                'procurements_counted' => count($dashboardPrNumbers),
+                'documents_fetched' => count($documentDtos)
+            ]);
 
             return $totalDocuments;
         } catch (Exception $e) {

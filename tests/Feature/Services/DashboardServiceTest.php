@@ -678,7 +678,9 @@ describe('DashboardService', function () {
             expect($result)->toBe(3);
 
             Log::shouldHaveReceived('info')
-                ->with('Dashboard document count calculated', ['total_documents' => 3])
+                ->with('Dashboard document count calculated', \Mockery::on(function ($data) {
+                    return isset($data['total_documents']) && $data['total_documents'] === 3;
+                }))
                 ->once();
         });
 

@@ -93,7 +93,7 @@ export interface UserActivityAnalytics {
 
 // Analytics Props Interface
 export interface AnalyticsProps {
-    analytics: {
+    analytics?: {
         user_activity: UserActivityAnalytics;
     };
 }
@@ -390,8 +390,10 @@ export default function AdminDashboard() {
                     </Deferred>
                 </div>
 
-                {/* Login Activity Trend */}
-                {userActivityAnalytics && userActivityAnalytics.login_patterns?.daily_login_trend && (
+                {/* Analytics Section - Deferred Loading */}
+                <Deferred data="analytics" fallback={<div className="flex items-center justify-center p-8"><Spinner className="h-8 w-8" /></div>}>
+                    {/* Login Activity Trend */}
+                    {userActivityAnalytics && userActivityAnalytics.login_patterns?.daily_login_trend && (
                     <Card className="py-3 sm:py-4 md:py-0">
                         <CardHeader className="flex flex-col items-stretch border-b p-0! sm:flex-row">
                             <div className="flex flex-1 flex-col justify-center gap-1 px-3 pb-2 sm:px-4 sm:pb-3 md:px-6 md:pb-0">
@@ -653,6 +655,7 @@ export default function AdminDashboard() {
                         </Card>
                     )}
                 </div>
+                </Deferred>
             </div>
         </AppLayout>
     );

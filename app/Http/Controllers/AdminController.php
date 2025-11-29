@@ -8,6 +8,7 @@ use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
 use App\Services\Manager;
 use Illuminate\Support\Facades\Cache;
+use Inertia\Inertia;
 
 class AdminController extends BaseDashboardController
 {
@@ -46,20 +47,14 @@ class AdminController extends BaseDashboardController
 
     /**
      * Get additional dashboard data specific to admin (analytics)
+     * Now deferred for better performance
      */
     protected function getAdditionalDashboardData($procurementsByKey, string $roleName): array
     {
-        // Use database cache for analytics data (can be large with 30 days of data)
-        $userActivityAnalytics = Cache::store('database')->remember(
-            DashboardCacheKeys::userActivityAnalytics($roleName),
-            now()->addMinutes(config('dashboard.cache_ttl.user_analytics')),
-            fn () => $this->analyticsService->getUserActivityAnalytics('30_days', null)
-        );
-
         return [
-            'analytics' => [
-                'user_activity' => $userActivityAnalytics,
-            ],
+            'analytics' => Inertia::defer(fn () => [
+                'user_activity' => $this->analyticsService->getUserActivityAnalytics('30_days', null)
+            ]),
         ];
     }
 
