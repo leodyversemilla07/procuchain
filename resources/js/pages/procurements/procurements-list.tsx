@@ -104,8 +104,12 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
     const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
     const breadcrumbs = getProcurementListBreadcrumbs(userRole);
 
-    const [searchValue, setSearchValue] = useState('');
-    const [stageFilter, setStageFilter] = useState('all');
+    // Initialize search and stage from URL params to avoid infinite reload loop
+    const initialSearchValue = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('search') || '' : '';
+    const initialStageFilter = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('stage') || 'all' : 'all';
+
+    const [searchValue, setSearchValue] = useState(initialSearchValue);
+    const [stageFilter, setStageFilter] = useState(initialStageFilter);
     const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
     const [pageIndex, setPageIndex] = useState<number>((pagination?.page ?? 1) - 1);
     const [pageSize, setPageSize] = useState<number>(pagination?.per_page ?? 10);
@@ -116,6 +120,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
     // Polling with background refresh indicator
     usePoll(30000, {
         only: ['procurements'],
+        preserveScroll: true,
         onBefore: () => setIsPolling(true),
         onFinish: () => {
             setIsPolling(false);
@@ -139,16 +144,6 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
         handleOpenPreBidDialog,
         handleOpenSupplementalBidBulletinDialog,
     } = useProcurementList({ initialProcurements, initialError });
-
-    // Initialize filters from URL params on mount
-    useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const urlSearch = params.get('search') || '';
-        const urlStage = params.get('stage') || 'all';
-
-        setSearchValue(urlSearch);
-        setStageFilter(urlStage);
-    }, []);
 
     // Keep local pagination state in sync with server meta
     useEffect(() => {
@@ -190,9 +185,11 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
             params.delete('page');
             params.set('per_page', String(pageSize));
 
-            router.visit(`${window.location.pathname}?${params.toString()}`, {
+            router.get(`${window.location.pathname}?${params.toString()}`, {}, {
                 replace: true,
                 preserveScroll: true,
+                preserveState: true,
+                only: ['procurements', 'pagination'],
             });
         },
         [pageSize],
@@ -204,9 +201,11 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
             params.set('page', String(nextPageIndex + 1));
             params.set('per_page', String(pageSize));
 
-            router.visit(`${window.location.pathname}?${params.toString()}`, {
+            router.get(`${window.location.pathname}?${params.toString()}`, {}, {
                 replace: true,
                 preserveScroll: true,
+                preserveState: true,
+                only: ['procurements', 'pagination'],
                 onSuccess: () => setPageIndex(nextPageIndex),
             });
         },
@@ -218,9 +217,11 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
         params.set('page', '1');
         params.set('per_page', String(nextPageSize));
 
-        router.visit(`${window.location.pathname}?${params.toString()}`, {
+        router.get(`${window.location.pathname}?${params.toString()}`, {}, {
             replace: true,
             preserveScroll: true,
+            preserveState: true,
+            only: ['procurements', 'pagination'],
             onSuccess: () => {
                 setPageIndex(0);
                 setPageSize(nextPageSize);
