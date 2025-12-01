@@ -78,7 +78,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                             className="hover:border-primary hover:bg-primary/5 focus-visible:ring-primary h-8 flex-1 text-xs font-medium shadow-sm transition-all duration-200 hover:shadow focus-visible:ring-2 focus-visible:ring-offset-2 sm:h-9 sm:flex-none sm:text-sm"
                         >
                             <Link
-                                href={pdf.viewer.url({ fileKey: encodeURIComponent(doc.file_key) })}
+                                href={pdf.viewer.url({ fileKey: doc.file_key })}
                                 className="flex items-center"
                                 aria-label={`View ${doc.document_type || 'document'} with analytics`}
                             >
@@ -95,7 +95,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                             className="hover:border-primary hover:bg-primary/5 focus-visible:ring-primary h-8 text-xs font-medium shadow-sm transition-all duration-200 hover:shadow focus-visible:ring-2 focus-visible:ring-offset-2 sm:h-9 sm:text-sm"
                         >
                             <a
-                                href={files.download.url({ fileKey: encodeURIComponent(doc.file_key) })}
+                                href={files.download.url({ fileKey: doc.file_key })}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center"

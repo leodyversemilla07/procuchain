@@ -25,7 +25,8 @@ class UserManagementController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $users = User::select('id', 'name', 'email', 'blockchain_address', 'email_verified_at', 'remember_token', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at')
+        // SECURITY: Only select non-sensitive columns - never expose tokens, secrets, or recovery codes
+        $users = User::select('id', 'name', 'email', 'blockchain_address', 'email_verified_at', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'two_factor_confirmed_at')
             ->with('roles:id,name')
             ->where('id', '!=', Auth::id())
             ->orderBy('created_at', 'desc')
@@ -41,10 +42,8 @@ class UserManagementController extends Controller
                     })->toArray(),
                     'blockchain_address' => $user->blockchain_address,
                     'email_verified_at' => $user->email_verified_at?->format('Y-m-d H:i:s'),
-                    'remember_token' => $user->remember_token,
-                    'two_factor_enabled' => ! empty($user->two_factor_secret),
-                    'two_factor_secret' => $user->two_factor_secret,
-                    'two_factor_recovery_codes' => $user->two_factor_recovery_codes,
+                    // SECURITY: Only indicate if 2FA is enabled, never expose secrets or recovery codes
+                    'two_factor_enabled' => $user->two_factor_confirmed_at !== null,
                     'two_factor_confirmed_at' => $user->two_factor_confirmed_at?->format('Y-m-d H:i:s'),
                     'created_at' => $user->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $user->updated_at?->format('Y-m-d H:i:s'),

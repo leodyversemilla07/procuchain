@@ -147,3 +147,89 @@ test('guest cannot access user management', function () {
 
     $response->assertRedirect('/login');
 });
+
+test('user management page does not expose sensitive user data', function () {
+    // Create a user with sensitive 2FA data
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+    $userWithSecrets = User::factory()->create([
+        'email' => 'secrets@test.com',
+        'two_factor_secret' => encrypt('super-secret-totp-key'),
+        'two_factor_recovery_codes' => encrypt(json_encode(['recovery1', 'recovery2', 'recovery3'])),
+        'two_factor_confirmed_at' => now(),
+        'remember_token' => 'sensitive-remember-token-12345',
+    ]);
+    $userWithSecrets->assignRole('bac_secretariat');
+
+    $response = $this->actingAs($this->admin)
+        ->get('/admin/users');
+
+    $response->assertStatus(200);
+
+    // Get the Inertia page props
+    $response->assertInertia(function ($page) {
+        $users = $page->toArray()['props']['users'];
+
+        // Find our test user in the response
+        $testUser = collect($users)->firstWhere('email', 'secrets@test.com');
+
+        expect($testUser)->not->toBeNull();
+
+        // SECURITY: Ensure sensitive data is NOT exposed in the API response
+        expect($testUser)->not->toHaveKey('remember_token');
+        expect($testUser)->not->toHaveKey('two_factor_secret');
+        expect($testUser)->not->toHaveKey('two_factor_recovery_codes');
+        expect($testUser)->not->toHaveKey('password');
+
+        // Verify that two_factor_enabled is a boolean, not the actual secret
+        expect($testUser)->toHaveKey('two_factor_enabled');
+        expect($testUser['two_factor_enabled'])->toBeBool();
+        expect($testUser['two_factor_enabled'])->toBeTrue();
+
+        return $page;
+    });
+});
+
+test('user management only exposes safe user attributes', function () {
+    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
+    $user = User::factory()->create([
+        'email' => 'safe@test.com',
+    ]);
+    $user->assignRole('bac_secretariat');
+
+    $response = $this->actingAs($this->admin)
+        ->get('/admin/users');
+
+    $response->assertInertia(function ($page) {
+        $users = $page->toArray()['props']['users'];
+        $testUser = collect($users)->firstWhere('email', 'safe@test.com');
+
+        // Verify only safe attributes are exposed
+        $allowedKeys = [
+            'id',
+            'name',
+            'email',
+            'role',
+            'roles',
+            'blockchain_address',
+            'email_verified_at',
+            'two_factor_enabled',
+            'two_factor_confirmed_at',
+            'created_at',
+            'updated_at',
+            'account_locked',
+            'locked_at',
+            'lock_expires_at',
+            'failed_login_attempts',
+            'last_failed_login_at',
+            'locked_reason',
+            'is_currently_locked',
+        ];
+
+        // Ensure all keys in user data are in the allowed list
+        foreach (array_keys($testUser) as $key) {
+            expect(in_array($key, $allowedKeys, true))->toBeTrue("Unexpected key '{$key}' found in user data - potential sensitive data exposure");
+        }
+
+        return $page;
+    });
+});
