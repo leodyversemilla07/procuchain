@@ -7,10 +7,15 @@
 - Procurement list search uses `router.visit()` causing page reloads.
 - Blockchain explorer search uses `router.get()` causing page reloads.
 - Page reloads reset scroll position, preventing users from scrolling through results.
+- `usePoll` hooks were missing `preserveScroll: true`, causing scroll reset during auto-refresh.
+- `router.reload()` calls were missing `preserveScroll: true`.
 
 **Fix Applied**:
-- Added `preserveScroll: true` to `router.visit()` calls in procurements-list.tsx to maintain scroll position on reload.
+- Added `preserveScroll: true` to `router.visit()` calls in `procurements-list.tsx` to maintain scroll position on reload.
+- Added `preserveScroll: true` to `usePoll` hook in `procurements-list.tsx` to prevent scroll reset during auto-refresh.
 - Changed blockchain explorer search to use AJAX (`fetch`) to load results without page reload, displaying them in a new "Search" tab.
+- Added `preserveScroll: true` to `usePoll` hook in `blockchain-explorer.tsx`.
+- Added `preserveScroll: true` to all `router.reload()` calls in `blockchain-explorer.tsx`.
 
 **Status**: Fixed - search now preserves scroll position or loads results without reload.
 
