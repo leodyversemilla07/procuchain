@@ -105,7 +105,11 @@ export default function PreBidConferenceUpload({ procurement, documentGuide, upl
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    const isStageCompleted = procurement.status?.includes('pre_bid_conference') === false || procurement.stage !== 'pre_bid_conference';
+    
+    // Stage is completed only if status explicitly shows completed or skipped
+    const isStageCompleted =
+        procurement.status === 'pre_bid_conference_completed' ||
+        procurement.status === 'pre_bid_conference_skipped';
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {

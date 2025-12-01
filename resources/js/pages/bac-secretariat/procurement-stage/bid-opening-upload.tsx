@@ -104,12 +104,8 @@ export default function BidOpeningUpload({ procurement, documentGuide, uploadedD
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
 
-    // Stage is completed if the current stage of the procurement is different from this stage (meaning we moved past it)
-    // OR if the status explicitly indicates completion (fallback)
-    const isStageCompleted =
-        procurement.current_stage && procurement.stage_value
-            ? procurement.current_stage !== procurement.stage_value
-            : procurement.status?.includes('bid_opening') === false || procurement.stage !== 'bid_opening';
+    // Stage is completed only if status explicitly shows bids opened
+    const isStageCompleted = procurement.status === 'bids_opened';
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {

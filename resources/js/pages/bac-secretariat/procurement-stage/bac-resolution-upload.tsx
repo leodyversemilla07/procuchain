@@ -97,9 +97,9 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    const isStageCompleted =
-        procurement.stage_value === 'notice_of_award' ||
-        (procurement.stage_value === 'bac_resolution' && procurement.status?.includes('resolution_recorded'));
+    
+    // Stage is completed only if status explicitly shows resolution recorded
+    const isStageCompleted = procurement.status === 'resolution_recorded';
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {

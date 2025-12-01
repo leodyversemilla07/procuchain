@@ -415,6 +415,36 @@ class PreProcurementController extends BaseController
             );
 
             // 4. Handle automatic stage transitions for specific stages
+            if ($stage === StageEnums::PRE_PROCUREMENT_CONFERENCE) {
+                // Automatically transition to BIDDING_DOCUMENTS stage
+                $this->statusPublisher->publishTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::PRE_PROCUREMENT_CONFERENCE,
+                    toStage: StageEnums::BIDDING_DOCUMENTS,
+                    currentStatus: StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
+                    userAddress: $userAddress
+                );
+
+                $this->eventPublisher->publishStageTransition(
+                    prNumber: $pr_number,
+                    procurementTitle: $procurement->title,
+                    fromStage: StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+                    toStage: StageEnums::BIDDING_DOCUMENTS->value,
+                    userAddress: $userAddress
+                );
+
+                return back()->with('success', [
+                    'message' => 'Pre-Procurement Conference marked as complete successfully! Proceeding to Bidding Documents stage.',
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
+                ]);
+            }
+
             if ($stage === StageEnums::BIDDING_DOCUMENTS) {
                 // Automatically transition to PRE_BID_CONFERENCE stage
                 $this->statusPublisher->publishTransition(
@@ -571,7 +601,15 @@ class PreProcurementController extends BaseController
 
         try {
             if ($validated['conference_held']) {
-                // Conference held - just publish the decision event, wait for documents
+                // Conference held - publish status update and decision event, wait for documents
+                $this->statusPublisher->publish(
+                    $pr_number,
+                    $validated['procurement_title'],
+                    StageEnums::PRE_PROCUREMENT_CONFERENCE,
+                    StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD,
+                    $userAddress
+                );
+
                 $this->eventPublisher->publish(
                     prNumber: $pr_number,
                     procurementTitle: $validated['procurement_title'],

@@ -105,10 +105,11 @@ export default function PreProcurementConferenceUpload({ procurement, documentGu
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
+    
+    // Stage is completed only if status explicitly shows completed or skipped
     const isStageCompleted =
-        procurement.stage !== 'pre_procurement_conference' ||
-        (procurement.status?.includes('pre_procurement_conference') === true &&
-            (procurement.status?.includes('completed') || procurement.status?.includes('skipped')));
+        procurement.status === 'pre_procurement_conference_completed' ||
+        procurement.status === 'pre_procurement_conference_skipped';
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {

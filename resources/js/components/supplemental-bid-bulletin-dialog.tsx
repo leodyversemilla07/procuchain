@@ -29,7 +29,7 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
         supplemental_bid_needed: undefined as boolean | undefined,
     });
 
-    const handleSuccess = (response: { props: PageProps }) => {
+    const handleSuccess = () => {
         onOpenChange(false);
 
         const message = form.data.supplemental_bid_needed
@@ -38,8 +38,8 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
 
         toast.success('Decision submitted successfully!', { description: message });
 
-        if (onComplete && response?.props?.success) {
-            onComplete(response.props.nextStage, form.data.supplemental_bid_needed);
+        if (onComplete) {
+            onComplete(undefined, form.data.supplemental_bid_needed);
         }
 
         form.reset();
