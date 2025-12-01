@@ -102,8 +102,9 @@ export default function BidEvaluationUpload({ procurement, documentGuide, upload
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    const isStageCompleted =
-        procurement.stage_value === 'post_qualification' || (procurement.stage_value === 'bid_evaluation' && procurement.status === 'bids_evaluated');
+    
+    // Stage is completed only if status explicitly shows bids evaluated
+    const isStageCompleted = procurement.status === 'bids_evaluated';
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {

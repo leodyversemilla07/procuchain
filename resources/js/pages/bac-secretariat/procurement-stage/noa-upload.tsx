@@ -101,9 +101,9 @@ export default function NoaUpload({ procurement, documentGuide, uploadedDocument
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    const isStageCompleted =
-        procurement.stage_value === 'performance_bond_contract_and_po' ||
-        (procurement.stage_value === 'notice_of_award' && procurement.status?.includes('awarded'));
+    
+    // Stage is completed only if status explicitly shows awarded
+    const isStageCompleted = procurement.status === 'awarded';
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {

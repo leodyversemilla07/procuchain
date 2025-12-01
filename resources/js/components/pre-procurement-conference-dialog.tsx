@@ -30,7 +30,7 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
         conference_held: undefined as boolean | undefined,
     });
 
-    const handleSuccess = (response: { props: PageProps }) => {
+    const handleSuccess = () => {
         onOpenChange(false);
 
         const message = form.data.conference_held
@@ -39,8 +39,8 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
 
         toast.success('Decision submitted successfully!', { description: message });
 
-        if (onComplete && response?.props?.success) {
-            onComplete(response.props.nextStage, form.data.conference_held);
+        if (onComplete) {
+            onComplete(undefined, form.data.conference_held);
         }
 
         if (!form.data.conference_held) {

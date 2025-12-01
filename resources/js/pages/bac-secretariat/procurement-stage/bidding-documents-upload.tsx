@@ -108,12 +108,10 @@ export default function BiddingDocumentsUpload({ procurement, documentGuide, upl
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
 
-    // Stage is completed if the current stage of the procurement is different from this stage (meaning we moved past it)
-    // OR if the status explicitly indicates completion (fallback)
+    // Stage is completed only if status explicitly shows completed/published
     const isStageCompleted =
-        procurement.current_stage && procurement.stage_value
-            ? procurement.current_stage !== procurement.stage_value
-            : procurement.status?.includes('bidding_documents') === false || procurement.stage !== 'bidding_documents';
+        procurement.status === 'bidding_documents_published' ||
+        procurement.status === 'bidding_documents_submitted';
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {
