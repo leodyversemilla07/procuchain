@@ -63,6 +63,21 @@ class DocumentRepository
     }
 
     /**
+     * Find documents by procurement ID
+     *
+     * @return DocumentData[]
+     */
+    public function findByProcurement(string $prNumber): array
+    {
+        $allDocuments = $this->all();
+
+        return array_filter(
+            $allDocuments,
+            fn (DocumentData $document): bool => $document->prNumber === $prNumber
+        );
+    }
+
+    /**
      * Find a document by transaction ID
      */
     public function findByTxid(string $txid): ?DocumentData
