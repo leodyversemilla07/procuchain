@@ -537,6 +537,7 @@ final class DocumentVerificationService
         }
 
         $stageValues = StageEnums::values();
+        $cases = StageEnums::cases();
         $latestStageIndex = 0;
 
         foreach ($documents as $doc) {
@@ -546,6 +547,11 @@ final class DocumentVerificationService
             }
         }
 
-        return StageEnums::cases()[$latestStageIndex];
+        // Ensure index is within bounds
+        if ($latestStageIndex < 0 || $latestStageIndex >= count($cases)) {
+            return StageEnums::PROCUREMENT_INITIATION;
+        }
+
+        return $cases[$latestStageIndex];
     }
 }
