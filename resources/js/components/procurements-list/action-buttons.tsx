@@ -2,7 +2,7 @@ import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { getActionConfigs } from '@/config/procurement-actions';
 import { ProcurementListItem, SharedData, Stage, Status } from '@/types';
 import { router, usePage } from '@inertiajs/react';
-import { AlertCircle, EyeIcon } from 'lucide-react';
+import { AlertCircle, EyeIcon, ShieldCheck } from 'lucide-react';
 
 // Import Wayfinder route helpers for each role (from /procurements-list routes)
 import { show as adminShow } from '@/routes/admin/procurements';
@@ -12,6 +12,9 @@ import { show as hopeShow } from '@/routes/hope/procurements';
 
 // Import corrections route helper
 import { show as correctionsShow } from '@/routes/procurements/corrections';
+
+// Import verification route helper
+import { verification as verificationShow } from '@/routes/procurement';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
@@ -97,6 +100,13 @@ export const ActionButtons = ({
         href: getProcurementShowUrl(userRole, id),
     };
 
+    // Verification Report action (available to all authenticated users)
+    const verificationReportConfig = {
+        icon: <ShieldCheck className="h-4 w-4 text-green-600 dark:text-green-400" />,
+        tooltipText: 'Verification Report',
+        href: verificationShow.url(id),
+    };
+
     // Only show View Corrections for BAC Secretariat users
     const viewCorrectionsConfig = isBacSecretariat
         ? {
@@ -106,7 +116,7 @@ export const ActionButtons = ({
           }
         : null;
 
-    const allConfigs = [viewDetailsConfig, ...(viewCorrectionsConfig ? [viewCorrectionsConfig] : []), ...workflowActions];
+    const allConfigs = [viewDetailsConfig, verificationReportConfig, ...(viewCorrectionsConfig ? [viewCorrectionsConfig] : []), ...workflowActions];
 
     return (
         <>

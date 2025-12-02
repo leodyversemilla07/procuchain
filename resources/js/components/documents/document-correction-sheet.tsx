@@ -6,9 +6,9 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { Textarea } from '@/components/ui/textarea';
 import FileUploadArea from '@/components/file-upload-area';
 import { correctDocument } from '@/actions/App/Http/Controllers/DocumentCorrectionController';
-import { Form, useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, FileText } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface DocumentCorrectionSheetProps {
@@ -24,7 +24,6 @@ interface DocumentCorrectionSheetProps {
 export function DocumentCorrectionSheet({
     open,
     onOpenChange,
-    documentId,
     pr_number,
     procurementTitle,
     originalDocumentHash,
@@ -33,7 +32,7 @@ export function DocumentCorrectionSheet({
     const { props } = usePage();
     const [correctedFile, setCorrectedFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
-    const formRef = useRef<ReturnType<typeof useForm>>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Initialize Inertia form with initial values
     const form = useForm({
@@ -46,16 +45,10 @@ export function DocumentCorrectionSheet({
         corrected_file: null as File | null,
     });
 
-    // Store form reference to avoid dependency issues
-    useEffect(() => {
-        formRef.current = form;
-    }, [form]);
-
     // Sync correctedFile state with form data
     useEffect(() => {
-        if (formRef.current) {
-            formRef.current.setData('corrected_file', correctedFile);
-        }
+        form.setData('corrected_file', correctedFile);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [correctedFile]);
 
     // Handle flash messages from backend
@@ -86,20 +79,61 @@ export function DocumentCorrectionSheet({
         handleFlashMessages();
     }, [handleFlashMessages]);
 
-    const handleSubmit = () => {
-        // Submit using Wayfinder object directly
-        form.submit(correctDocument(documentId), {
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        // Validate that we have a blockchain txid to correct
+        if (!originalTxid) {
+            toast.error('Cannot submit correction', {
+                description: 'This document does not have a blockchain transaction ID. It may not have been published to the blockchain yet.',
+            });
+            return;
+        }
+        
+        setIsSubmitting(true);
+
+        // Get the route definition from Wayfinder - use originalTxid as the document identifier
+        const route = correctDocument(originalTxid);
+
+        // Use router.post directly with forceFormData for file uploads
+        router.post(route.url, {
+            correction_reason: form.data.correction_reason,
+            correction_type: form.data.correction_type,
+            pr_number: form.data.pr_number,
+            procurement_title: form.data.procurement_title,
+            original_document_hash: form.data.original_document_hash,
+            original_txid: form.data.original_txid,
+            corrected_file: correctedFile,
+        }, {
+            forceFormData: true,
             preserveScroll: true,
             onSuccess: () => {
                 // Reset form on success
                 form.reset();
                 setCorrectedFile(null);
+                setIsSubmitting(false);
                 // Reset the input value
                 const fileInput = document.getElementById('corrected_file') as HTMLInputElement;
                 if (fileInput) {
                     fileInput.value = '';
                 }
-                // Don't close the sheet immediately - let the flash message handler show the toast
+                toast.success('Document correction submitted successfully!', {
+                    description: 'The correction has been recorded on the blockchain.',
+                });
+                onOpenChange(false);
+            },
+            onError: (errors) => {
+                setIsSubmitting(false);
+                console.error('Form submission errors:', errors);
+                const errorMessage = typeof errors === 'object' 
+                    ? Object.values(errors).flat().join(', ') 
+                    : 'Failed to submit correction';
+                toast.error('Failed to submit correction', {
+                    description: errorMessage,
+                });
+            },
+            onFinish: () => {
+                setIsSubmitting(false);
             },
         });
     };
@@ -167,8 +201,8 @@ export function DocumentCorrectionSheet({
                     </SheetDescription>
                 </SheetHeader>
 
-                <Form
-                    as="div"
+                <form
+                    onSubmit={handleSubmit}
                     className="grid flex-1 auto-rows-min gap-6 px-4 py-6"
                 >
                     {/* Correction Type */}
@@ -272,19 +306,19 @@ export function DocumentCorrectionSheet({
                             )}
                         </div>
                     </div>
-                </Form>
+                </form>
 
                 <SheetFooter className="flex-col gap-2 sm:flex-row">
-                    <Button type="button" variant="outline" onClick={handleCancel} disabled={form.processing} className="w-full sm:w-auto">
+                    <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting} className="w-full sm:w-auto">
                         Cancel
                     </Button>
                     <Button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={form.processing || !form.data.correction_reason || (form.data.correction_type === 'replace' && !form.data.corrected_file)}
+                        disabled={isSubmitting || !form.data.correction_reason || (form.data.correction_type === 'replace' && !correctedFile)}
                         className="w-full sm:w-auto"
                     >
-                        {form.processing ? 'Submitting...' : 'Submit Correction'}
+                        {isSubmitting ? 'Submitting...' : 'Submit Correction'}
                     </Button>
                 </SheetFooter>
             </SheetContent>

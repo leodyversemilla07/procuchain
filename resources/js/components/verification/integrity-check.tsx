@@ -63,39 +63,39 @@ export function IntegrityCheck({ result, documentType, showDetails = true }: Int
                 <CardContent className="pt-0">
                     <div className="space-y-3">
                         {/* Hash Information */}
-                        <div className="rounded-lg bg-muted/50 p-3 space-y-2">
-                            <div className="flex items-center gap-2 text-sm">
-                                <Hash className="h-4 w-4 text-muted-foreground" />
+                        <div className="rounded-lg bg-muted/50 p-2 sm:p-3 space-y-2">
+                            <div className="flex items-center gap-2 text-xs sm:text-sm">
+                                <Hash className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
                                 <span className="font-medium">Hash Verification</span>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] sm:text-xs">
+                                <div className="flex flex-col gap-0.5">
                                     <span className="text-muted-foreground">Expected:</span>
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <code className="ml-1 font-mono bg-background px-1 py-0.5 rounded cursor-help">
-                                                    {shortenHash(result.expected_hash)}
+                                                <code className="font-mono bg-background px-1.5 py-1 rounded cursor-help truncate block max-w-full">
+                                                    {shortenHash(result.expected_hash, 6)}
                                                 </code>
                                             </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p className="font-mono text-xs">{result.expected_hash || 'N/A'}</p>
+                                            <TooltipContent side="bottom" className="max-w-[280px] break-all">
+                                                <p className="font-mono text-[10px] sm:text-xs">{result.expected_hash || 'N/A'}</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
                                 </div>
-                                <div>
+                                <div className="flex flex-col gap-0.5">
                                     <span className="text-muted-foreground">Actual:</span>
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <code className="ml-1 font-mono bg-background px-1 py-0.5 rounded cursor-help">
-                                                    {shortenHash(result.actual_hash)}
+                                                <code className="font-mono bg-background px-1.5 py-1 rounded cursor-help truncate block max-w-full">
+                                                    {shortenHash(result.actual_hash, 6)}
                                                 </code>
                                             </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p className="font-mono text-xs">{result.actual_hash || 'N/A'}</p>
+                                            <TooltipContent side="bottom" className="max-w-[280px] break-all">
+                                                <p className="font-mono text-[10px] sm:text-xs">{result.actual_hash || 'N/A'}</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>

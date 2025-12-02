@@ -107,8 +107,6 @@ Route::middleware(['auth'])->group(function () {
             ->name('verify');
         Route::post('/verify/integrity', [DocumentVerificationController::class, 'verifyIntegrity'])
             ->name('verify.integrity');
-        Route::get('/verification-report', [DocumentVerificationController::class, 'getReport'])
-            ->name('verification-report');
         Route::get('/verification', [DocumentVerificationController::class, 'showVerificationPage'])
             ->name('verification');
     });

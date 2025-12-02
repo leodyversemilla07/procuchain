@@ -75,12 +75,20 @@ final class ComplianceResult
      */
     public function toArray(): array
     {
+        // Add display names to document_type_checks
+        $documentTypeChecksWithDisplayNames = array_map(function ($check) {
+            $documentType = \App\Enums\DocumentTypeEnums::tryFrom($check['document_type'] ?? '');
+            $check['document_type_display'] = $documentType?->getDisplayName() ?? ucwords(str_replace('_', ' ', $check['document_type'] ?? 'Unknown'));
+
+            return $check;
+        }, $this->documentTypeChecks);
+
         return [
             'is_compliant' => $this->isCompliant,
             'pr_number' => $this->prNumber,
             'stage' => $this->stage->value,
             'stage_display_name' => $this->stage->getDisplayName(),
-            'document_type_checks' => $this->documentTypeChecks,
+            'document_type_checks' => $documentTypeChecksWithDisplayNames,
             'timeline_checks' => $this->timelineChecks,
             'procurement_mode_checks' => $this->procurementModeChecks,
             'summary' => [
