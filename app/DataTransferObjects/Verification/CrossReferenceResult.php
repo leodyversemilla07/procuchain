@@ -74,10 +74,18 @@ final class CrossReferenceResult
      */
     public function toArray(): array
     {
+        // Add display names to pr_number_checks
+        $prNumberChecksWithDisplayNames = array_map(function ($check) {
+            $documentType = \App\Enums\DocumentTypeEnums::tryFrom($check['document_type'] ?? '');
+            $check['document_type_display'] = $documentType?->getDisplayName() ?? ucwords(str_replace('_', ' ', $check['document_type'] ?? 'Unknown'));
+
+            return $check;
+        }, $this->prNumberChecks);
+
         return [
             'is_consistent' => $this->isConsistent,
             'pr_number' => $this->prNumber,
-            'pr_number_checks' => $this->prNumberChecks,
+            'pr_number_checks' => $prNumberChecksWithDisplayNames,
             'amount_checks' => $this->amountChecks,
             'date_checks' => $this->dateChecks,
             'signatory_checks' => $this->signatoryChecks,

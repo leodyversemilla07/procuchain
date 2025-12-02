@@ -8,6 +8,7 @@ use App\Enums\StageEnums;
 use App\Http\Requests\Document\VerifyProcurementRequest;
 use App\Http\Requests\Document\VerifySingleDocumentRequest;
 use App\Services\DocumentVerificationService;
+use App\Services\ProcurementDataService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -21,7 +22,8 @@ use Inertia\Response;
 final class DocumentVerificationController extends Controller
 {
     public function __construct(
-        private readonly DocumentVerificationService $verificationService
+        private readonly DocumentVerificationService $verificationService,
+        private readonly ProcurementDataService $procurementDataService,
     ) {}
 
     /**
@@ -114,27 +116,6 @@ final class DocumentVerificationController extends Controller
     }
 
     /**
-     * Get verification report for a procurement
-     *
-     * GET /procurement/{pr_number}/verification-report
-     */
-    public function getReport(VerifyProcurementRequest $request, string $prNumber): JsonResponse
-    {
-        Log::info('Generating verification report', [
-            'pr_number' => $prNumber,
-            'user_id' => auth()->id(),
-        ]);
-
-        $stage = $request->getStageEnum();
-        $report = $this->verificationService->generateVerificationReport($prNumber, $stage);
-
-        return response()->json([
-            'success' => true,
-            'report' => $report->toArray(),
-        ]);
-    }
-
-    /**
      * Verify a single document by file key
      *
      * POST /documents/{fileKey}/verify
@@ -167,9 +148,27 @@ final class DocumentVerificationController extends Controller
     {
         $report = $this->verificationService->generateVerificationReport($prNumber);
 
-        return Inertia::render('procurement/verification', [
+        // Fetch procurement status information
+        $statusItems = $this->procurementDataService->fetchStatusItems($prNumber);
+        $currentStatus = $statusItems->first();
+
+        $procurementStatus = null;
+        if ($currentStatus) {
+            $stage = $currentStatus['stage'] ?? '';
+            $procurementStatus = [
+                'stage' => $stage,
+                'stage_formatted' => $currentStatus['stage_formatted'] ?? $this->procurementDataService->formatStageName($stage),
+                'current_status' => $currentStatus['current_status'] ?? '',
+                'status_formatted' => $currentStatus['status_formatted'] ?? '',
+                'phase' => $this->procurementDataService->getStagePhase($stage),
+                'phase_display_name' => $this->procurementDataService->getStagePhaseDisplayName($stage),
+            ];
+        }
+
+        return Inertia::render('procurements/verification', [
             'prNumber' => $prNumber,
             'report' => $report->toArray(),
+            'procurementStatus' => $procurementStatus,
         ]);
     }
 }

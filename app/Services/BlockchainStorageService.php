@@ -65,9 +65,9 @@ final class BlockchainStorageService
         $fileHash = hash('sha256', $fileContent);
 
         // Validate that we actually read the file content
-        // Allow empty files but log a warning for debugging
+        // Empty files should not be uploaded to blockchain
         if (empty($fileContent)) {
-            Log::warning('Empty file content detected during upload', [
+            Log::error('Empty file content detected during upload - rejecting upload', [
                 'filename' => $file->getClientOriginalName(),
                 'size' => $fileSize,
                 'mime_type' => $file->getMimeType(),
@@ -75,10 +75,7 @@ final class BlockchainStorageService
                 'document_type' => $documentType
             ]);
 
-            // Only throw exception for non-test environments or if explicitly required
-            if (app()->environment(['production', 'staging']) && $fileSize > 0) {
-                throw new Exception("Failed to read file content. File appears to be empty or inaccessible.");
-            }
+            throw new Exception("Failed to read file content. File appears to be empty or inaccessible. Reported size: {$fileSize} bytes");
         }
 
         if (strlen($fileContent) !== $fileSize) {

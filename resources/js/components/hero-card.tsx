@@ -32,7 +32,7 @@ export const HeroCard = ({
                         </div>
                         <div>
                             <h1 className="text-foreground text-lg font-bold sm:text-xl md:text-2xl">{title}</h1>
-                            <p className="text-muted-foreground mt-0.5 text-xs sm:mt-1 sm:text-sm">{description}</p>
+                            <div className="text-muted-foreground mt-0.5 text-xs sm:mt-1 sm:text-sm">{description}</div>
                         </div>
                     </div>
                     {actions ? <div className="flex items-center gap-2 sm:gap-3 md:gap-4">{actions}</div> : null}
