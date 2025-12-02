@@ -94,6 +94,26 @@ class DocumentRepository
     }
 
     /**
+     * Find a document by file key
+     *
+     * Note: Blockchain streams don't support indexed queries,
+     * so this iterates through all documents. Consider caching
+     * for high-frequency lookups.
+     */
+    public function findByFileKey(string $fileKey): ?DocumentData
+    {
+        $allDocuments = $this->all();
+
+        foreach ($allDocuments as $document) {
+            if ($document->fileKey === $fileKey) {
+                return $document;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Get all documents
      *
      * @return DocumentData[]
