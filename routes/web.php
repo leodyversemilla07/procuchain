@@ -7,6 +7,7 @@ use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\BlockchainExplorerController;
 use App\Http\Controllers\DocumentCorrectionController;
 use App\Http\Controllers\DocumentDownloadController;
+use App\Http\Controllers\DocumentVerificationController;
 use App\Http\Controllers\HopeController;
 use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\NotificationController;
@@ -99,6 +100,23 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/documents/{document}/correct', [DocumentCorrectionController::class, 'correctDocument'])
             ->name('documents.correct');
     });
+
+    // Document Verification Routes (All Authenticated Users)
+    Route::prefix('procurement/{pr_number}')->name('procurement.')->group(function () {
+        Route::post('/verify', [DocumentVerificationController::class, 'verify'])
+            ->name('verify');
+        Route::post('/verify/integrity', [DocumentVerificationController::class, 'verifyIntegrity'])
+            ->name('verify.integrity');
+        Route::get('/verification-report', [DocumentVerificationController::class, 'getReport'])
+            ->name('verification-report');
+        Route::get('/verification', [DocumentVerificationController::class, 'showVerificationPage'])
+            ->name('verification');
+    });
+
+    // Single Document Verification
+    Route::post('/documents/{fileKey}/verify', [DocumentVerificationController::class, 'verifyDocument'])
+        ->where('fileKey', '.*')
+        ->name('documents.verify');
 
     // Procurement Publishing & Upload Actions (BAC Secretariat only)
     // Rate limited to prevent blockchain node abuse (Issue #18 fix)
