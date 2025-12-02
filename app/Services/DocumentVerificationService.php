@@ -461,15 +461,7 @@ final class DocumentVerificationService
     {
         try {
             // Find the document in the repository
-            $documents = $this->documentRepository->all();
-            $document = null;
-
-            foreach ($documents as $doc) {
-                if ($doc->fileKey === $fileKey) {
-                    $document = $doc;
-                    break;
-                }
-            }
+            $document = $this->documentRepository->findByFileKey($fileKey);
 
             if ($document === null) {
                 return VerificationResult::failure(
