@@ -36,10 +36,8 @@ Route::get('/', fn () => Inertia::render('home'))->name('home');
 Route::inertia('/about', 'about')->name('about');
 Route::inertia('/team', 'team')->name('team');
 Route::inertia('/contact', 'contact')->name('contact');
-
-// Public Document Downloads
-Route::get('/privacy.pdf', fn () => response()->file(public_path('docs/privacy.pdf')))->name('privacy.policy');
-Route::get('/terms.pdf', fn () => response()->file(public_path('docs/terms.pdf')))->name('terms.service');
+Route::inertia('/privacy', 'privacy')->name('privacy.policy');
+Route::inertia('/terms', 'terms')->name('terms.service');
 
 /*
 |--------------------------------------------------------------------------
@@ -327,5 +325,3 @@ Route::middleware(['auth'])->group(function () {
 
 require __DIR__.'/auth.php';
 require __DIR__.'/settings.php';
-
-
