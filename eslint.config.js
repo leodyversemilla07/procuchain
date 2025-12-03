@@ -40,5 +40,30 @@ export default [
     {
         ignores: ['vendor', 'node_modules', 'public', 'bootstrap/ssr', 'tailwind.config.js'],
     },
+    // MultiChain Smart Filter files - blockchain runtime provides these globals
+    {
+        files: ['resources/blockchain/filters/**/*.js'],
+        languageOptions: {
+            globals: {
+                // MultiChain Smart Filter API functions
+                filterstreamitem: 'readonly',
+                filtertransaction: 'readonly',
+                getfilterstreamitem: 'readonly',
+                getfiltertransaction: 'readonly',
+                getlastblockinfo: 'readonly',
+                verifypermission: 'readonly',
+                verifymessage: 'readonly',
+                getassetinfo: 'readonly',
+                getstreaminfo: 'readonly',
+            },
+        },
+        rules: {
+            // These functions ARE used by MultiChain runtime
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': 'off',
+            // Catch variable in try/catch is intentionally unused
+            'no-useless-escape': 'off',
+        },
+    },
     prettier, // Turn off all rules that might conflict with Prettier
 ];

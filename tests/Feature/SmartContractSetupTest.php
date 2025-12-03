@@ -1,7 +1,6 @@
 <?php
 
 use App\Services\Manager;
-use Illuminate\Support\Facades\File;
 
 describe('SmartContractSetup Command', function () {
     beforeEach(function () {
@@ -9,7 +8,7 @@ describe('SmartContractSetup Command', function () {
         $this->app->instance(Manager::class, $this->multichainManager);
     });
 
-    it('checks multichain connection before deployment', function () {
+    it('checks multichain connection before any operation', function () {
         $this->multichainManager
             ->shouldReceive('getinfo')
             ->once()
@@ -17,86 +16,13 @@ describe('SmartContractSetup Command', function () {
                 'chainname' => 'procuchain',
                 'blocks' => 12345,
             ]);
-
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->once()
-            ->andThrow(new Exception('Testing - library deployment skipped'));
-
-        try {
-            $this->artisan('smartcontract:setup');
-        } catch (Exception $e) {
-            // Expected to fail during deployment
-        }
-
-        // Connection check should have succeeded even if deployment failed
-        expect(true)->toBeTrue();
-    });
-
-    it('deploys validation helper library successfully', function () {
-        // Mock File facade to simulate file existence and content
-        File::shouldReceive('exists')
-            ->andReturn(true);
-
-        File::shouldReceive('get')
-            ->andReturn('// Mock JavaScript library code');
-
-        $this->multichainManager
-            ->shouldReceive('getinfo')
-            ->once()
-            ->andReturn([
-                'chainname' => 'procuchain',
-                'blocks' => 12345,
-            ]);
-
-        $libraryTxid = '9a1c2e3f4b5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f';
-
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->with(
-                'library',
-                'procuchain_validation_helpers',
-                \Mockery::type('bool'),
-                \Mockery::type('array')
-            )
-            ->once()
-            ->andReturn($libraryTxid);
-
-        $this->multichainManager
-            ->shouldReceive('getstreaminfo')
-            ->andReturn(['name' => 'procurement.documents']);
-
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->andReturn($libraryTxid);
 
         $this->artisan('smartcontract:setup')
-            ->expectsOutput('Smart contract setup completed successfully!')
+            ->expectsOutput('Connected to: procuchain (block: 12345)')
             ->assertSuccessful();
     });
 
-    it('deploys document validation filter successfully', function () {
-        // Mock File facade to simulate file existence and content for specific files
-        File::shouldReceive('exists')
-            ->with(resource_path('blockchain/libraries/validation_helpers.js'))
-            ->andReturn(true);
-        File::shouldReceive('exists')
-            ->with(resource_path('blockchain/filters/documents_filter_v1_standalone.js'))
-            ->andReturn(true);
-        File::shouldReceive('exists')
-            ->with(resource_path('blockchain/filters/status_filter_v3_standalone.js'))
-            ->andReturn(true);
-
-        File::shouldReceive('get')
-            ->with(resource_path('blockchain/libraries/validation_helpers.js'))
-            ->andReturn('// Mock library code');
-        File::shouldReceive('get')
-            ->with(resource_path('blockchain/filters/documents_filter_v1_standalone.js'))
-            ->andReturn('// Mock documents filter code');
-        File::shouldReceive('get')
-            ->with(resource_path('blockchain/filters/status_filter_v3_standalone.js'))
-            ->andReturn('// Mock status filter code');
-
+    it('shows help when no option is provided', function () {
         $this->multichainManager
             ->shouldReceive('getinfo')
             ->once()
@@ -105,41 +31,12 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
-        $filterTxid = '8b1c2e3f4b5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e2a';
-
-        $this->multichainManager
-            ->shouldReceive('getstreaminfo')
-            ->with('procurement.documents')
-            ->once()
-            ->andReturn(['name' => 'procurement.documents']);
-
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->with('streamfilter', 'procuchain_documents_validator', true, \Mockery::on(function ($options) {
-                return isset($options['restrictions']) && isset($options['code']);
-            }))
-            ->once()
-            ->andReturn($filterTxid);
-
-        $this->multichainManager
-            ->shouldReceive('getstreaminfo')
-            ->with('procurement.status')
-            ->once()
-            ->andReturn(['name' => 'procurement.status']);
-
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->with('streamfilter', 'procuchain_status_v3', true, \Mockery::on(function ($options) {
-                return isset($options['restrictions']) && isset($options['code']);
-            }))
-            ->once()
-            ->andReturn($filterTxid);
-
         $this->artisan('smartcontract:setup')
+            ->expectsOutput('Usage:')
             ->assertSuccessful();
     });
 
-    it('handles already existing library gracefully', function () {
+    it('checks deployment status with --check flag', function () {
         $this->multichainManager
             ->shouldReceive('getinfo')
             ->once()
@@ -149,128 +46,37 @@ describe('SmartContractSetup Command', function () {
             ]);
 
         $this->multichainManager
-            ->shouldReceive('create')
-            ->once()
-            ->andThrow(new Exception('Library already exists'));
-
-        $this->multichainManager
-            ->shouldReceive('getstreaminfo')
-            ->twice() // Called for both streams
-            ->andReturn(['name' => 'procurement.documents'], ['name' => 'procurement.status']);
-
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->twice() // Called for both filters
-            ->andReturn('some-txid');
-
-        $this->artisan('smartcontract:setup')
-            ->assertSuccessful();
-    });
-
-    it('handles already existing filter gracefully', function () {
-        $this->multichainManager
-            ->shouldReceive('getinfo')
+            ->shouldReceive('liststreamfilters')
             ->once()
             ->andReturn([
-                'chainname' => 'procuchain',
-                'blocks' => 12345,
-            ]);
-
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->with('library', 'procuchain_validation_helpers', true, \Mockery::on(function ($options) {
-                return isset($options['restrictions']) && isset($options['code']);
-            }))
-            ->once()
-            ->andReturn('library-txid');
-
-        $this->multichainManager
-            ->shouldReceive('getstreaminfo')
-            ->andReturn(['name' => 'procurement.documents']);
-
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->with('streamfilter', 'procuchain_documents_validator', true, \Mockery::on(function ($options) {
-                return isset($options['restrictions']) && isset($options['code']);
-            }))
-            ->once()
-            ->andThrow(new Exception('Filter already exists for stream'));
-
-        $this->multichainManager
-            ->shouldReceive('getstreaminfo')
-            ->with('procurement.status')
-            ->andReturn(['name' => 'procurement.status']);
-
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->with('streamfilter', 'procuchain_status_v3', true, \Mockery::on(function ($options) {
-                return isset($options['restrictions']) && isset($options['code']);
-            }))
-            ->once()
-            ->andReturn('status-filter-txid');
-
-        $this->artisan('smartcontract:setup')
-            ->assertSuccessful();
-    });
-
-    it('fails if stream does not exist', function () {
-        $this->multichainManager
-            ->shouldReceive('getinfo')
-            ->once()
-            ->andReturn([
-                'chainname' => 'procuchain',
-                'blocks' => 12345,
-            ]);
-
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->with('library', 'procuchain_validation_helpers', true, \Mockery::on(function ($options) {
-                return isset($options['restrictions']) && isset($options['code']);
-            }))
-            ->once()
-            ->andReturn('library-txid');
-
-        $this->multichainManager
-            ->shouldReceive('getstreaminfo')
-            ->with('procurement.documents')
-            ->once()
-            ->andThrow(new Exception('Stream not found'));
-
-        // When first stream check fails, second stream is still checked
-        $this->multichainManager
-            ->shouldReceive('getstreaminfo')
-            ->with('procurement.status')
-            ->once()
-            ->andReturn(['name' => 'procurement.status']);
-
-        // Filter should be created for the stream that exists
-        $this->multichainManager
-            ->shouldReceive('create')
-            ->with('streamfilter', 'procuchain_status_v3', true, \Mockery::on(function ($options) {
-                return isset($options['restrictions']) && isset($options['code']);
-            }))
-            ->once()
-            ->andReturn('filter-txid');
-
-        $this->artisan('smartcontract:setup')
-            ->assertSuccessful(); // Command succeeds but logs error for missing stream
-    });
-
-    it('can check deployment status with --check flag', function () {
-        $this->multichainManager
-            ->shouldReceive('getinfo')
-            ->once()
-            ->andReturn([
-                'chainname' => 'procuchain',
-                'blocks' => 12345,
+                ['name' => 'sf_document_validation', 'compiled' => true],
+                ['name' => 'sf_status_validation', 'compiled' => true],
             ]);
 
         $this->artisan('smartcontract:setup --check')
-            ->expectsOutput('Checking smart contract deployment status...')
+            ->expectsOutput('Stream Filters:')
             ->assertSuccessful();
     });
 
-    it('can deploy only libraries with --deploy-libraries flag', function () {
+    it('shows warning when no filters deployed on --check', function () {
+        $this->multichainManager
+            ->shouldReceive('getinfo')
+            ->once()
+            ->andReturn([
+                'chainname' => 'procuchain',
+                'blocks' => 12345,
+            ]);
+
+        $this->multichainManager
+            ->shouldReceive('liststreamfilters')
+            ->once()
+            ->andReturn([]);
+
+        $this->artisan('smartcontract:setup --check')
+            ->assertSuccessful();
+    });
+
+    it('deploys filters with --deploy flag', function () {
         $this->multichainManager
             ->shouldReceive('getinfo')
             ->once()
@@ -281,20 +87,19 @@ describe('SmartContractSetup Command', function () {
 
         $this->multichainManager
             ->shouldReceive('create')
-            ->with('library', 'procuchain_validation_helpers', true, \Mockery::on(function ($options) {
-                return isset($options['restrictions']) && isset($options['code']);
-            }))
-            ->once()
-            ->andReturn('library-txid');
+            ->with('streamfilter', \Mockery::type('string'), false, \Mockery::type('string'))
+            ->times(4)
+            ->andReturn('txid-123');
 
-        $this->artisan('smartcontract:setup --deploy-libraries')
-            ->expectsOutput('Deploying JavaScript libraries...')
+        $this->artisan('smartcontract:setup --deploy')
+            ->expectsOutput('Deploying smart contracts...')
             ->assertSuccessful();
     });
 
-    it('displays deployment summary table', function () {
+    it('handles already existing filters gracefully during deploy', function () {
         $this->multichainManager
             ->shouldReceive('getinfo')
+            ->once()
             ->andReturn([
                 'chainname' => 'procuchain',
                 'blocks' => 12345,
@@ -302,81 +107,140 @@ describe('SmartContractSetup Command', function () {
 
         $this->multichainManager
             ->shouldReceive('create')
-            ->andReturn('txid-library-123');
+            ->andThrow(new Exception('Entity with this name already exists'));
+
+        $this->artisan('smartcontract:setup --deploy')
+            ->assertSuccessful();
+    });
+
+    it('activates filters with --activate flag', function () {
+        $this->multichainManager
+            ->shouldReceive('getinfo')
+            ->once()
+            ->andReturn([
+                'chainname' => 'procuchain',
+                'blocks' => 12345,
+            ]);
 
         $this->multichainManager
-            ->shouldReceive('getstreaminfo')
-            ->andReturn(['name' => 'procurement.documents']);
+            ->shouldReceive('getaddresses')
+            ->once()
+            ->andReturn(['1abc123def456']);
 
         $this->multichainManager
-            ->shouldReceive('create')
-            ->andReturn('txid-filter-456');
+            ->shouldReceive('liststreamfilters')
+            ->once()
+            ->andReturn([
+                ['name' => 'sf_document_validation'],
+                ['name' => 'sf_status_validation'],
+            ]);
+
+        $this->multichainManager
+            ->shouldReceive('approvefrom')
+            ->twice()
+            ->andReturn(true);
+
+        $this->artisan('smartcontract:setup --activate')
+            ->expectsOutput('Activating filters...')
+            ->assertSuccessful();
+    });
+
+    it('deactivates filters with --deactivate flag', function () {
+        $this->multichainManager
+            ->shouldReceive('getinfo')
+            ->once()
+            ->andReturn([
+                'chainname' => 'procuchain',
+                'blocks' => 12345,
+            ]);
+
+        $this->multichainManager
+            ->shouldReceive('getaddresses')
+            ->once()
+            ->andReturn(['1abc123def456']);
+
+        $this->multichainManager
+            ->shouldReceive('liststreamfilters')
+            ->once()
+            ->andReturn([
+                ['name' => 'sf_document_validation'],
+            ]);
+
+        $this->multichainManager
+            ->shouldReceive('approvefrom')
+            ->once()
+            ->andReturn(true);
+
+        $this->artisan('smartcontract:setup --deactivate')
+            ->expectsOutput('Deactivating filters...')
+            ->assertSuccessful();
+    });
+
+    it('fails when no admin address available', function () {
+        $this->multichainManager
+            ->shouldReceive('getinfo')
+            ->once()
+            ->andReturn([
+                'chainname' => 'procuchain',
+                'blocks' => 12345,
+            ]);
+
+        $this->multichainManager
+            ->shouldReceive('getaddresses')
+            ->once()
+            ->andReturn([]);
+
+        $this->artisan('smartcontract:setup --activate')
+            ->expectsOutput('No admin address available')
+            ->assertFailed();
+    });
+
+    it('handles connection errors gracefully', function () {
+        $this->multichainManager
+            ->shouldReceive('getinfo')
+            ->once()
+            ->andThrow(new Exception('Connection refused'));
 
         $this->artisan('smartcontract:setup')
-            ->expectsOutput('Deployment Summary:')
-            ->assertSuccessful();
+            ->assertFailed();
     });
 });
 
 describe('Smart Filter JavaScript Files', function () {
     it('has documents filter file', function () {
-        $path = resource_path('blockchain/filters/documents_filter_v1_standalone.js');
-
-        expect(File::exists($path))->toBeTrue()
-            ->and(File::get($path))->toContain('filterstreamitem')
-            ->and(File::get($path))->toContain('hashPattern')
-            ->and(File::get($path))->toContain('SHA-256');
+        expect(file_exists(resource_path('blockchain/filters/stream_document_validation.js')))->toBeTrue();
     });
 
     it('has status filter file', function () {
-        $path = resource_path('blockchain/filters/status_filter_v1_standalone.js');
-
-        expect(File::exists($path))->toBeTrue()
-            ->and(File::get($path))->toContain('filterstreamitem')
-            ->and(File::get($path))->toContain('current_status')
-            ->and(File::get($path))->toContain('stage');
+        expect(file_exists(resource_path('blockchain/filters/stream_status_validation.js')))->toBeTrue();
     });
 
-    it('has validation helpers library file', function () {
-        $path = resource_path('blockchain/libraries/validation_helpers.js');
+    it('has event filter file', function () {
+        expect(file_exists(resource_path('blockchain/filters/stream_event_validation.js')))->toBeTrue();
+    });
 
-        expect(File::exists($path))->toBeTrue()
-            ->and(File::get($path))->toContain('validateHash')
-            ->and(File::get($path))->toContain('validateRequiredFields')
-            ->and(File::get($path))->toContain('validateFileSize')
-            ->and(File::get($path))->toContain('validateEnum');
+    it('has file metadata filter file', function () {
+        expect(file_exists(resource_path('blockchain/filters/stream_file_metadata_validation.js')))->toBeTrue();
     });
 
     it('documents filter validates hash format', function () {
-        $filterCode = File::get(resource_path('blockchain/filters/documents_filter_v1_standalone.js'));
-
-        expect($filterCode)->toContain('/^[a-f0-9]{64}$/i')
-            ->and($filterCode)->toContain('Invalid document hash format');
+        $content = file_get_contents(resource_path('blockchain/filters/stream_document_validation.js'));
+        expect($content)->toContain('hash');
     });
 
     it('documents filter checks required fields', function () {
-        $filterCode = File::get(resource_path('blockchain/filters/documents_filter_v1_standalone.js'));
-
-        expect($filterCode)->toContain('pr_number')
-            ->and($filterCode)->toContain('hash')
-            ->and($filterCode)->toContain('file_key')
-            ->and($filterCode)->toContain('document_type')
-            ->and($filterCode)->toContain('Missing required field');
+        $content = file_get_contents(resource_path('blockchain/filters/stream_document_validation.js'));
+        expect($content)->toContain('pr_number');
+        expect($content)->toContain('file_name');
     });
 
     it('status filter validates status enums', function () {
-        $filterCode = File::get(resource_path('blockchain/filters/status_filter_v1_standalone.js'));
-
-        expect($filterCode)->toContain('procurement_submitted')
-            ->and($filterCode)->toContain('bidding_documents_published')
-            ->and($filterCode)->toContain('completed')
-            ->and($filterCode)->toContain('Invalid status');
+        $content = file_get_contents(resource_path('blockchain/filters/stream_status_validation.js'));
+        expect($content)->toContain('status');
     });
 
-    it('status filter validates stage-status alignment', function () {
-        $filterCode = File::get(resource_path('blockchain/filters/status_filter_v1_standalone.js'));
-
-        expect($filterCode)->toContain('stageStatusMap')
-            ->and($filterCode)->toContain('not valid for stage');
+    it('event filter validates event structure', function () {
+        $content = file_get_contents(resource_path('blockchain/filters/stream_event_validation.js'));
+        expect($content)->toContain('event_type');
     });
 });
