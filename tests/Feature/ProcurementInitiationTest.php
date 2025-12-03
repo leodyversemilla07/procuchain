@@ -4,6 +4,7 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Models\User;
+use App\Services\Manager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +15,13 @@ uses(RefreshDatabase::class)->group('procurement', 'integration');
 
 beforeEach(function () {
     Storage::fake('local');
+
+    // Mock MultiChain Manager for CI environment (no blockchain node available)
+    $mockMultichain = Mockery::mock(Manager::class);
+    $mockMultichain->shouldReceive('publish')->andReturn('mock_txid_'.uniqid());
+    $mockMultichain->shouldReceive('liststreamkeyitems')->andReturn([]);
+    $mockMultichain->shouldReceive('getinfo')->andReturn(['version' => '2.3.3']);
+    $this->app->instance(Manager::class, $mockMultichain);
 
     // Create permissions (or get if exists)
     $managePermission = Permission::firstOrCreate(['name' => 'manage procurement initiation']);
