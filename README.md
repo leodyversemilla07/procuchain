@@ -1,38 +1,116 @@
-# ProcuChain
+<p align="center">
+  <img src="public/logo.png" alt="ProcuChain Logo" width="120">
+</p>
 
-> Blockchain-backed procurement document integrity & workflow automation for BAC offices.
+<h1 align="center">ProcuChain</h1>
+
+<p align="center">
+  <strong>🔗 Blockchain-backed procurement document integrity & workflow automation for BAC offices</strong>
+</p>
+
+<p align="center">
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-features">Features</a> •
+  <a href="#-installation">Installation</a> •
+  <a href="#-usage">Usage</a> •
+  <a href="#-contributing">Contributing</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+  <img src="https://img.shields.io/badge/php-%3E%3D8.3-8892BF.svg" alt="PHP Version">
+  <img src="https://img.shields.io/badge/Laravel-12.x-FF2D20.svg" alt="Laravel">
+  <img src="https://img.shields.io/badge/React-19.x-61DAFB.svg" alt="React">
+  <img src="https://img.shields.io/badge/MultiChain-2.3.3-green.svg" alt="MultiChain">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC.svg" alt="Tailwind CSS">
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/status-active-success.svg" alt="Status">
+  <img src="https://img.shields.io/github/last-commit/leodyversemilla07/procuchain" alt="Last Commit">
+</p>
 
 ---
 
-## Table of Contents
+## 📋 Table of Contents
 
-1. [Overview](#overview)
-2. [Features](#features)
-3. [Technology Stack](#technology-stack)
-4. [Requirements](#requirements)
-5. [Architecture Snapshot](#architecture-snapshot)
-6. [Installation](#installation)
-7. [MultiChain Setup](#multichain-setup)
-8. [Smart Contracts](#smart-contracts-multichain-smart-filters)
-9. [Configuration](#configuration)
-10. [Entry Points](#entry-points)
-11. [Running & Development](#running--development)
-12. [Scripts](#scripts)
-13. [Testing](#testing)
-14. [Production Deployment](#production-deployment)
-15. [Project Structure](#project-structure)
-16. [Security](#security)
-17. [Troubleshooting](#troubleshooting)
-18. [License](#license)
-19. [Contact](#contact)
+<details>
+<summary>Click to expand</summary>
+
+- [🚀 Quick Start](#-quick-start)
+- [📖 Overview](#-overview)
+- [✨ Features](#-features)
+- [🛠️ Technology Stack](#️-technology-stack)
+- [📦 Requirements](#-requirements)
+- [🏗️ Architecture Snapshot](#️-architecture-snapshot)
+- [💻 Installation](#-installation)
+- [⛓️ MultiChain Setup](#️-multichain-setup)
+- [📜 Smart Contracts](#-smart-contracts-multichain-smart-filters)
+- [⚙️ Configuration](#️-configuration)
+- [🚪 Entry Points](#-entry-points)
+- [🔧 Running & Development](#-running--development)
+- [📝 Scripts](#-scripts)
+- [🧪 Testing](#-testing)
+- [🚀 Production Deployment](#-production-deployment)
+- [📁 Project Structure](#-project-structure)
+- [🔒 Security](#-security)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [📄 License](#-license)
+- [📞 Contact & Support](#-contact--support)
+- [🙏 Acknowledgments](#-acknowledgments)
+
+</details>
 
 ---
 
-## Overview
+## 🚀 Quick Start
+
+Get ProcuChain running in minutes:
+
+```bash
+# Clone the repository
+git clone https://github.com/leodyversemilla07/procuchain.git && cd procuchain
+
+# Install dependencies
+composer install && npm install
+
+# Configure environment
+cp .env.example .env && php artisan key:generate
+
+# Setup database and blockchain
+php artisan migrate --seed
+php artisan multichain:setup
+
+# Start development server
+composer run dev
+```
+
+> 📝 **Note:** Ensure MultiChain node is running before executing `multichain:setup`. See [Installation](#-installation) for detailed setup instructions.
+
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 📖 Overview
 
 ProcuChain is a blockchain-powered document management system for Bids and Awards Committee (BAC) operations. It provides immutable audit trails, controlled access, and automated procurement workflow stages.
 
-## Features
+### Why ProcuChain?
+
+| Challenge | Solution |
+|-----------|----------|
+| 📄 Document tampering | SHA-256 hashes stored on blockchain |
+| 🔍 Lack of transparency | Complete audit trail for every action |
+| ⏱️ Manual workflow tracking | Automated 15-stage procurement workflow |
+| 🔐 Unauthorized access | Role-based permissions with 2FA |
+| 📊 Scattered documentation | Centralized, searchable document repository |
+
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## ✨ Features
 
 - **Secure Document Management**: Upload, store, and manage procurement documents with blockchain integrity verification
 - **Blockchain-based Document Verification**: Immutable audit trails using MultiChain streams
@@ -46,7 +124,11 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 - **Push Notifications**: Real-time browser notifications using WebPush/VAPID
 - **Responsive Interface**: Modern React-based SPA with Inertia.js for seamless user experience
 
-## Technology Stack
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🛠️ Technology Stack
 
 - **Backend**: Laravel 12.38.1 with PHP 8.3.28
 - **Frontend**: React 19.2.0 with Inertia.js v2.2.16 for SPA experience
@@ -72,7 +154,11 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
     - TypeScript 5.7.2 for type safety
     - ESLint 9.17.0 & Prettier 3.4.2 for code quality
 
-## Requirements
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 📦 Requirements
 
 - PHP 8.3 or higher (8.3.27 recommended)
 - Composer 2.x
@@ -81,7 +167,29 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 - MultiChain 2.3.3+ (Community Edition) accessible via RPC
 - SMTP service or Resend API (for email notifications)
 
-## Architecture Snapshot
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🏗️ Architecture Snapshot
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        ProcuChain Architecture                   │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────────────┐   │
+│  │   React +   │   │   Laravel   │   │    MultiChain       │   │
+│  │  Inertia.js │◄─►│   12.x API  │◄─►│    Blockchain       │   │
+│  │  Frontend   │   │   Backend   │   │    (8 Streams)      │   │
+│  └─────────────┘   └─────────────┘   └─────────────────────┘   │
+│         │                 │                    │                │
+│         ▼                 ▼                    ▼                │
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────────────┐   │
+│  │  Tailwind   │   │   MySQL     │   │   Smart Filters     │   │
+│  │  CSS v4     │   │   8.0+      │   │   (Validation)      │   │
+│  └─────────────┘   └─────────────┘   └─────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 High level components:
 
@@ -102,7 +210,11 @@ High level components:
 - **Permission Matrix**: Config-driven grants for global & per-stream rights
 - **Security**: Multi-factor authentication, account lockout protection, IP blocking, and comprehensive audit logging
 
-## Installation
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 💻 Installation
 
 ### Prerequisites
 
@@ -151,7 +263,7 @@ php artisan db:seed
 composer run dev
 ```
 
-### MultiChain Setup
+### ⛓️ MultiChain Setup
 
 ```bash
 # Install MultiChain (if not already installed)
@@ -240,7 +352,11 @@ The command manages blockchain addresses for these roles:
 4. If config is cached, clear it after setup: `php artisan config:clear`
 5. Keep your `.env` file secure as it contains the blockchain addresses
 
-## Smart Contracts (MultiChain Smart Filters)
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 📜 Smart Contracts (MultiChain Smart Filters)
 
 ProcuChain implements **Smart Contracts** using MultiChain's Smart Filter technology. Smart Filters are JavaScript-based validation functions that run on the blockchain to enforce business rules at the protocol level.
 
@@ -359,7 +475,11 @@ Validates: pr_number, hash format, document_type, stage
 - Emergency deactivation available for critical issues
 - All validation failures are logged for audit
 
-## Configuration
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## ⚙️ Configuration
 
 Environment variables (core subset):
 
@@ -427,7 +547,11 @@ Environment variables (core subset):
 
 After running `php artisan multichain:setup`, the role addresses will be automatically generated and added to your `.env` file. Keep this file secure as it contains the blockchain addresses and sensitive credentials.
 
-## Entry Points
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🚪 Entry Points
 
 - Frontend CSS: resources/css/app.css
 - Frontend App (SPA): resources/js/app.tsx
@@ -437,7 +561,11 @@ After running `php artisan multichain:setup`, the role addresses will be automat
 
 Vite is configured in vite.config.ts with laravel-vite-plugin to handle both client and SSR builds.
 
-## Testing
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🧪 Testing
 
 The project uses [Pest](https://pestphp.com/) for expressive tests.
 
@@ -459,7 +587,11 @@ Run a single file:
 php artisan test tests/Feature/SomeFeatureTest.php
 ```
 
-## Running & Development
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🔧 Running & Development
 
 Development watcher (PHP + Vite):
 
@@ -479,7 +611,11 @@ Format code (Laravel Pint):
 vendor/bin/pint
 ```
 
-## Scripts
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 📝 Scripts
 
 Composer scripts:
 - composer run dev — Runs PHP server, queue listener, and Vite dev server concurrently.
@@ -502,7 +638,11 @@ Procfile (for platforms like Heroku):
 Docker (database only):
 - docker-compose up -d — Starts MySQL 8.4 and phpMyAdmin (mapped to ports 3307 and 8081).
 
-## Production Deployment
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🚀 Production Deployment
 
 1. Install dependencies (`composer install --no-dev --optimize-autoloader`, `npm ci && npm run build`).
 2. Optimize Laravel (`php artisan config:cache && php artisan route:cache && php artisan view:cache`).
@@ -520,7 +660,11 @@ Docker (database only):
 
 For subsequent deployments, re-run the setup command to ensure streams exist and permissions are properly granted.
 
-## Troubleshooting
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🐛 Troubleshooting
 
 | Symptom                                   | Cause                                          | Fix                                                       |
 | ----------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- |
@@ -531,7 +675,11 @@ For subsequent deployments, re-run the setup command to ensure streams exist and
 | `.env` file not updated                   | File permissions issue                         | Check file is writable                                    |
 | Connection check passes but setup fails   | Permission or stream creation issues           | Check MultiChain node logs for detailed error messages    |
 
-## Usage
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 📖 Usage
 
 ### Getting Started
 1. Access the system through your web browser at the configured `APP_URL`
@@ -600,7 +748,11 @@ Each stage requires specific documents and follows defined status transitions (2
 - **Audit Trail**: Complete history of all procurement activities
 - **Explorer**: Built-in blockchain explorer for transaction lookup and verification
 
-## Project Structure
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 📁 Project Structure
 
 Project root snapshot:
 
@@ -701,7 +853,11 @@ procuchain/
 - Database-driven queue (jobs table)
 - Retry logic with exponential backoff
 
-## Security
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🔒 Security
 
 ### Authentication & Authorization
 - **Multi-factor Authentication (2FA)**: Time-based OTP (TOTP) via Google2FA with encrypted recovery codes
@@ -751,7 +907,11 @@ procuchain/
 - Security monitoring through login logs and audit trails
 - **Note**: Files are stored on-chain, so no separate file backup needed - just ensure blockchain nodes are properly backed up
 
-## Performance & Optimization
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## ⚡ Performance & Optimization
 
 ### Caching Strategies
 - **Database Caching**: Query result caching with cache invalidation
@@ -779,7 +939,11 @@ procuchain/
 - **Circuit Breaker**: Prevent cascade failures with health monitoring
 - **Timeout Management**: Separate timeouts for web (12s) vs console (30s) operations
 
-## Monitoring & Logging
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 📊 Monitoring & Logging
 
 ### Error Tracking with Sentry
 ProcuChain uses [Sentry](https://sentry.io) for real-time error tracking and performance monitoring.
@@ -836,7 +1000,11 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - **File Storage**: On-chain storage verification with SHA-256 integrity checks
 - **Queue**: Failed job tracking and retry monitoring
 
-## API & Integration
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🔌 API & Integration
 
 ### Available Tools (Laravel Boost MCP)
 - `application-info`: Get PHP version, Laravel version, installed packages
@@ -854,7 +1022,11 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - **WebPush/VAPID**: Browser push notifications
 - **MultiChain RPC**: Blockchain operations via JSON-RPC 2.0
 
-## Development Guidelines
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 👨‍💻 Development Guidelines
 
 ### Code Quality Standards
 - **PHP**: Laravel Pint with PSR-12 compliance
@@ -874,7 +1046,11 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - **Commits**: Descriptive commit messages
 - **PR Reviews**: Code review before merging
 
-## Database Schema Overview
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🗃️ Database Schema Overview
 
 ### Core Tables (18 total)
 - **users** (20 columns): User accounts with blockchain addresses, 2FA, account lockout
@@ -902,9 +1078,13 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - `blockchain_retry_count`: Number of retry attempts
 - Document corrections tracked separately with full audit trail
 
-## Known Issues & Future Enhancements
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
 
-### Planned Enhancements
+---
+
+## 📌 Known Issues & Future Enhancements
+
+### 🚧 Planned Enhancements
 - API documentation with OpenAPI/Swagger
 - Automated backup scheduling for blockchain and database
 - Application Performance Monitoring (APM) integration
@@ -915,7 +1095,12 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - Real-time analytics dashboard
 - Multi-node blockchain setup documentation
 
-### Contributing
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 🤝 Contributing
+
 Contributions are welcome! Please:
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -924,7 +1109,11 @@ Contributions are welcome! Please:
 5. Push to the branch
 6. Open a Pull Request
 
-## License
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 📄 License
 
 MIT License
 
@@ -936,7 +1125,11 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## Contact & Support
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 📞 Contact & Support
 
 **Project Maintainer:** Leodyver Semilla  
 **Email:** [leodyversemilla07@gmail.com](mailto:leodyversemilla07@gmail.com)  
@@ -944,6 +1137,33 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 For bug reports, feature requests, or general inquiries, please open an issue on GitHub or contact the maintainer directly.
 
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
 ---
 
-**Built with ❤️ for transparent and accountable public procurement in the Philippines**
+## 🙏 Acknowledgments
+
+This project is built on the shoulders of giants. Special thanks to:
+
+| Technology | Purpose |
+|------------|----------|
+| [Laravel](https://laravel.com/) | The PHP framework for web artisans |
+| [React](https://react.dev/) | UI component library |
+| [Inertia.js](https://inertiajs.com/) | Modern monolith architecture |
+| [MultiChain](https://www.multichain.com/) | Enterprise blockchain platform |
+| [Tailwind CSS](https://tailwindcss.com/) | Utility-first CSS framework |
+| [shadcn/ui](https://ui.shadcn.com/) | Beautifully designed components |
+| [Pest](https://pestphp.com/) | Elegant PHP testing framework |
+| [Spatie](https://spatie.be/) | Laravel Permission package |
+
+<p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+<p align="center">
+  <strong>Built with ❤️ for transparent and accountable public procurement in the Philippines</strong>
+</p>
+
+<p align="center">
+  <a href="#procuchain">⬆️ Back to top</a>
+</p>
