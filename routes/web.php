@@ -328,12 +328,4 @@ Route::middleware(['auth'])->group(function () {
 require __DIR__.'/auth.php';
 require __DIR__.'/settings.php';
 
-/*
-|--------------------------------------------------------------------------
-| Development Only Routes
-|--------------------------------------------------------------------------
-*/
 
-if (app()->environment(['local', 'development'])) {
-    require __DIR__.'/file-uploads-ui-preview.php';
-}

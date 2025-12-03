@@ -7,341 +7,161 @@ use App\Services\Manager;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
 
 /**
- * Smart Contract Setup Command
- *
- * Deploys JavaScript libraries and smart filters to the MultiChain blockchain
- * for ProcuChain document and workflow validation.
- *
- * This command handles:
- * - Deploying validation helper libraries
- * - Creating and activating stream filters
- * - Verifying deployment status
- * - Subscribing to relevant streams
- *
- * Usage:
- *   php artisan smartcontract:setup
- *   php artisan smartcontract:setup --check
- *   php artisan smartcontract:setup --deploy-libraries
- *   php artisan smartcontract:setup --deploy-filters
+ * Deploy and manage MultiChain Smart Filters for ProcuChain.
  *
  * @see https://www.multichain.com/developers/smart-filters/
  */
 class SmartContractSetup extends Command
 {
     protected $signature = 'smartcontract:setup
-                            {--check : Check deployment status without deploying}
-                            {--deploy-libraries : Deploy only JavaScript libraries}
-                            {--deploy-filters : Deploy only stream filters}
-                            {--skip-library : Skip library deployment (filters work standalone)}
-                            {--force : Force redeployment even if already exists}';
+                            {--check : Check deployment status}
+                            {--deploy : Deploy all smart contracts}
+                            {--activate : Activate deployed filters}
+                            {--deactivate : Deactivate all filters}';
 
-    protected $description = 'Deploy smart contract libraries and filters to MultiChain blockchain';
+    protected $description = 'Deploy and manage MultiChain smart contracts';
 
-    private Manager $multichainService;
+    private Manager $multichain;
 
-    private array $deploymentResults = [];
+    private const FILTERS = [
+        ['name' => 'sf_document_validation', 'file' => 'stream_document_validation.js', 'stream' => 'DOCUMENTS'],
+        ['name' => 'sf_status_validation', 'file' => 'stream_status_validation.js', 'stream' => 'STATUS'],
+        ['name' => 'sf_file_metadata_validation', 'file' => 'stream_file_metadata_validation.js', 'stream' => 'FILE_METADATA'],
+        ['name' => 'sf_event_validation', 'file' => 'stream_event_validation.js', 'stream' => 'EVENTS'],
+    ];
 
-    /**
-     * Execute the console command.
-     */
     public function handle(Manager $multichain): int
     {
-        $this->multichainService = $multichain;
-
-        $this->info('ProcuChain Smart Contract Setup');
-        $this->newLine();
+        $this->multichain = $multichain;
 
         try {
-            // Verify MultiChain connection
-            $this->checkConnection();
-
-            if ($this->option('check')) {
-                return $this->checkDeploymentStatus();
-            }
-
-            // Deploy components
-            if (! $this->option('skip-library') && ($this->option('deploy-libraries') || ! $this->option('deploy-filters'))) {
-                $this->deployLibraries();
-            } elseif ($this->option('skip-library')) {
-                $this->warn('Skipping library deployment (filters work standalone)');
-                $this->newLine();
-            }
-
-            if ($this->option('deploy-filters') || ! $this->option('deploy-libraries')) {
-                $this->deployFilters();
-            }
-
-            // Display summary
-            $this->displaySummary();
-
-            $this->newLine();
-            $this->info('Smart contract setup completed successfully!');
+            $info = $this->multichain->getinfo();
+            $this->info("Connected to: {$info['chainname']} (block: {$info['blocks']})");
             $this->newLine();
 
-            $this->comment('Next steps:');
-            $this->line('1. Activate filters using admin approval: approvefrom <admin-address> <filter-name> true');
-            $this->line('2. Test filters with sample data');
-            $this->line('3. Monitor filter rejections in Laravel logs');
-
-            return Command::SUCCESS;
+            return match (true) {
+                $this->option('check') => $this->checkStatus(),
+                $this->option('deploy') => $this->deploy(),
+                $this->option('activate') => $this->toggleFilters(true),
+                $this->option('deactivate') => $this->toggleFilters(false),
+                default => $this->showHelp(),
+            };
         } catch (Exception $e) {
-            $this->error('Smart contract setup failed: '.$e->getMessage());
-            Log::error('Smart contract setup failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            $this->error($e->getMessage());
 
             return Command::FAILURE;
         }
     }
 
-    /**
-     * Check connection to MultiChain node
-     */
-    private function checkConnection(): void
+    private function showHelp(): int
     {
-        $this->info('Checking MultiChain connection...');
-
-        try {
-            $info = $this->multichainService->getinfo();
-
-            $this->line("Connected to blockchain: {$info['chainname']}");
-            $this->line("Block height: {$info['blocks']}");
-            $this->newLine();
-        } catch (Exception $e) {
-            throw new Exception('Failed to connect to MultiChain node: '.$e->getMessage());
-        }
-    }
-
-    /**
-     * Check deployment status of libraries and filters
-     */
-    private function checkDeploymentStatus(): int
-    {
-        $this->info('Checking smart contract deployment status...');
-        $this->newLine();
-
-        // This would require implementing listlibraries and liststreamfilters calls
-        // For now, we'll show a placeholder
-        $this->warn('Status checking not fully implemented yet.');
-        $this->line('Use MultiChain CLI: multichain-cli procuchain listlibraries');
-        $this->line('Use MultiChain CLI: multichain-cli procuchain liststreamfilters');
+        $this->line('Usage:');
+        $this->line('  --check      Check deployment status');
+        $this->line('  --deploy     Deploy all smart contracts');
+        $this->line('  --activate   Activate deployed filters');
+        $this->line('  --deactivate Deactivate all filters');
 
         return Command::SUCCESS;
     }
 
-    /**
-     * Deploy JavaScript libraries to blockchain
-     */
-    private function deployLibraries(): void
+    private function checkStatus(): int
     {
-        $this->info('Deploying JavaScript libraries...');
-        $this->newLine();
-
-        $libraryPath = resource_path('blockchain/libraries/validation_helpers.js');
-
-        if (! File::exists($libraryPath)) {
-            $this->error("Library file not found: {$libraryPath}");
-
-            return;
-        }
-
-        $libraryCode = File::get($libraryPath);
-        $libraryName = 'procuchain_validation_helpers';
+        $this->info('Stream Filters:');
 
         try {
-            $this->line("Deploying library: {$libraryName}...");
-
-            // Create library with updatemode='none' (no updates allowed after creation)
-            $restrictions = (object) ['updatemode' => 'none'];
-
-            $txid = $this->multichainService->create(
-                'library',
-                $libraryName,
-                true,
-                [
-                    'restrictions' => $restrictions,
-                    'code' => $libraryCode,
-                ]
-            );
-
-            $this->deploymentResults[] = [
-                'type' => 'Library',
-                'name' => $libraryName,
-                'status' => 'Created',
-                'txid' => $txid,
-            ];
-
-            $this->info("Library '{$libraryName}' deployed successfully");
-            $this->line("  Transaction ID: {$txid}");
-            $this->newLine();
-        } catch (Exception $e) {
-            $errorMsg = $e->getMessage();
-
-            // Check if library already exists
-            if (str_contains($errorMsg, 'already exists') || str_contains($errorMsg, 'duplicate')) {
-                $this->warn("Library '{$libraryName}' already exists");
-
-                if ($this->option('force')) {
-                    $this->line('  Use MultiChain update mechanism to modify existing library');
+            $filters = $this->multichain->liststreamfilters();
+            if (empty($filters)) {
+                $this->warn('  No filters deployed');
+            } else {
+                foreach ($filters as $f) {
+                    $status = ($f['compiled'] ?? false) ? '✓' : '○';
+                    $this->line("  {$status} {$f['name']}");
                 }
+            }
+        } catch (Exception $e) {
+            $this->warn("  Error: {$e->getMessage()}");
+        }
 
-                $this->deploymentResults[] = [
-                    'type' => 'Library',
-                    'name' => $libraryName,
-                    'status' => 'Already Exists',
-                    'txid' => 'N/A',
-                ];
-            } else {
-                $this->error("Failed to deploy library '{$libraryName}': {$errorMsg}");
-                $this->deploymentResults[] = [
-                    'type' => 'Library',
-                    'name' => $libraryName,
-                    'status' => 'Failed',
-                    'txid' => 'N/A',
-                ];
+        return Command::SUCCESS;
+    }
+
+    private function deploy(): int
+    {
+        $this->info('Deploying smart contracts...');
+        $filtersPath = resource_path('blockchain/filters');
+
+        foreach (self::FILTERS as $filter) {
+            $path = "{$filtersPath}/{$filter['file']}";
+
+            if (! File::exists($path)) {
+                $this->warn("  ✗ {$filter['name']}: file not found");
+
+                continue;
             }
 
-            $this->newLine();
+            try {
+                $this->multichain->create('streamfilter', $filter['name'], false, File::get($path));
+                $this->info("  ✓ {$filter['name']}: deployed");
+            } catch (Exception $e) {
+                if (str_contains($e->getMessage(), 'already exists')) {
+                    $this->warn("  ⚠ {$filter['name']}: already exists");
+                } else {
+                    $this->error("  ✗ {$filter['name']}: {$e->getMessage()}");
+                }
+            }
         }
-    }
 
-    /**
-     * Deploy stream filters to blockchain
-     */
-    private function deployFilters(): void
-    {
-        $this->info('Deploying stream filters...');
         $this->newLine();
+        $this->comment('Run with --activate to enable filters');
 
-        $filters = [
-            [
-                'name' => 'procuchain_documents_validator',
-                'file' => 'documents_filter_v1_standalone.js',
-                'stream' => StreamEnums::DOCUMENTS->value,
-                'description' => 'Document hash and metadata validation',
-            ],
-            [
-                'name' => 'procuchain_status_v3',
-                'file' => 'status_filter_v3_standalone.js',
-                'stream' => StreamEnums::STATUS->value,
-                'description' => 'Status transition and workflow validation (v3: pr_number support)',
-            ],
-        ];
-
-        foreach ($filters as $filter) {
-            $this->deployFilter($filter);
-        }
+        return Command::SUCCESS;
     }
 
-    /**
-     * Deploy a single stream filter
-     */
-    private function deployFilter(array $filterConfig): void
+    private function toggleFilters(bool $activate): int
     {
-        $filterPath = resource_path('blockchain/filters/'.$filterConfig['file']);
-
-        if (! File::exists($filterPath)) {
-            $this->error("Filter file not found: {$filterPath}");
-
-            return;
-        }
-
-        $filterCode = File::get($filterPath);
-        $filterName = $filterConfig['name'];
-        $streamName = $filterConfig['stream'];
+        $action = $activate ? 'Activating' : 'Deactivating';
+        $this->info("{$action} filters...");
 
         try {
-            $this->line("Deploying filter: {$filterName}...");
-            $this->line("  Target stream: {$streamName}");
-            $this->line("  Description: {$filterConfig['description']}");
+            $addresses = $this->multichain->getaddresses();
+            $admin = $addresses[0] ?? null;
 
-            // Verify stream exists
-            try {
-                $this->multichainService->getstreaminfo($streamName);
-            } catch (Exception $e) {
-                throw new Exception("Stream '{$streamName}' does not exist. Create it first using multichain:setup");
+            if (! $admin) {
+                $this->error('No admin address available');
+
+                return Command::FAILURE;
             }
 
-            // Create stream filter - no 'for' field, stream filters apply to specific stream
-            $restrictions = new \stdClass; // Empty restrictions for stream filter
-            // Uncomment to include validation helper library
-            // $restrictions->libraries = ['procuchain_validation_helpers'];
-
-            $txid = $this->multichainService->create(
-                'streamfilter',
-                $filterName,
-                true,
-                [
-                    'restrictions' => $restrictions,
-                    'code' => $filterCode,
-                ]
-            );
-
-            $this->deploymentResults[] = [
-                'type' => 'Stream Filter',
-                'name' => $filterName,
-                'status' => 'Created',
-                'txid' => $txid,
+            $streamMap = [
+                'sf_document_validation' => StreamEnums::DOCUMENTS->value,
+                'sf_status_validation' => StreamEnums::STATUS->value,
+                'sf_file_metadata_validation' => StreamEnums::FILE_METADATA->value,
+                'sf_event_validation' => StreamEnums::EVENTS->value,
             ];
 
-            $this->info("Filter '{$filterName}' deployed successfully");
-            $this->line("  Transaction ID: {$txid}");
-            $this->warn('  Filter requires admin approval before activation');
-            $this->newLine();
+            foreach ($this->multichain->liststreamfilters() as $filter) {
+                $name = $filter['name'] ?? null;
+                if ($name && isset($streamMap[$name])) {
+                    try {
+                        $this->multichain->approvefrom($admin, $name, [
+                            'for' => $streamMap[$name],
+                            'approve' => $activate,
+                        ]);
+                        $symbol = $activate ? '✓' : '○';
+                        $this->info("  {$symbol} {$name}");
+                    } catch (Exception $e) {
+                        $this->warn("  ⚠ {$name}: {$e->getMessage()}");
+                    }
+                }
+            }
         } catch (Exception $e) {
-            $errorMsg = $e->getMessage();
+            $this->error($e->getMessage());
 
-            if (str_contains($errorMsg, 'already exists') || str_contains($errorMsg, 'duplicate')) {
-                $this->warn("Filter '{$filterName}' already exists");
-                $this->deploymentResults[] = [
-                    'type' => 'Stream Filter',
-                    'name' => $filterName,
-                    'status' => 'Already Exists',
-                    'txid' => 'N/A',
-                ];
-            } else {
-                $this->error("Failed to deploy filter '{$filterName}': {$errorMsg}");
-                $this->deploymentResults[] = [
-                    'type' => 'Stream Filter',
-                    'name' => $filterName,
-                    'status' => 'Failed',
-                    'txid' => 'N/A',
-                ];
-            }
-
-            $this->newLine();
-        }
-    }
-
-    /**
-     * Display deployment summary table
-     */
-    private function displaySummary(): void
-    {
-        if (empty($this->deploymentResults)) {
-            return;
+            return Command::FAILURE;
         }
 
-        $this->newLine();
-        $this->info('Deployment Summary:');
-        $this->newLine();
-
-        $headers = ['Type', 'Name', 'Status', 'Transaction ID'];
-        $rows = [];
-
-        foreach ($this->deploymentResults as $result) {
-            $rows[] = [
-                $result['type'],
-                $result['name'],
-                $result['status'],
-                substr($result['txid'], 0, 16).'...',
-            ];
-        }
-
-        $this->table($headers, $rows);
+        return Command::SUCCESS;
     }
 }

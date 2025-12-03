@@ -12,18 +12,19 @@
 4. [Requirements](#requirements)
 5. [Architecture Snapshot](#architecture-snapshot)
 6. [Installation](#installation)
-7. [Configuration](#configuration)
-8. [MultiChain Setup](#multichain-setup)
-9. [Entry Points](#entry-points)
-10. [Running & Development](#running--development)
-11. [Scripts](#scripts)
-12. [Testing](#testing)
-13. [Production Deployment](#production-deployment)
-14. [Project Structure](#project-structure)
-15. [Security](#security)
-16. [Troubleshooting](#troubleshooting)
-17. [License](#license)
-18. [Contact](#contact)
+7. [MultiChain Setup](#multichain-setup)
+8. [Smart Contracts](#smart-contracts-multichain-smart-filters)
+9. [Configuration](#configuration)
+10. [Entry Points](#entry-points)
+11. [Running & Development](#running--development)
+12. [Scripts](#scripts)
+13. [Testing](#testing)
+14. [Production Deployment](#production-deployment)
+15. [Project Structure](#project-structure)
+16. [Security](#security)
+17. [Troubleshooting](#troubleshooting)
+18. [License](#license)
+19. [Contact](#contact)
 
 ---
 
@@ -35,6 +36,7 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 
 - **Secure Document Management**: Upload, store, and manage procurement documents with blockchain integrity verification
 - **Blockchain-based Document Verification**: Immutable audit trails using MultiChain streams
+- **Smart Contracts (Smart Filters)**: JavaScript-based validation rules enforcing business logic at the blockchain level
 - **Automated Workflow**: Streamlined bids and awards process with stage transitions
 - **Real-time Status Tracking**: Live updates on procurement progress and document status
 - **Role-based Access Control**: Granular permissions for different user roles (Admin, BAC Secretariat, BAC Chairman, HOPE)
@@ -46,7 +48,7 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 
 ## Technology Stack
 
-- **Backend**: Laravel 12.36.1 with PHP 8.3.27
+- **Backend**: Laravel 12.38.1 with PHP 8.3.28
 - **Frontend**: React 19.2.0 with Inertia.js v2.2.16 for SPA experience
 - **Database**: MySQL 8.0+ with database-driven sessions, cache, and queue
 - **Blockchain**: MultiChain (Community Edition) for immutable document integrity and audit trails
@@ -237,6 +239,125 @@ The command manages blockchain addresses for these roles:
 3. Generated addresses are immediately granted the necessary permissions
 4. If config is cached, clear it after setup: `php artisan config:clear`
 5. Keep your `.env` file secure as it contains the blockchain addresses
+
+## Smart Contracts (MultiChain Smart Filters)
+
+ProcuChain implements **Smart Contracts** using MultiChain's Smart Filter technology. Smart Filters are JavaScript-based validation functions that run on the blockchain to enforce business rules at the protocol level.
+
+### What Are Smart Filters?
+
+Unlike Ethereum-style smart contracts that execute arbitrary code, MultiChain Smart Filters are **validation functions** that:
+
+- **Transaction Filters**: Validate transactions before they are accepted into the blockchain
+- **Stream Filters**: Validate data before it's written to a specific stream
+
+Smart Filters ensure data integrity and enforce business rules directly on the blockchain, preventing invalid data from ever being recorded.
+
+### Implemented Smart Contracts
+
+| Filter Name | Type | Target | Purpose |
+|-------------|------|--------|---------|
+| `tx_procurement_validation` | Transaction | All transactions | Validates procurement transaction structure |
+| `sf_document_validation` | Stream | `procurement.documents` | Validates document hash, metadata, and structure |
+| `sf_status_validation` | Stream | `procurement.status` | Validates status transitions and workflow rules |
+| `sf_file_metadata_validation` | Stream | `file.metadata` | Validates file integrity and metadata |
+| `sf_event_validation` | Stream | `procurement.events` | Validates audit event structure |
+| `sf_corrections_validation` | Stream | `procurement.corrections` | Validates correction data |
+
+### Business Rules Enforced
+
+The smart contracts enforce the following business rules:
+
+1. **Document Validation**:
+   - Required fields: `pr_number`, `file_key`, `hash`, `document_type`, `stage`
+   - Valid SHA-256 hash format (64 hex characters)
+   - Timestamp presence
+   - Valid document types and stages
+
+2. **Status Transitions**:
+   - Valid stage progression (PRE_PROCUREMENT → BIDDING → EVALUATION → POST_QUALIFICATION → AWARD → CONTRACTING → COMPLETED)
+   - Required fields: `pr_number`, `from_stage`, `to_stage`, `actor`
+   - Cannot skip stages (except for early termination)
+   - Backward transitions only for special cases (corrections)
+
+3. **File Integrity**:
+   - Valid hash format
+   - File size must be positive
+   - Required metadata fields
+
+4. **Audit Events**:
+   - Required fields: `action`, `actor`, `timestamp`
+   - Valid action types
+   - Immutable event records
+
+### Smart Contract Commands
+
+```bash
+# List all available smart contracts
+php artisan smartcontract:setup --list
+
+# Check deployment status
+php artisan smartcontract:setup --check
+
+# Deploy smart contracts (dry run)
+php artisan smartcontract:setup --skip-library
+
+# Deploy all smart contracts
+php artisan smartcontract:setup
+
+# Activate deployed smart contracts (requires admin)
+php artisan smartcontract:setup --activate
+
+# Emergency deactivation (allows any data through)
+php artisan smartcontract:setup --deactivate
+```
+
+### Filter Files Location
+
+Smart contract JavaScript files are located in:
+
+```
+resources/blockchain/filters/
+├── tx_procurement_validation.js      # Transaction filter
+├── stream_document_validation.js     # Document stream filter
+├── stream_status_validation.js       # Status stream filter
+├── stream_file_metadata_validation.js # File metadata filter
+├── stream_event_validation.js        # Event stream filter
+└── corrections_filter_v1_standalone.js # Corrections filter
+```
+
+### How Validation Works
+
+When data is published to a stream:
+
+1. The stream filter receives the data
+2. JavaScript validation function executes
+3. If validation passes → data is written to blockchain
+4. If validation fails → transaction is rejected with error message
+
+Example validation flow for document upload:
+
+```
+User uploads document
+    ↓
+DocumentPublisher creates metadata
+    ↓
+Data sent to procurement.documents stream
+    ↓
+sf_document_validation filter executes
+    ↓
+Validates: pr_number, hash format, document_type, stage
+    ↓
+✓ Valid → Document recorded on blockchain
+✗ Invalid → Rejected with detailed error
+```
+
+### Security Considerations
+
+- Smart Filters cannot be modified once deployed (immutable)
+- Activation requires admin consensus
+- Emergency deactivation available for critical issues
+- All validation failures are logged for audit
 
 ## Configuration
 
@@ -481,8 +602,6 @@ Each stage requires specific documents and follows defined status transitions (2
 
 ## Project Structure
 
-**For comprehensive architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
-
 Project root snapshot:
 
 ```
@@ -508,12 +627,8 @@ procuchain/
 │   └── multichain.php         # MultiChain blockchain configuration
 ├── database/                  # Migrations, seeders, factories
 │   ├── factories/             # Model factories for testing
-│   ├── migrations/            # Database schema (21 tables)
+│   ├── migrations/            # Database schema
 │   └── seeders/               # Database seeders
-├── docs/                      # Project documentation
-│   ├── stages.md              # 15 procurement stages documentation
-│   ├── network-topology.md    # Network architecture diagram
-│   └── workflows/             # Workflow documentation
 ├── public/                    # Web root (entry point, built assets)
 ├── resources/
 │   ├── css/app.css            # Main stylesheet (Tailwind CSS)
@@ -534,7 +649,7 @@ procuchain/
 │   │   ├── lib/               # Utility functions
 │   │   └── types/             # TypeScript definitions
 │   └── views/                 # Blade templates (minimal, mostly for emails)
-├── routes/                    # Route definitions (151 routes total)
+├── routes/                    # Route definitions (127 routes)
 │   ├── web.php                # Main web routes
 │   ├── auth.php               # Authentication routes
 │   ├── settings.php           # User settings routes
@@ -761,11 +876,10 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 
 ## Database Schema Overview
 
-### Core Tables (22 total)
-- **users** (19 columns): User accounts with blockchain addresses, 2FA, account lockout
-- **procurements** (13 columns): Core procurement records with blockchain integration
-- **user_login_logs** (13 columns): Comprehensive login audit trail
-- **document_views** (13 columns): Document access tracking
+### Core Tables (18 total)
+- **users** (20 columns): User accounts with blockchain addresses, 2FA, account lockout
+- **user_login_logs** (14 columns): Comprehensive login audit trail with device detection
+- **document_views** (15 columns): Document access tracking
 - **blocked_ips** (8 columns): IP blocking system
 - **permissions** & **roles** & **model_has_permissions** & **model_has_roles** & **role_has_permissions**: Spatie permission system (5 tables)
 - **notifications**: In-app notification storage
@@ -775,6 +889,8 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - **jobs** & **failed_jobs** & **job_batches**: Queue system (3 tables)
 - **password_reset_tokens**: Password reset functionality
 - **migrations**: Database migration tracking
+
+**Note:** Procurement data is stored on the blockchain via MultiChain streams, not in the MySQL database.
 
 ### Blockchain Integration Fields
 - `blockchain_txid`: Transaction ID from MultiChain for documents stream
