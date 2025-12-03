@@ -2,7 +2,7 @@ import Footer from '@/components/footer';
 import Header from '@/components/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Head } from '@inertiajs/react';
-import { Shield, Database, Lock, Eye, UserCheck, Bell, Globe, Mail } from 'lucide-react';
+import { Bell, Database, Eye, Globe, Lock, Mail, Shield, UserCheck } from 'lucide-react';
 
 export default function Privacy() {
     return (
@@ -45,9 +45,7 @@ export default function Privacy() {
                                 <Shield className="text-primary h-8 w-8" />
                             </div>
                             <h1 className="mb-4 text-4xl font-bold sm:text-5xl md:text-6xl">Privacy Policy</h1>
-                            <p className="text-muted-foreground text-lg">
-                                Your privacy is important to us. Learn how we handle your data.
-                            </p>
+                            <p className="text-muted-foreground text-lg">Your privacy is important to us. Learn how we handle your data.</p>
                             <p className="text-muted-foreground mt-2 text-sm">Last updated: December 4, 2025</p>
                         </div>
 
@@ -58,8 +56,8 @@ export default function Privacy() {
                                     <div className="mx-auto max-w-3xl">
                                         <h2 className="mb-4 text-2xl font-semibold">Our Commitment to Privacy</h2>
                                         <p className="text-muted-foreground mb-4">
-                                            ProcuChain is committed to protecting the privacy and security of your personal information. This
-                                            Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our
+                                            ProcuChain is committed to protecting the privacy and security of your personal information. This Privacy
+                                            Policy explains how we collect, use, disclose, and safeguard your information when you use our
                                             blockchain-powered procurement document management system.
                                         </p>
                                         <p className="text-muted-foreground">
@@ -187,25 +185,25 @@ export default function Privacy() {
                                         <h2 className="text-xl font-semibold">Blockchain & Data Security</h2>
                                     </div>
                                     <p className="text-muted-foreground mb-4 text-sm">
-                                        ProcuChain utilizes blockchain technology to ensure document integrity and create immutable audit
-                                        trails. When documents are uploaded, cryptographic hashes are stored on the blockchain, providing
-                                        tamper-proof verification while the actual document content remains in secure storage.
+                                        ProcuChain utilizes blockchain technology to ensure document integrity and create immutable audit trails. When
+                                        documents are uploaded, cryptographic hashes are stored on the blockchain, providing tamper-proof verification
+                                        while the actual document content remains in secure storage.
                                     </p>
                                     <div className="grid gap-4 sm:grid-cols-2">
-                                            {[
-                                                'End-to-end encryption for data transmission',
-                                                'Cryptographic hashing for document verification',
-                                                'Distributed ledger for tamper-proof records',
-                                                'Regular security audits and updates',
-                                                'Secure backup and disaster recovery',
-                                                'Multi-factor authentication support',
-                                            ].map((item, index) => (
-                                                <div key={index} className="text-muted-foreground flex items-start text-sm">
-                                                    <Lock className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
-                                                    <span>{item}</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {[
+                                            'End-to-end encryption for data transmission',
+                                            'Cryptographic hashing for document verification',
+                                            'Distributed ledger for tamper-proof records',
+                                            'Regular security audits and updates',
+                                            'Secure backup and disaster recovery',
+                                            'Multi-factor authentication support',
+                                        ].map((item, index) => (
+                                            <div key={index} className="text-muted-foreground flex items-start text-sm">
+                                                <Lock className="text-primary mt-0.5 mr-2 h-4 w-4 shrink-0" />
+                                                <span>{item}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
@@ -272,8 +270,8 @@ export default function Privacy() {
                                     <div className="mx-auto max-w-3xl">
                                         <h2 className="mb-4 text-xl font-semibold">Data Retention</h2>
                                         <p className="text-muted-foreground mb-4 text-sm">
-                                            Due to the nature of government procurement processes and legal requirements, data stored in ProcuChain
-                                            is retained in accordance with applicable government records retention policies. Blockchain records are
+                                            Due to the nature of government procurement processes and legal requirements, data stored in ProcuChain is
+                                            retained in accordance with applicable government records retention policies. Blockchain records are
                                             immutable and permanent by design to ensure long-term document verification capabilities.
                                         </p>
                                         <p className="text-muted-foreground text-sm">
