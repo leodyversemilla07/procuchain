@@ -12,46 +12,44 @@ interface VerificationStatusProps {
     showLabel?: boolean;
 }
 
-const statusConfig: Record<
-    VerificationStatusType,
-    { icon: typeof CheckCircle; color: string; bgColor: string; borderColor: string; label: string }
-> = {
-    verified: {
-        icon: CheckCircle,
-        color: 'text-green-600 dark:text-green-400',
-        bgColor: 'bg-green-50 dark:bg-green-950',
-        borderColor: 'border-green-200 dark:border-green-800',
-        label: 'Verified',
-    },
-    failed: {
-        icon: XCircle,
-        color: 'text-red-600 dark:text-red-400',
-        bgColor: 'bg-red-50 dark:bg-red-950',
-        borderColor: 'border-red-200 dark:border-red-800',
-        label: 'Failed',
-    },
-    pending: {
-        icon: Clock,
-        color: 'text-yellow-600 dark:text-yellow-400',
-        bgColor: 'bg-yellow-50 dark:bg-yellow-950',
-        borderColor: 'border-yellow-200 dark:border-yellow-800',
-        label: 'Pending',
-    },
-    not_verified: {
-        icon: AlertCircle,
-        color: 'text-gray-400 dark:text-gray-500',
-        bgColor: 'bg-gray-50 dark:bg-gray-900',
-        borderColor: 'border-gray-200 dark:border-gray-700',
-        label: 'Not Verified',
-    },
-    warnings: {
-        icon: AlertTriangle,
-        color: 'text-amber-600 dark:text-amber-400',
-        bgColor: 'bg-amber-50 dark:bg-amber-950',
-        borderColor: 'border-amber-200 dark:border-amber-800',
-        label: 'Warnings',
-    },
-};
+const statusConfig: Record<VerificationStatusType, { icon: typeof CheckCircle; color: string; bgColor: string; borderColor: string; label: string }> =
+    {
+        verified: {
+            icon: CheckCircle,
+            color: 'text-green-600 dark:text-green-400',
+            bgColor: 'bg-green-50 dark:bg-green-950',
+            borderColor: 'border-green-200 dark:border-green-800',
+            label: 'Verified',
+        },
+        failed: {
+            icon: XCircle,
+            color: 'text-red-600 dark:text-red-400',
+            bgColor: 'bg-red-50 dark:bg-red-950',
+            borderColor: 'border-red-200 dark:border-red-800',
+            label: 'Failed',
+        },
+        pending: {
+            icon: Clock,
+            color: 'text-yellow-600 dark:text-yellow-400',
+            bgColor: 'bg-yellow-50 dark:bg-yellow-950',
+            borderColor: 'border-yellow-200 dark:border-yellow-800',
+            label: 'Pending',
+        },
+        not_verified: {
+            icon: AlertCircle,
+            color: 'text-gray-400 dark:text-gray-500',
+            bgColor: 'bg-gray-50 dark:bg-gray-900',
+            borderColor: 'border-gray-200 dark:border-gray-700',
+            label: 'Not Verified',
+        },
+        warnings: {
+            icon: AlertTriangle,
+            color: 'text-amber-600 dark:text-amber-400',
+            bgColor: 'bg-amber-50 dark:bg-amber-950',
+            borderColor: 'border-amber-200 dark:border-amber-800',
+            label: 'Warnings',
+        },
+    };
 
 const sizeClasses = {
     sm: {

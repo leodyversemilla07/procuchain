@@ -2,7 +2,7 @@ import Footer from '@/components/footer';
 import Header from '@/components/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Head } from '@inertiajs/react';
-import { FileText, Scale, Shield, UserCheck, AlertCircle, Ban, RefreshCw, Mail } from 'lucide-react';
+import { AlertCircle, Ban, FileText, Mail, RefreshCw, Scale, Shield, UserCheck } from 'lucide-react';
 
 export default function Terms() {
     return (
@@ -45,9 +45,7 @@ export default function Terms() {
                                 <Scale className="text-primary h-8 w-8" />
                             </div>
                             <h1 className="mb-4 text-4xl font-bold sm:text-5xl md:text-6xl">Terms of Service</h1>
-                            <p className="text-muted-foreground text-lg">
-                                Please read these terms carefully before using ProcuChain.
-                            </p>
+                            <p className="text-muted-foreground text-lg">Please read these terms carefully before using ProcuChain.</p>
                             <p className="text-muted-foreground mt-2 text-sm">Last updated: December 4, 2025</p>
                         </div>
 
@@ -183,10 +181,10 @@ export default function Terms() {
                                         <h2 className="text-xl font-semibold">Service Modifications</h2>
                                     </div>
                                     <p className="text-muted-foreground text-sm">
-                                        We reserve the right to modify, suspend, or discontinue any aspect of ProcuChain at any time. We will
-                                        provide reasonable notice of significant changes. Continued use of the platform after modifications
-                                        constitutes acceptance of the updated Terms. Critical updates affecting data integrity or security may be
-                                        implemented without prior notice.
+                                        We reserve the right to modify, suspend, or discontinue any aspect of ProcuChain at any time. We will provide
+                                        reasonable notice of significant changes. Continued use of the platform after modifications constitutes
+                                        acceptance of the updated Terms. Critical updates affecting data integrity or security may be implemented
+                                        without prior notice.
                                     </p>
                                 </CardContent>
                             </Card>
@@ -199,9 +197,9 @@ export default function Terms() {
                                     <div className="mx-auto max-w-3xl">
                                         <h2 className="mb-4 text-xl font-semibold">Disclaimer & Limitation of Liability</h2>
                                         <p className="text-muted-foreground mb-4 text-sm">
-                                            ProcuChain is provided "as is" without warranties of any kind, either express or implied. While we
-                                            strive to maintain high availability and data integrity through blockchain technology, we do not
-                                            guarantee uninterrupted service or absolute security.
+                                            ProcuChain is provided "as is" without warranties of any kind, either express or implied. While we strive
+                                            to maintain high availability and data integrity through blockchain technology, we do not guarantee
+                                            uninterrupted service or absolute security.
                                         </p>
                                         <p className="text-muted-foreground text-sm">
                                             In no event shall ProcuChain, its developers, or Mindoro State University be liable for any indirect,
