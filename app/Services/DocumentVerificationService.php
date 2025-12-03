@@ -419,7 +419,7 @@ final class DocumentVerificationService
 
         // Determine stage if not provided (use latest stage from documents)
         if ($stage === null) {
-            $stage = $this->determineCurrentStage($documents);
+            $stage = $this->determineCurrentStage($documents->all());
         }
 
         // Verify integrity for all documents
