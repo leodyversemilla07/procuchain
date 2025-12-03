@@ -20,7 +20,7 @@ import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 import { Head, router } from '@inertiajs/react';
-import { Activity, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Activity, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -466,12 +466,12 @@ export default function MonitoringUpload({ procurement, documentGuide, uploadedD
                                     >
                                         {isMarkingComplete ? (
                                             <div className="flex items-center gap-2">
-                                                <Spinner className="h-4 w-4" />
+                                                <Loader2 className="h-4 w-4 animate-spin" />
                                                 Marking Complete...
                                             </div>
                                         ) : isUploading ? (
                                             <div className="flex items-center gap-2">
-                                                <Spinner className="h-4 w-4" />
+                                                <Loader2 className="h-4 w-4 animate-spin" />
                                                 Uploading...
                                             </div>
                                         ) : (

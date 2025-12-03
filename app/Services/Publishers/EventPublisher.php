@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
+use App\Contracts\EventPublisherInterface;
 use App\DataTransferObjects\EventData;
 use App\Repositories\EventRepository;
 use Exception;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Log;
  * - Publishes to procurement.events stream
  * - Provides audit trail
  */
-class EventPublisher
+class EventPublisher implements EventPublisherInterface
 {
     public function __construct(
         private EventRepository $events
@@ -104,7 +105,9 @@ class EventPublisher
      * @param  string  $procurementTitle  Procurement title
      * @param  string  $stage  Stage identifier
      * @param  string  $documentType  Type of document uploaded
+     * @param  string  $filename  Name of the uploaded file
      * @param  string  $userAddress  User blockchain address
+     * @param  array<string, mixed>|null  $metadata  Additional metadata
      * @return array Event transaction information
      */
     public function publishDocumentUpload(
@@ -112,7 +115,9 @@ class EventPublisher
         string $procurementTitle,
         string $stage,
         string $documentType,
-        string $userAddress
+        string $filename,
+        string $userAddress,
+        ?array $metadata = null
     ): array {
         return $this->publish(
             prNumber: $prNumber,
@@ -121,9 +126,10 @@ class EventPublisher
             eventType: 'document_upload',
             category: 'document',
             severity: 'info',
-            details: "Document uploaded: {$documentType}",
+            details: "Document uploaded: {$documentType} ({$filename})",
             documentCount: 1,
             userAddress: $userAddress,
+            metadata: array_merge($metadata ?? [], ['filename' => $filename]),
         );
     }
 
@@ -135,6 +141,7 @@ class EventPublisher
      * @param  string  $fromStage  Previous stage
      * @param  string  $toStage  New stage
      * @param  string  $userAddress  User blockchain address
+     * @param  array<string, mixed>|null  $metadata  Additional metadata
      * @return array Event transaction information
      */
     public function publishStageTransition(
@@ -142,7 +149,8 @@ class EventPublisher
         string $procurementTitle,
         string $fromStage,
         string $toStage,
-        string $userAddress
+        string $userAddress,
+        ?array $metadata = null
     ): array {
         return $this->publish(
             prNumber: $prNumber,
@@ -154,10 +162,10 @@ class EventPublisher
             details: "Stage transitioned from {$fromStage} to {$toStage}",
             documentCount: 0,
             userAddress: $userAddress,
-            metadata: [
+            metadata: array_merge($metadata ?? [], [
                 'from_stage' => $fromStage,
                 'to_stage' => $toStage,
-            ],
+            ]),
         );
     }
 

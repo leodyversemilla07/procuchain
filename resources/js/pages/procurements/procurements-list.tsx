@@ -120,7 +120,6 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
     // Polling with background refresh indicator
     usePoll(30000, {
         only: ['procurements'],
-        preserveScroll: true,
         onBefore: () => setIsPolling(true),
         onFinish: () => {
             setIsPolling(false);
@@ -185,12 +184,16 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
             params.delete('page');
             params.set('per_page', String(pageSize));
 
-            router.get(`${window.location.pathname}?${params.toString()}`, {}, {
-                replace: true,
-                preserveScroll: true,
-                preserveState: true,
-                only: ['procurements', 'pagination'],
-            });
+            router.get(
+                `${window.location.pathname}?${params.toString()}`,
+                {},
+                {
+                    replace: true,
+                    preserveScroll: true,
+                    preserveState: true,
+                    only: ['procurements', 'pagination'],
+                },
+            );
         },
         [pageSize],
     );
@@ -201,13 +204,17 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
             params.set('page', String(nextPageIndex + 1));
             params.set('per_page', String(pageSize));
 
-            router.get(`${window.location.pathname}?${params.toString()}`, {}, {
-                replace: true,
-                preserveScroll: true,
-                preserveState: true,
-                only: ['procurements', 'pagination'],
-                onSuccess: () => setPageIndex(nextPageIndex),
-            });
+            router.get(
+                `${window.location.pathname}?${params.toString()}`,
+                {},
+                {
+                    replace: true,
+                    preserveScroll: true,
+                    preserveState: true,
+                    only: ['procurements', 'pagination'],
+                    onSuccess: () => setPageIndex(nextPageIndex),
+                },
+            );
         },
         [pageSize],
     );
@@ -217,16 +224,20 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
         params.set('page', '1');
         params.set('per_page', String(nextPageSize));
 
-        router.get(`${window.location.pathname}?${params.toString()}`, {}, {
-            replace: true,
-            preserveScroll: true,
-            preserveState: true,
-            only: ['procurements', 'pagination'],
-            onSuccess: () => {
-                setPageIndex(0);
-                setPageSize(nextPageSize);
+        router.get(
+            `${window.location.pathname}?${params.toString()}`,
+            {},
+            {
+                replace: true,
+                preserveScroll: true,
+                preserveState: true,
+                only: ['procurements', 'pagination'],
+                onSuccess: () => {
+                    setPageIndex(0);
+                    setPageSize(nextPageSize);
+                },
             },
-        });
+        );
     }, []);
 
     const handleRefresh = useCallback(() => {

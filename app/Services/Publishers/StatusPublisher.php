@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
+use App\Contracts\StatusPublisherInterface;
 use App\DataTransferObjects\StatusData;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Log;
  * - Publishes to procurement.status stream
  * - Validates status changes
  */
-class StatusPublisher
+class StatusPublisher implements StatusPublisherInterface
 {
     public function __construct(
         private StatusRepository $statuses
@@ -148,5 +149,28 @@ class StatusPublisher
 
             throw $e;
         }
+    }
+
+    /**
+     * Publish a completion status for a stage
+     */
+    public function publishCompletion(
+        string $prNumber,
+        string $procurementTitle,
+        StageEnums $stage,
+        string $userAddress,
+        ?array $metadata = null
+    ): array {
+        return $this->publish(
+            prNumber: $prNumber,
+            procurementTitle: $procurementTitle,
+            stage: $stage,
+            currentStatus: StatusEnums::COMPLETED,
+            userAddress: $userAddress,
+            previousStatus: null,
+            metadata: array_merge($metadata ?? [], [
+                'completion_timestamp' => now()->toIso8601String(),
+            ]),
+        );
     }
 }

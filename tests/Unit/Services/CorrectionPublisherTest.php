@@ -1,10 +1,12 @@
 <?php
 
 use App\Repositories\CorrectionRepository;
+use App\Services\BlockchainStorageService;
 use App\Services\Manager;
 use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -13,13 +15,17 @@ beforeEach(function () {
     $this->mockMultichain = Mockery::mock(Manager::class);
     $this->mockFileStorageMultichain = Mockery::mock(Manager::class);
 
-    // Mock file storage multichain for uploadFile
+    // Mock file storage multichain for uploadFile - this will be called by BlockchainStorageService
+    // The publish method is called twice: once for file data, once for metadata
     $this->mockFileStorageMultichain->shouldReceive('publish')
         ->andReturn('file_data_txid', 'file_metadata_txid');
 
-    $this->fileStorage = new \App\Services\BlockchainStorageService($this->mockFileStorageMultichain);
+    $this->fileStorage = new BlockchainStorageService($this->mockFileStorageMultichain);
     $this->repository = new CorrectionRepository($this->mockMultichain);
     $this->publisher = new CorrectionPublisher($this->repository, $this->fileStorage);
+
+    // Setup fake storage for uploaded files
+    Storage::fake('local');
 });
 
 it('can publish a replacement correction', function () {
@@ -39,8 +45,10 @@ it('can publish a replacement correction', function () {
         )
         ->andReturn('correction_txid_123');
 
-    // Create a fake uploaded file
-    $file = UploadedFile::fake()->create('test.pdf', 1000);
+    // Create a fake uploaded file with actual PDF-like content
+    // Using createWithContent to ensure the file has readable content
+    $pdfContent = '%PDF-1.4 test content '.str_repeat('x', 1000);
+    $file = UploadedFile::fake()->createWithContent('test.pdf', $pdfContent);
 
     // Test the publishReplacement method
     $result = $this->publisher->publishReplacement(

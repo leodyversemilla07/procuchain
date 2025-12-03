@@ -2,12 +2,24 @@
 
 namespace App\Providers;
 
+use App\Contracts\BlockchainStorageInterface;
 use App\Contracts\CacheStrategyInterface;
+use App\Contracts\DocumentPublisherInterface;
+use App\Contracts\DocumentRepositoryInterface;
+use App\Contracts\EventPublisherInterface;
+use App\Contracts\NotificationServiceInterface;
+use App\Contracts\ProcurementRepositoryInterface;
+use App\Contracts\StatusPublisherInterface;
+use App\Repositories\DocumentRepository;
+use App\Repositories\ProcurementRepository;
 use App\Services\BlockchainStorageService;
 use App\Services\CacheStrategyService;
 use App\Services\Manager;
 use App\Services\NotificationService;
 use App\Services\ProcurementStageTransitionService;
+use App\Services\Publishers\DocumentPublisher;
+use App\Services\Publishers\EventPublisher;
+use App\Services\Publishers\StatusPublisher;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -24,8 +36,21 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(BlockchainStorageService::class);
         $this->app->singleton(NotificationService::class);
 
-        // Register CacheStrategyInterface binding
+        // Register interface bindings - Cache
         $this->app->singleton(CacheStrategyInterface::class, CacheStrategyService::class);
+
+        // Register interface bindings - Repositories
+        $this->app->bind(ProcurementRepositoryInterface::class, ProcurementRepository::class);
+        $this->app->bind(DocumentRepositoryInterface::class, DocumentRepository::class);
+
+        // Register interface bindings - Publishers
+        $this->app->bind(DocumentPublisherInterface::class, DocumentPublisher::class);
+        $this->app->bind(StatusPublisherInterface::class, StatusPublisher::class);
+        $this->app->bind(EventPublisherInterface::class, EventPublisher::class);
+
+        // Register interface bindings - Services
+        $this->app->singleton(BlockchainStorageInterface::class, BlockchainStorageService::class);
+        $this->app->singleton(NotificationServiceInterface::class, NotificationService::class);
     }
 
     public function boot(): void

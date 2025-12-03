@@ -445,14 +445,14 @@ test('can mark procurement initiation stage as complete when all documents uploa
     $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class)->makePartial();
     $documentRepo->shouldReceive('findByProcurement')
         ->with($prNumber)
-        ->andReturn([
+        ->andReturn(collect([
             (object) ['stage' => 'procurement_initiation', 'documentType' => 'purchase_request'],
             (object) ['stage' => 'procurement_initiation', 'documentType' => 'ppmp'],
             (object) ['stage' => 'procurement_initiation', 'documentType' => 'app'],
             (object) ['stage' => 'procurement_initiation', 'documentType' => 'certificate_of_funds'],
             (object) ['stage' => 'procurement_initiation', 'documentType' => 'approved_budget_contract'],
             (object) ['stage' => 'procurement_initiation', 'documentType' => 'technical_specifications'],
-        ]);
+        ]));
     $this->app->instance(\App\Repositories\DocumentRepository::class, $documentRepo);
 
     // Mock procurement repository
@@ -504,7 +504,7 @@ test('cannot mark procurement initiation stage as complete without required docu
     $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class)->makePartial();
     $documentRepo->shouldReceive('findByProcurement')
         ->with($prNumber)
-        ->andReturn([]);
+        ->andReturn(collect([]));
     $this->app->instance(\App\Repositories\DocumentRepository::class, $documentRepo);
 
     $response = $this->actingAs($this->user)

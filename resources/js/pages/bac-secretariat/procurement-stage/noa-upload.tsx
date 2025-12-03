@@ -101,7 +101,7 @@ export default function NoaUpload({ procurement, documentGuide, uploadedDocument
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    
+
     // Stage is completed only if status explicitly shows awarded
     const isStageCompleted = procurement.status === 'awarded';
 

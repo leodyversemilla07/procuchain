@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Log;
 class LoginLoggerService
 {
     public function __construct(
-        protected DeviceDetectionService $deviceDetection
+        protected DeviceDetectionService $deviceDetection,
+        protected GeoLoginAnomalyService $geoAnomalyService
     ) {}
 
     /**
@@ -20,21 +21,29 @@ class LoginLoggerService
     {
         try {
             $deviceInfo = $this->parseDeviceInfo($request->input('device_info'));
+            $ipAddress = $this->getClientIp($request);
+
+            // Get location from geo service
+            $locationData = $this->geoAnomalyService->getGeolocation($ipAddress);
+            $locationString = $this->geoAnomalyService->formatLocation($locationData);
 
             $loginLog = UserLoginLog::create([
                 'user_id' => $user->id,
-                'ip_address' => $this->getClientIp($request),
+                'ip_address' => $ipAddress,
                 'user_agent' => $request->userAgent(),
                 'device_type' => $this->deviceDetection->getDeviceType(),
                 'browser' => $this->deviceDetection->getBrowser(),
                 'platform' => $deviceInfo['platform'] ?? $this->deviceDetection->getPlatform(),
-                'location' => $this->getLocation($request),
+                'location' => $locationString !== 'Unknown Location' ? $locationString : $this->getLocation($request),
                 'successful' => true,
                 'login_at' => now(),
             ]);
 
             // Reset failed login attempts on successful login
             $user->resetFailedLoginAttempts();
+
+            // Check for geographic anomaly and send alert if needed
+            $this->geoAnomalyService->checkAndAlert($user, $ipAddress, $request->userAgent());
 
             return $loginLog;
         } catch (\Exception $e) {

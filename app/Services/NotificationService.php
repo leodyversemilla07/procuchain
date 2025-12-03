@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
+use App\Contracts\NotificationServiceInterface;
 use App\Models\User;
 use App\Notifications\ProcurementStageNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
-class NotificationService
+class NotificationService implements NotificationServiceInterface
 {
     /**
      * Notify users about procurement stage updates.

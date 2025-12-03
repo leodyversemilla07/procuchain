@@ -38,7 +38,8 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->andReturn('metadata_txid_456');
 
             $service = new BlockchainStorageService($mockService);
-            $file = UploadedFile::fake()->create('document.pdf', 100);
+            // Use createWithContent to ensure file has readable content
+            $file = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
             $prNumber = 'PROC-001';
             $stageId = 1;
             $documentType = 'bid_document';
@@ -58,7 +59,8 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
             $mockService->shouldReceive('publish')->andReturn('txid1', 'txid2');
 
             $service = new BlockchainStorageService($mockService);
-            $file = UploadedFile::fake()->create('document.pdf', 100);
+            // Use createWithContent to ensure file has readable content
+            $file = UploadedFile::fake()->createWithContent('document.pdf', str_repeat('x', 100));
             $result = $service->uploadFile($file, 'TEST', 1, 'doc', ['pr_number' => 'TEST']);
 
             expect($result['hash'])->toBeString();
@@ -111,7 +113,8 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->andReturn('metadata_txid');
 
             $service = new BlockchainStorageService($mockService);
-            $file = UploadedFile::fake()->create('doc.pdf', 100);
+            // Use createWithContent to ensure file has readable content
+            $file = UploadedFile::fake()->createWithContent('doc.pdf', str_repeat('x', 100));
 
             $result = $service->uploadFile($file, 'test', 1, 'file', []);
 
@@ -121,8 +124,10 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
         it('throws exception for files exceeding max size', function () {
             $service = new BlockchainStorageService($this->multichainMock);
 
-            // Create file larger than 50MB
-            $largeFile = UploadedFile::fake()->create('large.pdf', 60000); // 60MB
+            // Create file larger than 50MB with actual content
+            // We need to create content that exceeds the limit
+            $largeContent = str_repeat('x', 52428801); // Just over 50MB limit
+            $largeFile = UploadedFile::fake()->createWithContent('large.pdf', $largeContent);
 
             expect(fn () => $service->uploadFile($largeFile, 'test', 1, 'file', []))
                 ->toThrow(Exception::class, 'exceeds maximum');
@@ -149,7 +154,8 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ->andReturn('txid_with_context');
 
             $service = new BlockchainStorageService($mockService);
-            $file = UploadedFile::fake()->create('bid.pdf', 100);
+            // Use createWithContent to ensure file has readable content
+            $file = UploadedFile::fake()->createWithContent('bid.pdf', str_repeat('x', 100));
             $result = $service->uploadFile(
                 $file,
                 'PROC-123',

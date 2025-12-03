@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Mail\AccountUnlockedMail;
-// use Illuminate\Contracts\Auth\MustVerifyEmail; --- IGNORE ---
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -47,7 +47,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @method static \Illuminate\Database\Eloquent\Builder|User permission($permissions, $without = false)
  * @method static \Illuminate\Database\Eloquent\Builder|User role($roles, $guard = null, $without = false)
  */
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasPushSubscriptions, HasRoles, Notifiable, TwoFactorAuthenticatable;

@@ -151,6 +151,7 @@ class DashboardService
 
             if (empty($eventDtos)) {
                 Log::warning('No events found in repository');
+
                 return [];
             }
 
@@ -203,6 +204,7 @@ class DashboardService
 
             if (empty($documentDtos)) {
                 Log::warning('Failed to retrieve document stream items for dashboard stats.');
+
                 return 0;
             }
 
@@ -222,7 +224,7 @@ class DashboardService
             Log::info('Dashboard document count calculated', [
                 'total_documents' => $totalDocuments,
                 'procurements_counted' => count($dashboardPrNumbers),
-                'documents_fetched' => count($documentDtos)
+                'documents_fetched' => count($documentDtos),
             ]);
 
             return $totalDocuments;

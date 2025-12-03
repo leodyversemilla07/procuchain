@@ -17,12 +17,6 @@ interface PreProcurementDialogProps {
     onComplete?: (skipToStage?: string, conferenceHeld?: boolean) => void;
 }
 
-interface PageProps {
-    success?: boolean;
-    nextStage?: string;
-    errors?: Record<string, string>;
-}
-
 export function PreProcurementDialog({ open, onOpenChange, pr_number, procurementTitle, onComplete }: PreProcurementDialogProps) {
     const form = useForm({
         pr_number: pr_number,

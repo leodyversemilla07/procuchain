@@ -112,17 +112,73 @@ return [
     |
     | Limits for document uploads to blockchain.
     |
+    | IMPORTANT: On-Chain Storage Considerations
+    | -------------------------------------------
+    | Files are stored directly on the MultiChain blockchain as hex-encoded data
+    | in the 'file.data' stream. This provides:
+    | - Immutable storage with automatic replication across all nodes
+    | - Zero external storage costs (no S3/cloud storage needed)
+    | - Heroku-compatible persistent storage
+    |
+    | However, on-chain storage has constraints:
+    | - Each transaction has size limits based on MultiChain configuration
+    | - Large files increase blockchain size and sync times
+    | - Recommended max: 2MB for optimal performance
+    |
     */
 
     'upload' => [
         // Maximum file size in bytes (default 2MB for blockchain transaction limits)
+        // This is the recommended limit for optimal blockchain performance
+        // Higher values possible but may impact sync times and transaction costs
         'max_file_size' => env('BLOCKCHAIN_MAX_FILE_SIZE', 2097152), // 2MB
 
-        // Allowed MIME types
+        // Absolute maximum file size (50MB) - enforced by BlockchainStorageService
+        // Files larger than this will be rejected regardless of config
+        'absolute_max_file_size' => 52428800, // 50MB
+
+        // Allowed MIME types for document uploads
         'allowed_mime_types' => ['application/pdf'],
 
         // Maximum documents per upload batch
         'max_batch_size' => env('BLOCKCHAIN_MAX_BATCH_SIZE', 10),
+
+        // Chunking configuration for large files
+        // When enabled, files larger than chunk_threshold will be split
+        'chunking' => [
+            // Enable chunking for large files (currently disabled - single-transaction storage)
+            'enabled' => env('BLOCKCHAIN_CHUNKING_ENABLED', false),
+
+            // Files larger than this will be chunked (if chunking is enabled)
+            'chunk_threshold' => env('BLOCKCHAIN_CHUNK_THRESHOLD', 1048576), // 1MB
+
+            // Size of each chunk when splitting large files
+            'chunk_size' => env('BLOCKCHAIN_CHUNK_SIZE', 1048576), // 1MB per chunk
+
+            // Stream for storing file chunks
+            'chunk_stream' => 'file.chunks',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Storage Streams
+    |--------------------------------------------------------------------------
+    |
+    | MultiChain stream names used for file storage.
+    | These should match the streams created during blockchain setup.
+    |
+    */
+
+    'streams' => [
+        // Raw file binary data (hex-encoded)
+        'file_data' => 'file.data',
+
+        // File metadata and integrity tracking with SHA-256 hashes
+        'file_metadata' => 'file.metadata',
+
+        // Large file chunks (when chunking is enabled)
+        'file_chunks' => 'file.chunks',
     ],
 
 ];

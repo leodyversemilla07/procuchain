@@ -32,7 +32,7 @@ export default function Password() {
     const updatePassword: FormEventHandler = (e) => {
         e.preventDefault();
 
-        put(update(), {
+        put(update.url(), {
             preserveScroll: true,
             onSuccess: () => reset(),
             onError: (errors) => {

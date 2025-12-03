@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\BlockchainStorageInterface;
 use App\DataTransferObjects\FileMetadata;
 use App\Enums\StreamEnums;
 use Exception;
@@ -25,19 +26,31 @@ use Illuminate\Support\Str;
  * - Integrity verification with SHA-256 hashing
  * - No ephemeral filesystem issues
  * - Phase-organized structure (pre-procurement, procurement, post-procurement)
+ *
+ * @see config/blockchain.php for upload limits and chunking configuration
  */
-final class BlockchainStorageService
+final class BlockchainStorageService implements BlockchainStorageInterface
 {
     /**
-     * Maximum chunk size for on-chain storage (50MB in bytes)
-     * MultiChain default maximum-chunk-size is 16777216 bytes (16MB)
-     * We use 50MB to handle large procurement documents
+     * Maximum chunk size for on-chain storage
+     * Loaded from config('blockchain.upload.absolute_max_file_size')
+     * Default: 50MB (52428800 bytes)
      */
-    private int $maxChunkSize = 52428800;
+    private int $maxChunkSize;
+
+    /**
+     * Recommended maximum file size for optimal blockchain performance
+     * Loaded from config('blockchain.upload.max_file_size')
+     * Default: 2MB (2097152 bytes)
+     */
+    private int $recommendedMaxSize;
 
     public function __construct(
         private Manager $multichain
-    ) {}
+    ) {
+        $this->maxChunkSize = config('blockchain.upload.absolute_max_file_size', 52428800);
+        $this->recommendedMaxSize = config('blockchain.upload.max_file_size', 2097152);
+    }
 
     /**
      * Upload a file directly to blockchain (on-chain storage)
@@ -72,7 +85,7 @@ final class BlockchainStorageService
                 'size' => $fileSize,
                 'mime_type' => $file->getMimeType(),
                 'pr_number' => $prNumber,
-                'document_type' => $documentType
+                'document_type' => $documentType,
             ]);
 
             throw new Exception("Failed to read file content. File appears to be empty or inaccessible. Reported size: {$fileSize} bytes");
@@ -356,6 +369,56 @@ final class BlockchainStorageService
         $mb = $this->maxChunkSize / 1048576;
 
         return number_format($mb, 0).' MB';
+    }
+
+    /**
+     * Get recommended maximum file size for optimal blockchain performance
+     *
+     * @return int Recommended file size in bytes
+     */
+    public function getRecommendedMaxFileSize(): int
+    {
+        return $this->recommendedMaxSize;
+    }
+
+    /**
+     * Get recommended maximum file size in human-readable format
+     *
+     * @return string Recommended file size (e.g., "2 MB")
+     */
+    public function getRecommendedMaxFileSizeFormatted(): string
+    {
+        $mb = $this->recommendedMaxSize / 1048576;
+
+        return number_format($mb, 0).' MB';
+    }
+
+    /**
+     * Check if a file exceeds the recommended size (but is still uploadable)
+     *
+     * @param  int  $fileSize  File size in bytes
+     * @return bool True if file is larger than recommended
+     */
+    public function exceedsRecommendedSize(int $fileSize): bool
+    {
+        return $fileSize > $this->recommendedMaxSize;
+    }
+
+    /**
+     * Get upload size configuration details
+     *
+     * @return array Configuration details for UI display
+     */
+    public function getUploadSizeConfig(): array
+    {
+        return [
+            'max_size_bytes' => $this->maxChunkSize,
+            'max_size_formatted' => $this->getMaxFileSizeFormatted(),
+            'recommended_size_bytes' => $this->recommendedMaxSize,
+            'recommended_size_formatted' => $this->getRecommendedMaxFileSizeFormatted(),
+            'chunking_enabled' => config('blockchain.upload.chunking.enabled', false),
+            'chunk_size' => config('blockchain.upload.chunking.chunk_size', 1048576),
+        ];
     }
 
     // =====================================================================
