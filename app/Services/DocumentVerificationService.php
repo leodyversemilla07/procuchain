@@ -95,13 +95,14 @@ final class DocumentVerificationService
      *
      * @param  string  $prNumber  The PR number
      * @param  StageEnums  $stage  The procurement stage
+     * @param  iterable|null  $documents  Pre-fetched documents (optional, will fetch if not provided)
      * @return CompletenessResult The completeness verification result
      */
-    public function verifyCompleteness(string $prNumber, StageEnums $stage): CompletenessResult
+    public function verifyCompleteness(string $prNumber, StageEnums $stage, ?iterable $documents = null): CompletenessResult
     {
         try {
-            // Get all documents for this procurement
-            $documents = $this->documentRepository->findByProcurement($prNumber);
+            // Use pre-fetched documents or fetch from repository
+            $documents = $documents ?? $this->documentRepository->findByProcurement($prNumber);
 
             // Filter documents for the specific stage
             $stageDocuments = array_filter(
@@ -180,13 +181,14 @@ final class DocumentVerificationService
      * Verify cross-references between documents (PR numbers, amounts, dates)
      *
      * @param  string  $prNumber  The PR number
+     * @param  iterable|null  $documents  Pre-fetched documents (optional, will fetch if not provided)
      * @return CrossReferenceResult The cross-reference verification result
      */
-    public function verifyCrossReferences(string $prNumber): CrossReferenceResult
+    public function verifyCrossReferences(string $prNumber, ?iterable $documents = null): CrossReferenceResult
     {
         try {
-            // Get all documents for this procurement
-            $documents = $this->documentRepository->findByProcurement($prNumber);
+            // Use pre-fetched documents or fetch from repository
+            $documents = $documents ?? $this->documentRepository->findByProcurement($prNumber);
 
             $prNumberChecks = [];
             $amountChecks = [];
@@ -292,13 +294,14 @@ final class DocumentVerificationService
      *
      * @param  string  $prNumber  The PR number
      * @param  StageEnums  $stage  The procurement stage
+     * @param  iterable|null  $documents  Pre-fetched documents (optional, will fetch if not provided)
      * @return ComplianceResult The compliance verification result
      */
-    public function verifyCompliance(string $prNumber, StageEnums $stage): ComplianceResult
+    public function verifyCompliance(string $prNumber, StageEnums $stage, ?iterable $documents = null): ComplianceResult
     {
         try {
-            // Get all documents for this procurement
-            $documents = $this->documentRepository->findByProcurement($prNumber);
+            // Use pre-fetched documents or fetch from repository
+            $documents = $documents ?? $this->documentRepository->findByProcurement($prNumber);
 
             $documentTypeChecks = [];
             $timelineChecks = [];
@@ -443,9 +446,11 @@ final class DocumentVerificationService
         }
 
         // Get completeness, cross-reference, and compliance results
-        $completenessResult = $this->verifyCompleteness($prNumber, $stage);
-        $crossReferenceResult = $this->verifyCrossReferences($prNumber);
-        $complianceResult = $this->verifyCompliance($prNumber, $stage);
+        // Pass pre-fetched documents to avoid multiple slow blockchain calls
+        $documentsArray = $documents->all();
+        $completenessResult = $this->verifyCompleteness($prNumber, $stage, $documentsArray);
+        $crossReferenceResult = $this->verifyCrossReferences($prNumber, $documentsArray);
+        $complianceResult = $this->verifyCompliance($prNumber, $stage, $documentsArray);
 
         Log::info('Verification report generated', [
             'pr_number' => $prNumber,
