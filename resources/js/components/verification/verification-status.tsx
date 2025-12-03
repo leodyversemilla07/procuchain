@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, Clock, XCircle } from 'lucide-react';
 
-export type VerificationStatusType = 'verified' | 'failed' | 'pending' | 'not_verified';
+export type VerificationStatusType = 'verified' | 'failed' | 'pending' | 'not_verified' | 'warnings';
 
 interface VerificationStatusProps {
     status: VerificationStatusType;
@@ -12,7 +12,10 @@ interface VerificationStatusProps {
     showLabel?: boolean;
 }
 
-const statusConfig = {
+const statusConfig: Record<
+    VerificationStatusType,
+    { icon: typeof CheckCircle; color: string; bgColor: string; borderColor: string; label: string }
+> = {
     verified: {
         icon: CheckCircle,
         color: 'text-green-600 dark:text-green-400',
@@ -40,6 +43,13 @@ const statusConfig = {
         bgColor: 'bg-gray-50 dark:bg-gray-900',
         borderColor: 'border-gray-200 dark:border-gray-700',
         label: 'Not Verified',
+    },
+    warnings: {
+        icon: AlertTriangle,
+        color: 'text-amber-600 dark:text-amber-400',
+        bgColor: 'bg-amber-50 dark:bg-amber-950',
+        borderColor: 'border-amber-200 dark:border-amber-800',
+        label: 'Warnings',
     },
 };
 
