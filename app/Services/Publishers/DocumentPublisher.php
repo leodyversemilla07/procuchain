@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
+use App\Contracts\DocumentPublisherInterface;
 use App\DataTransferObjects\DocumentData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\Log;
  * - Publishes to procurement.documents stream
  * - Returns transaction ID for tracking
  */
-class DocumentPublisher
+class DocumentPublisher implements DocumentPublisherInterface
 {
     public function __construct(
         private BlockchainStorageService $fileStorage,
@@ -177,5 +178,72 @@ class DocumentPublisher
             'results' => $results,
             'errors' => $errors,
         ];
+    }
+
+    /**
+     * Publish document metadata without file
+     *
+     * Used for external documents or references that don't require file upload
+     */
+    public function publishMetadataOnly(
+        string $prNumber,
+        string $procurementTitle,
+        string $userAddress,
+        StageEnums $stage,
+        string $status,
+        DocumentTypeEnums $documentType,
+        string $uploadedBy,
+        ?string $description = null,
+        ?array $stageMetadata = null
+    ): array {
+        try {
+            Log::info('DocumentPublisher: Publishing metadata only', [
+                'pr_number' => $prNumber,
+                'document_type' => $documentType->value,
+                'stage' => $stage->value,
+            ]);
+
+            $document = new DocumentData(
+                prNumber: $prNumber,
+                procurementTitle: $procurementTitle,
+                userAddress: $userAddress,
+                stage: $stage->value,
+                status: $status,
+                documentType: $documentType->value,
+                fileKey: null,
+                fileName: null,
+                fileSize: 0,
+                mimeType: null,
+                hash: null,
+                dataTxid: null,
+                metadataTxid: null,
+                uploadedBy: $uploadedBy,
+                timestamp: now(),
+                description: $description,
+                stageMetadata: $stageMetadata,
+            );
+
+            $txid = $this->documents->create($document);
+
+            Log::info('DocumentPublisher: Metadata published', [
+                'pr_number' => $prNumber,
+                'document_txid' => $txid,
+            ]);
+
+            return [
+                'success' => true,
+                'document_txid' => $txid,
+                'document_type' => $documentType->value,
+                'stage' => $stage->value,
+                'timestamp' => now()->toISOString(),
+            ];
+        } catch (Exception $e) {
+            Log::error('DocumentPublisher: Metadata publish failed', [
+                'pr_number' => $prNumber,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
     }
 }

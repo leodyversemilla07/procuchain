@@ -97,7 +97,7 @@ export default function BacResolutionUpload({ procurement, documentGuide, upload
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    
+
     // Stage is completed only if status explicitly shows resolution recorded
     const isStageCompleted = procurement.status === 'resolution_recorded';
 

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import procurements from '@/routes/procurements';
-import { AlertCircle, FileCheck, FileX, History, User, Calendar, FileText, Hash } from 'lucide-react';
+import { AlertCircle, Calendar, FileCheck, FileText, FileX, Hash, History, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface CorrectionRecord {
@@ -38,13 +38,7 @@ interface CorrectionDetailsSheetProps {
     documentHash?: string; // For history mode
 }
 
-export default function CorrectionDetailsSheet({
-    open,
-    onOpenChange,
-    correction,
-    pr_number,
-    documentHash
-}: CorrectionDetailsSheetProps) {
+export default function CorrectionDetailsSheet({ open, onOpenChange, correction, pr_number, documentHash }: CorrectionDetailsSheetProps) {
     const [corrections, setCorrections] = useState<CorrectionRecord[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -64,7 +58,7 @@ export default function CorrectionDetailsSheet({
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 },
@@ -137,9 +131,7 @@ export default function CorrectionDetailsSheet({
 
                     {/* Show history section */}
                     <div className="grid gap-4">
-                        <h3 className="text-lg font-semibold">
-                            {correction ? 'Correction Timeline' : 'All Corrections'}
-                        </h3>
+                        <h3 className="text-lg font-semibold">{correction ? 'Correction Timeline' : 'All Corrections'}</h3>
 
                         {loading && (
                             <div className="py-12 text-center">
@@ -171,15 +163,14 @@ export default function CorrectionDetailsSheet({
                             </Empty>
                         )}
 
-                        {!loading && !error && corrections.length > 0 && (
-                            <CorrectionTimeline corrections={corrections} />
-                        )}
+                        {!loading && !error && corrections.length > 0 && <CorrectionTimeline corrections={corrections} />}
 
                         {corrections.length > 0 && (
                             <Alert className="border-primary/20 bg-primary/5">
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertDescription className="text-sm">
-                                    All corrections are permanently recorded on the blockchain alongside the original documents, ensuring complete audit trail transparency.
+                                    All corrections are permanently recorded on the blockchain alongside the original documents, ensuring complete
+                                    audit trail transparency.
                                 </AlertDescription>
                             </Alert>
                         )}
@@ -205,18 +196,17 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
     const formatCorrectionType = (type: string, displayType?: string) => {
         if (displayType) return displayType;
         // Convert snake_case to Title Case
-        return type.split('_').map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-        ).join(' ');
+        return type
+            .split('_')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
     };
 
     return (
         <div className="grid flex-1 auto-rows-min gap-6 px-4 py-6">
             {/* Correction Type */}
             <div className="grid gap-3">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Correction Type
-                </h3>
+                <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Correction Type</h3>
                 <div className="flex items-center gap-3">
                     {correction.action === 'replace' ? (
                         <FileCheck className="h-5 w-5 text-emerald-600" />
@@ -231,37 +221,29 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
 
             {/* Reason */}
             <div className="grid gap-3">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Reason for Correction
-                </h3>
-                <div className="rounded-lg bg-muted/50 p-4">
+                <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Reason for Correction</h3>
+                <div className="bg-muted/50 rounded-lg p-4">
                     <p className="text-sm leading-relaxed">{correction.reason}</p>
                 </div>
             </div>
 
             {/* Original Information */}
             <div className="grid gap-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Original Information
-                </h3>
+                <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Original Information</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                     <div className="grid gap-1.5 rounded-lg border p-3">
-                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
                             <FileText className="h-3 w-3" />
                             Original Transaction
                         </div>
-                        <p className="text-sm font-mono break-all">
-                            {correction.original_txid || 'N/A'}
-                        </p>
+                        <p className="font-mono text-sm break-all">{correction.original_txid || 'N/A'}</p>
                     </div>
                     <div className="grid gap-1.5 rounded-lg border p-3">
-                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
                             <Hash className="h-3 w-3" />
                             Original Hash
                         </div>
-                        <p className="text-sm font-mono break-all">
-                            {correction.original_document_hash || correction.document_hash || 'N/A'}
-                        </p>
+                        <p className="font-mono text-sm break-all">{correction.original_document_hash || correction.document_hash || 'N/A'}</p>
                     </div>
                 </div>
             </div>
@@ -269,9 +251,7 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
             {/* Corrected Information */}
             {correction.action === 'replace' && correction.corrected_metadata && (
                 <div className="grid gap-4">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                        Corrected Information
-                    </h3>
+                    <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Corrected Information</h3>
                     <div className="rounded-lg border bg-emerald-50 p-4 dark:bg-emerald-950/20">
                         <div className="grid gap-3">
                             {correction.corrected_metadata.file_name && (
@@ -285,18 +265,14 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
                                 <div className="flex items-center gap-2">
                                     <FileText className="h-4 w-4 text-emerald-600" />
                                     <span className="text-sm font-medium">File Size:</span>
-                                    <span className="text-sm">
-                                        {(correction.corrected_metadata.file_size / 1024 / 1024).toFixed(2)} MB
-                                    </span>
+                                    <span className="text-sm">{(correction.corrected_metadata.file_size / 1024 / 1024).toFixed(2)} MB</span>
                                 </div>
                             )}
                             {correction.corrected_metadata.hash && (
                                 <div className="flex items-center gap-2">
                                     <Hash className="h-4 w-4 text-emerald-600" />
                                     <span className="text-sm font-medium">New Hash:</span>
-                                    <span className="text-sm font-mono break-all">
-                                        {correction.corrected_metadata.hash}
-                                    </span>
+                                    <span className="font-mono text-sm break-all">{correction.corrected_metadata.hash}</span>
                                 </div>
                             )}
                         </div>
@@ -306,40 +282,34 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
 
             {/* Audit Information */}
             <div className="grid gap-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Audit Information
-                </h3>
+                <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Audit Information</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                     <div className="grid gap-1.5 rounded-lg border p-3">
-                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
                             <User className="h-3 w-3" />
                             Corrected By
                         </div>
                         <p className="text-sm font-medium">{correction.corrected_by}</p>
                     </div>
                     <div className="grid gap-1.5 rounded-lg border p-3">
-                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
                             <Calendar className="h-3 w-3" />
                             Correction Date
                         </div>
-                        <p className="text-sm">
-                            {new Date(correction.timestamp).toLocaleString()}
-                        </p>
+                        <p className="text-sm">{new Date(correction.timestamp).toLocaleString()}</p>
                     </div>
                 </div>
             </div>
 
             {/* Blockchain TXID */}
             <div className="grid gap-3">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Blockchain Transaction
-                </h3>
+                <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Blockchain Transaction</h3>
                 <div className="grid gap-1.5 rounded-lg border p-3">
-                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wide uppercase">
                         <Hash className="h-3 w-3" />
                         Transaction ID
                     </div>
-                    <p className="text-sm font-mono break-all">{correction.txid}</p>
+                    <p className="font-mono text-sm break-all">{correction.txid}</p>
                 </div>
             </div>
 
@@ -347,7 +317,8 @@ function CorrectionDetails({ correction }: { correction: CorrectionRecord }) {
             <Alert className="border-primary/20 bg-primary/5">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-sm">
-                    Note: Both the original and correction records remain permanently on the blockchain for audit trail purposes. This ensures complete transparency and compliance with immutability requirements.
+                    Note: Both the original and correction records remain permanently on the blockchain for audit trail purposes. This ensures
+                    complete transparency and compliance with immutability requirements.
                 </AlertDescription>
             </Alert>
         </div>
@@ -360,9 +331,10 @@ function CorrectionTimeline({ corrections }: { corrections: CorrectionRecord[] }
     const formatCorrectionType = (type: string, displayType?: string) => {
         if (displayType) return displayType;
         // Convert snake_case to Title Case
-        return type.split('_').map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-        ).join(' ');
+        return type
+            .split('_')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
     };
 
     return (
@@ -391,19 +363,14 @@ function CorrectionTimeline({ corrections }: { corrections: CorrectionRecord[] }
                                         </p>
                                     </div>
                                 </div>
-                                <Badge
-                                    variant={correction.action === 'replace' ? 'default' : 'secondary'}
-                                    className="w-fit shrink-0 text-xs"
-                                >
+                                <Badge variant={correction.action === 'replace' ? 'default' : 'secondary'} className="w-fit shrink-0 text-xs">
                                     {formatCorrectionType(correction.correction_type, correction.correction_type_display)}
                                 </Badge>
                             </div>
 
                             <div className="mb-4 grid gap-2">
                                 <p className="text-sm font-semibold">Reason:</p>
-                                <p className="text-muted-foreground bg-muted rounded-lg p-3 text-sm leading-relaxed">
-                                    {correction.reason}
-                                </p>
+                                <p className="text-muted-foreground bg-muted rounded-lg p-3 text-sm leading-relaxed">{correction.reason}</p>
                             </div>
 
                             <div className="mb-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
@@ -412,31 +379,25 @@ function CorrectionTimeline({ corrections }: { corrections: CorrectionRecord[] }
                                     <p className="text-xs font-medium sm:text-sm">{correction.corrected_by}</p>
                                 </div>
                                 <div className="bg-muted/50 grid gap-1.5 rounded-lg p-3">
-                                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                                        Blockchain TXID
-                                    </p>
+                                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Blockchain TXID</p>
                                     <p className="font-mono text-xs break-all">{correction.txid}</p>
                                 </div>
                             </div>
 
                             <div className="grid gap-3 border-t pt-4">
-                                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                                    References Original
-                                </p>
+                                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">References Original</p>
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     {correction.original_txid && (
                                         <div className="bg-muted/30 grid gap-1 rounded-lg p-2 sm:p-3">
                                             <span className="text-xs font-medium">TXID:</span>
-                                            <span className="font-mono text-xs break-all">
-                                                {correction.original_txid}
-                                            </span>
+                                            <span className="font-mono text-xs break-all">{correction.original_txid}</span>
                                         </div>
                                     )}
                                     {(correction.original_document_hash || correction.document_hash) && (
                                         <div className="bg-muted/30 grid gap-1 rounded-lg p-2 sm:p-3">
                                             <span className="text-xs font-medium">Hash:</span>
                                             <span className="font-mono text-xs break-all">
-                                                {(correction.original_document_hash || correction.document_hash || '')}
+                                                {correction.original_document_hash || correction.document_hash || ''}
                                             </span>
                                         </div>
                                     )}
@@ -464,9 +425,7 @@ function CorrectionTimeline({ corrections }: { corrections: CorrectionRecord[] }
                                         {correction.corrected_metadata.hash && (
                                             <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
                                                 <strong className="shrink-0">Hash:</strong>
-                                                <span className="font-mono text-xs break-all">
-                                                    {correction.corrected_metadata.hash}
-                                                </span>
+                                                <span className="font-mono text-xs break-all">{correction.corrected_metadata.hash}</span>
                                             </div>
                                         )}
                                     </div>

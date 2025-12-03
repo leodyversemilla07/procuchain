@@ -17,12 +17,6 @@ interface PreBidDialogProps {
     onComplete?: (skipToStage?: string, conferenceHeld?: boolean) => void;
 }
 
-interface PageProps {
-    success?: boolean;
-    nextStage?: string;
-    errors?: Record<string, string>;
-}
-
 export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurementTitle, onComplete }: PreBidDialogProps) {
     const form = useForm({
         pr_number: pr_number,

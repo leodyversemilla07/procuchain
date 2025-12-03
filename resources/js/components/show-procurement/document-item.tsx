@@ -1,14 +1,14 @@
 import { Calendar, Download, Eye, FileText, HardDrive, Hash, Lock, TrendingUp } from 'lucide-react';
 import { useCallback, type FC } from 'react';
 
-import { Button } from '@/components/ui/button';
 import CorrectionDetailsSheet from '@/components/documents/correction-details-sheet';
+import { Button } from '@/components/ui/button';
 import files from '@/routes/files';
 import pdf from '@/routes/pdf';
 import type { Document } from '@/types';
 import { Link } from '@inertiajs/react';
-import { toast } from 'sonner';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { shortenHash } from '../../utils/show-procurement/helpers';
 import { DocumentMetadataCard } from './document-metadata-card';
 

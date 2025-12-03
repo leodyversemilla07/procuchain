@@ -16,12 +16,6 @@ interface SupplementalBidDialogProps {
     onComplete?: (skipToStage?: string, supplementalBidNeeded?: boolean) => void;
 }
 
-interface PageProps {
-    success?: boolean;
-    nextStage?: string;
-    errors?: Record<string, string>;
-}
-
 export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, procurementTitle, onComplete }: SupplementalBidDialogProps) {
     const form = useForm({
         pr_number: pr_number,

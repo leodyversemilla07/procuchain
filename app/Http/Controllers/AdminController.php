@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
 use App\Services\AdminAnalyticsService;
-use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
 use App\Services\Manager;
 use Illuminate\Support\Facades\Cache;
@@ -53,7 +52,7 @@ class AdminController extends BaseDashboardController
     {
         return [
             'analytics' => Inertia::defer(fn () => [
-                'user_activity' => $this->analyticsService->getUserActivityAnalytics('30_days', null)
+                'user_activity' => $this->analyticsService->getUserActivityAnalytics('30_days', null),
             ]),
         ];
     }

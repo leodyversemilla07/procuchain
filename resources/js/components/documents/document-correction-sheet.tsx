@@ -1,11 +1,11 @@
+import { correctDocument } from '@/actions/App/Http/Controllers/DocumentCorrectionController';
+import FileUploadArea from '@/components/file-upload-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
-import FileUploadArea from '@/components/file-upload-area';
-import { correctDocument } from '@/actions/App/Http/Controllers/DocumentCorrectionController';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, FileText } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -81,7 +81,7 @@ export function DocumentCorrectionSheet({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Validate that we have a blockchain txid to correct
         if (!originalTxid) {
             toast.error('Cannot submit correction', {
@@ -89,53 +89,55 @@ export function DocumentCorrectionSheet({
             });
             return;
         }
-        
+
         setIsSubmitting(true);
 
         // Get the route definition from Wayfinder - use originalTxid as the document identifier
         const route = correctDocument(originalTxid);
 
         // Use router.post directly with forceFormData for file uploads
-        router.post(route.url, {
-            correction_reason: form.data.correction_reason,
-            correction_type: form.data.correction_type,
-            pr_number: form.data.pr_number,
-            procurement_title: form.data.procurement_title,
-            original_document_hash: form.data.original_document_hash,
-            original_txid: form.data.original_txid,
-            corrected_file: correctedFile,
-        }, {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                // Reset form on success
-                form.reset();
-                setCorrectedFile(null);
-                setIsSubmitting(false);
-                // Reset the input value
-                const fileInput = document.getElementById('corrected_file') as HTMLInputElement;
-                if (fileInput) {
-                    fileInput.value = '';
-                }
-                toast.success('Document correction submitted successfully!', {
-                    description: 'The correction has been recorded on the blockchain.',
-                });
-                onOpenChange(false);
+        router.post(
+            route.url,
+            {
+                correction_reason: form.data.correction_reason,
+                correction_type: form.data.correction_type,
+                pr_number: form.data.pr_number,
+                procurement_title: form.data.procurement_title,
+                original_document_hash: form.data.original_document_hash,
+                original_txid: form.data.original_txid,
+                corrected_file: correctedFile,
             },
-            onError: (errors) => {
-                setIsSubmitting(false);
-                console.error('Form submission errors:', errors);
-                const errorMessage = typeof errors === 'object' 
-                    ? Object.values(errors).flat().join(', ') 
-                    : 'Failed to submit correction';
-                toast.error('Failed to submit correction', {
-                    description: errorMessage,
-                });
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    // Reset form on success
+                    form.reset();
+                    setCorrectedFile(null);
+                    setIsSubmitting(false);
+                    // Reset the input value
+                    const fileInput = document.getElementById('corrected_file') as HTMLInputElement;
+                    if (fileInput) {
+                        fileInput.value = '';
+                    }
+                    toast.success('Document correction submitted successfully!', {
+                        description: 'The correction has been recorded on the blockchain.',
+                    });
+                    onOpenChange(false);
+                },
+                onError: (errors) => {
+                    setIsSubmitting(false);
+                    console.error('Form submission errors:', errors);
+                    const errorMessage = typeof errors === 'object' ? Object.values(errors).flat().join(', ') : 'Failed to submit correction';
+                    toast.error('Failed to submit correction', {
+                        description: errorMessage,
+                    });
+                },
+                onFinish: () => {
+                    setIsSubmitting(false);
+                },
             },
-            onFinish: () => {
-                setIsSubmitting(false);
-            },
-        });
+        );
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,10 +203,7 @@ export function DocumentCorrectionSheet({
                     </SheetDescription>
                 </SheetHeader>
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="grid flex-1 auto-rows-min gap-6 px-4 py-6"
-                >
+                <form onSubmit={handleSubmit} className="grid flex-1 auto-rows-min gap-6 px-4 py-6">
                     {/* Correction Type */}
                     <Field>
                         <FieldLabel className="text-base font-semibold">Correction Type</FieldLabel>
@@ -227,7 +226,9 @@ export function DocumentCorrectionSheet({
                                     <RadioGroupItem value="invalidate" id="invalidate" className="mt-1 sm:mt-0" />
                                     <FieldLabel htmlFor="invalidate" className="flex-1 cursor-pointer">
                                         <div className="text-sm font-semibold sm:text-base">Invalidate Document</div>
-                                        <FieldDescription className="text-xs sm:text-sm">Mark the document as invalid without replacement</FieldDescription>
+                                        <FieldDescription className="text-xs sm:text-sm">
+                                            Mark the document as invalid without replacement
+                                        </FieldDescription>
                                     </FieldLabel>
                                 </div>
                             </RadioGroup>

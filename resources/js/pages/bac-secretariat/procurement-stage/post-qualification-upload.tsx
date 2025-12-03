@@ -104,11 +104,9 @@ export default function PostQualificationUpload({ procurement, documentGuide, up
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    
+
     // Stage is completed only if status explicitly shows verified or failed
-    const isStageCompleted =
-        procurement.status === 'post_qualification_verified' ||
-        procurement.status === 'post_qualification_failed';
+    const isStageCompleted = procurement.status === 'post_qualification_verified' || procurement.status === 'post_qualification_failed';
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {

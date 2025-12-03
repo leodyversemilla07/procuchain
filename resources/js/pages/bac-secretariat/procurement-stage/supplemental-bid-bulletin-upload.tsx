@@ -105,10 +105,9 @@ export default function SupplementalBidBulletinUpload({ procurement, documentGui
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    
+
     // Stage is completed only if status explicitly shows completed or skipped
-    const isStageCompleted =
-        procurement.status === 'supplemental_bulletins_completed';
+    const isStageCompleted = procurement.status === 'supplemental_bulletins_completed';
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {

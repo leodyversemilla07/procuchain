@@ -1,6 +1,6 @@
-import { AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 
 export type VerificationStatusType = 'verified' | 'failed' | 'pending' | 'not_verified';
 
@@ -61,13 +61,7 @@ const sizeClasses = {
     },
 };
 
-export function VerificationStatus({
-    status,
-    lastVerified,
-    onClick,
-    size = 'md',
-    showLabel = true,
-}: VerificationStatusProps) {
+export function VerificationStatus({ status, lastVerified, onClick, size = 'md', showLabel = true }: VerificationStatusProps) {
     const config = statusConfig[status];
     const sizeClass = sizeClasses[size];
     const Icon = config.icon;
@@ -79,15 +73,11 @@ export function VerificationStatus({
                 config.bgColor,
                 config.borderColor,
                 sizeClass.padding,
-                onClick && 'cursor-pointer hover:opacity-80 transition-opacity',
+                onClick && 'cursor-pointer transition-opacity hover:opacity-80',
             )}
         >
             <Icon className={cn(sizeClass.icon, config.color)} />
-            {showLabel && (
-                <span className={cn('font-medium', sizeClass.text, config.color)}>
-                    {config.label}
-                </span>
-            )}
+            {showLabel && <span className={cn('font-medium', sizeClass.text, config.color)}>{config.label}</span>}
             {lastVerified && (
                 <span className={cn('text-muted-foreground', sizeClass.text)}>
                     {formatDistanceToNow(new Date(lastVerified), { addSuffix: true })}
@@ -98,7 +88,7 @@ export function VerificationStatus({
 
     if (onClick) {
         return (
-            <button onClick={onClick} type="button" className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary rounded-full">
+            <button onClick={onClick} type="button" className="focus:ring-primary rounded-full focus:ring-2 focus:ring-offset-2 focus:outline-none">
                 {content}
             </button>
         );

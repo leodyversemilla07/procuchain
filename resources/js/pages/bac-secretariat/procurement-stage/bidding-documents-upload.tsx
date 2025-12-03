@@ -109,9 +109,7 @@ export default function BiddingDocumentsUpload({ procurement, documentGuide, upl
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
 
     // Stage is completed only if status explicitly shows completed/published
-    const isStageCompleted =
-        procurement.status === 'bidding_documents_published' ||
-        procurement.status === 'bidding_documents_submitted';
+    const isStageCompleted = procurement.status === 'bidding_documents_published' || procurement.status === 'bidding_documents_submitted';
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {

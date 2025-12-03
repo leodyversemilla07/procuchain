@@ -102,7 +102,7 @@ export default function BidEvaluationUpload({ procurement, documentGuide, upload
             : 100;
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
-    
+
     // Stage is completed only if status explicitly shows bids evaluated
     const isStageCompleted = procurement.status === 'bids_evaluated';
 

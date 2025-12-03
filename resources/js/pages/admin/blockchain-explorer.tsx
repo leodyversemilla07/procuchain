@@ -179,7 +179,6 @@ export default function BlockchainExplorer({
         30000,
         {
             only: ['overview', 'latestBlocks', 'streams', 'addresses', 'peers', 'health'],
-            preserveScroll: true,
             onFinish: () => {
                 toast.success('Data refreshed', {
                     description: 'Blockchain data has been updated',
@@ -280,7 +279,7 @@ export default function BlockchainExplorer({
                     toast.success('Circuit breaker reset', {
                         description: 'Blockchain requests will now resume normally',
                     });
-                    router.reload({ only: ['health'], preserveScroll: true });
+                    router.reload({ only: ['health'] });
                     setIsResetDialogOpen(false);
                 },
                 onError: () => {
@@ -294,7 +293,6 @@ export default function BlockchainExplorer({
     const handleRefresh = () => {
         setIsRefreshing(true);
         router.reload({
-            preserveScroll: true,
             onFinish: () => {
                 setIsRefreshing(false);
                 toast.success('Data refreshed');
@@ -330,7 +328,7 @@ export default function BlockchainExplorer({
                             <CardDescription>{error}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Button onClick={() => router.reload({ preserveScroll: true })}>Retry Connection</Button>
+                            <Button onClick={() => router.reload()}>Retry Connection</Button>
                         </CardContent>
                     </Card>
                 </div>
@@ -1381,7 +1379,7 @@ export default function BlockchainExplorer({
                                             <CardTitle>Block</CardTitle>
                                         </CardHeader>
                                         <CardContent>
-                                            <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(searchResults.block, null, 2)}</pre>
+                                            <pre className="text-sm whitespace-pre-wrap">{JSON.stringify(searchResults.block, null, 2)}</pre>
                                         </CardContent>
                                     </Card>
                                 )}
@@ -1391,7 +1389,7 @@ export default function BlockchainExplorer({
                                             <CardTitle>Transaction</CardTitle>
                                         </CardHeader>
                                         <CardContent>
-                                            <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(searchResults.transaction, null, 2)}</pre>
+                                            <pre className="text-sm whitespace-pre-wrap">{JSON.stringify(searchResults.transaction, null, 2)}</pre>
                                         </CardContent>
                                     </Card>
                                 )}
@@ -1401,7 +1399,7 @@ export default function BlockchainExplorer({
                                             <CardTitle>Address</CardTitle>
                                         </CardHeader>
                                         <CardContent>
-                                            <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(searchResults.address, null, 2)}</pre>
+                                            <pre className="text-sm whitespace-pre-wrap">{JSON.stringify(searchResults.address, null, 2)}</pre>
                                         </CardContent>
                                     </Card>
                                 )}

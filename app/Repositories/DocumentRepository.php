@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
+use App\Contracts\DocumentRepositoryInterface;
 use App\DataTransferObjects\DocumentData;
 use App\Enums\StreamEnums;
 use App\Services\Manager;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Repository for managing procurement.documents stream
  */
-class DocumentRepository
+class DocumentRepository implements DocumentRepositoryInterface
 {
     public function __construct(
         private Manager $multichain
@@ -21,7 +23,7 @@ class DocumentRepository
     /**
      * Create a new document record
      */
-    public function create(DocumentData $data): ?string
+    public function create(DocumentData $data): string
     {
         try {
             $txid = $this->multichain->publish(
@@ -37,14 +39,14 @@ class DocumentRepository
                 'txid' => $txid,
             ]);
 
-            return $txid;
+            return $txid ?? '';
         } catch (\Exception $e) {
             Log::error('Failed to publish document to blockchain', [
                 'pr_number' => $data->prNumber,
                 'error' => $e->getMessage(),
             ]);
 
-            return null;
+            throw $e;
         }
     }
 
@@ -65,16 +67,27 @@ class DocumentRepository
     /**
      * Find documents by procurement ID
      *
-     * @return DocumentData[]
+     * @return Collection<int, DocumentData>
      */
-    public function findByProcurement(string $prNumber): array
+    public function findByProcurement(string $prNumber): Collection
     {
         $allDocuments = $this->all();
 
-        return array_filter(
+        return collect(array_filter(
             $allDocuments,
             fn (DocumentData $document): bool => $document->prNumber === $prNumber
-        );
+        ));
+    }
+
+    /**
+     * Find documents by stage
+     *
+     * @return Collection<int, DocumentData>
+     */
+    public function findByStage(string $prNumber, string $stage): Collection
+    {
+        return $this->findByProcurement($prNumber)
+            ->filter(fn (DocumentData $doc) => $doc->stage === $stage);
     }
 
     /**
@@ -148,6 +161,46 @@ class DocumentRepository
 
             return [];
         }
+    }
+
+    /**
+     * Find a document by file hash
+     */
+    public function findByHash(string $hash): ?DocumentData
+    {
+        $allDocuments = $this->all();
+
+        foreach ($allDocuments as $document) {
+            if ($document->fileHash === $hash) {
+                return $document;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Count documents for a procurement
+     */
+    public function countByProcurement(string $prNumber): int
+    {
+        return $this->findByProcurement($prNumber)->count();
+    }
+
+    /**
+     * Verify document integrity by comparing hash
+     */
+    public function verifyIntegrity(string $prNumber, string $expectedHash): bool
+    {
+        $documents = $this->findByProcurement($prNumber);
+
+        foreach ($documents as $document) {
+            if ($document->fileHash === $expectedHash) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

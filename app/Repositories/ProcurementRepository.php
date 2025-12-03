@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
+use App\Contracts\ProcurementRepositoryInterface;
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\StreamEnums;
 use App\Services\Manager;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Log;
  * Handles all blockchain CRUD operations for procurement metadata
  * Stream: procurement.metadata
  */
-class ProcurementRepository
+class ProcurementRepository implements ProcurementRepositoryInterface
 {
     public function __construct(
         private Manager $multichain
@@ -115,5 +116,13 @@ class ProcurementRepository
 
             return collect();
         }
+    }
+
+    /**
+     * Check if a procurement exists
+     */
+    public function exists(string $prNumber): bool
+    {
+        return $this->findByProcurement($prNumber) !== null;
     }
 }
