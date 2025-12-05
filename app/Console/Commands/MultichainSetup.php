@@ -23,7 +23,6 @@ class MultichainSetup extends Command
     protected $signature = 'multichain:setup 
         {--check : Only check connection to MultiChain node}
         {--reset : Reset and recreate all blockchain setup}
-        {--init-storage : Initialize on-chain file storage streams}
         {--test-storage : Test the on-chain file storage after setup}';
 
     protected $description = 'Setup MultiChain blockchain for procurement system (aligned with official MultiChain API)';
@@ -108,17 +107,16 @@ class MultichainSetup extends Command
             // Uses: create command (type=stream) and subscribe command
             $this->createStreams();
 
-            // 4. Grant permissions (idempotent: handle already granted permissions)
+            // 4. Initialize file storage streams (always included in setup)
+            // Uses: create command for file storage streams
+            $this->initializeFileStorage();
+
+            // 5. Grant permissions (idempotent: handle already granted permissions)
             // Uses: grant command for global and per-stream permissions
             $this->grantPermissions($addresses);
 
-            // 5. Update database with addresses (idempotent: only update if changed)
+            // 6. Update database with addresses (idempotent: only update if changed)
             $this->updateAddresses($addresses);
-
-            // 6. Initialize file storage streams if requested (idempotent)
-            if ($this->option('init-storage')) {
-                $this->initializeFileStorage();
-            }
 
             $this->newLine();
             $this->info('MultiChain setup completed successfully!');
