@@ -76,7 +76,7 @@ test('can initiate procurement with all required documents for goods', function 
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             // Basic Information
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
-            'ppmp_reference' => 'PPMP-2025-001',
+            'app_reference' => 'APP-2025-001',
             'title' => 'Office Supplies Procurement',
             'description' => 'Purchase of office supplies for municipal office for FY 2025',
 
@@ -86,19 +86,11 @@ test('can initiate procurement with all required documents for goods', function 
 
             // Classification
             'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SHOPPING->value,
+            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
 
             // Office Information
             'office' => 'General Services Office',
             'end_user' => 'All Departments',
-
-            // Purpose
-            'purpose' => 'Regular office operations for FY 2025',
-
-            // Delivery Details
-            'delivery_location' => 'Municipal Hall, Main Office',
-            'delivery_date' => now()->addDays(30)->format('Y-m-d'),
-            'delivery_term_days' => 30,
 
             // Prepared By
             'prepared_by' => 'Test BAC Secretariat',
@@ -140,19 +132,15 @@ test('consulting services requires terms of reference not technical specificatio
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
-            'ppmp_reference' => 'PPMP-2025-002',
+            'app_reference' => 'APP-2025-002',
             'title' => 'IT Consulting Services',
             'description' => 'Professional IT consulting services for system upgrade',
-            'abc_amount' => '500000.00',
+            'abc_amount' => '150000.00', // Within 4th class municipality SVP threshold (₱200,000)
             'funding_source' => 'Special Fund',
             'category' => ProcurementCategoryEnums::CONSULTING_SERVICES->value,
-            'procurement_mode' => ProcurementModeEnums::SHOPPING->value,
+            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'IT Department',
             'end_user' => 'IT Department',
-            'purpose' => 'System upgrade and migration',
-            'delivery_location' => 'IT Office',
-            'delivery_date' => now()->addDays(60)->format('Y-m-d'),
-            'delivery_term_days' => 60,
             'prepared_by' => 'Test BAC Secretariat',
             'files' => $files,
             'document_types' => [
@@ -180,17 +168,15 @@ test('validation fails without pr number', function () {
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => '', // Missing PR number
-            'ppmp_reference' => 'PPMP-2025-003',
+            'app_reference' => 'APP-2025-003',
             'title' => 'Test Procurement',
             'description' => 'Test description',
             'abc_amount' => '150000.00',
             'funding_source' => 'General Fund',
             'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SHOPPING->value,
+            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
-            'purpose' => 'Test purpose',
-            'delivery_location' => 'Test location',
-            'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+            'prepared_by' => 'Test BAC Secretariat',
         ]);
 
     $response->assertRedirect()
@@ -204,17 +190,15 @@ test('validation fails with invalid pr number format', function () {
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => '2025-001', // Invalid format (should be PR-YYYY-####-####)
-            'ppmp_reference' => 'PPMP-2025-004',
+            'app_reference' => 'APP-2025-004',
             'title' => 'Test Procurement',
             'description' => 'Test description',
             'abc_amount' => '150000.00',
             'funding_source' => 'General Fund',
             'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SHOPPING->value,
+            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
-            'purpose' => 'Test purpose',
-            'delivery_location' => 'Test location',
-            'delivery_date' => now()->addDays(30)->format('Y-m-d'),
+            'prepared_by' => 'Test BAC Secretariat',
         ]);
 
     $response->assertRedirect()
@@ -234,17 +218,14 @@ test('validation fails when mandatory documents are missing', function () {
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
-            'ppmp_reference' => 'PPMP-2025-005',
+            'app_reference' => 'APP-2025-005',
             'title' => 'Test Procurement',
             'description' => 'Test description',
             'abc_amount' => '150000.00',
             'funding_source' => 'General Fund',
             'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SHOPPING->value,
+            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
-            'purpose' => 'Test purpose',
-            'delivery_location' => 'Test location',
-            'delivery_date' => now()->addDays(30)->format('Y-m-d'),
             'prepared_by' => 'Test BAC Secretariat',
             'files' => $files,
             'document_types' => [
@@ -276,17 +257,14 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
-            'ppmp_reference' => 'PPMP-2025-006',
+            'app_reference' => 'APP-2025-006',
             'title' => 'Large Procurement',
-            'description' => 'Large procurement exceeding Shopping threshold',
-            'abc_amount' => '5000000.00', // 5M exceeds Shopping threshold (1M)
+            'description' => 'Large procurement exceeding SVP threshold',
+            'abc_amount' => '500000.00', // ₱500K exceeds SVP threshold (₱200K for 4th class municipality)
             'funding_source' => 'General Fund',
             'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SHOPPING->value, // Wrong mode
+            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value, // Wrong mode
             'office' => 'General Services Office',
-            'purpose' => 'Test purpose',
-            'delivery_location' => 'Test location',
-            'delivery_date' => now()->addDays(30)->format('Y-m-d'),
             'prepared_by' => 'Test BAC Secretariat',
             'files' => $files,
             'document_types' => [
@@ -302,7 +280,7 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
         ->assertSessionHasErrors(['procurement_mode']);
     expect($response->getSession()->get('errors')->first('procurement_mode'))
         ->toContain('threshold')
-        ->toContain('RA 9184');
+        ->toContain('RA 12009');
 });
 
 /**
@@ -319,17 +297,14 @@ test('validation fails for non-pdf files', function () {
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
-            'ppmp_reference' => 'PPMP-2025-007',
+            'app_reference' => 'APP-2025-007',
             'title' => 'Test Procurement',
             'description' => 'Test description',
             'abc_amount' => '150000.00',
             'funding_source' => 'General Fund',
             'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SHOPPING->value,
+            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
-            'purpose' => 'Test purpose',
-            'delivery_location' => 'Test location',
-            'delivery_date' => now()->addDays(30)->format('Y-m-d'),
             'prepared_by' => 'Test BAC Secretariat',
             'files' => $files,
             'document_types' => [
@@ -363,19 +338,15 @@ test('can add optional supporting documents', function () {
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
-            'ppmp_reference' => 'PPMP-2025-008',
+            'app_reference' => 'APP-2025-008',
             'title' => 'Office Supplies with Supporting Docs',
             'description' => 'Purchase with market research and price survey',
             'abc_amount' => '150000.00',
             'funding_source' => 'General Fund',
             'category' => ProcurementCategoryEnums::GOODS->value,
-            'procurement_mode' => ProcurementModeEnums::SHOPPING->value,
+            'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
             'office' => 'General Services Office',
             'end_user' => 'All Departments',
-            'purpose' => 'Regular operations',
-            'delivery_location' => 'Municipal Hall',
-            'delivery_date' => now()->addDays(30)->format('Y-m-d'),
-            'delivery_term_days' => 30,
             'prepared_by' => 'Test BAC Secretariat',
             'files' => $files,
             'document_types' => [
@@ -469,19 +440,19 @@ test('can mark procurement initiation stage as complete when all documents uploa
         ->with($prNumber)
         ->andReturn(new \App\DataTransferObjects\ProcurementData(
             prNumber: $prNumber,
-            ppmpReference: 'PPMP-2025-TEST',
+            appReference: 'APP-2025-TEST',
             title: 'Test Procurement',
             description: 'Test procurement for stage completion',
             abcAmount: 150000.00,
             fundingSource: 'General Fund',
             category: \App\Enums\ProcurementCategoryEnums::GOODS,
-            procurementMode: \App\Enums\ProcurementModeEnums::SHOPPING,
+            procurementMode: \App\Enums\ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
             office: 'Test Office',
             endUser: 'Test Department',
-            purpose: 'Test purpose',
-            deliveryLocation: 'Test Location',
-            deliveryDate: now()->addDays(30),
-            deliveryTermDays: 30,
+            // Delivery details are populated at Contract Implementation stage per NGPA IRR
+            deliveryLocation: null,
+            deliveryDate: null,
+            deliveryTermDays: null,
             preparedBy: 'Test User',
             bacResolutionNumber: null,
             bacResolutionDate: null,

@@ -185,7 +185,7 @@ class ProcurementListController extends BaseController
             if ($procurementDetails) {
                 $procurementData['details'] = [
                     'pr_number' => $procurementDetails->prNumber,
-                    'ppmp_reference' => $procurementDetails->ppmpReference,
+                    'app_reference' => $procurementDetails->appReference,
                     'title' => $procurementDetails->title,
                     'description' => $procurementDetails->description,
                     'abc_amount' => $procurementDetails->abcAmount,
@@ -197,9 +197,9 @@ class ProcurementListController extends BaseController
                     'procurement_mode_label' => $procurementDetails->procurementMode->label(),
                     'office' => $procurementDetails->office,
                     'end_user' => $procurementDetails->endUser,
-                    'purpose' => $procurementDetails->purpose,
+                    // Delivery details are optional - populated at Contract Implementation stage per NGPA IRR
                     'delivery_location' => $procurementDetails->deliveryLocation,
-                    'delivery_date' => $procurementDetails->deliveryDate->toIso8601String(),
+                    'delivery_date' => $procurementDetails->deliveryDate?->toIso8601String(),
                     'delivery_date_formatted' => $procurementDetails->getFormattedDeliveryDate(),
                     'delivery_term_days' => $procurementDetails->deliveryTermDays,
                     'prepared_by' => $procurementDetails->preparedBy,

@@ -161,6 +161,8 @@ Route::middleware(['auth'])->group(function () {
                 ->name('procurement.post-procurement.upload-document');
             Route::post('/post-procurement/{pr_number}/{stage}/complete', [PostProcurementController::class, 'markStageComplete'])
                 ->name('procurement.post-procurement.complete');
+            Route::post('/post-procurement/{pr_number}/delivery-details', [PostProcurementController::class, 'updateDeliveryDetails'])
+                ->name('procurement.post-procurement.delivery-details');
 
             // Legacy route support (for backward compatibility)
             Route::post('/upload-pre-procurement-conference-documents', [PreProcurementController::class, 'uploadDocuments'])

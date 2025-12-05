@@ -1,7 +1,7 @@
-﻿import { initiate } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
+import { initiate } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
 import { index as procurementListIndex } from '@/actions/App/Http/Controllers/ProcurementListController';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { type BreadcrumbItem } from '@/types';
@@ -13,15 +13,46 @@ import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatePicker } from '@/components/ui/date-picker';
+
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 
-import { Building2, DollarSign, FileText, Info, MapPin, Upload } from 'lucide-react';
+import { AlertCircle, Building2, CheckCircle2, DollarSign, FileText, Save, Trash2, Upload } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 import { FUNDING_SOURCES, MUNICIPAL_OFFICES } from '@/types/constants';
+
+// Draft storage key
+const DRAFT_STORAGE_KEY = 'procurement_initiation_draft';
+
+// Common procurement descriptions for LGU
+const PROCUREMENT_DESCRIPTIONS = [
+    { value: 'Office Supplies and Materials', label: 'Office Supplies and Materials' },
+    { value: 'Computer Equipment and Accessories', label: 'Computer Equipment and Accessories' },
+    { value: 'Furniture and Fixtures', label: 'Furniture and Fixtures' },
+    { value: 'Medical Supplies and Equipment', label: 'Medical Supplies and Equipment' },
+    { value: 'Agricultural Supplies and Equipment', label: 'Agricultural Supplies and Equipment' },
+    { value: 'Construction Materials', label: 'Construction Materials' },
+    { value: 'Vehicle Parts and Accessories', label: 'Vehicle Parts and Accessories' },
+    { value: 'Fuel, Oil, and Lubricants', label: 'Fuel, Oil, and Lubricants' },
+    { value: 'Janitorial Supplies', label: 'Janitorial Supplies' },
+    { value: 'Electrical Supplies', label: 'Electrical Supplies' },
+    { value: 'Plumbing Supplies', label: 'Plumbing Supplies' },
+    { value: 'Food and Catering Services', label: 'Food and Catering Services' },
+    { value: 'Printing and Publication Services', label: 'Printing and Publication Services' },
+    { value: 'Security Services', label: 'Security Services' },
+    { value: 'Janitorial Services', label: 'Janitorial Services' },
+    { value: 'Repair and Maintenance Services', label: 'Repair and Maintenance Services' },
+    { value: 'Consulting Services', label: 'Consulting Services' },
+    { value: 'Construction of Building/Structure', label: 'Construction of Building/Structure' },
+    { value: 'Road Construction/Rehabilitation', label: 'Road Construction/Rehabilitation' },
+    { value: 'Drainage/Flood Control', label: 'Drainage/Flood Control' },
+    { value: 'Water System Installation/Repair', label: 'Water System Installation/Repair' },
+    { value: 'Other', label: 'Other (Please specify)' },
+] as const;
 
 // Type Definitions
 interface CategoryOption {
@@ -40,15 +71,17 @@ interface ProcurementModeOption {
 }
 
 type UseFormData = {
-    // Basic Information - REQUIRED per RA 9184
+    // Basic Information - REQUIRED per RA 12009 (NGPA)
     pr_number: string;
-    ppmp_reference: string;
+    app_reference: string;
     title: string;
     description: string;
+    other_description: string;
 
     // Financial Information (ABC = Approved Budget for Contract)
     abc_amount: string;
     funding_source: string;
+    other_funding_source: string;
 
     // Classification
     category: string;
@@ -57,45 +90,44 @@ type UseFormData = {
     // Municipal Office Information
     office: string;
     end_user: string;
-
-    // Purpose
-    purpose: string;
-
-    // Delivery Details
-    delivery_location: string;
-    delivery_date: Date | undefined;
-    delivery_term_days: string;
+    other_end_user: string;
 
     // Prepared By
     prepared_by: string;
 };
 
+interface DraftData extends UseFormData {
+    savedAt: string;
+}
+
 interface HeaderProps {
-    formState?: {
-        isComplete?: boolean;
-        createdAt?: string;
-        lastUpdated?: string;
-        reference?: string;
-    };
     categories?: CategoryOption[];
     procurementModes?: ProcurementModeOption[];
 }
 
-export default function ProcurementInitiationForm({ formState, categories = [], procurementModes = [] }: HeaderProps) {
+export default function ProcurementInitiationForm({ categories = [], procurementModes = [] }: HeaderProps) {
     const { auth } = usePage<{ auth: { user: { name: string; email: string } } }>().props;
 
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [{ title: 'Procurement Initiation', href: '#' }]);
 
-    const { data, setData, processing, errors, clearErrors } = useForm<UseFormData>({
+    // Draft state
+    const [hasDraft, setHasDraft] = useState(false);
+    const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
+    const [showDraftBanner, setShowDraftBanner] = useState(false);
+
+    const { data, setData, processing, errors, clearErrors, reset } = useForm<UseFormData>({
         // Basic Information
         pr_number: `PR-${new Date().getFullYear()}-0000-0000`,
-        ppmp_reference: '',
+        app_reference: '',
         title: '',
         description: '',
+        other_description: '',
 
         // Financial Information
         abc_amount: '',
         funding_source: '',
+        other_funding_source: '',
 
         // Classification
         category: '',
@@ -104,18 +136,118 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
         // Municipal Office Information
         office: '',
         end_user: '',
-
-        // Purpose
-        purpose: '',
-
-        // Delivery Details
-        delivery_location: '',
-        delivery_date: undefined,
-        delivery_term_days: '',
+        other_end_user: '',
 
         // Prepared By
         prepared_by: auth.user.name,
     });
+
+    // Draft management functions
+    const loadDraft = useCallback((): DraftData | null => {
+        try {
+            const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+            if (saved) {
+                return JSON.parse(saved) as DraftData;
+            }
+        } catch (e) {
+            console.error('Failed to load draft:', e);
+        }
+        return null;
+    }, []);
+
+    const saveDraft = useCallback(() => {
+        setIsSavingDraft(true);
+        try {
+            const draftData: DraftData = {
+                ...data,
+                savedAt: new Date().toISOString(),
+            };
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+            setHasDraft(true);
+            setDraftSavedAt(draftData.savedAt);
+            toast.success('Draft saved', {
+                description: 'Your progress has been saved locally.',
+            });
+        } catch (e) {
+            console.error('Failed to save draft:', e);
+            toast.error('Failed to save draft', {
+                description: 'Could not save your progress.',
+            });
+        } finally {
+            setIsSavingDraft(false);
+        }
+    }, [data]);
+
+    const clearDraft = useCallback(() => {
+        try {
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            setHasDraft(false);
+            setDraftSavedAt(null);
+            setShowDraftBanner(false);
+            toast.info('Draft cleared', {
+                description: 'Your saved draft has been removed.',
+            });
+        } catch (e) {
+            console.error('Failed to clear draft:', e);
+        }
+    }, []);
+
+    const restoreDraft = useCallback((draft: DraftData) => {
+        // Restore all fields from draft
+        Object.keys(draft).forEach((key) => {
+            if (key !== 'savedAt' && key in data) {
+                setData(key as keyof UseFormData, draft[key as keyof UseFormData]);
+            }
+        });
+        setDraftSavedAt(draft.savedAt);
+        setShowDraftBanner(false);
+        toast.success('Draft restored', {
+            description: 'Your previous progress has been loaded.',
+        });
+    }, [data, setData]);
+
+    const discardDraft = useCallback(() => {
+        clearDraft();
+        // Reset form to initial state
+        reset();
+        setData('prepared_by', auth.user.name);
+    }, [clearDraft, reset, setData, auth.user.name]);
+
+    // Check for existing draft on mount
+    useEffect(() => {
+        const draft = loadDraft();
+        if (draft) {
+            setHasDraft(true);
+            setDraftSavedAt(draft.savedAt);
+            setShowDraftBanner(true);
+        }
+    }, [loadDraft]);
+
+    // Auto-save draft when data changes (debounced)
+    useEffect(() => {
+        // Only auto-save if there's meaningful data
+        const hasContent = data.title.trim() !== '' || 
+                          data.app_reference.trim() !== '' || 
+                          data.abc_amount.trim() !== '';
+        
+        if (!hasContent) return;
+
+        const timeoutId = setTimeout(() => {
+            try {
+                const draftData: DraftData = {
+                    ...data,
+                    savedAt: new Date().toISOString(),
+                };
+                localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+                setHasDraft(true);
+                setDraftSavedAt(draftData.savedAt);
+            } catch (e) {
+                console.error('Auto-save failed:', e);
+            }
+        }, 2000); // Auto-save after 2 seconds of inactivity
+
+        return () => clearTimeout(timeoutId);
+    }, [data]);
 
     const hasError = useCallback(
         (field: string) => {
@@ -136,11 +268,16 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
     const prParts = data.pr_number.split('-');
     const prPrefix = prParts[0] || 'PR';
     const prYear = prParts[1] || new Date().getFullYear().toString();
-    const prSequence1 = prParts[2] || '0000';
-    const prSequence2 = prParts[3] || '0000';
+    const prSequence1 = prParts[2] ?? '';
+    const prSequence2 = prParts[3] ?? '';
 
     const handlePrPartChange = useCallback(
         (part: 'prefix' | 'year' | 'seq1' | 'seq2', value: string): void => {
+            // Only allow digits for sequence parts
+            if ((part === 'seq1' || part === 'seq2') && value !== '' && !/^\d*$/.test(value)) {
+                return;
+            }
+
             let newPrefix = prPrefix;
             let newYear = prYear;
             let newSeq1 = prSequence1;
@@ -167,8 +304,7 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
         [prPrefix, prYear, prSequence1, prSequence2, handleFieldChange],
     );
 
-    // Find selected category and mode for displaying descriptions
-    const selectedCategory = categories.find((cat) => cat.value === data.category);
+    // Find selected mode for displaying requirements
     const selectedMode = procurementModes.find((mode) => mode.value === data.procurement_mode);
 
     // Form validation
@@ -178,8 +314,8 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
             data.pr_number &&
             data.pr_number.trim() !== '' &&
             prNumberRegex.test(data.pr_number) &&
-            data.ppmp_reference &&
-            data.ppmp_reference.trim() !== '' &&
+            data.app_reference &&
+            data.app_reference.trim() !== '' &&
             data.title &&
             data.title.trim() !== '' &&
             data.description &&
@@ -194,13 +330,8 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
             data.funding_source.trim() !== '' &&
             data.office &&
             data.office.trim() !== '' &&
-            data.purpose &&
-            data.purpose.trim() !== '' &&
             data.prepared_by &&
-            data.prepared_by.trim() !== '' &&
-            data.delivery_location &&
-            data.delivery_location.trim() !== '' &&
-            data.delivery_date
+            data.prepared_by.trim() !== ''
         );
     }, [data]);
 
@@ -217,7 +348,7 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
         // Prepare data for submission (no documents)
         const submissionData = {
             pr_number: data.pr_number,
-            ppmp_reference: data.ppmp_reference,
+            app_reference: data.app_reference,
             title: data.title,
             description: data.description,
             abc_amount: data.abc_amount,
@@ -226,15 +357,15 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
             procurement_mode: data.procurement_mode,
             office: data.office,
             end_user: data.end_user,
-            purpose: data.purpose,
-            delivery_location: data.delivery_location,
-            delivery_date: data.delivery_date ? data.delivery_date.toISOString().split('T')[0] : '',
-            delivery_term_days: data.delivery_term_days,
             prepared_by: data.prepared_by,
         };
 
         router.post(initiate().url, submissionData, {
             onSuccess: () => {
+                // Clear draft on successful submission
+                localStorage.removeItem(DRAFT_STORAGE_KEY);
+                setHasDraft(false);
+                
                 toast.success('Procurement created successfully!', {
                     id: submissionToast,
                     description: 'Redirecting to procurement list. You can upload documents from there.',
@@ -270,60 +401,83 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Initiate Procurement" />
 
-            <div className="mx-auto max-w-7xl space-y-4 p-3 sm:space-y-6 sm:p-6 lg:p-8">
-                {/* Modern Header */}
-                <div className="from-primary/5 via-primary/3 to-background relative overflow-hidden rounded-xl border bg-linear-to-br p-4 shadow-sm sm:rounded-2xl sm:p-6 lg:p-8">
-                    <div className="relative z-10">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="flex gap-3 sm:gap-4">
-                                <div className="bg-primary/10 ring-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 sm:h-12 sm:w-12 sm:rounded-xl lg:h-14 lg:w-14">
-                                    <FileText className="text-primary h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7" />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h1 className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">New Procurement</h1>
-                                    <p className="text-muted-foreground mt-1 text-xs sm:mt-1.5 sm:max-w-2xl sm:text-sm lg:text-base">
-                                        Create a new procurement request with all required information.
-                                        <span className="hidden sm:inline"> Documents will be uploaded progressively after creation.</span>
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
+                {/* Draft Recovery Banner */}
+                {showDraftBanner && (
+                    <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                <div>
+                                    <p className="font-medium text-amber-800 dark:text-amber-200">
+                                        You have an unsaved draft
                                     </p>
-                                    <div className="mt-2 flex flex-wrap gap-1.5 sm:mt-3 sm:gap-2">
-                                        <Badge
-                                            variant="secondary"
-                                            className="rounded-full px-2 py-0.5 text-[10px] font-medium sm:px-3 sm:py-1 sm:text-xs"
-                                        >
-                                            <span className="bg-primary mr-1 inline-block h-1 w-1 rounded-full sm:mr-1.5 sm:h-1.5 sm:w-1.5"></span>
-                                            <span className="xs:inline hidden">Procurement </span>Initiation
-                                        </Badge>
-                                        {formState?.reference && (
-                                            <Badge
-                                                variant="outline"
-                                                className="rounded-full px-2 py-0.5 text-[10px] font-medium sm:px-3 sm:py-1 sm:text-xs"
-                                            >
-                                                {formState.reference}
-                                            </Badge>
-                                        )}
-                                    </div>
+                                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                                        Last saved: {draftSavedAt ? new Date(draftSavedAt).toLocaleString() : 'Unknown'}
+                                    </p>
                                 </div>
                             </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={discardDraft}
+                                    className="border-amber-500/50 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                                >
+                                    <Trash2 className="mr-1.5 h-4 w-4" />
+                                    Discard
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => {
+                                        const draft = loadDraft();
+                                        if (draft) restoreDraft(draft);
+                                    }}
+                                    className="bg-amber-600 text-white hover:bg-amber-700"
+                                >
+                                    <Save className="mr-1.5 h-4 w-4" />
+                                    Restore Draft
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Page Header */}
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
+                    <CardContent className="flex flex-col gap-2 p-4 sm:p-6">
+                        <div className="flex items-center justify-between">
+                            <div className="text-primary flex items-center gap-2">
+                                <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <h1 className="text-xl font-bold sm:text-2xl">Procurement Initiation</h1>
+                            </div>
+                            {hasDraft && !showDraftBanner && draftSavedAt && (
+                                <Badge variant="secondary" className="gap-1.5 text-xs">
+                                    <Save className="h-3 w-3" />
+                                    Draft saved {new Date(draftSavedAt).toLocaleTimeString()}
+                                </Badge>
+                            )}
                         </div>
-                    </div>
-                    {/* Decorative background elements - hidden on mobile */}
-                    <div className="bg-primary/5 absolute -top-8 -right-8 hidden h-32 w-32 rounded-full blur-3xl sm:block"></div>
-                    <div className="bg-primary/5 absolute -bottom-8 -left-8 hidden h-32 w-32 rounded-full blur-3xl sm:block"></div>
-                </div>
+                        <p className="text-muted-foreground text-sm sm:text-base">
+                            Create a new procurement request with all required information per RA 12009 (NGPA).
+                            <span className="hidden sm:inline"> Documents will be uploaded progressively after creation.</span>
+                        </p>
+                    </CardContent>
+                </Card>
 
                 <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
                     {/* Section 1: Basic Information */}
-                    <Card className="ring-border/50 overflow-hidden rounded-lg border-0 shadow-sm ring-1 sm:rounded-xl">
-                        <CardHeader className="border-l-primary bg-primary/2 border-l-3 px-4 py-4 sm:border-l-4 sm:px-6 sm:py-5">
-                            <div className="flex items-center gap-2.5 sm:gap-3">
-                                <div className="bg-primary/10 ring-primary/20 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1 sm:h-10 sm:w-10">
-                                    <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
-                                </div>
-                                <div className="min-w-0 space-y-1">
-                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">Basic Information</CardTitle>
-                                    <CardDescription className="xs:block hidden text-sm">Required procurement details per RA 9184</CardDescription>
-                                </div>
-                            </div>
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
+                        <CardHeader className="space-y-1 pb-2 sm:pb-4">
+                            <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
+                                <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                Basic Information
+                            </CardTitle>
+                            <CardDescription className="text-muted-foreground text-sm">
+                                Required procurement details per RA 12009 (NGPA)
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4 p-4 sm:space-y-6 sm:p-6">
                             {/* PR Number and PPMP Reference - Grid */}
@@ -383,22 +537,22 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
                                     {hasError('pr_number') && <FieldError>{errors.pr_number}</FieldError>}
                                 </Field>
 
-                                {/* PPMP Reference */}
+                                {/* PPMP/APP Reference */}
                                 <Field>
-                                    <FieldLabel htmlFor="ppmp_reference">
-                                        PPMP Reference
+                                    <FieldLabel htmlFor="app_reference">
+                                        APP Reference
                                         <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>Reference number from the Project Procurement Management Plan</FieldDescription>
+                                    <FieldDescription>Reference number from the Annual Procurement Plan</FieldDescription>
                                     <Input
-                                        id="ppmp_reference"
-                                        name="ppmp_reference"
-                                        value={data.ppmp_reference}
-                                        onChange={(e) => handleFieldChange('ppmp_reference', e.target.value)}
-                                        className={hasError('ppmp_reference') ? 'border-destructive ring-destructive/30' : ''}
-                                        placeholder="e.g., PPMP-2025-001"
+                                        id="app_reference"
+                                        name="app_reference"
+                                        value={data.app_reference}
+                                        onChange={(e) => handleFieldChange('app_reference', e.target.value)}
+                                        className={hasError('app_reference') ? 'border-destructive ring-destructive/30' : ''}
+                                        placeholder="e.g., APP-2025-001"
                                     />
-                                    {hasError('ppmp_reference') && <FieldError>{errors.ppmp_reference}</FieldError>}
+                                    {hasError('app_reference') && <FieldError>{errors.app_reference}</FieldError>}
                                 </Field>
                             </div>
 
@@ -428,109 +582,177 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
                                         Description
                                         <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>Detailed description of the items/services to be procured</FieldDescription>
-                                    <Textarea
-                                        id="description"
-                                        name="description"
+                                    <FieldDescription>Type of items/services to be procured</FieldDescription>
+                                    <Select
                                         value={data.description}
-                                        onChange={(e) => handleFieldChange('description', e.target.value)}
-                                        className={`bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[120px] w-full rounded-md border px-3 py-2 text-base shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
-                                            hasError('description') ? 'border-destructive ring-destructive/30' : 'border-input'
-                                        }`}
-                                        placeholder="Provide a detailed description of what needs to be procured..."
-                                    />
+                                        onValueChange={(value) => {
+                                            handleFieldChange('description', value);
+                                            // Clear other_description when switching away from Other
+                                            if (value !== 'Other') {
+                                                handleFieldChange('other_description', '');
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger className={hasError('description') ? 'border-destructive ring-destructive/30' : ''}>
+                                            <SelectValue placeholder="Select description" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {PROCUREMENT_DESCRIPTIONS.map((desc) => (
+                                                <SelectItem key={desc.value} value={desc.value}>
+                                                    {desc.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                     {hasError('description') && <FieldError>{errors.description}</FieldError>}
+                                    {data.description === 'Other' && (
+                                        <div className="mt-3">
+                                            <Input
+                                                id="other_description"
+                                                name="other_description"
+                                                type="text"
+                                                value={data.other_description}
+                                                onChange={(e) => handleFieldChange('other_description', e.target.value)}
+                                                className={hasError('other_description') ? 'border-destructive ring-destructive/30' : ''}
+                                                placeholder="Please specify the description"
+                                            />
+                                            {hasError('other_description') && <FieldError>{errors.other_description}</FieldError>}
+                                        </div>
+                                    )}
                                 </Field>
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Section 2: Classification & Budget */}
-                    <Card className="ring-border/50 overflow-hidden rounded-lg border-0 shadow-sm ring-1 sm:rounded-xl">
-                        <CardHeader className="border-l-3 border-l-emerald-500 bg-emerald-500/2 px-4 py-4 sm:border-l-4 sm:px-6 sm:py-5">
-                            <div className="flex items-center gap-2.5 sm:gap-3">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 ring-1 ring-emerald-500/20 sm:h-10 sm:w-10">
-                                    <DollarSign className="h-4 w-4 text-emerald-600 sm:h-5 sm:w-5 dark:text-emerald-500" />
-                                </div>
-                                <div className="min-w-0 space-y-1">
-                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">Classification & Budget</CardTitle>
-                                    <CardDescription className="xs:block hidden text-sm">
-                                        Procurement type and approved contract budget
-                                    </CardDescription>
-                                </div>
-                            </div>
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
+                        <CardHeader className="space-y-1 pb-2 sm:pb-4">
+                            <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
+                                <DollarSign className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                Classification & Budget
+                            </CardTitle>
+                            <CardDescription className="text-muted-foreground text-sm">
+                                Procurement type and approved contract budget
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4 p-4 sm:space-y-6 sm:p-6">
-                            {/* Category and Procurement Mode - Grid */}
+                            {/* Category and Funding Source - Grid */}
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                                 {/* Category */}
                                 <Field>
-                                    <FieldLabel htmlFor="category">
+                                    <FieldLabel>
                                         Category
                                         <span className="text-destructive">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>Select the type of procurement (Goods, Services, or Infrastructure)</FieldDescription>
-                                    <Select value={data.category} onValueChange={(value) => handleFieldChange('category', value)}>
-                                        <SelectTrigger
-                                            className={
-                                                hasError('category') ? 'border-destructive ring-destructive/30 h-auto min-h-10' : 'h-auto min-h-10'
-                                            }
-                                        >
-                                            <SelectValue placeholder="Select category" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {categories.map((category) => (
-                                                <SelectItem key={category.value} value={category.value} className="py-3">
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="font-medium">{category.label}</span>
-                                                        <span className="text-muted-foreground line-clamp-2 text-xs">{category.description}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <RadioGroup
+                                        value={data.category}
+                                        onValueChange={(value) => handleFieldChange('category', value)}
+                                        className="mt-2 grid gap-2"
+                                    >
+                                        {categories.map((category) => (
+                                            <div
+                                                key={category.value}
+                                                className={`flex items-center space-x-3 rounded-lg border p-3 transition-colors ${
+                                                    data.category === category.value
+                                                        ? 'border-primary bg-primary/5'
+                                                        : 'border-input hover:bg-muted/50'
+                                                } ${hasError('category') ? 'border-destructive' : ''}`}
+                                            >
+                                                <RadioGroupItem value={category.value} id={`category-${category.value}`} />
+                                                <Label htmlFor={`category-${category.value}`} className="flex-1 cursor-pointer font-medium">
+                                                    {category.label}
+                                                </Label>
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
                                     {hasError('category') && <FieldError>{errors.category}</FieldError>}
                                 </Field>
 
-                                {/* Procurement Mode */}
+                                {/* Funding Source */}
                                 <Field>
-                                    <FieldLabel htmlFor="procurement_mode">
-                                        Procurement Mode
+                                    <FieldLabel>
+                                        Funding Source
                                         <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>Select the appropriate procurement method per RA 9184</FieldDescription>
-                                    <Select value={data.procurement_mode} onValueChange={(value) => handleFieldChange('procurement_mode', value)}>
-                                        <SelectTrigger
-                                            className={
-                                                hasError('procurement_mode')
-                                                    ? 'border-destructive ring-destructive/30 h-auto min-h-10'
-                                                    : 'h-auto min-h-10'
+                                    <RadioGroup
+                                        value={data.funding_source}
+                                        onValueChange={(value) => {
+                                            handleFieldChange('funding_source', value);
+                                            // Clear other_funding_source when switching away from Other Sources
+                                            if (value !== 'Other Sources') {
+                                                handleFieldChange('other_funding_source', '');
                                             }
-                                        >
-                                            <SelectValue placeholder="Select procurement mode" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {procurementModes.map((mode) => (
-                                                <SelectItem key={mode.value} value={mode.value} className="py-3">
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="font-medium">{mode.label}</span>
-                                                        <span className="text-muted-foreground line-clamp-2 text-xs">{mode.description}</span>
-                                                        {mode.threshold && (
-                                                            <span className="text-muted-foreground text-xs">
-                                                                Threshold: ₱{mode.threshold.toLocaleString()}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {hasError('procurement_mode') && <FieldError>{errors.procurement_mode}</FieldError>}
+                                        }}
+                                        className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2"
+                                    >
+                                        {FUNDING_SOURCES.map((source) => (
+                                            <div key={source.value} className="flex items-center space-x-2">
+                                                <RadioGroupItem
+                                                    value={source.value}
+                                                    id={`funding-${source.value}`}
+                                                    className={hasError('funding_source') ? 'border-destructive' : ''}
+                                                />
+                                                <Label htmlFor={`funding-${source.value}`} className="cursor-pointer text-sm font-normal">
+                                                    {source.label}
+                                                </Label>
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
+                                    {hasError('funding_source') && <FieldError>{errors.funding_source}</FieldError>}
+                                    {data.funding_source === 'Other Sources' && (
+                                        <div className="mt-3">
+                                            <Input
+                                                id="other_funding_source"
+                                                name="other_funding_source"
+                                                type="text"
+                                                value={data.other_funding_source}
+                                                onChange={(e) => handleFieldChange('other_funding_source', e.target.value)}
+                                                className={hasError('other_funding_source') ? 'border-destructive ring-destructive/30' : ''}
+                                                placeholder="Please specify the funding source"
+                                            />
+                                            {hasError('other_funding_source') && <FieldError>{errors.other_funding_source}</FieldError>}
+                                        </div>
+                                    )}
                                 </Field>
                             </div>
 
-                            {/* ABC Amount and Funding Source - Grid */}
+                            {/* Procurement Mode and ABC Amount - Grid */}
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+                                {/* Procurement Mode */}
+                                <Field>
+                                    <FieldLabel>
+                                        Procurement Mode
+                                        <span className="text-destructive ml-1 text-xs">*</span>
+                                    </FieldLabel>
+                                    <RadioGroup
+                                        value={data.procurement_mode}
+                                        onValueChange={(value) => handleFieldChange('procurement_mode', value)}
+                                        className="mt-2 grid gap-2"
+                                    >
+                                        {procurementModes.map((mode) => (
+                                            <div
+                                                key={mode.value}
+                                                className={`flex items-center space-x-3 rounded-lg border p-3 transition-colors ${
+                                                    data.procurement_mode === mode.value
+                                                        ? 'border-primary bg-primary/5'
+                                                        : 'border-input hover:bg-muted/50'
+                                                } ${hasError('procurement_mode') ? 'border-destructive' : ''}`}
+                                            >
+                                                <RadioGroupItem value={mode.value} id={`mode-${mode.value}`} />
+                                                <Label htmlFor={`mode-${mode.value}`} className="flex-1 cursor-pointer">
+                                                    <span className="font-medium">{mode.label}</span>
+                                                    {mode.threshold && (
+                                                        <span className="text-muted-foreground ml-2 text-xs">
+                                                            (≤ ₱{mode.threshold.toLocaleString()})
+                                                        </span>
+                                                    )}
+                                                </Label>
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
+                                    {hasError('procurement_mode') && <FieldError>{errors.procurement_mode}</FieldError>}
+                                </Field>
+
                                 {/* ABC Amount */}
                                 <Field>
                                     <FieldLabel htmlFor="abc_amount">
@@ -538,111 +760,77 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
                                         <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
                                     <FieldDescription>Approved Budget for the Contract - the maximum amount allocated</FieldDescription>
-                                    <Input
-                                        id="abc_amount"
-                                        name="abc_amount"
-                                        type="number"
-                                        value={data.abc_amount}
-                                        onChange={(e) => handleFieldChange('abc_amount', e.target.value)}
-                                        className={hasError('abc_amount') ? 'border-destructive ring-destructive/30' : ''}
-                                        placeholder="0.00"
-                                        step="0.01"
-                                        min="0"
-                                    />
-                                    {hasError('abc_amount') && <FieldError>{errors.abc_amount}</FieldError>}
-                                    {data.abc_amount && parseFloat(data.abc_amount) > 0 && (
-                                        <div className="text-muted-foreground mt-2 text-sm">
-                                            Formatted: ₱
-                                            {parseFloat(data.abc_amount).toLocaleString('en-PH', {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}
-                                        </div>
-                                    )}
-                                </Field>
+                                    <div className="relative">
+                                        <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">₱</span>
+                                        <Input
+                                            id="abc_amount"
+                                            name="abc_amount"
+                                            type="text"
+                                            inputMode="decimal"
+                                            value={(() => {
+                                                if (!data.abc_amount) return '';
+                                                // Check if user is typing a decimal (ends with . or has incomplete decimal)
+                                                const hasTrailingDecimal = data.abc_amount.endsWith('.');
+                                                const decimalParts = data.abc_amount.split('.');
+                                                const decimalDigits = decimalParts[1] || '';
 
-                                {/* Funding Source */}
-                                <Field>
-                                    <FieldLabel htmlFor="funding_source">
-                                        Funding Source
-                                        <span className="text-destructive ml-1 text-xs">*</span>
-                                    </FieldLabel>
-                                    <FieldDescription>Select the source of funds for this procurement</FieldDescription>
-                                    <Select value={data.funding_source} onValueChange={(value) => handleFieldChange('funding_source', value)}>
-                                        <SelectTrigger className={hasError('funding_source') ? 'border-destructive ring-destructive/30' : ''}>
-                                            <SelectValue placeholder="Select funding source" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {FUNDING_SOURCES.map((source) => (
-                                                <SelectItem key={source.value} value={source.value}>
-                                                    {source.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {hasError('funding_source') && <FieldError>{errors.funding_source}</FieldError>}
+                                                // Format the integer part with commas
+                                                const integerPart = decimalParts[0];
+                                                const formattedInteger = integerPart ? parseInt(integerPart, 10).toLocaleString('en-PH') : '';
+
+                                                // Rebuild with decimal part preserved exactly as typed
+                                                if (hasTrailingDecimal) {
+                                                    return formattedInteger + '.';
+                                                } else if (decimalDigits) {
+                                                    return formattedInteger + '.' + decimalDigits;
+                                                }
+                                                return formattedInteger;
+                                            })()}
+                                            onChange={(e) => {
+                                                // Remove commas to get raw number
+                                                const rawValue = e.target.value.replace(/,/g, '');
+                                                // Only allow valid number input (digits and one decimal point, max 2 decimal places)
+                                                if (rawValue === '' || /^\d*\.?\d{0,2}$/.test(rawValue)) {
+                                                    handleFieldChange('abc_amount', rawValue);
+                                                }
+                                            }}
+                                            className={`pl-7 ${hasError('abc_amount') ? 'border-destructive ring-destructive/30' : ''}`}
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    {hasError('abc_amount') && <FieldError>{errors.abc_amount}</FieldError>}
                                 </Field>
                             </div>
                         </CardContent>
-                        <CardFooter className="bg-muted/30 border-t px-4 py-3 sm:px-6 sm:py-4">
-                            <div className="space-y-3">
-                                <div className="flex items-start gap-2">
-                                    <Info className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
-                                    <p className="text-muted-foreground text-xs sm:text-sm">
-                                        <strong className="text-foreground font-medium">ABC:</strong> The ABC must be determined based on prevailing
-                                        market prices and should not exceed the appropriated budget.
-                                    </p>
+                        {selectedMode && (selectedMode.requires_philgeps || selectedMode.requires_bac_resolution) && (
+                            <CardFooter className="bg-muted/30 border-t px-4 py-3 sm:px-6 sm:py-4">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-muted-foreground text-xs font-medium sm:text-sm">Requirements:</span>
+                                    {selectedMode.requires_philgeps && (
+                                        <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-300">
+                                            PhilGEPS Required
+                                        </Badge>
+                                    )}
+                                    {selectedMode.requires_bac_resolution && (
+                                        <Badge variant="outline" className="border-blue-500 text-blue-700 dark:text-blue-300">
+                                            BAC Resolution Required
+                                        </Badge>
+                                    )}
                                 </div>
-                                {selectedCategory && (
-                                    <div className="flex items-start gap-2 border-t pt-3">
-                                        <Info className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-500" />
-                                        <p className="text-muted-foreground text-xs sm:text-sm">
-                                            <strong className="text-foreground font-medium">Category:</strong> {selectedCategory.description}
-                                        </p>
-                                    </div>
-                                )}
-                                {selectedMode && (
-                                    <div className="space-y-2 border-t pt-3">
-                                        <div className="flex items-start gap-2">
-                                            <Info className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-500" />
-                                            <p className="text-muted-foreground text-xs sm:text-sm">
-                                                <strong className="text-foreground font-medium">Mode:</strong> {selectedMode.description}
-                                            </p>
-                                        </div>
-                                        {(selectedMode.requires_philgeps || selectedMode.requires_bac_resolution) && (
-                                            <div className="ml-6 flex flex-wrap gap-2">
-                                                {selectedMode.requires_philgeps && (
-                                                    <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-300">
-                                                        PhilGEPS Required
-                                                    </Badge>
-                                                )}
-                                                {selectedMode.requires_bac_resolution && (
-                                                    <Badge variant="outline" className="border-blue-500 text-blue-700 dark:text-blue-300">
-                                                        BAC Resolution Required
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </CardFooter>
+                            </CardFooter>
+                        )}
                     </Card>
 
                     {/* Section 3: Office & Purpose */}
-                    <Card className="ring-border/50 overflow-hidden rounded-lg border-0 shadow-sm ring-1 sm:rounded-xl">
-                        <CardHeader className="border-l-3 border-l-blue-500 bg-blue-500/2 px-4 py-4 sm:border-l-4 sm:px-6 sm:py-5">
-                            <div className="flex items-center gap-2.5 sm:gap-3">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 ring-1 ring-blue-500/20 sm:h-10 sm:w-10">
-                                    <Building2 className="h-4 w-4 text-blue-600 sm:h-5 sm:w-5 dark:text-blue-500" />
-                                </div>
-                                <div className="min-w-0 space-y-1">
-                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">Office & Purpose</CardTitle>
-                                    <CardDescription className="xs:block hidden text-sm">
-                                        Requesting office and procurement justification
-                                    </CardDescription>
-                                </div>
-                            </div>
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
+                        <CardHeader className="space-y-1 pb-2 sm:pb-4">
+                            <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
+                                <Building2 className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                Office & Purpose
+                            </CardTitle>
+                            <CardDescription className="text-muted-foreground text-sm">
+                                Requesting office and procurement justification
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4 p-4 sm:space-y-6 sm:p-6">
                             {/* Office and End User - Grid */}
@@ -673,192 +861,141 @@ export default function ProcurementInitiationForm({ formState, categories = [], 
                                 <Field>
                                     <FieldLabel htmlFor="end_user">End User (Optional)</FieldLabel>
                                     <FieldDescription>If different from the office, specify the actual end user</FieldDescription>
-                                    <Input
-                                        id="end_user"
-                                        name="end_user"
+                                    <Select
                                         value={data.end_user}
-                                        onChange={(e) => handleFieldChange('end_user', e.target.value)}
-                                        placeholder="e.g., Accounting Department"
-                                    />
+                                        onValueChange={(value) => {
+                                            handleFieldChange('end_user', value);
+                                            // Clear other_end_user when switching away from Other
+                                            if (value !== 'Other') {
+                                                handleFieldChange('other_end_user', '');
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Same as Office" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {MUNICIPAL_OFFICES.map((office) => (
+                                                <SelectItem key={office.value} value={office.value}>
+                                                    {office.label}
+                                                </SelectItem>
+                                            ))}
+                                            <SelectItem value="Other">Other (Please specify)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {data.end_user === 'Other' && (
+                                        <div className="mt-3">
+                                            <Input
+                                                id="other_end_user"
+                                                name="other_end_user"
+                                                type="text"
+                                                value={data.other_end_user}
+                                                onChange={(e) => handleFieldChange('other_end_user', e.target.value)}
+                                                className={hasError('other_end_user') ? 'border-destructive ring-destructive/30' : ''}
+                                                placeholder="Please specify the end user"
+                                            />
+                                            {hasError('other_end_user') && <FieldError>{errors.other_end_user}</FieldError>}
+                                        </div>
+                                    )}
                                 </Field>
                             </div>
 
-                            {/* Purpose and Prepared By - Grid */}
-                            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-                                {/* Purpose */}
-                                <Field>
-                                    <FieldLabel htmlFor="purpose">
-                                        Purpose
-                                        <span className="text-destructive ml-1 text-xs">*</span>
-                                    </FieldLabel>
-                                    <FieldDescription>Explain the purpose and justification for this procurement</FieldDescription>
-                                    <Textarea
-                                        id="purpose"
-                                        name="purpose"
-                                        value={data.purpose}
-                                        onChange={(e) => handleFieldChange('purpose', e.target.value)}
-                                        className={`bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[120px] w-full rounded-md border px-3 py-2 text-base shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
-                                            hasError('purpose') ? 'border-destructive ring-destructive/30' : 'border-input'
-                                        }`}
-                                        placeholder="Describe the purpose and necessity of this procurement..."
-                                    />
-                                    {hasError('purpose') && <FieldError>{errors.purpose}</FieldError>}
-                                </Field>
-
-                                {/* Prepared By */}
-                                <Field>
-                                    <FieldLabel htmlFor="prepared_by">
-                                        Prepared By
-                                        <span className="text-destructive ml-1 text-xs">*</span>
-                                    </FieldLabel>
-                                    <FieldDescription>Name of the person preparing this request</FieldDescription>
-                                    <Input
-                                        id="prepared_by"
-                                        name="prepared_by"
-                                        value={data.prepared_by}
-                                        onChange={(e) => handleFieldChange('prepared_by', e.target.value)}
-                                        className={hasError('prepared_by') ? 'border-destructive ring-destructive/30' : ''}
-                                        placeholder="Full Name"
-                                    />
-                                    {hasError('prepared_by') && <FieldError>{errors.prepared_by}</FieldError>}
-                                </Field>
-                            </div>
+                            {/* Prepared By */}
+                            <Field>
+                                <FieldLabel htmlFor="prepared_by">
+                                    Prepared By
+                                    <span className="text-destructive ml-1 text-xs">*</span>
+                                </FieldLabel>
+                                <FieldDescription>Name of the person preparing this request</FieldDescription>
+                                <Input
+                                    id="prepared_by"
+                                    name="prepared_by"
+                                    value={data.prepared_by}
+                                    onChange={(e) => handleFieldChange('prepared_by', e.target.value)}
+                                    className={hasError('prepared_by') ? 'border-destructive ring-destructive/30' : ''}
+                                    placeholder="Full Name"
+                                />
+                                {hasError('prepared_by') && <FieldError>{errors.prepared_by}</FieldError>}
+                            </Field>
                         </CardContent>
-                        <CardFooter className="bg-muted/30 border-t px-4 py-3 sm:px-6 sm:py-4">
-                            <div className="flex items-start gap-2">
-                                <Info className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
-                                <p className="text-muted-foreground text-xs sm:text-sm">
-                                    <strong className="text-foreground font-medium">Note:</strong> The purpose statement should clearly justify why
-                                    this procurement is necessary for government operations.
-                                </p>
-                            </div>
-                        </CardFooter>
-                    </Card>
-
-                    {/* Section 4: Delivery Details */}
-                    <Card className="ring-border/50 overflow-hidden rounded-lg border-0 shadow-sm ring-1 sm:rounded-xl">
-                        <CardHeader className="border-l-3 border-l-amber-500 bg-amber-500/2 px-4 py-4 sm:border-l-4 sm:px-6 sm:py-5">
-                            <div className="flex items-center gap-2.5 sm:gap-3">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 ring-1 ring-amber-500/20 sm:h-10 sm:w-10">
-                                    <MapPin className="h-4 w-4 text-amber-600 sm:h-5 sm:w-5 dark:text-amber-500" />
-                                </div>
-                                <div className="min-w-0 space-y-1">
-                                    <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">Delivery Details</CardTitle>
-                                    <CardDescription className="xs:block hidden text-sm">Delivery location, timeline, and terms</CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4 p-4 sm:space-y-6 sm:p-6">
-                            {/* Delivery Location, Date, and Term Days - Grid */}
-                            <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-                                {/* Delivery Location */}
-                                <Field>
-                                    <FieldLabel htmlFor="delivery_location">
-                                        Delivery Location
-                                        <span className="text-destructive">*</span>
-                                    </FieldLabel>
-                                    <FieldDescription>Where should the goods/services be delivered?</FieldDescription>
-                                    <Input
-                                        id="delivery_location"
-                                        name="delivery_location"
-                                        value={data.delivery_location}
-                                        onChange={(e) => handleFieldChange('delivery_location', e.target.value)}
-                                        className={hasError('delivery_location') ? 'border-destructive ring-destructive/30' : ''}
-                                        placeholder="e.g., Municipal Hall, Main Office"
-                                    />
-                                    {hasError('delivery_location') && <FieldError>{errors.delivery_location}</FieldError>}
-                                </Field>
-
-                                {/* Delivery Date */}
-                                <Field>
-                                    <FieldLabel htmlFor="delivery_date">
-                                        Delivery Date
-                                        <span className="text-destructive">*</span>
-                                    </FieldLabel>
-                                    <FieldDescription>Expected date for delivery or completion</FieldDescription>
-                                    <DatePicker
-                                        id="delivery_date"
-                                        date={data.delivery_date}
-                                        onDateChange={(date: Date | undefined) => handleFieldChange('delivery_date', date)}
-                                        minDate={new Date()}
-                                        className={hasError('delivery_date') ? 'border-destructive ring-destructive/30' : ''}
-                                    />
-                                    {hasError('delivery_date') && <FieldError>{errors.delivery_date}</FieldError>}
-                                </Field>
-
-                                {/* Delivery Term Days */}
-                                <Field>
-                                    <FieldLabel htmlFor="delivery_term_days">Delivery Term (Days)</FieldLabel>
-                                    <FieldDescription>Number of calendar days for delivery from contract signing (optional)</FieldDescription>
-                                    <Input
-                                        id="delivery_term_days"
-                                        name="delivery_term_days"
-                                        type="number"
-                                        value={data.delivery_term_days}
-                                        onChange={(e) => handleFieldChange('delivery_term_days', e.target.value)}
-                                        placeholder="e.g., 30"
-                                        min="0"
-                                    />
-                                </Field>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="bg-muted/30 border-t px-4 py-3 sm:px-6 sm:py-4">
-                            <div className="flex items-start gap-2">
-                                <Info className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
-                                <p className="text-muted-foreground text-xs sm:text-sm">
-                                    <strong className="text-foreground font-medium">Timeline:</strong> Ensure the delivery date allows sufficient time
-                                    for the procurement process and contractor preparation.
-                                </p>
-                            </div>
-                        </CardFooter>
                     </Card>
 
                     {/* Next Steps Info */}
-                    <Card className="overflow-hidden rounded-lg border-0 bg-linear-to-br from-blue-50 to-indigo-50 shadow-sm ring-1 ring-blue-200/50 sm:rounded-xl dark:from-blue-950/20 dark:to-indigo-950/20 dark:ring-blue-800/30">
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border bg-muted/30 shadow-md">
+                        <CardHeader className="space-y-1 pb-2 sm:pb-4">
+                            <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
+                                <Upload className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                Next: Progressive Document Upload
+                            </CardTitle>
+                            <CardDescription className="text-muted-foreground text-sm">
+                                After creating this procurement, you'll be redirected to upload required documents progressively.
+                                <span className="hidden sm:inline"> You can upload them one at a time and save your progress.</span>
+                            </CardDescription>
+                        </CardHeader>
+                    </Card>
+
+                    {/* Submit Button */}
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                         <CardContent className="p-4 sm:p-6">
-                            <div className="flex gap-3 sm:gap-4">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 ring-1 ring-blue-500/20 sm:h-12 sm:w-12 sm:rounded-xl">
-                                    <Upload className="h-5 w-5 text-blue-600 sm:h-6 sm:w-6 dark:text-blue-400" />
-                                </div>
-                                <div className="min-w-0 flex-1 space-y-1 sm:space-y-2">
-                                    <h3 className="text-sm font-semibold text-blue-900 sm:text-base dark:text-blue-100">
-                                        Next: Progressive Document Upload
-                                    </h3>
-                                    <p className="text-xs leading-relaxed text-blue-700/90 sm:text-sm dark:text-blue-300/90">
-                                        After creating this procurement, you'll be redirected to upload required documents progressively.{' '}
-                                        <span className="hidden sm:inline">You can upload them one at a time and save your progress.</span>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-muted-foreground text-sm">
+                                        All fields marked with <span className="text-destructive">*</span> are required
                                     </p>
+                                    {hasDraft && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={clearDraft}
+                                            className="text-muted-foreground hover:text-destructive h-auto p-1 text-xs"
+                                        >
+                                            <Trash2 className="mr-1 h-3 w-3" />
+                                            Clear Draft
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="flex flex-col gap-2 sm:flex-row">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={saveDraft}
+                                        disabled={isSavingDraft || processing}
+                                        className="flex h-10 w-full items-center gap-2 text-sm sm:h-11 sm:w-auto"
+                                    >
+                                        {isSavingDraft ? (
+                                            <>
+                                                <Spinner className="h-4 w-4" />
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Save className="h-4 w-4" />
+                                                Save Draft
+                                            </>
+                                        )}
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={processing || !isFormValid()}
+                                        className="flex h-10 w-full items-center gap-2 text-sm sm:h-11 sm:w-auto sm:min-w-[200px] sm:text-base"
+                                    >
+                                        {processing ? (
+                                            <>
+                                                <Spinner className="h-4 w-4" />
+                                                Creating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                Create Procurement
+                                            </>
+                                        )}
+                                    </Button>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-
-                    {/* Submit Button - Sticky on mobile */}
-                    <div className="bg-background/95 supports-backdrop-filter:bg-background/80 sticky right-0 bottom-0 left-0 z-20 -mx-3 border-t px-3 py-3 shadow-lg backdrop-blur-md sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:shadow-none sm:backdrop-blur-none">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                            <p className="text-muted-foreground hidden text-sm lg:block">
-                                All fields marked with <span className="text-destructive">*</span> are required
-                            </p>
-                            <Button
-                                type="submit"
-                                disabled={processing || !isFormValid()}
-                                className="w-full gap-2 shadow-sm sm:w-auto sm:min-w-[180px] lg:min-w-[200px]"
-                                size="lg"
-                            >
-                                {processing ? (
-                                    <>
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                        <span className="text-sm sm:text-base">Creating...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <FileText className="h-4 w-4" />
-                                        <span className="text-sm sm:text-base">Create Procurement</span>
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </div>
                 </form>
             </div>
         </AppLayout>

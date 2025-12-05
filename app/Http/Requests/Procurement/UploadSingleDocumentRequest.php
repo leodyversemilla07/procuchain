@@ -26,7 +26,7 @@ class UploadSingleDocumentRequest extends FormRequest
                 'required',
                 'file',
                 'mimes:pdf',
-                'max:10240', // 10MB
+                'max:51200', // 50MB for combined procurement initiation document
             ],
             'document_type' => [
                 'required',
@@ -54,7 +54,7 @@ class UploadSingleDocumentRequest extends FormRequest
             'document_file.required' => 'Please select a file to upload.',
             'document_file.file' => 'The uploaded item must be a valid file.',
             'document_file.mimes' => 'Only PDF files are allowed.',
-            'document_file.max' => 'File size must not exceed 10MB.',
+            'document_file.max' => 'File size must not exceed 50MB.',
             'document_type.required' => 'Document type is required.',
             'document_type.in' => 'Invalid document type selected.',
             'description.max' => 'Description must not exceed 500 characters.',

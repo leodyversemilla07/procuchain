@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import type { Document, Event, SharedData, TimelineItem } from '@/types';
@@ -18,7 +19,7 @@ import { TimelineTab } from '../../components/show-procurement/timeline-tab';
 
 interface ProcurementDetails {
     pr_number: string;
-    ppmp_reference?: string;
+    app_reference?: string;
     title: string;
     description: string;
     abc_amount: number;
@@ -30,10 +31,10 @@ interface ProcurementDetails {
     procurement_mode_label: string;
     office: string;
     end_user?: string;
-    purpose: string;
-    delivery_location: string;
-    delivery_date: string;
-    delivery_date_formatted: string;
+    // Delivery details are optional - populated at Contract Implementation stage per NGPA
+    delivery_location?: string;
+    delivery_date?: string;
+    delivery_date_formatted?: string;
     delivery_term_days?: number;
     prepared_by?: string;
     bac_resolution_number?: string;
@@ -121,35 +122,39 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                 <Head>
                     <title>Loading Procurement...</title>
                 </Head>
-                <div className="animate-pulse space-y-6 p-4 md:p-6 lg:p-8">
+                <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                     {/* Header Skeleton */}
-                    <Card className="border">
-                        <CardHeader className="space-y-4 pb-4">
-                            <div className="bg-muted h-8 w-3/4 rounded-md"></div>
-                            <div className="bg-muted h-4 w-1/4 rounded-md"></div>
-                            <div className="bg-muted h-2 w-full rounded-full"></div>
-                            <div className="flex gap-4">
-                                <div className="bg-muted h-16 w-32 rounded-md"></div>
-                                <div className="bg-muted h-16 w-32 rounded-md"></div>
-                                <div className="bg-muted h-16 w-32 rounded-md"></div>
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
+                        <CardContent className="space-y-4 p-4 sm:p-6">
+                            <div className="flex items-center gap-2">
+                                <Skeleton className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <Skeleton className="h-7 w-64 sm:h-8" />
                             </div>
-                        </CardHeader>
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-2 w-full rounded-full" />
+                            <div className="flex gap-4">
+                                <Skeleton className="h-16 w-32" />
+                                <Skeleton className="h-16 w-32" />
+                                <Skeleton className="h-16 w-32" />
+                            </div>
+                        </CardContent>
                     </Card>
 
                     {/* Tabs Skeleton */}
                     <div className="space-y-4">
                         <div className="flex gap-2">
-                            <div className="bg-muted h-10 w-32 rounded-md"></div>
-                            <div className="bg-muted h-10 w-32 rounded-md"></div>
+                            <Skeleton className="h-10 w-24" />
+                            <Skeleton className="h-10 w-24" />
+                            <Skeleton className="h-10 w-24" />
+                            <Skeleton className="h-10 w-24" />
                         </div>
-                        <Card className="border">
-                            <CardHeader>
-                                <div className="bg-muted h-6 w-48 rounded-md"></div>
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
+                            <CardHeader className="p-4 sm:p-6">
+                                <Skeleton className="h-6 w-48" />
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="bg-muted h-24 w-full rounded-md"></div>
-                                <div className="bg-muted h-24 w-full rounded-md"></div>
-                                <div className="bg-muted h-24 w-full rounded-md"></div>
+                            <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
+                                <Skeleton className="h-24 w-full" />
+                                <Skeleton className="h-24 w-full" />
                             </CardContent>
                         </Card>
                     </div>
@@ -165,9 +170,9 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                 <Head>
                     <title>Error Loading Procurement</title>
                 </Head>
-                <div className="p-4 sm:p-6">
-                    <div className="flex min-h-[60vh] items-center justify-center p-4">
-                        <Card className="border-destructive/50 bg-destructive/5 w-full max-w-md">
+                <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
+                    <div className="flex min-h-[60vh] items-center justify-center">
+                        <Card className="border-destructive/50 bg-destructive/5 w-full max-w-md shadow-md">
                             <CardHeader className="text-center">
                                 <div className="bg-destructive/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
                                     <AlertCircle className="text-destructive h-8 w-8" aria-hidden="true" />
@@ -176,18 +181,14 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                                 <CardDescription className="text-destructive/80 mt-2">{currentError}</CardDescription>
                             </CardHeader>
                             <CardContent className="flex flex-col gap-3 sm:flex-row">
-                                {handleGoBack && (
-                                    <Button variant="outline" className="flex-1" onClick={handleGoBack} aria-label="Go back to previous page">
-                                        <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
-                                        Go Back
-                                    </Button>
-                                )}
-                                {handleRetry && (
-                                    <Button variant="default" className="flex-1" onClick={handleRetry} aria-label="Retry loading procurement">
-                                        <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
-                                        Retry
-                                    </Button>
-                                )}
+                                <Button variant="outline" className="flex-1" onClick={handleGoBack} aria-label="Go back to previous page">
+                                    <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    Go Back
+                                </Button>
+                                <Button variant="default" className="flex-1" onClick={handleRetry} aria-label="Retry loading procurement">
+                                    <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    Retry
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>
@@ -203,7 +204,7 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                 <Head>
                     <title>Procurement Not Found</title>
                 </Head>
-                <div className="p-4 sm:p-6">
+                <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                     <Empty>
                         <EmptyHeader>
                             <EmptyMedia variant="icon">
@@ -238,7 +239,7 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                 Skip to content
             </a>
 
-            <div id="main-content" className="flex h-full flex-1 flex-col space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6 lg:p-8">
+            <div id="main-content" className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 {/* Procurement Header */}
                 <ProcurementHeader title={procurement.title} pr_number={procurement.id} status={procurement.status} />
 
@@ -288,27 +289,27 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                     </TabsList>
 
                     {/* Details Tab */}
-                    <TabsContent value="details" className="mt-3 sm:mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Procurement Information</CardTitle>
+                    <TabsContent value="details" className="mt-4 sm:mt-6">
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
+                            <CardHeader className="p-4 sm:p-6">
+                                <CardTitle className="text-lg sm:text-xl">Procurement Information</CardTitle>
                                 <CardDescription>Complete details from procurement initiation</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-6 p-4 pt-0 sm:p-6 sm:pt-0">
                                 {procurement.details ? (
                                     <>
                                         {/* Basic Information */}
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">Basic Information</h3>
+                                            <h3 className="text-base font-semibold sm:text-lg">Basic Information</h3>
                                             <div className="grid gap-4 sm:grid-cols-2">
                                                 <div>
                                                     <label className="text-muted-foreground text-sm font-medium">PR Number</label>
                                                     <p className="mt-1 text-sm">{procurement.details.pr_number}</p>
                                                 </div>
-                                                {procurement.details.ppmp_reference && (
+                                                {procurement.details.app_reference && (
                                                     <div>
-                                                        <label className="text-muted-foreground text-sm font-medium">PPMP Reference</label>
-                                                        <p className="mt-1 text-sm">{procurement.details.ppmp_reference}</p>
+                                                        <label className="text-muted-foreground text-sm font-medium">APP Reference</label>
+                                                        <p className="mt-1 text-sm">{procurement.details.app_reference}</p>
                                                     </div>
                                                 )}
                                                 <div className="sm:col-span-2">
@@ -324,7 +325,7 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
 
                                         {/* Financial Information */}
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">Financial Information</h3>
+                                            <h3 className="text-base font-semibold sm:text-lg">Financial Information</h3>
                                             <div className="grid gap-4 sm:grid-cols-2">
                                                 <div>
                                                     <label className="text-muted-foreground text-sm font-medium">ABC Amount</label>
@@ -341,7 +342,7 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
 
                                         {/* Classification */}
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">Classification</h3>
+                                            <h3 className="text-base font-semibold sm:text-lg">Classification</h3>
                                             <div className="grid gap-4 sm:grid-cols-2">
                                                 <div>
                                                     <label className="text-muted-foreground text-sm font-medium">Category</label>
@@ -356,7 +357,7 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
 
                                         {/* Office and Purpose */}
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">Office & Purpose</h3>
+                                            <h3 className="text-base font-semibold sm:text-lg">Office & Purpose</h3>
                                             <div className="grid gap-4 sm:grid-cols-2">
                                                 <div>
                                                     <label className="text-muted-foreground text-sm font-medium">Office</label>
@@ -368,37 +369,39 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                                                         <p className="mt-1 text-sm">{procurement.details.end_user}</p>
                                                     </div>
                                                 )}
-                                                <div className="sm:col-span-2">
-                                                    <label className="text-muted-foreground text-sm font-medium">Purpose</label>
-                                                    <p className="mt-1 text-sm">{procurement.details.purpose}</p>
-                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Delivery Details */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">Delivery Details</h3>
-                                            <div className="grid gap-4 sm:grid-cols-2">
-                                                <div>
-                                                    <label className="text-muted-foreground text-sm font-medium">Delivery Location</label>
-                                                    <p className="mt-1 text-sm">{procurement.details.delivery_location}</p>
+                                        {/* Delivery Details - Only show if populated (Contract Implementation stage) */}
+                                        {(procurement.details.delivery_location || procurement.details.delivery_date) && (
+                                            <div className="space-y-4">
+                                                <h3 className="text-base font-semibold sm:text-lg">Delivery Details</h3>
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    {procurement.details.delivery_location && (
+                                                        <div>
+                                                            <label className="text-muted-foreground text-sm font-medium">Delivery Location</label>
+                                                            <p className="mt-1 text-sm">{procurement.details.delivery_location}</p>
+                                                        </div>
+                                                    )}
+                                                    {procurement.details.delivery_date_formatted && (
+                                                        <div>
+                                                            <label className="text-muted-foreground text-sm font-medium">Delivery Date</label>
+                                                            <p className="mt-1 text-sm">{procurement.details.delivery_date_formatted}</p>
+                                                        </div>
+                                                    )}
+                                                    {procurement.details.delivery_term_days && (
+                                                        <div>
+                                                            <label className="text-muted-foreground text-sm font-medium">Delivery Term</label>
+                                                            <p className="mt-1 text-sm">{procurement.details.delivery_term_days} days</p>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div>
-                                                    <label className="text-muted-foreground text-sm font-medium">Delivery Date</label>
-                                                    <p className="mt-1 text-sm">{procurement.details.delivery_date_formatted}</p>
-                                                </div>
-                                                {procurement.details.delivery_term_days && (
-                                                    <div>
-                                                        <label className="text-muted-foreground text-sm font-medium">Delivery Term</label>
-                                                        <p className="mt-1 text-sm">{procurement.details.delivery_term_days} days</p>
-                                                    </div>
-                                                )}
                                             </div>
-                                        </div>
+                                        )}
 
                                         {/* Additional Information */}
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-semibold">Additional Information</h3>
+                                            <h3 className="text-base font-semibold sm:text-lg">Additional Information</h3>
                                             <div className="grid gap-4 sm:grid-cols-2">
                                                 {procurement.details.prepared_by && (
                                                     <div>
@@ -475,12 +478,12 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                     </TabsContent>
 
                     {/* Documents Tab */}
-                    <TabsContent value="documents" className="mt-3 sm:mt-6">
+                    <TabsContent value="documents" className="mt-4 sm:mt-6">
                         <DocumentsTab documents={procurement.documents} />
                     </TabsContent>
 
                     {/* Corrections Tab */}
-                    <TabsContent value="corrections" className="mt-3 sm:mt-6">
+                    <TabsContent value="corrections" className="mt-4 sm:mt-6">
                         <ProcurementCorrectionsTab
                             prNumber={procurement.id}
                             hasCorrections={procurement.has_corrections || false}
@@ -497,10 +500,6 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                                           procurement_mode: procurement.details.procurement_mode,
                                           office: procurement.details.office,
                                           end_user: procurement.details.end_user || '',
-                                          purpose: procurement.details.purpose,
-                                          delivery_location: procurement.details.delivery_location,
-                                          delivery_date: procurement.details.delivery_date,
-                                          delivery_term_days: procurement.details.delivery_term_days || 0,
                                           bac_resolution_number: procurement.details.bac_resolution_number || '',
                                           bac_resolution_date: procurement.details.bac_resolution_date || '',
                                           philgeps_reference: procurement.details.philgeps_reference || '',
@@ -514,7 +513,7 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                     </TabsContent>
 
                     {/* Timeline Tab */}
-                    <TabsContent value="timeline" className="mt-3 sm:mt-6">
+                    <TabsContent value="timeline" className="mt-4 sm:mt-6">
                         <TimelineTab timeline={procurement.timeline} events={procurement.events} />
                     </TabsContent>
                 </Tabs>

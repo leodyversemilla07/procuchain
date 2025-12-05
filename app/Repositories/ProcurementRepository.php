@@ -46,8 +46,16 @@ class ProcurementRepository implements ProcurementRepositoryInterface
                 return null;
             }
 
-            // Get the latest version
-            $latestItem = collect($items)->sortByDesc('blocktime')->first();
+            // Get the latest version - use last item if blocktime is pending (unconfirmed)
+            // Items are returned in chronological order, so last item is most recent
+            $latestItem = collect($items)
+                ->sortByDesc(fn ($item) => $item['blocktime'] ?? PHP_INT_MAX)
+                ->first();
+
+            // If all items are pending, get the last one (most recently published)
+            if (($latestItem['blocktime'] ?? null) === null) {
+                $latestItem = end($items);
+            }
 
             return ProcurementData::fromBlockchainArray($latestItem['data']['json']);
         } catch (\Exception $e) {

@@ -25,10 +25,6 @@ interface ProcurementData {
     procurement_mode_display: string;
     office: string;
     end_user: string;
-    purpose: string;
-    delivery_location: string;
-    delivery_date: string;
-    delivery_term_days: number;
     bac_resolution_number: string;
     bac_resolution_date: string;
     philgeps_reference: string;
@@ -188,10 +184,6 @@ export default function ProcurementCorrections({ procurement, corrections, docum
                         procurement_mode: procurement.procurement_mode,
                         office: procurement.office,
                         end_user: procurement.end_user,
-                        purpose: procurement.purpose,
-                        delivery_location: procurement.delivery_location,
-                        delivery_date: procurement.delivery_date,
-                        delivery_term_days: procurement.delivery_term_days,
                         bac_resolution_number: procurement.bac_resolution_number,
                         bac_resolution_date: procurement.bac_resolution_date,
                         philgeps_reference: procurement.philgeps_reference,

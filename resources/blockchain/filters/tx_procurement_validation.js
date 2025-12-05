@@ -251,16 +251,19 @@ function validateMetadataItem(dataItem) {
         return 'Invalid PR number format. Expected: PR-YYYY-XXXX-NNNN';
     }
 
-    // Validate procurement mode
+    // Validate procurement mode (NGPA IRR RA 12009 compliant)
     var validModes = [
-        'public_bidding',
+        'competitive_bidding',
         'limited_source_bidding',
+        'competitive_dialogue',
+        'unsolicited_offer_with_bid_matching',
         'direct_contracting',
+        'direct_acquisition',
         'repeat_order',
-        'shopping',
+        'small_value_procurement',
         'negotiated_procurement',
-        'agency_to_agency',
-        'emergency_procurement',
+        'direct_sales',
+        'direct_procurement_for_sti',
     ];
 
     if (validModes.indexOf(data.mode) === -1) {

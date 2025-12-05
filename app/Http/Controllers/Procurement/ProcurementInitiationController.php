@@ -20,7 +20,6 @@ use App\Services\ProcurementDataService;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
 use App\Services\Publishers\StatusPublisher;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -90,7 +89,7 @@ class ProcurementInitiationController extends BaseController
                 'isStageComplete' => $isStageComplete,
             ]);
 
-            return Inertia::render('bac-secretariat/procurement-stage/procurement-initiation-show', [
+            return Inertia::render('bac-secretariat/procurement-stage/procurement-initiation-upload', [
                 'procurement' => [
                     'pr_number' => $id,
                     'title' => $procurement->title,
@@ -165,7 +164,7 @@ class ProcurementInitiationController extends BaseController
 
         $procurement = new ProcurementData(
             prNumber: $prNumber,
-            ppmpReference: $request->input('ppmp_reference'),
+            appReference: $request->input('app_reference'),
             title: $request->input('title'),
             description: $request->input('description'),
             abcAmount: (float) $request->input('abc_amount'),
@@ -174,10 +173,10 @@ class ProcurementInitiationController extends BaseController
             procurementMode: ProcurementModeEnums::from($request->input('procurement_mode')),
             office: $request->input('office'),
             endUser: $request->input('end_user'),
-            purpose: $request->input('purpose'),
-            deliveryLocation: $request->input('delivery_location'),
-            deliveryDate: Carbon::parse($request->input('delivery_date')),
-            deliveryTermDays: $request->input('delivery_term_days') ? (int) $request->input('delivery_term_days') : null,
+            // Delivery details are populated at Contract Implementation stage per NGPA IRR Section 71
+            deliveryLocation: null,
+            deliveryDate: null,
+            deliveryTermDays: null,
             preparedBy: $request->input('prepared_by') ?? $user->name,
             bacResolutionNumber: null,
             bacResolutionDate: null,
@@ -233,7 +232,7 @@ class ProcurementInitiationController extends BaseController
             $result = $this->orchestrator->initiateProcurement(
                 procurementData: [
                     'pr_number' => $prNumber,
-                    'ppmp_reference' => $procurement->ppmpReference,
+                    'app_reference' => $procurement->appReference,
                     'title' => $procurement->title,
                     'description' => $procurement->description,
                     'abc_amount' => $procurement->abcAmount,
@@ -242,10 +241,6 @@ class ProcurementInitiationController extends BaseController
                     'procurement_mode' => $procurement->procurementMode->value,
                     'office' => $procurement->office,
                     'end_user' => $procurement->endUser,
-                    'purpose' => $procurement->purpose,
-                    'delivery_location' => $procurement->deliveryLocation,
-                    'delivery_date' => $procurement->deliveryDate->toDateString(),
-                    'delivery_term_days' => $procurement->deliveryTermDays,
                     'prepared_by' => $procurement->preparedBy,
                     'status' => $procurement->status,
                     'user_id' => $procurement->userId,

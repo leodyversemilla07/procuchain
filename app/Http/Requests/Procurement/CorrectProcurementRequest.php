@@ -29,17 +29,11 @@ class CorrectProcurementRequest extends FormRequest
             'abc_amount' => 'sometimes|required|numeric|min:0|max:999999999.99',
             'funding_source' => 'sometimes|required|string|min:2|max:255',
             'category' => 'sometimes|required|string|in:goods,services,works',
-            'procurement_mode' => 'sometimes|required|string|in:shopping,small_value_procurement,competitive_bidding,limited_source_bidding,direct_contracting,repeat_order,shopping_two_failed_biddings,negotiated_procurement',
+            'procurement_mode' => 'sometimes|required|string|in:competitive_bidding,limited_source_bidding,competitive_dialogue,unsolicited_offer_with_bid_matching,direct_contracting,direct_acquisition,repeat_order,small_value_procurement,negotiated_procurement,direct_sales,direct_procurement_for_sti',
 
             // Office and organizational details
             'office' => 'sometimes|required|string|min:2|max:255',
             'end_user' => 'sometimes|nullable|string|min:2|max:255',
-            'purpose' => 'sometimes|required|string|min:10|max:1000',
-
-            // Delivery information
-            'delivery_location' => 'sometimes|required|string|min:2|max:255',
-            'delivery_date' => 'sometimes|required|date|after:today',
-            'delivery_term_days' => 'sometimes|required|integer|min:1|max:365',
 
             // BAC Resolution (conditional validation)
             'bac_resolution_number' => 'sometimes|nullable|string|min:2|max:100',
@@ -88,16 +82,6 @@ class CorrectProcurementRequest extends FormRequest
             'end_user.min' => 'The end user must be at least 2 characters.',
             'end_user.max' => 'The end user cannot exceed 255 characters.',
 
-            'purpose.min' => 'The purpose must be at least 10 characters.',
-            'purpose.max' => 'The purpose cannot exceed 1000 characters.',
-
-            'delivery_location.min' => 'The delivery location must be at least 2 characters.',
-            'delivery_location.max' => 'The delivery location cannot exceed 255 characters.',
-
-            'delivery_date.after' => 'The delivery date must be in the future.',
-            'delivery_term_days.min' => 'Delivery term must be at least 1 day.',
-            'delivery_term_days.max' => 'Delivery term cannot exceed 365 days.',
-
             'bac_resolution_number.min' => 'BAC resolution number must be at least 2 characters.',
             'bac_resolution_number.max' => 'BAC resolution number cannot exceed 100 characters.',
 
@@ -126,9 +110,8 @@ class CorrectProcurementRequest extends FormRequest
             // Check if at least one field is being corrected
             $correctableFields = [
                 'title', 'description', 'abc_amount', 'funding_source', 'category', 'procurement_mode',
-                'office', 'end_user', 'purpose', 'delivery_location', 'delivery_date', 'delivery_term_days',
-                'bac_resolution_number', 'bac_resolution_date', 'philgeps_reference', 'philgeps_posting_date',
-                'approved_by', 'approval_date',
+                'office', 'end_user', 'bac_resolution_number', 'bac_resolution_date',
+                'philgeps_reference', 'philgeps_posting_date', 'approved_by', 'approval_date',
             ];
 
             $hasCorrection = false;

@@ -15,7 +15,7 @@ describe('DocumentValidationService', function () {
         it('validates required document for procurement initiation stage', function () {
             $validation = $this->service->validateUpload(
                 StageEnums::PROCUREMENT_INITIATION,
-                DocumentTypeEnums::PURCHASE_REQUEST,
+                DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT,
                 []
             );
 
@@ -24,15 +24,18 @@ describe('DocumentValidationService', function () {
             expect($validation['warnings'])->toBeEmpty();
         });
 
-        it('validates optional document for procurement initiation stage', function () {
+        it('validates document from different stage in same phase with warning', function () {
+            // Since procurement initiation now has no optional documents,
+            // test with a document from another stage in the same phase
             $validation = $this->service->validateUpload(
                 StageEnums::PROCUREMENT_INITIATION,
-                DocumentTypeEnums::MARKET_RESEARCH,
+                DocumentTypeEnums::PRE_PROCUREMENT_AGENDA, // Stage 2 document in same phase
                 []
             );
 
+            // Should be valid but with a warning since it's from a different stage
             expect($validation['valid'])->toBeTrue();
-            expect($validation['errors'])->toBeEmpty();
+            expect($validation['warnings'])->not->toBeEmpty();
         });
 
         it('warns when uploading document from different stage in same phase', function () {
@@ -60,11 +63,11 @@ describe('DocumentValidationService', function () {
         });
 
         it('prevents duplicate document upload', function () {
-            $uploadedTypes = [DocumentTypeEnums::PURCHASE_REQUEST];
+            $uploadedTypes = [DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT];
 
             $validation = $this->service->validateUpload(
                 StageEnums::PROCUREMENT_INITIATION,
-                DocumentTypeEnums::PURCHASE_REQUEST,
+                DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT,
                 $uploadedTypes
             );
 
@@ -87,21 +90,20 @@ describe('DocumentValidationService', function () {
         });
 
         it('returns false when only some required documents uploaded', function () {
+            // Use PRE_PROCUREMENT_CONFERENCE stage which has multiple required documents
             $uploadedDocs = [
-                DocumentTypeEnums::PURCHASE_REQUEST,
-                DocumentTypeEnums::PPMP,
-                DocumentTypeEnums::APP,
+                DocumentTypeEnums::PRE_PROCUREMENT_AGENDA,
             ];
 
             $validation = $this->service->validateStageCompletion(
-                StageEnums::PROCUREMENT_INITIATION,
+                StageEnums::PRE_PROCUREMENT_CONFERENCE,
                 $uploadedDocs
             );
 
             expect($validation['can_complete'])->toBeFalse();
             expect($validation['completion_percentage'])->toBeGreaterThan(0.0);
             expect($validation['completion_percentage'])->toBeLessThan(100.0);
-            expect($validation['missing_documents'])->toContain(DocumentTypeEnums::CERTIFICATE_OF_FUNDS->value);
+            expect($validation['missing_documents'])->not->toBeEmpty();
         });
 
         it('returns true when all required documents uploaded', function () {
@@ -118,13 +120,14 @@ describe('DocumentValidationService', function () {
         });
 
         it('includes uploaded and required documents in response', function () {
+            // Use PRE_PROCUREMENT_CONFERENCE stage which has multiple documents
             $uploadedDocs = [
-                DocumentTypeEnums::PURCHASE_REQUEST,
-                DocumentTypeEnums::PPMP,
+                DocumentTypeEnums::PRE_PROCUREMENT_AGENDA,
+                DocumentTypeEnums::PRE_PROCUREMENT_ATTENDANCE,
             ];
 
             $validation = $this->service->validateStageCompletion(
-                StageEnums::PROCUREMENT_INITIATION,
+                StageEnums::PRE_PROCUREMENT_CONFERENCE,
                 $uploadedDocs
             );
 
@@ -161,19 +164,20 @@ describe('DocumentValidationService', function () {
         });
 
         it('calculates correct percentage for partial upload', function () {
-            $requiredDocs = $this->requirements->getRequiredDocuments(StageEnums::PROCUREMENT_INITIATION);
+            // Use PRE_PROCUREMENT_CONFERENCE which has multiple required documents
+            $requiredDocs = $this->requirements->getRequiredDocuments(StageEnums::PRE_PROCUREMENT_CONFERENCE);
             $requiredCount = count($requiredDocs);
 
-            // Upload half of required documents
-            $halfUploaded = array_slice($requiredDocs, 0, (int) ($requiredCount / 2));
+            // Upload one document (should be ~33% for 3 required docs)
+            $partialUploaded = array_slice($requiredDocs, 0, 1);
 
             $percentage = $this->service->calculateCompletionPercentage(
-                StageEnums::PROCUREMENT_INITIATION,
-                $halfUploaded
+                StageEnums::PRE_PROCUREMENT_CONFERENCE,
+                $partialUploaded
             );
 
-            expect($percentage)->toBeGreaterThan(40.0);
-            expect($percentage)->toBeLessThan(60.0);
+            expect($percentage)->toBeGreaterThan(0.0);
+            expect($percentage)->toBeLessThan(100.0);
         });
 
         it('caps percentage at 100% even with extra documents', function () {

@@ -1,4 +1,4 @@
-import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PostProcurementController';
+import { markStageComplete, updateDeliveryDetails, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PostProcurementController';
 import FileUploadArea from '@/components/file-upload-area';
 import {
     AlertDialog,
@@ -13,6 +13,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { DatePickerInput } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
@@ -21,7 +24,7 @@ import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 import { Head, router } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, Send } from 'lucide-react';
+import { AlertCircle, CheckCircle2, MapPin, Calendar, Clock, Send } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -32,6 +35,11 @@ interface NtpUploadProps {
         status?: string;
         stage_value?: string;
         current_stage?: string;
+        // Delivery details per NGPA IRR Section 71
+        delivery_location?: string;
+        delivery_date?: string;
+        delivery_date_formatted?: string;
+        delivery_term_days?: number;
     };
     documentGuide?: DocumentGuide;
     uploadedDocuments?: string[];
@@ -42,6 +50,7 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
     const [dragging, setDragging] = useState<Record<string, boolean>>({});
     const [isUploading, setIsUploading] = useState(false);
     const [isMarkingComplete, setIsMarkingComplete] = useState(false);
+    const [isSavingDelivery, setIsSavingDelivery] = useState(false);
     const [confirmDialog, setConfirmDialog] = useState<{
         open: boolean;
         documentValue: string;
@@ -51,6 +60,15 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
         documentValue: '',
         documentName: '',
     });
+
+    // Delivery details form state
+    const [deliveryForm, setDeliveryForm] = useState({
+        delivery_location: procurement.delivery_location || '',
+        delivery_date: procurement.delivery_date || '',
+        delivery_term_days: procurement.delivery_term_days?.toString() || '',
+    });
+
+    const hasDeliveryDetails = Boolean(procurement.delivery_location && procurement.delivery_date && procurement.delivery_term_days);
 
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
         getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
@@ -70,6 +88,51 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
         }
         return true;
     }, []);
+
+    // Handle saving delivery details
+    const handleSaveDeliveryDetails = useCallback(() => {
+        // Validate required fields
+        if (!deliveryForm.delivery_location.trim()) {
+            toast.error('Delivery location is required');
+            return;
+        }
+        if (!deliveryForm.delivery_date) {
+            toast.error('Delivery date is required');
+            return;
+        }
+        if (!deliveryForm.delivery_term_days || parseInt(deliveryForm.delivery_term_days) < 1) {
+            toast.error('Delivery term must be at least 1 day');
+            return;
+        }
+
+        setIsSavingDelivery(true);
+
+        router.post(
+            updateDeliveryDetails({ pr_number: procurement.pr_number }).url,
+            {
+                delivery_location: deliveryForm.delivery_location,
+                delivery_date: deliveryForm.delivery_date,
+                delivery_term_days: parseInt(deliveryForm.delivery_term_days),
+            },
+            {
+                onSuccess: () => {
+                    toast.success('Delivery details saved successfully', {
+                        description: 'Delivery information has been recorded on the blockchain.',
+                    });
+                },
+                onError: (errors) => {
+                    const errorMessage = errors.message || Object.values(errors)[0] || 'Failed to save delivery details';
+                    toast.error('Failed to save delivery details', {
+                        description: errorMessage,
+                    });
+                },
+                onFinish: () => {
+                    setIsSavingDelivery(false);
+                },
+                preserveScroll: true,
+            },
+        );
+    }, [deliveryForm, procurement.pr_number]);
 
     const handleFileChange = (documentValue: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -226,21 +289,24 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
             <Head title="Upload Notice to Proceed" />
 
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
-                <div className="flex flex-col gap-2">
-                    <div className="text-primary flex items-center gap-2">
-                        <Send className="h-5 w-5 sm:h-6 sm:w-6" />
-                        <h1 className="text-xl font-bold sm:text-2xl">Notice to Proceed</h1>
-                    </div>
-                    <p className="text-muted-foreground text-sm sm:text-base">
-                        Upload the Notice to Proceed for procurement
-                        <span className="text-foreground font-medium"> #{procurement?.pr_number || 'Unknown'}</span>
-                        {procurement?.title && (
-                            <>
-                                :<span className="text-foreground font-medium italic"> {procurement.title}</span>
-                            </>
-                        )}
-                    </p>
-                </div>
+                {/* Page Header */}
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
+                    <CardContent className="flex flex-col gap-2 p-4 sm:p-6">
+                        <div className="text-primary flex items-center gap-2">
+                            <Send className="h-5 w-5 sm:h-6 sm:w-6" />
+                            <h1 className="text-xl font-bold sm:text-2xl">Notice to Proceed</h1>
+                        </div>
+                        <p className="text-muted-foreground text-sm sm:text-base">
+                            Upload the Notice to Proceed for procurement
+                            <span className="text-foreground font-medium"> #{procurement?.pr_number || 'Unknown'}</span>
+                            {procurement?.title && (
+                                <>
+                                    :<span className="text-foreground font-medium italic"> {procurement.title}</span>
+                                </>
+                            )}
+                        </p>
+                    </CardContent>
+                </Card>
 
                 <div className="space-y-4 sm:space-y-6">
                     <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
@@ -306,7 +372,102 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
                             </Card>
                         )}
 
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
+                        {/* Delivery Details Card - Per NGPA IRR Section 71 */}
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border h-fit shadow-md lg:col-span-3">
+                            <CardHeader className="space-y-1 pb-2 sm:pb-4">
+                                <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
+                                    <MapPin className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                    Delivery Details
+                                    {hasDeliveryDetails && (
+                                        <Badge variant="outline" className="ml-2 text-xs text-green-600 dark:text-green-500">
+                                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                                            Saved
+                                        </Badge>
+                                    )}
+                                </CardTitle>
+                                <CardDescription className="text-muted-foreground text-sm">
+                                    Per NGPA IRR Section 71, delivery details must be specified before contract implementation.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid gap-4 sm:grid-cols-3">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="delivery_location" className="flex items-center gap-1.5">
+                                            <MapPin className="h-3.5 w-3.5" />
+                                            Delivery Location
+                                        </Label>
+                                        <Input
+                                            id="delivery_location"
+                                            value={deliveryForm.delivery_location}
+                                            onChange={(e) => setDeliveryForm((prev) => ({ ...prev, delivery_location: e.target.value }))}
+                                            placeholder="e.g., Municipal Hall, Brgy. Centro"
+                                            disabled={isStageCompleted}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="delivery_date" className="flex items-center gap-1.5">
+                                            <Calendar className="h-3.5 w-3.5" />
+                                            Delivery Date
+                                        </Label>
+                                        <DatePickerInput
+                                            id="delivery_date"
+                                            value={deliveryForm.delivery_date}
+                                            onChange={(value) => setDeliveryForm((prev) => ({ ...prev, delivery_date: value }))}
+                                            placeholder="Select delivery date"
+                                            disabled={isStageCompleted}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="delivery_term_days" className="flex items-center gap-1.5">
+                                            <Clock className="h-3.5 w-3.5" />
+                                            Delivery Term (Days)
+                                        </Label>
+                                        <Input
+                                            id="delivery_term_days"
+                                            type="number"
+                                            min="1"
+                                            max="365"
+                                            value={deliveryForm.delivery_term_days}
+                                            onChange={(e) => setDeliveryForm((prev) => ({ ...prev, delivery_term_days: e.target.value }))}
+                                            placeholder="e.g., 30"
+                                            disabled={isStageCompleted}
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="border-t pt-4">
+                                {isStageCompleted ? (
+                                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-500">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        Delivery details have been recorded
+                                    </div>
+                                ) : (
+                                    <Button
+                                        type="button"
+                                        onClick={handleSaveDeliveryDetails}
+                                        disabled={isSavingDelivery || !deliveryForm.delivery_location || !deliveryForm.delivery_date || !deliveryForm.delivery_term_days}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        {isSavingDelivery ? (
+                                            <>
+                                                <Spinner className="mr-2 h-4 w-4" />
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                                Save Delivery Details
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
+                            </CardFooter>
+                        </Card>
+                    </div>
+
+                    {/* Document Upload Section */}
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                             <CardHeader className="space-y-1 pb-2 sm:pb-4">
                                 <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
                                     <Send className="text-primary h-4 w-4 sm:h-5 sm:w-5" />

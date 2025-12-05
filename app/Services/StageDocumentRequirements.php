@@ -47,12 +47,7 @@ class StageDocumentRequirements
     public function getOptionalDocuments(StageEnums $stage): array
     {
         return match ($stage) {
-            StageEnums::PROCUREMENT_INITIATION => [
-                DocumentTypeEnums::MARKET_RESEARCH,
-                DocumentTypeEnums::SANGGUNIANG_BAYAN_RESOLUTION,
-                DocumentTypeEnums::ENVIRONMENTAL_COMPLIANCE_CERTIFICATE,
-                DocumentTypeEnums::PROGRAM_OF_WORK,
-            ],
+            StageEnums::PROCUREMENT_INITIATION => [],  // All documents combined into single PDF
             StageEnums::PRE_PROCUREMENT_CONFERENCE => [
                 DocumentTypeEnums::PRE_PROCUREMENT_PRESENTATION,
                 DocumentTypeEnums::PRE_PROCUREMENT_QA_LOG,
@@ -168,17 +163,20 @@ class StageDocumentRequirements
     /**
      * Stage 1: Procurement Initiation Requirements
      *
+     * Single PDF document containing all procurement initiation documents:
+     * - Project Procurement Management Plan (PPMP)
+     * - Annual Procurement Plan (APP)
+     * - Purchase Request (PR)
+     * - Market Study / Price Canvass
+     * - Approved Budget for the Contract (ABC) Documentation
+     * - Any other supporting documents as applicable
+     *
      * @return array<DocumentTypeEnums>
      */
     private function getProcurementInitiationRequirements(): array
     {
         return [
-            DocumentTypeEnums::PURCHASE_REQUEST,
-            DocumentTypeEnums::PPMP,
-            DocumentTypeEnums::APP,
-            DocumentTypeEnums::CERTIFICATE_OF_FUNDS,
-            DocumentTypeEnums::APPROVED_BUDGET_CONTRACT,
-            DocumentTypeEnums::TECHNICAL_SPECIFICATIONS,
+            DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT,
         ];
     }
 

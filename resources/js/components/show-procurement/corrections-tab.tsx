@@ -45,10 +45,6 @@ interface ProcurementCorrectionsTabProps {
         procurement_mode: string;
         office: string;
         end_user: string;
-        purpose: string;
-        delivery_location: string;
-        delivery_date: string;
-        delivery_term_days: number;
         bac_resolution_number: string;
         bac_resolution_date: string;
         philgeps_reference: string;
@@ -71,10 +67,6 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
         procurement_mode: procurement?.procurement_mode || '',
         office: procurement?.office || '',
         end_user: procurement?.end_user || '',
-        purpose: procurement?.purpose || '',
-        delivery_location: procurement?.delivery_location || '',
-        delivery_date: procurement?.delivery_date || '',
-        delivery_term_days: procurement?.delivery_term_days?.toString() || '',
         bac_resolution_number: procurement?.bac_resolution_number || '',
         bac_resolution_date: procurement?.bac_resolution_date || '',
         philgeps_reference: procurement?.philgeps_reference || '',
@@ -121,10 +113,6 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                         procurement_mode: procurement?.procurement_mode || '',
                         office: procurement?.office || '',
                         end_user: procurement?.end_user || '',
-                        purpose: procurement?.purpose || '',
-                        delivery_location: procurement?.delivery_location || '',
-                        delivery_date: procurement?.delivery_date || '',
-                        delivery_term_days: procurement?.delivery_term_days?.toString() || '',
                         bac_resolution_number: procurement?.bac_resolution_number || '',
                         bac_resolution_date: procurement?.bac_resolution_date || '',
                         philgeps_reference: procurement?.philgeps_reference || '',
@@ -260,23 +248,26 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                                 <SelectValue placeholder="Select procurement mode" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="shopping">Shopping</SelectItem>
-                                                <SelectItem value="small_value_procurement">Small Value Procurement</SelectItem>
                                                 <SelectItem value="competitive_bidding">Competitive Bidding</SelectItem>
                                                 <SelectItem value="limited_source_bidding">Limited Source Bidding</SelectItem>
+                                                <SelectItem value="competitive_dialogue">Competitive Dialogue</SelectItem>
+                                                <SelectItem value="unsolicited_offer_with_bid_matching">Unsolicited Offer with Bid Matching</SelectItem>
                                                 <SelectItem value="direct_contracting">Direct Contracting</SelectItem>
+                                                <SelectItem value="direct_acquisition">Direct Acquisition</SelectItem>
                                                 <SelectItem value="repeat_order">Repeat Order</SelectItem>
-                                                <SelectItem value="shopping_two_failed_biddings">Shopping (Two Failed Biddings)</SelectItem>
+                                                <SelectItem value="small_value_procurement">Small Value Procurement</SelectItem>
                                                 <SelectItem value="negotiated_procurement">Negotiated Procurement</SelectItem>
+                                                <SelectItem value="direct_sales">Direct Sales</SelectItem>
+                                                <SelectItem value="direct_procurement_for_sti">Direct Procurement for STI</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Office & Purpose */}
+                            {/* Office & End User */}
                             <div className="space-y-4">
-                                <h4 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">Office & Purpose</h4>
+                                <h4 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">Office & End User</h4>
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="office">Office</Label>
@@ -294,51 +285,6 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                             value={correctionForm.end_user}
                                             onChange={(e) => setCorrectionForm((prev) => ({ ...prev, end_user: e.target.value }))}
                                             placeholder="Enter corrected end user"
-                                        />
-                                    </div>
-                                    <div className="space-y-2 sm:col-span-2">
-                                        <Label htmlFor="purpose">Purpose</Label>
-                                        <Textarea
-                                            id="purpose"
-                                            value={correctionForm.purpose}
-                                            onChange={(e) => setCorrectionForm((prev) => ({ ...prev, purpose: e.target.value }))}
-                                            placeholder="Enter corrected purpose"
-                                            rows={2}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Delivery Details */}
-                            <div className="space-y-4">
-                                <h4 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">Delivery Details</h4>
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="delivery_location">Delivery Location</Label>
-                                        <Input
-                                            id="delivery_location"
-                                            value={correctionForm.delivery_location}
-                                            onChange={(e) => setCorrectionForm((prev) => ({ ...prev, delivery_location: e.target.value }))}
-                                            placeholder="Enter corrected delivery location"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <DatePickerInput
-                                            id="delivery_date"
-                                            value={correctionForm.delivery_date}
-                                            onChange={(value) => setCorrectionForm((prev) => ({ ...prev, delivery_date: value }))}
-                                            placeholder="Select delivery date"
-                                            label="Delivery Date"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="delivery_term_days">Delivery Term (Days)</Label>
-                                        <Input
-                                            id="delivery_term_days"
-                                            type="number"
-                                            value={correctionForm.delivery_term_days}
-                                            onChange={(e) => setCorrectionForm((prev) => ({ ...prev, delivery_term_days: e.target.value }))}
-                                            placeholder="Enter delivery term in days"
                                         />
                                     </div>
                                 </div>
