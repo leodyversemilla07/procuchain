@@ -23,7 +23,7 @@ class LoginLogController extends Controller
     public function index(): Response
     {
         try {
-            $recentLogins = $this->loginLogger->getRecentLogins(100);
+            $recentLogins = $this->loginLogger->getRecentLogins(50);
             $statistics = $this->loginLogger->getLoginStatistics();
 
             return Inertia::render('admin/login-logs', [

@@ -216,72 +216,63 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
         return () => clearTimeout(timer);
     }, [searchTerm, debouncedSearchTerm]);
 
-    // Enhanced filtering function
-    const filterLogs = useCallback(
-        (logs: LoginLog[]) => {
-            return logs.filter((log) => {
-                // Filter out the current logged-in admin user's entries
-                const isNotCurrentUser = !log.user || !auth.user || log.user.id !== auth.user.id;
-
-                // Text search
-                const matchesSearch =
-                    !debouncedSearchTerm ||
-                    log.user?.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                    log.user?.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                    log.ip_address.includes(debouncedSearchTerm) ||
-                    log.location?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                    log.browser?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                    log.platform?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
-
-                // Role filter
-                const matchesRole = selectedRole === 'all' || log.user?.primary_role === selectedRole;
-
-                // Status filter
-                const matchesStatus =
-                    selectedStatus === 'all' || (selectedStatus === 'success' && log.successful) || (selectedStatus === 'failed' && !log.successful);
-
-                // Device type filter
-                const matchesDeviceType = selectedDeviceType === 'all' || log.device_type === selectedDeviceType;
-
-                // Browser filter
-                const matchesBrowser = selectedBrowser === 'all' || log.browser === selectedBrowser;
-
-                // Date range filter
-                const matchesDateRange =
-                    !dateRange?.from ||
-                    !dateRange?.to ||
-                    (() => {
-                        const loginDate = new Date(log.login_at);
-                        return loginDate >= dateRange.from! && loginDate <= dateRange.to!;
-                    })();
-
-                return isNotCurrentUser && matchesSearch && matchesRole && matchesStatus && matchesDeviceType && matchesBrowser && matchesDateRange;
-            });
-        },
-        [debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, dateRange, auth.user],
-    );
-
-    // Sort and filter recent logins (latest first)
-    const filteredAndSortedRecentLogins = useMemo(() => {
-        return filterLogs(recentLogins).sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
-    }, [recentLogins, filterLogs]);
-
-    // Sort and filter suspicious activities (latest first)
-    const filteredAndSortedSuspiciousActivities = useMemo(() => {
-        return filterLogs(suspiciousActivities || []).sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
-    }, [suspiciousActivities, filterLogs]);
-
-    // Merge, sort, and paginate combined logs
+    // Merge, filter, sort, and paginate combined logs in a single optimized computation
     type CombinedLog = LoginLog & { category: 'recent' | 'suspicious' };
     const combinedFilteredAndSortedLogs: CombinedLog[] = useMemo(() => {
-        const recentTagged = filteredAndSortedRecentLogins.map((l) => ({ ...l, category: 'recent' as const }));
-        const suspiciousTagged = filteredAndSortedSuspiciousActivities.map((l) => ({ ...l, category: 'suspicious' as const }));
-        let merged: CombinedLog[] = [...recentTagged, ...suspiciousTagged];
-        if (selectedCategory !== 'all') {
-            merged = merged.filter((l) => l.category === selectedCategory);
-        }
-        return merged.sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
-    }, [filteredAndSortedRecentLogins, filteredAndSortedSuspiciousActivities, selectedCategory]);
+        // Tag and combine logs
+        const recentTagged: CombinedLog[] = recentLogins.map((l) => ({ ...l, category: 'recent' as const }));
+        const suspiciousTagged: CombinedLog[] = (suspiciousActivities || []).map((l) => ({ ...l, category: 'suspicious' as const }));
+        
+        // Apply category filter first (cheap operation)
+        let logs: CombinedLog[] = selectedCategory === 'all' 
+            ? [...recentTagged, ...suspiciousTagged]
+            : selectedCategory === 'recent' 
+                ? recentTagged 
+                : suspiciousTagged;
+        
+        // Apply filter
+        logs = logs.filter((log) => {
+            // Filter out the current logged-in admin user's entries
+            const isNotCurrentUser = !log.user || !auth.user || log.user.id !== auth.user.id;
+
+            // Text search
+            const matchesSearch =
+                !debouncedSearchTerm ||
+                log.user?.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                log.user?.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                log.ip_address.includes(debouncedSearchTerm) ||
+                log.location?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                log.browser?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                log.platform?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+
+            // Role filter
+            const matchesRole = selectedRole === 'all' || log.user?.primary_role === selectedRole;
+
+            // Status filter
+            const matchesStatus =
+                selectedStatus === 'all' || (selectedStatus === 'success' && log.successful) || (selectedStatus === 'failed' && !log.successful);
+
+            // Device type filter
+            const matchesDeviceType = selectedDeviceType === 'all' || log.device_type === selectedDeviceType;
+
+            // Browser filter
+            const matchesBrowser = selectedBrowser === 'all' || log.browser === selectedBrowser;
+
+            // Date range filter
+            const matchesDateRange =
+                !dateRange?.from ||
+                !dateRange?.to ||
+                (() => {
+                    const loginDate = new Date(log.login_at);
+                    return loginDate >= dateRange.from! && loginDate <= dateRange.to!;
+                })();
+
+            return isNotCurrentUser && matchesSearch && matchesRole && matchesStatus && matchesDeviceType && matchesBrowser && matchesDateRange;
+        });
+        
+        // Sort once
+        return logs.sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
+    }, [recentLogins, suspiciousActivities, selectedCategory, debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, dateRange, auth.user]);
 
     const paginatedCombinedLogs = useMemo(() => {
         const startIndex = (combinedPage - 1) * pageSize;
@@ -1147,29 +1138,30 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                             {/* Desktop Table View */}
                             <CardContent className="hidden p-0 md:block">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="w-12 pl-6">
-                                                <Checkbox
-                                                    checked={selectedLogs.size === paginatedCombinedLogs.length && paginatedCombinedLogs.length > 0}
-                                                    onCheckedChange={toggleSelectAll}
-                                                    aria-label="Select all"
-                                                />
-                                            </TableHead>
-                                            <TableHead>Category</TableHead>
-                                            <TableHead>User/Email</TableHead>
-                                            <TableHead>Role</TableHead>
-                                            <TableHead>2FA</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>IP Address</TableHead>
-                                            <TableHead>Device</TableHead>
-                                            <TableHead>Browser</TableHead>
-                                            <TableHead>Time</TableHead>
-                                            <TableHead>Session</TableHead>
-                                            <TableHead className="w-12 pr-6">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
+                                <div className="overflow-x-auto">
+                                    <Table className="min-w-[1000px]">
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-12 pl-6">
+                                                    <Checkbox
+                                                        checked={selectedLogs.size === paginatedCombinedLogs.length && paginatedCombinedLogs.length > 0}
+                                                        onCheckedChange={toggleSelectAll}
+                                                        aria-label="Select all"
+                                                    />
+                                                </TableHead>
+                                                <TableHead className="w-24">Category</TableHead>
+                                                <TableHead className="min-w-[180px]">User/Email</TableHead>
+                                                <TableHead className="w-28">Role</TableHead>
+                                                <TableHead className="w-20">2FA</TableHead>
+                                                <TableHead className="w-20">Status</TableHead>
+                                                <TableHead className="min-w-[140px]">IP Address</TableHead>
+                                                <TableHead className="w-24">Device</TableHead>
+                                                <TableHead className="w-24">Browser</TableHead>
+                                                <TableHead className="min-w-[150px]">Time</TableHead>
+                                                <TableHead className="w-20">Session</TableHead>
+                                                <TableHead className="w-12 pr-6">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
                                     <TableBody>
                                         {isLoading || isRefreshing ? (
                                             // Loading skeleton
@@ -1241,11 +1233,11 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         )}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="space-y-1">
-                                                            <div className="font-medium">
+                                                        <div className="max-w-[180px] space-y-1">
+                                                            <div className="truncate font-medium" title={log.user?.name || 'Unknown User'}>
                                                                 {highlightSearchTerm(log.user?.name || 'Unknown User', debouncedSearchTerm)}
                                                             </div>
-                                                            <div className="text-muted-foreground text-sm">
+                                                            <div className="text-muted-foreground truncate text-sm" title={log.user?.email || 'Unknown Email'}>
                                                                 {highlightSearchTerm(log.user?.email || 'Unknown Email', debouncedSearchTerm)}
                                                             </div>
                                                         </div>
@@ -1267,28 +1259,30 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                     </TableCell>
                                                     <TableCell>{getStatusBadge(log.successful)}</TableCell>
                                                     <TableCell>
-                                                        <div className="flex items-center space-x-2">
-                                                            <Globe className="text-muted-foreground h-4 w-4" />
-                                                            <span className="font-mono text-sm">
-                                                                {highlightSearchTerm(log.ip_address, debouncedSearchTerm)}
-                                                            </span>
-                                                        </div>
-                                                        {log.location && (
-                                                            <div className="mt-1 flex items-center space-x-1">
-                                                                <MapPin className="text-muted-foreground h-3 w-3" />
-                                                                <span className="text-muted-foreground text-xs">
-                                                                    {highlightSearchTerm(log.location, debouncedSearchTerm)}
+                                                        <div className="max-w-[140px]">
+                                                            <div className="flex items-center space-x-2">
+                                                                <Globe className="text-muted-foreground h-4 w-4 shrink-0" />
+                                                                <span className="truncate font-mono text-sm" title={log.ip_address}>
+                                                                    {highlightSearchTerm(log.ip_address, debouncedSearchTerm)}
                                                                 </span>
                                                             </div>
-                                                        )}
+                                                            {log.location && (
+                                                                <div className="mt-1 flex items-center space-x-1">
+                                                                    <MapPin className="text-muted-foreground h-3 w-3 shrink-0" />
+                                                                    <span className="text-muted-foreground truncate text-xs" title={log.location}>
+                                                                        {highlightSearchTerm(log.location, debouncedSearchTerm)}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex items-center space-x-2">
                                                             {getDeviceIcon(log.device_type)}
-                                                            <div className="space-y-1">
-                                                                <div className="text-sm">{log.device_type || 'Unknown'}</div>
+                                                            <div className="max-w-20 space-y-1">
+                                                                <div className="truncate text-sm">{log.device_type || 'Unknown'}</div>
                                                                 {log.platform && (
-                                                                    <div className="text-muted-foreground text-xs">
+                                                                    <div className="text-muted-foreground truncate text-xs" title={log.platform}>
                                                                         {highlightSearchTerm(log.platform, debouncedSearchTerm)}
                                                                     </div>
                                                                 )}
@@ -1296,14 +1290,14 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         </div>
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="text-sm">
+                                                        <div className="max-w-[100px] truncate text-sm" title={log.browser || 'Unknown'}>
                                                             {highlightSearchTerm(log.browser || 'Unknown', debouncedSearchTerm)}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="pr-6">
+                                                    <TableCell>
                                                         <div className="flex items-center space-x-2">
-                                                            <Clock className="text-muted-foreground h-4 w-4" />
-                                                            <span className="text-sm">{formatDateTime(log.login_at)}</span>
+                                                            <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
+                                                            <span className="text-nowrap text-sm">{formatDateTime(log.login_at)}</span>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell>
@@ -1379,6 +1373,7 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                         )}
                                     </TableBody>
                                 </Table>
+                                </div>
                             </CardContent>
                             {paginatedCombinedLogs.length > 0 && (
                                 <CardFooter className="justify-end">
