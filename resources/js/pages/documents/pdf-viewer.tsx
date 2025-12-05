@@ -81,9 +81,13 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`PDF Viewer - ${document.document_type_display}`} />
 
-            <div className="p-3 sm:p-4 md:p-6 lg:p-8">
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
+                {/* Document Header Card */}
                 <PdfViewerHeader document={document} pdfUrl={pdfUrl} viewStats={viewStats} pdfError={false} />
-                <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-5 lg:grid-cols-3 lg:gap-6">
+
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+                    {/* PDF Viewer Pane */}
                     <div className="order-2 lg:order-1 lg:col-span-2">
                         <PdfViewerPane
                             pdfUrl={pdfUrl}
@@ -94,7 +98,9 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
                             onErrorChange={() => {}}
                         />
                     </div>
-                    <div ref={statisticsPanelRef} className="order-1 space-y-3 sm:space-y-4 md:space-y-5 lg:order-2 lg:space-y-6">
+
+                    {/* Statistics Panel */}
+                    <div ref={statisticsPanelRef} className="order-1 space-y-4 sm:space-y-6 lg:order-2">
                         <StatisticsCards viewStats={viewStats} />
                         <DocumentInfoCard document={document} fileKey={fileKey} viewStats={viewStats} />
                         <ViewsByRoleCard viewStats={viewStats} />

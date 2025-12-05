@@ -83,7 +83,7 @@ export enum UserRole {
 }
 
 export enum DocumentType {
-    // Procurement Initiation - RA 9184 Compliant Document Types
+    // Procurement Initiation - RA 12009 (NGPA) Compliant Document Types
     PURCHASE_REQUEST = 'purchase_request',
     TECHNICAL_SPECIFICATIONS = 'technical_specifications',
     TERMS_OF_REFERENCE = 'terms_of_reference',

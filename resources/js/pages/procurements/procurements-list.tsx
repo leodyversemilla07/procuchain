@@ -331,41 +331,40 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Procurement List" />
-            <div className="w-full space-y-4 p-4 md:p-6 lg:p-8">
-                <Card>
-                    <CardContent className="p-4 sm:p-6">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-start gap-3 sm:gap-4">
-                                <div className="bg-primary/10 shrink-0 rounded-lg p-2">
-                                    <FileText className="text-primary h-5 w-5 sm:h-6 sm:w-6" />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h1 className="text-foreground text-xl font-bold sm:text-2xl">Procurement List</h1>
-                                    <div className="mt-1 space-y-1">
-                                        <p className="text-muted-foreground text-sm">View and manage procurement items across all stages</p>
-                                        <p className="text-muted-foreground hidden text-xs sm:block">
-                                            Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">R</kbd> Refresh
-                                            {' · '}
-                                            <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">/</kbd> Search
-                                            {auth?.permissions?.includes('create procurement') && (
-                                                <>
-                                                    {' · '}
-                                                    <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">N</kbd> New
-                                                </>
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
+                {/* Page Header */}
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
+                    <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+                        <div className="flex flex-col gap-2">
+                            <div className="text-primary flex items-center gap-2">
+                                <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <h1 className="text-xl font-bold sm:text-2xl">Procurement List</h1>
                             </div>
-                            <Can permission="create procurement">
-                                <Button asChild className="w-full shrink-0 sm:w-auto">
-                                    <Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2">
-                                        <Plus className="h-4 w-4" />
-                                        <span>New Procurement</span>
-                                    </Link>
-                                </Button>
-                            </Can>
+                            <div className="space-y-1">
+                                <p className="text-muted-foreground text-sm sm:text-base">
+                                    View and manage procurement items across all stages
+                                </p>
+                                <p className="text-muted-foreground hidden text-xs sm:block">
+                                    Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">R</kbd> Refresh
+                                    {' · '}
+                                    <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">/</kbd> Search
+                                    {auth?.permissions?.includes('create procurement') && (
+                                        <>
+                                            {' · '}
+                                            <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">N</kbd> New
+                                        </>
+                                    )}
+                                </p>
+                            </div>
                         </div>
+                        <Can permission="create procurement">
+                            <Button asChild className="w-full shrink-0 sm:w-auto">
+                                <Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2">
+                                    <Plus className="h-4 w-4" />
+                                    <span>New Procurement</span>
+                                </Link>
+                            </Button>
+                        </Can>
                     </CardContent>
                 </Card>
 
@@ -375,38 +374,36 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                     completed={getCompletedCount()}
                     documentTotal={getTotalDocuments()}
                     userRole={userRole}
-                    className="gap-3 sm:gap-4"
                 />
-                <div className="pb-4">
-                    <ProcurementsDataTable
-                        columns={columns}
-                        data={procurements}
-                        loading={loading}
-                        error={error || null}
-                        userRole={userRole}
-                        onRowSelectionChange={setSelectedRows}
-                        onOpenPreProcurementDialog={handleOpenPreProcurementDialog}
-                        onOpenPreBidDialog={handleOpenPreBidDialog}
-                        onOpenSupplementalBidBulletinDialog={handleOpenSupplementalBidBulletinDialog}
-                        serverTotal={pagination?.total}
-                        pageIndex={pageIndex}
-                        pageSize={pageSize}
-                        onNavigatePage={handlePageNavigate}
-                        onChangePageSize={handlePageSizeChange}
-                        searchValue={searchValue}
-                        onSearchChange={(value) => setSearchValue(value)}
-                        stageValue={stageFilter}
-                        onStageChange={(value) => {
-                            setStageFilter(value);
-                            handleFilterChange('stage', value);
-                        }}
-                        stageOptions={stageFilterOptions}
-                        onRefresh={handleRefresh}
-                        refreshDisabled={loading}
-                        isRefreshing={isPolling}
-                        lastRefreshed={lastRefreshed}
-                    />
-                </div>
+
+                <ProcurementsDataTable
+                    columns={columns}
+                    data={procurements}
+                    loading={loading}
+                    error={error || null}
+                    userRole={userRole}
+                    onRowSelectionChange={setSelectedRows}
+                    onOpenPreProcurementDialog={handleOpenPreProcurementDialog}
+                    onOpenPreBidDialog={handleOpenPreBidDialog}
+                    onOpenSupplementalBidBulletinDialog={handleOpenSupplementalBidBulletinDialog}
+                    serverTotal={pagination?.total}
+                    pageIndex={pageIndex}
+                    pageSize={pageSize}
+                    onNavigatePage={handlePageNavigate}
+                    onChangePageSize={handlePageSizeChange}
+                    searchValue={searchValue}
+                    onSearchChange={(value) => setSearchValue(value)}
+                    stageValue={stageFilter}
+                    onStageChange={(value) => {
+                        setStageFilter(value);
+                        handleFilterChange('stage', value);
+                    }}
+                    stageOptions={stageFilterOptions}
+                    onRefresh={handleRefresh}
+                    refreshDisabled={loading}
+                    isRefreshing={isPolling}
+                    lastRefreshed={lastRefreshed}
+                />
             </div>
 
             {preProcurementDialogOpen && selectedProcurement && (

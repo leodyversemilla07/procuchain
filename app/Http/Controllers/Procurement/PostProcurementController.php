@@ -73,6 +73,12 @@ class PostProcurementController extends BaseController
             default => abort(404, 'Stage component not found'),
         };
 
+        // Get full procurement data for NTP stage to include delivery details
+        $procurementData = null;
+        if ($stage === StageEnums::NOTICE_TO_PROCEED) {
+            $procurementData = app(\App\Repositories\ProcurementRepository::class)->findByProcurement($pr_number);
+        }
+
         return Inertia::render($component, [
             'procurement' => [
                 'pr_number' => $pr_number,
@@ -81,6 +87,11 @@ class PostProcurementController extends BaseController
                 'stage' => $stage->getDisplayName(),
                 'stage_value' => $stage->value,
                 'current_stage' => $procurement['stage'] ?? '',
+                // Delivery details for NTP stage (per NGPA IRR Section 71)
+                'delivery_location' => $procurementData?->deliveryLocation,
+                'delivery_date' => $procurementData?->deliveryDate?->format('Y-m-d'),
+                'delivery_date_formatted' => $procurementData?->getFormattedDeliveryDate(),
+                'delivery_term_days' => $procurementData?->deliveryTermDays,
             ],
             'documentGuide' => $this->validationService->getStageDocumentGuide($stage),
             'uploadedDocuments' => fn () => $this->getUploadedDocumentTypes($pr_number, $stage),
@@ -737,5 +748,99 @@ class PostProcurementController extends BaseController
             StageEnums::COMPLETION => StageEnums::COMPLETED,
             default => null,
         };
+    }
+
+    /**
+     * Update delivery details for a procurement at the Notice to Proceed stage.
+     *
+     * Per NGPA IRR Section 71, delivery details should be specified at the
+     * Contract Implementation stage (Notice to Proceed).
+     */
+    public function updateDeliveryDetails(
+        \App\Http\Requests\Procurement\UpdateDeliveryDetailsRequest $request,
+        string $pr_number
+    ): RedirectResponse {
+        try {
+            $user = auth()->user();
+            $userAddress = $user->blockchain_address ?? $user->email;
+
+            // Get the current procurement data
+            $procurementRepository = app(\App\Repositories\ProcurementRepository::class);
+            $procurement = $procurementRepository->findByProcurement($pr_number);
+
+            if (! $procurement) {
+                return back()->withErrors(['message' => 'Procurement not found']);
+            }
+
+            // Create updated procurement data with delivery details
+            $updatedProcurement = new \App\DataTransferObjects\ProcurementData(
+                prNumber: $procurement->prNumber,
+                appReference: $procurement->appReference,
+                title: $procurement->title,
+                description: $procurement->description,
+                abcAmount: $procurement->abcAmount,
+                fundingSource: $procurement->fundingSource,
+                category: $procurement->category,
+                procurementMode: $procurement->procurementMode,
+                office: $procurement->office,
+                endUser: $procurement->endUser,
+                deliveryLocation: $request->input('delivery_location'),
+                deliveryDate: \Carbon\Carbon::parse($request->input('delivery_date')),
+                deliveryTermDays: (int) $request->input('delivery_term_days'),
+                preparedBy: $procurement->preparedBy,
+                bacResolutionNumber: $procurement->bacResolutionNumber,
+                bacResolutionDate: $procurement->bacResolutionDate,
+                philgepsReference: $procurement->philgepsReference,
+                philgepsPostingDate: $procurement->philgepsPostingDate,
+                approvedBy: $procurement->approvedBy,
+                approvalDate: $procurement->approvalDate,
+                status: $procurement->status,
+                userId: $procurement->userId,
+                createdAt: $procurement->createdAt,
+            );
+
+            // Update the procurement on blockchain
+            $procurementRepository->update($updatedProcurement);
+
+            // Publish event for delivery details update
+            $this->eventPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $procurement->title,
+                stage: StageEnums::NOTICE_TO_PROCEED->value,
+                eventType: 'delivery_details_updated',
+                category: 'procurement',
+                severity: 'info',
+                details: sprintf(
+                    'Delivery details updated: Location: %s, Date: %s, Term: %d days',
+                    $request->input('delivery_location'),
+                    $request->input('delivery_date'),
+                    $request->input('delivery_term_days')
+                ),
+                documentCount: 0,
+                userAddress: $userAddress,
+                metadata: [
+                    'delivery_location' => $request->input('delivery_location'),
+                    'delivery_date' => $request->input('delivery_date'),
+                    'delivery_term_days' => $request->input('delivery_term_days'),
+                ]
+            );
+
+            \Log::info('Delivery details updated for procurement', [
+                'pr_number' => $pr_number,
+                'delivery_location' => $request->input('delivery_location'),
+                'delivery_date' => $request->input('delivery_date'),
+                'delivery_term_days' => $request->input('delivery_term_days'),
+            ]);
+
+            return back()->with('success', 'Delivery details updated successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Failed to update delivery details', [
+                'pr_number' => $pr_number,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->withErrors(['message' => 'Failed to update delivery details. Please try again.']);
+        }
     }
 }

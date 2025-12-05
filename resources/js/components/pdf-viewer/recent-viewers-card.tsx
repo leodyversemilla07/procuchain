@@ -18,7 +18,7 @@ export default function RecentViewersCard({ recentViews }: Props) {
     const [showAllViewersDialog, setShowAllViewersDialog] = useState(false);
 
     return (
-        <Card>
+        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div>

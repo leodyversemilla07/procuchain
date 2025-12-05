@@ -168,7 +168,7 @@ export default function HOPEDashboard() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Head of Procuring Entity Dashboard" />
 
-            <div className="flex h-full flex-1 flex-col space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6 lg:p-8">
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 <HeroCard icon={FileText} title="HOPE Dashboard" description="High-level overview of procurement status and activities" />
 
                 <StatsGrid items={statsItems} gridClassName={gridColsClass} />

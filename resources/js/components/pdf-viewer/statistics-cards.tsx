@@ -9,7 +9,7 @@ interface Props {
 export default function StatisticsCards({ viewStats }: Props) {
     return (
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <Card>
+            <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                 <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between">
                         <div>
@@ -20,7 +20,7 @@ export default function StatisticsCards({ viewStats }: Props) {
                     </div>
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                 <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between">
                         <div>
@@ -31,7 +31,7 @@ export default function StatisticsCards({ viewStats }: Props) {
                     </div>
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                 <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between">
                         <div>
@@ -42,7 +42,7 @@ export default function StatisticsCards({ viewStats }: Props) {
                     </div>
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                 <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center justify-between">
                         <div>

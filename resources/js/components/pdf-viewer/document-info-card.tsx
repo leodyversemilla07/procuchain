@@ -33,7 +33,7 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
     const canCorrectDocuments =
         auth?.roles?.some((role: string) => allowedRoles.includes(role)) || (auth?.user?.role && allowedRoles.includes(auth.user.role));
     return (
-        <Card>
+        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                     <FileText className="h-4 w-4 sm:h-5 sm:w-5" />

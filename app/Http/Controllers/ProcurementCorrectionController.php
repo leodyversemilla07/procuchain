@@ -289,10 +289,6 @@ class ProcurementCorrectionController extends Controller
                     'procurement_mode_display' => $procurement->procurementMode->getDisplayName(),
                     'office' => $procurement->office,
                     'end_user' => $procurement->endUser,
-                    'purpose' => $procurement->purpose,
-                    'delivery_location' => $procurement->deliveryLocation,
-                    'delivery_date' => $procurement->getFormattedDeliveryDate(),
-                    'delivery_term_days' => $procurement->deliveryTermDays,
                     'bac_resolution_number' => $procurement->bacResolutionNumber,
                     'bac_resolution_date' => $procurement->getFormattedBacResolutionDate(),
                     'philgeps_reference' => $procurement->philgepsReference,
@@ -354,20 +350,6 @@ class ProcurementCorrectionController extends Controller
         }
         if (isset($validated['end_user'])) {
             $correctedData['end_user'] = $validated['end_user'];
-        }
-        if (isset($validated['purpose'])) {
-            $correctedData['purpose'] = $validated['purpose'];
-        }
-
-        // Delivery information
-        if (isset($validated['delivery_location'])) {
-            $correctedData['delivery_location'] = $validated['delivery_location'];
-        }
-        if (isset($validated['delivery_date'])) {
-            $correctedData['delivery_date'] = $validated['delivery_date'];
-        }
-        if (isset($validated['delivery_term_days'])) {
-            $correctedData['delivery_term_days'] = (int) $validated['delivery_term_days'];
         }
 
         // BAC Resolution

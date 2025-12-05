@@ -20,9 +20,9 @@ class InitiateProcurementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Basic Information - REQUIRED per RA 9184
+            // Basic Information - REQUIRED per RA 12009 (NGPA)
             'pr_number' => ['required', 'string', 'regex:/^PR-\d{4}-\d{4}-\d{4}$/', 'max:100'],
-            'ppmp_reference' => ['required', 'string', 'max:100'],
+            'app_reference' => ['required', 'string', 'max:100'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
 
@@ -37,14 +37,11 @@ class InitiateProcurementRequest extends FormRequest
             // Municipal Office Information
             'office' => ['required', 'string', 'max:255'],
             'end_user' => ['nullable', 'string', 'max:255'],
+            'other_end_user' => ['nullable', 'required_if:end_user,Other', 'string', 'max:255'],
 
-            // Purpose
-            'purpose' => ['required', 'string', 'max:2000'],
-
-            // Delivery Details
-            'delivery_location' => ['required', 'string', 'max:500'],
-            'delivery_date' => ['required', 'date', 'after:today'],
-            'delivery_term_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            // Other fields for custom entries
+            'other_description' => ['nullable', 'required_if:description,Other', 'string', 'max:5000'],
+            'other_funding_source' => ['nullable', 'required_if:funding_source,Other Sources', 'string', 'max:255'],
 
             // Prepared By
             'prepared_by' => ['required', 'string', 'max:255'],
@@ -65,7 +62,11 @@ class InitiateProcurementRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $this->validateMandatoryDocuments($validator);
+            // Only validate documents if files are being uploaded with this request
+            // Documents can be uploaded progressively after procurement creation
+            if ($this->hasFile('files') || ! empty($this->input('files'))) {
+                $this->validateMandatoryDocuments($validator);
+            }
             $this->validateAbcAgainstMode($validator);
         });
     }
@@ -104,13 +105,13 @@ class InitiateProcurementRequest extends FormRequest
         if (! empty($missing)) {
             $validator->errors()->add(
                 'document_types',
-                'Missing required documents per RA 9184: '.implode(', ', $missing).'. Please upload all mandatory documents before proceeding.'
+                'Missing required documents per RA 12009 (NGPA): '.implode(', ', $missing).'. Please upload all mandatory documents before proceeding.'
             );
         }
     }
 
     /**
-     * Validate ABC amount against procurement mode threshold per RA 9184 (Issue #9 enhanced)
+     * Validate ABC amount against procurement mode threshold per RA 12009 (NGPA)
      */
     protected function validateAbcAgainstMode($validator): void
     {
@@ -129,7 +130,7 @@ class InitiateProcurementRequest extends FormRequest
             $validator->errors()->add(
                 'procurement_mode',
                 sprintf(
-                    'The selected procurement mode "%s" has a threshold of %s. Your ABC amount of ₱%s exceeds this threshold. Suggested mode: "%s". Please refer to RA 9184 Section 18 for proper procurement mode selection.',
+                    'The selected procurement mode "%s" has a threshold of %s. Your ABC amount of ₱%s exceeds this threshold. Suggested mode: "%s". Please refer to RA 12009 Section 26 for proper procurement mode selection.',
                     $mode->getDisplayName(),
                     $mode->getAmountRange(),
                     number_format($abc, 2),
@@ -142,21 +143,21 @@ class InitiateProcurementRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'pr_number.required' => 'Purchase Request (PR) number is required per RA 9184 IRR-A Section 7.',
+            'pr_number.required' => 'Purchase Request (PR) number is required per RA 12009 (NGPA) IRR Section 7.',
             'pr_number.regex' => 'PR number must follow format: PR-YYYY-####-#### (e.g., PR-2025-0001-0001).',
-            'ppmp_reference.required' => 'PPMP reference is required to verify procurement is in approved annual plan per RA 9184.',
-            'abc_amount.required' => 'Approved Budget for Contract (ABC) is required per RA 9184.',
+            'app_reference.required' => 'APP reference is required to verify procurement is in approved annual plan per RA 12009.',
+            'abc_amount.required' => 'Approved Budget for Contract (ABC) is required per RA 12009.',
             'category.required' => 'Procurement category must be specified (Goods/Infrastructure/Consulting).',
-            'procurement_mode.required' => 'Procurement mode must comply with RA 9184 requirements.',
+            'procurement_mode.required' => 'Procurement mode must comply with RA 12009 requirements.',
             'office.required' => 'Municipal/City Office is required.',
-            'purpose.required' => 'Purpose of procurement must be clearly stated for transparency.',
-            'delivery_location.required' => 'Delivery location must be specified.',
-            'delivery_date.required' => 'Expected delivery date is required.',
             'prepared_by.required' => 'Prepared by field is required to identify the procurement officer.',
-            'files.*.required' => 'All required documents must be uploaded per RA 9184 IRR-A.',
+            'other_description.required_if' => 'Please specify the description when selecting "Other".',
+            'other_funding_source.required_if' => 'Please specify the funding source when selecting "Other Sources".',
+            'other_end_user.required_if' => 'Please specify the end user when selecting "Other".',
+            'files.*.required' => 'All required documents must be uploaded per RA 12009 (NGPA) IRR.',
             'files.*.mimes' => 'All documents must be in PDF format for blockchain storage.',
             'document_types.*.required' => 'Document type must be specified for each uploaded file.',
-            'document_types.*.enum' => 'Invalid document type. Please select from the provided list of RA 9184 compliant document types.',
+            'document_types.*.enum' => 'Invalid document type. Please select from the provided list of RA 12009 compliant document types.',
         ];
     }
 }

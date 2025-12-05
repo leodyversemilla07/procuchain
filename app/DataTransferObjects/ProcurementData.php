@@ -27,7 +27,7 @@ final class ProcurementData
         // Created at: StageEnums::PROCUREMENT_INITIATION
         // Required fields per RA 9184 IRR-A Section 7
         public readonly string $prNumber,
-        public readonly ?string $ppmpReference,
+        public readonly ?string $appReference,
         public readonly string $title,
         public readonly string $description,
         public readonly float $abcAmount,
@@ -36,9 +36,10 @@ final class ProcurementData
         public readonly ProcurementModeEnums $procurementMode,
         public readonly string $office,
         public readonly ?string $endUser,
-        public readonly string $purpose,
-        public readonly string $deliveryLocation,
-        public readonly Carbon $deliveryDate,
+        // Note: Delivery details are populated at Contract Implementation stage per NGPA IRR Section 71
+        // They are nullable at Procurement Initiation but required before contract signing
+        public readonly ?string $deliveryLocation,
+        public readonly ?Carbon $deliveryDate,
         public readonly ?int $deliveryTermDays,
         public readonly ?string $preparedBy,
 
@@ -85,7 +86,7 @@ final class ProcurementData
     {
         return [
             'pr_number' => $this->prNumber,
-            'ppmp_reference' => $this->ppmpReference,
+            'app_reference' => $this->appReference,
             'title' => $this->title,
             'description' => $this->description,
             'abc_amount' => (string) $this->abcAmount,
@@ -94,9 +95,8 @@ final class ProcurementData
             'procurement_mode' => $this->procurementMode->value,
             'office' => $this->office,
             'end_user' => $this->endUser,
-            'purpose' => $this->purpose,
             'delivery_location' => $this->deliveryLocation,
-            'delivery_date' => $this->deliveryDate->toIso8601String(),
+            'delivery_date' => $this->deliveryDate?->toIso8601String(),
             'delivery_term_days' => $this->deliveryTermDays,
             'prepared_by' => $this->preparedBy,
             'bac_resolution_number' => $this->bacResolutionNumber,
@@ -118,7 +118,7 @@ final class ProcurementData
 
         return new self(
             prNumber: $prNumber,
-            ppmpReference: $data['ppmp_reference'] ?? null,
+            appReference: $data['app_reference'] ?? null,
             title: $data['title'],
             description: $data['description'],
             abcAmount: (float) $data['abc_amount'],
@@ -127,9 +127,8 @@ final class ProcurementData
             procurementMode: ProcurementModeEnums::from($data['procurement_mode']),
             office: $data['office'] ?? '',
             endUser: $data['end_user'] ?? null,
-            purpose: $data['purpose'],
-            deliveryLocation: $data['delivery_location'],
-            deliveryDate: Carbon::parse($data['delivery_date']),
+            deliveryLocation: $data['delivery_location'] ?? null,
+            deliveryDate: isset($data['delivery_date']) ? Carbon::parse($data['delivery_date']) : null,
             deliveryTermDays: $data['delivery_term_days'] ?? null,
             preparedBy: $data['prepared_by'] ?? null,
             bacResolutionNumber: $data['bac_resolution_number'] ?? null,
@@ -267,9 +266,9 @@ final class ProcurementData
     /**
      * Format delivery date to readable format
      */
-    public function getFormattedDeliveryDate(): string
+    public function getFormattedDeliveryDate(): ?string
     {
-        return $this->deliveryDate->format('M j, Y');
+        return $this->deliveryDate?->format('M j, Y');
     }
 
     /**

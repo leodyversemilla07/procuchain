@@ -143,7 +143,7 @@ final class ProcurementCorrectionPublisher
         }
 
         // Date corrections
-        $dateFields = ['delivery_date', 'bac_resolution_date', 'philgeps_posting_date', 'approval_date'];
+        $dateFields = ['bac_resolution_date', 'philgeps_posting_date', 'approval_date'];
         foreach ($dateFields as $field) {
             if (isset($correctedData[$field])) {
                 return 'dates';

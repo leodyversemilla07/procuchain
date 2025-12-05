@@ -52,17 +52,14 @@ describe('InitiateProcurementRequest', function () {
         test('it passes with valid data', function () {
             $data = [
                 'pr_number' => 'PR-2024-0001-0001',
-                'ppmp_reference' => 'PPMP-2024-001',
+                'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
                 'category' => 'infrastructure_projects',
-                'procurement_mode' => 'public_bidding',
+                'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
-                'purpose' => 'To construct a new municipal building',
-                'delivery_location' => 'Municipal Hall',
-                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
                 'prepared_by' => 'John Doe',
                 'files' => [
                     UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
@@ -82,17 +79,14 @@ describe('InitiateProcurementRequest', function () {
         test('it passes without optional fields', function () {
             $data = [
                 'pr_number' => 'PR-2024-0001-0001',
-                'ppmp_reference' => 'PPMP-2024-001',
+                'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
                 'category' => 'infrastructure_projects',
-                'procurement_mode' => 'public_bidding',
+                'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
-                'purpose' => 'To construct a new municipal building',
-                'delivery_location' => 'Municipal Hall',
-                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
                 'prepared_by' => 'John Doe',
             ];
 
@@ -106,17 +100,14 @@ describe('InitiateProcurementRequest', function () {
     describe('pr_number validation', function () {
         test('it requires pr_number', function () {
             $data = [
-                'ppmp_reference' => 'PPMP-2024-001',
+                'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
                 'category' => 'infrastructure_projects',
-                'procurement_mode' => 'public_bidding',
+                'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
-                'purpose' => 'To construct a new municipal building',
-                'delivery_location' => 'Municipal Hall',
-                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
                 'prepared_by' => 'John Doe',
             ];
 
@@ -130,17 +121,14 @@ describe('InitiateProcurementRequest', function () {
         test('it validates pr_number format', function () {
             $data = [
                 'pr_number' => 'INVALID-123',
-                'ppmp_reference' => 'PPMP-2024-001',
+                'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
                 'category' => 'infrastructure_projects',
-                'procurement_mode' => 'public_bidding',
+                'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
-                'purpose' => 'To construct a new municipal building',
-                'delivery_location' => 'Municipal Hall',
-                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
                 'prepared_by' => 'John Doe',
             ];
 
@@ -154,17 +142,14 @@ describe('InitiateProcurementRequest', function () {
         test('it accepts valid pr_number format', function () {
             $data = [
                 'pr_number' => 'PR-2024-0001-0001',
-                'ppmp_reference' => 'PPMP-2024-001',
+                'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
                 'category' => 'infrastructure_projects',
-                'procurement_mode' => 'public_bidding',
+                'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
-                'purpose' => 'To construct a new municipal building',
-                'delivery_location' => 'Municipal Hall',
-                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
                 'prepared_by' => 'John Doe',
             ];
 
@@ -179,16 +164,13 @@ describe('InitiateProcurementRequest', function () {
         test('it requires title', function () {
             $data = [
                 'pr_number' => 'PR-2024-0001-0001',
-                'ppmp_reference' => 'PPMP-2024-001',
+                'app_reference' => 'APP-2024-001',
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
                 'category' => 'infrastructure_projects',
-                'procurement_mode' => 'public_bidding',
+                'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
-                'purpose' => 'To construct a new municipal building',
-                'delivery_location' => 'Municipal Hall',
-                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
                 'prepared_by' => 'John Doe',
             ];
 
@@ -202,17 +184,14 @@ describe('InitiateProcurementRequest', function () {
         test('it rejects title exceeding 255 characters', function () {
             $data = [
                 'pr_number' => 'PR-2024-0001-0001',
-                'ppmp_reference' => 'PPMP-2024-001',
+                'app_reference' => 'APP-2024-001',
                 'title' => str_repeat('A', 256),
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
                 'category' => 'infrastructure_projects',
-                'procurement_mode' => 'public_bidding',
+                'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
-                'purpose' => 'To construct a new municipal building',
-                'delivery_location' => 'Municipal Hall',
-                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
                 'prepared_by' => 'John Doe',
             ];
 
@@ -228,17 +207,14 @@ describe('InitiateProcurementRequest', function () {
         test('it accepts valid PDF files', function () {
             $data = [
                 'pr_number' => 'PR-2024-0001-0001',
-                'ppmp_reference' => 'PPMP-2024-001',
+                'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
                 'category' => 'infrastructure_projects',
-                'procurement_mode' => 'public_bidding',
+                'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
-                'purpose' => 'To construct a new municipal building',
-                'delivery_location' => 'Municipal Hall',
-                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
                 'prepared_by' => 'John Doe',
                 'files' => [
                     UploadedFile::fake()->create('document1.pdf', 1024, 'application/pdf'),
@@ -263,17 +239,14 @@ describe('InitiateProcurementRequest', function () {
         test('it rejects non-PDF files', function () {
             $data = [
                 'pr_number' => 'PR-2024-0001-0001',
-                'ppmp_reference' => 'PPMP-2024-001',
+                'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
                 'category' => 'infrastructure_projects',
-                'procurement_mode' => 'public_bidding',
+                'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
-                'purpose' => 'To construct a new municipal building',
-                'delivery_location' => 'Municipal Hall',
-                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
                 'prepared_by' => 'John Doe',
                 'files' => [
                     UploadedFile::fake()->create('document1.docx', 1024),
@@ -293,17 +266,14 @@ describe('InitiateProcurementRequest', function () {
         test('it rejects files exceeding 50MB', function () {
             $data = [
                 'pr_number' => 'PR-2024-0001-0001',
-                'ppmp_reference' => 'PPMP-2024-001',
+                'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
                 'funding_source' => 'Local Government Fund',
                 'category' => 'infrastructure_projects',
-                'procurement_mode' => 'public_bidding',
+                'procurement_mode' => 'competitive_bidding',
                 'office' => 'Engineering Office',
-                'purpose' => 'To construct a new municipal building',
-                'delivery_location' => 'Municipal Hall',
-                'delivery_date' => now()->addDays(30)->format('Y-m-d'),
                 'prepared_by' => 'John Doe',
                 'files' => [
                     UploadedFile::fake()->create('document1.pdf', 51201, 'application/pdf'),

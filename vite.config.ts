@@ -16,6 +16,9 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
+    optimizeDeps: {
+        include: ['react-pdf'],
+    },
     esbuild: {
         jsx: 'automatic',
     },

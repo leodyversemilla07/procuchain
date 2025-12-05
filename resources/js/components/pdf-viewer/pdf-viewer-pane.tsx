@@ -1,6 +1,26 @@
 import { Button } from '@/components/ui/button';
-import { Download, Eye, FileText } from 'lucide-react';
-import { useEffect } from 'react';
+import {
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
+    Download,
+    Eye,
+    FileText,
+    Loader2,
+    Minus,
+    Plus,
+    RotateCw,
+} from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+
+// Import styles for annotations and text layer
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+// Configure worker using CDN (more reliable for both dev and production)
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface Props {
     pdfUrl: string;
@@ -11,19 +31,81 @@ interface Props {
     onErrorChange: (error: boolean) => void;
 }
 
-export default function PdfViewerPane({ pdfUrl, pdfHeight, pdfLoading, pdfError, onLoadingChange, onErrorChange }: Props) {
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (pdfLoading) {
-                onLoadingChange(false);
-            }
-        }, 15000);
+export default function PdfViewerPane({ pdfUrl, pdfHeight, pdfError, onLoadingChange, onErrorChange }: Props) {
+    const [numPages, setNumPages] = useState<number>(0);
+    const [pageNumber, setPageNumber] = useState<number>(1);
+    const [scale, setScale] = useState<number>(1.0);
+    const [rotation, setRotation] = useState<number>(0);
+    const [viewerError, setViewerError] = useState<boolean>(false);
 
-        return () => clearTimeout(timer);
-    }, [pdfLoading, onLoadingChange]);
+    const onDocumentLoadSuccess = useCallback(
+        ({ numPages }: { numPages: number }) => {
+            setNumPages(numPages);
+            onLoadingChange(false);
+            onErrorChange(false);
+            setViewerError(false);
+        },
+        [onLoadingChange, onErrorChange],
+    );
+
+    const onDocumentLoadError = useCallback(() => {
+        onLoadingChange(false);
+        onErrorChange(true);
+        setViewerError(true);
+    }, [onLoadingChange, onErrorChange]);
+
+    const goToFirstPage = () => setPageNumber(1);
+    const goToLastPage = () => setPageNumber(numPages);
+    const goToPrevPage = () => setPageNumber((prev) => Math.max(prev - 1, 1));
+    const goToNextPage = () => setPageNumber((prev) => Math.min(prev + 1, numPages));
+
+    const zoomIn = () => setScale((prev) => Math.min(prev + 0.25, 3));
+    const zoomOut = () => setScale((prev) => Math.max(prev - 0.25, 0.5));
+    const rotate = () => setRotation((prev) => (prev + 90) % 360);
+
+    const showError = pdfError || viewerError;
 
     return (
-        <div className="bg-background relative rounded-lg border">
+        <div className="border-sidebar-border/70 dark:border-sidebar-border bg-background relative overflow-hidden rounded-lg border shadow-md">
+            {/* Toolbar */}
+            {!showError && numPages > 0 && (
+                <div className="bg-muted/50 flex flex-wrap items-center justify-between gap-2 border-b px-2 py-2 sm:px-4">
+                    {/* Page Navigation */}
+                    <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToFirstPage} disabled={pageNumber <= 1}>
+                            <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToPrevPage} disabled={pageNumber <= 1}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-muted-foreground px-2 text-sm">
+                            <span className="font-medium text-foreground">{pageNumber}</span> / {numPages}
+                        </span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToNextPage} disabled={pageNumber >= numPages}>
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToLastPage} disabled={pageNumber >= numPages}>
+                            <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    {/* Zoom & Rotate Controls */}
+                    <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={zoomOut} disabled={scale <= 0.5}>
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="text-muted-foreground w-14 text-center text-sm">{Math.round(scale * 100)}%</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={zoomIn} disabled={scale >= 3}>
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                        <div className="bg-border mx-2 hidden h-6 w-px sm:block" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={rotate}>
+                            <RotateCw className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* PDF Content */}
             <div
                 className="min-h-[400px] overflow-auto sm:min-h-[500px] md:min-h-[650px] lg:min-h-[750px] xl:min-h-[900px]"
@@ -32,7 +114,7 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, pdfLoading, pdfError,
                     maxHeight: 'calc(100vh - 250px)',
                 }}
             >
-                {pdfError ? (
+                {showError ? (
                     <div className="bg-muted flex h-full flex-col items-center justify-center">
                         <div className="max-w-md p-6 text-center sm:p-8">
                             <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12 sm:h-16 sm:w-16" />
@@ -57,28 +139,26 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, pdfLoading, pdfError,
                         </div>
                     </div>
                 ) : (
-                    // Use object tag approach for reliable PDF viewing
-                    <>
-                        <object
-                            data={pdfUrl}
-                            type="application/pdf"
-                            className="bg-background h-full w-full rounded-lg"
-                            style={{ minHeight: '500px' }}
-                            onLoad={() => {
-                                onLoadingChange(false);
-                                onErrorChange(false);
-                            }}
-                            onError={() => {
-                                onErrorChange(true);
-                                onLoadingChange(false);
-                            }}
-                        >
-                            <div className="bg-muted flex h-full min-h-[400px] w-full flex-col items-center justify-center rounded-lg sm:min-h-[500px] md:min-h-[650px] lg:min-h-[750px] xl:min-h-[900px]">
+                    <Document
+                        file={pdfUrl}
+                        onLoadSuccess={onDocumentLoadSuccess}
+                        onLoadError={onDocumentLoadError}
+                        loading={
+                            <div className="flex h-full min-h-[400px] items-center justify-center">
+                                <div className="text-center">
+                                    <Loader2 className="text-primary mx-auto mb-4 h-10 w-10 animate-spin sm:h-12 sm:w-12" />
+                                    <p className="text-primary text-base font-medium sm:text-lg">Loading PDF...</p>
+                                    <p className="text-muted-foreground mt-2 text-xs sm:text-sm">Please wait while the document loads</p>
+                                </div>
+                            </div>
+                        }
+                        error={
+                            <div className="bg-muted flex h-full min-h-[400px] flex-col items-center justify-center">
                                 <div className="max-w-md p-6 text-center sm:p-8">
                                     <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12 sm:h-16 sm:w-16" />
-                                    <h3 className="text-primary mb-2 text-base font-semibold sm:text-lg">PDF Plugin Not Available</h3>
+                                    <h3 className="text-primary mb-2 text-base font-semibold sm:text-lg">Failed to Load PDF</h3>
                                     <p className="text-muted-foreground mb-4 text-xs sm:mb-6 sm:text-sm">
-                                        Your browser doesn't support embedded PDFs. Use the buttons below to view the document.
+                                        There was an error loading the PDF. Please try again or use the options below.
                                     </p>
                                     <div className="space-y-2 sm:space-y-3">
                                         <Button asChild className="w-full text-xs sm:text-sm">
@@ -96,18 +176,21 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, pdfLoading, pdfError,
                                     </div>
                                 </div>
                             </div>
-                        </object>
-
-                        {pdfLoading && (
-                            <div className="bg-background/95 absolute inset-0 z-10 flex items-center justify-center rounded-lg backdrop-blur-sm">
-                                <div className="p-6 text-center sm:p-8">
-                                    <div className="border-primary mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-b-3 sm:h-12 sm:w-12"></div>
-                                    <p className="text-primary text-base font-medium sm:text-lg">Loading PDF...</p>
-                                    <p className="text-muted-foreground mt-2 text-xs sm:text-sm">Please wait while the document loads</p>
+                        }
+                        className="flex justify-center py-4"
+                    >
+                        <Page
+                            pageNumber={pageNumber}
+                            scale={scale}
+                            rotate={rotation}
+                            loading={
+                                <div className="flex items-center justify-center p-8">
+                                    <Loader2 className="text-primary h-8 w-8 animate-spin" />
                                 </div>
-                            </div>
-                        )}
-                    </>
+                            }
+                            className="shadow-lg"
+                        />
+                    </Document>
                 )}
             </div>
         </div>

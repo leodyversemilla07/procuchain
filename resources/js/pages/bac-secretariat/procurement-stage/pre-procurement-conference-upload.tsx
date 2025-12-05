@@ -240,21 +240,24 @@ export default function PreProcurementConferenceUpload({ procurement, documentGu
             <Head title="Upload Pre-Procurement Conference" />
 
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
-                <div className="flex flex-col gap-2">
-                    <div className="text-primary flex items-center gap-2">
-                        <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-                        <h1 className="text-xl font-bold sm:text-2xl">Pre-Procurement Conference</h1>
-                    </div>
-                    <p className="text-muted-foreground text-sm sm:text-base">
-                        Upload the Pre-Procurement Conference for procurement
-                        <span className="text-foreground font-medium"> #{procurement?.pr_number || 'Unknown'}</span>
-                        {procurement?.title && (
-                            <>
-                                :<span className="text-foreground font-medium italic"> {procurement.title}</span>
-                            </>
-                        )}
-                    </p>
-                </div>
+                {/* Page Header */}
+                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
+                    <CardContent className="flex flex-col gap-2 p-4 sm:p-6">
+                        <div className="text-primary flex items-center gap-2">
+                            <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                            <h1 className="text-xl font-bold sm:text-2xl">Pre-Procurement Conference</h1>
+                        </div>
+                        <p className="text-muted-foreground text-sm sm:text-base">
+                            Upload the Pre-Procurement Conference for procurement
+                            <span className="text-foreground font-medium"> #{procurement?.pr_number || 'Unknown'}</span>
+                            {procurement?.title && (
+                                <>
+                                    :<span className="text-foreground font-medium italic"> {procurement.title}</span>
+                                </>
+                            )}
+                        </p>
+                    </CardContent>
+                </Card>
 
                 <div className="space-y-4 sm:space-y-6">
                     <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
