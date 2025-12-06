@@ -170,6 +170,39 @@ enum ProcurementModeEnums: string
     }
 
     /**
+     * Check if this is an alternative (non-competitive) procurement mode
+     *
+     * Per NGPA IRR Sections 31-37, alternative modes have simplified requirements:
+     * - Direct Contracting (Sec. 31)
+     * - Direct Acquisition (Sec. 32) - ≤₱200,000
+     * - Repeat Order (Sec. 33)
+     * - Small Value Procurement (Sec. 34) - ₱200,000 for 4th class municipality (Gloria)
+     * - Negotiated Procurement (Sec. 35)
+     * - Direct Sales (Sec. 36)
+     * - Direct Procurement for STI (Sec. 37)
+     */
+    public function isAlternativeMode(): bool
+    {
+        return match ($this) {
+            // Competitive modes - Full bidding process
+            self::COMPETITIVE_BIDDING,
+            self::LIMITED_SOURCE_BIDDING,
+            self::COMPETITIVE_DIALOGUE,
+            self::UNSOLICITED_OFFER_WITH_BID_MATCHING => false,
+            // Alternative modes - Simplified process
+            default => true,
+        };
+    }
+
+    /**
+     * Check if this is a competitive procurement mode
+     */
+    public function isCompetitiveMode(): bool
+    {
+        return ! $this->isAlternativeMode();
+    }
+
+    /**
      * Check if the given ABC amount is valid for this procurement mode
      */
     public function isValidAmount(float $amount): bool
@@ -245,26 +278,22 @@ enum ProcurementModeEnums: string
     }
 
     /**
-     * Get Negotiated Procurement sub-types per Section 35
+     * Get Negotiated Procurement sub-types applicable for Municipality of Gloria
+     * Per Section 35 of NGPA IRR
      *
      * @return array<string, string>
      */
     public static function negotiatedProcurementSubTypes(): array
     {
         return [
-            '35.1' => 'Two Failed Biddings',
-            '35.2' => 'Emergency Cases',
-            '35.3' => 'Take-over of Contracts',
-            '35.4' => 'Adjacent or Contiguous',
-            '35.5' => 'Agency-to-Agency',
-            '35.6' => 'Scientific, Scholarly or Artistic Work',
-            '35.7' => 'Highly Technical Consultants',
-            '35.8' => 'Defense Cooperation Agreements',
-            '35.9' => 'Lease of Real Property and Venue',
-            '35.10' => 'NGO Participation',
-            '35.11' => 'Community Participation',
-            '35.12' => 'UN Agencies',
-            '35.13' => 'Direct Retail Purchase of POL Products, Electronic Charging Devices, and Online Subscriptions',
+            'two_failed_biddings' => 'Two Failed Biddings',
+            'emergency_cases' => 'Emergency Cases',
+            'take_over_of_contracts' => 'Take-over of Contracts',
+            'agency_to_agency' => 'Agency-to-Agency',
+            'lease_of_real_property' => 'Lease of Real Property and Venue',
+            'ngo_participation' => 'NGO Participation',
+            'community_participation' => 'Community Participation',
+            'direct_retail_purchase' => 'Direct Retail Purchase of POL Products and Online Subscriptions',
         ];
     }
 

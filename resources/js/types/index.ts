@@ -97,6 +97,11 @@ export type { CorrectionData, CorrectionRecord, DocumentView, PdfDocument, Procu
 export type { SearchResult, SearchSuggestion } from './search';
 
 // ============================================================================
+// WORKFLOW TYPES
+// ============================================================================
+export type { ProcurementMode, WorkflowInfo, WorkflowProgress, WorkflowStage } from './workflow';
+
+// ============================================================================
 // COMPONENT PROPS TYPES
 // ============================================================================
 export type {

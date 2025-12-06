@@ -13,9 +13,11 @@ enum StageEnums: string
     case PROCUREMENT_INITIATION = 'procurement_initiation';
     case PRE_PROCUREMENT_CONFERENCE = 'pre_procurement_conference';
     case BIDDING_DOCUMENTS = 'bidding_documents';
+    case REQUEST_FOR_QUOTATION = 'request_for_quotation';  // For alternative modes (SVP, Direct Contracting, etc.)
     case PRE_BID_CONFERENCE = 'pre_bid_conference';
     case SUPPLEMENTAL_BID_BULLETIN = 'supplemental_bid_bulletin';
     case BID_OPENING = 'bid_opening';
+    case ABSTRACT_OF_QUOTATIONS = 'abstract_of_quotations';  // For alternative modes (evaluates RFQ responses)
     case BID_EVALUATION = 'bid_evaluation';
     case POST_QUALIFICATION = 'post_qualification';
     case BAC_RESOLUTION = 'bac_resolution';
@@ -35,9 +37,11 @@ enum StageEnums: string
             self::PROCUREMENT_INITIATION => 'Procurement Initiation',
             self::PRE_PROCUREMENT_CONFERENCE => 'Pre-Procurement Conference',
             self::BIDDING_DOCUMENTS => 'Bidding Documents',
+            self::REQUEST_FOR_QUOTATION => 'Request for Quotation',
             self::PRE_BID_CONFERENCE => 'Pre-Bid Conference',
             self::SUPPLEMENTAL_BID_BULLETIN => 'Supplemental Bid Bulletin',
             self::BID_OPENING => 'Bid Opening',
+            self::ABSTRACT_OF_QUOTATIONS => 'Abstract of Quotations',
             self::BID_EVALUATION => 'Bid Evaluation',
             self::POST_QUALIFICATION => 'Post-Qualification',
             self::BAC_RESOLUTION => 'BAC Resolution',
@@ -59,9 +63,11 @@ enum StageEnums: string
             self::PROCUREMENT_INITIATION => 'ProcurementInitiation',
             self::PRE_PROCUREMENT_CONFERENCE => 'PreProcurementConference',
             self::BIDDING_DOCUMENTS => 'BiddingDocuments',
+            self::REQUEST_FOR_QUOTATION => 'RequestForQuotation',
             self::PRE_BID_CONFERENCE => 'PreBidConference',
             self::SUPPLEMENTAL_BID_BULLETIN => 'SupplementalBidBulletin',
             self::BID_OPENING => 'BidOpening',
+            self::ABSTRACT_OF_QUOTATIONS => 'AbstractOfQuotations',
             self::BID_EVALUATION => 'BidEvaluation',
             self::POST_QUALIFICATION => 'PostQualification',
             self::BAC_RESOLUTION => 'BACResolution',
@@ -83,9 +89,11 @@ enum StageEnums: string
             self::PROCUREMENT_INITIATION => 'Initial stage where procurement requirements are defined and approved',
             self::PRE_PROCUREMENT_CONFERENCE => 'Optional conference to discuss procurement requirements with potential bidders',
             self::BIDDING_DOCUMENTS => 'Preparation and publication of official bidding documents',
+            self::REQUEST_FOR_QUOTATION => 'Preparation and sending of RFQ to suppliers for alternative procurement modes',
             self::PRE_BID_CONFERENCE => 'Conference to clarify bidding requirements and answer bidder questions',
             self::SUPPLEMENTAL_BID_BULLETIN => 'Issuance of supplemental bulletins to modify or clarify bidding documents',
             self::BID_OPENING => 'Public opening of submitted bids',
+            self::ABSTRACT_OF_QUOTATIONS => 'Compilation and evaluation of received quotations from suppliers',
             self::BID_EVALUATION => 'Technical and financial evaluation of submitted bids',
             self::POST_QUALIFICATION => 'Verification of winning bidder\'s qualifications and capacity',
             self::BAC_RESOLUTION => 'Formal resolution by the Bids and Awards Committee',
@@ -99,8 +107,8 @@ enum StageEnums: string
     }
 
     /**
-     * Get the next stage in the workflow (simple linear path)
-     * For flexible workflow, use getNextStages() which returns all possible next stages
+     * Get the next stage in the workflow (simple linear path for Competitive Bidding)
+     * For flexible workflow or alternative modes, use getNextStagesForMode() instead
      */
     public function getNextStage(): ?self
     {
@@ -108,9 +116,11 @@ enum StageEnums: string
             self::PROCUREMENT_INITIATION => self::PRE_PROCUREMENT_CONFERENCE,
             self::PRE_PROCUREMENT_CONFERENCE => self::BIDDING_DOCUMENTS,
             self::BIDDING_DOCUMENTS => self::PRE_BID_CONFERENCE,
+            self::REQUEST_FOR_QUOTATION => self::ABSTRACT_OF_QUOTATIONS,
             self::PRE_BID_CONFERENCE => self::SUPPLEMENTAL_BID_BULLETIN,
             self::SUPPLEMENTAL_BID_BULLETIN => self::BID_OPENING,
             self::BID_OPENING => self::BID_EVALUATION,
+            self::ABSTRACT_OF_QUOTATIONS => self::BAC_RESOLUTION,
             self::BID_EVALUATION => self::POST_QUALIFICATION,
             self::POST_QUALIFICATION => self::BAC_RESOLUTION,
             self::BAC_RESOLUTION => self::NOTICE_OF_AWARD,
@@ -126,6 +136,7 @@ enum StageEnums: string
     /**
      * Get all possible next stages (flexible workflow - Issue #8 fix)
      * Returns array of stages that can follow the current stage
+     * Note: This is for Competitive Bidding. Use getNextStagesForMode() for other modes.
      *
      * @return array<self>
      */
@@ -134,13 +145,19 @@ enum StageEnums: string
         return match ($this) {
             self::PROCUREMENT_INITIATION => [
                 self::PRE_PROCUREMENT_CONFERENCE,  // Optional per RA 9184
-                self::BIDDING_DOCUMENTS,          // Can skip to this
+                self::BIDDING_DOCUMENTS,           // Can skip to this (Competitive Bidding)
+                self::REQUEST_FOR_QUOTATION,       // For alternative modes
             ],
             self::PRE_PROCUREMENT_CONFERENCE => [
                 self::BIDDING_DOCUMENTS,
+                self::REQUEST_FOR_QUOTATION,       // For alternative modes
+                self::BAC_RESOLUTION,              // For Negotiated Procurement
             ],
             self::BIDDING_DOCUMENTS => [
                 self::PRE_BID_CONFERENCE,
+            ],
+            self::REQUEST_FOR_QUOTATION => [
+                self::ABSTRACT_OF_QUOTATIONS,
             ],
             self::PRE_BID_CONFERENCE => [
                 self::SUPPLEMENTAL_BID_BULLETIN,  // Optional
@@ -152,6 +169,9 @@ enum StageEnums: string
             ],
             self::BID_OPENING => [
                 self::BID_EVALUATION,
+            ],
+            self::ABSTRACT_OF_QUOTATIONS => [
+                self::BAC_RESOLUTION,
             ],
             self::BID_EVALUATION => [
                 self::POST_QUALIFICATION,
@@ -218,7 +238,8 @@ enum StageEnums: string
     }
 
     /**
-     * Get the previous stage in the workflow
+     * Get the previous stage in the workflow (for Competitive Bidding)
+     * Note: For alternative modes, the previous stage may differ
      */
     public function getPreviousStage(): ?self
     {
@@ -226,9 +247,11 @@ enum StageEnums: string
             self::PROCUREMENT_INITIATION => null,
             self::PRE_PROCUREMENT_CONFERENCE => self::PROCUREMENT_INITIATION,
             self::BIDDING_DOCUMENTS => self::PRE_PROCUREMENT_CONFERENCE,
+            self::REQUEST_FOR_QUOTATION => self::PROCUREMENT_INITIATION,
             self::PRE_BID_CONFERENCE => self::BIDDING_DOCUMENTS,
             self::SUPPLEMENTAL_BID_BULLETIN => self::PRE_BID_CONFERENCE,
             self::BID_OPENING => self::SUPPLEMENTAL_BID_BULLETIN,
+            self::ABSTRACT_OF_QUOTATIONS => self::REQUEST_FOR_QUOTATION,
             self::BID_EVALUATION => self::BID_OPENING,
             self::POST_QUALIFICATION => self::BID_EVALUATION,
             self::BAC_RESOLUTION => self::POST_QUALIFICATION,
@@ -268,11 +291,13 @@ enum StageEnums: string
         return match ($this) {
             self::PROCUREMENT_INITIATION,
             self::PRE_PROCUREMENT_CONFERENCE,
-            self::BIDDING_DOCUMENTS => 'pre_procurement',
+            self::BIDDING_DOCUMENTS,
+            self::REQUEST_FOR_QUOTATION => 'pre_procurement',
 
             self::PRE_BID_CONFERENCE,
             self::SUPPLEMENTAL_BID_BULLETIN,
             self::BID_OPENING,
+            self::ABSTRACT_OF_QUOTATIONS,
             self::BID_EVALUATION,
             self::POST_QUALIFICATION,
             self::BAC_RESOLUTION => 'procurement',  // Fixed: BAC Resolution comes after evaluation
@@ -446,5 +471,369 @@ enum StageEnums: string
         $value = str_replace('-', '_', $slug);
 
         return self::tryFrom($value);
+    }
+
+    /**
+     * Get the workflow stages for a specific procurement mode
+     * Per NGPA IRR - different modes have different workflow requirements
+     *
+     * @return array<self>
+     */
+    public static function getStagesForMode(ProcurementModeEnums $mode): array
+    {
+        return match ($mode) {
+            // ═══════════════════════════════════════════════════════════════
+            // COMPETITIVE MODES - Full or near-full bidding process
+            // ═══════════════════════════════════════════════════════════════
+
+            // Competitive Bidding: Full 15-stage workflow per Section 27
+            ProcurementModeEnums::COMPETITIVE_BIDDING => [
+                self::PROCUREMENT_INITIATION,
+                self::PRE_PROCUREMENT_CONFERENCE,
+                self::BIDDING_DOCUMENTS,
+                self::PRE_BID_CONFERENCE,
+                self::SUPPLEMENTAL_BID_BULLETIN,
+                self::BID_OPENING,
+                self::BID_EVALUATION,
+                self::POST_QUALIFICATION,
+                self::BAC_RESOLUTION,
+                self::NOTICE_OF_AWARD,
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+
+            // Limited Source Bidding: Same as Competitive Bidding per Section 28.5
+            // "observe the procedure for Competitive Bidding"
+            ProcurementModeEnums::LIMITED_SOURCE_BIDDING => [
+                self::PROCUREMENT_INITIATION,
+                self::PRE_PROCUREMENT_CONFERENCE,
+                self::BIDDING_DOCUMENTS,
+                self::PRE_BID_CONFERENCE,
+                self::SUPPLEMENTAL_BID_BULLETIN,
+                self::BID_OPENING,
+                self::BID_EVALUATION,
+                self::POST_QUALIFICATION,
+                self::BAC_RESOLUTION,
+                self::NOTICE_OF_AWARD,
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+
+            // Competitive Dialogue: Two-stage process per Section 29
+            ProcurementModeEnums::COMPETITIVE_DIALOGUE => [
+                self::PROCUREMENT_INITIATION,
+                self::PRE_PROCUREMENT_CONFERENCE,
+                self::BIDDING_DOCUMENTS,           // First stage: initial proposals
+                self::PRE_BID_CONFERENCE,          // Dialogue phase
+                self::SUPPLEMENTAL_BID_BULLETIN,   // Finalize specs
+                self::BID_OPENING,                 // Second stage: final proposals
+                self::BID_EVALUATION,
+                self::POST_QUALIFICATION,
+                self::BAC_RESOLUTION,
+                self::NOTICE_OF_AWARD,
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+
+            // Unsolicited Offer with Bid Matching per Section 30
+            ProcurementModeEnums::UNSOLICITED_OFFER_WITH_BID_MATCHING => [
+                self::PROCUREMENT_INITIATION,      // Evaluate unsolicited offer
+                self::PRE_PROCUREMENT_CONFERENCE,  // Negotiation with original offeror
+                self::BIDDING_DOCUMENTS,           // Publication for bid matching
+                self::BID_OPENING,                 // Bid matching period
+                self::BID_EVALUATION,
+                self::POST_QUALIFICATION,
+                self::BAC_RESOLUTION,
+                self::NOTICE_OF_AWARD,
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+
+            // ═══════════════════════════════════════════════════════════════
+            // ALTERNATIVE MODES - Simplified procedures per Section 26.4
+            // May be delegated to End-User or Procurement Unit
+            // ═══════════════════════════════════════════════════════════════
+
+            // Direct Contracting per Section 31: RFQ-based, no elaborate bidding
+            ProcurementModeEnums::DIRECT_CONTRACTING => [
+                self::PROCUREMENT_INITIATION,
+                self::REQUEST_FOR_QUOTATION,       // BAC prepares RFQ per Section 31.3
+                self::BAC_RESOLUTION,              // BAC recommends award
+                self::NOTICE_OF_AWARD,
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+
+            // Direct Acquisition per Section 32: Very simple (≤₱200,000)
+            ProcurementModeEnums::DIRECT_ACQUISITION => [
+                self::PROCUREMENT_INITIATION,
+                self::NOTICE_OF_AWARD,             // Direct purchase
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+
+            // Repeat Order per Section 33: Purchase from previous winning bidder
+            ProcurementModeEnums::REPEAT_ORDER => [
+                self::PROCUREMENT_INITIATION,
+                self::REQUEST_FOR_QUOTATION,       // RFQ to previous winning bidder
+                self::BAC_RESOLUTION,              // Verify conditions met
+                self::NOTICE_OF_AWARD,
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+
+            // Small Value Procurement per Section 34: RFQ with 3 quotations
+            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
+                self::PROCUREMENT_INITIATION,
+                self::REQUEST_FOR_QUOTATION,       // RFQ to at least 3 suppliers per Section 34.3(c)
+                self::ABSTRACT_OF_QUOTATIONS,      // Abstract of Quotations per Section 34.3(e)
+                self::BAC_RESOLUTION,
+                self::NOTICE_OF_AWARD,
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+
+            // Negotiated Procurement per Section 35
+            ProcurementModeEnums::NEGOTIATED_PROCUREMENT => [
+                self::PROCUREMENT_INITIATION,
+                self::PRE_PROCUREMENT_CONFERENCE,  // Negotiation phase
+                self::BAC_RESOLUTION,              // Recommend award
+                self::NOTICE_OF_AWARD,
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+
+            // Direct Sales per Section 36: From supplier with completed contract
+            ProcurementModeEnums::DIRECT_SALES => [
+                self::PROCUREMENT_INITIATION,
+                self::REQUEST_FOR_QUOTATION,       // RFQ to qualified supplier
+                self::BAC_RESOLUTION,              // Verify conditions met
+                self::NOTICE_OF_AWARD,
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+
+            // Direct Procurement for STI per Section 37
+            ProcurementModeEnums::DIRECT_PROCUREMENT_FOR_STI => [
+                self::PROCUREMENT_INITIATION,
+                self::REQUEST_FOR_QUOTATION,       // RFQ to R&D suppliers
+                self::BAC_RESOLUTION,
+                self::NOTICE_OF_AWARD,
+                self::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                self::NOTICE_TO_PROCEED,
+                self::MONITORING,
+                self::COMPLETION,
+                self::COMPLETED,
+            ],
+        };
+    }
+
+    /**
+     * Get optional stages for a specific procurement mode
+     * These stages can be skipped per NGPA IRR
+     *
+     * @return array<self>
+     */
+    public static function getOptionalStagesForMode(ProcurementModeEnums $mode): array
+    {
+        return match ($mode) {
+            // Competitive modes: Pre-procurement conference and supplemental bulletin optional
+            ProcurementModeEnums::COMPETITIVE_BIDDING,
+            ProcurementModeEnums::LIMITED_SOURCE_BIDDING,
+            ProcurementModeEnums::COMPETITIVE_DIALOGUE,
+            ProcurementModeEnums::UNSOLICITED_OFFER_WITH_BID_MATCHING => [
+                self::PRE_PROCUREMENT_CONFERENCE,
+                self::SUPPLEMENTAL_BID_BULLETIN,
+            ],
+
+            // SVP: Pre-bid conference optional per Section 34.3(d)
+            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
+                self::PRE_BID_CONFERENCE,
+            ],
+
+            // Other modes: No optional stages in simplified workflow
+            default => [],
+        };
+    }
+
+    /**
+     * Get the next valid stages for a mode from current stage
+     * Respects mode-specific workflow and optional stages
+     *
+     * @return array<self>
+     */
+    public function getNextStagesForMode(ProcurementModeEnums $mode): array
+    {
+        $modeStages = self::getStagesForMode($mode);
+        $optionalStages = self::getOptionalStagesForMode($mode);
+        $currentIndex = array_search($this, $modeStages, true);
+
+        if ($currentIndex === false || $currentIndex >= count($modeStages) - 1) {
+            return [];
+        }
+
+        $nextStages = [];
+        $nextIndex = $currentIndex + 1;
+
+        // Always include the immediate next stage
+        if (isset($modeStages[$nextIndex])) {
+            $nextStages[] = $modeStages[$nextIndex];
+
+            // If next stage is optional, also include the one after
+            if (in_array($modeStages[$nextIndex], $optionalStages, true)) {
+                if (isset($modeStages[$nextIndex + 1])) {
+                    $nextStages[] = $modeStages[$nextIndex + 1];
+                }
+            }
+        }
+
+        return $nextStages;
+    }
+
+    /**
+     * Check if a stage is required for a specific mode
+     */
+    public function isRequiredForMode(ProcurementModeEnums $mode): bool
+    {
+        $modeStages = self::getStagesForMode($mode);
+        $optionalStages = self::getOptionalStagesForMode($mode);
+
+        return in_array($this, $modeStages, true) && ! in_array($this, $optionalStages, true);
+    }
+
+    /**
+     * Check if a stage exists in a mode's workflow
+     */
+    public function existsInModeWorkflow(ProcurementModeEnums $mode): bool
+    {
+        return in_array($this, self::getStagesForMode($mode), true);
+    }
+
+    /**
+     * Get stage count for a specific mode
+     */
+    public static function getStageCountForMode(ProcurementModeEnums $mode): int
+    {
+        return count(self::getStagesForMode($mode));
+    }
+
+    /**
+     * Get required stage count for a mode (excluding optional stages)
+     */
+    public static function getRequiredStageCountForMode(ProcurementModeEnums $mode): int
+    {
+        $total = count(self::getStagesForMode($mode));
+        $optional = count(self::getOptionalStagesForMode($mode));
+
+        return $total - $optional;
+    }
+
+    /**
+     * Get category-specific requirements for a stage
+     * Per NGPA IRR different categories may have different requirements
+     *
+     * @return array{video_recording_threshold: ?float, timeline_days: ?int, special_requirements: array<string>}
+     */
+    public function getCategoryRequirements(ProcurementCategoryEnums $category): array
+    {
+        // Video recording thresholds per Section 38.3
+        $videoThreshold = match ($category) {
+            ProcurementCategoryEnums::GOODS => 10000000.00,
+            ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS => 20000000.00,
+            ProcurementCategoryEnums::CONSULTING_SERVICES => 5000000.00,
+            ProcurementCategoryEnums::SERVICES => null, // Not specified in NGPA
+        };
+
+        // Competitive Dialogue timelines per Section 29.4.1
+        $timelineDays = match (true) {
+            $this === self::BIDDING_DOCUMENTS && $category === ProcurementCategoryEnums::GOODS => 45,
+            $this === self::BIDDING_DOCUMENTS && $category === ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS => 65,
+            $this === self::BIDDING_DOCUMENTS && $category === ProcurementCategoryEnums::CONSULTING_SERVICES => 75,
+            default => null,
+        };
+
+        // Category-specific requirements
+        $specialRequirements = match (true) {
+            $this === self::POST_QUALIFICATION && $category === ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS => [
+                'Site inspection verification',
+                'Equipment verification',
+                'PCAB license verification',
+            ],
+            $this === self::POST_QUALIFICATION && $category === ProcurementCategoryEnums::CONSULTING_SERVICES => [
+                'Personnel qualification verification',
+                'Previous project experience verification',
+            ],
+            $this === self::MONITORING && $category === ProcurementCategoryEnums::INFRASTRUCTURE_PROJECTS => [
+                'Progress billing review',
+                'Work accomplishment inspection',
+                'Variation order monitoring',
+            ],
+            default => [],
+        };
+
+        return [
+            'video_recording_threshold' => $videoThreshold,
+            'timeline_days' => $timelineDays,
+            'special_requirements' => $specialRequirements,
+        ];
+    }
+
+    /**
+     * Get workflow summary for a procurement mode
+     *
+     * @return array{mode: string, total_stages: int, required_stages: int, optional_stages: int, stages: array<array{stage: string, display_name: string, required: bool, phase: string}>}
+     */
+    public static function getWorkflowSummaryForMode(ProcurementModeEnums $mode): array
+    {
+        $stages = self::getStagesForMode($mode);
+        $optionalStages = self::getOptionalStagesForMode($mode);
+
+        $stageDetails = [];
+        foreach ($stages as $stage) {
+            $stageDetails[] = [
+                'stage' => $stage->value,
+                'display_name' => $stage->getDisplayName(),
+                'required' => ! in_array($stage, $optionalStages, true),
+                'phase' => $stage->getPhase(),
+            ];
+        }
+
+        return [
+            'mode' => $mode->getDisplayName(),
+            'total_stages' => count($stages),
+            'required_stages' => count($stages) - count($optionalStages),
+            'optional_stages' => count($optionalStages),
+            'stages' => $stageDetails,
+        ];
     }
 }

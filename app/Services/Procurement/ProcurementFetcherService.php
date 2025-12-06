@@ -13,10 +13,12 @@ use App\Models\User;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
+use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
 use App\Services\UserService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -40,8 +42,10 @@ final class ProcurementFetcherService
         private readonly DocumentRepository $documentRepository,
         private readonly EventRepository $eventRepository,
         private readonly CorrectionRepository $correctionRepository,
+        private readonly ProcurementRepository $procurementRepository,
         private readonly UserService $userService,
         private readonly ProcurementFormatterService $formatter,
+        private readonly ProcurementActionService $actionService,
     ) {}
 
     /**
@@ -71,9 +75,12 @@ final class ProcurementFetcherService
             ->map(fn ($docs) => $docs->count())
             ->all();
 
+        // Build procurement mode map by pr_number
+        $procurementModeMap = $this->buildProcurementModeMap($statusItems);
+
         // Process status items to get latest status per procurement
         $result = $statusItems
-            ->map(function (StatusData $statusDto) use ($documentCountMap) {
+            ->map(function (StatusData $statusDto) use ($documentCountMap, $procurementModeMap) {
                 $originalTimestamp = $statusDto->timestamp;
                 $displayTimestamp = Carbon::parse($statusDto->timestamp)->toDateString();
 
@@ -86,6 +93,21 @@ final class ProcurementFetcherService
                     'current_stage_in_phase' => 0,
                     'total_stages_in_phase' => 0,
                 ];
+
+                // Get procurement mode for this item
+                $modeInfo = $procurementModeMap[$statusDto->prNumber] ?? null;
+
+                // Get user role for action determination
+                $userRole = $this->getCurrentUserRole();
+
+                // Get available actions from the server-side service
+                $workflowActions = $this->actionService->getAvailableActions(
+                    $statusDto->prNumber,
+                    $statusDto->stage,
+                    $statusDto->currentStatus,
+                    $userRole
+                );
+                $staticActions = $this->actionService->getStaticActions($statusDto->prNumber, $userRole);
 
                 return [
                     'id' => $statusDto->prNumber,
@@ -104,6 +126,10 @@ final class ProcurementFetcherService
                     'user' => $this->getUserName($statusDto->userAddress),
                     'document_count' => $documentCountMap[$statusDto->prNumber] ?? 0,
                     'metadata' => $statusDto->metadata,
+                    'procurement_mode' => $modeInfo['value'] ?? null,
+                    'procurement_mode_label' => $modeInfo['label'] ?? null,
+                    'workflow_actions' => $workflowActions,
+                    'static_actions' => $staticActions,
                 ];
             })
             ->groupBy('id')
@@ -125,6 +151,46 @@ final class ProcurementFetcherService
         Log::info('ProcurementFetcherService: Final procurements result count', ['count' => count($result)]);
 
         return $result;
+    }
+
+    /**
+     * Build a map of procurement modes by PR number
+     *
+     * @return array<string, array{value: string, label: string}>
+     */
+    private function buildProcurementModeMap(Collection $statusItems): array
+    {
+        $prNumbers = $statusItems->pluck('prNumber')->unique()->values()->all();
+
+        $modeMap = [];
+        foreach ($prNumbers as $prNumber) {
+            $procurement = $this->procurementRepository->findByProcurement($prNumber);
+            if ($procurement && $procurement->procurementMode) {
+                $modeMap[$prNumber] = [
+                    'value' => $procurement->procurementMode->value,
+                    'label' => $procurement->procurementMode->getDisplayName(),
+                ];
+            }
+        }
+
+        return $modeMap;
+    }
+
+    /**
+     * Get the current authenticated user's role
+     */
+    private function getCurrentUserRole(): string
+    {
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            return 'guest';
+        }
+
+        // Get the first role from the user's roles
+        $roles = $user->getRoleNames();
+
+        return $roles->first() ?? 'guest';
     }
 
     /**

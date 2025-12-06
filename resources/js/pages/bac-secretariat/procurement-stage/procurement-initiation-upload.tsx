@@ -2,13 +2,14 @@ import { Head, router } from '@inertiajs/react';
 import React, { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type WorkflowInfo } from '@/types';
 import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 
 import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
 import FileUploadArea from '@/components/file-upload-area';
+import { ModeBadge, WorkflowProgressIndicator } from '@/components/procurement/workflow-progress-indicator';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -35,6 +36,7 @@ interface ProcurementInitiationShowProps {
         status?: string;
         stage?: string;
     };
+    workflowInfo?: WorkflowInfo;
     documentGuide: DocumentGuide;
     uploadedDocuments: string[];
     currentStage?: string;
@@ -48,6 +50,7 @@ const DOCUMENT_NAME = 'Procurement Initiation Document';
 
 export default function ProcurementInitiationShow({
     procurement,
+    workflowInfo,
     documentGuide,
     uploadedDocuments,
     currentStage,
@@ -262,20 +265,26 @@ export default function ProcurementInitiationShow({
             <Head title={`Upload Documents - ${procurement.pr_number}`} />
 
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
-                <div className="flex flex-col gap-2">
-                    <div className="text-primary flex items-center gap-2">
-                        <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
-                        <h1 className="text-xl font-bold sm:text-2xl">Procurement Initiation</h1>
+                {/* Workflow Progress Indicator */}
+                {workflowInfo && <WorkflowProgressIndicator workflowInfo={workflowInfo} />}
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-2">
+                        <div className="text-primary flex items-center gap-2">
+                            <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
+                            <h1 className="text-xl font-bold sm:text-2xl">Procurement Initiation</h1>
+                        </div>
+                        <p className="text-muted-foreground text-sm sm:text-base">
+                            Upload documents for procurement
+                            <span className="text-foreground font-medium"> #{procurement?.pr_number || 'Unknown'}</span>
+                            {procurement?.title && (
+                                <>
+                                    :<span className="text-foreground font-medium italic"> {procurement.title}</span>
+                                </>
+                            )}
+                        </p>
                     </div>
-                    <p className="text-muted-foreground text-sm sm:text-base">
-                        Upload documents for procurement
-                        <span className="text-foreground font-medium"> #{procurement?.pr_number || 'Unknown'}</span>
-                        {procurement?.title && (
-                            <>
-                                :<span className="text-foreground font-medium italic"> {procurement.title}</span>
-                            </>
-                        )}
-                    </p>
+                    {workflowInfo && <ModeBadge workflowInfo={workflowInfo} />}
                 </div>
 
                 <div className="space-y-4 sm:space-y-6">

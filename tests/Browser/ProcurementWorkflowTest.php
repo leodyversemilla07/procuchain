@@ -112,3 +112,79 @@ describe('Document Upload Browser Flow', function () {
         $page->assertNoJavascriptErrors();
     });
 });
+
+describe('Request for Quotation (RFQ) Browser Flow', function () {
+    beforeEach(function () {
+        $this->seedPermissions();
+
+        $this->bacSecretariat = User::factory()->create([
+            'blockchain_address' => 'test-blockchain-address',
+        ]);
+        $this->bacSecretariat->assignRole('bac_secretariat');
+    });
+
+    it('displays RFQ stage page correctly', function () {
+        $this->actingAs($this->bacSecretariat);
+
+        $page = visit('/bac-secretariat/procurement/PR-2024-001/pre-procurement/request_for_quotation');
+
+        $page->assertSee('Request for Quotation')
+            ->assertNoJavascriptErrors()
+            ->assertNoConsoleLogs();
+    });
+
+    it('shows file upload area for RFQ documents', function () {
+        $this->actingAs($this->bacSecretariat);
+
+        $page = visit('/bac-secretariat/procurement/PR-2024-001/pre-procurement/request_for_quotation');
+
+        $page->assertSee('Upload')
+            ->assertNoJavascriptErrors();
+    });
+
+    it('displays RFQ specific form fields', function () {
+        $this->actingAs($this->bacSecretariat);
+
+        $page = visit('/bac-secretariat/procurement/PR-2024-001/pre-procurement/request_for_quotation');
+
+        $page->assertNoJavascriptErrors();
+    });
+});
+
+describe('Abstract of Quotations Browser Flow', function () {
+    beforeEach(function () {
+        $this->seedPermissions();
+
+        $this->bacSecretariat = User::factory()->create([
+            'blockchain_address' => 'test-blockchain-address',
+        ]);
+        $this->bacSecretariat->assignRole('bac_secretariat');
+    });
+
+    it('displays Abstract of Quotations stage page correctly', function () {
+        $this->actingAs($this->bacSecretariat);
+
+        $page = visit('/bac-secretariat/procurement/PR-2024-001/bidding/abstract_of_quotations');
+
+        $page->assertSee('Abstract of Quotations')
+            ->assertNoJavascriptErrors()
+            ->assertNoConsoleLogs();
+    });
+
+    it('shows file upload area for Abstract documents', function () {
+        $this->actingAs($this->bacSecretariat);
+
+        $page = visit('/bac-secretariat/procurement/PR-2024-001/bidding/abstract_of_quotations');
+
+        $page->assertSee('Upload')
+            ->assertNoJavascriptErrors();
+    });
+
+    it('displays Abstract specific form fields', function () {
+        $this->actingAs($this->bacSecretariat);
+
+        $page = visit('/bac-secretariat/procurement/PR-2024-001/bidding/abstract_of_quotations');
+
+        $page->assertNoJavascriptErrors();
+    });
+});

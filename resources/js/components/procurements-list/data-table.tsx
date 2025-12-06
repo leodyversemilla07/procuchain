@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { ProcurementListItem } from '@/types';
 
 // Re-export cell components for backwards compatibility
-export { BadgeCell, DocumentCountCell, IdCell, LastUpdatedCell, StageCell, StatusCell, TitleCell } from './cells';
+export { BadgeCell, DocumentCountCell, IdCell, LastUpdatedCell, ModeCell, StageCell, StatusCell, TitleCell } from './cells';
 
 interface DataTableCheckboxProps {
     checked: boolean | 'indeterminate';

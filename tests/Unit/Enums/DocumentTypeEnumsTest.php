@@ -48,5 +48,5 @@ it('maps stage names to document types correctly', function () {
     // When document_type is the same as stage name (procurement_initiation),
     // it should map to the correct document type enum
     expect(DocumentTypeEnums::fromString('procurement_initiation'))->toBe(DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT);
-    expect(DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->getDisplayName())->toBe('Procurement Initiation Document');
+    expect(DocumentTypeEnums::PROCUREMENT_INITIATION_DOCUMENT->getDisplayName())->toBe('Procurement Initiation Document (PDF)');
 });

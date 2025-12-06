@@ -14,7 +14,7 @@ import {
 import type { ProcurementListItem } from '@/types';
 
 import { ActionButtons } from './action-buttons';
-import { DataTableCheckbox, DataTableColumnHeader, DocumentCountCell, IdCell, LastUpdatedCell, StageCell, StatusCell, TitleCell } from './data-table';
+import { DataTableCheckbox, DataTableColumnHeader, DocumentCountCell, IdCell, LastUpdatedCell, ModeCell, StageCell, StatusCell, TitleCell } from './data-table';
 
 export interface ColumnsProps {
     onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
@@ -71,6 +71,21 @@ export const createColumns = ({
             className: 'hidden lg:table-cell',
         },
         size: 150,
+    },
+    {
+        accessorKey: 'procurement_mode',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Mode" />,
+        cell: ({ row }) => (
+            <ModeCell
+                mode={row.original.procurement_mode}
+                modeLabel={row.original.procurement_mode_label}
+            />
+        ),
+        filterFn: (row, id, value) => Array.isArray(value) && value.includes(row.getValue(id)),
+        meta: {
+            className: 'hidden xl:table-cell',
+        },
+        size: 80,
     },
     {
         accessorKey: 'current_status',

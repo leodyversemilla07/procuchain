@@ -70,6 +70,11 @@ interface ProcurementModeOption {
     requires_bac_resolution: boolean;
 }
 
+interface NegotiatedProcurementTypeOption {
+    value: string;
+    label: string;
+}
+
 type UseFormData = {
     // Basic Information - REQUIRED per RA 12009 (NGPA)
     pr_number: string;
@@ -86,6 +91,7 @@ type UseFormData = {
     // Classification
     category: string;
     procurement_mode: string;
+    negotiated_procurement_type: string;
 
     // Municipal Office Information
     office: string;
@@ -103,9 +109,10 @@ interface DraftData extends UseFormData {
 interface HeaderProps {
     categories?: CategoryOption[];
     procurementModes?: ProcurementModeOption[];
+    negotiatedProcurementTypes?: NegotiatedProcurementTypeOption[];
 }
 
-export default function ProcurementInitiationForm({ categories = [], procurementModes = [] }: HeaderProps) {
+export default function ProcurementInitiationForm({ categories = [], procurementModes = [], negotiatedProcurementTypes = [] }: HeaderProps) {
     const { auth } = usePage<{ auth: { user: { name: string; email: string } } }>().props;
 
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [{ title: 'Procurement Initiation', href: '#' }]);
@@ -132,6 +139,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
         // Classification
         category: '',
         procurement_mode: '',
+        negotiated_procurement_type: '',
 
         // Municipal Office Information
         office: '',
@@ -310,6 +318,8 @@ export default function ProcurementInitiationForm({ categories = [], procurement
     // Form validation
     const isFormValid = useCallback((): boolean => {
         const prNumberRegex = /^PR-\d{4}-\d{4}-\d{4}$/;
+        const isNegotiatedProcurement = data.procurement_mode === 'negotiated_procurement';
+        
         return !!(
             data.pr_number &&
             data.pr_number.trim() !== '' &&
@@ -324,6 +334,8 @@ export default function ProcurementInitiationForm({ categories = [], procurement
             data.category.trim() !== '' &&
             data.procurement_mode &&
             data.procurement_mode.trim() !== '' &&
+            // Require negotiated_procurement_type when negotiated_procurement is selected
+            (!isNegotiatedProcurement || (data.negotiated_procurement_type && data.negotiated_procurement_type.trim() !== '')) &&
             data.abc_amount &&
             parseFloat(data.abc_amount) > 0 &&
             data.funding_source &&
@@ -355,6 +367,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
             funding_source: data.funding_source,
             category: data.category,
             procurement_mode: data.procurement_mode,
+            negotiated_procurement_type: data.negotiated_procurement_type || null,
             office: data.office,
             end_user: data.end_user,
             prepared_by: data.prepared_by,
@@ -726,7 +739,13 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                     </FieldLabel>
                                     <RadioGroup
                                         value={data.procurement_mode}
-                                        onValueChange={(value) => handleFieldChange('procurement_mode', value)}
+                                        onValueChange={(value) => {
+                                            handleFieldChange('procurement_mode', value);
+                                            // Clear negotiated procurement type when switching away from negotiated procurement
+                                            if (value !== 'negotiated_procurement') {
+                                                handleFieldChange('negotiated_procurement_type', '');
+                                            }
+                                        }}
                                         className="mt-2 grid gap-2"
                                     >
                                         {procurementModes.map((mode) => (
@@ -751,6 +770,43 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         ))}
                                     </RadioGroup>
                                     {hasError('procurement_mode') && <FieldError>{errors.procurement_mode}</FieldError>}
+
+                                    {/* Negotiated Procurement Sub-types */}
+                                    {data.procurement_mode === 'negotiated_procurement' && (
+                                        <div className="mt-4 ml-6 space-y-3 border-l-2 border-primary/30 pl-4">
+                                            <FieldLabel className="text-sm">
+                                                Type of Negotiated Procurement
+                                                <span className="text-destructive ml-1 text-xs">*</span>
+                                            </FieldLabel>
+                                            <FieldDescription className="text-xs">
+                                                Select the applicable type for this procurement
+                                            </FieldDescription>
+                                            <RadioGroup
+                                                value={data.negotiated_procurement_type}
+                                                onValueChange={(value) => handleFieldChange('negotiated_procurement_type', value)}
+                                                className="grid gap-2"
+                                            >
+                                                {negotiatedProcurementTypes.map((type) => (
+                                                    <div
+                                                        key={type.value}
+                                                        className={`flex items-center space-x-3 rounded-lg border p-2.5 transition-colors ${
+                                                            data.negotiated_procurement_type === type.value
+                                                                ? 'border-primary bg-primary/5'
+                                                                : 'border-input hover:bg-muted/50'
+                                                        } ${hasError('negotiated_procurement_type') ? 'border-destructive' : ''}`}
+                                                    >
+                                                        <RadioGroupItem value={type.value} id={`neg-type-${type.value}`} />
+                                                        <Label htmlFor={`neg-type-${type.value}`} className="flex-1 cursor-pointer text-sm font-medium">
+                                                            {type.label}
+                                                        </Label>
+                                                    </div>
+                                                ))}
+                                            </RadioGroup>
+                                            {hasError('negotiated_procurement_type') && (
+                                                <FieldError>{errors.negotiated_procurement_type}</FieldError>
+                                            )}
+                                        </div>
+                                    )}
                                 </Field>
 
                                 {/* ABC Amount */}
@@ -833,7 +889,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4 p-4 sm:space-y-6 sm:p-6">
-                            {/* Office and End User - Grid */}
+                            {/* Office, End User, and Prepared By - Grid */}
                             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                                 {/* Office */}
                                 <Field>
@@ -898,25 +954,25 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         </div>
                                     )}
                                 </Field>
-                            </div>
 
-                            {/* Prepared By */}
-                            <Field>
-                                <FieldLabel htmlFor="prepared_by">
-                                    Prepared By
-                                    <span className="text-destructive ml-1 text-xs">*</span>
-                                </FieldLabel>
-                                <FieldDescription>Name of the person preparing this request</FieldDescription>
-                                <Input
-                                    id="prepared_by"
-                                    name="prepared_by"
-                                    value={data.prepared_by}
-                                    onChange={(e) => handleFieldChange('prepared_by', e.target.value)}
-                                    className={hasError('prepared_by') ? 'border-destructive ring-destructive/30' : ''}
-                                    placeholder="Full Name"
-                                />
-                                {hasError('prepared_by') && <FieldError>{errors.prepared_by}</FieldError>}
-                            </Field>
+                                {/* Prepared By */}
+                                <Field>
+                                    <FieldLabel htmlFor="prepared_by">
+                                        Prepared By
+                                        <span className="text-destructive ml-1 text-xs">*</span>
+                                    </FieldLabel>
+                                    <FieldDescription>Name of the person preparing this request</FieldDescription>
+                                    <Input
+                                        id="prepared_by"
+                                        name="prepared_by"
+                                        value={data.prepared_by}
+                                        onChange={(e) => handleFieldChange('prepared_by', e.target.value)}
+                                        className={hasError('prepared_by') ? 'border-destructive ring-destructive/30' : ''}
+                                        placeholder="Full Name"
+                                    />
+                                    {hasError('prepared_by') && <FieldError>{errors.prepared_by}</FieldError>}
+                                </Field>
+                            </div>
                         </CardContent>
                     </Card>
 

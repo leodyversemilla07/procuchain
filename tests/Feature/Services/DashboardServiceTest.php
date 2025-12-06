@@ -5,6 +5,7 @@ use App\Enums\StreamEnums;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
+use App\Repositories\ProcurementRepository;
 use App\Services\DashboardService;
 use App\Services\Manager;
 use App\Services\UserService;
@@ -21,11 +22,20 @@ beforeEach(function () {
     $this->eventRepository = new EventRepository($this->manager);
     $this->documentRepository = new DocumentRepository($this->manager);
     $this->userService = mock(UserService::class)->makePartial(); // Allow real calls
+    $this->procurementRepository = mock(ProcurementRepository::class);
+
+    // Default mock: return null for any procurement lookup (no mode info)
+    $this->procurementRepository
+        ->shouldReceive('findByProcurement')
+        ->andReturn(null)
+        ->byDefault();
+
     $this->service = new DashboardService(
         $this->manager,
         $this->eventRepository,
         $this->documentRepository,
-        $this->userService
+        $this->userService,
+        $this->procurementRepository
     );
 });
 describe('DashboardService', function () {

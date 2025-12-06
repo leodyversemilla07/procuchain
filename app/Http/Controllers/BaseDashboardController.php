@@ -76,6 +76,8 @@ abstract class BaseDashboardController extends Controller
                 // Phase-based data
                 'phaseStatistics' => Inertia::defer(fn () => $this->dashboardService->getPhaseStatistics($procurementsByKey)),
                 'procurementsByPhase' => Inertia::defer(fn () => $this->dashboardService->groupProcurementsByPhase($procurementsByKey)),
+                // Mode-based statistics (NGPA IRR Sections 27-37)
+                'modeStatistics' => Inertia::defer(fn () => $this->dashboardService->getModeStatistics($procurementsByKey)),
             ], $this->getAdditionalDashboardData($procurementsByKey, $roleName));
 
             Log::info("Successfully retrieved {$roleLabel} Dashboard data");
@@ -160,6 +162,16 @@ abstract class BaseDashboardController extends Controller
             'procurementDistribution' => [],
             'recentActivities' => [],
             'stats' => $this->dashboardService->getEmptyStats(),
+            'modeStatistics' => [
+                'distribution' => [],
+                'type_breakdown' => [
+                    'competitive' => ['count' => 0, 'percentage' => 0],
+                    'alternative' => ['count' => 0, 'percentage' => 0],
+                    'unknown' => ['count' => 0, 'percentage' => 0],
+                    'total' => 0,
+                ],
+                'by_mode' => [],
+            ],
             'error' => 'Failed to retrieve dashboard data. Please try again later.',
         ], $this->getEmptyAdditionalData()));
     }

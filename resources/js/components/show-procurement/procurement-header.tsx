@@ -1,4 +1,4 @@
-import { Calendar, Clock, FileCheck, Hash } from 'lucide-react';
+import { Calendar, Clock, FileCheck, Hash, Tag } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,9 +29,11 @@ interface ProcurementHeaderProps {
     title: string;
     pr_number: string;
     status: ProcurementStatus;
+    procurementMode?: string;
+    procurementModeLabel?: string;
 }
 
-export function ProcurementHeader({ title, pr_number, status }: ProcurementHeaderProps) {
+export function ProcurementHeader({ title, pr_number, status, procurementMode, procurementModeLabel }: ProcurementHeaderProps) {
     const stageToSearch = (status?.stage_formatted || status?.stage) as (typeof STAGE_ORDER)[number];
     const stageIndex = stageToSearch ? STAGE_ORDER.indexOf(stageToSearch) + 1 : 0;
     const totalStages = STAGE_ORDER.length;
@@ -42,7 +44,15 @@ export function ProcurementHeader({ title, pr_number, status }: ProcurementHeade
             <CardHeader className="space-y-4 p-4 pb-4 sm:space-y-6 sm:p-6 sm:pb-6">
                 {/* Title and ID Section */}
                 <div className="space-y-1.5 sm:space-y-2">
-                    <CardTitle className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">{title}</CardTitle>
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                        <CardTitle className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">{title}</CardTitle>
+                        {procurementModeLabel && (
+                            <Badge variant="secondary" className="flex items-center gap-1.5 text-xs font-medium sm:text-sm">
+                                <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+                                {procurementModeLabel}
+                            </Badge>
+                        )}
+                    </div>
                     <CardDescription className="flex flex-wrap items-center gap-1.5 text-sm sm:gap-2 sm:text-base">
                         <Hash className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
                         <span className="font-mono text-xs sm:text-sm">Procurement ID: {pr_number}</span>

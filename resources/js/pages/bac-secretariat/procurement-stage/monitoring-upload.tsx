@@ -1,5 +1,7 @@
 import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PostProcurementController';
 import FileUploadArea from '@/components/file-upload-area';
+import { handleFlashSuccess } from '@/utils/blockchain-toast';
+import { ModeBadge, WorkflowProgressIndicator } from '@/components/procurement/workflow-progress-indicator';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -15,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
+import { BreadcrumbItem, WorkflowInfo } from '@/types';
 import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
@@ -32,11 +34,12 @@ interface MonitoringUploadProps {
         stage_value?: string;
         current_stage?: string;
     };
+    workflowInfo?: WorkflowInfo;
     documentGuide?: DocumentGuide;
     uploadedDocuments?: string[];
 }
 
-export default function MonitoringUpload({ procurement, documentGuide, uploadedDocuments = [] }: MonitoringUploadProps) {
+export default function MonitoringUpload({ procurement, workflowInfo, documentGuide, uploadedDocuments = [] }: MonitoringUploadProps) {
     const [files, setFiles] = useState<Record<string, File | null>>({});
     const [dragging, setDragging] = useState<Record<string, boolean>>({});
     const [isUploading, setIsUploading] = useState(false);
@@ -181,23 +184,7 @@ export default function MonitoringUpload({ procurement, documentGuide, uploadedD
             {},
             {
                 onSuccess: (page) => {
-                    const flash = (page.props as Record<string, unknown>).flash as Record<string, unknown> | undefined;
-                    const response = flash?.success;
-                    if (typeof response === 'object' && response && 'blockchain' in response) {
-                        const { message, blockchain } = response as { message: string; blockchain: { status_txid?: string; event_txid?: string } };
-                        toast.success(message, {
-                            description: (
-                                <div className="space-y-1 text-xs">
-                                    {blockchain.status_txid && <p>Status TX: {blockchain.status_txid}</p>}
-                                    {blockchain.event_txid && <p>Event TX: {blockchain.event_txid}</p>}
-                                </div>
-                            ),
-                        });
-                    } else {
-                        toast.success('Stage marked as complete!', {
-                            description: 'All required documents have been uploaded.',
-                        });
-                    }
+                    handleFlashSuccess(page as { props: Record<string, unknown> }, 'Stage marked as complete!');
                 },
                 onError: () => {
                     toast.error('Failed to mark stage as complete', {
@@ -227,12 +214,18 @@ export default function MonitoringUpload({ procurement, documentGuide, uploadedD
             <Head title="Upload Monitoring" />
 
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
+                {/* Workflow Progress Indicator */}
+                {workflowInfo && <WorkflowProgressIndicator workflowInfo={workflowInfo} />}
+
                 {/* Page Header */}
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                     <CardContent className="flex flex-col gap-2 p-4 sm:p-6">
-                        <div className="text-primary flex items-center gap-2">
-                            <Activity className="h-5 w-5 sm:h-6 sm:w-6" />
-                            <h1 className="text-xl font-bold sm:text-2xl">Monitoring</h1>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="text-primary flex items-center gap-2">
+                                <Activity className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <h1 className="text-xl font-bold sm:text-2xl">Monitoring</h1>
+                            </div>
+                            {workflowInfo && <ModeBadge workflowInfo={workflowInfo} />}
                         </div>
                         <p className="text-muted-foreground text-sm sm:text-base">
                             Upload the Monitoring documents for procurement

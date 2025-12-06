@@ -96,6 +96,7 @@ class ProcurementInitiationController extends BaseController
                     'status' => $procurement->status,
                     'stage' => $latestStatus?->stage ?? StageEnums::PROCUREMENT_INITIATION->value,
                 ],
+                'workflowInfo' => $this->getWorkflowInfo($id, StageEnums::PROCUREMENT_INITIATION),
                 'documentGuide' => $this->validationService->getStageDocumentGuide(
                     StageEnums::PROCUREMENT_INITIATION
                 ),
@@ -131,6 +132,12 @@ class ProcurementInitiationController extends BaseController
                     'threshold' => $case->thresholdAmount(),
                     'requires_philgeps' => $case->requiresPhilGEPS(),
                     'requires_bac_resolution' => $case->requiresBACResolution(),
+                ])
+                ->values(),
+            'negotiatedProcurementTypes' => collect(ProcurementModeEnums::negotiatedProcurementSubTypes())
+                ->map(fn ($label, $value) => [
+                    'value' => $value,
+                    'label' => $label,
                 ])
                 ->values(),
             'documentTypes' => collect(DocumentTypeEnums::getInitiationDocuments())
@@ -466,8 +473,13 @@ class ProcurementInitiationController extends BaseController
             $user = auth()->user();
             $userAddress = $user->blockchain_address ?? $user->email;
 
-            // Transition to the next stage: PRE_PROCUREMENT_CONFERENCE
-            $nextStage = StageEnums::PROCUREMENT_INITIATION;
+            // Get the mode-aware next stage for automatic transition (from HasProcurementSupport trait)
+            $nextStage = $this->getNextStageForProcurement($pr_number, $stage);
+
+            if (! $nextStage) {
+                return back()->with('error', 'Unable to determine next stage for this procurement mode.');
+            }
+
             $completionStatus = StatusEnums::PROCUREMENT_SUBMITTED;
 
             // 1. Publish status update to blockchain with stage transition
