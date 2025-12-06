@@ -60,12 +60,18 @@ class PreProcurementController extends BaseController
             abort(403, 'Invalid stage for Pre-Procurement phase');
         }
 
+        // Validate that stage exists in the procurement's mode workflow
+        if (! $this->stageExistsInWorkflow($pr_number, $stage)) {
+            abort(403, 'This stage is not applicable for this procurement mode');
+        }
+
         $procurement = $this->findProcurementById($pr_number);
 
         // Determine which Inertia component to render based on stage
         $component = match ($stage) {
             StageEnums::PRE_PROCUREMENT_CONFERENCE => 'bac-secretariat/procurement-stage/pre-procurement-conference-upload',
             StageEnums::BIDDING_DOCUMENTS => 'bac-secretariat/procurement-stage/bidding-documents-upload',
+            StageEnums::REQUEST_FOR_QUOTATION => 'bac-secretariat/procurement-stage/rfq-upload',
             default => abort(404, 'Stage component not found'),
         };
 
@@ -78,6 +84,7 @@ class PreProcurementController extends BaseController
                 'stage_value' => $stage->value,
                 'current_stage' => $procurement['stage'] ?? '',
             ],
+            'workflowInfo' => $this->getWorkflowInfo($pr_number, $stage),
             'documentGuide' => $this->validationService->getStageDocumentGuide($stage),
             'uploadedDocuments' => fn () => $this->getUploadedDocumentTypes($pr_number, $stage),
         ]);
@@ -92,6 +99,9 @@ class PreProcurementController extends BaseController
         if (! $stage->isPreProcurement()) {
             abort(403, 'Invalid stage for Pre-Procurement phase');
         }
+
+        // Validate that stage exists in the procurement's mode workflow
+        $this->validateStageInWorkflow($pr_number, $stage);
 
         $user = auth()->user();
         $userAddress = $user->blockchain_address;
@@ -362,6 +372,9 @@ class PreProcurementController extends BaseController
             abort(403, 'Invalid stage for Pre-Procurement phase');
         }
 
+        // Validate that stage exists in the procurement's mode workflow
+        $this->validateStageInWorkflow($pr_number, $stage);
+
         try {
             // Verify all required documents are uploaded
             $uploadedDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
@@ -411,106 +424,69 @@ class PreProcurementController extends BaseController
                 metadata: [
                     'stage' => $stage->value,
                     'completion_status' => $completionStatus->value,
+                    'procurement_mode' => $procurement->procurementMode->value,
                 ]
             );
 
-            // 4. Handle automatic stage transitions for specific stages
-            if ($stage === StageEnums::PRE_PROCUREMENT_CONFERENCE) {
-                // Automatically transition to BIDDING_DOCUMENTS stage
+            // 4. Get the mode-aware next stage for automatic transition
+            $nextStage = $this->getNextStageForProcurement($pr_number, $stage);
+
+            if ($nextStage) {
+                // Publish stage transition to blockchain
                 $this->statusPublisher->publishTransition(
                     prNumber: $pr_number,
                     procurementTitle: $procurement->title,
-                    fromStage: StageEnums::PRE_PROCUREMENT_CONFERENCE,
-                    toStage: StageEnums::BIDDING_DOCUMENTS,
-                    currentStatus: StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
+                    fromStage: $stage,
+                    toStage: $nextStage,
+                    currentStatus: $completionStatus,
                     userAddress: $userAddress
                 );
 
                 $this->eventPublisher->publishStageTransition(
                     prNumber: $pr_number,
                     procurementTitle: $procurement->title,
-                    fromStage: StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-                    toStage: StageEnums::BIDDING_DOCUMENTS->value,
+                    fromStage: $stage->value,
+                    toStage: $nextStage->value,
                     userAddress: $userAddress
                 );
 
-                return back()->with('success', [
-                    'message' => 'Pre-Procurement Conference marked as complete successfully! Proceeding to Bidding Documents stage.',
-                    'blockchain' => [
-                        'status_txid' => $statusResult['status_txid'] ?? null,
-                        'event_txid' => $eventResult['event_txid'] ?? null,
-                        'stage' => $stage->value,
-                        'completion_status' => $completionStatus->value,
-                    ],
-                ]);
-            }
-
-            if ($stage === StageEnums::BIDDING_DOCUMENTS) {
-                // Automatically transition to PRE_BID_CONFERENCE stage
-                $this->statusPublisher->publishTransition(
-                    prNumber: $pr_number,
-                    procurementTitle: $procurement->title,
-                    fromStage: StageEnums::BIDDING_DOCUMENTS,
-                    toStage: StageEnums::PRE_BID_CONFERENCE,
-                    currentStatus: StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
-                    userAddress: $userAddress
-                );
-
-                $this->eventPublisher->publishStageTransition(
-                    prNumber: $pr_number,
-                    procurementTitle: $procurement->title,
-                    fromStage: StageEnums::BIDDING_DOCUMENTS->value,
-                    toStage: StageEnums::PRE_BID_CONFERENCE->value,
-                    userAddress: $userAddress
-                );
-
-                return back()->with('success', [
-                    'message' => 'Bidding Documents marked as complete successfully! Proceeding to Pre-Bid Conference stage.',
-                    'blockchain' => [
-                        'status_txid' => $statusResult['status_txid'] ?? null,
-                        'event_txid' => $eventResult['event_txid'] ?? null,
-                        'stage' => $stage->value,
-                        'completion_status' => $completionStatus->value,
-                    ],
-                ]);
-            }
-
-            // 5. Determine next possible stages for other stages
-            $nextStages = $stage->getNextStages();
-            $nextStageMessage = '';
-            if (! empty($nextStages)) {
-                $nextStageNames = array_map(fn ($s) => $s->getDisplayName(), $nextStages);
-                if (count($nextStageNames) === 1) {
-                    $nextStageMessage = " Next stage: {$nextStageNames[0]}.";
-                } else {
-                    $nextStageMessage = ' Next possible stages: '.implode(', ', $nextStageNames).'.';
+                // 5. Notify relevant parties
+                try {
+                    $this->notificationService->notifyStageUpdate(
+                        pr_number: $pr_number,
+                        procurementTitle: $procurement->title,
+                        stageIdentifier: $stage->getDisplayName(),
+                        currentStatus: $completionStatus->getDisplayName(),
+                        timestamp: now()->toDateTimeString(),
+                        actionType: 'marked complete',
+                        documentCount: count($uploadedDocuments),
+                        stageTransition: true,
+                        nextStage: $nextStage->getDisplayName(),
+                        rolesToNotify: ['bac_chairman', 'hope', 'admin']
+                    );
+                } catch (\Exception $e) {
+                    // Non-critical: Continue even if notification fails
+                    Log::warning('Failed to send stage completion notifications', [
+                        'pr_number' => $pr_number,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
-            }
 
-            // 6. Notify relevant parties
-            try {
-                $this->notificationService->notifyStageUpdate(
-                    pr_number: $pr_number,
-                    procurementTitle: $procurement->title,
-                    stageIdentifier: $stage->getDisplayName(),
-                    currentStatus: $completionStatus->getDisplayName(),
-                    timestamp: now()->toDateTimeString(),
-                    actionType: 'marked complete',
-                    documentCount: count($uploadedDocuments),
-                    stageTransition: true,
-                    nextStage: ! empty($nextStages) ? $nextStages[0]->getDisplayName() : '',
-                    rolesToNotify: ['bac_chairman', 'hope', 'admin']
-                );
-            } catch (\Exception $e) {
-                // Non-critical: Continue even if notification fails
-                Log::warning('Failed to send stage completion notifications', [
-                    'pr_number' => $pr_number,
-                    'error' => $e->getMessage(),
+                return back()->with('success', [
+                    'message' => "{$stage->getDisplayName()} marked as complete successfully! Proceeding to {$nextStage->getDisplayName()} stage.",
+                    'blockchain' => [
+                        'status_txid' => $statusResult['status_txid'] ?? null,
+                        'event_txid' => $eventResult['event_txid'] ?? null,
+                        'stage' => $stage->value,
+                        'next_stage' => $nextStage->value,
+                        'completion_status' => $completionStatus->value,
+                    ],
                 ]);
             }
 
+            // No next stage - end of workflow for this phase
             return back()->with('success', [
-                'message' => "Stage marked as complete successfully!{$nextStageMessage}",
+                'message' => "{$stage->getDisplayName()} marked as complete successfully!",
                 'blockchain' => [
                     'status_txid' => $statusResult['status_txid'] ?? null,
                     'event_txid' => $eventResult['event_txid'] ?? null,
@@ -530,6 +506,37 @@ class PreProcurementController extends BaseController
     }
 
     /**
+     * Skip an optional stage and proceed to the next stage.
+     */
+    public function skipStage(Request $request, string $pr_number, StageEnums $stage): RedirectResponse
+    {
+        if (! $stage->isPreProcurement()) {
+            abort(403, 'Invalid stage for Pre-Procurement phase');
+        }
+
+        // Validate that stage exists in the procurement's mode workflow
+        $this->validateStageInWorkflow($pr_number, $stage);
+
+        try {
+            $reason = $request->input('reason');
+            $result = $this->performSkipStage($pr_number, $stage, $reason);
+
+            return back()->with('success', [
+                'message' => $result['message'],
+                'blockchain' => $result['blockchain'],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error skipping stage', [
+                'pr_number' => $pr_number,
+                'stage' => $stage->value,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
      * Get the appropriate completion status for a given stage.
      */
     private function getCompletionStatusForStage(StageEnums $stage): StatusEnums
@@ -537,6 +544,7 @@ class PreProcurementController extends BaseController
         return match ($stage) {
             StageEnums::PRE_PROCUREMENT_CONFERENCE => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
             StageEnums::BIDDING_DOCUMENTS => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
+            StageEnums::REQUEST_FOR_QUOTATION => StatusEnums::QUOTATIONS_RECEIVED,
             default => StatusEnums::PROCUREMENT_SUBMITTED,
         };
     }
@@ -750,7 +758,7 @@ class PreProcurementController extends BaseController
                     userAddress: $userAddress
                 );
 
-                return redirect()->route('bac-secretariat.procurement.phase.show', [
+                return redirect()->route('bac-secretariat.procurement.bidding.show', [
                     'pr_number' => $pr_number,
                     'stage' => StageEnums::PRE_BID_CONFERENCE->getSlug(),
                 ])->with('success', 'Decision recorded. Please upload conference documents.');
@@ -845,7 +853,7 @@ class PreProcurementController extends BaseController
                     userAddress: $userAddress
                 );
 
-                return redirect()->route('bac-secretariat.procurement.phase.show', [
+                return redirect()->route('bac-secretariat.procurement.bidding.show', [
                     'pr_number' => $pr_number,
                     'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->getSlug(),
                 ])->with('success', 'Decision recorded. Please upload supplemental bid bulletin documents.');

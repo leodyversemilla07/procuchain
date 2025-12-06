@@ -36,6 +36,9 @@ class StageDocumentRequirements
             StageEnums::MONITORING => $this->getMonitoringRequirements(),
             StageEnums::COMPLETION => $this->getCompletionRequirements(),
             StageEnums::COMPLETED => [],
+            // Small Value Procurement & Alternative Methods stages
+            StageEnums::REQUEST_FOR_QUOTATION => $this->getRequestForQuotationRequirements(),
+            StageEnums::ABSTRACT_OF_QUOTATIONS => $this->getAbstractOfQuotationsRequirements(),
         };
     }
 
@@ -62,6 +65,7 @@ class StageDocumentRequirements
             StageEnums::SUPPLEMENTAL_BID_BULLETIN => [],
             StageEnums::BID_OPENING => [
                 DocumentTypeEnums::BID_OPENING_RECORDING,
+                DocumentTypeEnums::PHILGEPS_PLATINUM_CERTIFICATE,
             ],
             StageEnums::BID_EVALUATION => [],
             StageEnums::POST_QUALIFICATION => [],
@@ -70,6 +74,7 @@ class StageDocumentRequirements
                 DocumentTypeEnums::LEGAL_OFFICER_CERTIFICATE,
             ],
             StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO => [
+                DocumentTypeEnums::PERFORMANCE_SECURING_DECLARATION,
                 DocumentTypeEnums::JOB_ORDER,
                 DocumentTypeEnums::CONTRACT_SB_RESOLUTION,
                 DocumentTypeEnums::INSURANCE_POLICIES,
@@ -88,6 +93,14 @@ class StageDocumentRequirements
                 DocumentTypeEnums::COA_AUDIT_DOCUMENTATION,
                 DocumentTypeEnums::WARRANTY_CLAIM_RECORDS,
                 DocumentTypeEnums::ASSET_MANAGEMENT_RECORDS,
+            ],
+            // Small Value Procurement & Alternative Methods stages
+            StageEnums::REQUEST_FOR_QUOTATION => [
+                DocumentTypeEnums::SUPPLIER_CANVASS_FORM,
+                DocumentTypeEnums::QUOTATION_COMPARISON_SHEET,
+            ],
+            StageEnums::ABSTRACT_OF_QUOTATIONS => [
+                DocumentTypeEnums::LOWEST_QUOTATION_CERTIFICATION,
             ],
         };
     }
@@ -405,6 +418,37 @@ class StageDocumentRequirements
             DocumentTypeEnums::UPDATED_INVENTORY_RECORDS,
             DocumentTypeEnums::PROCUREMENT_DOCUMENTATION_PACKAGE,
             DocumentTypeEnums::PERFORMANCE_EVALUATION,
+        ];
+    }
+
+    /**
+     * Request for Quotation Requirements (SVP & Alternative Methods)
+     *
+     * Per NGPA IRR Rule 4 Section 33: Small Value Procurement
+     * and related alternative procurement methods
+     *
+     * @return array<DocumentTypeEnums>
+     */
+    private function getRequestForQuotationRequirements(): array
+    {
+        return [
+            DocumentTypeEnums::REQUEST_FOR_QUOTATION,
+            DocumentTypeEnums::PRICE_QUOTATION,
+        ];
+    }
+
+    /**
+     * Abstract of Quotations Requirements (SVP & Alternative Methods)
+     *
+     * Per NGPA IRR Rule 4 Section 33: Required compilation
+     * of all quotations received for BAC evaluation
+     *
+     * @return array<DocumentTypeEnums>
+     */
+    private function getAbstractOfQuotationsRequirements(): array
+    {
+        return [
+            DocumentTypeEnums::ABSTRACT_OF_QUOTATIONS,
         ];
     }
 }

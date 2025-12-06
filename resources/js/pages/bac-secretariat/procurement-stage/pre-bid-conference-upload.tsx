@@ -1,5 +1,7 @@
 import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementController';
 import FileUploadArea from '@/components/file-upload-area';
+import { handleFlashSuccess } from '@/utils/blockchain-toast';
+import { ModeBadge, WorkflowProgressIndicator } from '@/components/procurement/workflow-progress-indicator';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -16,7 +18,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from '@/components/ui/progress';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
+import { BreadcrumbItem, WorkflowInfo } from '@/types';
 import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
@@ -31,12 +33,15 @@ interface PreBidConferenceUploadProps {
         title: string;
         status?: string;
         stage?: string;
+        stage_value?: string;
+        current_stage?: string;
     };
+    workflowInfo?: WorkflowInfo;
     documentGuide?: DocumentGuide;
     uploadedDocuments?: string[];
 }
 
-export default function PreBidConferenceUpload({ procurement, documentGuide, uploadedDocuments = [] }: PreBidConferenceUploadProps) {
+export default function PreBidConferenceUpload({ procurement, workflowInfo, documentGuide, uploadedDocuments = [] }: PreBidConferenceUploadProps) {
     const [files, setFiles] = useState<Record<string, File | null>>({});
     const [dragging, setDragging] = useState<Record<string, boolean>>({});
     const [isUploading, setIsUploading] = useState(false);
@@ -66,23 +71,7 @@ export default function PreBidConferenceUpload({ procurement, documentGuide, upl
             {},
             {
                 onSuccess: (page) => {
-                    const flash = (page.props as Record<string, unknown>).flash as Record<string, unknown> | undefined;
-                    const response = flash?.success;
-                    if (typeof response === 'object' && response && 'blockchain' in response) {
-                        const { message, blockchain } = response as { message: string; blockchain: { status_txid?: string; event_txid?: string } };
-                        toast.success(message, {
-                            description: (
-                                <div className="space-y-1 text-xs">
-                                    {blockchain.status_txid && <p>Status TX: {blockchain.status_txid}</p>}
-                                    {blockchain.event_txid && <p>Event TX: {blockchain.event_txid}</p>}
-                                </div>
-                            ),
-                        });
-                    } else {
-                        toast.success('Stage marked as complete!', {
-                            description: 'All required documents have been uploaded.',
-                        });
-                    }
+                    handleFlashSuccess(page as { props: Record<string, unknown> }, 'Stage marked as complete!');
                 },
                 onError: () => {
                     toast.error('Failed to mark stage as complete', {
@@ -107,7 +96,8 @@ export default function PreBidConferenceUpload({ procurement, documentGuide, upl
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
 
     // Stage is completed only if status explicitly shows completed or skipped
-    const isStageCompleted = procurement.status === 'pre_bid_conference_completed' || procurement.status === 'pre_bid_conference_skipped';
+    // Stage is completed if we've moved past this stage
+    const isStageCompleted = procurement.current_stage !== procurement.stage_value;
 
     const validateFile = useCallback((file: File): boolean => {
         if (file.size > 10 * 1024 * 1024) {
@@ -239,12 +229,18 @@ export default function PreBidConferenceUpload({ procurement, documentGuide, upl
             <Head title="Upload Pre-Bid Conference" />
 
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
+                {/* Workflow Progress Indicator */}
+                {workflowInfo && <WorkflowProgressIndicator workflowInfo={workflowInfo} />}
+
                 {/* Page Header */}
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                     <CardContent className="flex flex-col gap-2 p-4 sm:p-6">
-                        <div className="text-primary flex items-center gap-2">
-                            <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6" />
-                            <h1 className="text-xl font-bold sm:text-2xl">Pre-Bid Conference</h1>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="text-primary flex items-center gap-2">
+                                <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <h1 className="text-xl font-bold sm:text-2xl">Pre-Bid Conference</h1>
+                            </div>
+                            {workflowInfo && <ModeBadge workflowInfo={workflowInfo} />}
                         </div>
                         <p className="text-muted-foreground text-sm sm:text-base">
                             Upload the Pre-Bid Conference for procurement

@@ -139,6 +139,8 @@ Route::middleware(['auth'])->group(function () {
                 ->name('procurement.pre-procurement.upload-document');
             Route::post('/pre-procurement/{pr_number}/{stage}/complete', [PreProcurementController::class, 'markStageComplete'])
                 ->name('procurement.pre-procurement.complete');
+            Route::post('/pre-procurement/{pr_number}/{stage}/skip', [PreProcurementController::class, 'skipStage'])
+                ->name('procurement.pre-procurement.skip');
             Route::post('/publish-pre-procurement-conference-decision', [PreProcurementController::class, 'publishDecision'])
                 ->name('publish-pre-procurement-conference-decision');
             Route::post('/publish-pre-bid-conference-decision', [PreProcurementController::class, 'publishPreBidDecision'])
@@ -153,6 +155,8 @@ Route::middleware(['auth'])->group(function () {
                 ->name('procurement.bidding.upload-document');
             Route::post('/procurement/{pr_number}/{stage}/complete', [ProcurementController::class, 'markStageComplete'])
                 ->name('procurement.bidding.complete');
+            Route::post('/procurement/{pr_number}/{stage}/skip', [ProcurementController::class, 'skipStage'])
+                ->name('procurement.bidding.skip');
 
             // Post-Procurement Phase (Stages 10-15)
             Route::post('/post-procurement/{pr_number}/{stage}/upload', [PostProcurementController::class, 'uploadDocuments'])
@@ -161,6 +165,8 @@ Route::middleware(['auth'])->group(function () {
                 ->name('procurement.post-procurement.upload-document');
             Route::post('/post-procurement/{pr_number}/{stage}/complete', [PostProcurementController::class, 'markStageComplete'])
                 ->name('procurement.post-procurement.complete');
+            Route::post('/post-procurement/{pr_number}/{stage}/skip', [PostProcurementController::class, 'skipStage'])
+                ->name('procurement.post-procurement.skip');
             Route::post('/post-procurement/{pr_number}/delivery-details', [PostProcurementController::class, 'updateDeliveryDetails'])
                 ->name('procurement.post-procurement.delivery-details');
 

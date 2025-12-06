@@ -1,20 +1,8 @@
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { getActionConfigs } from '@/config/procurement-actions';
-import { ProcurementListItem, SharedData, Stage, Status } from '@/types';
-import { router, usePage } from '@inertiajs/react';
-import { AlertCircle, EyeIcon, ShieldCheck } from 'lucide-react';
-
-// Import Wayfinder route helpers for each role (from /procurements-list routes)
-import { show as adminShow } from '@/routes/admin/procurements';
-import { show as bacChairmanShow } from '@/routes/bac-chairman/procurements';
-import { show as bacSecretariatShow } from '@/routes/bac-secretariat/procurements';
-import { show as hopeShow } from '@/routes/hope/procurements';
-
-// Import corrections route helper
-import { show as correctionsShow } from '@/routes/procurements/corrections';
-
-// Import verification route helper
-import { verification as verificationShow } from '@/routes/procurement';
+import type { ProcurementListItem } from '@/types';
+import type { ProcurementAction } from '@/types/workflow';
+import { router } from '@inertiajs/react';
+import { AlertCircle, BarChart4Icon, Edit2Icon, EyeIcon, ShieldCheck, SkipForward, UploadCloudIcon } from 'lucide-react';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
@@ -23,23 +11,45 @@ interface ActionButtonsProps {
     onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
 }
 
-// Helper function to get the correct Wayfinder route based on user role
-const getProcurementShowUrl = (role: string, id: string): string => {
-    switch (role) {
-        case 'bac_secretariat':
-            return bacSecretariatShow.url(id);
-        case 'bac_chairman':
-            return bacChairmanShow.url(id);
-        case 'hope':
-            return hopeShow.url(id);
-        case 'admin':
-            return adminShow.url(id);
-        case 'guest':
-            // Guests shouldn't be able to view procurement details
-            return '#';
+/**
+ * Maps server-provided icon names to Lucide React icons
+ */
+const getIconComponent = (iconName: string, variant: string) => {
+    const variantColorMap: Record<string, string> = {
+        default: 'text-gray-600 dark:text-gray-400',
+        blue: 'text-blue-600 dark:text-blue-400',
+        green: 'text-green-600 dark:text-green-400',
+        indigo: 'text-indigo-600 dark:text-indigo-400',
+        amber: 'text-amber-600 dark:text-amber-400',
+        purple: 'text-purple-600 dark:text-purple-400',
+        cyan: 'text-cyan-600 dark:text-cyan-400',
+        teal: 'text-teal-600 dark:text-teal-400',
+        emerald: 'text-emerald-600 dark:text-emerald-400',
+        warning: 'text-amber-600 dark:text-amber-400',
+        success: 'text-green-600 dark:text-green-400',
+        outline: 'text-gray-500 dark:text-gray-400',
+    };
+
+    const colorClass = variantColorMap[variant] || variantColorMap.default;
+    const className = `h-4 w-4 ${colorClass}`;
+
+    switch (iconName) {
+        case 'upload':
+            return <UploadCloudIcon className={className} />;
+        case 'edit':
+            return <Edit2Icon className={className} />;
+        case 'chart':
+            return <BarChart4Icon className={className} />;
+        case 'eye':
+            return <EyeIcon className={className} />;
+        case 'shield-check':
+            return <ShieldCheck className={className} />;
+        case 'alert-circle':
+            return <AlertCircle className={className} />;
+        case 'skip':
+            return <SkipForward className={className} />;
         default:
-            // Unknown role, default to admin route
-            return adminShow.url(id);
+            return <EyeIcon className={className} />;
     }
 };
 
@@ -48,11 +58,13 @@ const DropdownActionItem = ({
     tooltipText,
     onClick,
     href,
+    isOptional = false,
 }: {
     icon: React.ReactNode;
     tooltipText: string;
     onClick?: () => void;
     href?: string;
+    isOptional?: boolean;
 }) => {
     const handleClick = (e: React.MouseEvent) => {
         if (href) {
@@ -66,63 +78,63 @@ const DropdownActionItem = ({
     return (
         <DropdownMenuItem onClick={handleClick} className="flex cursor-pointer items-center gap-2">
             {icon}
-            <span>{tooltipText}</span>
+            <span className={isOptional ? 'italic text-gray-500' : ''}>{tooltipText}</span>
         </DropdownMenuItem>
     );
 };
 
+/**
+ * Server-driven action buttons component
+ *
+ * This component renders action buttons based on server-provided configuration.
+ * Actions are determined by the backend based on procurement stage, status, mode,
+ * and user role - ensuring business logic stays in one place.
+ */
 export const ActionButtons = ({
     procurement,
     onOpenPreProcurementDialog,
     onOpenPreBidDialog,
     onOpenSupplementalBidBulletinDialog,
 }: ActionButtonsProps) => {
-    const { id, stage, current_status } = procurement;
-    const { auth } = usePage<SharedData>().props;
+    const { workflow_actions = [], static_actions = [] } = procurement;
 
-    // Extract role from roles array (roles[0]) instead of user.role
-    const userRole = auth.roles?.[0] || auth.user?.role || 'guest';
-    const isBacSecretariat = userRole === 'bac_secretariat';
-
-    // Get workflow actions from the centralized configuration
-    const workflowActions = isBacSecretariat
-        ? getActionConfigs(id, stage as Stage, current_status as Status, {
-              onPreProcurement: () => onOpenPreProcurementDialog?.(procurement),
-              onPreBid: () => onOpenPreBidDialog?.(procurement),
-              onSupplementalBidBulletin: () => onOpenSupplementalBidBulletinDialog?.(procurement),
-          })
-        : [];
-
-    // Always include View Details action
-    const viewDetailsConfig = {
-        icon: <EyeIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
-        tooltipText: 'View Details',
-        href: getProcurementShowUrl(userRole, id),
+    /**
+     * Maps server action types to click handlers for dialog actions
+     */
+    const getDialogHandler = (actionType: string | undefined): (() => void) | undefined => {
+        switch (actionType) {
+            case 'pre-procurement':
+                return () => onOpenPreProcurementDialog?.(procurement);
+            case 'pre-bid':
+                return () => onOpenPreBidDialog?.(procurement);
+            case 'supplemental-bid-bulletin':
+                return () => onOpenSupplementalBidBulletinDialog?.(procurement);
+            default:
+                return undefined;
+        }
     };
 
-    // Verification Report action (available to all authenticated users)
-    const verificationReportConfig = {
-        icon: <ShieldCheck className="h-4 w-4 text-green-600 dark:text-green-400" />,
-        tooltipText: 'Verification Report',
-        href: verificationShow.url(id),
+    /**
+     * Renders a single action from server configuration
+     */
+    const renderAction = (action: ProcurementAction, index: number) => {
+        const icon = getIconComponent(action.icon, action.variant);
+        const onClick = action.type === 'dialog' ? getDialogHandler(action.action) : undefined;
+
+        return (
+            <DropdownActionItem
+                key={`${action.type}-${index}`}
+                icon={icon}
+                tooltipText={action.label}
+                href={action.href}
+                onClick={onClick}
+                isOptional={action.is_optional}
+            />
+        );
     };
 
-    // Only show View Corrections for BAC Secretariat users
-    const viewCorrectionsConfig = isBacSecretariat
-        ? {
-              icon: <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />,
-              tooltipText: 'View Corrections',
-              href: correctionsShow.url(id),
-          }
-        : null;
+    // Combine static actions (view, verify) with workflow actions
+    const allActions = [...static_actions, ...workflow_actions];
 
-    const allConfigs = [viewDetailsConfig, verificationReportConfig, ...(viewCorrectionsConfig ? [viewCorrectionsConfig] : []), ...workflowActions];
-
-    return (
-        <>
-            {allConfigs.map((config, index) => (
-                <DropdownActionItem key={index} {...config} />
-            ))}
-        </>
-    );
+    return <>{allActions.map((action, index) => renderAction(action, index))}</>;
 };

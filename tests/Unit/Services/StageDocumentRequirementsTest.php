@@ -61,8 +61,12 @@ describe('StageDocumentRequirements', function () {
         });
 
         it('returns different documents than required', function () {
-            $required = $this->service->getRequiredDocuments(StageEnums::PROCUREMENT_INITIATION);
-            $optional = $this->service->getOptionalDocuments(StageEnums::PROCUREMENT_INITIATION);
+            // Use a stage that has optional documents for this test
+            $required = $this->service->getRequiredDocuments(StageEnums::PRE_PROCUREMENT_CONFERENCE);
+            $optional = $this->service->getOptionalDocuments(StageEnums::PRE_PROCUREMENT_CONFERENCE);
+
+            // Ensure stage has optional documents for this test
+            expect($optional)->not->toBeEmpty('PRE_PROCUREMENT_CONFERENCE should have optional documents');
 
             // No document should be in both required and optional
             foreach ($optional as $doc) {
@@ -204,11 +208,15 @@ describe('StageDocumentRequirements', function () {
         });
 
         it('does not include optional documents in missing', function () {
-            $required = $this->service->getRequiredDocuments(StageEnums::PROCUREMENT_INITIATION);
-            $optional = $this->service->getOptionalDocuments(StageEnums::PROCUREMENT_INITIATION);
+            // Use a stage that has optional documents for this test
+            $required = $this->service->getRequiredDocuments(StageEnums::PRE_PROCUREMENT_CONFERENCE);
+            $optional = $this->service->getOptionalDocuments(StageEnums::PRE_PROCUREMENT_CONFERENCE);
+
+            // Ensure stage has optional documents for this test
+            expect($optional)->not->toBeEmpty('PRE_PROCUREMENT_CONFERENCE should have optional documents');
 
             $missing = $this->service->getMissingDocuments(
-                StageEnums::PROCUREMENT_INITIATION,
+                StageEnums::PRE_PROCUREMENT_CONFERENCE,
                 []
             );
 

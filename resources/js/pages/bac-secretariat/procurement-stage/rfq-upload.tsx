@@ -1,6 +1,5 @@
-import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PostProcurementController';
+import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PreProcurementController';
 import FileUploadArea from '@/components/file-upload-area';
-import { handleFlashSuccess } from '@/utils/blockchain-toast';
 import { ModeBadge, WorkflowProgressIndicator } from '@/components/procurement/workflow-progress-indicator';
 import {
     AlertDialog,
@@ -21,17 +20,19 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, WorkflowInfo } from '@/types';
 import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
+import { handleFlashSuccess } from '@/utils/blockchain-toast';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 import { Head, router } from '@inertiajs/react';
-import { AlertCircle, Award, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, FileText } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
-interface NoaUploadProps {
+interface RfqUploadProps {
     procurement: {
         pr_number: string;
         title: string;
         status?: string;
+        stage?: string;
         stage_value?: string;
         current_stage?: string;
     };
@@ -40,7 +41,7 @@ interface NoaUploadProps {
     uploadedDocuments?: string[];
 }
 
-export default function NoaUpload({ procurement, workflowInfo, documentGuide, uploadedDocuments = [] }: NoaUploadProps) {
+export default function RfqUpload({ procurement, workflowInfo, documentGuide, uploadedDocuments = [] }: RfqUploadProps) {
     const [files, setFiles] = useState<Record<string, File | null>>({});
     const [dragging, setDragging] = useState<Record<string, boolean>>({});
     const [isUploading, setIsUploading] = useState(false);
@@ -57,13 +58,13 @@ export default function NoaUpload({ procurement, workflowInfo, documentGuide, up
 
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
         getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
-        { title: `Upload Notice of Award - ${procurement?.pr_number || 'Unknown'}${procurement?.title ? ': ' + procurement.title : ''}`, href: '#' },
+        { title: `Request for Quotation - ${procurement?.pr_number || 'Unknown'}${procurement?.title ? ': ' + procurement.title : ''}`, href: '#' },
     ]);
 
     const handleMarkComplete = () => {
         setIsMarkingComplete(true);
         router.post(
-            markStageComplete({ pr_number: procurement.pr_number, stage: 'notice_of_award' }).url,
+            markStageComplete({ pr_number: procurement.pr_number, stage: 'request_for_quotation' }).url,
             {},
             {
                 onSuccess: (page) => {
@@ -90,7 +91,7 @@ export default function NoaUpload({ procurement, workflowInfo, documentGuide, up
 
     const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
 
-    // Stage is completed only if status explicitly shows awarded
+    // Stage is completed only if status explicitly shows quotations received
     // Stage is completed if we've moved past this stage
     const isStageCompleted = procurement.current_stage !== procurement.stage_value;
 
@@ -187,7 +188,7 @@ export default function NoaUpload({ procurement, workflowInfo, documentGuide, up
         setIsUploading(true);
 
         router.post(
-            uploadSingleDocument({ pr_number: procurement.pr_number, stage: 'notice_of_award' }).url,
+            uploadSingleDocument({ pr_number: procurement.pr_number, stage: 'request_for_quotation' }).url,
             {
                 document_file: file,
                 document_type: confirmDialog.documentValue,
@@ -220,7 +221,7 @@ export default function NoaUpload({ procurement, workflowInfo, documentGuide, up
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Upload Notice of Award" />
+            <Head title="Request for Quotation" />
 
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 {/* Workflow Progress Indicator */}
@@ -231,19 +232,22 @@ export default function NoaUpload({ procurement, workflowInfo, documentGuide, up
                     <CardContent className="flex flex-col gap-2 p-4 sm:p-6">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div className="text-primary flex items-center gap-2">
-                                <Award className="h-5 w-5 sm:h-6 sm:w-6" />
-                                <h1 className="text-xl font-bold sm:text-2xl">Notice of Award</h1>
+                                <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <h1 className="text-xl font-bold sm:text-2xl">Request for Quotation (RFQ)</h1>
                             </div>
                             {workflowInfo && <ModeBadge workflowInfo={workflowInfo} />}
                         </div>
                         <p className="text-muted-foreground text-sm sm:text-base">
-                            Upload the Notice of Award for procurement
+                            Upload the Request for Quotation and price quotations for procurement
                             <span className="text-foreground font-medium"> #{procurement?.pr_number || 'Unknown'}</span>
                             {procurement?.title && (
                                 <>
                                     :<span className="text-foreground font-medium italic"> {procurement.title}</span>
                                 </>
                             )}
+                        </p>
+                        <p className="text-muted-foreground mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs dark:border-blue-800 dark:bg-blue-950/20">
+                            <strong>Note:</strong> This stage is for Small Value Procurement (SVP) and other alternative procurement methods. Upload the RFQ sent to suppliers and the price quotations received.
                         </p>
                     </CardContent>
                 </Card>
@@ -255,7 +259,7 @@ export default function NoaUpload({ procurement, workflowInfo, documentGuide, up
                             <Card className="border-sidebar-border/70 dark:border-sidebar-border h-fit shadow-md">
                                 <CardHeader className="space-y-1 pb-2 sm:pb-4">
                                     <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                                        <Award className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                        <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
                                         Upload Progress
                                     </CardTitle>
                                     <CardDescription className="text-sm">Track your document upload progress</CardDescription>
@@ -315,11 +319,11 @@ export default function NoaUpload({ procurement, workflowInfo, documentGuide, up
                         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
                             <CardHeader className="space-y-1 pb-2 sm:pb-4">
                                 <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                                    <Award className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                    <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
                                     Document Upload
                                 </CardTitle>
                                 <CardDescription className="text-sm">
-                                    Upload required and optional documents for Notice of Award. Files will be permanently saved.
+                                    Upload required and optional documents for Request for Quotation. Files will be permanently saved.
                                 </CardDescription>
                             </CardHeader>
 

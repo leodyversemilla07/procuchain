@@ -5,6 +5,7 @@
 
 import type { Document, Event } from './document';
 import type { Stage, Status } from './enums';
+import type { ProcurementAction } from './workflow';
 
 export interface ProcurementListItem {
     id: string;
@@ -15,6 +16,10 @@ export interface ProcurementListItem {
     timestamp: string;
     document_count: number;
     last_updated: string;
+    procurement_mode?: string | null;
+    procurement_mode_label?: string | null;
+    workflow_actions?: ProcurementAction[];
+    static_actions?: ProcurementAction[];
 }
 
 export interface Procurement {

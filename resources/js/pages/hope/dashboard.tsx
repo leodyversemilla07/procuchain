@@ -1,3 +1,4 @@
+import { ModeDistributionCard, type ModeStatistics } from '@/components/dashboard/mode-distribution-card';
 import { ProcurementDistributionCard } from '@/components/dashboard/procurement-distribution-card';
 import { RecentActivitiesList } from '@/components/dashboard/recent-activities-list';
 import { RecentProcurementsTable } from '@/components/dashboard/recent-procurements-table';
@@ -55,11 +56,12 @@ interface DashboardProps extends SharedData {
     procurementDistribution: RecentProcurement[];
     recentActivities: RecentActivity[];
     stats: DashboardStats;
+    modeStatistics?: ModeStatistics;
     error?: string;
 }
 
 export default function HOPEDashboard() {
-    const { recentProcurements = [], procurementDistribution = [], recentActivities = [], stats, error } = usePage<DashboardProps>().props;
+    const { recentProcurements = [], procurementDistribution = [], recentActivities = [], stats, modeStatistics, error } = usePage<DashboardProps>().props;
 
     const breadcrumbs = [getDashboardBreadcrumb(UserRole.HOPE)];
 
@@ -206,6 +208,46 @@ export default function HOPEDashboard() {
                             className="xl:col-span-2"
                             stageDistribution={stageDistribution}
                             errorState={buildErrorState('Unable to load stage distribution')}
+                        />
+                    </Deferred>
+                </div>
+
+                {/* Mode Distribution Section - NGPA Compliance */}
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+                    <Deferred
+                        data="modeStatistics"
+                        fallback={
+                            <Card className="shadow-sm">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
+                                    <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <ModeDistributionCard
+                            modeStatistics={modeStatistics}
+                            title="Procurement Mode Distribution"
+                            description="NGPA-compliant mode usage statistics"
+                            variant="chart"
+                            errorState={buildErrorState('Unable to load mode distribution')}
+                        />
+                    </Deferred>
+                    <Deferred
+                        data="modeStatistics"
+                        fallback={
+                            <Card className="shadow-sm">
+                                <CardContent className="flex h-[200px] items-center justify-center sm:h-[250px] md:h-[300px]">
+                                    <Spinner className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10" />
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <ModeDistributionCard
+                            modeStatistics={modeStatistics}
+                            title="Competitive vs Alternative"
+                            description="Mode type breakdown per NGPA IRR"
+                            variant="breakdown"
+                            errorState={buildErrorState('Unable to load mode breakdown')}
                         />
                     </Deferred>
                 </div>

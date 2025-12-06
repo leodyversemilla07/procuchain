@@ -34,11 +34,16 @@ enum StatusEnums: string
     case COMPLETION_DOCUMENTS_UPLOADED = 'completion_documents_uploaded';
     case COMPLETED = 'completed';
 
+    // Alternative Procurement Methods (SVP, Direct Contracting, etc.)
+    case QUOTATIONS_RECEIVED = 'quotations_received';
+    case ABSTRACT_PREPARED = 'abstract_prepared';
+
     // Issue #12 fix: Lifecycle state statuses for procurement management
     case STAGE_ON_HOLD = 'stage_on_hold';
     case STAGE_CANCELLED = 'stage_cancelled';
     case STAGE_REJECTED = 'stage_rejected';
     case STAGE_PENDING_CORRECTION = 'stage_pending_correction';
+    case STAGE_SKIPPED = 'stage_skipped';
 
     /**
      * Get the user-friendly display name for the status
@@ -69,11 +74,15 @@ enum StatusEnums: string
             self::MONITORING_COMPLETED => 'Monitoring Completed',
             self::COMPLETION_DOCUMENTS_UPLOADED => 'Completion Documents Uploaded',
             self::COMPLETED => 'Completed',
+            // Alternative Procurement Methods (SVP, Direct Contracting, etc.)
+            self::QUOTATIONS_RECEIVED => 'Quotations Received',
+            self::ABSTRACT_PREPARED => 'Abstract of Quotations Prepared',
             // Issue #12 fix: Lifecycle states
             self::STAGE_ON_HOLD => 'On Hold',
             self::STAGE_CANCELLED => 'Cancelled',
             self::STAGE_REJECTED => 'Rejected',
             self::STAGE_PENDING_CORRECTION => 'Pending Correction',
+            self::STAGE_SKIPPED => 'Stage Skipped',
         };
     }
 
@@ -106,11 +115,15 @@ enum StatusEnums: string
             self::MONITORING_COMPLETED => 'MonitoringCompleted',
             self::COMPLETION_DOCUMENTS_UPLOADED => 'CompletionDocumentsUploaded',
             self::COMPLETED => 'Completed',
+            // Alternative Procurement Methods (SVP, Direct Contracting, etc.)
+            self::QUOTATIONS_RECEIVED => 'QuotationsReceived',
+            self::ABSTRACT_PREPARED => 'AbstractPrepared',
             // Issue #12 fix: Lifecycle states
             self::STAGE_ON_HOLD => 'OnHold',
             self::STAGE_CANCELLED => 'Cancelled',
             self::STAGE_REJECTED => 'Rejected',
             self::STAGE_PENDING_CORRECTION => 'PendingCorrection',
+            self::STAGE_SKIPPED => 'StageSkipped',
         };
     }
 
@@ -143,11 +156,15 @@ enum StatusEnums: string
             self::MONITORING_COMPLETED => 'Project monitoring phase has been completed',
             self::COMPLETION_DOCUMENTS_UPLOADED => 'Completion documents have been uploaded',
             self::COMPLETED => 'Procurement process is fully completed',
+            // Alternative Procurement Methods (SVP, Direct Contracting, etc.)
+            self::QUOTATIONS_RECEIVED => 'All price quotations have been received from suppliers',
+            self::ABSTRACT_PREPARED => 'Abstract of Quotations has been prepared for BAC evaluation',
             // Issue #12 fix: Lifecycle states
             self::STAGE_ON_HOLD => 'Procurement has been temporarily paused',
             self::STAGE_CANCELLED => 'Procurement has been terminated',
             self::STAGE_REJECTED => 'Stage has been rejected and requires rework',
             self::STAGE_PENDING_CORRECTION => 'Awaiting corrections before proceeding',
+            self::STAGE_SKIPPED => 'Optional stage has been skipped per procurement mode',
         };
     }
 

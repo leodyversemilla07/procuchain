@@ -1,5 +1,7 @@
 import { markStageComplete, updateDeliveryDetails, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PostProcurementController';
 import FileUploadArea from '@/components/file-upload-area';
+import { handleFlashSuccess } from '@/utils/blockchain-toast';
+import { ModeBadge, WorkflowProgressIndicator } from '@/components/procurement/workflow-progress-indicator';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -19,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
+import { BreadcrumbItem, WorkflowInfo } from '@/types';
 import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
@@ -41,11 +43,12 @@ interface NtpUploadProps {
         delivery_date_formatted?: string;
         delivery_term_days?: number;
     };
+    workflowInfo?: WorkflowInfo;
     documentGuide?: DocumentGuide;
     uploadedDocuments?: string[];
 }
 
-export default function NtpUpload({ procurement, documentGuide, uploadedDocuments = [] }: NtpUploadProps) {
+export default function NtpUpload({ procurement, workflowInfo, documentGuide, uploadedDocuments = [] }: NtpUploadProps) {
     const [files, setFiles] = useState<Record<string, File | null>>({});
     const [dragging, setDragging] = useState<Record<string, boolean>>({});
     const [isUploading, setIsUploading] = useState(false);
@@ -68,7 +71,12 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
         delivery_term_days: procurement.delivery_term_days?.toString() || '',
     });
 
-    const hasDeliveryDetails = Boolean(procurement.delivery_location && procurement.delivery_date && procurement.delivery_term_days);
+    // Track if delivery details have been saved (either from initial data or after saving)
+    const [deliveryDetailsSaved, setDeliveryDetailsSaved] = useState(
+        Boolean(procurement.delivery_location && procurement.delivery_date && procurement.delivery_term_days)
+    );
+
+    const hasDeliveryDetails = deliveryDetailsSaved;
 
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
         getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
@@ -119,6 +127,7 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
                     toast.success('Delivery details saved successfully', {
                         description: 'Delivery information has been recorded on the blockchain.',
                     });
+                    setDeliveryDetailsSaved(true);
                 },
                 onError: (errors) => {
                     const errorMessage = errors.message || Object.values(errors)[0] || 'Failed to save delivery details';
@@ -243,23 +252,7 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
             {},
             {
                 onSuccess: (page) => {
-                    const flash = (page.props as Record<string, unknown>).flash as Record<string, unknown> | undefined;
-                    const response = flash?.success;
-                    if (typeof response === 'object' && response && 'blockchain' in response) {
-                        const { message, blockchain } = response as { message: string; blockchain: { status_txid?: string; event_txid?: string } };
-                        toast.success(message, {
-                            description: (
-                                <div className="space-y-1 text-xs">
-                                    {blockchain.status_txid && <p>Status TX: {blockchain.status_txid}</p>}
-                                    {blockchain.event_txid && <p>Event TX: {blockchain.event_txid}</p>}
-                                </div>
-                            ),
-                        });
-                    } else {
-                        toast.success('Stage marked as complete!', {
-                            description: 'All required documents have been uploaded.',
-                        });
-                    }
+                    handleFlashSuccess(page as { props: Record<string, unknown> }, 'Stage marked as complete!');
                 },
                 onError: () => {
                     toast.error('Failed to mark stage as complete', {
@@ -289,12 +282,18 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
             <Head title="Upload Notice to Proceed" />
 
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
+                {/* Workflow Progress Indicator */}
+                {workflowInfo && <WorkflowProgressIndicator workflowInfo={workflowInfo} />}
+
                 {/* Page Header */}
                 <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                     <CardContent className="flex flex-col gap-2 p-4 sm:p-6">
-                        <div className="text-primary flex items-center gap-2">
-                            <Send className="h-5 w-5 sm:h-6 sm:w-6" />
-                            <h1 className="text-xl font-bold sm:text-2xl">Notice to Proceed</h1>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="text-primary flex items-center gap-2">
+                                <Send className="h-5 w-5 sm:h-6 sm:w-6" />
+                                <h1 className="text-xl font-bold sm:text-2xl">Notice to Proceed</h1>
+                            </div>
+                            {workflowInfo && <ModeBadge workflowInfo={workflowInfo} />}
                         </div>
                         <p className="text-muted-foreground text-sm sm:text-base">
                             Upload the Notice to Proceed for procurement
@@ -308,11 +307,12 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
                     </CardContent>
                 </Card>
 
-                <div className="space-y-4 sm:space-y-6">
-                    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+                    {/* Left Column - Progress & Delivery Details */}
+                    <div className="space-y-4 sm:space-y-6">
                         {/* Document Upload Progress */}
                         {documentGuide && (
-                            <Card className="border-sidebar-border/70 dark:border-sidebar-border h-fit shadow-md">
+                            <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                                 <CardHeader className="space-y-1 pb-2 sm:pb-4">
                                     <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
                                         <Send className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
@@ -373,7 +373,7 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
                         )}
 
                         {/* Delivery Details Card - Per NGPA IRR Section 71 */}
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border h-fit shadow-md lg:col-span-3">
+                        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
                             <CardHeader className="space-y-1 pb-2 sm:pb-4">
                                 <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
                                     <MapPin className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
@@ -390,7 +390,7 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid gap-4 sm:grid-cols-3">
+                                <div className="space-y-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="delivery_location" className="flex items-center gap-1.5">
                                             <MapPin className="h-3.5 w-3.5" />
@@ -401,7 +401,7 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
                                             value={deliveryForm.delivery_location}
                                             onChange={(e) => setDeliveryForm((prev) => ({ ...prev, delivery_location: e.target.value }))}
                                             placeholder="e.g., Municipal Hall, Brgy. Centro"
-                                            disabled={isStageCompleted}
+                                            disabled={isStageCompleted || hasDeliveryDetails}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -414,7 +414,7 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
                                             value={deliveryForm.delivery_date}
                                             onChange={(value) => setDeliveryForm((prev) => ({ ...prev, delivery_date: value }))}
                                             placeholder="Select delivery date"
-                                            disabled={isStageCompleted}
+                                            disabled={isStageCompleted || hasDeliveryDetails}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -430,13 +430,13 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
                                             value={deliveryForm.delivery_term_days}
                                             onChange={(e) => setDeliveryForm((prev) => ({ ...prev, delivery_term_days: e.target.value }))}
                                             placeholder="e.g., 30"
-                                            disabled={isStageCompleted}
+                                            disabled={isStageCompleted || hasDeliveryDetails}
                                         />
                                     </div>
                                 </div>
                             </CardContent>
                             <CardFooter className="border-t pt-4">
-                                {isStageCompleted ? (
+                                {isStageCompleted || hasDeliveryDetails ? (
                                     <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-500">
                                         <CheckCircle2 className="h-4 w-4" />
                                         Delivery details have been recorded
@@ -446,7 +446,7 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
                                         type="button"
                                         onClick={handleSaveDeliveryDetails}
                                         disabled={isSavingDelivery || !deliveryForm.delivery_location || !deliveryForm.delivery_date || !deliveryForm.delivery_term_days}
-                                        className="w-full sm:w-auto"
+                                        className="w-full"
                                     >
                                         {isSavingDelivery ? (
                                             <>
@@ -465,184 +465,182 @@ export default function NtpUpload({ procurement, documentGuide, uploadedDocument
                         </Card>
                     </div>
 
-                    {/* Document Upload Section */}
-                    <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
-                            <CardHeader className="space-y-1 pb-2 sm:pb-4">
-                                <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
-                                    <Send className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
-                                    Document Upload
-                                </CardTitle>
-                                <p className="text-muted-foreground text-sm">
-                                    Upload required and optional documents for Notice to Proceed. Files will be permanently saved.
-                                </p>
-                            </CardHeader>
+                    {/* Right Column - Document Upload Section */}
+                    <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md lg:col-span-2">
+                        <CardHeader className="space-y-1 pb-2 sm:pb-4">
+                            <CardTitle className="flex items-center gap-2 text-lg font-semibold sm:text-xl">
+                                <Send className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+                                Document Upload
+                            </CardTitle>
+                            <p className="text-muted-foreground text-sm">
+                                Upload required and optional documents for Notice to Proceed. Files will be permanently saved.
+                            </p>
+                        </CardHeader>
 
-                            <CardContent className="space-y-6">
-                                {/* Required Documents */}
-                                {documentGuide && documentGuide.required_documents.length > 0 && (
+                        <CardContent className="space-y-6">
+                            {/* Required Documents */}
+                            {documentGuide && documentGuide.required_documents.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-sm font-semibold">Required Documents</h3>
+                                        <Badge variant="secondary" className="text-xs">
+                                            {documentGuide.counts.required_count}
+                                        </Badge>
+                                    </div>
                                     <div className="space-y-4">
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-sm font-semibold">Required Documents</h3>
-                                            <Badge variant="secondary" className="text-xs">
-                                                {documentGuide.counts.required_count}
-                                            </Badge>
-                                        </div>
-                                        <div className="space-y-4">
-                                            {documentGuide.required_documents.map((doc) => {
-                                                const isUploaded = uploadedDocuments.includes(doc.value);
-                                                return (
-                                                    <div key={doc.value} className="space-y-2">
-                                                        <div className="flex items-start justify-between gap-2">
-                                                            <div className="flex-1">
-                                                                <p className="text-sm font-medium">{doc.display_name}</p>
-                                                                {doc.description && (
-                                                                    <p className="text-muted-foreground text-xs">{doc.description}</p>
-                                                                )}
-                                                            </div>
-                                                            {isUploaded && (
-                                                                <Badge variant="outline" className="text-xs text-green-600 dark:text-green-500">
-                                                                    <CheckCircle2 className="mr-1 h-3 w-3" />
-                                                                    Uploaded
-                                                                </Badge>
+                                        {documentGuide.required_documents.map((doc) => {
+                                            const isUploaded = uploadedDocuments.includes(doc.value);
+                                            return (
+                                                <div key={doc.value} className="space-y-2">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-medium">{doc.display_name}</p>
+                                                            {doc.description && (
+                                                                <p className="text-muted-foreground text-xs">{doc.description}</p>
                                                             )}
                                                         </div>
-                                                        {!isUploaded && (
-                                                            <div className="flex flex-col gap-2 sm:flex-row">
-                                                                <div className="flex-1">
-                                                                    <FileUploadArea
-                                                                        label=""
-                                                                        file={files[doc.value] || null}
-                                                                        isDragging={dragging[doc.value] || false}
-                                                                        onFileChange={handleFileChange(doc.value)}
-                                                                        onDragEnter={handleDragEnter(doc.value)}
-                                                                        onDragLeave={handleDragLeave(doc.value)}
-                                                                        onDragOver={handleDragOver}
-                                                                        onDrop={handleDrop(doc.value)}
-                                                                        onRemove={handleRemove(doc.value)}
-                                                                        inputId={`file-${doc.value}`}
-                                                                        required
-                                                                    />
-                                                                </div>
-                                                                <Button
-                                                                    type="button"
-                                                                    onClick={() => handleUploadClick(doc.value, doc.display_name)}
-                                                                    disabled={!files[doc.value] || isUploading}
-                                                                    className="mt-0 h-12 w-full self-start sm:h-[120px] sm:w-auto"
-                                                                >
-                                                                    Upload
-                                                                </Button>
-                                                            </div>
+                                                        {isUploaded && (
+                                                            <Badge variant="outline" className="text-xs text-green-600 dark:text-green-500">
+                                                                <CheckCircle2 className="mr-1 h-3 w-3" />
+                                                                Uploaded
+                                                            </Badge>
                                                         )}
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Optional Documents */}
-                                {documentGuide && documentGuide.optional_documents.length > 0 && (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-sm font-semibold">Optional Documents</h3>
-                                            <Badge variant="outline" className="text-xs">
-                                                {documentGuide.counts.optional_count}
-                                            </Badge>
-                                        </div>
-                                        <div className="space-y-4">
-                                            {documentGuide.optional_documents.map((doc) => {
-                                                const isUploaded = uploadedDocuments.includes(doc.value);
-                                                return (
-                                                    <div key={doc.value} className="space-y-2">
-                                                        <div className="flex items-start justify-between gap-2">
+                                                    {!isUploaded && (
+                                                        <div className="flex flex-col gap-2 sm:flex-row">
                                                             <div className="flex-1">
-                                                                <p className="text-sm font-medium">{doc.display_name}</p>
-                                                                {doc.description && (
-                                                                    <p className="text-muted-foreground text-xs">{doc.description}</p>
-                                                                )}
+                                                                <FileUploadArea
+                                                                    label=""
+                                                                    file={files[doc.value] || null}
+                                                                    isDragging={dragging[doc.value] || false}
+                                                                    onFileChange={handleFileChange(doc.value)}
+                                                                    onDragEnter={handleDragEnter(doc.value)}
+                                                                    onDragLeave={handleDragLeave(doc.value)}
+                                                                    onDragOver={handleDragOver}
+                                                                    onDrop={handleDrop(doc.value)}
+                                                                    onRemove={handleRemove(doc.value)}
+                                                                    inputId={`file-${doc.value}`}
+                                                                    required
+                                                                />
                                                             </div>
-                                                            {isUploaded && (
-                                                                <Badge variant="outline" className="text-xs text-blue-600 dark:text-blue-500">
-                                                                    <CheckCircle2 className="mr-1 h-3 w-3" />
-                                                                    Uploaded
-                                                                </Badge>
+                                                            <Button
+                                                                type="button"
+                                                                onClick={() => handleUploadClick(doc.value, doc.display_name)}
+                                                                disabled={!files[doc.value] || isUploading}
+                                                                className="mt-0 h-12 w-full self-start sm:h-[120px] sm:w-auto"
+                                                            >
+                                                                Upload
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Optional Documents */}
+                            {documentGuide && documentGuide.optional_documents.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-sm font-semibold">Optional Documents</h3>
+                                        <Badge variant="outline" className="text-xs">
+                                            {documentGuide.counts.optional_count}
+                                        </Badge>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {documentGuide.optional_documents.map((doc) => {
+                                            const isUploaded = uploadedDocuments.includes(doc.value);
+                                            return (
+                                                <div key={doc.value} className="space-y-2">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-medium">{doc.display_name}</p>
+                                                            {doc.description && (
+                                                                <p className="text-muted-foreground text-xs">{doc.description}</p>
                                                             )}
                                                         </div>
-                                                        {!isUploaded && (
-                                                            <div className="flex flex-col gap-2 sm:flex-row">
-                                                                <div className="flex-1">
-                                                                    <FileUploadArea
-                                                                        label=""
-                                                                        file={files[doc.value] || null}
-                                                                        isDragging={dragging[doc.value] || false}
-                                                                        onFileChange={handleFileChange(doc.value)}
-                                                                        onDragEnter={handleDragEnter(doc.value)}
-                                                                        onDragLeave={handleDragLeave(doc.value)}
-                                                                        onDragOver={handleDragOver}
-                                                                        onDrop={handleDrop(doc.value)}
-                                                                        onRemove={handleRemove(doc.value)}
-                                                                        inputId={`file-${doc.value}`}
-                                                                    />
-                                                                </div>
-                                                                <Button
-                                                                    type="button"
-                                                                    onClick={() => handleUploadClick(doc.value, doc.display_name)}
-                                                                    disabled={!files[doc.value] || isUploading}
-                                                                    variant="secondary"
-                                                                    className="mt-0 h-12 w-full self-start sm:h-[120px] sm:w-auto"
-                                                                >
-                                                                    Upload
-                                                                </Button>
-                                                            </div>
+                                                        {isUploaded && (
+                                                            <Badge variant="outline" className="text-xs text-blue-600 dark:text-blue-500">
+                                                                <CheckCircle2 className="mr-1 h-3 w-3" />
+                                                                Uploaded
+                                                            </Badge>
                                                         )}
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
+                                                    {!isUploaded && (
+                                                        <div className="flex flex-col gap-2 sm:flex-row">
+                                                            <div className="flex-1">
+                                                                <FileUploadArea
+                                                                    label=""
+                                                                    file={files[doc.value] || null}
+                                                                    isDragging={dragging[doc.value] || false}
+                                                                    onFileChange={handleFileChange(doc.value)}
+                                                                    onDragEnter={handleDragEnter(doc.value)}
+                                                                    onDragLeave={handleDragLeave(doc.value)}
+                                                                    onDragOver={handleDragOver}
+                                                                    onDrop={handleDrop(doc.value)}
+                                                                    onRemove={handleRemove(doc.value)}
+                                                                    inputId={`file-${doc.value}`}
+                                                                />
+                                                            </div>
+                                                            <Button
+                                                                type="button"
+                                                                onClick={() => handleUploadClick(doc.value, doc.display_name)}
+                                                                disabled={!files[doc.value] || isUploading}
+                                                                variant="secondary"
+                                                                className="mt-0 h-12 w-full self-start sm:h-[120px] sm:w-auto"
+                                                            >
+                                                                Upload
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                )}
-                            </CardContent>
+                                </div>
+                            )}
+                        </CardContent>
 
-                            <CardFooter className="flex flex-col gap-3 border-t pt-4">
-                                {isStageCompleted ? (
-                                    <div className="w-full rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
-                                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                                            <CheckCircle2 className="h-5 w-5" />
-                                            <div>
-                                                <p className="font-semibold">Stage Completed</p>
-                                                <p className="text-sm">This stage has been marked as complete.</p>
-                                            </div>
+                        <CardFooter className="flex flex-col gap-3 border-t pt-4">
+                            {isStageCompleted ? (
+                                <div className="w-full rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
+                                    <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                                        <CheckCircle2 className="h-5 w-5" />
+                                        <div>
+                                            <p className="font-semibold">Stage Completed</p>
+                                            <p className="text-sm">This stage has been marked as complete.</p>
                                         </div>
                                     </div>
-                                ) : (
-                                    <Button
-                                        type="button"
-                                        disabled={!allRequiredUploaded || isUploading || isMarkingComplete}
-                                        onClick={handleMarkComplete}
-                                        className="flex h-10 w-full items-center gap-2 text-sm sm:h-11 sm:text-base"
-                                    >
-                                        {isMarkingComplete ? (
-                                            <div className="flex items-center gap-2">
-                                                <Spinner className="h-4 w-4" />
-                                                Marking Complete...
-                                            </div>
-                                        ) : isUploading ? (
-                                            <div className="flex items-center gap-2">
-                                                <Spinner className="h-4 w-4" />
-                                                Uploading...
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <CheckCircle2 className="h-4 w-4" />
-                                                Mark Stage as Complete
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
-                            </CardFooter>
-                        </Card>
-                    </div>
+                                </div>
+                            ) : (
+                                <Button
+                                    type="button"
+                                    disabled={!allRequiredUploaded || isUploading || isMarkingComplete}
+                                    onClick={handleMarkComplete}
+                                    className="flex h-10 w-full items-center gap-2 text-sm sm:h-11 sm:text-base"
+                                >
+                                    {isMarkingComplete ? (
+                                        <div className="flex items-center gap-2">
+                                            <Spinner className="h-4 w-4" />
+                                            Marking Complete...
+                                        </div>
+                                    ) : isUploading ? (
+                                        <div className="flex items-center gap-2">
+                                            <Spinner className="h-4 w-4" />
+                                            Uploading...
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <CheckCircle2 className="h-4 w-4" />
+                                            Mark Stage as Complete
+                                        </>
+                                    )}
+                                </Button>
+                            )}
+                        </CardFooter>
+                    </Card>
                 </div>
             </div>
 

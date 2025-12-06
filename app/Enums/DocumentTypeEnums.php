@@ -74,8 +74,9 @@ enum DocumentTypeEnums: string
     case BID_BULLETIN_WEBSITE = 'bid_bulletin_website';
     case BID_BULLETIN_ACKNOWLEDGMENTS = 'bid_bulletin_acknowledgments';
 
-    // Stage 6: Bid Opening (11 documents)
+    // Stage 6: Bid Opening (12 documents)
     case BID_SUBMISSION_REGISTER = 'bid_submission_register';
+    case PHILGEPS_PLATINUM_CERTIFICATE = 'philgeps_platinum_certificate';
     case SEALED_BID_PROPOSALS = 'sealed_bid_proposals';
     case ABSTRACT_OF_BIDS = 'abstract_of_bids';
     case BID_OPENING_MINUTES = 'bid_opening_minutes';
@@ -132,8 +133,9 @@ enum DocumentTypeEnums: string
     case BID_SECURITY_RETURN = 'bid_security_return';
     case LEGAL_OFFICER_CERTIFICATE = 'legal_officer_certificate';
 
-    // Stage 11: Performance Bond, Contract and PO (13 documents)
+    // Stage 11: Performance Bond, Contract and PO (14 documents)
     case PERFORMANCE_BOND = 'performance_bond';
+    case PERFORMANCE_SECURING_DECLARATION = 'performance_securing_declaration';
     case CONTRACT = 'contract';
     case CONTRACT_ANNEXES = 'contract_annexes';
     case PURCHASE_ORDER = 'purchase_order';
@@ -202,6 +204,21 @@ enum DocumentTypeEnums: string
     case COA_AUDIT_DOCUMENTATION = 'coa_audit_documentation';
     case WARRANTY_CLAIM_RECORDS = 'warranty_claim_records';
     case ASSET_MANAGEMENT_RECORDS = 'asset_management_records';
+
+    // ==================================================================================
+    // ALTERNATIVE PROCUREMENT METHODS - Small Value & Direct Procurement
+    // Per NGPA IRR Rule 4 (RA 12009)
+    // ==================================================================================
+
+    // Request for Quotation Stage (SVP, Direct Contracting, Repeat Order, etc.)
+    case REQUEST_FOR_QUOTATION = 'request_for_quotation';
+    case PRICE_QUOTATION = 'price_quotation';
+    case SUPPLIER_CANVASS_FORM = 'supplier_canvass_form';
+    case QUOTATION_COMPARISON_SHEET = 'quotation_comparison_sheet';
+
+    // Abstract of Quotations Stage
+    case ABSTRACT_OF_QUOTATIONS = 'abstract_of_quotations';
+    case LOWEST_QUOTATION_CERTIFICATION = 'lowest_quotation_certification';
 
     // Legacy/Compatibility Cases (kept for backward compatibility)
     case PPMP_ENTRY = 'ppmp_entry';
@@ -291,6 +308,7 @@ enum DocumentTypeEnums: string
 
             // Stage 6: Bid Opening
             self::BID_SUBMISSION_REGISTER => 'Bid Submission Register',
+            self::PHILGEPS_PLATINUM_CERTIFICATE => 'PhilGEPS Platinum Membership Certificate',
             self::SEALED_BID_PROPOSALS => 'Sealed Bid Envelopes',
             self::ABSTRACT_OF_BIDS => 'Abstract of Bids',
             self::BID_OPENING_MINUTES => 'Minutes of Bid Opening',
@@ -345,6 +363,7 @@ enum DocumentTypeEnums: string
 
             // Stage 11: Performance Bond, Contract and PO
             self::PERFORMANCE_BOND => 'Performance Security/Bond',
+            self::PERFORMANCE_SECURING_DECLARATION => 'Performance Securing Declaration (PSD)',
             self::CONTRACT => 'Contract Agreement',
             self::CONTRACT_ANNEXES => 'Contract Annexes',
             self::PURCHASE_ORDER => 'Purchase Order (PO)',
@@ -414,6 +433,14 @@ enum DocumentTypeEnums: string
             self::WARRANTY_CLAIM_RECORDS => 'Warranty Claim Records',
             self::ASSET_MANAGEMENT_RECORDS => 'Updated Asset Management Records',
 
+            // Alternative Procurement Methods (SVP, Direct Contracting, etc.)
+            self::REQUEST_FOR_QUOTATION => 'Request for Quotation (RFQ)',
+            self::PRICE_QUOTATION => 'Price Quotation',
+            self::SUPPLIER_CANVASS_FORM => 'Supplier Canvass Form',
+            self::QUOTATION_COMPARISON_SHEET => 'Quotation Comparison Sheet',
+            self::ABSTRACT_OF_QUOTATIONS => 'Abstract of Quotations',
+            self::LOWEST_QUOTATION_CERTIFICATION => 'Certification of Lowest Quotation',
+
             // Legacy/Compatibility
             self::PPMP_ENTRY => 'PPMP Entry',
             self::PRICE_SURVEY => 'Price Survey',
@@ -470,7 +497,9 @@ enum DocumentTypeEnums: string
             self::NOTICE_OF_POST_QUALIFICATION => 'Notice of post-qualification results',
             self::BAC_RESOLUTION => 'Bids and Awards Committee resolution',
             self::NOTICE_OF_AWARD => 'Official notice of contract award',
-            self::PERFORMANCE_BOND => 'Performance security bond',
+            self::PERFORMANCE_BOND => 'Performance security bond per NGPA Section 68',
+            self::PERFORMANCE_SECURING_DECLARATION => 'Performance Securing Declaration in lieu of bond per NGPA Section 68.2',
+            self::PHILGEPS_PLATINUM_CERTIFICATE => 'Valid PhilGEPS Platinum Membership Certificate per NGPA Section 52.1',
             self::CONTRACT => 'Signed contract agreement',
             self::PURCHASE_ORDER => 'Official purchase order',
             self::NOTICE_TO_PROCEED => 'Authorization to begin work',

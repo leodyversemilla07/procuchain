@@ -33,8 +33,9 @@ describe('ProcurementFormatterService', function () {
             expect($this->formatter->getStageOrderIndex('procurement_initiation'))
                 ->toBe(0);
 
+            // With 17 stages (including RFQ and Abstract of Quotations), completed is at index 16
             expect($this->formatter->getStageOrderIndex('completed'))
-                ->toBe(14);
+                ->toBe(16);
         });
 
         it('returns 999 for unknown stages', function () {
@@ -43,12 +44,12 @@ describe('ProcurementFormatterService', function () {
         });
 
         it('calculates progress percentage correctly', function () {
-            // First stage (1/15) ≈ 6.67%
+            // First stage (1/17) ≈ 5.88%
             $progress = $this->formatter->calculateProgress('procurement_initiation');
-            expect($progress)->toBeGreaterThan(6);
+            expect($progress)->toBeGreaterThan(5);
             expect($progress)->toBeLessThan(7);
 
-            // Last stage (15/15) = 100%
+            // Last stage (17/17) = 100%
             expect($this->formatter->calculateProgress('completed'))
                 ->toBe(100.0);
         });

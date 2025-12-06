@@ -89,6 +89,6 @@ it('formats stage enum to display name correctly', function () {
         ->where('document.stage', 'procurement_initiation')
         ->where('document.stage_display', 'Procurement Initiation')
         ->where('document.document_type', 'procurement_initiation')
-        ->where('document.document_type_display', 'Procurement Initiation Document')
+        ->where('document.document_type_display', 'Procurement Initiation Document (PDF)')
     );
 });
