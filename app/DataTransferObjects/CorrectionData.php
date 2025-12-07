@@ -50,18 +50,24 @@ final class CorrectionData
         // Backward compatibility: try pr_number first, fall back to pr_number
         $prNumber = $data['pr_number'] ?? $data['pr_number'] ?? '';
 
+        // Handle corrected_by as either string or array
+        $correctedBy = $data['corrected_by'] ?? '';
+        if (is_array($correctedBy)) {
+            $correctedBy = $correctedBy['name'] ?? ($correctedBy['id'] ?? '');
+        }
+
         return new self(
             txid: $txid,
             prNumber: $prNumber,
-            procurementTitle: $data['procurement_title'],
-            originalTxid: $data['original_txid'],
-            originalDocumentHash: $data['original_document_hash'],
-            correctionType: $data['correction_type'],
-            action: $data['action'],
-            reason: $data['reason'],
-            correctedBy: $data['corrected_by'],
-            userAddress: $data['user_address'],
-            timestamp: Carbon::parse($data['timestamp']),
+            procurementTitle: $data['procurement_title'] ?? '',
+            originalTxid: $data['original_txid'] ?? '',
+            originalDocumentHash: $data['original_document_hash'] ?? '',
+            correctionType: $data['correction_type'] ?? '',
+            action: $data['action'] ?? '',
+            reason: $data['reason'] ?? '',
+            correctedBy: (string) $correctedBy,
+            userAddress: $data['user_address'] ?? '',
+            timestamp: Carbon::parse($data['timestamp'] ?? now()),
             correctedMetadata: $data['corrected_metadata'] ?? null,
         );
     }

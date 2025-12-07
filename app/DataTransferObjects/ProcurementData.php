@@ -116,30 +116,48 @@ final class ProcurementData
         // Extract PR number from data
         $prNumber = $data['pr_number'] ?? '';
 
+        // Handle prepared_by as either string or array
+        $preparedBy = $data['prepared_by'] ?? null;
+        if (is_array($preparedBy)) {
+            $preparedBy = $preparedBy['name'] ?? ($preparedBy['id'] ?? null);
+        }
+
+        // Handle approved_by as either string or array
+        $approvedBy = $data['approved_by'] ?? null;
+        if (is_array($approvedBy)) {
+            $approvedBy = $approvedBy['name'] ?? ($approvedBy['id'] ?? null);
+        }
+
+        // Handle user_id as either string or array
+        $userId = $data['user_id'] ?? '';
+        if (is_array($userId)) {
+            $userId = (string) ($userId['id'] ?? '');
+        }
+
         return new self(
             prNumber: $prNumber,
             appReference: $data['app_reference'] ?? null,
-            title: $data['title'],
-            description: $data['description'],
-            abcAmount: (float) $data['abc_amount'],
-            fundingSource: $data['funding_source'],
-            category: ProcurementCategoryEnums::from($data['category']),
-            procurementMode: ProcurementModeEnums::from($data['procurement_mode']),
+            title: $data['title'] ?? '',
+            description: $data['description'] ?? '',
+            abcAmount: (float) ($data['abc_amount'] ?? 0),
+            fundingSource: $data['funding_source'] ?? '',
+            category: ProcurementCategoryEnums::from($data['category'] ?? 'goods'),
+            procurementMode: ProcurementModeEnums::from($data['procurement_mode'] ?? 'competitive_bidding'),
             office: $data['office'] ?? '',
             endUser: $data['end_user'] ?? null,
             deliveryLocation: $data['delivery_location'] ?? null,
             deliveryDate: isset($data['delivery_date']) ? Carbon::parse($data['delivery_date']) : null,
             deliveryTermDays: $data['delivery_term_days'] ?? null,
-            preparedBy: $data['prepared_by'] ?? null,
+            preparedBy: $preparedBy !== null ? (string) $preparedBy : null,
             bacResolutionNumber: $data['bac_resolution_number'] ?? null,
             bacResolutionDate: isset($data['bac_resolution_date']) ? Carbon::parse($data['bac_resolution_date']) : null,
             philgepsReference: $data['philgeps_reference'] ?? null,
             philgepsPostingDate: isset($data['philgeps_posting_date']) ? Carbon::parse($data['philgeps_posting_date']) : null,
-            approvedBy: $data['approved_by'] ?? null,
+            approvedBy: $approvedBy !== null ? (string) $approvedBy : null,
             approvalDate: isset($data['approval_date']) ? Carbon::parse($data['approval_date']) : null,
-            status: $data['status'],
-            userId: $data['user_id'],
-            createdAt: Carbon::parse($data['created_at']),
+            status: $data['status'] ?? 'draft',
+            userId: (string) $userId,
+            createdAt: Carbon::parse($data['created_at'] ?? now()),
         );
     }
 

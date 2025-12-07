@@ -61,6 +61,12 @@ final class DocumentData
         // Backward compatibility: try pr_number first, fall back to pr_number
         $prNumber = $data['pr_number'] ?? '';
 
+        // Handle uploaded_by as either string or array
+        $uploadedBy = $data['uploaded_by'] ?? '';
+        if (is_array($uploadedBy)) {
+            $uploadedBy = $uploadedBy['name'] ?? ($uploadedBy['id'] ?? '');
+        }
+
         try {
             return new self(
                 prNumber: $prNumber,
@@ -76,7 +82,7 @@ final class DocumentData
                 hash: $data['hash'] ?? '',
                 dataTxid: $data['data_txid'] ?? '',
                 metadataTxid: $data['metadata_txid'] ?? '',
-                uploadedBy: $data['uploaded_by'] ?? '',
+                uploadedBy: (string) $uploadedBy,
                 timestamp: isset($data['timestamp']) ? Carbon::parse($data['timestamp']) : Carbon::now(),
                 description: $data['description'] ?? null,
                 stageMetadata: $data['stage_metadata'] ?? null,

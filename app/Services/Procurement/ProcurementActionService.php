@@ -62,8 +62,10 @@ final class ProcurementActionService
 
         // Add skip action if current stage is optional AND there's no dialog action already
         // Dialog actions (like pre-procurement conference decision) include skip option in the dialog itself
+        // Also don't show skip if the stage is already in progress (work has started)
         $hasDialogAction = collect($actions)->contains(fn ($action) => ($action['type'] ?? '') === 'dialog');
-        if ($userRole === 'bac_secretariat' && $mode && $this->isStageOptional($stageEnum, $mode) && ! $hasDialogAction) {
+        $stageInProgress = $this->isStageInProgress($statusEnum);
+        if ($userRole === 'bac_secretariat' && $mode && $this->isStageOptional($stageEnum, $mode) && ! $hasDialogAction && ! $stageInProgress) {
             $actions[] = $this->buildSkipAction($prNumber, $stageEnum);
         }
 
@@ -555,5 +557,43 @@ final class ProcurementActionService
             'admin' => "/admin/procurements-list/{$prNumber}",
             default => "/admin/procurements-list/{$prNumber}",
         };
+    }
+
+    /**
+     * Check if the stage is already in progress (work has started).
+     * When a stage is in progress, it should not be skipped anymore.
+     */
+    private function isStageInProgress(StatusEnums $status): bool
+    {
+        // Statuses that indicate work has started on a stage
+        $inProgressStatuses = [
+            // Pre-Procurement Conference - conference was held
+            StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD,
+            StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
+
+            // Pre-Bid Conference - conference was held
+            StatusEnums::PRE_BID_CONFERENCE_HELD,
+            StatusEnums::PRE_BID_CONFERENCE_COMPLETED,
+
+            // Supplemental Bulletins - bulletins are ongoing or completed
+            StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
+            StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+
+            // Any completed status indicates the stage has been worked on
+            StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
+            StatusEnums::BIDDING_DOCUMENTS_SUBMITTED,
+            StatusEnums::BIDS_OPENED,
+            StatusEnums::BIDS_EVALUATED,
+            StatusEnums::POST_QUALIFICATION_VERIFIED,
+            StatusEnums::RESOLUTION_RECORDED,
+            StatusEnums::AWARDED,
+            StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
+            StatusEnums::NTP_RECORDED,
+            StatusEnums::MONITORING_COMPLETED,
+            StatusEnums::COMPLETION_DOCUMENTS_UPLOADED,
+            StatusEnums::COMPLETED,
+        ];
+
+        return in_array($status, $inProgressStatuses, true);
     }
 }

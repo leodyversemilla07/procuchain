@@ -123,15 +123,21 @@ final class ProcurementCorrectionData
 
     public static function fromBlockchainArray(array $data, string $txid): self
     {
+        // Handle corrected_by as either string or array
+        $correctedBy = $data['corrected_by'] ?? '';
+        if (is_array($correctedBy)) {
+            $correctedBy = $correctedBy['name'] ?? ($correctedBy['id'] ?? '');
+        }
+
         return new self(
             txid: $txid,
-            prNumber: $data['pr_number'],
-            procurementTitle: $data['procurement_title'],
-            correctionType: $data['correction_type'],
-            reason: $data['reason'],
-            correctedBy: $data['corrected_by'],
-            userAddress: $data['user_address'],
-            timestamp: Carbon::parse($data['timestamp']),
+            prNumber: $data['pr_number'] ?? '',
+            procurementTitle: $data['procurement_title'] ?? '',
+            correctionType: $data['correction_type'] ?? '',
+            reason: $data['reason'] ?? '',
+            correctedBy: (string) $correctedBy,
+            userAddress: $data['user_address'] ?? '',
+            timestamp: Carbon::parse($data['timestamp'] ?? now()),
 
             // Original values
             originalTitle: $data['original_title'] ?? null,

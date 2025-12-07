@@ -245,9 +245,11 @@ function getValidDocumentTypes() {
         'procurement_initiation',
         'pre_procurement_conference',
         'bidding_documents',
+        'request_for_quotation',
         'pre_bid_conference',
         'supplemental_bid_bulletin',
         'bid_opening',
+        'abstract_of_quotations',
         'bid_evaluation',
         'post_qualification',
         'bac_resolution',
@@ -256,6 +258,7 @@ function getValidDocumentTypes() {
         'notice_to_proceed',
         'monitoring',
         'completion',
+        'completed',
     ];
 }
 
@@ -265,11 +268,13 @@ function getValidDocumentTypes() {
  */
 function getValidStatuses() {
     return [
+        'procurement_initiated',
         'procurement_submitted',
         'pre_procurement_conference_held',
         'pre_procurement_conference_skipped',
         'pre_procurement_conference_completed',
         'bidding_documents_published',
+        'bidding_documents_submitted',
         'pre_bid_conference_held',
         'pre_bid_conference_skipped',
         'pre_bid_conference_completed',
@@ -286,6 +291,15 @@ function getValidStatuses() {
         'monitoring_completed',
         'completion_documents_uploaded',
         'completed',
+        // Alternative Procurement Methods (SVP, Direct Contracting, etc.)
+        'quotations_received',
+        'abstract_prepared',
+        // Lifecycle states
+        'stage_on_hold',
+        'stage_cancelled',
+        'stage_rejected',
+        'stage_pending_correction',
+        'stage_skipped',
     ];
 }
 
@@ -298,9 +312,11 @@ function getValidStages() {
         'procurement_initiation',
         'pre_procurement_conference',
         'bidding_documents',
+        'request_for_quotation',
         'pre_bid_conference',
         'supplemental_bid_bulletin',
         'bid_opening',
+        'abstract_of_quotations',
         'bid_evaluation',
         'post_qualification',
         'bac_resolution',
