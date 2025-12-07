@@ -17,12 +17,16 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
+        $this->multichainManager
+            ->shouldReceive('create')
+            ->andReturn('txid-123');
+
         $this->artisan('smartcontract:setup')
             ->expectsOutput('Connected to: procuchain (block: 12345)')
             ->assertSuccessful();
     });
 
-    it('shows help when no option is provided', function () {
+    it('deploys by default when no option is provided', function () {
         $this->multichainManager
             ->shouldReceive('getinfo')
             ->once()
@@ -31,8 +35,18 @@ describe('SmartContractSetup Command', function () {
                 'blocks' => 12345,
             ]);
 
+        $this->multichainManager
+            ->shouldReceive('create')
+            ->with('streamfilter', \Mockery::type('string'), false, \Mockery::type('string'))
+            ->andReturn('txid-123');
+
+        $this->multichainManager
+            ->shouldReceive('create')
+            ->with('txfilter', \Mockery::type('string'), false, \Mockery::type('string'))
+            ->andReturn('txid-456');
+
         $this->artisan('smartcontract:setup')
-            ->expectsOutput('Usage:')
+            ->expectsOutput('Deploying smart contracts...')
             ->assertSuccessful();
     });
 
@@ -76,7 +90,7 @@ describe('SmartContractSetup Command', function () {
             ->assertSuccessful();
     });
 
-    it('deploys filters with --deploy flag', function () {
+    it('deploys all stream and transaction filters', function () {
         $this->multichainManager
             ->shouldReceive('getinfo')
             ->once()
@@ -88,11 +102,17 @@ describe('SmartContractSetup Command', function () {
         $this->multichainManager
             ->shouldReceive('create')
             ->with('streamfilter', \Mockery::type('string'), false, \Mockery::type('string'))
-            ->times(4)
             ->andReturn('txid-123');
 
-        $this->artisan('smartcontract:setup --deploy')
+        $this->multichainManager
+            ->shouldReceive('create')
+            ->with('txfilter', \Mockery::type('string'), false, \Mockery::type('string'))
+            ->andReturn('txid-456');
+
+        $this->artisan('smartcontract:setup')
             ->expectsOutput('Deploying smart contracts...')
+            ->expectsOutput('Stream Filters:')
+            ->expectsOutput('Transaction Filters:')
             ->assertSuccessful();
     });
 
@@ -109,7 +129,7 @@ describe('SmartContractSetup Command', function () {
             ->shouldReceive('create')
             ->andThrow(new Exception('Entity with this name already exists'));
 
-        $this->artisan('smartcontract:setup --deploy')
+        $this->artisan('smartcontract:setup')
             ->assertSuccessful();
     });
 
@@ -136,8 +156,12 @@ describe('SmartContractSetup Command', function () {
             ]);
 
         $this->multichainManager
+            ->shouldReceive('listtxfilters')
+            ->once()
+            ->andReturn([]);
+
+        $this->multichainManager
             ->shouldReceive('approvefrom')
-            ->twice()
             ->andReturn(true);
 
         $this->artisan('smartcontract:setup --activate')
@@ -167,8 +191,12 @@ describe('SmartContractSetup Command', function () {
             ]);
 
         $this->multichainManager
-            ->shouldReceive('approvefrom')
+            ->shouldReceive('listtxfilters')
             ->once()
+            ->andReturn([]);
+
+        $this->multichainManager
+            ->shouldReceive('approvefrom')
             ->andReturn(true);
 
         $this->artisan('smartcontract:setup --deactivate')

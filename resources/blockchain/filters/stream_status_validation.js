@@ -1,3 +1,4 @@
+ 
 /**
  * ProcuChain Stream Filter: Status Transition Validation
  *
@@ -78,9 +79,11 @@ function filterstreamitem() {
         'procurement_initiation',
         'pre_procurement_conference',
         'bidding_documents',
+        'request_for_quotation',
         'pre_bid_conference',
         'supplemental_bid_bulletin',
         'bid_opening',
+        'abstract_of_quotations',
         'bid_evaluation',
         'post_qualification',
         'bac_resolution',
@@ -105,44 +108,62 @@ function filterstreamitem() {
         return 'Invalid procurement stage: ' + data.stage;
     }
 
-    // Define valid statuses
+    // Define valid statuses (aligned with StatusEnums)
     var validStatuses = [
-        // General statuses
+        // Core workflow statuses
+        'procurement_initiated',
+        'procurement_submitted',
+        'pre_procurement_conference_held',
+        'pre_procurement_conference_skipped',
+        'pre_procurement_conference_completed',
+        'bidding_documents_published',
+        'bidding_documents_submitted',
+        'pre_bid_conference_held',
+        'pre_bid_conference_skipped',
+        'pre_bid_conference_completed',
+        'supplemental_bulletins_ongoing',
+        'supplemental_bulletins_completed',
+        'bids_opened',
+        'bids_evaluated',
+        'post_qualification_verified',
+        'post_qualification_failed',
+        'resolution_recorded',
+        'awarded',
+        'performance_bond_contract_and_po_recorded',
+        'ntp_recorded',
+        'monitoring_completed',
+        'completion_documents_uploaded',
+        'completed',
+        // Alternative Procurement Methods (SVP, Direct Contracting, etc.)
+        'quotations_received',
+        'abstract_prepared',
+        // Lifecycle states
+        'stage_on_hold',
+        'stage_cancelled',
+        'stage_rejected',
+        'stage_pending_correction',
+        'stage_skipped',
+        // Legacy/generic statuses for backward compatibility
         'pending',
         'in_progress',
-        'completed',
         'cancelled',
         'on_hold',
         'draft',
-
-        // Document statuses
         'pending_documents',
         'documents_uploaded',
         'documents_verified',
         'documents_published',
-
-        // Stage-specific statuses
         'awaiting_approval',
         'approved',
         'rejected',
         'for_revision',
         'revised',
-
-        // Conference statuses
         'scheduled',
         'conducted',
         'minutes_uploaded',
-        'pre_procurement_conference_held',
-        'pre_bid_conference_held',
-
-        // Bid statuses
         'bids_received',
-        'bids_opened',
         'evaluation_ongoing',
         'evaluation_complete',
-
-        // Award statuses
-        'awarded',
         'contract_signed',
         'ntp_issued',
     ];

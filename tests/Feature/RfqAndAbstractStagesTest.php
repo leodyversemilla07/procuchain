@@ -1,9 +1,12 @@
 <?php
 
+use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
+use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Models\User;
+use App\Repositories\ProcurementRepository;
 use App\Services\DocumentValidationService;
 
 use function Pest\Laravel\actingAs;
@@ -14,11 +17,46 @@ beforeEach(function () {
     $this->bacSecretariat->assignRole('bac_secretariat');
     $this->bacSecretariat->blockchain_address = 'test_address_123';
     $this->bacSecretariat->save();
+
+    // Mock SVP procurement data (RFQ and Abstract stages are in SVP workflow)
+    $this->svpProcurementData = new ProcurementData(
+        prNumber: 'PR-2024-001',
+        appReference: 'APP-2024-001',
+        title: 'Test Procurement',
+        description: 'Test Description',
+        abcAmount: 100000.00,
+        fundingSource: 'General Fund',
+        category: ProcurementCategoryEnums::GOODS,
+        procurementMode: ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
+        office: 'Test Office',
+        endUser: 'Test User',
+        deliveryLocation: null,
+        deliveryDate: null,
+        deliveryTermDays: null,
+        preparedBy: 'Test Preparer',
+        bacResolutionNumber: null,
+        bacResolutionDate: null,
+        philgepsReference: null,
+        philgepsPostingDate: null,
+        approvedBy: null,
+        approvalDate: null,
+        status: 'in_progress',
+        userId: 'test@example.com',
+        createdAt: now()
+    );
+
+    // Helper to mock the repository with SVP procurement
+    $this->mockSvpRepository = function () {
+        $repository = mock(ProcurementRepository::class);
+        $repository->shouldReceive('findByProcurement')->andReturn($this->svpProcurementData);
+        $this->instance(ProcurementRepository::class, $repository);
+    };
 });
 
 describe('Request for Quotation (RFQ) Stage', function () {
     it('shows RFQ stage page for authorized users', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
             'pr_number' => 'PR-2024-001',
@@ -36,6 +74,7 @@ describe('Request for Quotation (RFQ) Stage', function () {
 
     it('includes workflowInfo with mode details for RFQ page', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
             'pr_number' => 'PR-2024-001',
@@ -57,6 +96,7 @@ describe('Request for Quotation (RFQ) Stage', function () {
 
     it('provides document guide for RFQ stage', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $validationService = mock(DocumentValidationService::class);
         $validationService->shouldReceive('getStageDocumentGuide')
@@ -98,6 +138,7 @@ describe('Request for Quotation (RFQ) Stage', function () {
 describe('Abstract of Quotations Stage', function () {
     it('shows Abstract of Quotations stage page for authorized users', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $response = $this->get(route('bac-secretariat.procurement.bidding.show', [
             'pr_number' => 'PR-2024-001',
@@ -115,6 +156,7 @@ describe('Abstract of Quotations Stage', function () {
 
     it('includes workflowInfo with mode details for Abstract page', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $response = $this->get(route('bac-secretariat.procurement.bidding.show', [
             'pr_number' => 'PR-2024-001',
@@ -136,6 +178,7 @@ describe('Abstract of Quotations Stage', function () {
 
     it('provides document guide for Abstract stage', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $validationService = mock(DocumentValidationService::class);
         $validationService->shouldReceive('getStageDocumentGuide')

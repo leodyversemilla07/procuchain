@@ -28,7 +28,7 @@ beforeEach(function () {
     $this->bacSecretariat->blockchain_address = 'test_address_123';
     $this->bacSecretariat->save();
 
-    // Helper to create mock procurement data
+    // Helper to create mock procurement data (Competitive Bidding)
     $this->mockProcurementData = new ProcurementData(
         prNumber: 'PR-2024-001',
         appReference: 'APP-2024-001',
@@ -54,11 +54,46 @@ beforeEach(function () {
         userId: 'test@example.com',
         createdAt: now()
     );
+
+    // Helper to create SVP procurement data (has RFQ and Abstract stages)
+    $this->svpProcurementData = new ProcurementData(
+        prNumber: 'PR-2024-001',
+        appReference: 'APP-2024-001',
+        title: 'Test SVP Procurement',
+        description: 'Test Description',
+        abcAmount: 100000.00,
+        fundingSource: 'General Fund',
+        category: ProcurementCategoryEnums::GOODS,
+        procurementMode: ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
+        office: 'Test Office',
+        endUser: 'Test User',
+        deliveryLocation: null,
+        deliveryDate: null,
+        deliveryTermDays: null,
+        preparedBy: 'Test Preparer',
+        bacResolutionNumber: null,
+        bacResolutionDate: null,
+        philgepsReference: null,
+        philgepsPostingDate: null,
+        approvedBy: null,
+        approvalDate: null,
+        status: 'in_progress',
+        userId: 'test@example.com',
+        createdAt: now()
+    );
+
+    // Helper to mock repository with SVP procurement
+    $this->mockSvpRepository = function () {
+        $repository = mock(ProcurementRepository::class);
+        $repository->shouldReceive('findByProcurement')->andReturn($this->svpProcurementData);
+        $this->instance(ProcurementRepository::class, $repository);
+    };
 });
 
 describe('Workflow Info Structure', function () {
     it('has correct workflow info structure with mode details', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
             'pr_number' => 'PR-2024-001',
@@ -83,6 +118,7 @@ describe('Workflow Info Structure', function () {
 
     it('includes mode display name and IRR section', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
             'pr_number' => 'PR-2024-001',
@@ -102,6 +138,7 @@ describe('Workflow Info Structure', function () {
 
     it('includes stages array with required properties', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
             'pr_number' => 'PR-2024-001',
@@ -151,6 +188,7 @@ describe('Pre-Procurement Stage Pages with Workflow Info', function () {
 
     it('includes workflowInfo on RFQ page', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
             'pr_number' => 'PR-2024-001',
@@ -259,6 +297,7 @@ describe('Procurement Stage Pages with Workflow Info', function () {
 
     it('includes workflowInfo on Abstract of Quotations page', function () {
         actingAs($this->bacSecretariat);
+        ($this->mockSvpRepository)();
 
         $response = $this->get(route('bac-secretariat.procurement.bidding.show', [
             'pr_number' => 'PR-2024-001',

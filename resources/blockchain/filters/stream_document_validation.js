@@ -1,3 +1,4 @@
+ 
 /**
  * ProcuChain Stream Filter: Document Validation
  *
@@ -125,9 +126,11 @@ function filterstreamitem() {
         'procurement_initiation',
         'pre_procurement_conference',
         'bidding_documents',
+        'request_for_quotation',
         'pre_bid_conference',
         'supplemental_bid_bulletin',
         'bid_opening',
+        'abstract_of_quotations',
         'bid_evaluation',
         'post_qualification',
         'bac_resolution',
