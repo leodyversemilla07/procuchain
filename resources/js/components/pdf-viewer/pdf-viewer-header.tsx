@@ -104,12 +104,12 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
 
                 {/* Document Correction Sheet */}
                 {canCorrectDocuments && document.hash && (
-                <DocumentCorrectionSheet
-                    open={showCorrectionSheet}
-                    onOpenChange={setShowCorrectionSheet}
-                    documentId={document.blockchain_txid || document.id || document.pr_number}
-                    pr_number={document.pr_number}
-                    procurementTitle={document.procurement_title}
+                    <DocumentCorrectionSheet
+                        open={showCorrectionSheet}
+                        onOpenChange={setShowCorrectionSheet}
+                        documentId={document.blockchain_txid || document.id || document.pr_number}
+                        pr_number={document.pr_number}
+                        procurementTitle={document.procurement_title}
                         originalDocumentHash={document.hash}
                         originalTxid={document.blockchain_txid}
                     />

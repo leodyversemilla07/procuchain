@@ -2,7 +2,7 @@ import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import type { ProcurementListItem } from '@/types';
 import type { ProcurementAction } from '@/types/workflow';
 import { router } from '@inertiajs/react';
-import { AlertCircle, BarChart4Icon, Edit2Icon, EyeIcon, ShieldCheck, SkipForward, UploadCloudIcon } from 'lucide-react';
+import { AlertCircle, BarChart4Icon, Edit2Icon, EyeIcon, RefreshCw, ShieldCheck, SkipForward, UploadCloudIcon } from 'lucide-react';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
@@ -48,6 +48,8 @@ const getIconComponent = (iconName: string, variant: string) => {
             return <AlertCircle className={className} />;
         case 'skip':
             return <SkipForward className={className} />;
+        case 'refresh':
+            return <RefreshCw className={className} />;
         default:
             return <EyeIcon className={className} />;
     }
@@ -78,7 +80,7 @@ const DropdownActionItem = ({
     return (
         <DropdownMenuItem onClick={handleClick} className="flex cursor-pointer items-center gap-2">
             {icon}
-            <span className={isOptional ? 'italic text-gray-500' : ''}>{tooltipText}</span>
+            <span className={isOptional ? 'text-gray-500 italic' : ''}>{tooltipText}</span>
         </DropdownMenuItem>
     );
 };
@@ -115,18 +117,38 @@ export const ActionButtons = ({
     };
 
     /**
+     * Handles repeat action (POST request to issue another bulletin)
+     */
+    const handleRepeatAction = (href: string) => {
+        router.post(
+            href,
+            {},
+            {
+                preserveScroll: true,
+            },
+        );
+    };
+
+    /**
      * Renders a single action from server configuration
      */
     const renderAction = (action: ProcurementAction, index: number) => {
         const icon = getIconComponent(action.icon, action.variant);
-        const onClick = action.type === 'dialog' ? getDialogHandler(action.action) : undefined;
+
+        // Determine click handler based on action type
+        let onClick: (() => void) | undefined;
+        if (action.type === 'dialog') {
+            onClick = getDialogHandler(action.action);
+        } else if (action.type === 'repeat' && action.href) {
+            onClick = () => handleRepeatAction(action.href!);
+        }
 
         return (
             <DropdownActionItem
                 key={`${action.type}-${index}`}
                 icon={icon}
                 tooltipText={action.label}
-                href={action.href}
+                href={action.type === 'repeat' ? undefined : action.href}
                 onClick={onClick}
                 isOptional={action.is_optional}
             />

@@ -222,14 +222,11 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
         // Tag and combine logs
         const recentTagged: CombinedLog[] = recentLogins.map((l) => ({ ...l, category: 'recent' as const }));
         const suspiciousTagged: CombinedLog[] = (suspiciousActivities || []).map((l) => ({ ...l, category: 'suspicious' as const }));
-        
+
         // Apply category filter first (cheap operation)
-        let logs: CombinedLog[] = selectedCategory === 'all' 
-            ? [...recentTagged, ...suspiciousTagged]
-            : selectedCategory === 'recent' 
-                ? recentTagged 
-                : suspiciousTagged;
-        
+        let logs: CombinedLog[] =
+            selectedCategory === 'all' ? [...recentTagged, ...suspiciousTagged] : selectedCategory === 'recent' ? recentTagged : suspiciousTagged;
+
         // Apply filter
         logs = logs.filter((log) => {
             // Filter out the current logged-in admin user's entries
@@ -269,10 +266,21 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
             return isNotCurrentUser && matchesSearch && matchesRole && matchesStatus && matchesDeviceType && matchesBrowser && matchesDateRange;
         });
-        
+
         // Sort once
         return logs.sort((a, b) => new Date(b.login_at).getTime() - new Date(a.login_at).getTime());
-    }, [recentLogins, suspiciousActivities, selectedCategory, debouncedSearchTerm, selectedRole, selectedStatus, selectedDeviceType, selectedBrowser, dateRange, auth.user]);
+    }, [
+        recentLogins,
+        suspiciousActivities,
+        selectedCategory,
+        debouncedSearchTerm,
+        selectedRole,
+        selectedStatus,
+        selectedDeviceType,
+        selectedBrowser,
+        dateRange,
+        auth.user,
+    ]);
 
     const paginatedCombinedLogs = useMemo(() => {
         const startIndex = (combinedPage - 1) * pageSize;
@@ -1144,7 +1152,9 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                             <TableRow>
                                                 <TableHead className="w-12 pl-6">
                                                     <Checkbox
-                                                        checked={selectedLogs.size === paginatedCombinedLogs.length && paginatedCombinedLogs.length > 0}
+                                                        checked={
+                                                            selectedLogs.size === paginatedCombinedLogs.length && paginatedCombinedLogs.length > 0
+                                                        }
                                                         onCheckedChange={toggleSelectAll}
                                                         aria-label="Select all"
                                                     />
@@ -1162,217 +1172,220 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                 <TableHead className="w-12 pr-6">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
-                                    <TableBody>
-                                        {isLoading || isRefreshing ? (
-                                            // Loading skeleton
-                                            Array.from({ length: 5 }).map((_, index) => (
-                                                <TableRow key={`skeleton-${index}`}>
-                                                    <TableCell className="pl-6">
-                                                        <Skeleton className="h-4 w-4" />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Skeleton className="h-6 w-20" />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="space-y-2">
+                                        <TableBody>
+                                            {isLoading || isRefreshing ? (
+                                                // Loading skeleton
+                                                Array.from({ length: 5 }).map((_, index) => (
+                                                    <TableRow key={`skeleton-${index}`}>
+                                                        <TableCell className="pl-6">
+                                                            <Skeleton className="h-4 w-4" />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Skeleton className="h-6 w-20" />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="space-y-2">
+                                                                <Skeleton className="h-4 w-32" />
+                                                                <Skeleton className="h-3 w-40" />
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Skeleton className="h-6 w-24" />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Skeleton className="h-6 w-20" />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Skeleton className="h-6 w-16" />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Skeleton className="h-4 w-28" />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Skeleton className="h-4 w-20" />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Skeleton className="h-4 w-24" />
+                                                        </TableCell>
+                                                        <TableCell>
                                                             <Skeleton className="h-4 w-32" />
-                                                            <Skeleton className="h-3 w-40" />
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Skeleton className="h-6 w-24" />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Skeleton className="h-6 w-20" />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Skeleton className="h-6 w-16" />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Skeleton className="h-4 w-28" />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Skeleton className="h-4 w-20" />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Skeleton className="h-4 w-24" />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Skeleton className="h-4 w-32" />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Skeleton className="h-6 w-16" />
-                                                    </TableCell>
-                                                    <TableCell className="pr-6">
-                                                        <Skeleton className="h-8 w-8" />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                        ) : paginatedCombinedLogs.length > 0 ? (
-                                            paginatedCombinedLogs.map((log) => (
-                                                <TableRow
-                                                    key={`${log.category}-${log.id}`}
-                                                    className={log.category === 'suspicious' ? 'bg-destructive/5' : undefined}
-                                                >
-                                                    <TableCell className="pl-6">
-                                                        <Checkbox
-                                                            checked={selectedLogs.has(log.id)}
-                                                            onCheckedChange={() => toggleLogSelection(log.id)}
-                                                            aria-label={`Select log ${log.id}`}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {log.category === 'suspicious' ? (
-                                                            <Badge variant="destructive" className="flex items-center gap-1 text-xs">
-                                                                <AlertTriangle className="h-3 w-3" /> Suspicious
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge variant="secondary" className="text-xs">
-                                                                Recent
-                                                            </Badge>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="max-w-[180px] space-y-1">
-                                                            <div className="truncate font-medium" title={log.user?.name || 'Unknown User'}>
-                                                                {highlightSearchTerm(log.user?.name || 'Unknown User', debouncedSearchTerm)}
-                                                            </div>
-                                                            <div className="text-muted-foreground truncate text-sm" title={log.user?.email || 'Unknown Email'}>
-                                                                {highlightSearchTerm(log.user?.email || 'Unknown Email', debouncedSearchTerm)}
-                                                            </div>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>{getRoleBadge(log.user?.primary_role)}</TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center space-x-1">
-                                                            {log.user?.two_factor_enabled ? (
-                                                                <Badge className="border border-green-200 bg-green-100 px-2 py-1 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
-                                                                    <QrCode className="mr-1 h-3 w-3" />
-                                                                    Enabled
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Skeleton className="h-6 w-16" />
+                                                        </TableCell>
+                                                        <TableCell className="pr-6">
+                                                            <Skeleton className="h-8 w-8" />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : paginatedCombinedLogs.length > 0 ? (
+                                                paginatedCombinedLogs.map((log) => (
+                                                    <TableRow
+                                                        key={`${log.category}-${log.id}`}
+                                                        className={log.category === 'suspicious' ? 'bg-destructive/5' : undefined}
+                                                    >
+                                                        <TableCell className="pl-6">
+                                                            <Checkbox
+                                                                checked={selectedLogs.has(log.id)}
+                                                                onCheckedChange={() => toggleLogSelection(log.id)}
+                                                                aria-label={`Select log ${log.id}`}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {log.category === 'suspicious' ? (
+                                                                <Badge variant="destructive" className="flex items-center gap-1 text-xs">
+                                                                    <AlertTriangle className="h-3 w-3" /> Suspicious
                                                                 </Badge>
                                                             ) : (
-                                                                <Badge className="border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-800 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-300">
-                                                                    Disabled
+                                                                <Badge variant="secondary" className="text-xs">
+                                                                    Recent
                                                                 </Badge>
                                                             )}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>{getStatusBadge(log.successful)}</TableCell>
-                                                    <TableCell>
-                                                        <div className="max-w-[140px]">
-                                                            <div className="flex items-center space-x-2">
-                                                                <Globe className="text-muted-foreground h-4 w-4 shrink-0" />
-                                                                <span className="truncate font-mono text-sm" title={log.ip_address}>
-                                                                    {highlightSearchTerm(log.ip_address, debouncedSearchTerm)}
-                                                                </span>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="max-w-[180px] space-y-1">
+                                                                <div className="truncate font-medium" title={log.user?.name || 'Unknown User'}>
+                                                                    {highlightSearchTerm(log.user?.name || 'Unknown User', debouncedSearchTerm)}
+                                                                </div>
+                                                                <div
+                                                                    className="text-muted-foreground truncate text-sm"
+                                                                    title={log.user?.email || 'Unknown Email'}
+                                                                >
+                                                                    {highlightSearchTerm(log.user?.email || 'Unknown Email', debouncedSearchTerm)}
+                                                                </div>
                                                             </div>
-                                                            {log.location && (
-                                                                <div className="mt-1 flex items-center space-x-1">
-                                                                    <MapPin className="text-muted-foreground h-3 w-3 shrink-0" />
-                                                                    <span className="text-muted-foreground truncate text-xs" title={log.location}>
-                                                                        {highlightSearchTerm(log.location, debouncedSearchTerm)}
+                                                        </TableCell>
+                                                        <TableCell>{getRoleBadge(log.user?.primary_role)}</TableCell>
+                                                        <TableCell>
+                                                            <div className="flex items-center space-x-1">
+                                                                {log.user?.two_factor_enabled ? (
+                                                                    <Badge className="border border-green-200 bg-green-100 px-2 py-1 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/20 dark:text-green-200">
+                                                                        <QrCode className="mr-1 h-3 w-3" />
+                                                                        Enabled
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <Badge className="border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-800 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-300">
+                                                                        Disabled
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>{getStatusBadge(log.successful)}</TableCell>
+                                                        <TableCell>
+                                                            <div className="max-w-[140px]">
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Globe className="text-muted-foreground h-4 w-4 shrink-0" />
+                                                                    <span className="truncate font-mono text-sm" title={log.ip_address}>
+                                                                        {highlightSearchTerm(log.ip_address, debouncedSearchTerm)}
                                                                     </span>
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center space-x-2">
-                                                            {getDeviceIcon(log.device_type)}
-                                                            <div className="max-w-20 space-y-1">
-                                                                <div className="truncate text-sm">{log.device_type || 'Unknown'}</div>
-                                                                {log.platform && (
-                                                                    <div className="text-muted-foreground truncate text-xs" title={log.platform}>
-                                                                        {highlightSearchTerm(log.platform, debouncedSearchTerm)}
+                                                                {log.location && (
+                                                                    <div className="mt-1 flex items-center space-x-1">
+                                                                        <MapPin className="text-muted-foreground h-3 w-3 shrink-0" />
+                                                                        <span className="text-muted-foreground truncate text-xs" title={log.location}>
+                                                                            {highlightSearchTerm(log.location, debouncedSearchTerm)}
+                                                                        </span>
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="max-w-[100px] truncate text-sm" title={log.browser || 'Unknown'}>
-                                                            {highlightSearchTerm(log.browser || 'Unknown', debouncedSearchTerm)}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center space-x-2">
-                                                            <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
-                                                            <span className="text-nowrap text-sm">{formatDateTime(log.login_at)}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {log.category === 'recent' ? (
-                                                            <Badge variant={log.logout_at ? 'secondary' : 'default'}>
-                                                                {getSessionDuration(log.login_at, log.logout_at)}
-                                                            </Badge>
-                                                        ) : (
-                                                            <span className="text-muted-foreground text-sm">-</span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="pr-6">
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                                    <MoreVertical className="h-4 w-4" />
-                                                                    <span className="sr-only">Open menu</span>
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                                <DropdownMenuItem onClick={() => handleViewDetails(log, log.category)}>
-                                                                    <Eye className="mr-2 h-4 w-4" />
-                                                                    View Details
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem
-                                                                    onClick={() => {
-                                                                        navigator.clipboard.writeText(log.ip_address);
-                                                                        toast.success('IP Address copied', {
-                                                                            description: log.ip_address,
-                                                                        });
-                                                                    }}
-                                                                >
-                                                                    <Globe className="mr-2 h-4 w-4" />
-                                                                    Copy IP Address
-                                                                </DropdownMenuItem>
-                                                                {log.category === 'suspicious' && (
-                                                                    <>
-                                                                        <DropdownMenuSeparator />
-                                                                        <DropdownMenuItem
-                                                                            className="text-destructive focus:text-destructive"
-                                                                            onClick={() => handleBlockIpClick(log.ip_address)}
-                                                                        >
-                                                                            <ShieldBan className="mr-2 h-4 w-4" />
-                                                                            Block IP Address
-                                                                        </DropdownMenuItem>
-                                                                    </>
-                                                                )}
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex items-center space-x-2">
+                                                                {getDeviceIcon(log.device_type)}
+                                                                <div className="max-w-20 space-y-1">
+                                                                    <div className="truncate text-sm">{log.device_type || 'Unknown'}</div>
+                                                                    {log.platform && (
+                                                                        <div className="text-muted-foreground truncate text-xs" title={log.platform}>
+                                                                            {highlightSearchTerm(log.platform, debouncedSearchTerm)}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="max-w-[100px] truncate text-sm" title={log.browser || 'Unknown'}>
+                                                                {highlightSearchTerm(log.browser || 'Unknown', debouncedSearchTerm)}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex items-center space-x-2">
+                                                                <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
+                                                                <span className="text-sm text-nowrap">{formatDateTime(log.login_at)}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {log.category === 'recent' ? (
+                                                                <Badge variant={log.logout_at ? 'secondary' : 'default'}>
+                                                                    {getSessionDuration(log.login_at, log.logout_at)}
+                                                                </Badge>
+                                                            ) : (
+                                                                <span className="text-muted-foreground text-sm">-</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="pr-6">
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                        <MoreVertical className="h-4 w-4" />
+                                                                        <span className="sr-only">Open menu</span>
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                                    <DropdownMenuItem onClick={() => handleViewDetails(log, log.category)}>
+                                                                        <Eye className="mr-2 h-4 w-4" />
+                                                                        View Details
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => {
+                                                                            navigator.clipboard.writeText(log.ip_address);
+                                                                            toast.success('IP Address copied', {
+                                                                                description: log.ip_address,
+                                                                            });
+                                                                        }}
+                                                                    >
+                                                                        <Globe className="mr-2 h-4 w-4" />
+                                                                        Copy IP Address
+                                                                    </DropdownMenuItem>
+                                                                    {log.category === 'suspicious' && (
+                                                                        <>
+                                                                            <DropdownMenuSeparator />
+                                                                            <DropdownMenuItem
+                                                                                className="text-destructive focus:text-destructive"
+                                                                                onClick={() => handleBlockIpClick(log.ip_address)}
+                                                                            >
+                                                                                <ShieldBan className="mr-2 h-4 w-4" />
+                                                                                Block IP Address
+                                                                            </DropdownMenuItem>
+                                                                        </>
+                                                                    )}
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={12} className="h-96">
+                                                        <Empty>
+                                                            <EmptyHeader>
+                                                                <EmptyMedia variant="icon">
+                                                                    <Shield className="h-6 w-6" />
+                                                                </EmptyMedia>
+                                                                <EmptyTitle>No login activities found</EmptyTitle>
+                                                                <EmptyDescription>
+                                                                    {hasActiveFilters
+                                                                        ? 'No activities match your current filters. Try adjusting your search criteria.'
+                                                                        : 'No login activities have been recorded yet.'}
+                                                                </EmptyDescription>
+                                                            </EmptyHeader>
+                                                        </Empty>
                                                     </TableCell>
                                                 </TableRow>
-                                            ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={12} className="h-96">
-                                                    <Empty>
-                                                        <EmptyHeader>
-                                                            <EmptyMedia variant="icon">
-                                                                <Shield className="h-6 w-6" />
-                                                            </EmptyMedia>
-                                                            <EmptyTitle>No login activities found</EmptyTitle>
-                                                            <EmptyDescription>
-                                                                {hasActiveFilters
-                                                                    ? 'No activities match your current filters. Try adjusting your search criteria.'
-                                                                    : 'No login activities have been recorded yet.'}
-                                                            </EmptyDescription>
-                                                        </EmptyHeader>
-                                                    </Empty>
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
+                                            )}
+                                        </TableBody>
+                                    </Table>
                                 </div>
                             </CardContent>
                             {paginatedCombinedLogs.length > 0 && (

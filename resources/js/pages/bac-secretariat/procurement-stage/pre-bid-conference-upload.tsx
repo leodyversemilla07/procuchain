@@ -1,6 +1,5 @@
 import { markStageComplete, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementController';
 import FileUploadArea from '@/components/file-upload-area';
-import { handleFlashSuccess } from '@/utils/blockchain-toast';
 import { ModeBadge, WorkflowProgressIndicator } from '@/components/procurement/workflow-progress-indicator';
 import {
     AlertDialog,
@@ -21,6 +20,7 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, WorkflowInfo } from '@/types';
 import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
+import { handleFlashSuccess } from '@/utils/blockchain-toast';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 import { Head, router } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, ClipboardList, FileText } from 'lucide-react';

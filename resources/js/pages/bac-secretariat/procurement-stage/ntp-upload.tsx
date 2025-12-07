@@ -1,6 +1,5 @@
 import { markStageComplete, updateDeliveryDetails, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PostProcurementController';
 import FileUploadArea from '@/components/file-upload-area';
-import { handleFlashSuccess } from '@/utils/blockchain-toast';
 import { ModeBadge, WorkflowProgressIndicator } from '@/components/procurement/workflow-progress-indicator';
 import {
     AlertDialog,
@@ -24,9 +23,10 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, WorkflowInfo } from '@/types';
 import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
+import { handleFlashSuccess } from '@/utils/blockchain-toast';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 import { Head, router } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, MapPin, Calendar, Clock, Send } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle2, Clock, MapPin, Send } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -73,7 +73,7 @@ export default function NtpUpload({ procurement, workflowInfo, documentGuide, up
 
     // Track if delivery details have been saved (either from initial data or after saving)
     const [deliveryDetailsSaved, setDeliveryDetailsSaved] = useState(
-        Boolean(procurement.delivery_location && procurement.delivery_date && procurement.delivery_term_days)
+        Boolean(procurement.delivery_location && procurement.delivery_date && procurement.delivery_term_days),
     );
 
     const hasDeliveryDetails = deliveryDetailsSaved;
@@ -445,7 +445,12 @@ export default function NtpUpload({ procurement, workflowInfo, documentGuide, up
                                     <Button
                                         type="button"
                                         onClick={handleSaveDeliveryDetails}
-                                        disabled={isSavingDelivery || !deliveryForm.delivery_location || !deliveryForm.delivery_date || !deliveryForm.delivery_term_days}
+                                        disabled={
+                                            isSavingDelivery ||
+                                            !deliveryForm.delivery_location ||
+                                            !deliveryForm.delivery_date ||
+                                            !deliveryForm.delivery_term_days
+                                        }
                                         className="w-full"
                                     >
                                         {isSavingDelivery ? (
@@ -495,9 +500,7 @@ export default function NtpUpload({ procurement, workflowInfo, documentGuide, up
                                                     <div className="flex items-start justify-between gap-2">
                                                         <div className="flex-1">
                                                             <p className="text-sm font-medium">{doc.display_name}</p>
-                                                            {doc.description && (
-                                                                <p className="text-muted-foreground text-xs">{doc.description}</p>
-                                                            )}
+                                                            {doc.description && <p className="text-muted-foreground text-xs">{doc.description}</p>}
                                                         </div>
                                                         {isUploaded && (
                                                             <Badge variant="outline" className="text-xs text-green-600 dark:text-green-500">
@@ -557,9 +560,7 @@ export default function NtpUpload({ procurement, workflowInfo, documentGuide, up
                                                     <div className="flex items-start justify-between gap-2">
                                                         <div className="flex-1">
                                                             <p className="text-sm font-medium">{doc.display_name}</p>
-                                                            {doc.description && (
-                                                                <p className="text-muted-foreground text-xs">{doc.description}</p>
-                                                            )}
+                                                            {doc.description && <p className="text-muted-foreground text-xs">{doc.description}</p>}
                                                         </div>
                                                         {isUploaded && (
                                                             <Badge variant="outline" className="text-xs text-blue-600 dark:text-blue-500">

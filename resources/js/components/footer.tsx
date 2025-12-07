@@ -1,4 +1,4 @@
-import { about, contact, home, team } from '@/routes';
+import { about, contact, home, team, workflow } from '@/routes';
 import { policy } from '@/routes/privacy';
 import { service } from '@/routes/terms';
 import { Link } from '@inertiajs/react';
@@ -25,6 +25,9 @@ export default function Footer() {
                         </Link>
                         <Link href={about.url()} className="text-muted-foreground hover:text-foreground text-sm">
                             About
+                        </Link>
+                        <Link href={workflow.url()} className="text-muted-foreground hover:text-foreground text-sm">
+                            Workflow
                         </Link>
                         <Link href={team.url()} className="text-muted-foreground hover:text-foreground text-sm">
                             Team

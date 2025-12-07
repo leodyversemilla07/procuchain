@@ -251,7 +251,9 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                                 <SelectItem value="competitive_bidding">Competitive Bidding</SelectItem>
                                                 <SelectItem value="limited_source_bidding">Limited Source Bidding</SelectItem>
                                                 <SelectItem value="competitive_dialogue">Competitive Dialogue</SelectItem>
-                                                <SelectItem value="unsolicited_offer_with_bid_matching">Unsolicited Offer with Bid Matching</SelectItem>
+                                                <SelectItem value="unsolicited_offer_with_bid_matching">
+                                                    Unsolicited Offer with Bid Matching
+                                                </SelectItem>
                                                 <SelectItem value="direct_contracting">Direct Contracting</SelectItem>
                                                 <SelectItem value="direct_acquisition">Direct Acquisition</SelectItem>
                                                 <SelectItem value="repeat_order">Repeat Order</SelectItem>

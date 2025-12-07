@@ -1,5 +1,5 @@
 import { useAppearance } from '@/hooks/use-appearance';
-import { about, contact, home, login, team } from '@/routes';
+import { about, contact, home, login, team, workflow } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
 import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
 import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
@@ -72,6 +72,12 @@ export default function Header() {
                             className={`text-sm font-medium transition-colors ${isRouteActive(about.url()) ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             About
+                        </Link>
+                        <Link
+                            href={workflow.url()}
+                            className={`text-sm font-medium transition-colors ${isRouteActive(workflow.url()) ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            Workflow
                         </Link>
                         <Link
                             href={team.url()}
@@ -159,6 +165,17 @@ export default function Header() {
                                         }`}
                                     >
                                         About
+                                    </Link>
+                                    <Link
+                                        href={workflow.url()}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className={`block rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
+                                            isRouteActive(workflow.url())
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                        }`}
+                                    >
+                                        Workflow
                                     </Link>
                                     <Link
                                         href={team.url()}

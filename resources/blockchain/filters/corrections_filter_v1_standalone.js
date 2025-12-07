@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, no-undef */
+ 
 /**
  * Smart Filter: Procurement Corrections Stream
  * Version: 2.0.0 (pr_number support with backward compatibility)

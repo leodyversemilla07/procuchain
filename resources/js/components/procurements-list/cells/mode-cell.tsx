@@ -49,7 +49,7 @@ export const ModeCell = ({ mode, modeLabel }: ModeCellProps) => {
             <Badge
                 variant="outline"
                 className={cn(
-                    'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-950/30 dark:text-gray-500 dark:border-gray-800',
+                    'border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-800 dark:bg-gray-950/30 dark:text-gray-500',
                     'inline-flex items-center px-2 py-0.5 text-xs font-medium',
                 )}
             >
@@ -70,7 +70,7 @@ export const ModeCell = ({ mode, modeLabel }: ModeCellProps) => {
                         variant="outline"
                         className={cn(
                             style,
-                            'inline-flex items-center px-2 py-0.5 text-xs font-medium cursor-help',
+                            'inline-flex cursor-help items-center px-2 py-0.5 text-xs font-medium',
                             'border shadow-sm transition-all duration-150',
                         )}
                     >

@@ -61,7 +61,14 @@ interface DashboardProps extends SharedData {
 }
 
 export default function HOPEDashboard() {
-    const { recentProcurements = [], procurementDistribution = [], recentActivities = [], stats, modeStatistics, error } = usePage<DashboardProps>().props;
+    const {
+        recentProcurements = [],
+        procurementDistribution = [],
+        recentActivities = [],
+        stats,
+        modeStatistics,
+        error,
+    } = usePage<DashboardProps>().props;
 
     const breadcrumbs = [getDashboardBreadcrumb(UserRole.HOPE)];
 

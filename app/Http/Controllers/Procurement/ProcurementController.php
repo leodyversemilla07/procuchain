@@ -511,6 +511,88 @@ class ProcurementController extends BaseController
     }
 
     /**
+     * Repeat a stage to issue another document (e.g., another Supplemental Bid Bulletin).
+     * Per NGPA IRR, some stages like Supplemental Bid Bulletin can be issued multiple times.
+     */
+    public function repeatStage(Request $request, string $pr_number, StageEnums $stage): RedirectResponse
+    {
+        if (! $stage->isProcurement()) {
+            abort(403, 'Invalid stage for Procurement phase');
+        }
+
+        // Validate that this stage can be repeated
+        if (! $stage->canRepeat()) {
+            return back()->with('error', 'This stage cannot be repeated.');
+        }
+
+        // Validate that stage exists in the procurement's mode workflow
+        $this->validateStageInWorkflow($pr_number, $stage);
+
+        try {
+            $procurement = app(\App\Repositories\ProcurementRepository::class)->findByProcurement($pr_number);
+            if (! $procurement) {
+                return back()->with('error', 'Procurement not found.');
+            }
+
+            $user = auth()->user();
+            $userAddress = $user->blockchain_address ?? $user->email;
+
+            // Get the "ongoing" status for this stage
+            $ongoingStatus = $this->getOngoingStatusForStage($stage);
+
+            // Publish event for issuing another bulletin
+            $eventResult = $this->eventPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $procurement->title,
+                stage: $stage->value,
+                eventType: 'stage_repeated',
+                category: 'stage_transition',
+                severity: 'info',
+                details: "Another {$stage->getDisplayName()} is being issued per NGPA IRR provisions.",
+                documentCount: 0,
+                userAddress: $userAddress,
+                metadata: [
+                    'stage' => $stage->value,
+                    'repeat_reason' => $request->input('reason', 'Additional bulletin required'),
+                    'procurement_mode' => $procurement->procurementMode->value,
+                ]
+            );
+
+            // Publish status update to reset stage to ongoing
+            $statusResult = $this->statusPublisher->publish(
+                prNumber: $pr_number,
+                procurementTitle: $procurement->title,
+                stage: $stage,
+                currentStatus: $ongoingStatus,
+                userAddress: $userAddress,
+                previousStatus: null,
+                metadata: [
+                    'action' => 'repeat_stage',
+                    'repeated_at' => now()->toIso8601String(),
+                    'procurement_mode' => $procurement->procurementMode->value,
+                ]
+            );
+
+            return back()->with('success', [
+                'message' => "Another {$stage->getDisplayName()} can now be issued. Please upload the new documents.",
+                'blockchain' => [
+                    'status_txid' => $statusResult['status_txid'] ?? null,
+                    'event_txid' => $eventResult['event_txid'] ?? null,
+                    'stage' => $stage->value,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error repeating stage', [
+                'pr_number' => $pr_number,
+                'stage' => $stage->value,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to repeat stage. Please try again.');
+        }
+    }
+
+    /**
      * Get the appropriate completion status for a given stage.
      */
     private function getCompletionStatusForStage(StageEnums $stage): StatusEnums

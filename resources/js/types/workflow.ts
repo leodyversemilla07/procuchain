@@ -35,7 +35,7 @@ export interface WorkflowInfo {
 /**
  * Server-provided action configuration
  */
-export type ActionType = 'view' | 'upload' | 'dialog' | 'skip' | 'verify' | 'corrections';
+export type ActionType = 'view' | 'upload' | 'dialog' | 'skip' | 'verify' | 'corrections' | 'repeat';
 
 export type ActionVariant =
     | 'default'
@@ -51,14 +51,7 @@ export type ActionVariant =
     | 'success'
     | 'outline';
 
-export type ActionIcon =
-    | 'upload'
-    | 'edit'
-    | 'chart'
-    | 'eye'
-    | 'shield-check'
-    | 'alert-circle'
-    | 'skip';
+export type ActionIcon = 'upload' | 'edit' | 'chart' | 'eye' | 'shield-check' | 'alert-circle' | 'skip';
 
 export interface ProcurementAction {
     type: ActionType;

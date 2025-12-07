@@ -250,7 +250,34 @@ final class ProcurementActionService
                 'href_template' => '/bac-secretariat/procurement/{pr_number}/supplemental_bid_bulletin',
             ],
 
+            // Issue Another Bulletin - Per NGPA IRR, multiple bulletins can be issued
+            [
+                'condition' => [
+                    'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN,
+                    'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+                ],
+                'type' => 'repeat',
+                'label' => 'Issue Another Bulletin',
+                'icon' => 'refresh',
+                'variant' => 'outline',
+                'href_template' => '/bac-secretariat/procurement/{pr_number}/supplemental_bid_bulletin/repeat',
+                'is_repeatable' => true,
+            ],
+
             // Bid Opening
+            // Option to issue another bulletin before proceeding with Bid Opening
+            [
+                'condition' => [
+                    'stage' => StageEnums::BID_OPENING,
+                    'status' => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+                ],
+                'type' => 'repeat',
+                'label' => 'Issue Another Bulletin (Before Bid Opening)',
+                'icon' => 'refresh',
+                'variant' => 'outline',
+                'href_template' => '/bac-secretariat/procurement/{pr_number}/supplemental_bid_bulletin/repeat',
+                'is_repeatable' => true,
+            ],
             [
                 'condition' => [
                     'stage' => StageEnums::BID_OPENING,

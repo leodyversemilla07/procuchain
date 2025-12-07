@@ -239,11 +239,14 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                 Skip to content
             </a>
 
-            <div id="main-content" className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
+            <div
+                id="main-content"
+                className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6"
+            >
                 {/* Procurement Header */}
-                <ProcurementHeader 
-                    title={procurement.title} 
-                    pr_number={procurement.id} 
+                <ProcurementHeader
+                    title={procurement.title}
+                    pr_number={procurement.id}
                     status={procurement.status}
                     procurementMode={procurement.details?.procurement_mode}
                     procurementModeLabel={procurement.details?.procurement_mode_label}
