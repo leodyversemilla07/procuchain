@@ -34,6 +34,7 @@ use Inertia\Inertia;
 // Marketing Pages
 Route::get('/', fn () => Inertia::render('home'))->name('home');
 Route::inertia('/about', 'about')->name('about');
+Route::inertia('/workflow', 'workflow')->name('workflow');
 Route::inertia('/team', 'team')->name('team');
 Route::inertia('/contact', 'contact')->name('contact');
 Route::inertia('/privacy', 'privacy')->name('privacy.policy');
@@ -157,6 +158,8 @@ Route::middleware(['auth'])->group(function () {
                 ->name('procurement.bidding.complete');
             Route::post('/procurement/{pr_number}/{stage}/skip', [ProcurementController::class, 'skipStage'])
                 ->name('procurement.bidding.skip');
+            Route::post('/procurement/{pr_number}/{stage}/repeat', [ProcurementController::class, 'repeatStage'])
+                ->name('procurement.bidding.repeat');
 
             // Post-Procurement Phase (Stages 10-15)
             Route::post('/post-procurement/{pr_number}/{stage}/upload', [PostProcurementController::class, 'uploadDocuments'])

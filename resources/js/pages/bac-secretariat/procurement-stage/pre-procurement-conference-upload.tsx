@@ -39,7 +39,12 @@ interface PreProcurementConferenceUploadProps {
     uploadedDocuments?: string[];
 }
 
-export default function PreProcurementConferenceUpload({ procurement, workflowInfo, documentGuide, uploadedDocuments = [] }: PreProcurementConferenceUploadProps) {
+export default function PreProcurementConferenceUpload({
+    procurement,
+    workflowInfo,
+    documentGuide,
+    uploadedDocuments = [],
+}: PreProcurementConferenceUploadProps) {
     const [files, setFiles] = useState<Record<string, File | null>>({});
     const [dragging, setDragging] = useState<Record<string, boolean>>({});
     const [isUploading, setIsUploading] = useState(false);

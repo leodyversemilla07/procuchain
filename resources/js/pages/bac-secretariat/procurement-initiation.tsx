@@ -20,8 +20,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-import { AlertCircle, Building2, CheckCircle2, DollarSign, FileText, Save, Trash2, Upload } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
+import { AlertCircle, Building2, CheckCircle2, DollarSign, FileText, Save, Trash2, Upload } from 'lucide-react';
 
 import { FUNDING_SOURCES, MUNICIPAL_OFFICES } from '@/types/constants';
 
@@ -200,19 +200,22 @@ export default function ProcurementInitiationForm({ categories = [], procurement
         }
     }, []);
 
-    const restoreDraft = useCallback((draft: DraftData) => {
-        // Restore all fields from draft
-        Object.keys(draft).forEach((key) => {
-            if (key !== 'savedAt' && key in data) {
-                setData(key as keyof UseFormData, draft[key as keyof UseFormData]);
-            }
-        });
-        setDraftSavedAt(draft.savedAt);
-        setShowDraftBanner(false);
-        toast.success('Draft restored', {
-            description: 'Your previous progress has been loaded.',
-        });
-    }, [data, setData]);
+    const restoreDraft = useCallback(
+        (draft: DraftData) => {
+            // Restore all fields from draft
+            Object.keys(draft).forEach((key) => {
+                if (key !== 'savedAt' && key in data) {
+                    setData(key as keyof UseFormData, draft[key as keyof UseFormData]);
+                }
+            });
+            setDraftSavedAt(draft.savedAt);
+            setShowDraftBanner(false);
+            toast.success('Draft restored', {
+                description: 'Your previous progress has been loaded.',
+            });
+        },
+        [data, setData],
+    );
 
     const discardDraft = useCallback(() => {
         clearDraft();
@@ -234,10 +237,8 @@ export default function ProcurementInitiationForm({ categories = [], procurement
     // Auto-save draft when data changes (debounced)
     useEffect(() => {
         // Only auto-save if there's meaningful data
-        const hasContent = data.title.trim() !== '' || 
-                          data.app_reference.trim() !== '' || 
-                          data.abc_amount.trim() !== '';
-        
+        const hasContent = data.title.trim() !== '' || data.app_reference.trim() !== '' || data.abc_amount.trim() !== '';
+
         if (!hasContent) return;
 
         const timeoutId = setTimeout(() => {
@@ -319,7 +320,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
     const isFormValid = useCallback((): boolean => {
         const prNumberRegex = /^PR-\d{4}-\d{4}-\d{4}$/;
         const isNegotiatedProcurement = data.procurement_mode === 'negotiated_procurement';
-        
+
         return !!(
             data.pr_number &&
             data.pr_number.trim() !== '' &&
@@ -378,7 +379,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                 // Clear draft on successful submission
                 localStorage.removeItem(DRAFT_STORAGE_KEY);
                 setHasDraft(false);
-                
+
                 toast.success('Procurement created successfully!', {
                     id: submissionToast,
                     description: 'Redirecting to procurement list. You can upload documents from there.',
@@ -422,9 +423,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                             <div className="flex items-start gap-3">
                                 <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
                                 <div>
-                                    <p className="font-medium text-amber-800 dark:text-amber-200">
-                                        You have an unsaved draft
-                                    </p>
+                                    <p className="font-medium text-amber-800 dark:text-amber-200">You have an unsaved draft</p>
                                     <p className="text-sm text-amber-700 dark:text-amber-300">
                                         Last saved: {draftSavedAt ? new Date(draftSavedAt).toLocaleString() : 'Unknown'}
                                     </p>
@@ -644,9 +643,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                 <DollarSign className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
                                 Classification & Budget
                             </CardTitle>
-                            <CardDescription className="text-muted-foreground text-sm">
-                                Procurement type and approved contract budget
-                            </CardDescription>
+                            <CardDescription className="text-muted-foreground text-sm">Procurement type and approved contract budget</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4 p-4 sm:space-y-6 sm:p-6">
                             {/* Category and Funding Source - Grid */}
@@ -773,14 +770,12 @@ export default function ProcurementInitiationForm({ categories = [], procurement
 
                                     {/* Negotiated Procurement Sub-types */}
                                     {data.procurement_mode === 'negotiated_procurement' && (
-                                        <div className="mt-4 ml-6 space-y-3 border-l-2 border-primary/30 pl-4">
+                                        <div className="border-primary/30 mt-4 ml-6 space-y-3 border-l-2 pl-4">
                                             <FieldLabel className="text-sm">
                                                 Type of Negotiated Procurement
                                                 <span className="text-destructive ml-1 text-xs">*</span>
                                             </FieldLabel>
-                                            <FieldDescription className="text-xs">
-                                                Select the applicable type for this procurement
-                                            </FieldDescription>
+                                            <FieldDescription className="text-xs">Select the applicable type for this procurement</FieldDescription>
                                             <RadioGroup
                                                 value={data.negotiated_procurement_type}
                                                 onValueChange={(value) => handleFieldChange('negotiated_procurement_type', value)}
@@ -796,15 +791,16 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                                         } ${hasError('negotiated_procurement_type') ? 'border-destructive' : ''}`}
                                                     >
                                                         <RadioGroupItem value={type.value} id={`neg-type-${type.value}`} />
-                                                        <Label htmlFor={`neg-type-${type.value}`} className="flex-1 cursor-pointer text-sm font-medium">
+                                                        <Label
+                                                            htmlFor={`neg-type-${type.value}`}
+                                                            className="flex-1 cursor-pointer text-sm font-medium"
+                                                        >
                                                             {type.label}
                                                         </Label>
                                                     </div>
                                                 ))}
                                             </RadioGroup>
-                                            {hasError('negotiated_procurement_type') && (
-                                                <FieldError>{errors.negotiated_procurement_type}</FieldError>
-                                            )}
+                                            {hasError('negotiated_procurement_type') && <FieldError>{errors.negotiated_procurement_type}</FieldError>}
                                         </div>
                                     )}
                                 </Field>

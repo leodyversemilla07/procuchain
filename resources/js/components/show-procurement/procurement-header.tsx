@@ -33,7 +33,7 @@ interface ProcurementHeaderProps {
     procurementModeLabel?: string;
 }
 
-export function ProcurementHeader({ title, pr_number, status, procurementMode, procurementModeLabel }: ProcurementHeaderProps) {
+export function ProcurementHeader({ title, pr_number, status, procurementModeLabel }: ProcurementHeaderProps) {
     const stageToSearch = (status?.stage_formatted || status?.stage) as (typeof STAGE_ORDER)[number];
     const stageIndex = stageToSearch ? STAGE_ORDER.indexOf(stageToSearch) + 1 : 0;
     const totalStages = STAGE_ORDER.length;

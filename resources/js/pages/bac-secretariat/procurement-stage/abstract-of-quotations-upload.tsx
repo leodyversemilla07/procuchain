@@ -41,7 +41,12 @@ interface AbstractOfQuotationsUploadProps {
     uploadedDocuments?: string[];
 }
 
-export default function AbstractOfQuotationsUpload({ procurement, workflowInfo, documentGuide, uploadedDocuments = [] }: AbstractOfQuotationsUploadProps) {
+export default function AbstractOfQuotationsUpload({
+    procurement,
+    workflowInfo,
+    documentGuide,
+    uploadedDocuments = [],
+}: AbstractOfQuotationsUploadProps) {
     const [files, setFiles] = useState<Record<string, File | null>>({});
     const [dragging, setDragging] = useState<Record<string, boolean>>({});
     const [isUploading, setIsUploading] = useState(false);
@@ -247,7 +252,8 @@ export default function AbstractOfQuotationsUpload({ procurement, workflowInfo, 
                             )}
                         </p>
                         <p className="text-muted-foreground mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs dark:border-blue-800 dark:bg-blue-950/20">
-                            <strong>Note:</strong> This stage is for compiling all received quotations into an Abstract of Quotations. The abstract summarizes all price quotations received from suppliers for BAC evaluation and award recommendation.
+                            <strong>Note:</strong> This stage is for compiling all received quotations into an Abstract of Quotations. The abstract
+                            summarizes all price quotations received from suppliers for BAC evaluation and award recommendation.
                         </p>
                     </CardContent>
                 </Card>

@@ -1,17 +1,5 @@
 import { Button } from '@/components/ui/button';
-import {
-    ChevronLeft,
-    ChevronRight,
-    ChevronsLeft,
-    ChevronsRight,
-    Download,
-    Eye,
-    FileText,
-    Loader2,
-    Minus,
-    Plus,
-    RotateCw,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, Eye, FileText, Loader2, Minus, Plus, RotateCw } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 
@@ -79,7 +67,7 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, pdfError, onLoadingCh
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <span className="text-muted-foreground px-2 text-sm">
-                            <span className="font-medium text-foreground">{pageNumber}</span> / {numPages}
+                            <span className="text-foreground font-medium">{pageNumber}</span> / {numPages}
                         </span>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToNextPage} disabled={pageNumber >= numPages}>
                             <ChevronRight className="h-4 w-4" />

@@ -247,7 +247,8 @@ export default function RfqUpload({ procurement, workflowInfo, documentGuide, up
                             )}
                         </p>
                         <p className="text-muted-foreground mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs dark:border-blue-800 dark:bg-blue-950/20">
-                            <strong>Note:</strong> This stage is for Small Value Procurement (SVP) and other alternative procurement methods. Upload the RFQ sent to suppliers and the price quotations received.
+                            <strong>Note:</strong> This stage is for Small Value Procurement (SVP) and other alternative procurement methods. Upload
+                            the RFQ sent to suppliers and the price quotations received.
                         </p>
                     </CardContent>
                 </Card>

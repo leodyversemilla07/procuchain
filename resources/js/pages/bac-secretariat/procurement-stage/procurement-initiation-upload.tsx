@@ -349,13 +349,10 @@ export default function ProcurementInitiationShow({
                                     <Upload className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
                                     Upload Document
                                 </CardTitle>
-                                <CardDescription className="text-sm">
-                                    Upload the procurement initiation document in PDF format.
-                                </CardDescription>
+                                <CardDescription className="text-sm">Upload the procurement initiation document in PDF format.</CardDescription>
                             </CardHeader>
 
                             <CardContent className="space-y-6">
-
                                 {/* Upload Status or Upload Area */}
                                 {isDocumentUploaded ? (
                                     <div className="rounded-lg border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-950/20">

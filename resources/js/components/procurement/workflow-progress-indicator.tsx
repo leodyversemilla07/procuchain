@@ -4,7 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { WorkflowInfo } from '@/types';
 import { CheckCircle2, ChevronLeft, ChevronRight, Info, SkipForward } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface WorkflowProgressIndicatorProps {
     workflowInfo: WorkflowInfo;
@@ -75,60 +75,49 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom" className="max-w-[280px] sm:max-w-sm">
                                     <p className="text-xs sm:text-sm">{mode.description}</p>
-                                    <p className="text-muted-foreground mt-1 text-xs">
-                                        Reference: NGPA IRR {mode.irr_section}
-                                    </p>
+                                    <p className="text-muted-foreground mt-1 text-xs">Reference: NGPA IRR {mode.irr_section}</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
                     </div>
                     <div className="text-muted-foreground text-xs sm:text-sm">
-                        <span className="font-medium text-foreground">
-                            Stage {workflow.current_index + 1}
-                        </span>{' '}
-                        of {workflow.total_stages}
+                        <span className="text-foreground font-medium">Stage {workflow.current_index + 1}</span> of {workflow.total_stages}
                     </div>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="mt-3 sm:mt-4 space-y-1.5 sm:space-y-2">
+                <div className="mt-3 space-y-1.5 sm:mt-4 sm:space-y-2">
                     <Progress value={workflow.progress_percentage} className="h-1.5 sm:h-2" />
-                    <p className="text-muted-foreground text-[10px] sm:text-xs">
-                        {workflow.progress_percentage}% complete
-                    </p>
+                    <p className="text-muted-foreground text-[10px] sm:text-xs">{workflow.progress_percentage}% complete</p>
                 </div>
 
                 {/* Stage Indicators - Mobile: Scrollable with arrows, Desktop: Wrap */}
-                <div className="mt-3 sm:mt-4 relative">
+                <div className="relative mt-3 sm:mt-4">
                     {/* Mobile: Scrollable container with navigation arrows */}
                     <div className="block lg:hidden">
                         {showLeftArrow && (
                             <button
                                 onClick={scrollLeft}
-                                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm rounded-full p-1 shadow-md border border-border hover:bg-muted transition-colors"
+                                className="bg-background/90 border-border hover:bg-muted absolute top-1/2 left-0 z-10 -translate-y-1/2 rounded-full border p-1 shadow-md backdrop-blur-sm transition-colors"
                                 aria-label="Scroll left"
                             >
                                 <ChevronLeft className="h-4 w-4" />
                             </button>
                         )}
-                        <div
-                            ref={scrollContainerRef}
-                            className="overflow-x-auto scrollbar-hide px-6"
-                            onScroll={checkScrollArrows}
-                        >
+                        <div ref={scrollContainerRef} className="scrollbar-hide overflow-x-auto px-6" onScroll={checkScrollArrows}>
                             <div className="flex gap-1.5 pb-2">
                                 {workflow.stages.map((stage, index) => (
                                     <TooltipProvider key={stage.value}>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <div
-                                                    className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                                                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-8 sm:w-8 ${
                                                         stage.is_current
                                                             ? 'bg-primary border-primary text-primary-foreground'
                                                             : stage.is_completed
-                                                              ? 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600'
+                                                              ? 'border-green-500 bg-green-500 text-white dark:border-green-600 dark:bg-green-600'
                                                               : stage.is_optional
-                                                                ? 'border-dashed border-muted-foreground/50 text-muted-foreground/50'
+                                                                ? 'border-muted-foreground/50 text-muted-foreground/50 border-dashed'
                                                                 : 'border-muted-foreground/30 text-muted-foreground/30'
                                                     }`}
                                                 >
@@ -137,26 +126,29 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                     ) : stage.is_optional ? (
                                                         <SkipForward className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                                     ) : (
-                                                        <span className="text-[10px] sm:text-xs font-medium">{index + 1}</span>
+                                                        <span className="text-[10px] font-medium sm:text-xs">{index + 1}</span>
                                                     )}
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent side="bottom">
                                                 <div className="space-y-1">
-                                                    <p className="font-medium text-xs sm:text-sm">{stage.display_name}</p>
+                                                    <p className="text-xs font-medium sm:text-sm">{stage.display_name}</p>
                                                     <div className="flex flex-wrap items-center gap-1 text-xs">
                                                         {stage.is_current && (
-                                                            <Badge variant="default" className="text-[10px] px-1.5 py-0">
+                                                            <Badge variant="default" className="px-1.5 py-0 text-[10px]">
                                                                 Current
                                                             </Badge>
                                                         )}
                                                         {stage.is_completed && (
-                                                            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] px-1.5 py-0">
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className="bg-green-100 px-1.5 py-0 text-[10px] text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                                            >
                                                                 Completed
                                                             </Badge>
                                                         )}
                                                         {stage.is_optional && (
-                                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                                            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
                                                                 Optional
                                                             </Badge>
                                                         )}
@@ -171,7 +163,7 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                         {showRightArrow && (
                             <button
                                 onClick={scrollRight}
-                                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm rounded-full p-1 shadow-md border border-border hover:bg-muted transition-colors"
+                                className="bg-background/90 border-border hover:bg-muted absolute top-1/2 right-0 z-10 -translate-y-1/2 rounded-full border p-1 shadow-md backdrop-blur-sm transition-colors"
                                 aria-label="Scroll right"
                             >
                                 <ChevronRight className="h-4 w-4" />
@@ -190,9 +182,9 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                 stage.is_current
                                                     ? 'bg-primary border-primary text-primary-foreground'
                                                     : stage.is_completed
-                                                      ? 'bg-green-500 border-green-500 text-white dark:bg-green-600 dark:border-green-600'
+                                                      ? 'border-green-500 bg-green-500 text-white dark:border-green-600 dark:bg-green-600'
                                                       : stage.is_optional
-                                                        ? 'border-dashed border-muted-foreground/50 text-muted-foreground/50'
+                                                        ? 'border-muted-foreground/50 text-muted-foreground/50 border-dashed'
                                                         : 'border-muted-foreground/30 text-muted-foreground/30'
                                             }`}
                                         >
@@ -215,7 +207,10 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                                     </Badge>
                                                 )}
                                                 {stage.is_completed && (
-                                                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                                    >
                                                         Completed
                                                     </Badge>
                                                 )}
@@ -236,19 +231,19 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                 {/* Legend - Visible on all screens, compact on mobile */}
                 <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-2 text-[10px] sm:mt-4 sm:gap-4 sm:text-xs">
                     <div className="flex items-center gap-1">
-                        <div className="bg-primary h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full" />
+                        <div className="bg-primary h-2.5 w-2.5 rounded-full sm:h-3 sm:w-3" />
                         <span>Current</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-green-500 dark:bg-green-600" />
+                        <div className="h-2.5 w-2.5 rounded-full bg-green-500 sm:h-3 sm:w-3 dark:bg-green-600" />
                         <span>Completed</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="border-muted-foreground/30 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full border-2" />
+                        <div className="border-muted-foreground/30 h-2.5 w-2.5 rounded-full border-2 sm:h-3 sm:w-3" />
                         <span>Pending</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="border-muted-foreground/50 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full border-2 border-dashed" />
+                        <div className="border-muted-foreground/50 h-2.5 w-2.5 rounded-full border-2 border-dashed sm:h-3 sm:w-3" />
                         <span>Optional</span>
                     </div>
                 </div>
@@ -277,9 +272,7 @@ export function ModeBadge({ workflowInfo }: { workflowInfo: WorkflowInfo }) {
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-sm">
                     <p className="text-sm">{mode.description}</p>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                        Reference: NGPA IRR {mode.irr_section}
-                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs">Reference: NGPA IRR {mode.irr_section}</p>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>

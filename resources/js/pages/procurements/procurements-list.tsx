@@ -341,9 +341,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                                 <h1 className="text-xl font-bold sm:text-2xl">Procurement List</h1>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-muted-foreground text-sm sm:text-base">
-                                    View and manage procurement items across all stages
-                                </p>
+                                <p className="text-muted-foreground text-sm sm:text-base">View and manage procurement items across all stages</p>
                                 <p className="text-muted-foreground hidden text-xs sm:block">
                                     Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">R</kbd> Refresh
                                     {' · '}

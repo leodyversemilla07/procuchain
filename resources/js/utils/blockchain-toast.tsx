@@ -1,5 +1,5 @@
-import { toast } from 'sonner';
 import { ShieldCheck } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface BlockchainResponse {
     message: string;
@@ -56,9 +56,7 @@ export function handleFlashSuccess(page: { props: Record<string, unknown> }, fal
  * Show a simple success toast for stage completion.
  */
 export function showStageCompleteToast(stageName: string, nextStageName?: string): void {
-    const message = nextStageName
-        ? `${stageName} completed! Proceeding to ${nextStageName}.`
-        : `${stageName} marked as complete!`;
+    const message = nextStageName ? `${stageName} completed! Proceeding to ${nextStageName}.` : `${stageName} marked as complete!`;
 
     toast.success(message, {
         description: (
