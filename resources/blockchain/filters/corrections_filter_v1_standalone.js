@@ -1,4 +1,3 @@
- 
 /**
  * Smart Filter: Procurement Corrections Stream
  * Version: 2.0.0 (pr_number support with backward compatibility)
