@@ -97,8 +97,8 @@ class ProcurementRepository implements ProcurementRepositoryInterface
 
     /**
      * Find multiple procurements by PR numbers (OPTIMIZED BATCH FETCH)
-     * 
-     * @param array<string> $prNumbers
+     *
+     * @param  array<string>  $prNumbers
      * @return array<string, ProcurementData|null>
      */
     public function findManyByProcurement(array $prNumbers): array
@@ -126,7 +126,7 @@ class ProcurementRepository implements ProcurementRepositoryInterface
                     $latest = $grouped->get($prNumber)
                         ->sortByDesc('blocktime')
                         ->first();
-                    
+
                     if ($latest && isset($latest['data']['json'])) {
                         $result[$prNumber] = ProcurementData::fromBlockchainArray($latest['data']['json']);
                     } else {

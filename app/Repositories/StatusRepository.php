@@ -113,7 +113,14 @@ final readonly class StatusRepository
             $statuses = [];
             foreach ($items as $item) {
                 if (isset($item['data']['json'])) {
-                    $statuses[] = StatusData::fromBlockchainArray($item['data']['json']);
+                    try {
+                        $statuses[] = StatusData::fromBlockchainArray($item['data']['json']);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to parse status data in all()', [
+                            'error' => $e->getMessage(),
+                            'data' => $item['data']['json'] ?? null,
+                        ]);
+                    }
                 }
             }
 
@@ -177,7 +184,15 @@ final readonly class StatusRepository
                     // Items are in chronological order, so last item is the latest
                     $latestItem = end($items);
                     if (isset($latestItem['data']['json'])) {
-                        $latestStatuses[] = StatusData::fromBlockchainArray($latestItem['data']['json']);
+                        try {
+                            $latestStatuses[] = StatusData::fromBlockchainArray($latestItem['data']['json']);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to parse status data for PR', [
+                                'pr_number' => $prNumber,
+                                'error' => $e->getMessage(),
+                                'data' => $latestItem['data']['json'] ?? null,
+                            ]);
+                        }
                     }
                 }
             }

@@ -15,7 +15,7 @@ final class StatusData
 {
     public function __construct(
         public readonly string $prNumber,
-        public readonly string $procurementTitle,
+        public readonly ?string $procurementTitle,
         public readonly string $stage,
         public readonly string $currentStatus,
         public readonly string $userAddress,
@@ -42,7 +42,7 @@ final class StatusData
     {
         return new self(
             prNumber: $data['pr_number'],
-            procurementTitle: $data['procurement_title'],
+            procurementTitle: $data['procurement_title'] ?? null,
             stage: $data['stage'],
             currentStatus: $data['current_status'],
             userAddress: $data['user_address'] ?? '',

@@ -63,8 +63,10 @@ final class ProcurementFetcherService
      */
     public function fetchAllProcurements(bool $skipActions = true): array
     {
-        // Cache for 5 minutes for faster refreshes while maintaining freshness
-        return Cache::remember('procurements:list:all:v2', now()->addMinutes(5), function () {
+        // Cache for configurable TTL (default 2 minutes for balance between performance and freshness)
+        $cacheTtl = (int) config('blockchain.cache.procurement_list_ttl', 120); // seconds
+
+        return Cache::remember('procurements:list:all:v2', now()->addSeconds($cacheTtl), function () {
             try {
                 Log::info('ProcurementFetcherService: Starting OPTIMIZED fetch from repositories');
 

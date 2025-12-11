@@ -59,7 +59,7 @@ final class Client
      * Persistent cURL handle for connection reuse (performance optimization)
      * Reduces connection overhead by 30-50% for multiple requests
      */
-    private \CurlHandle|null $persistentCurlHandle = null;
+    private ?\CurlHandle $persistentCurlHandle = null;
 
     public function __construct(string $host, int $port, string $username, string $password, bool $usessl = false)
     {
@@ -290,6 +290,7 @@ final class Client
             if ($this->persistentCurlHandle === false) {
                 $this->error_code = MC_DEFAULT_ERROR_CODE;
                 $this->error_message = 'Unable to initialize cURL';
+
                 return null;
             }
 
@@ -307,7 +308,7 @@ final class Client
             // Enable HTTP/1.1 persistent connections
             curl_setopt($this->persistentCurlHandle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 
-            if (!$this->verifyssl) {
+            if (! $this->verifyssl) {
                 curl_setopt($this->persistentCurlHandle, CURLOPT_SSL_VERIFYHOST, false);
                 curl_setopt($this->persistentCurlHandle, CURLOPT_SSL_VERIFYPEER, false);
             }

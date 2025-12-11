@@ -125,7 +125,8 @@ return [
 
     'cache' => [
         // TTL for procurement list cache (seconds)
-        'procurement_list_ttl' => env('BLOCKCHAIN_CACHE_PROCUREMENT_LIST', 300), // 5 minutes
+        // Set to 0 to disable caching (not recommended for production)
+        'procurement_list_ttl' => env('BLOCKCHAIN_CACHE_PROCUREMENT_LIST', 120), // 2 minutes
 
         // TTL for individual procurement details (seconds)
         'procurement_details_ttl' => env('BLOCKCHAIN_CACHE_PROCUREMENT_DETAILS', 600), // 10 minutes
