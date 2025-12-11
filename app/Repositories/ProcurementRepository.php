@@ -68,10 +68,17 @@ class ProcurementRepository implements ProcurementRepositoryInterface
         }
     }
 
-    public function all(): Collection
+    public function all(int $limit = 1000, int $offset = 0): Collection
     {
         try {
-            $items = $this->multichain->liststreamitems('procurement.metadata');
+            // OPTIMIZATION: Use verbose=false for faster response
+            $items = $this->multichain->liststreamitems(
+                'procurement.metadata',
+                false,  // verbose=false
+                $limit,
+                $offset,
+                false
+            );
 
             // Group by procurement ID and get latest version of each
             return collect($items)
@@ -85,6 +92,60 @@ class ProcurementRepository implements ProcurementRepositoryInterface
             ]);
 
             return collect();
+        }
+    }
+
+    /**
+     * Find multiple procurements by PR numbers (OPTIMIZED BATCH FETCH)
+     * 
+     * @param array<string> $prNumbers
+     * @return array<string, ProcurementData|null>
+     */
+    public function findManyByProcurement(array $prNumbers): array
+    {
+        if (empty($prNumbers)) {
+            return [];
+        }
+
+        try {
+            // Fetch all metadata items once (much faster than per-PR queries)
+            $items = $this->multichain->liststreamitems(
+                StreamEnums::METADATA->value,
+                false,  // verbose=false
+                count($prNumbers) * 2,  // Buffer for multiple versions
+                0,
+                false
+            );
+
+            $result = [];
+            $grouped = collect($items)->groupBy('keys.0');
+
+            foreach ($prNumbers as $prNumber) {
+                if ($grouped->has($prNumber)) {
+                    // Get latest version for this PR
+                    $latest = $grouped->get($prNumber)
+                        ->sortByDesc('blocktime')
+                        ->first();
+                    
+                    if ($latest && isset($latest['data']['json'])) {
+                        $result[$prNumber] = ProcurementData::fromBlockchainArray($latest['data']['json']);
+                    } else {
+                        $result[$prNumber] = null;
+                    }
+                } else {
+                    $result[$prNumber] = null;
+                }
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('Failed to batch fetch procurements', [
+                'pr_count' => count($prNumbers),
+                'error' => $e->getMessage(),
+            ]);
+
+            // Return nulls for all
+            return array_fill_keys($prNumbers, null);
         }
     }
 

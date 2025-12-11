@@ -94,14 +94,15 @@ final readonly class StatusRepository
      *
      * @return StatusData[]
      */
-    public function all(): array
+    public function all(int $limit = 1000, int $offset = 0): array
     {
         try {
+            // Optimization: Use verbose=false to reduce data transfer, we only need the JSON
             $items = $this->multichain->liststreamitems(
                 StreamEnums::STATUS->value,
-                true,
-                1000,
-                0,
+                false,  // verbose=false for faster response
+                $limit,
+                $offset,
                 false
             );
 
@@ -123,6 +124,68 @@ final readonly class StatusRepository
             ]);
 
             return [];
+        }
+    }
+
+    /**
+     * Get only the latest status for each unique procurement (OPTIMIZED)
+     * Uses MultiChain's key-based indexing for faster queries
+     * Per MultiChain docs: local-ordering provides faster execution
+     *
+     * @return StatusData[]
+     */
+    public function getLatestByProcurement(int $limit = 100): array
+    {
+        try {
+            // Get stream keys (PR numbers) first - this is very fast
+            // OPTIMIZATION: local-ordering=true for faster query execution
+            $keys = $this->multichain->liststreamkeys(
+                StreamEnums::STATUS->value,
+                '*',
+                false,  // verbose=false for speed
+                $limit,
+                0,
+                true    // local-ordering for faster queries
+            );
+
+            if (! $keys) {
+                return [];
+            }
+
+            $latestStatuses = [];
+            
+            // For each PR, get only the latest item (count=1, start=-1 for most recent)
+            foreach ($keys as $key) {
+                if (empty($key['key'])) {
+                    continue;
+                }
+
+                $prNumber = $key['key'];
+                
+                // Get only the most recent item for this key
+                // OPTIMIZATION: local-ordering=true for faster execution
+                $items = $this->multichain->liststreamkeyitems(
+                    StreamEnums::STATUS->value,
+                    $prNumber,
+                    false,  // verbose=false for speed
+                    1,      // limit=1 (only latest)
+                    -1,     // start=-1 (from end)
+                    true    // local-ordering for faster queries
+                );
+
+                if (!empty($items) && isset($items[0]['data']['json'])) {
+                    $latestStatuses[] = StatusData::fromBlockchainArray($items[0]['data']['json']);
+                }
+            }
+
+            return $latestStatuses;
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve latest statuses by procurement', [
+                'error' => $e->getMessage(),
+            ]);
+
+            // Fallback to old method
+            return $this->all($limit);
         }
     }
 
