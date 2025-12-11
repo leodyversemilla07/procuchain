@@ -103,14 +103,23 @@ final class ProcurementFetcherService
                     // Get user role for action determination
                     $userRole = $this->getCurrentUserRole();
 
-                    // Get available actions from the server-side service
-                    $workflowActions = $this->actionService->getAvailableActions(
-                        $statusDto->prNumber,
-                        $statusDto->stage,
-                        $statusDto->currentStatus,
-                        $userRole
-                    );
-                    $staticActions = $this->actionService->getStaticActions($statusDto->prNumber, $userRole);
+                    // Get available actions from the server-side service (with fallback)
+                    try {
+                        $workflowActions = $this->actionService->getAvailableActions(
+                            $statusDto->prNumber,
+                            $statusDto->stage,
+                            $statusDto->currentStatus,
+                            $userRole
+                        );
+                        $staticActions = $this->actionService->getStaticActions($statusDto->prNumber, $userRole);
+                    } catch (\Exception $e) {
+                        Log::debug('Failed to fetch actions for procurement, using empty actions', [
+                            'pr_number' => $statusDto->prNumber,
+                            'error' => $e->getMessage(),
+                        ]);
+                        $workflowActions = [];
+                        $staticActions = [];
+                    }
 
                     return [
                         'id' => $statusDto->prNumber,
@@ -164,20 +173,27 @@ final class ProcurementFetcherService
      */
     private function buildProcurementModeMap(Collection $statusItems): array
     {
-        $prNumbers = $statusItems->pluck('prNumber')->unique()->values()->all();
+        try {
+            $prNumbers = $statusItems->pluck('prNumber')->unique()->values()->all();
 
-        $modeMap = [];
-        foreach ($prNumbers as $prNumber) {
-            $procurement = $this->procurementRepository->findByProcurement($prNumber);
-            if ($procurement && $procurement->procurementMode) {
-                $modeMap[$prNumber] = [
-                    'value' => $procurement->procurementMode->value,
-                    'label' => $procurement->procurementMode->getDisplayName(),
-                ];
+            $modeMap = [];
+            foreach ($prNumbers as $prNumber) {
+                $procurement = $this->procurementRepository->findByProcurement($prNumber);
+                if ($procurement && $procurement->procurementMode) {
+                    $modeMap[$prNumber] = [
+                        'value' => $procurement->procurementMode->value,
+                        'label' => $procurement->procurementMode->getDisplayName(),
+                    ];
+                }
             }
-        }
 
-        return $modeMap;
+            return $modeMap;
+        } catch (\Exception $e) {
+            Log::warning('Failed to build procurement mode map, blockchain may be unavailable', [
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
     }
 
     /**
