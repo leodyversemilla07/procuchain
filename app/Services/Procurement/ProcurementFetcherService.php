@@ -58,28 +58,29 @@ final class ProcurementFetcherService
     {
         // Cache for 30 minutes to prevent repeated blockchain queries on page refreshes
         return Cache::remember('procurements:list:all', now()->addMinutes(30), function () {
-            Log::info('ProcurementFetcherService: Starting to fetch data from repositories (cache miss)');
+            try {
+                Log::info('ProcurementFetcherService: Starting to fetch data from repositories (cache miss)');
 
-            $statusDtos = $this->statusRepository->all();
-            $statusItems = collect($statusDtos);
+                $statusDtos = $this->statusRepository->all();
+                $statusItems = collect($statusDtos);
 
-            $documentDtos = $this->documentRepository->all();
+                $documentDtos = $this->documentRepository->all();
 
-            Log::info('ProcurementFetcherService: Fetched data from repositories', [
-                'status_count' => $statusItems->count(),
-                'document_count' => count($documentDtos),
-            ]);
+                Log::info('ProcurementFetcherService: Fetched data from repositories', [
+                    'status_count' => $statusItems->count(),
+                    'document_count' => count($documentDtos),
+                ]);
 
-            $this->preloadUserNamesFromDtos($statusItems);
+                $this->preloadUserNamesFromDtos($statusItems);
 
-            // Build document count map by pr_number
-            $documentCountMap = collect($documentDtos)
-                ->groupBy(fn (DocumentData $doc) => $doc->prNumber)
-                ->map(fn ($docs) => $docs->count())
-                ->all();
+                // Build document count map by pr_number
+                $documentCountMap = collect($documentDtos)
+                    ->groupBy(fn (DocumentData $doc) => $doc->prNumber)
+                    ->map(fn ($docs) => $docs->count())
+                    ->all();
 
-            // Build procurement mode map by pr_number
-            $procurementModeMap = $this->buildProcurementModeMap($statusItems);
+                // Build procurement mode map by pr_number
+                $procurementModeMap = $this->buildProcurementModeMap($statusItems);
 
             // Process status items to get latest status per procurement
             $result = $statusItems
@@ -162,7 +163,16 @@ final class ProcurementFetcherService
 
             Log::info('ProcurementFetcherService: Final procurements result count', ['count' => count($result)]);
 
-            return $result;
+                return $result;
+            } catch (\Exception $e) {
+                Log::error('Failed to fetch procurement data, blockchain may be unavailable', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                
+                // Return empty array to allow page to load with error message
+                return [];
+            }
         });
     }
 
