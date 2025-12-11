@@ -42,34 +42,46 @@ final class ProcurementActionService
         string $status,
         string $userRole = 'bac_secretariat'
     ): array {
-        $actions = [];
+        try {
+            $actions = [];
 
-        // Get procurement data for mode-aware actions
-        $procurement = $this->procurementRepository->findByProcurement($prNumber);
-        $mode = $procurement?->procurementMode;
+            // Get procurement data for mode-aware actions with timeout protection
+            $procurement = $this->procurementRepository->findByProcurement($prNumber);
+            $mode = $procurement?->procurementMode;
 
-        $stageEnum = StageEnums::tryFrom($stage);
-        $statusEnum = StatusEnums::tryFrom($status);
+            $stageEnum = StageEnums::tryFrom($stage);
+            $statusEnum = StatusEnums::tryFrom($status);
 
-        if (! $stageEnum || ! $statusEnum) {
+            if (! $stageEnum || ! $statusEnum) {
+                return $actions;
+            }
+
+            // Only BAC Secretariat can perform workflow actions
+            if ($userRole === 'bac_secretariat') {
+                $actions = array_merge($actions, $this->getWorkflowActions($prNumber, $stageEnum, $statusEnum, $mode));
+            }
+
+            // Add skip action if current stage is optional AND there's no dialog action already
+            // Dialog actions (like pre-procurement conference decision) include skip option in the dialog itself
+            // Also don't show skip if the stage is already in progress (work has started)
+            $hasDialogAction = collect($actions)->contains(fn ($action) => ($action['type'] ?? '') === 'dialog');
+            $stageInProgress = $this->isStageInProgress($statusEnum);
+            if ($userRole === 'bac_secretariat' && $mode && $this->isStageOptional($stageEnum, $mode) && ! $hasDialogAction && ! $stageInProgress) {
+                $actions[] = $this->buildSkipAction($prNumber, $stageEnum);
+            }
+
             return $actions;
-        }
+        } catch (\Exception $e) {
+            // Log blockchain connection errors but don't crash the page
+            Log::warning('Failed to get available actions for procurement', [
+                'pr_number' => $prNumber,
+                'stage' => $stage,
+                'status' => $status,
+                'error' => $e->getMessage(),
+            ]);
 
-        // Only BAC Secretariat can perform workflow actions
-        if ($userRole === 'bac_secretariat') {
-            $actions = array_merge($actions, $this->getWorkflowActions($prNumber, $stageEnum, $statusEnum, $mode));
+            return []; // Return empty actions array on error
         }
-
-        // Add skip action if current stage is optional AND there's no dialog action already
-        // Dialog actions (like pre-procurement conference decision) include skip option in the dialog itself
-        // Also don't show skip if the stage is already in progress (work has started)
-        $hasDialogAction = collect($actions)->contains(fn ($action) => ($action['type'] ?? '') === 'dialog');
-        $stageInProgress = $this->isStageInProgress($statusEnum);
-        if ($userRole === 'bac_secretariat' && $mode && $this->isStageOptional($stageEnum, $mode) && ! $hasDialogAction && ! $stageInProgress) {
-            $actions[] = $this->buildSkipAction($prNumber, $stageEnum);
-        }
-
-        return $actions;
     }
 
     /**
