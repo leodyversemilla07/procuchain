@@ -49,6 +49,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Connection Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Maximum time (in seconds) to wait for a blockchain RPC response.
+    | Lower values prevent request timeouts but may fail on slow networks.
+    |
+    */
+
+    'timeout' => env('MULTICHAIN_TIMEOUT', 5),
+
+    /*
+    |--------------------------------------------------------------------------
     | Network Configuration
     |--------------------------------------------------------------------------
     |
@@ -70,13 +82,13 @@ return [
     |
     */
 
-    'connection_timeout' => env('MULTICHAIN_CONNECTION_TIMEOUT', 30),
-    'max_retries' => env('MULTICHAIN_MAX_RETRIES', 3),
-    'retry_delay' => env('MULTICHAIN_RETRY_DELAY', 2),
+    'connection_timeout' => env('MULTICHAIN_CONNECTION_TIMEOUT', 10),
+    'max_retries' => env('MULTICHAIN_MAX_RETRIES', 2),
+    'retry_delay' => env('MULTICHAIN_RETRY_DELAY', 1),
 
     // Web-request specific caps to avoid hitting PHP's 60s max execution time
-    'web_connection_timeout' => env('MULTICHAIN_WEB_CONNECTION_TIMEOUT', 12),
-    'web_max_retries' => env('MULTICHAIN_WEB_MAX_RETRIES', 2),
+    'web_connection_timeout' => env('MULTICHAIN_WEB_CONNECTION_TIMEOUT', 3),
+    'web_max_retries' => env('MULTICHAIN_WEB_MAX_RETRIES', 1),
 
     /*
     |--------------------------------------------------------------------------
