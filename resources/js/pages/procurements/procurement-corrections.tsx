@@ -111,30 +111,32 @@ export default function ProcurementCorrections({ procurement, corrections, docum
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">PR Number</label>
+                                    <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">PR Number</label>
                                     <p className="font-mono text-sm font-medium">{procurement.pr_number}</p>
                                 </div>
                                 <div>
-                                    <label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Title</label>
+                                    <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Title</label>
                                     <p className="text-sm">{procurement.title}</p>
                                 </div>
                                 <div>
-                                    <label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">ABC Amount</label>
+                                    <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">ABC Amount</label>
                                     <p className="text-sm font-semibold text-green-600 dark:text-green-400">{procurement.formatted_abc_amount}</p>
                                 </div>
                             </div>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Category</label>
+                                    <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Category</label>
                                     <p className="text-sm">{procurement.category_display}</p>
                                 </div>
                                 <div>
-                                    <label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Procurement Mode</label>
+                                    <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Procurement Mode</label>
                                     <p className="text-sm">{procurement.procurement_mode_display}</p>
                                 </div>
                                 <div>
-                                    <label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Current Status</label>
-                                    <Badge variant="outline" className="mt-1">{procurement.status}</Badge>
+                                    <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Current Status</label>
+                                    <Badge variant="outline" className="mt-1">
+                                        {procurement.status}
+                                    </Badge>
                                 </div>
                             </div>
                         </div>
