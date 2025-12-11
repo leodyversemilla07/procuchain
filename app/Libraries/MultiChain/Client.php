@@ -53,7 +53,7 @@ final class Client
 
     private string $error_message;
 
-    private int $timeout = 30;
+    private int $timeout = 5;
 
     public function __construct(string $host, int $port, string $username, string $password, bool $usessl = false)
     {
