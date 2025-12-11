@@ -11,7 +11,7 @@ class ProcurementPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view procurements');
+        return $user->can('view procurement');
     }
 
     /**
@@ -19,7 +19,7 @@ class ProcurementPolicy
      */
     public function view(User $user, $procurement): bool
     {
-        return $user->can('view procurements');
+        return $user->can('view procurement');
     }
 
     /**
@@ -27,7 +27,7 @@ class ProcurementPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create procurements');
+        return $user->can('create procurement');
     }
 
     /**
@@ -35,7 +35,7 @@ class ProcurementPolicy
      */
     public function update(User $user, $procurement): bool
     {
-        return $user->can('update procurements');
+        return $user->can('edit procurement');
     }
 
     /**
@@ -43,7 +43,7 @@ class ProcurementPolicy
      */
     public function delete(User $user, $procurement): bool
     {
-        return $user->can('delete procurements');
+        return $user->can('delete procurement');
     }
 
     /**
@@ -51,7 +51,7 @@ class ProcurementPolicy
      */
     public function restore(User $user, $procurement): bool
     {
-        return $user->can('restore procurements');
+        return $user->can('edit procurement');
     }
 
     /**
@@ -59,7 +59,7 @@ class ProcurementPolicy
      */
     public function forceDelete(User $user, $procurement): bool
     {
-        return $user->can('force delete procurements');
+        return $user->can('delete procurement');
     }
 
     /**
@@ -83,7 +83,7 @@ class ProcurementPolicy
      */
     public function viewCorrectionHistory(User $user, $procurement): bool
     {
-        return $user->can('view procurements');
+        return $user->can('view procurement');
     }
 
     /**

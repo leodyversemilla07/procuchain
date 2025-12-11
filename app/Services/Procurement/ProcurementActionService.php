@@ -20,6 +20,13 @@ use Illuminate\Support\Facades\Log;
  */
 final class ProcurementActionService
 {
+    /**
+     * Cache for procurement modes to avoid repeated blockchain calls
+     *
+     * @var array<string, ProcurementModeEnums|null>
+     */
+    private array $modeCache = [];
+
     public function __construct(
         private readonly ProcurementRepository $procurementRepository
     ) {}
@@ -41,14 +48,16 @@ final class ProcurementActionService
         string $prNumber,
         string $stage,
         string $status,
-        string $userRole = 'bac_secretariat'
+        string $userRole = 'bac_secretariat',
+        ?ProcurementModeEnums $mode = null
     ): array {
         try {
             $actions = [];
 
-            // Get procurement data for mode-aware actions with timeout protection
-            $procurement = $this->procurementRepository->findByProcurement($prNumber);
-            $mode = $procurement?->procurementMode;
+            // Use provided mode if available, otherwise fetch with caching
+            if ($mode === null) {
+                $mode = $this->getProcurementMode($prNumber);
+            }
 
             $stageEnum = StageEnums::tryFrom($stage);
             $statusEnum = StatusEnums::tryFrom($status);
@@ -83,6 +92,35 @@ final class ProcurementActionService
 
             return []; // Return empty actions array on error
         }
+    }
+
+    /**
+     * Get procurement mode with caching to avoid repeated blockchain calls.
+     * This is critical for performance when displaying action buttons for multiple procurements.
+     */
+    private function getProcurementMode(string $prNumber): ?ProcurementModeEnums
+    {
+        // Check cache first
+        if (array_key_exists($prNumber, $this->modeCache)) {
+            return $this->modeCache[$prNumber];
+        }
+
+        // Fetch from blockchain with timeout protection
+        try {
+            $procurement = $this->procurementRepository->findByProcurement($prNumber);
+            $mode = $procurement?->procurementMode;
+        } catch (\Exception $e) {
+            Log::debug('Failed to fetch procurement mode, using null', [
+                'pr_number' => $prNumber,
+                'error' => $e->getMessage(),
+            ]);
+            $mode = null;
+        }
+
+        // Store in cache
+        $this->modeCache[$prNumber] = $mode;
+
+        return $mode;
     }
 
     /**

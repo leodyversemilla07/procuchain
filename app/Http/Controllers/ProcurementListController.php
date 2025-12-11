@@ -54,6 +54,10 @@ class ProcurementListController extends BaseController
 
         try {
             Log::info('Fetching procurements list');
+
+            // Set a reasonable timeout for blockchain operations
+            set_time_limit(28); // Give 2 seconds buffer
+
             $procurements = $this->procurementDataService->fetchAndProcessProcurements();
 
             // Get filter parameters from request

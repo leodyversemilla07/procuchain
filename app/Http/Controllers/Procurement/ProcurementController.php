@@ -8,6 +8,7 @@ use App\Enums\StatusEnums;
 use App\Http\Controllers\Procurement\Concerns\HasProcurementSupport;
 use App\Services\DocumentValidationService;
 use App\Services\Manager;
+use App\Services\ModeAwareDocumentValidationService;
 use App\Services\ProcurementDataService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
@@ -42,6 +43,7 @@ class ProcurementController extends BaseController
         ProcurementDataService $procurementDataService,
         \App\Repositories\DocumentRepository $documentRepository,
         protected DocumentValidationService $validationService,
+        protected ModeAwareDocumentValidationService $modeAwareValidationService,
         protected ProcurementOrchestrator $orchestrator
     ) {
         $this->initializeProcurementSupport($multichain, $documentPublisher, $statusPublisher, $eventPublisher, $procurementDataService, $documentRepository);
@@ -78,6 +80,9 @@ class ProcurementController extends BaseController
             default => abort(404, 'Stage component not found'),
         };
 
+        // Get procurement mode for mode-aware document requirements
+        $mode = $this->getProcurementMode($pr_number);
+
         return Inertia::render($component, [
             'procurement' => [
                 'pr_number' => $pr_number,
@@ -88,7 +93,7 @@ class ProcurementController extends BaseController
                 'current_stage' => $procurement['stage'] ?? '',
             ],
             'workflowInfo' => $this->getWorkflowInfo($pr_number, $stage),
-            'documentGuide' => $this->validationService->getStageDocumentGuide($stage),
+            'documentGuide' => $this->modeAwareValidationService->getStageDocumentGuide($stage, $mode),
             'uploadedDocuments' => fn () => $this->getUploadedDocumentTypes($pr_number, $stage),
         ]);
     }
@@ -353,7 +358,8 @@ class ProcurementController extends BaseController
             abort(403, 'Invalid stage for Procurement phase');
         }
 
-        $guide = $this->validationService->getStageDocumentGuide($stage);
+        $mode = $this->getProcurementMode($pr_number);
+        $guide = $this->modeAwareValidationService->getStageDocumentGuide($stage, $mode);
 
         return response()->json($guide);
     }
@@ -373,7 +379,8 @@ class ProcurementController extends BaseController
         try {
             // Verify all required documents are uploaded
             $uploadedDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
-            $documentGuide = $this->validationService->getStageDocumentGuide($stage);
+            $mode = $this->getProcurementMode($pr_number);
+            $documentGuide = $this->modeAwareValidationService->getStageDocumentGuide($stage, $mode);
 
             if (count($uploadedDocuments) < $documentGuide['counts']['required_count']) {
                 return back()->with('error', 'Cannot mark stage as complete. Please upload all required documents first.');

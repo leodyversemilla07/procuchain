@@ -211,13 +211,17 @@ enum DocumentTypeEnums: string
     // ==================================================================================
 
     // Request for Quotation Stage (SVP, Direct Contracting, Repeat Order, etc.)
+    case NOTICE_OF_REQUEST_FOR_QUOTATION = 'notice_of_request_for_quotation';
     case REQUEST_FOR_QUOTATION = 'request_for_quotation';
+    case PHILGEPS_BID_NOTICE_ABSTRACT = 'philgeps_bid_notice_abstract';
     case PRICE_QUOTATION = 'price_quotation';
     case SUPPLIER_CANVASS_FORM = 'supplier_canvass_form';
     case QUOTATION_COMPARISON_SHEET = 'quotation_comparison_sheet';
 
     // Abstract of Quotations Stage
     case ABSTRACT_OF_QUOTATIONS = 'abstract_of_quotations';
+    case CERTIFICATE_OF_ACCEPTANCE_OF_QUOTATION = 'certificate_of_acceptance_of_quotation';
+    case PHILGEPS_AWARD_NOTICE_ABSTRACT = 'philgeps_award_notice_abstract';
     case LOWEST_QUOTATION_CERTIFICATION = 'lowest_quotation_certification';
 
     // Legacy/Compatibility Cases (kept for backward compatibility)
@@ -434,11 +438,15 @@ enum DocumentTypeEnums: string
             self::ASSET_MANAGEMENT_RECORDS => 'Updated Asset Management Records',
 
             // Alternative Procurement Methods (SVP, Direct Contracting, etc.)
+            self::NOTICE_OF_REQUEST_FOR_QUOTATION => 'Notice of Request for Quotation',
             self::REQUEST_FOR_QUOTATION => 'Request for Quotation (RFQ)',
+            self::PHILGEPS_BID_NOTICE_ABSTRACT => 'PhilGEPS Bid Notice Abstract',
             self::PRICE_QUOTATION => 'Price Quotation',
             self::SUPPLIER_CANVASS_FORM => 'Supplier Canvass Form',
             self::QUOTATION_COMPARISON_SHEET => 'Quotation Comparison Sheet',
             self::ABSTRACT_OF_QUOTATIONS => 'Abstract of Quotations',
+            self::CERTIFICATE_OF_ACCEPTANCE_OF_QUOTATION => 'Certificate of Acceptance of Quotation in Canvass',
+            self::PHILGEPS_AWARD_NOTICE_ABSTRACT => 'PhilGEPS Award Notice Abstract',
             self::LOWEST_QUOTATION_CERTIFICATION => 'Certification of Lowest Quotation',
 
             // Legacy/Compatibility

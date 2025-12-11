@@ -53,7 +53,7 @@ final class Client
 
     private string $error_message;
 
-    private int $timeout = 5;
+    private int $timeout = 3;
 
     /**
      * Persistent cURL handle for connection reuse (performance optimization)
@@ -328,6 +328,10 @@ final class Client
             'Keep-Alive: timeout=300, max=1000',  // Keep connection alive for up to 1000 requests
             'Authorization: Basic '.$strUserPass64,
         ]);
+
+        // Enforce timeout for this specific request
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->timeout);
 
         $encoded = curl_exec($ch);
         $result = null;
