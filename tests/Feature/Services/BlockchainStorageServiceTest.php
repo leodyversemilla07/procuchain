@@ -25,17 +25,11 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
         it('uploads file successfully to blockchain with hex encoding', function () {
             $mockService = Mockery::mock(Manager::class);
 
-            // Mock publish for file data (hex)
-            $mockService->shouldReceive('publish')
+            // Mock publishmulti for batch upload (data + metadata)
+            $mockService->shouldReceive('publishmulti')
                 ->once()
-                ->with('file.data', Mockery::type('string'), Mockery::type('string'))
-                ->andReturn('data_txid_123');
-
-            // Mock publish for metadata
-            $mockService->shouldReceive('publish')
-                ->once()
-                ->with('file.metadata', Mockery::type('string'), Mockery::type('array'))
-                ->andReturn('metadata_txid_456');
+                ->with('file.data', Mockery::type('array'))
+                ->andReturn('batch_txid_123');
 
             $service = new BlockchainStorageService($mockService);
             // Use createWithContent to ensure file has readable content
@@ -50,13 +44,13 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
             expect($result)->toHaveKeys(['file_key', 'data_txid', 'metadata_txid', 'filename', 'size', 'hash']);
             expect($result['file_key'])->toContain($prNumber);
             expect($result['file_key'])->toContain($documentType);
-            expect($result['data_txid'])->toBe('data_txid_123');
-            expect($result['metadata_txid'])->toBe('metadata_txid_456');
+            expect($result['data_txid'])->toBe('batch_txid_123');
+            expect($result['metadata_txid'])->toBe('batch_txid_123'); // Same txid for batch
         });
 
         it('calculates sha256 hash correctly', function () {
             $mockService = Mockery::mock(Manager::class);
-            $mockService->shouldReceive('publish')->andReturn('txid1', 'txid2');
+            $mockService->shouldReceive('publishmulti')->andReturn('batch_txid');
 
             $service = new BlockchainStorageService($mockService);
             // Use createWithContent to ensure file has readable content
@@ -73,44 +67,38 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
             $mockService = Mockery::mock(Manager::class);
 
-            // Verify hex is published to file.data stream
-            $mockService->shouldReceive('publish')
+            // Verify hex is in batch items
+            $mockService->shouldReceive('publishmulti')
                 ->once()
-                ->with('file.data', Mockery::type('string'), $expectedHex)
-                ->andReturn('data_txid');
-
-            $mockService->shouldReceive('publish')
-                ->once()
-                ->with('file.metadata', Mockery::any(), Mockery::any())
-                ->andReturn('metadata_txid');
+                ->with('file.data', Mockery::on(function ($items) use ($expectedHex) {
+                    return count($items) === 2 && // data + metadata
+                           $items[0]['data'] === $expectedHex &&
+                           $items[0]['for'] === 'file.data';
+                }))
+                ->andReturn('batch_txid');
 
             $service = new BlockchainStorageService($mockService);
             $file = UploadedFile::fake()->createWithContent('test.txt', $fileContent);
 
             $result = $service->uploadFile($file, 'test', 1, 'file', []);
 
-            expect($result['data_txid'])->toBe('data_txid');
+            expect($result['data_txid'])->toBe('batch_txid');
         });
 
         it('includes storage_method as on_chain in metadata', function () {
             $mockService = Mockery::mock(Manager::class);
 
-            $mockService->shouldReceive('publish')
-                ->once()
-                ->with('file.data', Mockery::any(), Mockery::any())
-                ->andReturn('data_txid');
-
-            $mockService->shouldReceive('publish')
+            $mockService->shouldReceive('publishmulti')
                 ->once()
                 ->with(
-                    'file.metadata',
-                    Mockery::type('string'),
-                    Mockery::on(function ($data) {
-                        return $data['json']['storage_method'] === 'on_chain' &&
-                               isset($data['json']['data_txid']);
+                    'file.data',
+                    Mockery::on(function ($items) {
+                        return count($items) === 2 &&
+                               $items[1]['for'] === 'file.metadata' &&
+                               $items[1]['data']['json']['storage_method'] === 'on_chain';
                     })
                 )
-                ->andReturn('metadata_txid');
+                ->andReturn('batch_txid');
 
             $service = new BlockchainStorageService($mockService);
             // Use createWithContent to ensure file has readable content
@@ -118,7 +106,7 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
 
             $result = $service->uploadFile($file, 'test', 1, 'file', []);
 
-            expect($result['metadata_txid'])->toBe('metadata_txid');
+            expect($result['metadata_txid'])->toBe('batch_txid');
         });
 
         it('throws exception for files exceeding max size', function () {
@@ -136,22 +124,17 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
         it('includes context in blockchain metadata', function () {
             $mockService = Mockery::mock(Manager::class);
 
-            $mockService->shouldReceive('publish')
-                ->once()
-                ->with('file.data', Mockery::any(), Mockery::any())
-                ->andReturn('data_txid');
-
-            $mockService->shouldReceive('publish')
+            $mockService->shouldReceive('publishmulti')
                 ->once()
                 ->with(
-                    'file.metadata',
-                    Mockery::type('string'),
-                    Mockery::on(function ($data) {
-                        return $data['json']['pr_number'] === 'PROC-123' &&
-                               $data['json']['title'] === 'Bid Document';
+                    'file.data',
+                    Mockery::on(function ($items) {
+                        return count($items) === 2 &&
+                               $items[1]['data']['json']['pr_number'] === 'PROC-123' &&
+                               $items[1]['data']['json']['title'] === 'Bid Document';
                     })
                 )
-                ->andReturn('txid_with_context');
+                ->andReturn('batch_txid_with_context');
 
             $service = new BlockchainStorageService($mockService);
             // Use createWithContent to ensure file has readable content
@@ -164,7 +147,7 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
                 ['pr_number' => 'PROC-123', 'title' => 'Bid Document']
             );
 
-            expect($result['metadata_txid'])->toBe('txid_with_context');
+            expect($result['metadata_txid'])->toBe('batch_txid_with_context');
         });
     });
 
