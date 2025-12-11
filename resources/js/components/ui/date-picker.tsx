@@ -112,9 +112,9 @@ export function DatePickerInput({
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate)
-    // Convert to YYYY-MM-DD format for form submission
+    // Convert to YYYY-MM-DD format for form submission (timezone-safe)
     const formattedValue = selectedDate
-      ? selectedDate.toISOString().split('T')[0]
+      ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
       : ""
     onChange(formattedValue)
   }
