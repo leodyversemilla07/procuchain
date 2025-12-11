@@ -1,11 +1,28 @@
 import Footer from '@/components/footer';
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
-import { about, login } from '@/routes';
-import { Head, Link } from '@inertiajs/react';
+import { about, home, login } from '@/routes';
+import { dashboard as adminDashboard } from '@/routes/admin';
+import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
+import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
+import { dashboard as hopeDashboard } from '@/routes/hope';
+import { type SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Database, FileText, Lock, Shield } from 'lucide-react';
 
+const getDashboardRouteByRole = (role: string): string => {
+    const routes: Record<string, () => string> = {
+        hope: hopeDashboard.url,
+        bac_secretariat: bacSecretariatDashboard.url,
+        bac_chairman: bacChairmanDashboard.url,
+        admin: adminDashboard.url,
+    };
+    return (routes[role] || home.url)();
+};
+
 export default function Home() {
+    const page = usePage<SharedData>();
+    const { auth } = page.props;
     const features = [
         {
             icon: Shield,
@@ -60,7 +77,9 @@ export default function Home() {
 
                             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
                                 <Button size="lg" className="w-full sm:w-auto" asChild>
-                                    <Link href={login.url()}>Get Started</Link>
+                                    <Link href={auth.user ? getDashboardRouteByRole(auth.roles?.[0] || auth.user.role) : login.url()}>
+                                        Get Started
+                                    </Link>
                                 </Button>
                                 <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
                                     <Link href={about.url()}>Learn More</Link>
