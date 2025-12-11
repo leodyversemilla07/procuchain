@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "587cca07176b152e0bea6922063ebf26",
+    "content-hash": "e71963eca34363866be8be514661bba0",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1231,16 +1231,16 @@
         },
         {
             "name": "inertiajs/inertia-laravel",
-            "version": "v2.0.12",
+            "version": "v2.0.14",
             "source": {
                 "type": "git",
                 "url": "https://github.com/inertiajs/inertia-laravel.git",
-                "reference": "9170201299d741bb7f5f3baf37d8f1299a321753"
+                "reference": "c4a7bbefbfb9995ce2189f1665ba73276cb3cb6f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/inertiajs/inertia-laravel/zipball/9170201299d741bb7f5f3baf37d8f1299a321753",
-                "reference": "9170201299d741bb7f5f3baf37d8f1299a321753",
+                "url": "https://api.github.com/repos/inertiajs/inertia-laravel/zipball/c4a7bbefbfb9995ce2189f1665ba73276cb3cb6f",
+                "reference": "c4a7bbefbfb9995ce2189f1665ba73276cb3cb6f",
                 "shasum": ""
             },
             "require": {
@@ -1295,9 +1295,9 @@
             ],
             "support": {
                 "issues": "https://github.com/inertiajs/inertia-laravel/issues",
-                "source": "https://github.com/inertiajs/inertia-laravel/tree/v2.0.12"
+                "source": "https://github.com/inertiajs/inertia-laravel/tree/v2.0.14"
             },
-            "time": "2025-12-09T08:56:23+00:00"
+            "time": "2025-12-10T13:29:20+00:00"
         },
         {
             "name": "jaybizzle/crawler-detect",
@@ -4505,30 +4505,30 @@
         },
         {
             "name": "resend/resend-laravel",
-            "version": "v0.23.0",
+            "version": "v1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/resend/resend-laravel.git",
-                "reference": "a40ee95d5976eaf79e594a1f793d3e7c8648c66c"
+                "reference": "90492b2357d11fe24e6db37ff7b2af7eead64d98"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/resend/resend-laravel/zipball/a40ee95d5976eaf79e594a1f793d3e7c8648c66c",
-                "reference": "a40ee95d5976eaf79e594a1f793d3e7c8648c66c",
+                "url": "https://api.github.com/repos/resend/resend-laravel/zipball/90492b2357d11fe24e6db37ff7b2af7eead64d98",
+                "reference": "90492b2357d11fe24e6db37ff7b2af7eead64d98",
                 "shasum": ""
             },
             "require": {
                 "illuminate/http": "^10.0|^11.0|^12.0",
                 "illuminate/support": "^10.0|^11.0|^12.0",
                 "php": "^8.1",
-                "resend/resend-php": "^0.21.0",
+                "resend/resend-php": "^1.0.0",
                 "symfony/mailer": "^6.2|^7.0"
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "^3.14",
                 "mockery/mockery": "^1.5",
-                "orchestra/testbench": "^8.17|^9.0|^10.0",
-                "pestphp/pest": "^2.0|^3.7"
+                "orchestra/testbench": "^8.17|^9.0|^10.8",
+                "pestphp/pest": "^2.0|^3.7|^4.0"
             },
             "type": "library",
             "extra": {
@@ -4568,22 +4568,22 @@
             ],
             "support": {
                 "issues": "https://github.com/resend/resend-laravel/issues",
-                "source": "https://github.com/resend/resend-laravel/tree/v0.23.0"
+                "source": "https://github.com/resend/resend-laravel/tree/v1.1.0"
             },
-            "time": "2025-10-11T04:19:52+00:00"
+            "time": "2025-12-09T06:14:20+00:00"
         },
         {
             "name": "resend/resend-php",
-            "version": "v0.21.0",
+            "version": "v1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/resend/resend-php.git",
-                "reference": "16d481c8347d2b2aa9910ca0ae7f252b2f7d8b8c"
+                "reference": "c1ce4ee5dc8ca90a5e6a2dc6d772a06abbe7c9d3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/resend/resend-php/zipball/16d481c8347d2b2aa9910ca0ae7f252b2f7d8b8c",
-                "reference": "16d481c8347d2b2aa9910ca0ae7f252b2f7d8b8c",
+                "url": "https://api.github.com/repos/resend/resend-php/zipball/c1ce4ee5dc8ca90a5e6a2dc6d772a06abbe7c9d3",
+                "reference": "c1ce4ee5dc8ca90a5e6a2dc6d772a06abbe7c9d3",
                 "shasum": ""
             },
             "require": {
@@ -4593,7 +4593,7 @@
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "^3.13",
                 "mockery/mockery": "^1.6",
-                "pestphp/pest": "^2.0"
+                "pestphp/pest": "^2.0|^3.0|^4.0"
             },
             "type": "library",
             "autoload": {
@@ -4625,9 +4625,9 @@
             ],
             "support": {
                 "issues": "https://github.com/resend/resend-php/issues",
-                "source": "https://github.com/resend/resend-php/tree/v0.21.0"
+                "source": "https://github.com/resend/resend-php/tree/v1.1.0"
             },
-            "time": "2025-09-24T05:02:03+00:00"
+            "time": "2025-11-26T08:41:40+00:00"
         },
         {
             "name": "sentry/sentry",
@@ -10854,37 +10854,37 @@
         },
         {
             "name": "pestphp/pest-plugin-browser",
-            "version": "v4.0.0",
+            "version": "v4.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pestphp/pest-plugin-browser.git",
-                "reference": "9b493ba1f64a12b49f838b7263a91dd219789e94"
+                "reference": "da70fce21e4b33ba22bef1276f654e77676213d7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pestphp/pest-plugin-browser/zipball/9b493ba1f64a12b49f838b7263a91dd219789e94",
-                "reference": "9b493ba1f64a12b49f838b7263a91dd219789e94",
+                "url": "https://api.github.com/repos/pestphp/pest-plugin-browser/zipball/da70fce21e4b33ba22bef1276f654e77676213d7",
+                "reference": "da70fce21e4b33ba22bef1276f654e77676213d7",
                 "shasum": ""
             },
             "require": {
-                "amphp/amp": "^3.1.0",
+                "amphp/amp": "^3.1.1",
                 "amphp/http-server": "^3.4.3",
-                "amphp/websocket-client": "^2.0.1",
+                "amphp/websocket-client": "^2.0.2",
                 "ext-sockets": "*",
-                "pestphp/pest": "^4.0.0",
+                "pestphp/pest": "^4.1.0",
                 "pestphp/pest-plugin": "^4.0.0",
                 "php": "^8.3",
-                "symfony/process": "^7.3.0"
+                "symfony/process": "^7.3.4"
             },
             "require-dev": {
                 "ext-pcntl": "*",
                 "ext-posix": "*",
-                "livewire/livewire": "dev-main",
+                "livewire/livewire": "^3.6.4",
                 "nunomaduro/collision": "^8.8.2",
-                "orchestra/testbench": "^10.5.0",
+                "orchestra/testbench": "^10.6.0",
                 "pestphp/pest-dev-tools": "^4.0.0",
                 "pestphp/pest-plugin-laravel": "^4.0",
-                "pestphp/pest-plugin-type-coverage": "^4.0.1"
+                "pestphp/pest-plugin-type-coverage": "^4.0.2"
             },
             "type": "library",
             "extra": {
@@ -10917,7 +10917,7 @@
                 "unit"
             ],
             "support": {
-                "source": "https://github.com/pestphp/pest-plugin-browser/tree/v4.0.0"
+                "source": "https://github.com/pestphp/pest-plugin-browser/tree/v4.1.1"
             },
             "funding": [
                 {
@@ -10933,7 +10933,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2025-08-20T13:19:11+00:00"
+            "time": "2025-09-29T01:31:33+00:00"
         },
         {
             "name": "pestphp/pest-plugin-laravel",
