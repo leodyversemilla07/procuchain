@@ -13,7 +13,8 @@
  *
  * Municipality of Gloria Context:
  * - 4th Class Municipality, Oriental Mindoro
- * - SVP/Direct Acquisition threshold: ₱200,000
+ * - SVP threshold: ₱400,000
+ * - Direct Acquisition threshold: ₱200,000
  */
 
 use App\Enums\ProcurementModeEnums;
@@ -279,8 +280,8 @@ describe('NGPA Mode Enum Integration', function () {
     it('validates Municipality of Gloria threshold for SVP', function () {
         $svp = ProcurementModeEnums::SMALL_VALUE_PROCUREMENT;
 
-        // Municipality of Gloria is 4th class, threshold should be ₱200,000
-        expect($svp->thresholdAmount())->toBe(200000.0);
+        // Municipality of Gloria is 4th class, threshold should be ₱400,000
+        expect($svp->thresholdAmount())->toBe(400000.0);
         expect($svp->getIrrSection())->toBe('Section 34');
     });
 

@@ -317,7 +317,7 @@ export default function ShowProcurement({ procurement, error }: ShowProps) {
                                                 </div>
                                                 {procurement.details.app_reference && (
                                                     <div>
-                                                        <label className="text-muted-foreground text-sm font-medium">APP Reference</label>
+                                                        <label className="text-muted-foreground text-sm font-medium">AIP Code Reference</label>
                                                         <p className="mt-1 text-sm">{procurement.details.app_reference}</p>
                                                     </div>
                                                 )}

@@ -51,7 +51,7 @@ describe('InitiateProcurementRequest', function () {
     describe('validation rules', function () {
         test('it passes with valid data', function () {
             $data = [
-                'pr_number' => 'PR-2024-0001-0001',
+                'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
@@ -78,7 +78,7 @@ describe('InitiateProcurementRequest', function () {
 
         test('it passes without optional fields', function () {
             $data = [
-                'pr_number' => 'PR-2024-0001-0001',
+                'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
@@ -141,7 +141,7 @@ describe('InitiateProcurementRequest', function () {
 
         test('it accepts valid pr_number format', function () {
             $data = [
-                'pr_number' => 'PR-2024-0001-0001',
+                'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
@@ -163,7 +163,7 @@ describe('InitiateProcurementRequest', function () {
     describe('title validation', function () {
         test('it requires title', function () {
             $data = [
-                'pr_number' => 'PR-2024-0001-0001',
+                'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
                 'description' => 'Construction project for municipal building',
                 'abc_amount' => 1000000.00,
@@ -183,7 +183,7 @@ describe('InitiateProcurementRequest', function () {
 
         test('it rejects title exceeding 255 characters', function () {
             $data = [
-                'pr_number' => 'PR-2024-0001-0001',
+                'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
                 'title' => str_repeat('A', 256),
                 'description' => 'Construction project for municipal building',
@@ -206,7 +206,7 @@ describe('InitiateProcurementRequest', function () {
     describe('files validation', function () {
         test('it accepts valid PDF files', function () {
             $data = [
-                'pr_number' => 'PR-2024-0001-0001',
+                'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
@@ -238,7 +238,7 @@ describe('InitiateProcurementRequest', function () {
 
         test('it rejects non-PDF files', function () {
             $data = [
-                'pr_number' => 'PR-2024-0001-0001',
+                'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',
@@ -265,7 +265,7 @@ describe('InitiateProcurementRequest', function () {
 
         test('it rejects files exceeding 50MB', function () {
             $data = [
-                'pr_number' => 'PR-2024-0001-0001',
+                'pr_number' => 'PR-2024-001-0001',
                 'app_reference' => 'APP-2024-001',
                 'title' => 'Construction of Municipal Building',
                 'description' => 'Construction project for municipal building',

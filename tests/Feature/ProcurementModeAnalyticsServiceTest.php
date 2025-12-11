@@ -107,7 +107,7 @@ describe('Threshold Analysis for Municipality of Gloria', function () {
 
         expect($analysis['municipality_class'])->toBe('4th Class')
             ->and($analysis['municipality_name'])->toContain('Gloria')
-            ->and($analysis['svp']['threshold'])->toBe(200000.0)
+            ->and($analysis['svp']['threshold'])->toBe(400000.0)
             ->and($analysis['svp']['irr_section'])->toBe('Section 34.2')
             ->and($analysis['svp']['count'])->toBe(2)
             ->and($analysis['direct_acquisition']['threshold'])->toBe(200000.0)

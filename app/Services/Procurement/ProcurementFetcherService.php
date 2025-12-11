@@ -64,7 +64,7 @@ final class ProcurementFetcherService
     public function fetchAllProcurements(bool $skipActions = true): array
     {
         // Cache for 5 minutes for faster refreshes while maintaining freshness
-        return Cache::remember('procurements:list:all:v2', now()->addMinutes(5), function () use ($skipActions) {
+        return Cache::remember('procurements:list:all:v2', now()->addMinutes(5), function () {
             try {
                 Log::info('ProcurementFetcherService: Starting OPTIMIZED fetch from repositories');
 
@@ -94,86 +94,92 @@ final class ProcurementFetcherService
                 // Build procurement mode map (RESTORED - needed for frontend display)
                 $procurementModeMap = $this->buildProcurementModeMap($statusItems);
 
-            // Process status items to get latest status per procurement
-            $result = $statusItems
-                ->map(function (StatusData $statusDto) use ($documentCountMap, $procurementModeMap) {
-                    $originalTimestamp = $statusDto->timestamp;
-                    $displayTimestamp = Carbon::parse($statusDto->timestamp)->toDateString();
+                // Process status items to get latest status per procurement
+                $result = $statusItems
+                    ->map(function (StatusData $statusDto) use ($documentCountMap, $procurementModeMap) {
+                        $originalTimestamp = $statusDto->timestamp;
+                        $displayTimestamp = Carbon::parse($statusDto->timestamp)->toDateString();
 
-                    $stageEnum = StageEnums::tryFrom($statusDto->stage);
-                    $phase = $stageEnum?->getPhase() ?? 'unknown';
-                    $phaseDisplayName = $stageEnum?->getPhaseDisplayName() ?? 'Unknown';
-                    $phaseProgress = $stageEnum?->getPhaseProgress() ?? [
-                        'phase' => 'unknown',
-                        'progress' => 0,
-                        'current_stage_in_phase' => 0,
-                        'total_stages_in_phase' => 0,
-                    ];
+                        $stageEnum = StageEnums::tryFrom($statusDto->stage);
+                        $phase = $stageEnum?->getPhase() ?? 'unknown';
+                        $phaseDisplayName = $stageEnum?->getPhaseDisplayName() ?? 'Unknown';
+                        $phaseProgress = $stageEnum?->getPhaseProgress() ?? [
+                            'phase' => 'unknown',
+                            'progress' => 0,
+                            'current_stage_in_phase' => 0,
+                            'total_stages_in_phase' => 0,
+                        ];
 
-                    // Get procurement mode for this item
-                    $modeInfo = $procurementModeMap[$statusDto->prNumber] ?? null;
+                        // Get procurement mode for this item
+                        $modeInfo = $procurementModeMap[$statusDto->prNumber] ?? null;
 
-                    // Get user role for action determination
-                    $userRole = $this->getCurrentUserRole();
+                        // Get user role for action determination
+                        $userRole = $this->getCurrentUserRole();
 
-                    // Get available actions from the action service
-                    try {
-                        $workflowActions = $this->actionService->getAvailableActions(
-                            $statusDto->prNumber,
-                            $statusDto->stage,
-                            $statusDto->currentStatus,
-                            $userRole
-                        );
-                        $staticActions = $this->actionService->getStaticActions($statusDto->prNumber, $userRole);
-                    } catch (\Exception $e) {
-                        Log::debug('Failed to fetch actions for procurement, using empty actions', [
-                            'pr_number' => $statusDto->prNumber,
-                            'error' => $e->getMessage(),
-                        ]);
-                        $workflowActions = [];
-                        $staticActions = [];
-                    }
+                        // Get available actions from the action service
+                        try {
+                            $workflowActions = $this->actionService->getAvailableActions(
+                                $statusDto->prNumber,
+                                $statusDto->stage,
+                                $statusDto->currentStatus,
+                                $userRole
+                            );
+                            $staticActions = $this->actionService->getStaticActions($statusDto->prNumber, $userRole);
+                        } catch (\Exception $e) {
+                            Log::debug('Failed to fetch actions for procurement, using empty actions', [
+                                'pr_number' => $statusDto->prNumber,
+                                'error' => $e->getMessage(),
+                            ]);
+                            $workflowActions = [];
+                            $staticActions = [];
+                        }
 
-                    return [
-                        'id' => $statusDto->prNumber,
-                        'title' => $statusDto->procurementTitle,
-                        'stage' => $statusDto->stage,
-                        'stage_formatted' => $this->formatter->formatStageName($statusDto->stage),
-                        'phase' => $phase,
-                        'phase_display' => $phaseDisplayName,
-                        'phase_progress' => $phaseProgress,
-                        'current_status' => $statusDto->currentStatus,
-                        'status_formatted' => $this->formatter->formatStatus($statusDto->currentStatus),
-                        'timestamp' => $originalTimestamp,
-                        'display_date' => $displayTimestamp,
-                        'last_updated' => $displayTimestamp,
-                        'user_address' => $statusDto->userAddress,
-                        'user' => $this->getUserName($statusDto->userAddress),
-                        'document_count' => $documentCountMap[$statusDto->prNumber] ?? 0,
-                        'metadata' => $statusDto->metadata,
-                        'procurement_mode' => $modeInfo['value'] ?? null,
-                        'procurement_mode_label' => $modeInfo['label'] ?? null,
-                        'workflow_actions' => $workflowActions,
-                        'static_actions' => $staticActions,
-                    ];
-                })
-                ->groupBy('id')
-                ->map(function ($group) {
-                    return $group->sortByDesc(function ($item) {
+                        return [
+                            'id' => $statusDto->prNumber,
+                            'title' => $statusDto->procurementTitle,
+                            'stage' => $statusDto->stage,
+                            'stage_formatted' => $this->formatter->formatStageName($statusDto->stage),
+                            'phase' => $phase,
+                            'phase_display' => $phaseDisplayName,
+                            'phase_progress' => $phaseProgress,
+                            'current_status' => $statusDto->currentStatus,
+                            'status_formatted' => $this->formatter->formatStatus($statusDto->currentStatus),
+                            'timestamp' => $originalTimestamp,
+                            'display_date' => $displayTimestamp,
+                            'last_updated' => $displayTimestamp,
+                            'user_address' => $statusDto->userAddress,
+                            'user' => $this->getUserName($statusDto->userAddress),
+                            'document_count' => $documentCountMap[$statusDto->prNumber] ?? 0,
+                            'metadata' => $statusDto->metadata,
+                            'procurement_mode' => $modeInfo['value'] ?? null,
+                            'procurement_mode_label' => $modeInfo['label'] ?? null,
+                            'workflow_actions' => $workflowActions,
+                            'static_actions' => $staticActions,
+                        ];
+                    })
+                    ->groupBy('id')
+                    ->map(function ($group) {
+                        return $group->sortByDesc(function ($item) {
+                            $timestamp = $item['timestamp'] ?? '0';
+                            $unixTimestamp = $timestamp instanceof Carbon ? $timestamp->timestamp : strtotime($timestamp);
+
+                            // Prioritize transitions when timestamps are identical
+                            $isTransition = isset($item['metadata']['transition']) && $item['metadata']['transition'] === true;
+                            $priorityOffset = $isTransition ? 0.001 : 0;
+
+                            return $unixTimestamp + $priorityOffset;
+                        })->first();
+                    })
+                    ->sortByDesc(function ($item) {
+                        // Sort all procurements by timestamp in descending order (newest first)
                         $timestamp = $item['timestamp'] ?? '0';
-                        $unixTimestamp = $timestamp instanceof Carbon ? $timestamp->timestamp : strtotime($timestamp);
 
-                        // Prioritize transitions when timestamps are identical
-                        $isTransition = isset($item['metadata']['transition']) && $item['metadata']['transition'] === true;
-                        $priorityOffset = $isTransition ? 0.001 : 0;
+                        return $timestamp instanceof Carbon ? $timestamp->timestamp : strtotime($timestamp);
+                    })
+                    ->values()
+                    ->all();
 
-                        return $unixTimestamp + $priorityOffset;
-                    })->first();
-                })
-                ->values()
-                ->all();
-
-            Log::info('ProcurementFetcherService: Final procurements result count', ['count' => count($result)]);
+                Log::info('ProcurementFetcherService: Final procurements result count', ['count' => count($result)]);
 
                 return $result;
             } catch (\Exception $e) {
@@ -181,7 +187,7 @@ final class ProcurementFetcherService
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
-                
+
                 // Return empty array to allow page to load with error message
                 return [];
             }
@@ -222,6 +228,7 @@ final class ProcurementFetcherService
             Log::warning('Failed to build procurement mode map, blockchain may be unavailable', [
                 'error' => $e->getMessage(),
             ]);
+
             return [];
         }
     }

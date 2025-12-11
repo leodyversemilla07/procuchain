@@ -30,7 +30,7 @@ enum ProcurementModeEnums: string
     case DIRECT_CONTRACTING = 'direct_contracting';                               // Section 31
     case DIRECT_ACQUISITION = 'direct_acquisition';                               // Section 32 (≤₱200,000)
     case REPEAT_ORDER = 'repeat_order';                                           // Section 33
-    case SMALL_VALUE_PROCUREMENT = 'small_value_procurement';                     // Section 34 (≤₱200K for 4th class municipality)
+    case SMALL_VALUE_PROCUREMENT = 'small_value_procurement';                     // Section 34 (≤₱400K for 4th class municipality)
     case NEGOTIATED_PROCUREMENT = 'negotiated_procurement';                       // Section 35
     case DIRECT_SALES = 'direct_sales';                                           // Section 36
     case DIRECT_PROCUREMENT_FOR_STI = 'direct_procurement_for_sti';               // Section 37
@@ -76,7 +76,7 @@ enum ProcurementModeEnums: string
             self::DIRECT_CONTRACTING => 'Procurement of proprietary goods, critical components from specific manufacturer, or from exclusive dealer (NGPA IRR Sec. 31)',
             self::DIRECT_ACQUISITION => 'Procurement of CSE not available in PS-DBM, Non-CSE, and services with ABC not exceeding ₱200,000 (NGPA IRR Sec. 32)',
             self::REPEAT_ORDER => 'Procurement from previous winning bidder, ≤25% of original quantity, within 6 months from NTP (NGPA IRR Sec. 33)',
-            self::SMALL_VALUE_PROCUREMENT => 'Request for at least 3 price quotations; 1 quotation sufficient if within threshold. Threshold: ₱200,000 for 4th class municipality (NGPA IRR Sec. 34)',
+            self::SMALL_VALUE_PROCUREMENT => 'Request for at least 3 price quotations; 1 quotation sufficient if within threshold. Threshold: ₱400,000 for 4th class municipality (NGPA IRR Sec. 34)',
             self::NEGOTIATED_PROCUREMENT => 'Direct negotiation for two failed biddings, emergencies, take-over contracts, agency-to-agency, and other special cases (NGPA IRR Sec. 35)',
             self::DIRECT_SALES => 'Direct purchase from supplier that satisfactorily delivered Non-CSE to another government agency within 6 months (NGPA IRR Sec. 36)',
             self::DIRECT_PROCUREMENT_FOR_STI => 'Procurement of R&D supplies, materials, equipment, and commissioned products for science, technology and innovation (NGPA IRR Sec. 37)',
@@ -108,13 +108,13 @@ enum ProcurementModeEnums: string
      * Per NGPA IRR (RA 12009)
      *
      * Note: Municipality of Gloria, Oriental Mindoro is a 4th Class Municipality
-     * SVP Threshold per Section 34.2: ₱200,000 for 4th class municipalities
+     * SVP Threshold per Section 34.2: ₱400,000 for 4th class municipalities
      */
     public function thresholdAmount(): ?float
     {
         return match ($this) {
             self::DIRECT_ACQUISITION => 200000.00,       // ₱200,000 per Section 32
-            self::SMALL_VALUE_PROCUREMENT => 200000.00,  // ₱200,000 for 4th class municipality per Section 34.2
+            self::SMALL_VALUE_PROCUREMENT => 400000.00,  // ₱400,000 for 4th class municipality per Section 34.2
             default => null,
         };
     }
@@ -171,12 +171,12 @@ enum ProcurementModeEnums: string
 
     /**
      * Check if this is an alternative (non-competitive) procurement mode
-     *
+    /**
      * Per NGPA IRR Sections 31-37, alternative modes have simplified requirements:
      * - Direct Contracting (Sec. 31)
      * - Direct Acquisition (Sec. 32) - ≤₱200,000
      * - Repeat Order (Sec. 33)
-     * - Small Value Procurement (Sec. 34) - ₱200,000 for 4th class municipality (Gloria)
+     * - Small Value Procurement (Sec. 34) - ₱400,000 for 4th class municipality (Gloria)
      * - Negotiated Procurement (Sec. 35)
      * - Direct Sales (Sec. 36)
      * - Direct Procurement for STI (Sec. 37)
@@ -239,7 +239,7 @@ enum ProcurementModeEnums: string
     public static function suggestModeForAmount(float $amount): self
     {
         return match (true) {
-            $amount <= 200000 => self::SMALL_VALUE_PROCUREMENT, // ₱200,000 for 4th class municipality
+            $amount <= 400000 => self::SMALL_VALUE_PROCUREMENT, // ₱400,000 for 4th class municipality
             default => self::COMPETITIVE_BIDDING,
         };
     }

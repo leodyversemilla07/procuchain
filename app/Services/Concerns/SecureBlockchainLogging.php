@@ -55,7 +55,7 @@ trait SecureBlockchainLogging
      * Mask PR number to show only prefix for privacy
      *
      * Examples:
-     * - Full: PR-2025-0001-0001
+     * - Full: PR-2025-001-0001
      * - Masked: PR-2025-...
      */
     protected function maskPrNumber(string $prNumber): string

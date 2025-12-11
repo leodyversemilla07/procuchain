@@ -81,11 +81,11 @@ const stages: Stage[] = [
         details: [
             'Preparation of Purchase Request (PR)',
             'Project Procurement Management Plan (PPMP)',
-            'Annual Procurement Plan (APP) inclusion',
+            'Annual Investment Plan (AIP) inclusion',
             'Budget allocation and certification',
             'Specification preparation and market study',
         ],
-        documents: ['Purchase Request', 'PPMP', 'APP Entry', 'Budget Certification', 'Technical Specifications'],
+        documents: ['Purchase Request', 'PPMP', 'AIP Entry', 'Budget Certification', 'Technical Specifications'],
         modes: [
             'competitive_bidding',
             'limited_source_bidding',

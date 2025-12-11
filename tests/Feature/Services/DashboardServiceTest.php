@@ -679,7 +679,7 @@ describe('DashboardService', function () {
             ];
 
             $this->manager->shouldReceive('liststreamitems')
-                ->with(StreamEnums::DOCUMENTS->value, true, 10000, 0, false)
+                ->with(StreamEnums::DOCUMENTS->value, false, 10000, 0, true)
                 ->andReturn($blockchainItems);
 
             $result = $this->service->getTotalDocuments($procurements);
@@ -737,7 +737,7 @@ describe('DashboardService', function () {
             ];
 
             $this->manager->shouldReceive('liststreamitems')
-                ->with(StreamEnums::DOCUMENTS->value, true, 10000, 0, false)
+                ->with(StreamEnums::DOCUMENTS->value, false, 10000, 0, true)
                 ->andReturn($blockchainItems);
 
             $result = $this->service->getTotalDocuments($procurements);
@@ -751,7 +751,7 @@ describe('DashboardService', function () {
             ]);
 
             $this->manager->shouldReceive('liststreamitems')
-                ->with(StreamEnums::DOCUMENTS->value, true, 10000, 0, false)
+                ->with(StreamEnums::DOCUMENTS->value, false, 10000, 0, true)
                 ->andReturn([]);
 
             $result = $this->service->getTotalDocuments($procurements);
@@ -789,7 +789,7 @@ describe('DashboardService', function () {
             ];
 
             $this->manager->shouldReceive('liststreamitems')
-                ->with(StreamEnums::DOCUMENTS->value, true, 10000, 0, false)
+                ->with(StreamEnums::DOCUMENTS->value, false, 10000, 0, true)
                 ->andReturn($blockchainItems);
 
             $result = $this->service->getTotalDocuments($procurements);
@@ -803,7 +803,7 @@ describe('DashboardService', function () {
             ]);
 
             $this->manager->shouldReceive('liststreamitems')
-                ->with(StreamEnums::DOCUMENTS->value, true, 10000, 0, false)
+                ->with(StreamEnums::DOCUMENTS->value, false, 10000, 0, true)
                 ->andThrow(new Exception('Repository error'));
 
             $result = $this->service->getTotalDocuments($procurements);

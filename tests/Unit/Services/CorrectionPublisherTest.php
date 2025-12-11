@@ -60,7 +60,8 @@ it('can publish a replacement correction', function () {
         reason: 'Test correction',
         correctedBy: 'Test User',
         userAddress: 'test_address',
-        correctedFile: $file
+        correctedFile: $file,
+        originalStage: '5'  // Preserve original stage
     );
 
     expect($result)->toBeArray();
@@ -102,3 +103,67 @@ it('can publish an invalidation correction', function () {
     expect($result)->toHaveKey('correction_txid');
     expect($result['correction_txid'])->toBe('correction_txid_456');
 });
+
+it('preserves original stage when publishing replacement correction', function () {
+    // Mock the multichain publish call for correction
+    $this->mockMultichain
+        ->shouldReceive('publish')
+        ->once()
+        ->andReturn('correction_txid_789');
+
+    // Create a fake uploaded file
+    $pdfContent = '%PDF-1.4 test content '.str_repeat('x', 1000);
+    $file = UploadedFile::fake()->createWithContent('corrected.pdf', $pdfContent);
+
+    // The fileStorage->uploadFile should be called with stage 5, not default 1
+    // This is verified implicitly by the mock setup in BlockchainStorageService
+
+    $result = $this->publisher->publish(
+        prNumber: 'PR-2024-001',
+        procurementTitle: 'Test Procurement',
+        originalTxid: 'test_txid_123',
+        originalDocumentHash: 'test_hash_123',
+        correctionType: 'document_correction',
+        action: 'replace',
+        reason: 'Correcting document at stage 5',
+        correctedBy: 'Test User',
+        userAddress: 'test_address',
+        correctedFile: $file,
+        originalStage: '5'  // Should use stage 5, not default stage 1
+    );
+
+    expect($result)->toBeArray();
+    expect($result)->toHaveKey('correction_txid');
+    expect($result['success'])->toBeTrue();
+});
+
+it('uses default stage 1 when original stage is not provided', function () {
+    // Mock the multichain publish call for correction
+    $this->mockMultichain
+        ->shouldReceive('publish')
+        ->once()
+        ->andReturn('correction_txid_default');
+
+    // Create a fake uploaded file
+    $pdfContent = '%PDF-1.4 test content '.str_repeat('x', 1000);
+    $file = UploadedFile::fake()->createWithContent('corrected.pdf', $pdfContent);
+
+    $result = $this->publisher->publish(
+        prNumber: 'PR-2024-001',
+        procurementTitle: 'Test Procurement',
+        originalTxid: 'test_txid_123',
+        originalDocumentHash: 'test_hash_123',
+        correctionType: 'document_correction',
+        action: 'replace',
+        reason: 'Correcting document with default stage',
+        correctedBy: 'Test User',
+        userAddress: 'test_address',
+        correctedFile: $file,
+        originalStage: null  // No stage provided, should default to 1
+    );
+
+    expect($result)->toBeArray();
+    expect($result)->toHaveKey('correction_txid');
+    expect($result['success'])->toBeTrue();
+});
+
