@@ -12,6 +12,7 @@ use App\Repositories\DocumentRepository;
 use App\Services\BlockchainStorageService;
 use Exception;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -107,6 +108,9 @@ class DocumentPublisher implements DocumentPublisherInterface
             );
 
             $txid = $this->documents->create($document);
+
+            // Invalidate procurement list cache after document upload
+            Cache::forget('procurements:list:all');
 
             Log::info('DocumentPublisher: Success', [
                 'pr_number' => $prNumber,
