@@ -82,6 +82,14 @@ final class ProcurementData
         public readonly Carbon $createdAt,
     ) {}
 
+    /**
+     * Convert the procurement data to a blockchain-compatible array format.
+     *
+     * Converts all properties to snake_case keys and serializes dates to ISO 8601 format
+     * for storage on the blockchain. Enum values are converted to their string representations.
+     *
+     * @return array<string, mixed> The procurement data formatted for blockchain storage
+     */
     public function toBlockchainArray(): array
     {
         return [
@@ -111,6 +119,16 @@ final class ProcurementData
         ];
     }
 
+    /**
+     * Create a ProcurementData instance from blockchain array data.
+     *
+     * Reconstructs a ProcurementData DTO from blockchain-stored data, handling type conversions
+     * and flexible field structures (some fields may be stored as strings, objects, or arrays).
+     * Missing fields are filled with sensible defaults.
+     *
+     * @param  array<string, mixed>  $data  The raw blockchain data with snake_case keys
+     * @return self A new ProcurementData instance
+     */
     public static function fromBlockchainArray(array $data): self
     {
         // Extract PR number from data
@@ -162,25 +180,49 @@ final class ProcurementData
     }
 
     /**
-     * Create ProcurementData from array (alias for fromBlockchainArray)
+     * Create ProcurementData from array (convenience alias for fromBlockchainArray).
+     *
+     * Provides a more semantic way to instantiate ProcurementData from raw array data.
+     *
+     * @param  array<string, mixed>  $data  The raw data with snake_case keys
+     * @return self A new ProcurementData instance
      */
     public static function fromArray(array $data): self
     {
         return self::fromBlockchainArray($data);
     }
 
+    /**
+     * Check if this procurement requires PhilGEPS posting.
+     *
+     * Delegates to the procurement mode's requirements per RA 9184.
+     *
+     * @return bool True if PhilGEPS posting is required for this procurement mode
+     */
     public function requiresPhilGEPS(): bool
     {
         return $this->procurementMode->requiresPhilGEPS();
     }
 
+    /**
+     * Check if this procurement requires BAC (Bids and Awards Committee) resolution.
+     *
+     * Delegates to the procurement mode's requirements per RA 9184.
+     *
+     * @return bool True if BAC resolution is required for this procurement mode
+     */
     public function requiresBACResolution(): bool
     {
         return $this->procurementMode->requiresBACResolution();
     }
 
     /**
-     * Check if procurement has been approved (Notice of Award stage)
+     * Check if procurement has been approved (Notice of Award stage).
+     *
+     * Validates that both the approving authority and approval date are recorded,
+     * indicating the Notice of Award has been issued.
+     *
+     * @return bool True if both approvedBy and approvalDate are set
      */
     public function isApproved(): bool
     {
@@ -188,7 +230,12 @@ final class ProcurementData
     }
 
     /**
-     * Check if BAC resolution has been recorded
+     * Check if BAC (Bids and Awards Committee) resolution has been recorded.
+     *
+     * Validates that both the resolution number and date are set, indicating official
+     * BAC approval of the procurement process.
+     *
+     * @return bool True if both bacResolutionNumber and bacResolutionDate are set
      */
     public function hasBACResolution(): bool
     {
@@ -196,7 +243,13 @@ final class ProcurementData
     }
 
     /**
-     * Check if posted to PhilGEPS
+     * Check if procurement has been posted to PhilGEPS.
+     *
+     * Validates that both the PhilGEPS reference and posting date are recorded,
+     * indicating the procurement has been publicly advertised on the Philippine Government
+     * Procurement Portal.
+     *
+     * @return bool True if both philgepsReference and philgepsPostingDate are set
      */
     public function isPostedToPhilGEPS(): bool
     {
@@ -204,10 +257,15 @@ final class ProcurementData
     }
 
     /**
-     * Get the current phase based on populated fields
-     * This provides a data-driven phase detection
+     * Infer the current procurement phase based on populated fields.
      *
-     * @return string 'pre_procurement', 'procurement', or 'post_procurement'
+     * Provides data-driven phase detection by examining which fields have been populated.
+     * Returns the most advanced phase indicated by the data:
+     * - If approved: post_procurement
+     * - If posted to PhilGEPS or BAC resolution exists: procurement
+     * - Otherwise: pre_procurement
+     *
+     * @return string One of: 'pre_procurement', 'procurement', or 'post_procurement'
      */
     public function inferCurrentPhase(): string
     {
@@ -226,9 +284,12 @@ final class ProcurementData
     }
 
     /**
-     * Get missing required fields for PhilGEPS posting
+     * Get missing required fields for PhilGEPS posting.
      *
-     * @return array<string>
+     * Returns an array of field names that are required for PhilGEPS posting but are
+     * currently not set. Only returns fields if this procurement mode requires PhilGEPS.
+     *
+     * @return array<string> Field names that are missing and required
      */
     public function getMissingPhilGEPSFields(): array
     {
@@ -250,9 +311,12 @@ final class ProcurementData
     }
 
     /**
-     * Get missing required fields for BAC resolution
+     * Get missing required fields for BAC resolution.
      *
-     * @return array<string>
+     * Returns an array of field names that are required for BAC resolution but are
+     * currently not set. Only returns fields if this procurement mode requires BAC resolution.
+     *
+     * @return array<string> Field names that are missing and required
      */
     public function getMissingBACResolutionFields(): array
     {
@@ -274,7 +338,11 @@ final class ProcurementData
     }
 
     /**
-     * Format ABC amount to currency
+     * Format the ABC (Approved Budget for Contract) amount as Philippine currency.
+     *
+     * Converts the numeric ABC amount to a human-readable Philippine Peso format.
+     *
+     * @return string The formatted amount (e.g., '₱ 1,000,000.00')
      */
     public function getFormattedAbcAmount(): string
     {
@@ -282,7 +350,9 @@ final class ProcurementData
     }
 
     /**
-     * Format delivery date to readable format
+     * Format the delivery date to a human-readable format.
+     *
+     * @return string|null The formatted date (e.g., 'Dec 8, 2025'), or null if not set
      */
     public function getFormattedDeliveryDate(): ?string
     {
@@ -290,7 +360,9 @@ final class ProcurementData
     }
 
     /**
-     * Format BAC resolution date to readable format
+     * Format the BAC resolution date to a human-readable format.
+     *
+     * @return string|null The formatted date (e.g., 'Dec 8, 2025'), or null if not set
      */
     public function getFormattedBacResolutionDate(): ?string
     {
@@ -298,7 +370,9 @@ final class ProcurementData
     }
 
     /**
-     * Format PhilGEPS posting date to readable format
+     * Format the PhilGEPS posting date to a human-readable format.
+     *
+     * @return string|null The formatted date (e.g., 'Dec 8, 2025'), or null if not set
      */
     public function getFormattedPhilgepsPostingDate(): ?string
     {
@@ -306,7 +380,9 @@ final class ProcurementData
     }
 
     /**
-     * Format approval date to readable format
+     * Format the approval date to a human-readable format.
+     *
+     * @return string|null The formatted date (e.g., 'Dec 8, 2025'), or null if not set
      */
     public function getFormattedApprovalDate(): ?string
     {
@@ -314,7 +390,9 @@ final class ProcurementData
     }
 
     /**
-     * Format created at timestamp
+     * Format the creation timestamp to a human-readable format with time.
+     *
+     * @return string The formatted datetime (e.g., 'Dec 8, 2025, 2:30 PM')
      */
     public function getFormattedCreatedAt(): string
     {

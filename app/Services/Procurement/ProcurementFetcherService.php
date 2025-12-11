@@ -56,8 +56,8 @@ final class ProcurementFetcherService
      */
     public function fetchAllProcurements(): array
     {
-        // Cache for 2 minutes to prevent repeated blockchain queries on page refreshes
-        return Cache::remember('procurements:list:all', now()->addMinutes(2), function () {
+        // Cache for 30 minutes to prevent repeated blockchain queries on page refreshes
+        return Cache::remember('procurements:list:all', now()->addMinutes(30), function () {
             Log::info('ProcurementFetcherService: Starting to fetch data from repositories (cache miss)');
 
             $statusDtos = $this->statusRepository->all();
