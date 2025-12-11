@@ -8,6 +8,7 @@ use App\DataTransferObjects\CorrectionData;
 use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\EventData;
 use App\DataTransferObjects\StatusData;
+use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Models\User;
 use App\Repositories\CorrectionRepository;
@@ -58,17 +59,22 @@ final class ProcurementFetcherService
      * - local-ordering=true for faster execution
      * - Batch queries to prevent N+1 problems
      * - Short cache TTL (5min) for balance between speed and freshness
+     * - Optional action generation skipping for faster initial load
      *
      * @return array<int, array<string, mixed>>
      */
-    public function fetchAllProcurements(bool $skipActions = true): array
+    public function fetchAllProcurements(bool $skipActions = false): array
     {
         // Cache for configurable TTL (default 2 minutes for balance between performance and freshness)
         $cacheTtl = (int) config('blockchain.cache.procurement_list_ttl', 120); // seconds
+        $cacheKey = $skipActions ? 'procurements:list:all:v4:no-actions' : 'procurements:list:all:v4:with-actions';
 
-        return Cache::remember('procurements:list:all:v2', now()->addSeconds($cacheTtl), function () {
+        return Cache::remember($cacheKey, now()->addSeconds($cacheTtl), function () use ($skipActions) {
             try {
                 Log::info('ProcurementFetcherService: Starting OPTIMIZED fetch from repositories');
+
+                // Set a reasonable timeout for the entire operation
+                set_time_limit(25); // Leave 5 seconds buffer before PHP's 30s limit
 
                 // OPTIMIZATION 1: Use optimized repository method that fetches only latest per PR
                 $statusDtos = $this->statusRepository->getLatestByProcurement(100);
@@ -98,7 +104,7 @@ final class ProcurementFetcherService
 
                 // Process status items to get latest status per procurement
                 $result = $statusItems
-                    ->map(function (StatusData $statusDto) use ($documentCountMap, $procurementModeMap) {
+                    ->map(function (StatusData $statusDto) use ($documentCountMap, $procurementModeMap, $skipActions) {
                         $originalTimestamp = $statusDto->timestamp;
                         $displayTimestamp = Carbon::parse($statusDto->timestamp)->toDateString();
 
@@ -114,26 +120,32 @@ final class ProcurementFetcherService
 
                         // Get procurement mode for this item
                         $modeInfo = $procurementModeMap[$statusDto->prNumber] ?? null;
+                        $modeEnum = isset($modeInfo['value']) ? ProcurementModeEnums::tryFrom($modeInfo['value']) : null;
 
                         // Get user role for action determination
                         $userRole = $this->getCurrentUserRole();
 
-                        // Get available actions from the action service
-                        try {
-                            $workflowActions = $this->actionService->getAvailableActions(
-                                $statusDto->prNumber,
-                                $statusDto->stage,
-                                $statusDto->currentStatus,
-                                $userRole
-                            );
-                            $staticActions = $this->actionService->getStaticActions($statusDto->prNumber, $userRole);
-                        } catch (\Exception $e) {
-                            Log::debug('Failed to fetch actions for procurement, using empty actions', [
-                                'pr_number' => $statusDto->prNumber,
-                                'error' => $e->getMessage(),
-                            ]);
-                            $workflowActions = [];
-                            $staticActions = [];
+                        // Get available actions from the action service (skip if requested for performance)
+                        // Pass the mode directly to avoid additional blockchain lookups
+                        $workflowActions = [];
+                        $staticActions = [];
+
+                        if (! $skipActions) {
+                            try {
+                                $workflowActions = $this->actionService->getAvailableActions(
+                                    $statusDto->prNumber,
+                                    $statusDto->stage,
+                                    $statusDto->currentStatus,
+                                    $userRole,
+                                    $modeEnum
+                                );
+                                $staticActions = $this->actionService->getStaticActions($statusDto->prNumber, $userRole);
+                            } catch (\Exception $e) {
+                                Log::debug('Failed to fetch actions for procurement, using empty actions', [
+                                    'pr_number' => $statusDto->prNumber,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
                         }
 
                         return [

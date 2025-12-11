@@ -37,11 +37,12 @@ class ProcurementDataService
     /**
      * Fetch and process all procurement data
      *
+     * @param  bool  $skipActions  Skip action generation for faster initial load
      * @return array<int, array<string, mixed>>
      */
-    public function fetchAndProcessProcurements(): array
+    public function fetchAndProcessProcurements(bool $skipActions = false): array
     {
-        return $this->fetcher->fetchAllProcurements();
+        return $this->fetcher->fetchAllProcurements($skipActions);
     }
 
     /**

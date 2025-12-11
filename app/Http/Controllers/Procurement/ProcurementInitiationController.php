@@ -16,6 +16,7 @@ use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Repositories\ProcurementRepository;
 use App\Services\DocumentValidationService;
 use App\Services\Manager;
+use App\Services\ModeAwareDocumentValidationService;
 use App\Services\ProcurementDataService;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
@@ -42,7 +43,8 @@ class ProcurementInitiationController extends BaseController
         \App\Repositories\DocumentRepository $documentRepository,
         private readonly ProcurementRepository $procurements,
         private readonly ProcurementOrchestrator $orchestrator,
-        protected DocumentValidationService $validationService
+        protected DocumentValidationService $validationService,
+        protected ModeAwareDocumentValidationService $modeAwareValidationService
     ) {
         // Initialize trait dependencies (includes statusPublisher and eventPublisher)
         $this->initializeProcurementSupport(
@@ -89,6 +91,9 @@ class ProcurementInitiationController extends BaseController
                 'isStageComplete' => $isStageComplete,
             ]);
 
+            // Get procurement mode for mode-aware document requirements
+            $mode = $this->getProcurementMode($id);
+
             return Inertia::render('bac-secretariat/procurement-stage/procurement-initiation-upload', [
                 'procurement' => [
                     'pr_number' => $id,
@@ -97,8 +102,9 @@ class ProcurementInitiationController extends BaseController
                     'stage' => $latestStatus?->stage ?? StageEnums::PROCUREMENT_INITIATION->value,
                 ],
                 'workflowInfo' => $this->getWorkflowInfo($id, StageEnums::PROCUREMENT_INITIATION),
-                'documentGuide' => $this->validationService->getStageDocumentGuide(
-                    StageEnums::PROCUREMENT_INITIATION
+                'documentGuide' => $this->modeAwareValidationService->getStageDocumentGuide(
+                    StageEnums::PROCUREMENT_INITIATION,
+                    $mode
                 ),
                 'uploadedDocuments' => tap($this->getUploadedDocumentTypes(
                     $id,
@@ -442,7 +448,8 @@ class ProcurementInitiationController extends BaseController
     public function documentGuide(Request $request, string $pr_number): JsonResponse
     {
         $stage = StageEnums::PROCUREMENT_INITIATION;
-        $guide = $this->validationService->getStageDocumentGuide($stage);
+        $mode = $this->getProcurementMode($pr_number);
+        $guide = $this->modeAwareValidationService->getStageDocumentGuide($stage, $mode);
 
         return response()->json($guide);
     }
@@ -457,7 +464,8 @@ class ProcurementInitiationController extends BaseController
         try {
             // Verify all required documents are uploaded
             $uploadedDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
-            $documentGuide = $this->validationService->getStageDocumentGuide($stage);
+            $mode = $this->getProcurementMode($pr_number);
+            $documentGuide = $this->modeAwareValidationService->getStageDocumentGuide($stage, $mode);
 
             if (count($uploadedDocuments) < $documentGuide['counts']['required_count']) {
                 return back()->with('error', 'Cannot mark stage as complete. Please upload all required documents first.');

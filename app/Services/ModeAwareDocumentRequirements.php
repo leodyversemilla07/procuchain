@@ -365,6 +365,8 @@ class ModeAwareDocumentRequirements
             // Abstract of Quotations - Compilation of received quotations
             StageEnums::ABSTRACT_OF_QUOTATIONS => [
                 DocumentTypeEnums::ABSTRACT_OF_QUOTATIONS,
+                DocumentTypeEnums::CERTIFICATE_OF_ACCEPTANCE_OF_QUOTATION,
+                DocumentTypeEnums::PHILGEPS_AWARD_NOTICE_ABSTRACT,
             ],
 
             // BAC Resolution - Award recommendation
@@ -408,8 +410,9 @@ class ModeAwareDocumentRequirements
 
             // SVP - At least 3 quotations requested, 1 sufficient per Section 34.1
             ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
+                DocumentTypeEnums::NOTICE_OF_REQUEST_FOR_QUOTATION,
                 DocumentTypeEnums::REQUEST_FOR_QUOTATION,
-                DocumentTypeEnums::PRICE_QUOTATION,
+                DocumentTypeEnums::PHILGEPS_BID_NOTICE_ABSTRACT,
             ],
 
             // Direct Contracting - Simplified per Section 31.3
@@ -453,10 +456,9 @@ class ModeAwareDocumentRequirements
                 DocumentTypeEnums::PURCHASE_ORDER,
             ],
 
-            // SVP - Standard PO/Contract per Section 34
+            // SVP - Simplified PO only per Section 34
             ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
                 DocumentTypeEnums::PURCHASE_ORDER,
-                DocumentTypeEnums::CONTRACT,
             ],
 
             // Other alternative modes - Standard requirements
@@ -480,6 +482,7 @@ class ModeAwareDocumentRequirements
 
             // SVP - Standard monitoring
             ProcurementModeEnums::SMALL_VALUE_PROCUREMENT => [
+                DocumentTypeEnums::DELIVERY_RECEIPTS,
                 DocumentTypeEnums::INSPECTION_ACCEPTANCE_REPORT,
                 DocumentTypeEnums::PROGRESS_REPORTS,
             ],
@@ -552,10 +555,7 @@ class ModeAwareDocumentRequirements
     private function getAlternativeModeOptionalDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
     {
         return match ($stage) {
-            StageEnums::REQUEST_FOR_QUOTATION => [
-                DocumentTypeEnums::SUPPLIER_CANVASS_FORM,
-                DocumentTypeEnums::QUOTATION_COMPARISON_SHEET,
-            ],
+            StageEnums::REQUEST_FOR_QUOTATION => [],
             StageEnums::ABSTRACT_OF_QUOTATIONS => [
                 DocumentTypeEnums::LOWEST_QUOTATION_CERTIFICATION,
             ],

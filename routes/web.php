@@ -33,6 +33,7 @@ use Inertia\Inertia;
 
 // Marketing Pages
 Route::get('/', fn () => Inertia::render('home'))->name('home');
+
 Route::inertia('/about', 'about')->name('about');
 Route::inertia('/workflow', 'workflow')->name('workflow');
 Route::inertia('/team', 'team')->name('team');
@@ -76,6 +77,10 @@ Route::middleware(['auth'])->group(function () {
     // Blockchain Status Polling (All Authenticated Users)
     Route::get('/procurements/{pr_number}/blockchain-status', [ProcurementListController::class, 'getBlockchainStatus'])
         ->name('procurements.blockchain-status');
+
+    // Procurement Actions API (All Authenticated Users)
+    Route::get('/api/procurements/{pr_number}/actions', [\App\Http\Controllers\ProcurementActionsController::class, 'getActions'])
+        ->name('procurements.actions');
 
     // Procurement Corrections - Management (BAC Secretariat only)
     Route::middleware(['role:bac_secretariat'])->group(function () {

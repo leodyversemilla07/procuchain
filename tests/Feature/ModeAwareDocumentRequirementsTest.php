@@ -53,9 +53,10 @@ describe('ModeAwareDocumentRequirements - Alternative Modes', function () {
 
         $required = $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
 
-        // SVP requires RFQ and Price Quotation per Section 34
+        // SVP requires Notice of RFQ, RFQ, and PhilGEPS Bid Notice Abstract per Section 34
+        expect($required)->toContain(DocumentTypeEnums::NOTICE_OF_REQUEST_FOR_QUOTATION);
         expect($required)->toContain(DocumentTypeEnums::REQUEST_FOR_QUOTATION);
-        expect($required)->toContain(DocumentTypeEnums::PRICE_QUOTATION);
+        expect($required)->toContain(DocumentTypeEnums::PHILGEPS_BID_NOTICE_ABSTRACT);
     });
 
     it('returns empty for stages not in SVP workflow', function () {
@@ -185,8 +186,9 @@ describe('ModeAwareDocumentValidationService', function () {
 
     it('validates stage completion with mode awareness', function () {
         $uploadedDocs = [
+            DocumentTypeEnums::NOTICE_OF_REQUEST_FOR_QUOTATION,
             DocumentTypeEnums::REQUEST_FOR_QUOTATION,
-            DocumentTypeEnums::PRICE_QUOTATION,
+            DocumentTypeEnums::PHILGEPS_BID_NOTICE_ABSTRACT,
         ];
 
         $result = $this->validationService->validateStageCompletion(
@@ -211,8 +213,8 @@ describe('ModeAwareDocumentValidationService', function () {
             ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
         );
 
-        // SVP RFQ stage requires 2 docs, 1 uploaded = 50%
-        expect($result['completion_percentage'])->toBe(50.0);
+        // SVP RFQ stage requires 3 docs, 1 uploaded = 33.33%
+        expect($result['completion_percentage'])->toBe(33.33);
     });
 });
 
