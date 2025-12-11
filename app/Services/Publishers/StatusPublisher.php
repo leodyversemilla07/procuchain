@@ -10,6 +10,7 @@ use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Repositories\StatusRepository;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -69,6 +70,9 @@ class StatusPublisher implements StatusPublisherInterface
             );
 
             $txid = $this->statuses->create($status);
+
+            // Invalidate procurement list cache after status update
+            Cache::forget('procurements:list:all');
 
             Log::info('StatusPublisher: Success', [
                 'pr_number' => $prNumber,
