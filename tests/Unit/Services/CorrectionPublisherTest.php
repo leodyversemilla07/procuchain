@@ -15,10 +15,9 @@ beforeEach(function () {
     $this->mockMultichain = Mockery::mock(Manager::class);
     $this->mockFileStorageMultichain = Mockery::mock(Manager::class);
 
-    // Mock file storage multichain for uploadFile - this will be called by BlockchainStorageService
-    // The publish method is called twice: once for file data, once for metadata
-    $this->mockFileStorageMultichain->shouldReceive('publish')
-        ->andReturn('file_data_txid', 'file_metadata_txid');
+    // Mock file storage multichain for uploadFile - BlockchainStorageService now uses publishmulti for atomic operations
+    $this->mockFileStorageMultichain->shouldReceive('publishmulti')
+        ->andReturn('file_data_txid');
 
     $this->fileStorage = new BlockchainStorageService($this->mockFileStorageMultichain);
     $this->repository = new CorrectionRepository($this->mockMultichain);
@@ -166,4 +165,3 @@ it('uses default stage 1 when original stage is not provided', function () {
     expect($result)->toHaveKey('correction_txid');
     expect($result['success'])->toBeTrue();
 });
-
