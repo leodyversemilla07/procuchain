@@ -153,7 +153,7 @@ final readonly class StatusRepository
             }
 
             $latestStatuses = [];
-            
+
             // For each PR, get only the latest item (count=1, start=-1 for most recent)
             foreach ($keys as $key) {
                 if (empty($key['key'])) {
@@ -161,20 +161,24 @@ final readonly class StatusRepository
                 }
 
                 $prNumber = $key['key'];
-                
-                // Get only the most recent item for this key
-                // OPTIMIZATION: local-ordering=true for faster execution
+
+                // Get all items for this key and take the latest by timestamp
+                // Note: MultiChain returns items in chronological order (oldest first)
                 $items = $this->multichain->liststreamkeyitems(
                     StreamEnums::STATUS->value,
                     $prNumber,
                     false,  // verbose=false for speed
-                    1,      // limit=1 (only latest)
-                    -1,     // start=-1 (from end)
+                    10,     // Get last 10 to find the latest
+                    0,      // start from beginning
                     true    // local-ordering for faster queries
                 );
 
-                if (!empty($items) && isset($items[0]['data']['json'])) {
-                    $latestStatuses[] = StatusData::fromBlockchainArray($items[0]['data']['json']);
+                if (! empty($items)) {
+                    // Items are in chronological order, so last item is the latest
+                    $latestItem = end($items);
+                    if (isset($latestItem['data']['json'])) {
+                        $latestStatuses[] = StatusData::fromBlockchainArray($latestItem['data']['json']);
+                    }
                 }
             }
 

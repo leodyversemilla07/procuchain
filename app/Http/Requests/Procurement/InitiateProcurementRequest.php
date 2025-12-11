@@ -21,7 +21,7 @@ class InitiateProcurementRequest extends FormRequest
     {
         return [
             // Basic Information - REQUIRED per RA 12009 (NGPA)
-            'pr_number' => ['required', 'string', 'regex:/^PR-\d{4}-\d{4}-\d{4}$/', 'max:100'],
+            'pr_number' => ['required', 'string', 'regex:/^PR-\d{4}-\d{3}-\d{4}$/', 'max:100'],
             'app_reference' => ['required', 'string', 'max:100'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
@@ -144,8 +144,8 @@ class InitiateProcurementRequest extends FormRequest
     {
         return [
             'pr_number.required' => 'Purchase Request (PR) number is required per RA 12009 (NGPA) IRR Section 7.',
-            'pr_number.regex' => 'PR number must follow format: PR-YYYY-####-#### (e.g., PR-2025-0001-0001).',
-            'app_reference.required' => 'APP reference is required to verify procurement is in approved annual plan per RA 12009.',
+            'pr_number.regex' => 'PR number must follow format: PR-YYYY-000-0000 (e.g., PR-2025-001-0001).',
+            'app_reference.required' => 'AIP code reference is required to verify procurement is in approved annual investment plan per RA 12009.',
             'abc_amount.required' => 'Approved Budget for Contract (ABC) is required per RA 12009.',
             'category.required' => 'Procurement category must be specified (Goods/Infrastructure/Consulting).',
             'procurement_mode.required' => 'Procurement mode must comply with RA 12009 requirements.',

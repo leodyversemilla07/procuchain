@@ -108,11 +108,11 @@ describe('ModeAwareDocumentRequirements - Alternative Modes', function () {
 });
 
 describe('ModeAwareDocumentRequirements - Municipality of Gloria Thresholds', function () {
-    it('confirms SVP threshold of ₱200,000 for 4th class municipality', function () {
+    it('confirms SVP threshold of ₱400,000 for 4th class municipality', function () {
         $threshold = ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->thresholdAmount();
 
         // Municipality of Gloria is a 4th Class Municipality
-        expect($threshold)->toBe(200000.00);
+        expect($threshold)->toBe(400000.00);
     });
 
     it('confirms Direct Acquisition threshold of ₱200,000', function () {
@@ -127,15 +127,15 @@ describe('ModeAwareDocumentRequirements - Municipality of Gloria Thresholds', fu
         // ₱150,000 is within threshold
         expect($mode->isValidAmount(150000))->toBeTrue();
 
-        // ₱200,000 is at threshold
-        expect($mode->isValidAmount(200000))->toBeTrue();
+        // ₱400,000 is at threshold
+        expect($mode->isValidAmount(400000))->toBeTrue();
     });
 
     it('validates amount exceeding SVP threshold is invalid', function () {
         $mode = ProcurementModeEnums::SMALL_VALUE_PROCUREMENT;
 
-        // ₱250,000 exceeds threshold
-        expect($mode->isValidAmount(250000))->toBeFalse();
+        // ₱450,000 exceeds threshold
+        expect($mode->isValidAmount(450000))->toBeFalse();
     });
 });
 

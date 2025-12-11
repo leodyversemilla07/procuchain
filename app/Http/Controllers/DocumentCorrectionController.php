@@ -76,7 +76,8 @@ class DocumentCorrectionController extends Controller
                 reason: $validated['correction_reason'],
                 correctedBy: auth()->user()->name ?? 'System',
                 userAddress: $userAddress,
-                correctedFile: $request->hasFile('corrected_file') ? $request->file('corrected_file') : null
+                correctedFile: $request->hasFile('corrected_file') ? $request->file('corrected_file') : null,
+                originalStage: $documentData['stage'] ?? null  // Pass original stage to preserve context
             );
 
             Log::info('Document correction published to blockchain', [

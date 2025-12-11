@@ -125,7 +125,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
 
     const { data, setData, processing, errors, clearErrors, reset } = useForm<UseFormData>({
         // Basic Information
-        pr_number: `PR-${new Date().getFullYear()}-0000-0000`,
+        pr_number: `PR-${new Date().getFullYear()}-000-0000`,
         app_reference: '',
         title: '',
         description: '',
@@ -318,7 +318,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
 
     // Form validation
     const isFormValid = useCallback((): boolean => {
-        const prNumberRegex = /^PR-\d{4}-\d{4}-\d{4}$/;
+        const prNumberRegex = /^PR-\d{4}-\d{3}-\d{4}$/;
         const isNegotiatedProcurement = data.procurement_mode === 'negotiated_procurement';
 
         return !!(
@@ -331,6 +331,8 @@ export default function ProcurementInitiationForm({ categories = [], procurement
             data.title.trim() !== '' &&
             data.description &&
             data.description.trim() !== '' &&
+            // Validate other_description when description is "Other"
+            (data.description !== 'Other' || (data.other_description && data.other_description.trim() !== '')) &&
             data.category &&
             data.category.trim() !== '' &&
             data.procurement_mode &&
@@ -341,8 +343,12 @@ export default function ProcurementInitiationForm({ categories = [], procurement
             parseFloat(data.abc_amount) > 0 &&
             data.funding_source &&
             data.funding_source.trim() !== '' &&
+            // Validate other_funding_source when funding_source is "Other Sources"
+            (data.funding_source !== 'Other Sources' || (data.other_funding_source && data.other_funding_source.trim() !== '')) &&
             data.office &&
             data.office.trim() !== '' &&
+            // Validate other_end_user when end_user is "Other"
+            (!data.end_user || data.end_user !== 'Other' || (data.other_end_user && data.other_end_user.trim() !== '')) &&
             data.prepared_by &&
             data.prepared_by.trim() !== ''
         );
@@ -364,13 +370,16 @@ export default function ProcurementInitiationForm({ categories = [], procurement
             app_reference: data.app_reference,
             title: data.title,
             description: data.description,
+            other_description: data.other_description,
             abc_amount: data.abc_amount,
             funding_source: data.funding_source,
+            other_funding_source: data.other_funding_source,
             category: data.category,
             procurement_mode: data.procurement_mode,
             negotiated_procurement_type: data.negotiated_procurement_type || null,
             office: data.office,
             end_user: data.end_user,
+            other_end_user: data.other_end_user,
             prepared_by: data.prepared_by,
         };
 
@@ -500,7 +509,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         Purchase Request Number
                                         <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>Format: PR-YYYY-####-#### (e.g., PR-2025-0001-0001)</FieldDescription>
+                                    <FieldDescription>Format: PR-YYYY-000-0000 (e.g., PR-2025-001-0001)</FieldDescription>
                                     <div className="mt-2 flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                         <Input
                                             id="pr_prefix"
@@ -531,9 +540,9 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                             name="pr_sequence1"
                                             value={prSequence1}
                                             onChange={(e) => handlePrPartChange('seq1', e.target.value)}
-                                            className={hasError('pr_number') ? 'border-destructive ring-destructive/30 w-16 sm:w-20' : 'w-16 sm:w-20'}
-                                            maxLength={4}
-                                            placeholder="0000"
+                                            className={hasError('pr_number') ? 'border-destructive ring-destructive/30 w-14 sm:w-16' : 'w-14 sm:w-16'}
+                                            maxLength={3}
+                                            placeholder="000"
                                         />
                                         <span className="text-muted-foreground">-</span>
                                         <Input
@@ -549,20 +558,20 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                     {hasError('pr_number') && <FieldError>{errors.pr_number}</FieldError>}
                                 </Field>
 
-                                {/* PPMP/APP Reference */}
+                                {/* PPMP/AIP Code Reference */}
                                 <Field>
                                     <FieldLabel htmlFor="app_reference">
-                                        APP Reference
+                                        AIP Code Reference
                                         <span className="text-destructive ml-1 text-xs">*</span>
                                     </FieldLabel>
-                                    <FieldDescription>Reference number from the Annual Procurement Plan</FieldDescription>
+                                    <FieldDescription>Reference number from the Annual Investment Plan</FieldDescription>
                                     <Input
                                         id="app_reference"
                                         name="app_reference"
                                         value={data.app_reference}
                                         onChange={(e) => handleFieldChange('app_reference', e.target.value)}
                                         className={hasError('app_reference') ? 'border-destructive ring-destructive/30' : ''}
-                                        placeholder="e.g., APP-2025-001"
+                                        placeholder="e.g., AIP-2025-001"
                                     />
                                     {hasError('app_reference') && <FieldError>{errors.app_reference}</FieldError>}
                                 </Field>

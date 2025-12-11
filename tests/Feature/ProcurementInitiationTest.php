@@ -75,7 +75,7 @@ test('can initiate procurement with all required documents for goods', function 
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
             // Basic Information
-            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(100, 999), 3, '0', STR_PAD_LEFT).'-0001',
             'app_reference' => 'APP-2025-001',
             'title' => 'Office Supplies Procurement',
             'description' => 'Purchase of office supplies for municipal office for FY 2025',
@@ -131,11 +131,11 @@ test('consulting services requires terms of reference not technical specificatio
 
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(100, 999), 3, '0', STR_PAD_LEFT).'-0001',
             'app_reference' => 'APP-2025-002',
             'title' => 'IT Consulting Services',
             'description' => 'Professional IT consulting services for system upgrade',
-            'abc_amount' => '150000.00', // Within 4th class municipality SVP threshold (₱200,000)
+            'abc_amount' => '150000.00', // Within 4th class municipality SVP threshold (₱400,000)
             'funding_source' => 'Special Fund',
             'category' => ProcurementCategoryEnums::CONSULTING_SERVICES->value,
             'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
@@ -217,7 +217,7 @@ test('validation fails when mandatory documents are missing', function () {
 
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(100, 999), 3, '0', STR_PAD_LEFT).'-0001',
             'app_reference' => 'APP-2025-005',
             'title' => 'Test Procurement',
             'description' => 'Test description',
@@ -256,11 +256,11 @@ test('validation fails when abc amount exceeds procurement mode threshold', func
 
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(100, 999), 3, '0', STR_PAD_LEFT).'-0001',
             'app_reference' => 'APP-2025-006',
             'title' => 'Large Procurement',
             'description' => 'Large procurement exceeding SVP threshold',
-            'abc_amount' => '500000.00', // ₱500K exceeds SVP threshold (₱200K for 4th class municipality)
+            'abc_amount' => '500000.00', // ₱500K exceeds SVP threshold (₱400K for 4th class municipality)
             'funding_source' => 'General Fund',
             'category' => ProcurementCategoryEnums::GOODS->value,
             'procurement_mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value, // Wrong mode
@@ -296,7 +296,7 @@ test('validation fails for non-pdf files', function () {
 
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(100, 999), 3, '0', STR_PAD_LEFT).'-0001',
             'app_reference' => 'APP-2025-007',
             'title' => 'Test Procurement',
             'description' => 'Test description',
@@ -337,7 +337,7 @@ test('can add optional supporting documents', function () {
 
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post('/bac-secretariat/initiate-procurement', [
-            'pr_number' => 'PR-2025-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT).'-0001',
+            'pr_number' => 'PR-2025-'.str_pad((string) rand(100, 999), 3, '0', STR_PAD_LEFT).'-0001',
             'app_reference' => 'APP-2025-008',
             'title' => 'Office Supplies with Supporting Docs',
             'description' => 'Purchase with market research and price survey',

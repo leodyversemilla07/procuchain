@@ -178,7 +178,7 @@ class StageDocumentRequirements
      *
      * Single PDF document containing all procurement initiation documents:
      * - Project Procurement Management Plan (PPMP)
-     * - Annual Procurement Plan (APP)
+     * - Annual Investment Plan (AIP)
      * - Purchase Request (PR)
      * - Market Study / Price Canvass
      * - Approved Budget for the Contract (ABC) Documentation

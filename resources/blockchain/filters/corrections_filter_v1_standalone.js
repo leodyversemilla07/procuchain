@@ -64,10 +64,10 @@ function filterstreamitem() {
 
     // PR Number format validation (if provided)
     if (data.pr_number && data.pr_number !== '') {
-        // PR-YYYY-####-#### format (e.g., PR-2025-0001-0042)
-        var prNumberPattern = /^PR-\d{4}-\d{4}-\d{4}$/;
+        // PR-YYYY-000-0000 format (e.g., PR-2025-001-0042)
+        var prNumberPattern = /^PR-\d{4}-\d{3}-\d{4}$/;
         if (!prNumberPattern.test(data.pr_number)) {
-            return 'Invalid PR number format. Expected: PR-YYYY-####-#### (e.g., PR-2025-0001-0042)';
+            return 'Invalid PR number format. Expected: PR-YYYY-000-0000 (e.g., PR-2025-001-0042)';
         }
     }
 

@@ -38,6 +38,7 @@ final class CorrectionPublisher
      * @param  string  $correctedBy  Who made the correction
      * @param  string  $userAddress  User blockchain address
      * @param  UploadedFile|null  $correctedFile  New file (for replacements)
+     * @param  string|null  $originalStage  Original document stage (to preserve stage context)
      * @return array Correction transaction information
      *
      * @throws Exception If publication fails
@@ -52,7 +53,8 @@ final class CorrectionPublisher
         string $reason,
         string $correctedBy,
         string $userAddress,
-        ?UploadedFile $correctedFile = null
+        ?UploadedFile $correctedFile = null,
+        ?string $originalStage = null
     ): array {
         try {
             Log::info('CorrectionPublisher: Publishing correction', [
@@ -65,16 +67,21 @@ final class CorrectionPublisher
 
             // If replacing, upload the new file
             if ($action === 'replace' && $correctedFile !== null) {
+                // Use original document's stage if provided, otherwise default to 1
+                // This prevents stage/status confusion when correcting documents
+                $stageId = $originalStage ? (int) $originalStage : 1;
+
                 $fileResult = $this->fileStorage->uploadFile(
                     $correctedFile,
                     $prNumber,
-                    1, // Use stage 1 as default for corrections
+                    $stageId,
                     'corrected_document',
                     [
                         'pr_number' => $prNumber,
                         'correction_type' => 'replace',
                         'original_txid' => $originalTxid,
                         'corrected_by' => $correctedBy,
+                        'is_correction' => true, // Flag to indicate this is a correction, not a regular upload
                     ]
                 );
 
@@ -140,6 +147,7 @@ final class CorrectionPublisher
      * @param  string  $correctedBy  Who made the correction
      * @param  string  $userAddress  User blockchain address
      * @param  UploadedFile  $correctedFile  New file
+     * @param  string|null  $originalStage  Original document stage
      * @return array Correction transaction information
      */
     public function publishReplacement(
@@ -151,7 +159,8 @@ final class CorrectionPublisher
         string $reason,
         string $correctedBy,
         string $userAddress,
-        UploadedFile $correctedFile
+        UploadedFile $correctedFile,
+        ?string $originalStage = null
     ): array {
         return $this->publish(
             prNumber: $prNumber,
@@ -164,6 +173,7 @@ final class CorrectionPublisher
             correctedBy: $correctedBy,
             userAddress: $userAddress,
             correctedFile: $correctedFile,
+            originalStage: $originalStage,
         );
     }
 

@@ -165,7 +165,7 @@ class ProcurementModeAnalyticsService
      */
     public function getThresholdAnalysis(Collection $procurements): array
     {
-        $svpThreshold = 200000.0; // 4th class municipality
+        $svpThreshold = 400000.0; // 4th class municipality
         $daThreshold = 200000.0;
 
         $svpProcurements = $procurements->filter(

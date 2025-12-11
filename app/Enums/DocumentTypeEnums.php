@@ -253,7 +253,7 @@ enum DocumentTypeEnums: string
             // Stage 1: Procurement Initiation
             self::PURCHASE_REQUEST => 'Purchase Request (PR)',
             self::PPMP => 'Project Procurement Management Plan (PPMP)',
-            self::APP => 'Annual Procurement Plan (APP)',
+            self::APP => 'Annual Investment Plan (AIP)',
             self::CERTIFICATE_OF_FUNDS => 'Certificate of Availability of Funds (CAF)',
             self::APPROVED_BUDGET_CONTRACT => 'Approved Budget for the Contract (ABC)',
             self::TECHNICAL_SPECIFICATIONS => 'Technical Specifications',
@@ -473,7 +473,7 @@ enum DocumentTypeEnums: string
     {
         return match ($this) {
             self::PPMP => 'Annual project procurement plan',
-            self::APP => 'Consolidated annual procurement plan',
+            self::APP => 'Consolidated annual investment plan',
             self::PURCHASE_REQUEST => 'Official purchase request form',
             self::TECHNICAL_SPECIFICATIONS => 'Detailed technical requirements',
             self::BUDGET_ESTIMATE => 'Approved budget allocation',
