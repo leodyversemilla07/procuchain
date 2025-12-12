@@ -78,10 +78,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/procurements/{pr_number}/blockchain-status', [ProcurementListController::class, 'getBlockchainStatus'])
         ->name('procurements.blockchain-status');
 
-    // Procurement Actions API (All Authenticated Users)
-    Route::get('/api/procurements/{pr_number}/actions', [\App\Http\Controllers\ProcurementActionsController::class, 'getActions'])
-        ->name('procurements.actions');
-
     // Procurement Corrections - Management (BAC Secretariat only)
     Route::middleware(['role:bac_secretariat'])->group(function () {
         Route::get('/procurements/{pr_number}/corrections', [ProcurementCorrectionController::class, 'showProcurementCorrectionsPage'])
