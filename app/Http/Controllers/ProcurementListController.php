@@ -58,7 +58,8 @@ class ProcurementListController extends BaseController
             // Set a reasonable timeout for blockchain operations
             set_time_limit(28); // Give 2 seconds buffer
 
-            $procurements = $this->procurementDataService->fetchAndProcessProcurements();
+            // Fetch procurements with actions included (skipActions=false for instant button visibility)
+            $procurements = $this->procurementDataService->fetchAndProcessProcurements(skipActions: false);
 
             // Get filter parameters from request
             $search = request()->input('search', '');

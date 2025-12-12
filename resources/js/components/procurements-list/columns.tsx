@@ -1,6 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -131,10 +130,9 @@ export const createColumns = ({
         id: 'actions',
         cell: ({ row }) => {
             const procurement = row.original;
-            const [isOpen, setIsOpen] = useState(false);
 
             return (
-                <DropdownMenu onOpenChange={setIsOpen}>
+                <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
                             <span className="sr-only">Open menu</span>
@@ -161,7 +159,6 @@ export const createColumns = ({
                             onOpenPreProcurementDialog={onOpenPreProcurementDialog}
                             onOpenPreBidDialog={onOpenPreBidDialog}
                             onOpenSupplementalBidBulletinDialog={onOpenSupplementalBidBulletinDialog}
-                            isOpen={isOpen}
                         />
                     </DropdownMenuContent>
                 </DropdownMenu>

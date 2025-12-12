@@ -2,15 +2,13 @@ import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import type { ProcurementListItem } from '@/types';
 import type { ProcurementAction } from '@/types/workflow';
 import { router } from '@inertiajs/react';
-import { AlertCircle, BarChart4Icon, Edit2Icon, EyeIcon, Loader2, RefreshCw, ShieldCheck, SkipForward, UploadCloudIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { AlertCircle, BarChart4Icon, Edit2Icon, EyeIcon, RefreshCw, ShieldCheck, SkipForward, UploadCloudIcon } from 'lucide-react';
 
 interface ActionButtonsProps {
     procurement: ProcurementListItem;
     onOpenPreProcurementDialog?: (procurement: ProcurementListItem) => void;
     onOpenPreBidDialog?: (procurement: ProcurementListItem) => void;
     onOpenSupplementalBidBulletinDialog?: (procurement: ProcurementListItem) => void;
-    isOpen?: boolean; // New prop to know when dropdown is open
 }
 
 /**
@@ -94,53 +92,17 @@ const DropdownActionItem = ({
  * Actions are determined by the backend based on procurement stage, status, mode,
  * and user role - ensuring business logic stays in one place.
  *
- * Performance: Actions are lazy-loaded when the dropdown opens to improve initial page load.
+ * Actions are pre-loaded via Inertia for instant display without API calls.
  */
 export const ActionButtons = ({
     procurement,
     onOpenPreProcurementDialog,
     onOpenPreBidDialog,
     onOpenSupplementalBidBulletinDialog,
-    isOpen,
 }: ActionButtonsProps) => {
-    const [actions, setActions] = useState<{
-        workflow_actions: ProcurementAction[];
-        static_actions: ProcurementAction[];
-    }>({
-        workflow_actions: procurement.workflow_actions || [],
-        static_actions: procurement.static_actions || [],
-    });
-    const [isLoading, setIsLoading] = useState(false);
-    const [hasLoaded, setHasLoaded] = useState(
-        !!(procurement.workflow_actions && procurement.workflow_actions.length > 0) ||
-            !!(procurement.static_actions && procurement.static_actions.length > 0),
-    );
-
-    // Lazy-load actions when dropdown opens (if not already loaded)
-    useEffect(() => {
-        if (isOpen && !hasLoaded && !isLoading) {
-            setIsLoading(true);
-            fetch(
-                `/api/procurements/${procurement.id}/actions?stage=${procurement.stage}&status=${procurement.current_status}&mode=${procurement.procurement_mode || ''}`,
-            )
-                .then((res) => res.json())
-                .then((data) => {
-                    setActions({
-                        workflow_actions: data.workflow_actions || [],
-                        static_actions: data.static_actions || [],
-                    });
-                    setHasLoaded(true);
-                })
-                .catch((err) => {
-                    console.error('Failed to load actions:', err);
-                })
-                .finally(() => {
-                    setIsLoading(false);
-                });
-        }
-    }, [isOpen, hasLoaded, isLoading, procurement]);
-
-    const { workflow_actions = [], static_actions = [] } = actions;
+    // Use actions directly from Inertia props (pre-loaded from backend)
+    const workflow_actions = procurement.workflow_actions || [];
+    const static_actions = procurement.static_actions || [];
 
     /**
      * Maps server action types to click handlers for dialog actions
@@ -204,16 +166,6 @@ export const ActionButtons = ({
 
     // Combine static actions (view, verify) with workflow actions
     const allActions = [...static_actions, ...workflow_actions];
-
-    // Show loading state while fetching actions
-    if (isLoading) {
-        return (
-            <DropdownMenuItem disabled className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-muted-foreground">Loading actions...</span>
-            </DropdownMenuItem>
-        );
-    }
 
     return <>{allActions.map((action, index) => renderAction(action, index))}</>;
 };
