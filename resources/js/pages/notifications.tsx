@@ -303,7 +303,7 @@ export default function Notifications() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Notifications" />
-            <div className="flex h-full flex-1 flex-col space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 <HeroCard
                     icon={Bell}
                     title="Notifications"

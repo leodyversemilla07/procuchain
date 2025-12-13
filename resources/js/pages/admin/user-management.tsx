@@ -130,7 +130,6 @@ export default function AdminUserManagement() {
         role: '',
         password: '',
         password_confirmation: '',
-        blockchain_address: '',
     });
 
     // New UI/UX state
@@ -160,7 +159,6 @@ export default function AdminUserManagement() {
             role: '',
             password: '',
             password_confirmation: '',
-            blockchain_address: '',
         });
     };
 
@@ -381,7 +379,6 @@ export default function AdminUserManagement() {
             role: user.role,
             password: '',
             password_confirmation: '',
-            blockchain_address: user.blockchain_address || '',
         });
         setIsEditModalOpen(true);
     };
@@ -804,7 +801,7 @@ export default function AdminUserManagement() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="User Management" />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6 md:p-8">
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 {/* Header Section */}
                 <HeroCard
                     icon={Users}
