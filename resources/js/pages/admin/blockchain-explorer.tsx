@@ -321,7 +321,7 @@ export default function BlockchainExplorer({
                 ]}
             >
                 <Head title="Blockchain Explorer - Error" />
-                <div className="flex h-full flex-1 flex-col gap-6 p-6 md:p-8">
+                <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                     <Card className="border-destructive">
                         <CardHeader>
                             <CardTitle className="text-destructive">Connection Error</CardTitle>
@@ -344,7 +344,7 @@ export default function BlockchainExplorer({
             ]}
         >
             <Head title="Blockchain Explorer" />
-            <div className="flex h-full flex-1 flex-col gap-6 p-6 md:p-8">
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 {/* Network Status Indicator */}
                 <Card className="border-emerald-500/20 bg-emerald-500/5">
                     <CardContent className="py-3">
