@@ -5,7 +5,6 @@ import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import AuthLayout from '@/layouts/auth-layout';
 import { logout } from '@/routes';
-import { send } from '@/routes/verification';
 
 export default function VerifyEmail({ status }: { status?: string }) {
     return (
@@ -18,20 +17,13 @@ export default function VerifyEmail({ status }: { status?: string }) {
                 </div>
             )}
 
-            <Form action={send()}>
-                {({ processing }) => (
-                    <div className="space-y-6 text-center">
-                        <Button type="submit" disabled={processing} variant="secondary">
-                            {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                            Resend verification email
-                        </Button>
-
-                        <TextLink href={logout.url()} method="post" className="mx-auto block text-sm">
-                            Log out
-                        </TextLink>
-                    </div>
-                )}
-            </Form>
+            <div className="space-y-6 text-center">
+                <p className="text-sm text-neutral-600">Email verification is currently disabled.</p>
+                
+                <TextLink href={logout.url()} method="post" className="mx-auto block text-sm">
+                    Log out
+                </TextLink>
+            </div>
         </AuthLayout>
     );
 }

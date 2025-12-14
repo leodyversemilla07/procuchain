@@ -81,37 +81,6 @@ class FortifyServiceProvider extends ServiceProvider
         $this->app->singleton(TwoFactorDisabledResponseContract::class, TwoFactorDisabledResponse::class);
         $this->app->singleton(RecoveryCodesGeneratedResponseContract::class, RecoveryCodesGeneratedResponse::class);
         $this->app->singleton(FailedPasswordConfirmationResponse::class, FailedPasswordConfirmationResponseImplementation::class);
-
-        // Bind VerifyEmailResponse for successful verification
-        $this->app->singleton(\Laravel\Fortify\Contracts\VerifyEmailResponse::class, function ($app) {
-            return new class implements \Laravel\Fortify\Contracts\VerifyEmailResponse
-            {
-                public function toResponse($request)
-                {
-                    $user = $request->user();
-                    $dashboardUrl = match (true) {
-                        $user->hasRole('admin') => '/admin/dashboard',
-                        $user->hasRole('bac_secretariat') => '/bac-secretariat/dashboard',
-                        $user->hasRole('bac_chairman') => '/bac-chairman/dashboard',
-                        $user->hasRole('hope') => '/hope/dashboard',
-                        default => '/dashboard',
-                    };
-
-                    return redirect()->intended($dashboardUrl.'?verified=1');
-                }
-            };
-        });
-
-        // Bind EmailVerificationNotificationSentResponse for resend verification email
-        $this->app->singleton(\Laravel\Fortify\Contracts\EmailVerificationNotificationSentResponse::class, function ($app) {
-            return new class implements \Laravel\Fortify\Contracts\EmailVerificationNotificationSentResponse
-            {
-                public function toResponse($request)
-                {
-                    return back()->with('status', 'verification-link-sent');
-                }
-            };
-        });
     }
 
     /**
