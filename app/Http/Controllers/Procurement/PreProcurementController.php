@@ -279,10 +279,43 @@ class PreProcurementController extends BaseController
                 return back()->withErrors(['message' => implode(' ', $validation['errors'])]);
             }
 
-            // Get procurement details
+            // Get procurement details - Try METADATA stream first, fallback to STATUS stream
             $procurement = app(\App\Repositories\ProcurementRepository::class)->findByProcurement($pr_number);
+
+            // Fallback to STATUS stream if METADATA stream fails (provides resilience)
             if (! $procurement) {
-                return back()->withErrors(['message' => 'Procurement not found']);
+                \Log::warning('Procurement not found in METADATA stream, attempting fallback to STATUS stream', [
+                    'pr_number' => $pr_number,
+                    'stage' => $stage->value,
+                    'user' => $user->email,
+                ]);
+
+                $statusData = $this->findProcurementById($pr_number);
+                if (! $statusData) {
+                    \Log::error('Procurement not found in both METADATA and STATUS streams', [
+                        'pr_number' => $pr_number,
+                        'stage' => $stage->value,
+                        'user' => $user->email,
+                    ]);
+
+                    return back()->withErrors(['message' => 'Procurement not found. Please ensure the procurement has been properly initiated.']);
+                }
+
+                // Create a temporary ProcurementData DTO from STATUS stream data
+                $procurement = new \App\DataTransferObjects\ProcurementData(
+                    prNumber: $pr_number,
+                    title: $statusData['procurement_title'] ?? 'N/A',
+                    status: \App\Enums\StatusEnums::tryFrom($statusData['current_status'] ?? '') ?? \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED,
+                    stage: \App\Enums\StageEnums::tryFrom($statusData['stage'] ?? '') ?? $stage,
+                    procurementMode: $this->getProcurementMode($pr_number) ?? \App\Enums\ProcurementModeEnums::PUBLIC_BIDDING,
+                    timestamp: $statusData['timestamp'] ?? now()->toIso8601String(),
+                    userAddress: $statusData['user_address'] ?? $userAddress,
+                );
+
+                \Log::info('Using STATUS stream fallback for procurement data', [
+                    'pr_number' => $pr_number,
+                    'title' => $procurement->title,
+                ]);
             }
 
             // Publish document workflow to blockchain

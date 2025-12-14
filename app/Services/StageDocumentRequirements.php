@@ -315,12 +315,16 @@ class StageDocumentRequirements
     /**
      * Stage 9: BAC Resolution Requirements
      *
+     * Primary document: BAC_RESOLUTION (general resolution)
+     * Supporting documents for award process per NGPA
+     *
      * @return array<DocumentTypeEnums>
      */
     private function getBacResolutionRequirements(): array
     {
         return [
-            DocumentTypeEnums::BAC_RESOLUTION_AWARD,
+            DocumentTypeEnums::BAC_RESOLUTION,  // Primary resolution document
+            DocumentTypeEnums::BAC_RESOLUTION_AWARD,  // Specific award recommendation
             DocumentTypeEnums::LCRB_NOTICE,
             DocumentTypeEnums::BID_EVALUATION_PACKAGE,
             DocumentTypeEnums::TRANSMITTAL_TO_HOPE,
