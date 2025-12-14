@@ -62,6 +62,8 @@
             border-radius: 8px;
             border: 1px solid #e2e8f0;
             overflow: hidden;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         /* Header */
@@ -102,6 +104,8 @@
         .content {
             padding: 28px 24px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .greeting {

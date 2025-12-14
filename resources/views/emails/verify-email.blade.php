@@ -74,7 +74,7 @@
         If you're having trouble clicking the "Verify Email Address" button, copy and paste the URL below into your web browser:
     </p>
 
-    <p class="small-text" style="word-break: break-all; color: #6b7280;">
+    <p class="small-text" style="word-break: break-all; overflow-wrap: break-word; color: #6b7280;">
         {{ $verificationUrl }}
     </p>
 @endsection

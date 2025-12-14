@@ -173,11 +173,7 @@ return [
     'features' => [
         // Features::registration(),
         // Features::resetPasswords(),
-        // Email verification is handled by custom controllers in routes/auth.php
-        // (EmailVerificationPromptController, VerifyEmailController, EmailVerificationNotificationController)
-        // The User model implements MustVerifyEmail for the functionality to work.
-        // We don't enable Fortify's emailVerification to avoid duplicate route name conflicts.
-        // Features::emailVerification(),
+        Features::emailVerification(),
         // Features::updateProfileInformation(),
         // Features::updatePasswords(),
         Features::twoFactorAuthentication([

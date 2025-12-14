@@ -49,6 +49,11 @@ class FortifyServiceProvider extends ServiceProvider
             );
         });
 
+        // Use custom email verification notification
+        $this->app->resolving(\Illuminate\Contracts\Auth\MustVerifyEmail::class, function ($user) {
+            $user->sendEmailVerificationNotification();
+        });
+
         // Register Fortify response bindings
         $this->registerResponseBindings();
 
@@ -76,6 +81,37 @@ class FortifyServiceProvider extends ServiceProvider
         $this->app->singleton(TwoFactorDisabledResponseContract::class, TwoFactorDisabledResponse::class);
         $this->app->singleton(RecoveryCodesGeneratedResponseContract::class, RecoveryCodesGeneratedResponse::class);
         $this->app->singleton(FailedPasswordConfirmationResponse::class, FailedPasswordConfirmationResponseImplementation::class);
+
+        // Bind VerifyEmailResponse for successful verification
+        $this->app->singleton(\Laravel\Fortify\Contracts\VerifyEmailResponse::class, function ($app) {
+            return new class implements \Laravel\Fortify\Contracts\VerifyEmailResponse
+            {
+                public function toResponse($request)
+                {
+                    $user = $request->user();
+                    $dashboardUrl = match (true) {
+                        $user->hasRole('admin') => '/admin/dashboard',
+                        $user->hasRole('bac_secretariat') => '/bac-secretariat/dashboard',
+                        $user->hasRole('bac_chairman') => '/bac-chairman/dashboard',
+                        $user->hasRole('hope') => '/hope/dashboard',
+                        default => '/dashboard',
+                    };
+
+                    return redirect()->intended($dashboardUrl.'?verified=1');
+                }
+            };
+        });
+
+        // Bind EmailVerificationNotificationSentResponse for resend verification email
+        $this->app->singleton(\Laravel\Fortify\Contracts\EmailVerificationNotificationSentResponse::class, function ($app) {
+            return new class implements \Laravel\Fortify\Contracts\EmailVerificationNotificationSentResponse
+            {
+                public function toResponse($request)
+                {
+                    return back()->with('status', 'verification-link-sent');
+                }
+            };
+        });
     }
 
     /**
@@ -88,6 +124,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+        Fortify::verifyEmailView(fn () => Inertia::render('auth/verify-email'));
 
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
