@@ -14,6 +14,7 @@ describe('User Model - Configuration', function () {
         $expectedFillable = [
             'name',
             'email',
+            'email_verified_at',
             'blockchain_address',
             'password',
             'account_locked',

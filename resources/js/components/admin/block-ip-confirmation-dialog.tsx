@@ -42,8 +42,7 @@ export default function BlockIpConfirmationDialog({ open, onOpenChange, ipAddres
                             <p className="text-muted-foreground text-sm">
                                 • You are about to block IP address{' '}
                                 <code className="bg-background rounded px-1.5 py-0.5 font-mono text-sm">{ipAddress}</code>
-                                <br />
-                                • This action will immediately prevent any access from this IP address
+                                <br />• This action will immediately prevent any access from this IP address
                             </p>
                         </div>
                     </div>

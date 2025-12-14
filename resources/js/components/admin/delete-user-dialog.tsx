@@ -44,7 +44,7 @@ export default function DeleteUserDialog({ open, onOpenChange, user, onConfirm }
 
                 <div className="space-y-3">
                     <div className="bg-destructive/10 border-destructive/20 rounded-lg border p-4">
-                        <p className="text-destructive text-sm font-medium mb-2">Warning: This will permanently:</p>
+                        <p className="text-destructive mb-2 text-sm font-medium">Warning: This will permanently:</p>
                         <ul className="text-muted-foreground space-y-1 text-sm">
                             <li>• Remove all user data from the system</li>
                             <li>• Revoke all access permissions and roles</li>

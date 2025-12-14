@@ -83,11 +83,16 @@ export default function EditUserDialog({ open, onOpenChange, formData, setFormDa
                                 Role
                                 <span className="text-destructive ml-1">*</span>
                             </FieldLabel>
-                            <RadioGroup value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })} required className="flex flex-wrap gap-4">
+                            <RadioGroup
+                                value={formData.role}
+                                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                                required
+                                className="flex flex-wrap gap-4"
+                            >
                                 {roles.map((role) => (
                                     <div key={role} className="flex items-center gap-2">
                                         <RadioGroupItem value={role} id={`edit_${role}`} />
-                                        <Label htmlFor={`edit_${role}`} className="font-normal cursor-pointer">
+                                        <Label htmlFor={`edit_${role}`} className="cursor-pointer font-normal">
                                             {getRoleDisplayName(role)}
                                         </Label>
                                     </div>

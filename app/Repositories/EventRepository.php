@@ -106,16 +106,17 @@ final readonly class EventRepository
                     try {
                         // Skip events that don't have required fields (e.g., test data)
                         $json = $item['data']['json'];
-                        if (!isset($json['procurement_title']) || !isset($json['pr_number'])) {
+                        if (! isset($json['procurement_title']) || ! isset($json['pr_number'])) {
                             continue;
                         }
-                        
+
                         $events[] = EventData::fromBlockchainArray($json);
                     } catch (\Exception $e) {
                         Log::warning('Skipping invalid event data', [
                             'error' => $e->getMessage(),
                             'pr_number' => $json['pr_number'] ?? 'N/A',
                         ]);
+
                         continue;
                     }
                 }

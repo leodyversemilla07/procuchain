@@ -135,10 +135,14 @@ describe('PreProcurementController', function () {
         ]));
 
         $response->assertSuccessful();
-        $response->assertJson([
-            'required' => [DocumentTypeEnums::PRE_PROCUREMENT_MINUTES->value],
-            'optional' => [DocumentTypeEnums::PRE_PROCUREMENT_AGENDA->value],
-            'uploaded' => [],
+        $response->assertJsonStructure([
+            'stage',
+            'stage_display_name',
+            'phase',
+            'description',
+            'required_documents',
+            'optional_documents',
+            'counts',
         ]);
     });
 

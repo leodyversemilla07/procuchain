@@ -79,21 +79,26 @@ export default function CreateUserDialog({ open, onOpenChange, formData, setForm
                         </div>
 
                         <Field>
-                                <FieldLabel htmlFor="role">
-                                    Role
-                                    <span className="text-destructive ml-1">*</span>
-                                </FieldLabel>
-                                <RadioGroup value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })} required className="flex flex-wrap gap-4">
-                                    {roles.map((role) => (
-                                        <div key={role} className="flex items-center gap-2">
-                                            <RadioGroupItem value={role} id={role} />
-                                            <Label htmlFor={role} className="font-normal cursor-pointer">
-                                                {getRoleDisplayName(role)}
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </RadioGroup>
-                            </Field>
+                            <FieldLabel htmlFor="role">
+                                Role
+                                <span className="text-destructive ml-1">*</span>
+                            </FieldLabel>
+                            <RadioGroup
+                                value={formData.role}
+                                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                                required
+                                className="flex flex-wrap gap-4"
+                            >
+                                {roles.map((role) => (
+                                    <div key={role} className="flex items-center gap-2">
+                                        <RadioGroupItem value={role} id={role} />
+                                        <Label htmlFor={role} className="cursor-pointer font-normal">
+                                            {getRoleDisplayName(role)}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </RadioGroup>
+                        </Field>
 
                         <div className="grid grid-cols-2 gap-4">
                             <Field>
@@ -128,7 +133,7 @@ export default function CreateUserDialog({ open, onOpenChange, formData, setForm
                                 />
                             </Field>
                         </div>
-                        </FieldGroup>
+                    </FieldGroup>
 
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
