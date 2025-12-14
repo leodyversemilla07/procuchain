@@ -76,7 +76,7 @@ jobs:
         run: composer dump-autoload
 
       - name: Run Tests
-        run: ./vendor/bin/pest --ci
+        run: php -d max_execution_time=0 -d memory_limit=1G ./vendor/bin/pest --ci
         env:
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
