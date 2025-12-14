@@ -102,8 +102,9 @@ class AcceptInvitationController extends Controller
             // Log the user in
             Auth::login($user);
 
-            // Redirect based on role
-            return redirect('/dashboard')->with('success', 'Welcome to Procuchain! Your account has been created successfully.');
+            // Redirect to role-specific dashboard
+            return redirect($this->redirectToDashboard($user))
+                ->with('success', 'Welcome to Procuchain! Your account has been created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 
