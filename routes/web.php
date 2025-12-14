@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AccountLockoutController;
+use App\Http\Controllers\Admin\UserInvitationController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Auth\AcceptInvitationController;
 use App\Http\Controllers\BacChairmanController;
 use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\BlockchainExplorerController;
@@ -40,6 +42,14 @@ Route::inertia('/team', 'team')->name('team');
 Route::inertia('/contact', 'contact')->name('contact');
 Route::inertia('/privacy', 'privacy')->name('privacy.policy');
 Route::inertia('/terms', 'terms')->name('terms.service');
+
+// User Invitation Acceptance (Public - Signed URL)
+Route::get('/invitation/{token}', [AcceptInvitationController::class, 'show'])
+    ->name('invitation.show')
+    ->middleware('signed');
+Route::post('/invitation/{token}/accept', [AcceptInvitationController::class, 'accept'])
+    ->name('invitation.accept')
+    ->middleware('signed');
 
 /*
 |--------------------------------------------------------------------------
@@ -293,6 +303,14 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
             Route::delete('/', [UserManagementController::class, 'bulkDelete'])->name('bulk-delete');
             Route::post('/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('reset-password');
+        });
+
+        // User Invitations
+        Route::prefix('invitations')->name('invitations.')->group(function () {
+            Route::get('/', [UserInvitationController::class, 'index'])->name('index');
+            Route::post('/', [UserInvitationController::class, 'store'])->name('store');
+            Route::post('/{invitation}/resend', [UserInvitationController::class, 'resend'])->name('resend');
+            Route::delete('/{invitation}', [UserInvitationController::class, 'destroy'])->name('revoke');
         });
 
         // Login Tracking & Monitoring
