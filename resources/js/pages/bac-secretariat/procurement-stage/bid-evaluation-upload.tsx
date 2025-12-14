@@ -22,8 +22,8 @@ import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
 import { handleFlashSuccess } from '@/utils/blockchain-toast';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
-import { Head, router } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, FileCheck } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { AlertCircle, ArrowRight, CheckCircle2, FileCheck } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -46,6 +46,7 @@ export default function BidEvaluationUpload({ procurement, workflowInfo, documen
     const [dragging, setDragging] = useState<Record<string, boolean>>({});
     const [isUploading, setIsUploading] = useState(false);
     const [isMarkingComplete, setIsMarkingComplete] = useState(false);
+    const [nextStageInfo, setNextStageInfo] = useState<{ name: string; url: string } | null>(null);
     const [confirmDialog, setConfirmDialog] = useState<{
         open: boolean;
         documentValue: string;
@@ -68,6 +69,16 @@ export default function BidEvaluationUpload({ procurement, workflowInfo, documen
             {},
             {
                 onSuccess: (page) => {
+                    const flash = page.props.flash as Record<string, unknown> | undefined;
+                    const response = flash?.success as { blockchain?: { next_stage_name?: string; next_stage_url?: string } } | undefined;
+
+                    const nextStageName = response?.blockchain?.next_stage_name;
+                    const nextStageUrl = response?.blockchain?.next_stage_url;
+
+                    if (nextStageName && nextStageUrl) {
+                        setNextStageInfo({ name: nextStageName, url: nextStageUrl });
+                    }
+
                     handleFlashSuccess(page as { props: Record<string, unknown> }, 'Stage marked as complete!');
                 },
                 onError: () => {
@@ -452,13 +463,32 @@ export default function BidEvaluationUpload({ procurement, workflowInfo, documen
 
                             <CardFooter className="flex flex-col gap-3 border-t pt-4">
                                 {isStageCompleted ? (
-                                    <div className="w-full rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
-                                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                                            <CheckCircle2 className="h-5 w-5" />
-                                            <div>
-                                                <p className="font-semibold">Stage Completed</p>
-                                                <p className="text-sm">This stage has been marked as complete.</p>
+                                    <div className="w-full space-y-3">
+                                        <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
+                                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                                                <CheckCircle2 className="h-5 w-5" />
+                                                <div>
+                                                    <p className="font-semibold">Stage Completed</p>
+                                                    <p className="text-sm">This stage has been marked as complete.</p>
+                                                </div>
                                             </div>
+                                        </div>
+                                        <div className="flex flex-col gap-2 sm:flex-row">
+                                            {nextStageInfo ? (
+                                                <Button asChild className="flex-1">
+                                                    <Link href={nextStageInfo.url}>
+                                                        <ArrowRight className="mr-2 h-4 w-4" />
+                                                        Continue to {nextStageInfo.name}
+                                                    </Link>
+                                                </Button>
+                                            ) : (
+                                                <Button asChild className="flex-1" variant="outline">
+                                                    <Link href={getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT).href!}>
+                                                        <ArrowRight className="mr-2 h-4 w-4" />
+                                                        View Procurements
+                                                    </Link>
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 ) : (

@@ -38,11 +38,13 @@ class ProcurementDataService
      * Fetch and process all procurement data
      *
      * @param  bool  $skipActions  Skip action generation for faster initial load
+     * @param  string|null  $filterByUserId  Filter procurements by creator user ID (for BAC Secretariat)
+     * @param  string|null  $filterByUserAddress  Filter by blockchain address for additional security
      * @return array<int, array<string, mixed>>
      */
-    public function fetchAndProcessProcurements(bool $skipActions = false): array
+    public function fetchAndProcessProcurements(bool $skipActions = false, ?string $filterByUserId = null, ?string $filterByUserAddress = null): array
     {
-        return $this->fetcher->fetchAllProcurements($skipActions);
+        return $this->fetcher->fetchAllProcurements($skipActions, $filterByUserId, $filterByUserAddress);
     }
 
     /**

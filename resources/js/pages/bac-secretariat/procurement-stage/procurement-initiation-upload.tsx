@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import React, { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -27,7 +27,7 @@ import { Progress } from '@/components/ui/progress';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 
-import { AlertCircle, CheckCircle2, FileText, Upload } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, FileText, Upload } from 'lucide-react';
 
 interface ProcurementInitiationShowProps {
     procurement?: {
@@ -72,6 +72,7 @@ export default function ProcurementInitiationShow({
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isMarkingComplete, setIsMarkingComplete] = useState(false);
+    const [nextStageInfo, setNextStageInfo] = useState<{ name: string; url: string } | null>(null);
     const [showUploadDialog, setShowUploadDialog] = useState(false);
     const [showCompleteDialog, setShowCompleteDialog] = useState(false);
 
@@ -226,13 +227,22 @@ export default function ProcurementInitiationShow({
             markStageComplete.url(procurement.pr_number),
             {},
             {
-                onSuccess: () => {
+                onSuccess: (page) => {
                     toast.success('Stage marked as complete!', {
                         id: completeToast,
                         description: 'The Procurement Initiation stage has been completed.',
                     });
                     setShowCompleteDialog(false);
                     setIsMarkingComplete(false);
+
+                    const flash = page.props.flash as Record<string, unknown> | undefined;
+                    const response = flash?.success as { blockchain?: { next_stage_name?: string; next_stage_url?: string } } | undefined;
+                    const nextStageName = response?.blockchain?.next_stage_name;
+                    const nextStageUrl = response?.blockchain?.next_stage_url;
+
+                    if (nextStageName && nextStageUrl) {
+                        setNextStageInfo({ name: nextStageName, url: nextStageUrl });
+                    }
                 },
                 onError: (errors) => {
                     const errorMessage = errors.message || Object.values(errors)[0] || 'Failed to mark stage as complete';
@@ -415,13 +425,32 @@ export default function ProcurementInitiationShow({
 
                             <CardFooter className="flex flex-col gap-3 border-t pt-4">
                                 {isStageFinished ? (
-                                    <div className="w-full rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
-                                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                                            <CheckCircle2 className="h-5 w-5" />
-                                            <div>
-                                                <p className="font-semibold">Stage Completed</p>
-                                                <p className="text-sm">This stage has been marked as complete.</p>
+                                    <div className="w-full space-y-3">
+                                        <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
+                                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                                                <CheckCircle2 className="h-5 w-5" />
+                                                <div>
+                                                    <p className="font-semibold">Stage Completed</p>
+                                                    <p className="text-sm">This stage has been marked as complete.</p>
+                                                </div>
                                             </div>
+                                        </div>
+                                        <div className="flex flex-col gap-2 sm:flex-row">
+                                            {nextStageInfo ? (
+                                                <Button asChild className="flex-1">
+                                                    <Link href={nextStageInfo.url}>
+                                                        <ArrowRight className="mr-2 h-4 w-4" />
+                                                        Continue to {nextStageInfo.name}
+                                                    </Link>
+                                                </Button>
+                                            ) : (
+                                                <Button asChild className="flex-1" variant="outline">
+                                                    <Link href={getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT).href!}>
+                                                        <ArrowRight className="mr-2 h-4 w-4" />
+                                                        View Procurements
+                                                    </Link>
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 ) : (

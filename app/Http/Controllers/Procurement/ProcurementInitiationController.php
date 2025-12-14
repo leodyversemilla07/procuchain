@@ -557,7 +557,19 @@ class ProcurementInitiationController extends BaseController
                 ]
             );
 
-            return back()->with('success', "Procurement Initiation completed! Moved to {$nextStage->getDisplayName()} stage.");
+            // Get the next stage action URL using ProcurementActionService
+            $actionService = app(\App\Services\Procurement\ProcurementActionService::class);
+            $actions = $actionService->getActions($pr_number);
+            $nextStageAction = collect($actions['workflow_actions'])->first();
+
+            return back()->with('success', [
+                'message' => "Procurement Initiation completed! Moved to {$nextStage->getDisplayName()} stage.",
+                'blockchain' => [
+                    'next_stage' => $nextStage->value,
+                    'next_stage_name' => $nextStage->getDisplayName(),
+                    'next_stage_url' => $nextStageAction['href'] ?? null,
+                ],
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to mark Procurement Initiation stage as complete', [
                 'pr_number' => $pr_number,

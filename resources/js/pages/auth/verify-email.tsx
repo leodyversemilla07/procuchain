@@ -1,8 +1,6 @@
-import { Form, Head } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { Head } from '@inertiajs/react';
 
 import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
 import AuthLayout from '@/layouts/auth-layout';
 import { logout } from '@/routes';
 
@@ -19,7 +17,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
 
             <div className="space-y-6 text-center">
                 <p className="text-sm text-neutral-600">Email verification is currently disabled.</p>
-                
+
                 <TextLink href={logout.url()} method="post" className="mx-auto block text-sm">
                     Log out
                 </TextLink>

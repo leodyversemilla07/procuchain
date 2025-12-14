@@ -61,15 +61,27 @@ final class ProcurementFetcherService
      * - Short cache TTL (5min) for balance between speed and freshness
      * - Optional action generation skipping for faster initial load
      *
+     * Security:
+     * - BAC Secretariat users can only see their own procurements
+     * - Filtering by both userId (creator) and blockchain_address (identity verification)
+     * - Admin, BAC Chairman, and HOPE can see all procurements
+     *
+     * @param  bool  $skipActions  Skip action generation for faster initial load
+     * @param  string|null  $filterByUserId  Filter procurements by creator user ID (for BAC Secretariat)
+     * @param  string|null  $filterByUserAddress  Filter by blockchain address for additional security
      * @return array<int, array<string, mixed>>
      */
-    public function fetchAllProcurements(bool $skipActions = false): array
+    public function fetchAllProcurements(bool $skipActions = false, ?string $filterByUserId = null, ?string $filterByUserAddress = null): array
     {
         // Cache for configurable TTL (default 2 minutes for balance between performance and freshness)
         $cacheTtl = (int) config('blockchain.cache.procurement_list_ttl', 120); // seconds
-        $cacheKey = $skipActions ? 'procurements:list:all:v4:no-actions' : 'procurements:list:all:v4:with-actions';
 
-        return Cache::remember($cacheKey, now()->addSeconds($cacheTtl), function () use ($skipActions) {
+        // Include userId and blockchain address in cache key for proper isolation
+        $userCacheKey = $filterByUserId ? ':user-'.$filterByUserId : ':all';
+        $addressCacheKey = $filterByUserAddress ? ':addr-'.substr(md5($filterByUserAddress), 0, 8) : '';
+        $cacheKey = 'procurements:list:v6'.$userCacheKey.$addressCacheKey.($skipActions ? ':no-actions' : ':with-actions');
+
+        return Cache::remember($cacheKey, now()->addSeconds($cacheTtl), function () use ($skipActions, $filterByUserId, $filterByUserAddress) {
             try {
                 Log::info('ProcurementFetcherService: Starting OPTIMIZED fetch from repositories');
 
@@ -101,6 +113,47 @@ final class ProcurementFetcherService
 
                 // Build procurement mode map (RESTORED - needed for frontend display)
                 $procurementModeMap = $this->buildProcurementModeMap($statusItems);
+
+                // SECURITY: Filter procurements by userId and/or blockchain address if specified (for BAC Secretariat isolation)
+                if ($filterByUserId !== null || $filterByUserAddress !== null) {
+                    // Get all procurement metadata for filtering
+                    $prNumbers = $statusItems->pluck('prNumber')->unique()->values()->all();
+                    $procurements = $this->procurementRepository->findManyByProcurement($prNumbers);
+
+                    // Filter to only include procurements created by the specified user
+                    $allowedPrNumbers = [];
+                    foreach ($procurements as $prNumber => $procurement) {
+                        if ($procurement) {
+                            // Check userId if filter is provided
+                            $userIdMatch = $filterByUserId === null || $procurement->userId === $filterByUserId;
+
+                            // Note: ProcurementData doesn't store blockchain address directly,
+                            // but we can still filter StatusData by userAddress below
+                            if ($userIdMatch) {
+                                $allowedPrNumbers[] = $prNumber;
+                            }
+                        }
+                    }
+
+                    // Filter status items to only allowed procurement numbers
+                    $statusItems = $statusItems->filter(function (StatusData $statusDto) use ($allowedPrNumbers, $filterByUserAddress) {
+                        // Check if procurement is in allowed list
+                        $prNumberAllowed = in_array($statusDto->prNumber, $allowedPrNumbers, true);
+
+                        // Additionally filter by blockchain address if specified
+                        // This ensures we only show procurements where the user has interacted via blockchain
+                        $addressAllowed = $filterByUserAddress === null || $statusDto->userAddress === $filterByUserAddress;
+
+                        return $prNumberAllowed && $addressAllowed;
+                    });
+
+                    Log::info('Filtered procurements by userId and/or blockchain address', [
+                        'filter_user_id' => $filterByUserId,
+                        'filter_user_address' => $filterByUserAddress ? substr($filterByUserAddress, 0, 10).'...' : null,
+                        'total_procurements' => count($prNumbers),
+                        'filtered_count' => $statusItems->count(),
+                    ]);
+                }
 
                 // Process status items to get latest status per procurement
                 $result = $statusItems
