@@ -9,13 +9,19 @@ use Illuminate\Support\Facades\URL;
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
+    // Disable throttling for tests
+    $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
+
     RateLimiter::clear('verification');
+    RateLimiter::clear('email-verification');
+    // Clear all rate limiters
+    RateLimiter::clear(config('fortify.limiters.login'));
 });
 
 test('email verification screen can be rendered', function () {
     $user = User::factory()->unverified()->create();
 
-    $response = $this->actingAs($user)->get('/verify-email');
+    $response = $this->actingAs($user)->get('/email/verify');
 
     $response->assertStatus(200);
 });
@@ -88,7 +94,8 @@ test('user cannot verify email with invalid signature', function () {
 
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
     $response->assertStatus(403);
-    $response->assertSee('Email Verification Link Invalid');
+    // Fortify returns standard Laravel 403 page
+    $response->assertSee('Invalid signature');
 });
 
 test('user cannot verify another users email', function () {
@@ -110,7 +117,8 @@ test('user cannot verify another users email', function () {
     // User 2's email should not be verified
     expect($user2->fresh()->hasVerifiedEmail())->toBeFalse();
     $response->assertStatus(403);
-    $response->assertSee('Email Verification Link Invalid');
+    // Fortify returns standard Laravel 403 page
+    $response->assertSee('This action is unauthorized');
 });
 
 test('guest cannot verify email and is redirected to login', function () {
@@ -146,6 +154,9 @@ test('already verified user is redirected to dashboard with verified flag', func
 });
 
 test('verification link expires after 60 minutes', function () {
+    RateLimiter::clear('verification');
+    RateLimiter::clear('email-verification');
+
     $user = User::factory()->unverified()->create();
 
     $this->actingAs($user);
@@ -161,5 +172,6 @@ test('verification link expires after 60 minutes', function () {
 
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
     $response->assertStatus(403);
-    $response->assertSee('Email Verification Link Invalid');
+    // Fortify returns standard Laravel 403 page
+    $response->assertSee('Invalid signature');
 });
