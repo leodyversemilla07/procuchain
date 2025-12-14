@@ -218,7 +218,7 @@ test('can accept valid invitation and create account', function () {
     ]);
 
     $response->assertSessionHasNoErrors();
-    $response->assertRedirect('/dashboard');
+    $response->assertRedirect('/bac-secretariat/dashboard'); // Role-specific dashboard redirect
 
     $this->assertDatabaseHas('users', [
         'email' => 'newuser@example.com',

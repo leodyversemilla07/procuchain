@@ -41,6 +41,10 @@ class UserInvitationMail extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'emails.user-invitation',
+            with: [
+                'invitation' => $this->invitation,
+                'acceptUrl' => $this->acceptUrl,
+            ]
         );
     }
 
