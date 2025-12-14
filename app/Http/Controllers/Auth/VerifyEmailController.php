@@ -21,18 +21,37 @@ class VerifyEmailController extends Controller
             return redirect()->route('login');
         }
 
+        // Log verification attempt for debugging
+        \Log::info('Email verification attempt', [
+            'logged_in_user_id' => $request->user()->id,
+            'url_user_id' => $request->route('id'),
+            'logged_in_email' => $request->user()->email,
+            'url_hash' => $request->route('hash'),
+            'expected_hash' => sha1($request->user()->email),
+            'expires' => $request->query('expires'),
+            'current_time' => now()->timestamp,
+            'url' => $request->fullUrl(),
+        ]);
+
         // Check if the logged-in user matches the user ID in the URL
         if ($request->user()->id != $request->route('id')) {
+            \Log::warning('Verification failed: User ID mismatch');
             return response()->view('errors.verification-failed', [], 403);
         }
 
         // Verify the signature manually to show custom error page
         if (! URL::hasValidSignature($request)) {
+            \Log::warning('Verification failed: Invalid signature or expired', [
+                'expires' => $request->query('expires'),
+                'current_time' => now()->timestamp,
+                'is_expired' => $request->query('expires') < now()->timestamp,
+            ]);
             return response()->view('errors.verification-failed', [], 403);
         }
 
         // Verify the hash matches the user's email
         if (! hash_equals((string) $request->route('hash'), sha1($request->user()->email))) {
+            \Log::warning('Verification failed: Hash mismatch');
             return response()->view('errors.verification-failed', [], 403);
         }
 
