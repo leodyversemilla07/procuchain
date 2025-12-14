@@ -26,33 +26,33 @@
                 <td class="details-label">Location</td>
                 <td class="details-value">{{ $formattedLocation }}</td>
             </tr>
-            @if(isset($location['city']))
-            <tr>
-                <td class="details-label">City</td>
-                <td class="details-value">{{ $location['city'] }}</td>
-            </tr>
+            @if (isset($location['city']))
+                <tr>
+                    <td class="details-label">City</td>
+                    <td class="details-value">{{ $location['city'] }}</td>
+                </tr>
             @endif
-            @if(isset($location['region']))
-            <tr>
-                <td class="details-label">Region</td>
-                <td class="details-value">{{ $location['region'] }}</td>
-            </tr>
+            @if (isset($location['region']))
+                <tr>
+                    <td class="details-label">Region</td>
+                    <td class="details-value">{{ $location['region'] }}</td>
+                </tr>
             @endif
-            @if(isset($location['country']))
-            <tr>
-                <td class="details-label">Country</td>
-                <td class="details-value">{{ $location['country'] }}</td>
-            </tr>
+            @if (isset($location['country']))
+                <tr>
+                    <td class="details-label">Country</td>
+                    <td class="details-value">{{ $location['country'] }}</td>
+                </tr>
             @endif
             <tr>
                 <td class="details-label">IP Address</td>
                 <td class="details-value">{{ $ipAddress }}</td>
             </tr>
-            @if($userAgent)
-            <tr>
-                <td class="details-label">Device</td>
-                <td class="details-value">{{ Str::limit($userAgent, 80) }}</td>
-            </tr>
+            @if ($userAgent)
+                <tr>
+                    <td class="details-label">Device</td>
+                    <td class="details-value">{{ Str::limit($userAgent, 80) }}</td>
+                </tr>
             @endif
         </table>
     </div>
@@ -60,7 +60,8 @@
     <div class="alert-box alert-success">
         <div class="alert-title">✅ Was This You?</div>
         <div class="alert-message">
-            If you recognize this login activity (e.g., you're traveling or using a VPN), you can safely ignore this email. This location will be remembered for future logins.
+            If you recognize this login activity (e.g., you're traveling or using a VPN), you can safely ignore this email.
+            This location will be remembered for future logins.
         </div>
     </div>
 
@@ -88,7 +89,8 @@
     <div class="info-box">
         <div class="info-box-title">💡 Security Tip</div>
         <ul>
-            <li>Enable two-factor authentication (2FA) for an extra layer of security. Even if someone obtains your password, they won't be able to access your account without the second factor.</li>
+            <li>Enable two-factor authentication (2FA) for an extra layer of security. Even if someone obtains your
+                password, they won't be able to access your account without the second factor.</li>
         </ul>
     </div>
 @endsection

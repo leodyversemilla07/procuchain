@@ -13,9 +13,11 @@
         <div class="alert-message">
             @if (($documentCount ?? 0) > 0)
                 @if (in_array($actionType ?? '', ['uploaded', 'submitted']))
-                    <strong>{{ $documentCount }} document(s)</strong> have been uploaded for the <strong>{{ $stageIdentifier }}</strong> stage.
+                    <strong>{{ $documentCount }} document(s)</strong> have been uploaded for the
+                    <strong>{{ $stageIdentifier }}</strong> stage.
                 @else
-                    The <strong>{{ $stageIdentifier }}</strong> stage {{ $formattedAction }} with <strong>{{ $documentCount }} document(s)</strong>.
+                    The <strong>{{ $stageIdentifier }}</strong> stage {{ $formattedAction }} with
+                    <strong>{{ $documentCount }} document(s)</strong>.
                 @endif
             @else
                 The <strong>{{ $stageIdentifier }}</strong> stage {{ $formattedAction }}.
@@ -24,12 +26,12 @@
     </div>
 
     @if (!empty($nextStage))
-    <div class="alert-box alert-success">
-        <div class="alert-title">➡️ Stage Transition</div>
-        <div class="alert-message">
-            The procurement process is now moving to the <strong>{{ $nextStage }}</strong> stage.
+        <div class="alert-box alert-success">
+            <div class="alert-title">➡️ Stage Transition</div>
+            <div class="alert-message">
+                The procurement process is now moving to the <strong>{{ $nextStage }}</strong> stage.
+            </div>
         </div>
-    </div>
     @endif
 
     <div class="details-section">
