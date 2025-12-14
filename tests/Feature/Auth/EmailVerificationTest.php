@@ -3,9 +3,14 @@
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+
+beforeEach(function () {
+    RateLimiter::clear('verification');
+});
 
 test('email verification screen can be rendered', function () {
     $user = User::factory()->unverified()->create();
@@ -66,4 +71,95 @@ test('email is not verified with invalid hash', function () {
     $this->actingAs($user)->get($verificationUrl);
 
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+});
+
+test('user cannot verify email with invalid signature', function () {
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user);
+
+    // Create URL with invalid signature
+    $verificationUrl = route('verification.verify', [
+        'id' => $user->id,
+        'hash' => sha1($user->email),
+    ]).'?expires='.now()->addMinutes(60)->timestamp.'&signature=invalid-signature';
+
+    $response = $this->get($verificationUrl);
+
+    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+    $response->assertStatus(403);
+    $response->assertSee('Email Verification Link Invalid');
+});
+
+test('user cannot verify another users email', function () {
+    $user1 = User::factory()->unverified()->create();
+    $user2 = User::factory()->unverified()->create();
+
+    // User 1 is logged in
+    $this->actingAs($user1);
+
+    // But trying to verify User 2's email
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        ['id' => $user2->id, 'hash' => sha1($user2->email)]
+    );
+
+    $response = $this->get($verificationUrl);
+
+    // User 2's email should not be verified
+    expect($user2->fresh()->hasVerifiedEmail())->toBeFalse();
+    $response->assertStatus(403);
+    $response->assertSee('Email Verification Link Invalid');
+});
+
+test('guest cannot verify email and is redirected to login', function () {
+    $user = User::factory()->unverified()->create();
+
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        ['id' => $user->id, 'hash' => sha1($user->email)]
+    );
+
+    $response = $this->get($verificationUrl);
+
+    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+    $response->assertRedirect(route('login'));
+});
+
+test('already verified user is redirected to dashboard with verified flag', function () {
+    $user = User::factory()->create(); // Already verified
+
+    $this->actingAs($user);
+
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        ['id' => $user->id, 'hash' => sha1($user->email)]
+    );
+
+    $response = $this->get($verificationUrl);
+
+    $response->assertRedirect();
+    $response->assertRedirectContains('verified=1');
+});
+
+test('verification link expires after 60 minutes', function () {
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user);
+
+    // Create expired verification URL
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->subMinutes(61), // Expired 1 minute ago
+        ['id' => $user->id, 'hash' => sha1($user->email)]
+    );
+
+    $response = $this->get($verificationUrl);
+
+    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+    $response->assertStatus(403);
+    $response->assertSee('Email Verification Link Invalid');
 });
