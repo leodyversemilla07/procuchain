@@ -14,12 +14,14 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\FailedPasswordConfirmationResponse;
+use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Contracts\PasswordConfirmedResponse;
 use Laravel\Fortify\Contracts\RecoveryCodesGeneratedResponse as RecoveryCodesGeneratedResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider as TwoFactorAuthenticationProviderContract;
 use Laravel\Fortify\Contracts\TwoFactorConfirmedResponse as TwoFactorConfirmedResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorDisabledResponse as TwoFactorDisabledResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorEnabledResponse as TwoFactorEnabledResponseContract;
+use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Http\Responses\FailedPasswordConfirmationResponse as FailedPasswordConfirmationResponseImplementation;
 use Laravel\Fortify\Http\Responses\RecoveryCodesGeneratedResponse;
@@ -76,6 +78,8 @@ class FortifyServiceProvider extends ServiceProvider
      */
     protected function registerResponseBindings(): void
     {
+        $this->app->singleton(LoginResponseContract::class, \App\Http\Responses\LoginResponse::class);
+        $this->app->singleton(TwoFactorLoginResponseContract::class, \App\Http\Responses\TwoFactorLoginResponse::class);
         $this->app->singleton(TwoFactorEnabledResponseContract::class, TwoFactorEnabledResponse::class);
         $this->app->singleton(TwoFactorConfirmedResponseContract::class, TwoFactorConfirmedResponse::class);
         $this->app->singleton(TwoFactorDisabledResponseContract::class, TwoFactorDisabledResponse::class);
