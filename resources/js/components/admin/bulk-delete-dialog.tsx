@@ -48,7 +48,7 @@ export default function BulkDeleteDialog({ open, onOpenChange, selectedUsers, on
 
                 <div className="space-y-3">
                     <div className="bg-destructive/10 border-destructive/20 rounded-lg border p-4">
-                        <p className="text-destructive text-sm font-medium mb-2">Warning: This will permanently:</p>
+                        <p className="text-destructive mb-2 text-sm font-medium">Warning: This will permanently:</p>
                         <ul className="text-muted-foreground space-y-1 text-sm">
                             <li>• Remove all selected user data from the system</li>
                             <li>• Revoke all access permissions and roles for these users</li>
@@ -58,8 +58,8 @@ export default function BulkDeleteDialog({ open, onOpenChange, selectedUsers, on
                     </div>
 
                     {/* List of users to be deleted */}
-                    <div className="bg-muted/50 border rounded-lg p-3 max-h-40 overflow-y-auto">
-                        <p className="text-sm font-medium mb-2">Users to be deleted:</p>
+                    <div className="bg-muted/50 max-h-40 overflow-y-auto rounded-lg border p-3">
+                        <p className="mb-2 text-sm font-medium">Users to be deleted:</p>
                         <div className="space-y-1">
                             {selectedUsers.map((user) => (
                                 <div key={user.id} className="text-sm">

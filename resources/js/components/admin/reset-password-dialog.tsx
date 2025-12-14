@@ -65,7 +65,9 @@ export default function ResetPasswordDialog({ open, onOpenChange, user }: ResetP
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Reset User Password</DialogTitle>
-                    <DialogDescription>Send password reset link to {user.name} ({user.email})</DialogDescription>
+                    <DialogDescription>
+                        Send password reset link to {user.name} ({user.email})
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
