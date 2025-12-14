@@ -83,7 +83,7 @@ class UserInvitationController extends Controller
             ]);
 
             // Generate acceptance URL
-            $acceptUrl = URL::signedRoute('invitation.show', ['token' => $invitation->token]);
+            $acceptUrl = route('invitation.show', ['token' => $invitation->token]);
 
             // Send invitation email
             Mail::to($invitation->email)->send(new UserInvitationMail($invitation, $acceptUrl));
@@ -125,7 +125,7 @@ class UserInvitationController extends Controller
             ]);
 
             // Generate acceptance URL
-            $acceptUrl = URL::signedRoute('invitation.show', ['token' => $invitation->token]);
+            $acceptUrl = route('invitation.show', ['token' => $invitation->token]);
 
             // Resend email
             Mail::to($invitation->email)->send(new UserInvitationMail($invitation, $acceptUrl));
