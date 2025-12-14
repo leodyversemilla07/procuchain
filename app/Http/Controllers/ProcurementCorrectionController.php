@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\DataTransferObjects\ProcurementData;
+use App\Enums\ProcurementModeEnums;
+use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
 use App\Http\Requests\Procurement\CorrectProcurementRequest;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementCorrectionRepository;
 use App\Repositories\ProcurementRepository;
+use App\Services\ProcurementDataService;
 use App\Services\Publishers\ProcurementCorrectionPublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +27,8 @@ class ProcurementCorrectionController extends Controller
         private readonly ProcurementRepository $procurementRepository,
         private readonly ProcurementCorrectionRepository $procurementCorrectionRepository,
         private readonly CorrectionRepository $correctionRepository,
-        private readonly DocumentRepository $documentRepository
+        private readonly DocumentRepository $documentRepository,
+        private readonly ProcurementDataService $procurementDataService
     ) {}
 
     /**
@@ -33,11 +39,41 @@ class ProcurementCorrectionController extends Controller
         $validated = $request->validated();
 
         try {
-            // Fetch the original procurement from blockchain
+            // Fetch the original procurement from blockchain - Try METADATA stream first
             $originalProcurement = $this->procurementRepository->findByProcurement($prNumber);
 
+            // Fallback to STATUS stream if METADATA stream fails (provides resilience)
             if (! $originalProcurement) {
-                return redirect()->back()->withErrors(['error' => 'Procurement not found in blockchain.']);
+                Log::warning('Procurement not found in METADATA stream for correction, attempting fallback to STATUS stream', [
+                    'pr_number' => $prNumber,
+                    'user' => auth()->user()->email,
+                ]);
+
+                $statusData = $this->procurementDataService->fetchStatusItems($prNumber)->first();
+                if (! $statusData) {
+                    Log::error('Procurement not found in both METADATA and STATUS streams for correction', [
+                        'pr_number' => $prNumber,
+                        'user' => auth()->user()->email,
+                    ]);
+
+                    return redirect()->back()->withErrors(['error' => 'Procurement not found in blockchain. Please ensure the procurement has been properly initiated.']);
+                }
+
+                // Create a temporary ProcurementData DTO from STATUS stream data
+                $originalProcurement = new ProcurementData(
+                    prNumber: $prNumber,
+                    title: $statusData['procurement_title'] ?? 'N/A',
+                    status: StatusEnums::tryFrom($statusData['current_status'] ?? '') ?? StatusEnums::PROCUREMENT_SUBMITTED,
+                    stage: StageEnums::tryFrom($statusData['stage'] ?? '') ?? StageEnums::PROCUREMENT_INITIATION,
+                    procurementMode: ProcurementModeEnums::PUBLIC_BIDDING, // Default for corrections
+                    timestamp: $statusData['timestamp'] ?? now()->toIso8601String(),
+                    userAddress: $statusData['user_address'] ?? auth()->user()->blockchain_address ?? '',
+                );
+
+                Log::info('Using STATUS stream fallback for procurement correction', [
+                    'pr_number' => $prNumber,
+                    'title' => $originalProcurement->title,
+                ]);
             }
 
             // Get user's blockchain address
