@@ -58,8 +58,37 @@ class ProcurementListController extends BaseController
             // Set a reasonable timeout for blockchain operations
             set_time_limit(28); // Give 2 seconds buffer
 
+            // SECURITY: Determine if we need to filter by user
+            // BAC Secretariat can only see their own procurements
+            // Admin, BAC Chairman, and HOPE can see all procurements
+            $user = auth()->user();
+            $filterByUserId = null;
+            $filterByUserAddress = null;
+
+            if ($user) {
+                $userRoles = $user->getRoleNames();
+                $primaryRole = $userRoles->first();
+
+                // Only BAC Secretariat users should see filtered list
+                if ($primaryRole === 'bac_secretariat') {
+                    $filterByUserId = (string) $user->id;
+                    $filterByUserAddress = $user->blockchain_address;
+
+                    Log::info('Filtering procurements for BAC Secretariat user', [
+                        'user_id' => $filterByUserId,
+                        'user_email' => $user->email,
+                        'blockchain_address' => $filterByUserAddress ? substr($filterByUserAddress, 0, 10).'...' : null,
+                    ]);
+                }
+            }
+
             // Fetch procurements with actions included (skipActions=false for instant button visibility)
-            $procurements = $this->procurementDataService->fetchAndProcessProcurements(skipActions: false);
+            // Pass both filterByUserId and filterByUserAddress for dual-layer BAC Secretariat isolation
+            $procurements = $this->procurementDataService->fetchAndProcessProcurements(
+                skipActions: false,
+                filterByUserId: $filterByUserId,
+                filterByUserAddress: $filterByUserAddress
+            );
 
             // Get filter parameters from request
             $search = request()->input('search', '');

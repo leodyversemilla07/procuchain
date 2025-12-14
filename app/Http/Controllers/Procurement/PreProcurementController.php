@@ -512,6 +512,11 @@ class PreProcurementController extends BaseController
                     ]);
                 }
 
+                // Get the next stage action URL using ProcurementActionService
+                $actionService = app(\App\Services\Procurement\ProcurementActionService::class);
+                $actions = $actionService->getActions($pr_number);
+                $nextStageAction = collect($actions['workflow_actions'])->first();
+
                 return back()->with('success', [
                     'message' => "{$stage->getDisplayName()} marked as complete successfully! Proceeding to {$nextStage->getDisplayName()} stage.",
                     'blockchain' => [
@@ -519,6 +524,8 @@ class PreProcurementController extends BaseController
                         'event_txid' => $eventResult['event_txid'] ?? null,
                         'stage' => $stage->value,
                         'next_stage' => $nextStage->value,
+                        'next_stage_name' => $nextStage->getDisplayName(),
+                        'next_stage_url' => $nextStageAction['href'] ?? null,
                         'completion_status' => $completionStatus->value,
                     ],
                 ]);
