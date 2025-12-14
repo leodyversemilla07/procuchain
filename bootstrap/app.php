@@ -70,4 +70,11 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         Integration::handles($exceptions);
+
+        // Handle email verification signature errors with custom page
+        $exceptions->render(function (\Illuminate\Routing\Exceptions\InvalidSignatureException $e, $request) {
+            if ($request->is('verify-email/*')) {
+                return response()->view('errors.verification-failed', [], 403);
+            }
+        });
     })->create();
