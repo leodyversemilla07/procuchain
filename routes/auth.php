@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Using custom authentication with LoginLoggerService and account locking.
-| Email verification is handled by Laravel Fortify.
 |
 */
 

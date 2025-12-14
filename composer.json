@@ -17,7 +17,7 @@
         "laravel/fortify": "^1.31",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "laravel/wayfinder": "^0.1.12",
+        "laravel/wayfinder": "^0.1",
         "pragmarx/google2fa-laravel": "^2.3",
         "predis/predis": "^3.2",
         "resend/resend-laravel": "1.1",
@@ -57,8 +57,7 @@
     "scripts": {
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi",
-            "@php artisan wayfinder:generate --ansi || true"
+            "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
