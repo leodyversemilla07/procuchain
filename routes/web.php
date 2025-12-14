@@ -43,13 +43,11 @@ Route::inertia('/contact', 'contact')->name('contact');
 Route::inertia('/privacy', 'privacy')->name('privacy.policy');
 Route::inertia('/terms', 'terms')->name('terms.service');
 
-// User Invitation Acceptance (Public - Signed URL)
+// User Invitation Acceptance (Public)
 Route::get('/invitation/{token}', [AcceptInvitationController::class, 'show'])
-    ->name('invitation.show')
-    ->middleware('signed');
+    ->name('invitation.show');
 Route::post('/invitation/{token}/accept', [AcceptInvitationController::class, 'accept'])
-    ->name('invitation.accept')
-    ->middleware('signed');
+    ->name('invitation.accept');
 
 /*
 |--------------------------------------------------------------------------
