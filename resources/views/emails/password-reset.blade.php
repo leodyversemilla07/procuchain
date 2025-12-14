@@ -11,7 +11,8 @@
     <div class="alert-box alert-info">
         <div class="alert-title">🔐 Password Reset Request</div>
         <div class="alert-message">
-            We received a request to reset your password for your ProcuChain account. If you made this request, click the button below to reset your password.
+            We received a request to reset your password for your ProcuChain account. If you made this request, click the
+            button below to reset your password.
         </div>
     </div>
 
@@ -54,7 +55,8 @@
     </div>
 
     <p class="message-text">
-        If you didn't request a password reset, please ignore this email. Your password will remain unchanged and your account will stay secure.
+        If you didn't request a password reset, please ignore this email. Your password will remain unchanged and your
+        account will stay secure.
     </p>
 
     <p class="message-text">

@@ -11,7 +11,8 @@
     <div class="alert-box alert-danger">
         <div class="alert-title">🔒 Your Account Has Been Locked</div>
         <div class="alert-message">
-            Your account has been temporarily locked for security reasons. This is a protective measure to keep your account safe.
+            Your account has been temporarily locked for security reasons. This is a protective measure to keep your account
+            safe.
         </div>
     </div>
 
@@ -30,11 +31,11 @@
                 <td class="details-label">Locked At</td>
                 <td class="details-value">{{ now()->format('F j, Y \a\t g:i A') }}</td>
             </tr>
-            @if($unlockTime !== 'Unknown')
-            <tr>
-                <td class="details-label">Auto-Unlock</td>
-                <td class="details-value"><span class="badge badge-warning">{{ $unlockTime }}</span></td>
-            </tr>
+            @if ($unlockTime !== 'Unknown')
+                <tr>
+                    <td class="details-label">Auto-Unlock</td>
+                    <td class="details-value"><span class="badge badge-warning">{{ $unlockTime }}</span></td>
+                </tr>
             @endif
         </table>
     </div>
@@ -51,7 +52,8 @@
     </div>
 
     <p class="message-text">
-        If you believe this lock was placed in error or need immediate access to your account, please contact our support team.
+        If you believe this lock was placed in error or need immediate access to your account, please contact our support
+        team.
     </p>
 
     <div class="cta-container">

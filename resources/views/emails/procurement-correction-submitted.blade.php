@@ -11,7 +11,8 @@
     <div class="alert-box alert-warning">
         <div class="alert-title">📝 Procurement Correction Submitted</div>
         <div class="alert-message">
-            <strong>{{ $correctedBy }}</strong> has submitted a correction for procurement <strong>{{ $procurementTitle }}</strong>.
+            <strong>{{ $correctedBy }}</strong> has submitted a correction for procurement
+            <strong>{{ $procurementTitle }}</strong>.
             <br><br>
             <span class="badge badge-warning">{{ count($changedFields) }} field(s) corrected</span>
         </div>
@@ -25,7 +26,7 @@
     <div class="info-box">
         <div class="info-box-title">Fields Modified</div>
         <ul>
-            @foreach($changedFields as $field)
+            @foreach ($changedFields as $field)
                 <li>{{ ucwords(str_replace('_', ' ', $field)) }}</li>
             @endforeach
         </ul>
