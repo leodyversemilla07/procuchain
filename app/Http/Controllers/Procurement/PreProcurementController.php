@@ -187,49 +187,7 @@ class PreProcurementController extends BaseController
                 );
             }
 
-            // Refresh uploaded documents after new uploads
-            $uploadedDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
-            $uploadedDocumentEnums = array_filter(
-                array_map(fn ($docType) => DocumentTypeEnums::tryFrom($docType), $uploadedDocuments),
-                fn ($enum) => $enum !== null
-            );
-
-            // Check if stage is ready for completion
-            $completionCheck = $this->validationService->validateStageCompletion($stage, $uploadedDocumentEnums);
-
-            if ($completionCheck['can_complete']) {
-                // Determine next stage
-                $nextStage = $this->getNextStage($stage);
-
-                // Publish stage transition
-                if ($nextStage) {
-                    $procurement = $this->findProcurementById($pr_number);
-                    // Get the appropriate status for entering the next stage
-                    $nextStageStatus = $this->getInitialStatusForStage($pr_number, $nextStage);
-
-                    $this->statusPublisher->publishTransition(
-                        $pr_number,
-                        $procurement['title'] ?? 'Unknown',
-                        $stage,
-                        $nextStage,
-                        $nextStageStatus,
-                        $userAddress
-                    );
-
-                    $this->eventPublisher->publishStageTransition(
-                        $pr_number,
-                        $procurementTitle,
-                        $stage->value,
-                        $nextStage->value,
-                        $userAddress
-                    );
-                }
-
-                return redirect()->route('bac-secretariat.procurements.index')
-                    ->with('success', 'Documents uploaded and stage completed successfully. Publishing to blockchain in the background.');
-            }
-
-            return redirect()->back()->with('success', 'Documents uploaded successfully. Please upload remaining required documents.');
+            return redirect()->back()->with('success', 'Documents uploaded successfully.');
         } catch (\Exception $e) {
             \Log::error('Failed to upload pre-procurement documents', [
                 'pr_number' => $pr_number,
@@ -444,24 +402,27 @@ class PreProcurementController extends BaseController
             $user = auth()->user();
             $userAddress = $user->blockchain_address ?? $user->email;
 
-            // 1. Determine completion status based on stage
+            // 1. Get current status before completion
+            $previousStatus = StatusEnums::tryFrom($procurement->status);
+
+            // 2. Determine completion status based on stage
             $completionStatus = $this->getCompletionStatusForStage($stage);
 
-            // 2. Publish status update to blockchain
+            // 3. Publish status update to blockchain
             $statusResult = $this->statusPublisher->publish(
                 prNumber: $pr_number,
                 procurementTitle: $procurement->title,
                 stage: $stage,
                 currentStatus: $completionStatus,
                 userAddress: $userAddress,
-                previousStatus: null,
+                previousStatus: $previousStatus,
                 metadata: [
                     'documents_uploaded' => count($uploadedDocuments),
                     'marked_complete_at' => now()->toIso8601String(),
                 ]
             );
 
-            // 3. Publish completion event to blockchain
+            // 4. Publish completion event to blockchain
             $eventResult = $this->eventPublisher->publish(
                 prNumber: $pr_number,
                 procurementTitle: $procurement->title,
@@ -479,7 +440,7 @@ class PreProcurementController extends BaseController
                 ]
             );
 
-            // 4. Get the mode-aware next stage for automatic transition
+            // 5. Get the mode-aware next stage for automatic transition
             $nextStage = $this->getNextStageForProcurement($pr_number, $stage);
 
             if ($nextStage) {
@@ -493,7 +454,8 @@ class PreProcurementController extends BaseController
                     fromStage: $stage,
                     toStage: $nextStage,
                     currentStatus: $nextStageStatus,
-                    userAddress: $userAddress
+                    userAddress: $userAddress,
+                    previousStatus: $completionStatus
                 );
 
                 $this->eventPublisher->publishStageTransition(
