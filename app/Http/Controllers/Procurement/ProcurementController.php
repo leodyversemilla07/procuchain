@@ -197,7 +197,7 @@ class ProcurementController extends BaseController
                 if ($nextStage) {
                     $procurement = $this->findProcurementById($pr_number);
                     // Get the appropriate status for entering the next stage
-                    $nextStageStatus = $this->getInitialStatusForStage($nextStage);
+                    $nextStageStatus = $this->getInitialStatusForStage($pr_number, $nextStage);
 
                     $this->statusPublisher->publishTransition(
                         $pr_number,
