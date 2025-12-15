@@ -87,8 +87,10 @@ return [
     'retry_delay' => env('MULTICHAIN_RETRY_DELAY', 1),
 
     // Web-request specific caps to avoid hitting PHP's 60s max execution time
-    'web_connection_timeout' => env('MULTICHAIN_WEB_CONNECTION_TIMEOUT', 3),
-    'web_max_retries' => env('MULTICHAIN_WEB_MAX_RETRIES', 1),
+    // Increased from 3s to 15s to handle large procurement list fetches
+    'web_connection_timeout' => env('MULTICHAIN_WEB_CONNECTION_TIMEOUT', 15),
+    // Increased from 1 to 2 retries to handle temporary network issues
+    'web_max_retries' => env('MULTICHAIN_WEB_MAX_RETRIES', 2),
 
     /*
     |--------------------------------------------------------------------------
