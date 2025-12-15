@@ -47,7 +47,54 @@ trait HasProcurementSupport
     }
 
     /**
-     * Apply common middleware for procurement controllers
+     * Get the initial/default status when entering a new stage.
+     * This is MODE-AWARE and considers the procurement mode to return the correct status.
+     * This is used when transitioning FROM one stage TO another.
+     *
+     * @param  string  $prNumber  The procurement reference number (to determine mode)
+     * @param  StageEnums  $stage  The stage being entered
+     * @return \App\Enums\StatusEnums The appropriate status for entering that stage
+     */
+    protected function getInitialStatusForStage(string $prNumber, StageEnums $stage): \App\Enums\StatusEnums
+    {
+        // Get procurement mode for mode-aware status determination
+        $mode = $this->getProcurementMode($prNumber);
+
+        // Validate that stage exists in the procurement's mode workflow
+        if ($mode && ! $stage->existsInModeWorkflow($mode)) {
+            // Stage doesn't exist in this mode's workflow - return generic submitted status
+            return \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED;
+        }
+
+        return match ($stage) {
+            // Pre-Procurement Phase
+            StageEnums::PROCUREMENT_INITIATION => \App\Enums\StatusEnums::PROCUREMENT_INITIATED,
+            StageEnums::PRE_PROCUREMENT_CONFERENCE => \App\Enums\StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD,
+            StageEnums::BIDDING_DOCUMENTS => \App\Enums\StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
+            StageEnums::REQUEST_FOR_QUOTATION => \App\Enums\StatusEnums::QUOTATIONS_RECEIVED,
+
+            // Procurement/Bidding Phase
+            StageEnums::PRE_BID_CONFERENCE => \App\Enums\StatusEnums::PRE_BID_CONFERENCE_HELD,
+            StageEnums::SUPPLEMENTAL_BID_BULLETIN => \App\Enums\StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
+            StageEnums::BID_OPENING => \App\Enums\StatusEnums::BIDS_OPENED,
+            StageEnums::ABSTRACT_OF_QUOTATIONS => \App\Enums\StatusEnums::ABSTRACT_PREPARED,
+            StageEnums::BID_EVALUATION => \App\Enums\StatusEnums::BIDS_EVALUATED,
+            StageEnums::POST_QUALIFICATION => \App\Enums\StatusEnums::POST_QUALIFICATION_VERIFIED,
+            StageEnums::BAC_RESOLUTION => \App\Enums\StatusEnums::RESOLUTION_RECORDED,
+
+            // Post-Procurement Phase
+            StageEnums::NOTICE_OF_AWARD => \App\Enums\StatusEnums::AWARDED,
+            StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO => \App\Enums\StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
+            StageEnums::NOTICE_TO_PROCEED => \App\Enums\StatusEnums::NTP_RECORDED,
+            StageEnums::MONITORING => \App\Enums\StatusEnums::MONITORING_COMPLETED,
+            StageEnums::COMPLETION => \App\Enums\StatusEnums::COMPLETION_DOCUMENTS_UPLOADED,
+            StageEnums::COMPLETED => \App\Enums\StatusEnums::COMPLETED,
+
+            default => \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED,
+        };
+    }
+
+    /**     * Apply common middleware for procurement controllers
      */
     protected function applyProcurementMiddleware(): void
     {
@@ -384,13 +431,16 @@ trait HasProcurementSupport
         $nextStage = $this->getNextStageForProcurement($prNumber, $stage);
 
         if ($nextStage) {
+            // Get the appropriate status for entering the next stage
+            $nextStageStatus = $this->getInitialStatusForStage($prNumber, $nextStage);
+
             // Publish stage transition to blockchain
             $this->statusPublisher->publishTransition(
                 prNumber: $prNumber,
                 procurementTitle: $procurement->title,
                 fromStage: $stage,
                 toStage: $nextStage,
-                currentStatus: \App\Enums\StatusEnums::STAGE_SKIPPED,
+                currentStatus: $nextStageStatus,
                 userAddress: $userAddress
             );
 
