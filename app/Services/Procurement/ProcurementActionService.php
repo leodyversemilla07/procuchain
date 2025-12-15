@@ -201,7 +201,10 @@ final class ProcurementActionService
             [
                 'condition' => [
                     'stage' => StageEnums::PROCUREMENT_INITIATION,
-                    'status' => StatusEnums::PROCUREMENT_INITIATED,
+                    'status' => [
+                        StatusEnums::PROCUREMENT_INITIATED,
+                        StatusEnums::PROCUREMENT_SUBMITTED, // SVP mode entry status
+                    ],
                 ],
                 'type' => 'upload',
                 'label' => 'Upload Procurement Initiation Documents',
@@ -581,7 +584,10 @@ final class ProcurementActionService
             [
                 'condition' => [
                     'stage' => StageEnums::REQUEST_FOR_QUOTATION,
-                    'status' => StatusEnums::PROCUREMENT_SUBMITTED,
+                    'status' => [
+                        StatusEnums::PROCUREMENT_SUBMITTED,
+                        StatusEnums::QUOTATIONS_RECEIVED, // Entry status from stage transition
+                    ],
                 ],
                 'type' => 'upload',
                 'label' => 'Upload Request for Quotation',
