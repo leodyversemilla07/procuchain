@@ -51,3 +51,11 @@
     ExpiresByType image/x-icon "access plus 1 year"
 </IfModule>
 
+# PHP Upload Settings (for Apache with mod_php)
+<IfModule mod_php.c>
+    php_value upload_max_filesize 50M
+    php_value post_max_size 52M
+    php_value memory_limit 256M
+    php_value max_execution_time 120
+    php_value max_input_time 120
+</IfModule>
