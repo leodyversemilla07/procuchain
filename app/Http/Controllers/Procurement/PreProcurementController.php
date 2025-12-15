@@ -200,12 +200,15 @@ class PreProcurementController extends BaseController
                 // Publish stage transition
                 if ($nextStage) {
                     $procurement = $this->findProcurementById($pr_number);
+                    // Get the appropriate status for entering the next stage
+                    $nextStageStatus = $this->getInitialStatusForStage($nextStage);
+
                     $this->statusPublisher->publishTransition(
                         $pr_number,
                         $procurement['title'] ?? 'Unknown',
                         $stage,
                         $nextStage,
-                        \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED,
+                        $nextStageStatus,
                         $userAddress
                     );
 
@@ -472,13 +475,16 @@ class PreProcurementController extends BaseController
             $nextStage = $this->getNextStageForProcurement($pr_number, $stage);
 
             if ($nextStage) {
+                // Get the appropriate status for entering the next stage
+                $nextStageStatus = $this->getInitialStatusForStage($pr_number, $nextStage);
+
                 // Publish stage transition to blockchain
                 $this->statusPublisher->publishTransition(
                     prNumber: $pr_number,
                     procurementTitle: $procurement->title,
                     fromStage: $stage,
                     toStage: $nextStage,
-                    currentStatus: $completionStatus,
+                    currentStatus: $nextStageStatus,
                     userAddress: $userAddress
                 );
 

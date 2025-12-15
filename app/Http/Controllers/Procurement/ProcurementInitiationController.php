@@ -9,7 +9,6 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
-use App\Enums\StatusEnums;
 use App\Http\Controllers\Procurement\Concerns\HasProcurementSupport;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
@@ -521,14 +520,15 @@ class ProcurementInitiationController extends BaseController
                 return back()->with('error', 'Unable to determine next stage for this procurement mode.');
             }
 
-            $completionStatus = StatusEnums::PROCUREMENT_SUBMITTED;
+            // Get the appropriate status for entering the next stage
+            $nextStageStatus = $this->getInitialStatusForStage($nextStage);
 
             // 1. Publish status update to blockchain with stage transition
             $this->statusPublisher->publish(
                 prNumber: $pr_number,
                 procurementTitle: $procurement->title,
                 stage: $nextStage,
-                currentStatus: $completionStatus,
+                currentStatus: $nextStageStatus,
                 userAddress: $userAddress,
                 previousStatus: null,
                 metadata: [
@@ -547,13 +547,13 @@ class ProcurementInitiationController extends BaseController
                 eventType: 'stage_completed',
                 category: 'stage_transition',
                 severity: 'info',
-                details: "Stage {$stage->getDisplayName()} completed. Transitioned to {$nextStage->getDisplayName()} with status {$completionStatus->getDisplayName()}.",
+                details: "Stage {$stage->getDisplayName()} completed. Transitioned to {$nextStage->getDisplayName()} with status {$nextStageStatus->getDisplayName()}.",
                 documentCount: count($uploadedDocuments),
                 userAddress: $userAddress,
                 metadata: [
                     'previous_stage' => $stage->value,
                     'new_stage' => $nextStage->value,
-                    'completion_status' => $completionStatus->value,
+                    'completion_status' => $nextStageStatus->value,
                 ]
             );
 
