@@ -209,6 +209,8 @@ final class ProcurementActionService
                 'variant' => 'blue',
                 'href_template' => '/bac-secretariat/procurement-initiation/{pr_number}',
             ],
+
+            // ===== Competitive Bidding (CB) Mode Flow =====
             // Pre-Procurement Conference Decision (after Procurement Initiation is complete)
             // For Competitive Bidding mode - shows dialog to decide whether to hold conference
             [
@@ -234,6 +236,19 @@ final class ProcurementActionService
                 'icon' => 'upload',
                 'variant' => 'green',
                 'href_template' => '/bac-secretariat/pre-procurement/{pr_number}/pre_procurement_conference',
+            ],
+
+            // Pre-Procurement Conference Complete -> Proceed to Bidding Documents
+            [
+                'condition' => [
+                    'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE,
+                    'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to Bidding Documents',
+                'icon' => 'arrow-right',
+                'variant' => 'amber',
+                'href_template' => '/bac-secretariat/pre-procurement/{pr_number}/bidding_documents',
             ],
 
             // Bidding Documents
@@ -343,6 +358,19 @@ final class ProcurementActionService
                 'href_template' => '/bac-secretariat/procurement/{pr_number}/bid_opening',
             ],
 
+            // Bid Opening Complete -> Proceed to Bid Evaluation
+            [
+                'condition' => [
+                    'stage' => StageEnums::BID_OPENING,
+                    'status' => StatusEnums::BIDS_OPENED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to Bid Evaluation',
+                'icon' => 'arrow-right',
+                'variant' => 'indigo',
+                'href_template' => '/bac-secretariat/procurement/{pr_number}/bid_evaluation',
+            ],
+
             // Bid Evaluation
             [
                 'condition' => [
@@ -356,6 +384,19 @@ final class ProcurementActionService
                 'href_template' => '/bac-secretariat/procurement/{pr_number}/bid_evaluation',
             ],
 
+            // Bid Evaluation Complete -> Proceed to Post-Qualification
+            [
+                'condition' => [
+                    'stage' => StageEnums::BID_EVALUATION,
+                    'status' => StatusEnums::BIDS_EVALUATED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to Post-Qualification',
+                'icon' => 'arrow-right',
+                'variant' => 'green',
+                'href_template' => '/bac-secretariat/procurement/{pr_number}/post_qualification',
+            ],
+
             // Post-Qualification
             [
                 'condition' => [
@@ -367,6 +408,19 @@ final class ProcurementActionService
                 'icon' => 'upload',
                 'variant' => 'green',
                 'href_template' => '/bac-secretariat/procurement/{pr_number}/post_qualification',
+            ],
+
+            // Post-Qualification Complete -> Proceed to BAC Resolution
+            [
+                'condition' => [
+                    'stage' => StageEnums::POST_QUALIFICATION,
+                    'status' => StatusEnums::POST_QUALIFICATION_VERIFIED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to BAC Resolution',
+                'icon' => 'arrow-right',
+                'variant' => 'purple',
+                'href_template' => '/bac-secretariat/procurement/{pr_number}/bac_resolution',
             ],
 
             // BAC Resolution (supports both Competitive Bidding and SVP modes)
@@ -385,17 +439,50 @@ final class ProcurementActionService
                 'href_template' => '/bac-secretariat/procurement/{pr_number}/bac_resolution',
             ],
 
+            // BAC Resolution Complete -> Proceed to Notice of Award
+            // This action triggers auto-stage transition when user navigates to NOA page
+            [
+                'condition' => [
+                    'stage' => StageEnums::BAC_RESOLUTION,
+                    'status' => StatusEnums::RESOLUTION_RECORDED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to Notice of Award',
+                'icon' => 'arrow-right',
+                'variant' => 'amber',
+                'href_template' => '/bac-secretariat/post-procurement/{pr_number}/notice_of_award',
+            ],
+
             // Notice of Award
+            // Supports multiple entry statuses for different procurement modes:
+            // - RESOLUTION_RECORDED: Standard flow after BAC Resolution
+            // - PROCUREMENT_SUBMITTED: Direct Contracting (DC) may skip intermediate stages
             [
                 'condition' => [
                     'stage' => StageEnums::NOTICE_OF_AWARD,
-                    'status' => StatusEnums::RESOLUTION_RECORDED,
+                    'status' => [
+                        StatusEnums::RESOLUTION_RECORDED,
+                        StatusEnums::PROCUREMENT_SUBMITTED,  // DC mode edge case
+                    ],
                 ],
                 'type' => 'upload',
                 'label' => 'Upload Notice of Award',
                 'icon' => 'upload',
                 'variant' => 'amber',
                 'href_template' => '/bac-secretariat/post-procurement/{pr_number}/notice_of_award',
+            ],
+
+            // Notice of Award Complete -> Proceed to Performance Bond
+            [
+                'condition' => [
+                    'stage' => StageEnums::NOTICE_OF_AWARD,
+                    'status' => StatusEnums::AWARDED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to Performance Bond & Contract',
+                'icon' => 'arrow-right',
+                'variant' => 'cyan',
+                'href_template' => '/bac-secretariat/post-procurement/{pr_number}/performance_bond_contract_and_po',
             ],
 
             // Performance Bond, Contract, and PO
@@ -411,6 +498,19 @@ final class ProcurementActionService
                 'href_template' => '/bac-secretariat/post-procurement/{pr_number}/performance_bond_contract_and_po',
             ],
 
+            // Performance Bond Complete -> Proceed to NTP
+            [
+                'condition' => [
+                    'stage' => StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO,
+                    'status' => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to Notice to Proceed',
+                'icon' => 'arrow-right',
+                'variant' => 'green',
+                'href_template' => '/bac-secretariat/post-procurement/{pr_number}/notice_to_proceed',
+            ],
+
             // Notice to Proceed
             [
                 'condition' => [
@@ -424,6 +524,19 @@ final class ProcurementActionService
                 'href_template' => '/bac-secretariat/post-procurement/{pr_number}/notice_to_proceed',
             ],
 
+            // NTP Complete -> Proceed to Monitoring
+            [
+                'condition' => [
+                    'stage' => StageEnums::NOTICE_TO_PROCEED,
+                    'status' => StatusEnums::NTP_RECORDED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to Monitoring',
+                'icon' => 'arrow-right',
+                'variant' => 'teal',
+                'href_template' => '/bac-secretariat/post-procurement/{pr_number}/monitoring',
+            ],
+
             // Monitoring
             [
                 'condition' => [
@@ -435,6 +548,19 @@ final class ProcurementActionService
                 'icon' => 'upload',
                 'variant' => 'teal',
                 'href_template' => '/bac-secretariat/post-procurement/{pr_number}/monitoring',
+            ],
+
+            // Monitoring Complete -> Proceed to Completion
+            [
+                'condition' => [
+                    'stage' => StageEnums::MONITORING,
+                    'status' => StatusEnums::MONITORING_COMPLETED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to Completion',
+                'icon' => 'arrow-right',
+                'variant' => 'emerald',
+                'href_template' => '/bac-secretariat/post-procurement/{pr_number}/completion',
             ],
 
             // Completion
@@ -464,6 +590,19 @@ final class ProcurementActionService
                 'href_template' => '/bac-secretariat/pre-procurement/{pr_number}/request_for_quotation',
             ],
 
+            // RFQ Complete -> Proceed to Abstract of Quotations
+            [
+                'condition' => [
+                    'stage' => StageEnums::REQUEST_FOR_QUOTATION,
+                    'status' => StatusEnums::QUOTATIONS_RECEIVED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to Abstract of Quotations',
+                'icon' => 'arrow-right',
+                'variant' => 'indigo',
+                'href_template' => '/bac-secretariat/procurement/{pr_number}/abstract_of_quotations',
+            ],
+
             // Abstract of Quotations
             [
                 'condition' => [
@@ -475,6 +614,19 @@ final class ProcurementActionService
                 'icon' => 'upload',
                 'variant' => 'indigo',
                 'href_template' => '/bac-secretariat/procurement/{pr_number}/abstract_of_quotations',
+            ],
+
+            // Abstract of Quotations Complete -> Proceed to BAC Resolution
+            [
+                'condition' => [
+                    'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS,
+                    'status' => StatusEnums::ABSTRACT_PREPARED,
+                ],
+                'type' => 'proceed',
+                'label' => 'Proceed to BAC Resolution',
+                'icon' => 'arrow-right',
+                'variant' => 'purple',
+                'href_template' => '/bac-secretariat/procurement/{pr_number}/bac_resolution',
             ],
         ];
     }

@@ -78,22 +78,54 @@ class DashboardCacheKeys
 
     /**
      * Clear all dashboard caches for a specific role
+     *
+     * Important: Dashboard uses two cache stores:
+     * - 'database' store for large data (procurements, activities, distribution)
+     * - 'default' store for small data (stats)
      */
     public static function clearAll(string $role): void
     {
-        $keys = [
+        // Keys stored in database cache (large data via rememberLarge)
+        $databaseKeys = [
             self::procurements($role),
-            self::stats($role),
             self::recentActivities($role),
-            self::totalDocuments($role),
             self::procurementDistribution($role),
             self::priorityActions($role),
-            self::priorityActionsCount($role),
             self::userActivityAnalytics($role),
         ];
 
-        foreach ($keys as $key) {
+        // Keys stored in default cache (small data via rememberSmall)
+        $defaultKeys = [
+            self::stats($role),
+            self::totalDocuments($role),
+            self::priorityActionsCount($role),
+        ];
+
+        // Clear database cache keys
+        foreach ($databaseKeys as $key) {
+            Cache::store('database')->forget($key);
+        }
+
+        // Clear default cache keys
+        foreach ($defaultKeys as $key) {
             Cache::forget($key);
+        }
+
+        // Also clear user-specific BAC Secretariat cache
+        if ($role === 'bac_secretariat') {
+            // Clear all user-specific procurement caches
+            // These are stored in database cache as well
+            try {
+                $cacheTable = config('cache.stores.database.table', 'cache');
+                $prefix = self::procurements($role).':user:';
+                \Illuminate\Support\Facades\DB::table($cacheTable)
+                    ->where('key', 'like', $prefix.'%')
+                    ->delete();
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to clear user-specific caches', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
@@ -147,6 +179,13 @@ class DashboardCacheKeys
             } else {
                 // File/Database cache - manually clear known patterns
                 // This is a fallback for non-Redis environments
+                // Clear from both database and default cache stores
+                Cache::store('database')->forget('procurements:list:all');
+                Cache::store('database')->forget('procurements:list:v6:all');
+                Cache::store('database')->forget('procurements:list:v6:all:with-actions');
+                Cache::store('database')->forget('procurements:list:v6:all:no-actions');
+
+                // Also try default store
                 Cache::forget('procurements:list:all');
                 Cache::forget('procurements:list:v6:all');
                 Cache::forget('procurements:list:v6:all:with-actions');
