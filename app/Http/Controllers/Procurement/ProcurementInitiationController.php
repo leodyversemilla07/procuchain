@@ -318,11 +318,15 @@ class ProcurementInitiationController extends BaseController
                 fn ($enum) => $enum !== null
             );
 
+            // Get procurement mode for mode-aware validation
+            $mode = $this->getProcurementMode($pr_number);
+
             // Validate the single document upload (prevents duplicates)
-            $validation = $this->validationService->validateUpload(
+            $validation = $this->modeAwareValidationService->validateUpload(
                 $stage,
                 $documentType,
-                $existingDocumentEnums
+                $existingDocumentEnums,
+                $mode
             );
 
             if (! empty($validation['errors'])) {
@@ -461,10 +465,14 @@ class ProcurementInitiationController extends BaseController
             fn ($enum) => $enum !== null
         );
 
-        $validation = $this->validationService->validateUpload(
+        // Get procurement mode for mode-aware validation
+        $mode = $this->getProcurementMode($pr_number);
+
+        $validation = $this->modeAwareValidationService->validateUpload(
             $stage,
             $documentType,
-            $existingDocumentEnums
+            $existingDocumentEnums,
+            $mode
         );
 
         return response()->json([
