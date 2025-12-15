@@ -521,7 +521,7 @@ class ProcurementInitiationController extends BaseController
             }
 
             // Get the appropriate status for entering the next stage
-            $nextStageStatus = $this->getInitialStatusForStage($nextStage);
+            $nextStageStatus = $this->getInitialStatusForStage($pr_number, $nextStage);
 
             // 1. Publish status update to blockchain with stage transition
             $this->statusPublisher->publish(
