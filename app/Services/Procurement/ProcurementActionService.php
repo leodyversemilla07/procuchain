@@ -580,14 +580,11 @@ final class ProcurementActionService
             ],
 
             // ===== SVP/Alternative Mode Actions =====
-            // Request for Quotation
+            // Request for Quotation - Initial upload action
             [
                 'condition' => [
                     'stage' => StageEnums::REQUEST_FOR_QUOTATION,
-                    'status' => [
-                        StatusEnums::PROCUREMENT_SUBMITTED,
-                        StatusEnums::QUOTATIONS_RECEIVED, // Entry status from stage transition
-                    ],
+                    'status' => StatusEnums::PROCUREMENT_SUBMITTED, // Entry status when transitioning to RFQ stage
                 ],
                 'type' => 'upload',
                 'label' => 'Upload Request for Quotation',
