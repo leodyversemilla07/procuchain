@@ -86,17 +86,27 @@ final class ProcurementFetcherService
      */
     private function fetchProcurementsOptimized(bool $skipActions, ?string $filterByUserId, ?string $filterByUserAddress): array
     {
+        // Define blockchain health cache key
+        $blockchainHealthKey = 'blockchain:health:procurement_fetch';
+
         try {
             Log::info('ProcurementFetcherService: Starting OPTIMIZED fetch from blockchain');
 
             // Set a reasonable timeout for the entire operation
             set_time_limit(22); // Leave 8 seconds buffer before PHP's 30s limit
 
-            // OPTIMIZED: Use minimal limits for fastest queries
-            $statusLimit = 10; // Triggers fallback method (single query)
-            $documentLimit = 30; // Minimal documents needed for count
+            // Fetch enough status items to cover all procurements
+            // Using lower limit since StatusRepository now uses optimized single-query method
+            // The repository will internally fetch enough items to find all unique procurements
+            //
+            // SCALING: If blockchain grows significantly, consider:
+            // 1. Moving these to config('procurement.list_limits.status') and config('procurement.list_limits.documents')
+            // 2. Adding pagination to the procurement list UI
+            // 3. Implementing background sync to database for faster queries
+            $statusLimit = 50; // Repository will fetch 10x this (~500 items) to find all unique PRs
+            $documentLimit = 100; // Increased to ensure accurate document counts as data grows
 
-            Log::info('Fetching with optimized limits', [
+            Log::info('Fetching with limits', [
                 'status_limit' => $statusLimit,
                 'document_limit' => $documentLimit,
             ]);

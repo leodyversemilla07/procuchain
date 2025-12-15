@@ -87,14 +87,14 @@ class RoleAndPermissionSeeder extends Seeder
         // Create roles and assign permissions
 
         // Admin role - has all permissions except procurement creation
-        $adminRole = Role::create(['name' => 'admin']);
-        $adminRole->givePermissionTo(
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $adminRole->syncPermissions(
             Permission::where('name', '!=', 'create procurement')->get()
         );
 
         // BAC Secretariat role - manages procurement workflow
-        $bacSecretariatRole = Role::create(['name' => 'bac_secretariat']);
-        $bacSecretariatRole->givePermissionTo([
+        $bacSecretariatRole = Role::firstOrCreate(['name' => 'bac_secretariat']);
+        $bacSecretariatRole->syncPermissions([
             'view bac-secretariat dashboard',
             'create procurement',
             'view procurement',
@@ -124,8 +124,8 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // BAC Chairman role - approves and oversees
-        $bacChairmanRole = Role::create(['name' => 'bac_chairman']);
-        $bacChairmanRole->givePermissionTo([
+        $bacChairmanRole = Role::firstOrCreate(['name' => 'bac_chairman']);
+        $bacChairmanRole->syncPermissions([
             'view bac-chairman dashboard',
             'view procurement',
             'view documents',
@@ -138,8 +138,8 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
 
         // HOPE role - oversight and monitoring
-        $hopeRole = Role::create(['name' => 'hope']);
-        $hopeRole->givePermissionTo([
+        $hopeRole = Role::firstOrCreate(['name' => 'hope']);
+        $hopeRole->syncPermissions([
             'view hope dashboard',
             'view procurement',
             'view documents',
