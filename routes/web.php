@@ -143,8 +143,6 @@ Route::middleware(['auth'])->group(function () {
                 ->name('procurement.initiation.validate-upload');
 
             // Pre-Procurement Phase (Stages 1-3)
-            Route::post('/pre-procurement/{pr_number}/{stage}/upload', [PreProcurementController::class, 'uploadDocuments'])
-                ->name('procurement.pre-procurement.upload');
             Route::post('/pre-procurement/{pr_number}/{stage}/upload-document', [PreProcurementController::class, 'uploadSingleDocument'])
                 ->name('procurement.pre-procurement.upload-document');
             Route::post('/pre-procurement/{pr_number}/{stage}/complete', [PreProcurementController::class, 'markStageComplete'])
@@ -159,8 +157,6 @@ Route::middleware(['auth'])->group(function () {
                 ->name('publish-supplemental-bid-bulletin-decision');
 
             // Procurement Phase (Stages 4-9)
-            Route::post('/procurement/{pr_number}/{stage}/upload', [ProcurementController::class, 'uploadDocuments'])
-                ->name('procurement.bidding.upload');
             Route::post('/procurement/{pr_number}/{stage}/upload-document', [ProcurementController::class, 'uploadSingleDocument'])
                 ->name('procurement.bidding.upload-document');
             Route::post('/procurement/{pr_number}/{stage}/complete', [ProcurementController::class, 'markStageComplete'])
@@ -171,8 +167,6 @@ Route::middleware(['auth'])->group(function () {
                 ->name('procurement.bidding.repeat');
 
             // Post-Procurement Phase (Stages 10-15)
-            Route::post('/post-procurement/{pr_number}/{stage}/upload', [PostProcurementController::class, 'uploadDocuments'])
-                ->name('procurement.post-procurement.upload');
             Route::post('/post-procurement/{pr_number}/{stage}/upload-document', [PostProcurementController::class, 'uploadSingleDocument'])
                 ->name('procurement.post-procurement.upload-document');
             Route::post('/post-procurement/{pr_number}/{stage}/complete', [PostProcurementController::class, 'markStageComplete'])
@@ -182,9 +176,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/post-procurement/{pr_number}/delivery-details', [PostProcurementController::class, 'updateDeliveryDetails'])
                 ->name('procurement.post-procurement.delivery-details');
 
-            // Legacy route support (for backward compatibility)
-            Route::post('/upload-pre-procurement-conference-documents', [PreProcurementController::class, 'uploadDocuments'])
-                ->name('upload-pre-procurement-conference-documents');
+            // Legacy route deprecation notices
             Route::post('/upload-bidding-documents', function () {
                 abort(410, 'This route is deprecated. Please use the new phase-based routes.');
             })->name('upload-bidding-documents');
