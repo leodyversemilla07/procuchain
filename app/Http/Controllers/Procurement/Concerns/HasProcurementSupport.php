@@ -77,7 +77,7 @@ trait HasProcurementSupport
             StageEnums::PRE_BID_CONFERENCE => \App\Enums\StatusEnums::PRE_BID_CONFERENCE_HELD,
             StageEnums::SUPPLEMENTAL_BID_BULLETIN => \App\Enums\StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
             StageEnums::BID_OPENING => \App\Enums\StatusEnums::BIDS_OPENED,
-            StageEnums::ABSTRACT_OF_QUOTATIONS => \App\Enums\StatusEnums::ABSTRACT_PREPARED,
+            StageEnums::ABSTRACT_OF_QUOTATIONS => \App\Enums\StatusEnums::QUOTATIONS_RECEIVED,  // Fixed: Should start at quotations received, not abstract prepared
             StageEnums::BID_EVALUATION => \App\Enums\StatusEnums::BIDS_EVALUATED,
             StageEnums::POST_QUALIFICATION => \App\Enums\StatusEnums::POST_QUALIFICATION_VERIFIED,
             StageEnums::BAC_RESOLUTION => \App\Enums\StatusEnums::RESOLUTION_RECORDED,
