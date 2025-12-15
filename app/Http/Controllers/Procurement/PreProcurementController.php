@@ -121,6 +121,9 @@ class PreProcurementController extends BaseController
             fn ($enum) => $enum !== null
         );
 
+        // Get procurement mode for mode-aware validation
+        $mode = $this->getProcurementMode($pr_number);
+
         try {
             // Validate each uploaded document
             foreach ($uploadedFiles as $fieldName => $file) {
@@ -128,10 +131,11 @@ class PreProcurementController extends BaseController
                 $documentTypeKey = str_replace('_file', '', $fieldName);
                 $documentType = $this->resolveDocumentType($documentTypeKey, $stage);
 
-                $validation = $this->validationService->validateUpload(
+                $validation = $this->modeAwareValidationService->validateUpload(
                     $stage,
                     $documentType,
-                    $existingDocumentEnums
+                    $existingDocumentEnums,
+                    $mode
                 );
 
                 if (! empty($validation['errors'])) {
@@ -271,11 +275,15 @@ class PreProcurementController extends BaseController
                 fn ($enum) => $enum !== null
             );
 
-            // Validate the single document upload
-            $validation = $this->validationService->validateUpload(
+            // Get procurement mode for mode-aware validation
+            $mode = $this->getProcurementMode($pr_number);
+
+            // Validate the single document upload with mode awareness
+            $validation = $this->modeAwareValidationService->validateUpload(
                 $stage,
                 $documentType,
-                $existingDocumentEnums
+                $existingDocumentEnums,
+                $mode
             );
 
             if (! empty($validation['errors'])) {
@@ -636,10 +644,14 @@ class PreProcurementController extends BaseController
             ], 400);
         }
 
-        $validation = $this->validationService->validateUpload(
+        // Get procurement mode for mode-aware validation
+        $mode = $this->getProcurementMode($pr_number);
+
+        $validation = $this->modeAwareValidationService->validateUpload(
             $stage,
             $documentType,
-            []
+            [],
+            $mode
         );
 
         return response()->json([
