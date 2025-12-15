@@ -110,6 +110,60 @@ class DashboardCacheKeys
     }
 
     /**
+     * Clear all procurement-related caches (dashboard + user-specific)
+     * Called when procurement data changes (status updates, document uploads, etc.)
+     */
+    public static function clearAllProcurementCaches(): void
+    {
+        // Clear all dashboard caches for all roles
+        self::clearAllRoles();
+
+        // Clear user-specific BAC Secretariat caches
+        // Pattern: dashboard:bac_secretariat:procurements_by_key:user:{id}
+        try {
+            $cacheDriver = Cache::getStore();
+            if (method_exists($cacheDriver, 'getRedis')) {
+                // Redis cache - use pattern matching
+                $redis = $cacheDriver->getRedis();
+                $prefix = config('cache.prefix', 'laravel_cache');
+                $patterns = [
+                    $prefix.':dashboard:*',                          // All dashboard caches
+                    $prefix.':procurements:list:*',                  // All procurement list caches
+                ];
+
+                foreach ($patterns as $pattern) {
+                    $keys = $redis->keys($pattern);
+                    if (! empty($keys)) {
+                        foreach ($keys as $key) {
+                            $cleanKey = str_replace($prefix.':', '', $key);
+                            Cache::forget($cleanKey);
+                        }
+                        \Illuminate\Support\Facades\Log::info('Cleared procurement caches', [
+                            'pattern' => $pattern,
+                            'count' => count($keys),
+                        ]);
+                    }
+                }
+            } else {
+                // File/Database cache - manually clear known patterns
+                // This is a fallback for non-Redis environments
+                Cache::forget('procurements:list:all');
+                Cache::forget('procurements:list:v6:all');
+                Cache::forget('procurements:list:v6:all:with-actions');
+                Cache::forget('procurements:list:v6:all:no-actions');
+
+                \Illuminate\Support\Facades\Log::info('Cleared procurement caches (non-Redis)', [
+                    'method' => 'manual',
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to clear some procurement caches', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Get all cache keys for a specific role
      *
      * @return array<string>

@@ -109,8 +109,8 @@ class DocumentPublisher implements DocumentPublisherInterface
 
             $txid = $this->documents->create($document);
 
-            // Invalidate procurement list cache after document upload
-            Cache::forget('procurements:list:all');
+            // Invalidate ALL procurement list caches after document update
+            $this->clearProcurementListCache();
 
             Log::info('DocumentPublisher: Success', [
                 'pr_number' => $prNumber,
@@ -249,5 +249,16 @@ class DocumentPublisher implements DocumentPublisherInterface
 
             throw $e;
         }
+    }
+
+    /**
+     * Clear all procurement list caches
+     * Delegates to centralized cache management
+     */
+    private function clearProcurementListCache(): void
+    {
+        \App\Services\DashboardCacheKeys::clearAllProcurementCaches();
+
+        Log::info('Cleared all procurement caches after document upload');
     }
 }

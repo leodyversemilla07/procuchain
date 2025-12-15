@@ -13,10 +13,13 @@ test('login screen can be rendered', function () {
 test('users can authenticate using the login screen', function (string $role, string $expectedRoute) {
     $user = createUserWithRole($role);
 
-    $response = $this->post(route('login.store'), [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
+    $response = $this
+        ->withSession(['_token' => 'test-token'])
+        ->post(route('login.store'), [
+            '_token' => 'test-token',
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
 
     $this->assertAuthenticated();
     $response->assertRedirect(route($expectedRoute, absolute: false));

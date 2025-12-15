@@ -9,8 +9,8 @@ use App\DataTransferObjects\StatusData;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Repositories\StatusRepository;
+use App\Services\DashboardCacheKeys;
 use Exception;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -71,8 +71,9 @@ class StatusPublisher implements StatusPublisherInterface
 
             $txid = $this->statuses->create($status);
 
-            // Invalidate procurement list cache after status update
-            Cache::forget('procurements:list:all');
+            // Invalidate ALL procurement list caches after status update
+            // This includes versioned caches (v6), user-specific caches, and legacy caches
+            $this->clearProcurementListCache();
 
             Log::info('StatusPublisher: Success', [
                 'pr_number' => $prNumber,
@@ -176,5 +177,16 @@ class StatusPublisher implements StatusPublisherInterface
                 'completion_timestamp' => now()->toIso8601String(),
             ]),
         );
+    }
+
+    /**
+     * Clear all procurement-related caches
+     * Called after status updates to show fresh data
+     */
+    private function clearProcurementListCache(): void
+    {
+        DashboardCacheKeys::clearAllProcurementCaches();
+
+        Log::info('Cleared all procurement caches after status update');
     }
 }

@@ -58,36 +58,15 @@ class ProcurementListController extends BaseController
             // Set a reasonable timeout for blockchain operations
             set_time_limit(28); // Give 2 seconds buffer
 
-            // SECURITY: Determine if we need to filter by user
-            // BAC Secretariat can only see their own procurements
-            // Admin, BAC Chairman, and HOPE can see all procurements
+            // SECURITY: BAC Secretariat users only see their own procurements
+            // Other roles (Admin, BAC Chairman, HOPE) see all procurements
             $user = auth()->user();
-            $filterByUserId = null;
-            $filterByUserAddress = null;
+            $isBacSecretariat = $user->hasRole('bac_secretariat');
 
-            if ($user) {
-                $userRoles = $user->getRoleNames();
-                $primaryRole = $userRoles->first();
-
-                // Only BAC Secretariat users should see filtered list
-                if ($primaryRole === 'bac_secretariat') {
-                    $filterByUserId = (string) $user->id;
-                    $filterByUserAddress = $user->blockchain_address;
-
-                    Log::info('Filtering procurements for BAC Secretariat user', [
-                        'user_id' => $filterByUserId,
-                        'user_email' => $user->email,
-                        'blockchain_address' => $filterByUserAddress ? substr($filterByUserAddress, 0, 10).'...' : null,
-                    ]);
-                }
-            }
-
-            // Fetch procurements with actions included (skipActions=false for instant button visibility)
-            // Pass both filterByUserId and filterByUserAddress for dual-layer BAC Secretariat isolation
             $procurements = $this->procurementDataService->fetchAndProcessProcurements(
                 skipActions: false,
-                filterByUserId: $filterByUserId,
-                filterByUserAddress: $filterByUserAddress
+                filterByUserId: $isBacSecretariat ? (string) $user->id : null,
+                filterByUserAddress: $isBacSecretariat ? $user->blockchain_address : null
             );
 
             // Get filter parameters from request

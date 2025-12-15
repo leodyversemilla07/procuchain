@@ -99,13 +99,25 @@ abstract class BaseDashboardController extends Controller
     /**
      * Get cached procurements for the role
      * Uses database cache since this is typically large blockchain data
+     *
+     * NOTE: Procurement visibility by role:
+     * - Admin, BAC Chairman, HOPE: See all procurements
+     * - BAC Secretariat: See only their own procurements (created or interacted with)
      */
     protected function getCachedProcurements(string $roleName, string $roleLabel)
     {
+        $user = auth()->user();
+        $isBacSecretariat = $roleName === 'bac_secretariat';
+
+        // Use user-specific cache key for BAC Secretariat to isolate their data
+        $cacheKey = $isBacSecretariat
+            ? DashboardCacheKeys::procurements($roleName).':user:'.$user->id
+            : DashboardCacheKeys::procurements($roleName);
+
         return $this->cacheStrategy->rememberLarge(
-            DashboardCacheKeys::procurements($roleName),
+            $cacheKey,
             now()->addMinutes(config('dashboard.cache_ttl.procurements')),
-            function () use ($roleLabel) {
+            function () use ($roleLabel, $isBacSecretariat, $user) {
                 Log::info("Cache miss: Recalculating procurementsByKey for {$roleLabel} Dashboard");
                 $states = $this->multichain->liststreamitems(
                     StreamEnums::STATUS->value,
@@ -119,9 +131,74 @@ abstract class BaseDashboardController extends Controller
                     throw new Exception("Failed to retrieve status stream items for {$roleLabel} procurementsByKey cache");
                 }
 
-                return $this->dashboardService->getProcurementsByKey($states);
+                $procurementsByKey = $this->dashboardService->getProcurementsByKey($states);
+
+                // Filter for BAC Secretariat users
+                if ($isBacSecretariat) {
+                    $procurementsByKey = $this->filterProcurementsByUser(
+                        $procurementsByKey,
+                        (string) $user->id,
+                        $user->blockchain_address
+                    );
+                }
+
+                return $procurementsByKey;
             }
         );
+    }
+
+    /**
+     * Filter procurements collection by user ID and/or blockchain address
+     * Used for BAC Secretariat isolation
+     */
+    protected function filterProcurementsByUser($procurementsByKey, ?string $filterByUserId, ?string $filterByUserAddress)
+    {
+        if ($procurementsByKey === null || $procurementsByKey->isEmpty()) {
+            return $procurementsByKey;
+        }
+
+        // Get procurement IDs from the collection
+        $prNumbers = $procurementsByKey->keys()->all();
+
+        // Fetch procurement metadata to check ownership
+        $procurements = app(\App\Repositories\ProcurementRepository::class)->findManyByProcurement($prNumbers);
+
+        // Filter to only include procurements owned by the user
+        $allowedPrNumbers = [];
+        foreach ($procurements as $prNumber => $procurement) {
+            if ($procurement) {
+                // Check userId if filter is provided
+                $userIdMatch = $filterByUserId === null || $procurement->userId === $filterByUserId;
+
+                if ($userIdMatch) {
+                    $allowedPrNumbers[] = $prNumber;
+                }
+            }
+        }
+
+        // Filter the collection to only allowed procurement numbers
+        $filtered = $procurementsByKey->filter(function ($items, $prNumber) use ($allowedPrNumbers, $filterByUserAddress) {
+            // Check if procurement is in allowed list (user created it)
+            $prNumberAllowed = in_array($prNumber, $allowedPrNumbers, true);
+
+            // Check if user has interacted with this procurement via blockchain
+            $addressAllowed = $filterByUserAddress === null || collect($items)->contains(function ($item) use ($filterByUserAddress) {
+                return isset($item['user_address']) && $item['user_address'] === $filterByUserAddress;
+            });
+
+            // Use OR logic: Show if user created it OR interacted with it
+            // This allows BAC Secretariat to see procurements they're working on
+            return $prNumberAllowed || $addressAllowed;
+        });
+
+        Log::info('Filtered dashboard procurements by userId and/or blockchain address', [
+            'filter_user_id' => $filterByUserId,
+            'filter_user_address' => $filterByUserAddress ? substr($filterByUserAddress, 0, 10).'...' : null,
+            'total_procurements' => count($prNumbers),
+            'filtered_count' => $filtered->count(),
+        ]);
+
+        return $filtered;
     }
 
     /**
