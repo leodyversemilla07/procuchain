@@ -31,6 +31,9 @@ class ProcurementRepository implements ProcurementRepositoryInterface
             ['json' => $procurement->toBlockchainArray()]
         );
 
+        // Clear caches to show new procurement
+        \App\Services\DashboardCacheKeys::clearAllProcurementCaches();
+
         Log::info('Procurement published to blockchain', [
             'pr_number' => $procurement->prNumber,
             'stream' => StreamEnums::METADATA->value,
@@ -157,6 +160,9 @@ class ProcurementRepository implements ProcurementRepositoryInterface
             $procurement->prNumber,
             ['json' => $procurement->toBlockchainArray()]
         );
+
+        // Clear caches to show updated procurement data
+        \App\Services\DashboardCacheKeys::clearAllProcurementCaches();
 
         Log::info('Procurement metadata updated on blockchain', [
             'pr_number' => $procurement->prNumber,

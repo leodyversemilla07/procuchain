@@ -144,6 +144,36 @@ final readonly class StatusRepository
     public function getLatestByProcurement(int $limit = 100): array
     {
         try {
+            // EMERGENCY FALLBACK: If limit is very small, use simple all() method
+            // to avoid N+1 blockchain queries
+            if ($limit <= 10) {
+                Log::info('Using fallback all() method due to small limit', ['limit' => $limit]);
+                $allStatuses = $this->all($limit * 5, 0); // Fetch more items to account for multiple versions
+
+                // Group by PR and get latest for each
+                $grouped = [];
+                foreach ($allStatuses as $status) {
+                    $prNumber = $status->prNumber;
+                    if (! isset($grouped[$prNumber])) {
+                        $grouped[$prNumber] = $status;
+                    } else {
+                        // Keep the latest by timestamp
+                        $currentTime = $grouped[$prNumber]->timestamp instanceof \Carbon\Carbon
+                            ? $grouped[$prNumber]->timestamp->timestamp
+                            : strtotime($grouped[$prNumber]->timestamp);
+                        $newTime = $status->timestamp instanceof \Carbon\Carbon
+                            ? $status->timestamp->timestamp
+                            : strtotime($status->timestamp);
+
+                        if ($newTime > $currentTime) {
+                            $grouped[$prNumber] = $status;
+                        }
+                    }
+                }
+
+                return array_slice(array_values($grouped), 0, $limit);
+            }
+
             // Get stream keys (PR numbers) first - this is very fast
             // OPTIMIZATION: local-ordering=true for faster query execution
             $keys = $this->multichain->liststreamkeys(
