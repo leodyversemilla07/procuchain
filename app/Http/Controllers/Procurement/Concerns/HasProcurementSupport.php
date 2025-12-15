@@ -71,16 +71,18 @@ trait HasProcurementSupport
             StageEnums::PROCUREMENT_INITIATION => \App\Enums\StatusEnums::PROCUREMENT_INITIATED,
             StageEnums::PRE_PROCUREMENT_CONFERENCE => \App\Enums\StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD,
             StageEnums::BIDDING_DOCUMENTS => \App\Enums\StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
-            StageEnums::REQUEST_FOR_QUOTATION => \App\Enums\StatusEnums::QUOTATIONS_RECEIVED,
+            StageEnums::REQUEST_FOR_QUOTATION => \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED,  // Initial status when entering RFQ stage; changes to QUOTATIONS_RECEIVED after upload
 
             // Procurement/Bidding Phase
             StageEnums::PRE_BID_CONFERENCE => \App\Enums\StatusEnums::PRE_BID_CONFERENCE_HELD,
             StageEnums::SUPPLEMENTAL_BID_BULLETIN => \App\Enums\StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING,
             StageEnums::BID_OPENING => \App\Enums\StatusEnums::BIDS_OPENED,
-            StageEnums::ABSTRACT_OF_QUOTATIONS => \App\Enums\StatusEnums::QUOTATIONS_RECEIVED,  // Fixed: Should start at quotations received, not abstract prepared
+            StageEnums::ABSTRACT_OF_QUOTATIONS => \App\Enums\StatusEnums::QUOTATIONS_RECEIVED,  // Enters with quotations_received (from RFQ completion); changes to ABSTRACT_PREPARED after upload
             StageEnums::BID_EVALUATION => \App\Enums\StatusEnums::BIDS_EVALUATED,
             StageEnums::POST_QUALIFICATION => \App\Enums\StatusEnums::POST_QUALIFICATION_VERIFIED,
-            StageEnums::BAC_RESOLUTION => \App\Enums\StatusEnums::RESOLUTION_RECORDED,
+            StageEnums::BAC_RESOLUTION => $mode && in_array($mode, [\App\Enums\ProcurementModeEnums::SMALL_VALUE_PROCUREMENT, \App\Enums\ProcurementModeEnums::DIRECT_CONTRACTING, \App\Enums\ProcurementModeEnums::REPEAT_ORDER, \App\Enums\ProcurementModeEnums::DIRECT_SALES, \App\Enums\ProcurementModeEnums::DIRECT_PROCUREMENT_FOR_STI], true)
+                ? \App\Enums\StatusEnums::ABSTRACT_PREPARED  // SVP and RFQ-based modes: enters with abstract_prepared
+                : \App\Enums\StatusEnums::POST_QUALIFICATION_VERIFIED,  // Competitive Bidding modes: enters with post_qualification_verified
 
             // Post-Procurement Phase
             StageEnums::NOTICE_OF_AWARD => \App\Enums\StatusEnums::AWARDED,
