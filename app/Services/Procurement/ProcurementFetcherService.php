@@ -88,12 +88,14 @@ final class ProcurementFetcherService
                 // Set a reasonable timeout for the entire operation
                 set_time_limit(25); // Leave 5 seconds buffer before PHP's 30s limit
 
-                // OPTIMIZATION 1: Use optimized repository method that fetches only latest per PR
-                $statusDtos = $this->statusRepository->getLatestByProcurement(100);
+                // OPTIMIZATION 1: Use optimized repository method with reduced limit for faster response
+                // Reduced from 100 to 50 to prevent blockchain timeout
+                $statusDtos = $this->statusRepository->getLatestByProcurement(50);
                 $statusItems = collect($statusDtos);
 
-                // OPTIMIZATION 2: Fetch documents with limit for faster response
-                $documentDtos = $this->documentRepository->all(500, 0);
+                // OPTIMIZATION 2: Fetch documents with reduced limit for faster response
+                // Reduced from 500 to 200 to prevent blockchain timeout
+                $documentDtos = $this->documentRepository->all(200, 0);
 
                 Log::info('ProcurementFetcherService: Fetched data from repositories (OPTIMIZED)', [
                     'status_count' => $statusItems->count(),
@@ -118,6 +120,17 @@ final class ProcurementFetcherService
                 if ($filterByUserId !== null || $filterByUserAddress !== null) {
                     // Get all procurement metadata for filtering
                     $prNumbers = $statusItems->pluck('prNumber')->unique()->values()->all();
+
+                    // EMERGENCY TIMEOUT PREVENTION: Limit batch size to prevent blockchain timeout
+                    // If we have more than 30 procurements, only fetch first 30 to prevent timeout
+                    if (count($prNumbers) > 30) {
+                        Log::warning('Too many procurements to filter, limiting to 30 to prevent timeout', [
+                            'total' => count($prNumbers),
+                            'limiting_to' => 30,
+                        ]);
+                        $prNumbers = array_slice($prNumbers, 0, 30);
+                    }
+
                     $procurements = $this->procurementRepository->findManyByProcurement($prNumbers);
 
                     // Filter to only include procurements created by the specified user
