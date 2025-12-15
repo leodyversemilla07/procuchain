@@ -101,18 +101,20 @@ abstract class BaseDashboardController extends Controller
      * Uses database cache since this is typically large blockchain data
      *
      * NOTE: Procurement visibility by role:
-     * - Admin, BAC Chairman, HOPE: See all procurements
-     * - BAC Secretariat: See only their own procurements (created or interacted with)
+     * - TEMPORARY: Filtering completely disabled - all users see all procurements
+     * - This matches the behavior of ProcurementListController
+     * - Previously: BAC Secretariat saw only their own procurements (created or interacted with)
      */
     protected function getCachedProcurements(string $roleName, string $roleLabel)
     {
         $user = auth()->user();
-        $isBacSecretariat = $roleName === 'bac_secretariat';
 
-        // Use user-specific cache key for BAC Secretariat to isolate their data
-        $cacheKey = $isBacSecretariat
-            ? DashboardCacheKeys::procurements($roleName).':user:'.$user->id
-            : DashboardCacheKeys::procurements($roleName);
+        // TEMPORARY: Filtering completely disabled - all users see all procurements
+        // This matches the behavior of ProcurementListController
+        $isBacSecretariat = false; // Disabled: $roleName === 'bac_secretariat';
+
+        // Use role-based cache key (not user-specific since filtering is disabled)
+        $cacheKey = DashboardCacheKeys::procurements($roleName);
 
         return $this->cacheStrategy->rememberLarge(
             $cacheKey,
@@ -133,14 +135,15 @@ abstract class BaseDashboardController extends Controller
 
                 $procurementsByKey = $this->dashboardService->getProcurementsByKey($states);
 
-                // Filter for BAC Secretariat users
-                if ($isBacSecretariat) {
-                    $procurementsByKey = $this->filterProcurementsByUser(
-                        $procurementsByKey,
-                        (string) $user->id,
-                        $user->blockchain_address
-                    );
-                }
+                // TEMPORARY: Filtering disabled - all users see all procurements
+                // Previously: Filter for BAC Secretariat users
+                // if ($isBacSecretariat) {
+                //     $procurementsByKey = $this->filterProcurementsByUser(
+                //         $procurementsByKey,
+                //         (string) $user->id,
+                //         $user->blockchain_address
+                //     );
+                // }
 
                 return $procurementsByKey;
             }

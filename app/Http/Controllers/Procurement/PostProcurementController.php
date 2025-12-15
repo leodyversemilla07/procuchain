@@ -66,6 +66,10 @@ class PostProcurementController extends BaseController
 
         $procurement = $this->findProcurementById($pr_number);
 
+        // Auto-transition: If accessing NOA page while still at BAC Resolution with resolution_recorded,
+        // automatically publish the stage transition to Notice of Award
+        $this->handleAutoStageTransition($pr_number, $procurement, $stage);
+
         // Determine which Inertia component to render based on stage
         $component = match ($stage) {
             StageEnums::NOTICE_OF_AWARD => 'bac-secretariat/procurement-stage/noa-upload',
@@ -522,8 +526,14 @@ class PostProcurementController extends BaseController
 
                 // Get the next stage action URL using ProcurementActionService
                 $actionService = app(\App\Services\Procurement\ProcurementActionService::class);
-                $actions = $actionService->getActions($pr_number);
-                $nextStageAction = collect($actions['workflow_actions'])->first();
+                $actions = $actionService->getAvailableActions(
+                    $pr_number,
+                    $nextStage->value,
+                    $completionStatus->value,
+                    'bac_secretariat',
+                    $procurement->procurementMode
+                );
+                $nextStageAction = collect($actions)->first();
 
                 return back()->with('success', [
                     'message' => $message,
@@ -589,22 +599,6 @@ class PostProcurementController extends BaseController
 
             return back()->with('error', $e->getMessage());
         }
-    }
-
-    /**
-     * Get the appropriate completion status for a given stage.
-     */
-    private function getCompletionStatusForStage(StageEnums $stage): StatusEnums
-    {
-        return match ($stage) {
-            StageEnums::NOTICE_OF_AWARD => StatusEnums::AWARDED,
-            StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
-            StageEnums::NOTICE_TO_PROCEED => StatusEnums::NTP_RECORDED,
-            StageEnums::MONITORING => StatusEnums::MONITORING_COMPLETED,
-            StageEnums::COMPLETION => StatusEnums::COMPLETION_DOCUMENTS_UPLOADED,
-            StageEnums::COMPLETED => StatusEnums::COMPLETED,
-            default => StatusEnums::PROCUREMENT_SUBMITTED,
-        };
     }
 
     /**
@@ -815,6 +809,144 @@ class PostProcurementController extends BaseController
             ]);
 
             return back()->withErrors(['message' => 'Failed to update delivery details. Please try again.']);
+        }
+    }
+
+    /**
+     * Handle automatic stage transition when accessing a post-procurement stage.
+     *
+     * For example: accessing Notice of Award while still at BAC Resolution + resolution_recorded
+     *
+     * Uses mode-aware workflow to determine valid transitions.
+     */
+    private function handleAutoStageTransition(string $prNumber, array $procurement, StageEnums $targetStage): void
+    {
+        $currentStageValue = $procurement['stage'] ?? null;
+        $currentStatusValue = $procurement['current_status'] ?? null;
+
+        if (! $currentStageValue || ! $currentStatusValue) {
+            return;
+        }
+
+        $currentStage = StageEnums::tryFrom($currentStageValue);
+        $currentStatus = StatusEnums::tryFrom($currentStatusValue);
+
+        if (! $currentStage || ! $currentStatus) {
+            return;
+        }
+
+        // If already at the target stage, no transition needed
+        if ($currentStage === $targetStage) {
+            return;
+        }
+
+        // Get the completion status for the current stage
+        $completionStatus = $this->getCompletionStatusForStage($currentStage);
+
+        // Check if current stage is completed (status matches completion status)
+        if ($currentStatus !== $completionStatus) {
+            return;
+        }
+
+        // Get the mode-aware next stage for this procurement
+        $expectedNextStage = $this->getNextStageForProcurement($prNumber, $currentStage);
+
+        // Verify that the target stage is the expected next stage in the workflow
+        if ($expectedNextStage !== $targetStage) {
+            return;
+        }
+
+        // Perform the auto-transition
+        $this->publishStageTransition($prNumber, $procurement, $currentStage, $targetStage, $currentStatus);
+
+        \Log::info('Auto stage transition triggered', [
+            'pr_number' => $prNumber,
+            'from_stage' => $currentStage->value,
+            'to_stage' => $targetStage->value,
+            'status' => $currentStatus->value,
+        ]);
+    }
+
+    /**
+     * Get the completion status for a given stage.
+     */
+    private function getCompletionStatusForStage(StageEnums $stage): StatusEnums
+    {
+        return match ($stage) {
+            StageEnums::BAC_RESOLUTION => StatusEnums::RESOLUTION_RECORDED,
+            StageEnums::NOTICE_OF_AWARD => StatusEnums::AWARDED,
+            StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
+            StageEnums::NOTICE_TO_PROCEED => StatusEnums::NTP_RECORDED,
+            StageEnums::MONITORING => StatusEnums::MONITORING_COMPLETED,
+            StageEnums::COMPLETION => StatusEnums::PROCUREMENT_COMPLETED,
+            // Pre-procurement and procurement phase stages (for completeness)
+            StageEnums::PROCUREMENT_INITIATION => StatusEnums::PROCUREMENT_INITIATED,
+            StageEnums::PRE_PROCUREMENT_CONFERENCE => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD,
+            StageEnums::BIDDING_DOCUMENTS => StatusEnums::BIDDING_DOCUMENTS_PREPARED,
+            StageEnums::REQUEST_FOR_QUOTATION => StatusEnums::QUOTATIONS_RECEIVED,
+            StageEnums::PRE_BID_CONFERENCE => StatusEnums::PRE_BID_CONFERENCE_COMPLETED,
+            StageEnums::SUPPLEMENTAL_BID_BULLETIN => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
+            StageEnums::BID_OPENING => StatusEnums::BIDS_OPENED,
+            StageEnums::ABSTRACT_OF_QUOTATIONS => StatusEnums::ABSTRACT_PREPARED,
+            StageEnums::BID_EVALUATION => StatusEnums::BIDS_EVALUATED,
+            StageEnums::POST_QUALIFICATION => StatusEnums::POST_QUALIFICATION_VERIFIED,
+            default => StatusEnums::PROCUREMENT_SUBMITTED,
+        };
+    }
+
+    /**
+     * Publish stage transition to blockchain.
+     */
+    private function publishStageTransition(
+        string $prNumber,
+        array $procurement,
+        StageEnums $fromStage,
+        StageEnums $toStage,
+        StatusEnums $currentStatus
+    ): void {
+        try {
+            $user = auth()->user();
+            $userAddress = $user->blockchain_address ?? 'unknown';
+
+            // Publish the new stage status
+            $this->statusPublisher->publish(
+                prNumber: $prNumber,
+                procurementTitle: $procurement['procurement_title'] ?? '',
+                stage: $toStage,
+                currentStatus: $currentStatus,
+                userAddress: $userAddress,
+                metadata: [
+                    'auto_transition' => true,
+                    'from_stage' => $fromStage->value,
+                    'to_stage' => $toStage->value,
+                    'description' => sprintf('Auto-transitioned from %s to %s', $fromStage->getDisplayName(), $toStage->getDisplayName()),
+                ]
+            );
+
+            // Publish event for the transition
+            $this->eventPublisher->publish(
+                prNumber: $prNumber,
+                procurementTitle: $procurement['procurement_title'] ?? '',
+                stage: $toStage->value,
+                eventType: 'stage_transition',
+                category: 'workflow',
+                severity: 'info',
+                details: sprintf('Stage transitioned from %s to %s', $fromStage->getDisplayName(), $toStage->getDisplayName()),
+                documentCount: 0,
+                userAddress: $userAddress,
+                metadata: [
+                    'auto_transition' => true,
+                    'from_stage' => $fromStage->value,
+                    'to_stage' => $toStage->value,
+                ]
+            );
+        } catch (\Exception $e) {
+            \Log::error('Failed to publish stage transition', [
+                'pr_number' => $prNumber,
+                'from_stage' => $fromStage->value,
+                'to_stage' => $toStage->value,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }
