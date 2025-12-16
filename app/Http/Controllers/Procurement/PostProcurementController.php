@@ -846,11 +846,11 @@ class PostProcurementController extends BaseController
             StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO => StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,
             StageEnums::NOTICE_TO_PROCEED => StatusEnums::NTP_RECORDED,
             StageEnums::MONITORING => StatusEnums::MONITORING_COMPLETED,
-            StageEnums::COMPLETION => StatusEnums::PROCUREMENT_COMPLETED,
+            StageEnums::COMPLETION => StatusEnums::COMPLETED,
             // Pre-procurement and procurement phase stages (for completeness)
             StageEnums::PROCUREMENT_INITIATION => StatusEnums::PROCUREMENT_INITIATED,
             StageEnums::PRE_PROCUREMENT_CONFERENCE => StatusEnums::PRE_PROCUREMENT_CONFERENCE_HELD,
-            StageEnums::BIDDING_DOCUMENTS => StatusEnums::BIDDING_DOCUMENTS_PREPARED,
+            StageEnums::BIDDING_DOCUMENTS => StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,
             StageEnums::REQUEST_FOR_QUOTATION => StatusEnums::QUOTATIONS_RECEIVED,
             StageEnums::PRE_BID_CONFERENCE => StatusEnums::PRE_BID_CONFERENCE_COMPLETED,
             StageEnums::SUPPLEMENTAL_BID_BULLETIN => StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,
