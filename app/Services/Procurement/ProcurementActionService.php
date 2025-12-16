@@ -258,10 +258,7 @@ final class ProcurementActionService
             [
                 'condition' => [
                     'stage' => StageEnums::BIDDING_DOCUMENTS,
-                    'status' => [
-                        StatusEnums::PRE_PROCUREMENT_CONFERENCE_SKIPPED,
-                        StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,
-                    ],
+                    'status' => StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,  // Entry status after stage transition
                 ],
                 'type' => 'upload',
                 'label' => 'Upload Bidding Documents',
@@ -566,11 +563,12 @@ final class ProcurementActionService
                 'href_template' => '/bac-secretariat/post-procurement/{pr_number}/completion',
             ],
 
-            // Completion
+            // Completion - Universal stage (all modes)
+            // All 11 procurement modes include MONITORING → COMPLETION in post-procurement phase
             [
                 'condition' => [
                     'stage' => StageEnums::COMPLETION,
-                    'status' => StatusEnums::MONITORING_COMPLETED,
+                    'status' => StatusEnums::MONITORING_COMPLETED,  // Entry status from previous stage (MONITORING always precedes COMPLETION)
                 ],
                 'type' => 'upload',
                 'label' => 'Upload Certificate of Completion',
