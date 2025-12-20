@@ -18,11 +18,11 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-  <img src="https://img.shields.io/badge/php-%3E%3D8.3-8892BF.svg" alt="PHP Version">
-  <img src="https://img.shields.io/badge/Laravel-12.x-FF2D20.svg" alt="Laravel">
-  <img src="https://img.shields.io/badge/React-19.x-61DAFB.svg" alt="React">
+  <img src="https://img.shields.io/badge/php-8.3.28-8892BF.svg" alt="PHP Version">
+  <img src="https://img.shields.io/badge/Laravel-12.42.0-FF2D20.svg" alt="Laravel">
+  <img src="https://img.shields.io/badge/React-19.2.1-61DAFB.svg" alt="React">
   <img src="https://img.shields.io/badge/MultiChain-2.3.3-green.svg" alt="MultiChain">
-  <img src="https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC.svg" alt="Tailwind CSS">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4.1.17-38B2AC.svg" alt="Tailwind CSS">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome">
 </p>
 
@@ -130,17 +130,17 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 
 ## 🛠️ Technology Stack
 
-- **Backend**: Laravel 12.38.1 with PHP 8.3.28
-- **Frontend**: React 19.2.0 with Inertia.js v2.2.16 for SPA experience
+- **Backend**: Laravel 12.42.0 with PHP 8.3.28
+- **Frontend**: React 19.2.1 with Inertia.js v2.0.14 (Laravel) & v2.2.21 (React) for SPA experience
 - **Database**: MySQL 8.0+ with database-driven sessions, cache, and queue
 - **Blockchain**: MultiChain (Community Edition) for immutable document integrity and audit trails
 - **File Storage**: On-chain storage directly in blockchain (zero external storage costs, automatic node replication, Heroku-compatible)
 - **Styling**: Tailwind CSS v4.1.17 for responsive design
 - **UI Components**: Radix UI primitives with shadcn/ui patterns
-- **Build Tools**: Vite 6.0+ for fast frontend asset compilation with HMR
-- **Testing**: Pest v4.1.3 for expressive PHP testing
-- **Code Quality**: Laravel Pint v1.25.1 for consistent code formatting
-- **Authentication**: Laravel Fortify 1.31.2 with two-factor authentication (TOTP)
+- **Build Tools**: Vite 7.1+ for fast frontend asset compilation with HMR
+- **Testing**: Pest v4.1.6 for expressive PHP testing
+- **Code Quality**: Laravel Pint v1.26.0 for consistent code formatting
+- **Authentication**: Laravel Fortify 1.32.1 with two-factor authentication (TOTP)
 - **Authorization**: Spatie Laravel Permission 6.21 for role-based access control
 - **Type-Safe Routes**: Laravel Wayfinder 0.1.12 for TypeScript route generation
 - **Notifications**:
@@ -152,7 +152,7 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
     - Concurrently for multi-process management
     - Optional SSR with Inertia SSR server
     - TypeScript 5.7.2 for type safety
-    - ESLint 9.17.0 & Prettier 3.4.2 for code quality
+    - ESLint 9.39.1 & Prettier 3.7.4 for code quality
 
 <p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
 
@@ -160,7 +160,7 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 
 ## 📦 Requirements
 
-- PHP 8.3 or higher (8.3.27 recommended)
+- PHP 8.3.28 or higher
 - Composer 2.x
 - Node.js 18+ and npm
 - MySQL 8.0+ (or MariaDB 10.6+)
@@ -175,19 +175,19 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        ProcuChain Architecture                   │
+│                        ProcuChain Architecture                  │
 ├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐   ┌─────────────┐   ┌─────────────────────┐   │
-│  │   React +   │   │   Laravel   │   │    MultiChain       │   │
-│  │  Inertia.js │◄─►│   12.x API  │◄─►│    Blockchain       │   │
-│  │  Frontend   │   │   Backend   │   │    (8 Streams)      │   │
-│  └─────────────┘   └─────────────┘   └─────────────────────┘   │
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────────────┐    │
+│  │   React +   │   │   Laravel   │   │    MultiChain       │    │
+│  │  Inertia.js │◄─►│   12.x API  │◄─►│    Blockchain       │    │
+│  │  Frontend   │   │   Backend   │   │    (8 Streams)      │    │
+│  └─────────────┘   └─────────────┘   └─────────────────────┘    │
 │         │                 │                    │                │
 │         ▼                 ▼                    ▼                │
-│  ┌─────────────┐   ┌─────────────┐   ┌─────────────────────┐   │
-│  │  Tailwind   │   │   MySQL     │   │   Smart Filters     │   │
-│  │  CSS v4     │   │   8.0+      │   │   (Validation)      │   │
-│  └─────────────┘   └─────────────┘   └─────────────────────┘   │
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────────────┐    │
+│  │  Tailwind   │   │   MySQL     │   │   Smart Filters     │    │
+│  │  CSS v4     │   │   8.0+      │   │   (Validation)      │    │
+│  └─────────────┘   └─────────────┘   └─────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -264,6 +264,52 @@ composer run dev
 ```
 
 ### ⛓️ MultiChain Setup
+
+#### What is MultiChain?
+
+**MultiChain** is an open-source blockchain platform designed for building private blockchain networks. Unlike public blockchains like Bitcoin or Ethereum, MultiChain is optimized for enterprise and organizational use cases where control, privacy, and scalability are essential.
+
+##### Key Features of MultiChain:
+
+- **Private & Permissioned**: Only authorized participants can join the network and perform specific actions
+- **Rapid Deployment**: Create a new blockchain in seconds with simple commands
+- **Data Streams**: Built-in key-value database with immutability and timestamping
+- **Scalability**: Handles thousands of transactions per second with configurable block times
+- **Asset Management**: Native support for creating and managing digital assets and tokens
+- **Fine-grained Permissions**: Control who can connect, send, receive, create assets, mine blocks, and administer the network
+- **Multi-signature Support**: Enhanced security through multi-party authorization
+- **JSON-RPC API**: Easy integration with applications using standard RPC calls
+- **No Cryptocurrency Required**: No mining rewards or transaction fees - purely for data and asset management
+
+##### Why ProcuChain Uses MultiChain:
+
+ProcuChain leverages MultiChain's capabilities to provide:
+
+1. **Immutable Audit Trail**: Every procurement action is permanently recorded on the blockchain
+2. **Document Integrity**: SHA-256 hashes stored on-chain ensure documents haven't been tampered with
+3. **Role-Based Blockchain Permissions**: Different roles (Admin, BAC Secretariat, BAC Chairman, HOPE) have distinct blockchain addresses with appropriate permissions
+4. **Data Streams for Organization**: Separate streams for documents, status changes, events, corrections, and file storage
+5. **Smart Filters for Validation**: JavaScript-based validation rules enforced at the blockchain protocol level
+6. **Zero External Storage Costs**: Files stored directly on the blockchain, automatically replicated across all nodes
+7. **Transparency & Accountability**: Complete visibility into all procurement activities for authorized stakeholders
+
+##### MultiChain vs Other Blockchains:
+
+| Feature | MultiChain | Ethereum | Bitcoin |
+|---------|-----------|----------|---------|
+| **Deployment** | Private/Permissioned | Public | Public |
+| **Setup Time** | Seconds | N/A | N/A |
+| **Transaction Speed** | 1000+ TPS | ~15 TPS | ~7 TPS |
+| **Fees** | None | Gas fees | Transaction fees |
+| **Permission Control** | Granular | Open | Open |
+| **Data Storage** | Native streams | Contract storage | Limited OP_RETURN |
+| **Use Case** | Enterprise apps | DApps & DeFi | Currency |
+
+For more information, visit [MultiChain Official Documentation](https://www.multichain.com/developers/).
+
+---
+
+#### Installing MultiChain
 
 ```bash
 # Install MultiChain (if not already installed)
@@ -1035,7 +1081,7 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - **Documentation**: PHPDoc blocks for all public methods
 
 ### Testing
-- **Framework**: Pest 3.8.4 for expressive testing
+- **Framework**: Pest 4.1.6 for expressive testing
 - **Types**: Feature tests and unit tests
 - **Factories**: Model factories for test data generation
 - **Coverage**: Test all happy paths, failure paths, and edge cases
