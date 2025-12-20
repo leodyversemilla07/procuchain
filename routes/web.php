@@ -20,6 +20,7 @@ use App\Http\Controllers\Procurement\ProcurementController;
 use App\Http\Controllers\Procurement\ProcurementInitiationController;
 use App\Http\Controllers\ProcurementCorrectionController;
 use App\Http\Controllers\ProcurementListController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -85,6 +86,22 @@ Route::middleware(['auth'])->group(function () {
     // Blockchain Status Polling (All Authenticated Users)
     Route::get('/procurements/{pr_number}/blockchain-status', [ProcurementListController::class, 'getBlockchainStatus'])
         ->name('procurements.blockchain-status');
+
+    /*
+    |----------------------------------------------------------------------
+    | Semantic Search & Report Generation Routes
+    |----------------------------------------------------------------------
+    */
+
+    // Semantic Search & Reports (All Authenticated Users)
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        Route::post('/generate', [ReportController::class, 'generate'])->name('generate');
+        Route::post('/export', [ReportController::class, 'export'])->name('export');
+    });
+
+    // Semantic Search API
+    Route::post('/search', [ReportController::class, 'search'])->name('search');
 
     // Procurement Corrections - Management (BAC Secretariat only)
     Route::middleware(['role:bac_secretariat'])->group(function () {
