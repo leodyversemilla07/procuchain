@@ -144,15 +144,17 @@ try {
 }
 ```
 
-Check operation success:
+Check operation success (using Client methods):
 
 ```php
-$this->multichain->setruntimeparam('maxshowndata', 16384);
+$client = $this->multichain->getClient();
+$client->setruntimeparam('maxshowndata', 16384);
 
-if ($this->multichain->success()) {
+if ($client->success()) {
     // Operation succeeded
 } else {
-    $error = $this->multichain->error();
+    $error = $client->errormessage();
+    $code = $client->errorcode();
 }
 ```
 
@@ -948,11 +950,15 @@ MultiChain connection settings are in `config/multichain.php`:
 
 ```php
 return [
-    'host' => env('MULTICHAIN_HOST', 'localhost'),
-    'port' => env('MULTICHAIN_PORT', 8570),
-    'username' => env('MULTICHAIN_USERNAME'),
-    'password' => env('MULTICHAIN_PASSWORD'),
+    'rpc' => [
+        'host' => env('MULTICHAIN_RPC_HOST', '127.0.0.1'),
+        'port' => env('MULTICHAIN_RPC_PORT', 4786),
+        'username' => env('MULTICHAIN_RPC_USERNAME', 'multichainrpc'),
+        'password' => env('MULTICHAIN_RPC_PASSWORD', 'default_password_change_me'),
+    ],
     'chain_name' => env('MULTICHAIN_CHAIN_NAME', 'procuchain'),
+    'use_ssl' => env('MULTICHAIN_USE_SSL', false),
+    'verify_ssl' => env('MULTICHAIN_VERIFY_SSL', false),
 ];
 ```
 
