@@ -19,7 +19,7 @@ import { dashboard as hopeDashboard } from '@/routes/hope';
 import { index as hopeProcurementsList } from '@/routes/hope/procurements';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, Blocks, LayoutGrid, Mail, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
+import { BarChart3, Bell, Blocks, LayoutGrid, Mail, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermissions>): NavItem[] => {
@@ -93,6 +93,13 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
             });
         }
     }
+
+    // Reports - available to all authenticated users
+    items.push({
+        title: 'Reports',
+        href: '/reports',
+        icon: BarChart3,
+    });
 
     // Procurement Initiation - only for BAC Secretariat with permission
     if (role === 'bac_secretariat' && can.manageProcurement) {
