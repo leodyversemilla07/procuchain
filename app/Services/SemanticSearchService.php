@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Services\ProcurementDataService;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 final class SemanticSearchService
@@ -108,25 +106,32 @@ final class SemanticSearchService
 
             // Date range filter (month/year/quarter)
             if (! empty($filters['date_from']) || ! empty($filters['date_to'])) {
-                $createdAt = $procurement['created_at'] ?? null;
-                if (! $createdAt) {
+                // Try both 'created_at' and 'timestamp' fields
+                $dateField = $procurement['created_at'] ?? $procurement['timestamp'] ?? null;
+                if (! $dateField) {
+                    // If no date field, skip this procurement
                     return false;
                 }
 
-                $timestamp = strtotime($createdAt);
-                if ($timestamp === false) {
-                    return false;
+                // Handle both Carbon instances and string dates
+                if ($dateField instanceof \Carbon\Carbon) {
+                    $timestamp = $dateField->timestamp;
+                } else {
+                    $timestamp = strtotime($dateField);
+                    if ($timestamp === false) {
+                        return false;
+                    }
                 }
 
                 if (! empty($filters['date_from'])) {
-                    $dateFrom = strtotime($filters['date_from']);
+                    $dateFrom = strtotime($filters['date_from'].' 00:00:00');
                     if ($dateFrom !== false && $timestamp < $dateFrom) {
                         return false;
                     }
                 }
 
                 if (! empty($filters['date_to'])) {
-                    $dateTo = strtotime($filters['date_to']);
+                    $dateTo = strtotime($filters['date_to'].' 23:59:59');
                     if ($dateTo !== false && $timestamp > $dateTo) {
                         return false;
                     }

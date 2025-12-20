@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import AuthLayout from '@/layouts/auth-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { CheckCircle2, Clock, Loader2, Mail, Shield, User } from 'lucide-react';
+import { accept } from '@/actions/App/Http/Controllers/Auth/AcceptInvitationController';
 
 interface Invitation {
     email: string;
@@ -32,7 +33,7 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(`/invitation/${token}/accept`);
+        post(accept.url(token));
     };
 
     return (
@@ -40,15 +41,6 @@ export default function AcceptInvitation({ invitation, token }: PageProps) {
             <Head title="Accept Invitation" />
 
             <div className="w-full max-w-2xl space-y-6">
-                {/* Header */}
-                <div className="text-center">
-                    <div className="bg-primary/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
-                        <Mail className="text-primary h-8 w-8" />
-                    </div>
-                    <h1 className="text-3xl font-bold tracking-tight">You're Invited!</h1>
-                    <p className="text-muted-foreground mt-2">Join the Procuchain Procurement System</p>
-                </div>
-
                 {/* Invitation Details */}
                 <Card>
                     <CardHeader>

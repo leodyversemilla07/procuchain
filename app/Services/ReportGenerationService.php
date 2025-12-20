@@ -198,6 +198,7 @@ final class ReportGenerationService
             'month' => $this->generateDailyTimeSeries($results),
             'year' => $this->generateMonthlyTimeSeries($results),
             'quarter' => $this->generateMonthlyTimeSeries($results),
+            'date_range' => $this->generateDailyTimeSeries($results),
             default => [],
         };
     }
@@ -213,12 +214,18 @@ final class ReportGenerationService
         $dailyData = [];
 
         foreach ($results as $procurement) {
-            $createdAt = $procurement['created_at'] ?? null;
+            $createdAt = $procurement['created_at'] ?? $procurement['timestamp'] ?? null;
             if (! $createdAt) {
                 continue;
             }
 
-            $date = Carbon::parse($createdAt)->toDateString();
+            // Handle Carbon instances
+            if ($createdAt instanceof \Carbon\Carbon) {
+                $date = $createdAt->toDateString();
+            } else {
+                $date = Carbon::parse($createdAt)->toDateString();
+            }
+
             if (! isset($dailyData[$date])) {
                 $dailyData[$date] = ['count' => 0, 'date' => $date];
             }
@@ -241,12 +248,18 @@ final class ReportGenerationService
         $monthlyData = [];
 
         foreach ($results as $procurement) {
-            $createdAt = $procurement['created_at'] ?? null;
+            $createdAt = $procurement['created_at'] ?? $procurement['timestamp'] ?? null;
             if (! $createdAt) {
                 continue;
             }
 
-            $month = Carbon::parse($createdAt)->format('Y-m');
+            // Handle Carbon instances
+            if ($createdAt instanceof \Carbon\Carbon) {
+                $month = $createdAt->format('Y-m');
+            } else {
+                $month = Carbon::parse($createdAt)->format('Y-m');
+            }
+
             if (! isset($monthlyData[$month])) {
                 $monthlyData[$month] = ['count' => 0, 'month' => $month];
             }
