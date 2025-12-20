@@ -59,7 +59,7 @@
             max-width: 560px;
             margin: 0 auto;
             background-color: #ffffff;
-            border-radius: 8px;
+            border-radius: 0;
             border: 1px solid #e2e8f0;
             overflow: hidden;
             word-wrap: break-word;
@@ -79,7 +79,7 @@
             height: 48px;
             margin: 0 auto 12px auto;
             display: block;
-            border-radius: 8px;
+            border-radius: 0;
         }
 
         .header-title {
@@ -128,7 +128,7 @@
         .alert-box {
             padding: 14px 16px;
             margin: 20px 0;
-            border-radius: 6px;
+            border-radius: 0;
             border-left: 3px solid;
         }
 
@@ -227,7 +227,7 @@
         .badge {
             display: inline-block;
             padding: 2px 8px;
-            border-radius: 4px;
+            border-radius: 0;
             font-size: 11px;
             font-weight: 600;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -267,7 +267,7 @@
             color: #ffffff !important;
             text-decoration: none !important;
             padding: 12px 28px;
-            border-radius: 6px;
+            border-radius: 0;
             font-weight: 600;
             font-size: 14px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -281,7 +281,7 @@
         .info-box {
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            border-radius: 0;
             padding: 14px 16px;
             margin: 16px 0;
         }
@@ -323,7 +323,7 @@
         .link-section {
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            border-radius: 0;
             padding: 12px 14px;
             margin: 16px 0;
             word-break: break-all;
@@ -386,7 +386,7 @@
             }
 
             .email-container {
-                border-radius: 6px;
+                border-radius: 0;
             }
 
             .header {
@@ -416,10 +416,10 @@
 
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
     <div class="email-wrapper" style="background-color: #f1f5f9; padding: 32px 16px;">
-        <div class="email-container" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden;">
+        <div class="email-container" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 0; border: 1px solid #e2e8f0; overflow: hidden;">
             <!-- Header -->
             <div class="header" style="background-color: #0d9488; color: #ffffff; padding: 28px 24px; text-align: center;">
-                <img src="{{ asset('logo.png') }}" alt="ProcuChain Logo" class="header-logo" style="width: 48px; height: 48px; margin: 0 auto 12px auto; display: block; border-radius: 8px;">
+                <img src="{{ asset('logo.png') }}" alt="ProcuChain Logo" class="header-logo" style="width: 48px; height: 48px; margin: 0 auto 12px auto; display: block; border-radius: 0;">
                 <h1 class="header-title" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 20px; font-weight: 600; margin: 0 0 4px 0; color: #ffffff;">@yield('header-title', 'ProcuChain')</h1>
                 <p class="header-subtitle" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; opacity: 0.9; margin: 0; color: #ffffff;">@yield('header-subtitle', 'Blockchain-Powered Procurement')</p>
             </div>

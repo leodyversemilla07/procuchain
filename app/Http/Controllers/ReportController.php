@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Services\ReportGenerationService;
 use App\Services\SemanticSearchService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +19,7 @@ class ReportController extends Controller
         private readonly ReportGenerationService $reportGenerationService,
         private readonly SemanticSearchService $semanticSearchService
     ) {
-        $this->middleware('auth');
+        //
     }
 
     /**
@@ -83,7 +84,7 @@ class ReportController extends Controller
     /**
      * Export report in various formats
      */
-    public function export(Request $request): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
+    public function export(Request $request): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse|\Symfony\Component\HttpFoundation\Response
     {
         $validated = $request->validate([
             'filter_type' => 'nullable|string|in:month,year,quarter,date_range',
@@ -97,7 +98,7 @@ class ReportController extends Controller
             'stage' => 'nullable|string',
             'mode' => 'nullable|string',
             'category' => 'nullable|string',
-            'format' => 'required|string|in:json,csv',
+            'format' => 'required|string|in:json,csv,pdf',
         ]);
 
         try {
@@ -111,6 +112,18 @@ class ReportController extends Controller
             }
 
             $format = $validated['format'];
+
+            if ($format === 'pdf') {
+                $filename = 'procurement-report-'.now()->format('Y-m-d-His').'.pdf';
+
+                $pdf = Pdf::loadView('reports.pdf', [
+                    'report' => $report,
+                    'filters' => $validated,
+                ]);
+
+                return $pdf->download($filename);
+            }
+
             $exportData = $this->reportGenerationService->exportReport($report, $format);
 
             if ($format === 'csv') {

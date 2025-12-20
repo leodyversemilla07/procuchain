@@ -7,16 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { type BreadcrumbItem, type SharedData } from '@/types';
-import { PageProps } from '@inertiajs/core';
-import { Head, usePage } from '@inertiajs/react';
-import { BarChart3, Calendar, Download, FileText, Search, TrendingUp } from 'lucide-react';
+import { type BreadcrumbItem } from '@/types';
+import { Head } from '@inertiajs/react';
+import { BarChart3, Calendar, Download, FileText, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
-
-interface ReportIndexProps extends PageProps {
-    now: string;
-}
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { generate, exportMethod } from '@/actions/App/Http/Controllers/ReportController';
 
 interface ReportFilters {
     filter_type: 'month' | 'year' | 'quarter' | 'date_range';
@@ -45,12 +41,10 @@ interface ReportData {
         total_abc_amount: number;
     };
     time_series: Array<{ date?: string; month?: string; count: number }>;
-    data: Array<any>;
+    data: Array<Record<string, unknown>>;
 }
 
-export default function ReportIndex({ now }: ReportIndexProps) {
-    const { auth } = usePage<PageProps<SharedData>>().props;
-
+export default function ReportIndex() {
     const [filters, setFilters] = useState<ReportFilters>({
         filter_type: 'month',
         month: new Date().getMonth() + 1,
@@ -62,10 +56,10 @@ export default function ReportIndex({ now }: ReportIndexProps) {
     const [error, setError] = useState<string | null>(null);
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { name: 'Reports', href: '/reports', current: true },
+        { title: 'Reports', href: '/reports' },
     ];
 
-    const handleFilterChange = (key: keyof ReportFilters, value: any) => {
+    const handleFilterChange = (key: keyof ReportFilters, value: string | number | undefined) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
@@ -74,7 +68,7 @@ export default function ReportIndex({ now }: ReportIndexProps) {
         setError(null);
 
         try {
-            const response = await fetch('/reports/generate', {
+            const response = await fetch(generate.url(), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -97,9 +91,9 @@ export default function ReportIndex({ now }: ReportIndexProps) {
         }
     };
 
-    const exportReport = async (format: 'json' | 'csv') => {
+    const exportReport = async (format: 'json' | 'csv' | 'pdf') => {
         try {
-            const response = await fetch('/reports/export', {
+            const response = await fetch(exportMethod.url(), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -108,12 +102,12 @@ export default function ReportIndex({ now }: ReportIndexProps) {
                 body: JSON.stringify({ ...filters, format }),
             });
 
-            if (format === 'csv') {
+            if (format === 'csv' || format === 'pdf') {
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `procurement-report-${new Date().toISOString().split('T')[0]}.csv`;
+                a.download = `procurement-report-${new Date().toISOString().split('T')[0]}.${format}`;
                 a.click();
                 window.URL.revokeObjectURL(url);
             } else {
@@ -152,7 +146,7 @@ export default function ReportIndex({ now }: ReportIndexProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Semantic Search & Reports" />
 
-            <div className="space-y-6">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b from-background to-muted/20 p-4 sm:gap-6 sm:p-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Semantic Search & Reports</h1>
                     <p className="text-muted-foreground">Generate procurement reports with advanced filtering options</p>
@@ -341,6 +335,10 @@ export default function ReportIndex({ now }: ReportIndexProps) {
                                         <Download className="mr-2 h-4 w-4" />
                                         Export JSON
                                     </Button>
+                                    <Button onClick={() => exportReport('pdf')} variant="outline">
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Export PDF
+                                    </Button>
                                 </>
                             )}
                         </div>
@@ -402,12 +400,14 @@ export default function ReportIndex({ now }: ReportIndexProps) {
                         </div>
 
                         {reportData.time_series.length > 0 && (
-                            <Card>
+                            <Card className="w-full">
                                 <CardHeader>
-                                    <CardTitle>Time Series Analysis</CardTitle>
-                                    <CardDescription>Procurement trends over selected period</CardDescription>
+                                    <CardTitle>Procurement Trends</CardTitle>
+                                    <CardDescription>
+                                        Procurement activity over the selected period
+                                    </CardDescription>
                                 </CardHeader>
-                                <CardContent>
+                                <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
                                     <ChartContainer
                                         config={{
                                             count: {
@@ -415,20 +415,66 @@ export default function ReportIndex({ now }: ReportIndexProps) {
                                                 color: 'hsl(var(--primary))',
                                             },
                                         }}
-                                        className="h-[300px]"
+                                        className="aspect-auto h-[350px] w-full"
                                     >
-                                        <LineChart data={reportData.time_series}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey={reportData.time_series[0]?.date ? 'date' : 'month'} />
-                                            <YAxis />
-                                            <ChartTooltip content={<ChartTooltipContent />} />
-                                            <Line
+                                        <AreaChart
+                                            data={reportData.time_series}
+                                            margin={{ left: 12, right: 12, top: 12, bottom: 12 }}
+                                        >
+                                            <defs>
+                                                <linearGradient id="fillCount" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop
+                                                        offset="5%"
+                                                        stopColor="hsl(var(--primary))"
+                                                        stopOpacity={0.8}
+                                                    />
+                                                    <stop
+                                                        offset="95%"
+                                                        stopColor="hsl(var(--primary))"
+                                                        stopOpacity={0.1}
+                                                    />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                            <XAxis
+                                                dataKey={reportData.time_series[0]?.date ? 'date' : 'month'}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tickMargin={8}
+                                                minTickGap={32}
+                                                tickFormatter={(value) => {
+                                                    const date = new Date(value);
+                                                    return date.toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                    });
+                                                }}
+                                            />
+                                            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                                            <ChartTooltip
+                                                cursor={false}
+                                                content={
+                                                    <ChartTooltipContent
+                                                        labelFormatter={(value) => {
+                                                            return new Date(value).toLocaleDateString('en-US', {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                year: 'numeric',
+                                                            });
+                                                        }}
+                                                        indicator="line"
+                                                    />
+                                                }
+                                            />
+                                            <Area
                                                 type="monotone"
                                                 dataKey="count"
                                                 stroke="hsl(var(--primary))"
+                                                fill="url(#fillCount)"
+                                                fillOpacity={0.6}
                                                 strokeWidth={2}
                                             />
-                                        </LineChart>
+                                        </AreaChart>
                                     </ChartContainer>
                                 </CardContent>
                             </Card>
@@ -443,7 +489,9 @@ export default function ReportIndex({ now }: ReportIndexProps) {
                                     <div className="space-y-2">
                                         {Object.entries(reportData.summary.by_status).map(([status, count]) => (
                                             <div key={status} className="flex items-center justify-between">
-                                                <span className="text-sm">{status}</span>
+                                                <span className="text-sm capitalize">
+                                                    {status.replace(/_/g, ' ')}
+                                                </span>
                                                 <Badge variant="secondary">{count}</Badge>
                                             </div>
                                         ))}
@@ -459,7 +507,9 @@ export default function ReportIndex({ now }: ReportIndexProps) {
                                     <div className="space-y-2">
                                         {Object.entries(reportData.summary.by_mode).map(([mode, count]) => (
                                             <div key={mode} className="flex items-center justify-between">
-                                                <span className="text-sm">{mode}</span>
+                                                <span className="text-sm capitalize">
+                                                    {mode.replace(/_/g, ' ')}
+                                                </span>
                                                 <Badge variant="secondary">{count}</Badge>
                                             </div>
                                         ))}

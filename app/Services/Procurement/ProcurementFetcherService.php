@@ -285,6 +285,8 @@ final class ProcurementFetcherService
                         'metadata' => $statusDto->metadata,
                         'procurement_mode' => $modeInfo['value'] ?? null,
                         'procurement_mode_label' => $modeInfo['label'] ?? null,
+                        'mode' => $modeInfo['value'] ?? 'unknown',
+                        'abc_amount' => $modeInfo['abc_amount'] ?? 0,
                         'workflow_actions' => $workflowActions,
                         'static_actions' => $staticActions,
                     ];
@@ -354,6 +356,7 @@ final class ProcurementFetcherService
                     $modeMap[$prNumber] = [
                         'value' => $procurement->procurementMode->value,
                         'label' => $procurement->procurementMode->getDisplayName(),
+                        'abc_amount' => $procurement->abcAmount ?? 0,
                     ];
                 }
             }
