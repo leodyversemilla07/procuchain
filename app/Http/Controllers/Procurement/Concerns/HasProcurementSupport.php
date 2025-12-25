@@ -8,6 +8,7 @@ use App\Enums\StageEnums;
 use App\Repositories\ProcurementRepository;
 use App\Services\Manager;
 use App\Services\ProcurementDataService;
+use App\Services\ProcurementWorkflowService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
@@ -27,6 +28,8 @@ trait HasProcurementSupport
 
     protected \App\Repositories\DocumentRepository $documentRepository;
 
+    protected ProcurementWorkflowService $workflowService;
+
     /**
      * Initialize procurement support dependencies
      */
@@ -36,7 +39,8 @@ trait HasProcurementSupport
         StatusPublisher $statusPublisher,
         EventPublisher $eventPublisher,
         ProcurementDataService $procurementDataService,
-        \App\Repositories\DocumentRepository $documentRepository
+        \App\Repositories\DocumentRepository $documentRepository,
+        ?ProcurementWorkflowService $workflowService = null
     ): void {
         $this->multiChain = $multichain;
         $this->documentPublisher = $documentPublisher;
@@ -44,6 +48,7 @@ trait HasProcurementSupport
         $this->eventPublisher = $eventPublisher;
         $this->procurementDataService = $procurementDataService;
         $this->documentRepository = $documentRepository;
+        $this->workflowService = $workflowService ?? app(ProcurementWorkflowService::class);
     }
 
     /**
@@ -188,6 +193,7 @@ trait HasProcurementSupport
     /**
      * Get the next stage for a procurement based on its mode.
      * Uses mode-aware stage navigation per NGPA IRR.
+     * Now uses ProcurementWorkflowService to respect admin configuration.
      *
      * @param  string  $prNumber  The procurement reference number
      * @param  StageEnums  $currentStage  The current stage
@@ -202,8 +208,8 @@ trait HasProcurementSupport
             return $currentStage->getNextStage();
         }
 
-        // Get mode-specific next stages
-        $nextStages = $currentStage->getNextStagesForMode($mode);
+        // Use workflow service for database-backed configuration
+        $nextStages = $this->workflowService->getNextStagesForMode($currentStage, $mode);
 
         if (empty($nextStages)) {
             return null;
@@ -216,6 +222,7 @@ trait HasProcurementSupport
 
     /**
      * Check if a stage exists in the procurement's mode workflow.
+     * Now uses ProcurementWorkflowService to respect admin configuration.
      *
      * @param  string  $prNumber  The procurement reference number
      * @param  StageEnums  $stage  The stage to check
@@ -229,7 +236,7 @@ trait HasProcurementSupport
             return true;
         }
 
-        return $stage->existsInModeWorkflow($mode);
+        return $this->workflowService->isStageInWorkflow($stage, $mode);
     }
 
     /**
@@ -248,6 +255,7 @@ trait HasProcurementSupport
 
     /**
      * Check if a stage is optional for the procurement's mode.
+     * Now uses ProcurementWorkflowService to respect admin configuration.
      *
      * @param  string  $prNumber  The procurement reference number
      * @param  StageEnums  $stage  The stage to check
@@ -260,13 +268,12 @@ trait HasProcurementSupport
             return $stage->canSkip();
         }
 
-        $optionalStages = StageEnums::getOptionalStagesForMode($mode);
-
-        return in_array($stage, $optionalStages, true);
+        return $this->workflowService->isStageOptional($stage, $mode);
     }
 
     /**
      * Get all stages in the workflow for a procurement based on its mode.
+     * Now uses ProcurementWorkflowService to respect admin configuration.
      *
      * @param  string  $prNumber  The procurement reference number
      * @return array<StageEnums>
@@ -280,7 +287,7 @@ trait HasProcurementSupport
             return StageEnums::cases();
         }
 
-        return StageEnums::getStagesForMode($mode);
+        return $this->workflowService->getStagesForMode($mode);
     }
 
     /**
@@ -318,9 +325,9 @@ trait HasProcurementSupport
             ];
         }
 
-        // Get mode-specific stages
-        $workflowStages = StageEnums::getStagesForMode($mode);
-        $optionalStages = StageEnums::getOptionalStagesForMode($mode);
+        // Get mode-specific stages from workflow service (database-backed)
+        $workflowStages = $this->workflowService->getStagesForMode($mode);
+        $optionalStages = $this->workflowService->getOptionalStagesForMode($mode);
 
         // Determine current stage index based on actual procurement stage
         $currentIndex = 0;

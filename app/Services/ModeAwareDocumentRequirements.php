@@ -307,9 +307,9 @@ class ModeAwareDocumentRequirements
         $baseReqs = $this->baseRequirements->getRequiredDocuments($stage);
 
         if ($stage === StageEnums::PRE_BID_CONFERENCE) {
-            // Add dialogue-specific documents
+            // Add dialogue-specific documents (using pre-bid minutes for dialogue minutes)
             return array_merge($baseReqs, [
-                DocumentTypeEnums::DIALOGUE_MINUTES ?? null,
+                DocumentTypeEnums::PRE_BID_MINUTES,
             ]);
         }
 
