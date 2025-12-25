@@ -351,6 +351,23 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/search', [BlockchainExplorerController::class, 'search'])->name('search');
             Route::post('/reset-circuit-breaker', [BlockchainExplorerController::class, 'resetCircuitBreaker'])->name('reset');
         });
+
+        // Procurement Workflow Configuration
+        Route::prefix('workflow-config')->name('workflow-config.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\ProcurementWorkflowConfigController::class, 'index'])->name('index');
+            Route::get('/{mode}/edit', [\App\Http\Controllers\Admin\ProcurementWorkflowConfigController::class, 'edit'])->name('edit');
+            Route::get('/{mode}/preview', [\App\Http\Controllers\Admin\ProcurementWorkflowConfigController::class, 'preview'])->name('preview');
+            Route::put('/{mode}', [\App\Http\Controllers\Admin\ProcurementWorkflowConfigController::class, 'update'])->name('update');
+            Route::post('/{mode}/reset', [\App\Http\Controllers\Admin\ProcurementWorkflowConfigController::class, 'resetToDefaults'])->name('reset');
+        });
+
+        // Stage Document Configuration
+        Route::prefix('stage-documents')->name('stage-documents.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\StageDocumentConfigController::class, 'index'])->name('index');
+            Route::get('/{mode}/{stage}/edit', [\App\Http\Controllers\Admin\StageDocumentConfigController::class, 'edit'])->name('edit');
+            Route::put('/{mode}/{stage}', [\App\Http\Controllers\Admin\StageDocumentConfigController::class, 'update'])->name('update');
+            Route::post('/{mode}/{stage}/reset', [\App\Http\Controllers\Admin\StageDocumentConfigController::class, 'resetToDefaults'])->name('reset');
+        });
     });
 });
 

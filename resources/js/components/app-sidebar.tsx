@@ -7,9 +7,12 @@ import { notifications as notificationsPage } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
 import { locked as adminAccountsLocked } from '@/routes/admin/accounts';
 import adminBlockchain from '@/routes/admin/blockchain';
+import { index as adminInvitations } from '@/routes/admin/invitations';
 import adminLoginLogs from '@/routes/admin/login-logs';
 import { index as adminProcurementsList } from '@/routes/admin/procurements';
+import { index as stageDocumentsIndex } from '@/routes/admin/stage-documents';
 import adminUsers from '@/routes/admin/users';
+import { index as workflowConfigIndex, preview as workflowPreview } from '@/routes/admin/workflow-config';
 import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
 import { index as bacChairmanProcurementsList } from '@/routes/bac-chairman/procurements';
 import { dashboard as bacSecretariatDashboard } from '@/routes/bac-secretariat';
@@ -17,9 +20,10 @@ import { index as bacSecretariatProcurementInitiation } from '@/routes/bac-secre
 import { index as bacSecretariatProcurementsList } from '@/routes/bac-secretariat/procurements';
 import { dashboard as hopeDashboard } from '@/routes/hope';
 import { index as hopeProcurementsList } from '@/routes/hope/procurements';
+import { index as reportsIndex } from '@/routes/reports';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BarChart3, Bell, Blocks, LayoutGrid, Mail, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
+import { BarChart3, Bell, Blocks, Eye, FileText, GitBranch, LayoutGrid, Mail, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermissions>): NavItem[] => {
@@ -97,7 +101,7 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
     // Reports - available to all authenticated users
     items.push({
         title: 'Reports',
-        href: '/reports',
+        href: reportsIndex().url,
         icon: BarChart3,
     });
 
@@ -120,7 +124,7 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
 
         items.push({
             title: 'User Invitations',
-            href: '/admin/invitations',
+            href: adminInvitations().url,
             icon: Mail,
         });
     }
@@ -143,6 +147,25 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
             title: 'Blockchain Explorer',
             href: adminBlockchain.explorer.index.url(),
             icon: Blocks,
+        });
+
+        // Procurement Configuration (Workflow & Documents)
+        items.push({
+            title: 'Workflow Config',
+            href: workflowConfigIndex().url,
+            icon: GitBranch,
+        });
+
+        items.push({
+            title: 'Workflow Preview',
+            href: workflowPreview('competitive_bidding').url,
+            icon: Eye,
+        });
+
+        items.push({
+            title: 'Stage Documents',
+            href: stageDocumentsIndex().url,
+            icon: FileText,
         });
     }
 
