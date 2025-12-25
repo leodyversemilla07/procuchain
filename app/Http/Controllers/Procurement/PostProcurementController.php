@@ -70,19 +70,8 @@ class PostProcurementController extends BaseController
         // automatically publish the stage transition to Notice of Award
         $this->handleAutoStageTransition($pr_number, $procurement, $stage);
 
-        // Determine which Inertia component to render based on stage
-        $component = match ($stage) {
-            StageEnums::NOTICE_OF_AWARD => 'bac-secretariat/procurement-stage/noa-upload',
-            // Frontend file is `performance-bond-contract-po-upload.tsx`
-            StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO => 'bac-secretariat/procurement-stage/performance-bond-contract-po-upload',
-            // Frontend file is `ntp-upload.tsx`
-            StageEnums::NOTICE_TO_PROCEED => 'bac-secretariat/procurement-stage/ntp-upload',
-            StageEnums::MONITORING => 'bac-secretariat/procurement-stage/monitoring-upload',
-            StageEnums::COMPLETION => 'bac-secretariat/procurement-stage/completion-upload',
-            // There is no dedicated "completed" page; render completion upload as a fallback
-            StageEnums::COMPLETED => 'bac-secretariat/procurement-stage/completion-upload',
-            default => abort(404, 'Stage component not found'),
-        };
+        // All stages now use the unified stage-upload component
+        $component = 'bac-secretariat/stage-upload';
 
         // Get full procurement data for NTP stage to include delivery details
         $procurementData = null;

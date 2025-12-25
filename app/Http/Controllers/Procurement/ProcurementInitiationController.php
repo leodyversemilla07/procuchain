@@ -93,31 +93,23 @@ class ProcurementInitiationController extends BaseController
             // Get procurement mode for mode-aware document requirements
             $mode = $this->getProcurementMode($id);
 
-            return Inertia::render('bac-secretariat/procurement-stage/procurement-initiation-upload', [
+            return Inertia::render('bac-secretariat/stage-upload', [
                 'procurement' => [
                     'pr_number' => $id,
                     'title' => $procurement->title,
                     'status' => $procurement->status,
-                    'stage' => $latestStatus?->stage ?? StageEnums::PROCUREMENT_INITIATION->value,
+                    'stage_value' => StageEnums::PROCUREMENT_INITIATION->value,
+                    'current_stage' => $latestStatus?->stage ?? StageEnums::PROCUREMENT_INITIATION->value,
                 ],
                 'workflowInfo' => $this->getWorkflowInfo($id, StageEnums::PROCUREMENT_INITIATION),
                 'documentGuide' => $this->modeAwareValidationService->getStageDocumentGuide(
                     StageEnums::PROCUREMENT_INITIATION,
                     $mode
                 ),
-                'uploadedDocuments' => tap($this->getUploadedDocumentTypes(
+                'uploadedDocuments' => $this->getUploadedDocumentTypes(
                     $id,
                     StageEnums::PROCUREMENT_INITIATION
-                ), function ($docs) use ($id) {
-                    Log::info('Uploaded documents for frontend', [
-                        'pr_number' => $id,
-                        'uploaded_documents' => $docs,
-                        'count' => count($docs),
-                    ]);
-                }),
-                'currentStage' => $latestStatus?->stage ?? StageEnums::PROCUREMENT_INITIATION->value,
-                'currentStatus' => $latestStatus?->currentStatus ?? $procurement->status,
-                'isStageComplete' => $isStageComplete,
+                ),
             ]);
         }
 

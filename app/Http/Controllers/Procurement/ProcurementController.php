@@ -67,18 +67,8 @@ class ProcurementController extends BaseController
 
         $procurement = $this->findProcurementById($pr_number);
 
-        // Determine which Inertia component to render based on stage
-        $component = match ($stage) {
-            StageEnums::PRE_BID_CONFERENCE => 'bac-secretariat/procurement-stage/pre-bid-conference-upload',
-            StageEnums::SUPPLEMENTAL_BID_BULLETIN => 'bac-secretariat/procurement-stage/supplemental-bid-bulletin-upload',
-            StageEnums::BID_OPENING => 'bac-secretariat/procurement-stage/bid-opening-upload',
-            StageEnums::BID_EVALUATION => 'bac-secretariat/procurement-stage/bid-evaluation-upload',
-            StageEnums::POST_QUALIFICATION => 'bac-secretariat/procurement-stage/post-qualification-upload',
-            StageEnums::BAC_RESOLUTION => 'bac-secretariat/procurement-stage/bac-resolution-upload',
-            StageEnums::REQUEST_FOR_QUOTATION => 'bac-secretariat/procurement-stage/rfq-upload',
-            StageEnums::ABSTRACT_OF_QUOTATIONS => 'bac-secretariat/procurement-stage/abstract-of-quotations-upload',
-            default => abort(404, 'Stage component not found'),
-        };
+        // All stages now use the unified stage-upload component
+        $component = 'bac-secretariat/stage-upload';
 
         // Get procurement mode for mode-aware document requirements
         $mode = $this->getProcurementMode($pr_number);
