@@ -346,12 +346,34 @@ trait HasProcurementSupport
         // Build stages array with metadata
         $stagesInfo = [];
         foreach ($workflowStages as $index => $stage) {
+            $isCompleted = $index < $currentIndex;
+            $isCurrent = $stage->value === $currentProcurementStage;
+            
+            // Generate URL for the stage based on its phase
+            $url = '#';
+            if ($stage === StageEnums::PROCUREMENT_INITIATION) {
+                $url = route('bac-secretariat.procurement.initiation.show', ['pr_number' => $prNumber]);
+            } else {
+                $phase = $stage->getPhase();
+                $routeName = match ($phase) {
+                    'pre_procurement' => 'bac-secretariat.procurement.pre-procurement.show',
+                    'procurement' => 'bac-secretariat.procurement.bidding.show',
+                    'post_procurement' => 'bac-secretariat.procurement.post-procurement.show',
+                    default => null,
+                };
+
+                if ($routeName) {
+                    $url = route($routeName, ['pr_number' => $prNumber, 'stage' => $stage->value]);
+                }
+            }
+
             $stagesInfo[] = [
                 'value' => $stage->value,
                 'display_name' => $stage->getDisplayName(),
                 'is_optional' => in_array($stage, $optionalStages, true),
-                'is_current' => $stage->value === $currentProcurementStage,
-                'is_completed' => $index < $currentIndex,
+                'is_current' => $isCurrent,
+                'is_completed' => $isCompleted,
+                'url' => $url,
             ];
         }
 

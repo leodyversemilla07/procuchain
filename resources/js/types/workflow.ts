@@ -11,6 +11,7 @@ export interface WorkflowStage {
     is_optional: boolean;
     is_current: boolean;
     is_completed: boolean;
+    url?: string;
 }
 
 export interface ProcurementMode {
