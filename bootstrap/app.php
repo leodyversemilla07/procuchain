@@ -7,7 +7,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 use Sentry\Laravel\Integration;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -71,5 +73,21 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         Integration::handles($exceptions);
 
-        // Fortify handles email verification errors automatically
+        $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
+            $status = $response->getStatusCode();
+
+            // In local environment, we want to see the actual error for 500s (Server Errors)
+            // but we can show the custom page for 404s, 403s, etc.
+            if (app()->environment('local') && $status === 500) {
+                return $response;
+            }
+
+            if (in_array($status, [500, 503, 404, 403, 401, 419, 429])) {
+                return Inertia::render('error', ['status' => $status])
+                    ->toResponse($request)
+                    ->setStatusCode($status);
+            }
+
+            return $response;
+        });
     })->create();
