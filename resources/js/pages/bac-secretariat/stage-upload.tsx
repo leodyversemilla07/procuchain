@@ -3,6 +3,7 @@ import { markStageComplete as postMarkStageComplete, updateDeliveryDetails, uplo
 import { markStageComplete as preMarkStageComplete, uploadSingleDocument as preUploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PreProcurementController';
 import { markStageComplete as procMarkStageComplete, uploadSingleDocument as procUploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementController';
 import FileUploadArea from '@/components/file-upload-area';
+import { HeroCard } from '@/components/hero-card';
 import { ModeBadge } from '@/components/procurement/workflow-progress-indicator';
 import {
     AlertDialog,
@@ -206,38 +207,28 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
 
                 {/* HERO CARD: Stage Title and Description */}
-                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
-                    <CardHeader className="p-4 sm:p-6">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-3">
-                                    <div className="text-primary">
-                                        <FileCheck2 className="h-5 w-5 sm:h-6 sm:w-6" />
-                                    </div>
-                                    <CardTitle className="text-xl sm:text-2xl font-bold">
-                                        {documentGuide?.stage_display_name}
-                                    </CardTitle>
-                                </div>
-                                <CardDescription className="text-xs sm:text-sm mt-1 flex flex-col gap-1">
-                                    <span className="font-semibold text-foreground line-clamp-2 md:line-clamp-none">
-                                        {procurement.title}
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                        {procurement.pr_number} &bull; Upload and verify documents for this stage
-                                    </span>
-                                </CardDescription>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="text-[10px] sm:text-xs font-mono">
-                                        {procurement.pr_number}
-                                    </Badge>
-                                    {workflowInfo && <ModeBadge workflowInfo={workflowInfo} />}
-                                </div>
-                            </div>
+                <HeroCard
+                    icon={FileCheck2}
+                    title={documentGuide?.stage_display_name || 'Procurement Stage'}
+                    description={
+                        <div className="flex flex-col gap-1">
+                            <span className="font-semibold text-foreground line-clamp-2 md:line-clamp-none">
+                                {procurement.title}
+                            </span>
+                            <span>
+                                {procurement.pr_number} &bull; Upload and verify documents for this stage
+                            </span>
                         </div>
-                    </CardHeader>
-                </Card>
+                    }
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline" className="text-[10px] sm:text-xs font-mono">
+                                {procurement.pr_number}
+                            </Badge>
+                            {workflowInfo && <ModeBadge workflowInfo={workflowInfo} />}
+                        </div>
+                    }
+                />
 
                 <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
                     {/* LEFT SIDEBAR: Progress */}

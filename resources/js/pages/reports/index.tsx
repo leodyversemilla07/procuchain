@@ -9,10 +9,11 @@ import { Spinner } from '@/components/ui/spinner';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { BarChart3, Calendar, Download, FileText, TrendingUp } from 'lucide-react';
+import { BarChart3, Calendar, Download, FileText, TrendingUp, Search } from 'lucide-react';
 import { useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { generate, exportMethod } from '@/actions/App/Http/Controllers/ReportController';
+import { HeroCard } from '@/components/hero-card';
 
 interface ReportFilters {
     filter_type: 'month' | 'year' | 'quarter' | 'date_range';
@@ -147,10 +148,11 @@ export default function ReportIndex() {
             <Head title="Semantic Search & Reports" />
 
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b from-background to-muted/20 p-4 sm:gap-6 sm:p-6">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Semantic Search & Reports</h1>
-                    <p className="text-muted-foreground">Generate procurement reports with advanced filtering options</p>
-                </div>
+                <HeroCard
+                    icon={Search}
+                    title="Semantic Search & Reports"
+                    description="Generate procurement reports with advanced filtering options"
+                />
 
                 <Card>
                     <CardHeader>

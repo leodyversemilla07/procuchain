@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\StageEnums;
+use App\Models\ProcurementWorkflowConfig;
 use App\Services\ProcurementDataService;
 use Exception;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -205,6 +206,51 @@ class ProcurementListController extends BaseController
                 $statusItems
             );
 
+            // Workflow Visualization Logic
+            $workflowInfo = null;
+            if ($procurementDetails) {
+                $procurementMode = $procurementDetails->procurementMode;
+                $currentStageValue = $currentStatus['stage'];
+
+                // Get workflow config
+                $workflowConfig = ProcurementWorkflowConfig::forMode($procurementMode)->active()->first();
+
+                // Get stages list (either from config or default enum)
+                $stages = $workflowConfig
+                    ? $workflowConfig->getStagesAsEnums()
+                    : StageEnums::getStagesForMode($procurementMode);
+
+                // Determine current stage index for completion status
+                $currentStageIndex = -1;
+                $stagesList = array_values($stages); // Ensure 0-indexed array
+                foreach ($stagesList as $index => $stage) {
+                    if ($stage->value === $currentStageValue) {
+                        $currentStageIndex = $index;
+                        break;
+                    }
+                }
+
+                $workflowStages = collect($stagesList)->map(function ($stage, $index) use ($currentStageIndex, $currentStageValue, $workflowConfig) {
+                    $isCompleted = $index < $currentStageIndex;
+                    $isCurrent = $stage->value === $currentStageValue;
+
+                    return [
+                        'value' => $stage->value,
+                        'display_name' => $stage->getDisplayName(),
+                        'url' => '#', // No direct link for view-only progress
+                        'is_completed' => $isCompleted,
+                        'is_current' => $isCurrent,
+                        'is_optional' => $workflowConfig ? $workflowConfig->isStageOptional($stage) : false,
+                    ];
+                })->toArray();
+
+                $workflowInfo = [
+                    'mode' => $procurementMode->value,
+                    'name' => $procurementMode->getDisplayName(),
+                    'stages' => $workflowStages,
+                ];
+            }
+
             // Add procurement details to response if available
             if ($procurementDetails) {
                 $procurementData['details'] = [
@@ -284,6 +330,7 @@ class ProcurementListController extends BaseController
 
             return Inertia::render('procurements/show-procurement', [
                 'procurement' => $procurementData,
+                'workflow' => $workflowInfo,
                 'now' => now()->toIso8601String(),
             ]);
         } catch (\Exception $e) {

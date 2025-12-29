@@ -3,6 +3,7 @@ import { AlertCircle, Calendar, Edit, File, FileText, User } from 'lucide-react'
 import { useState } from 'react';
 
 import { DocumentCorrectionSheet } from '@/components/documents/document-correction-sheet';
+import { HeroCard } from '@/components/hero-card';
 import { ProcurementCorrectionsTab } from '@/components/show-procurement/corrections-tab';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -89,14 +90,11 @@ export default function ProcurementCorrections({ procurement, corrections, docum
 
             <div className="w-full space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div>
-                            <h1 className="text-foreground text-2xl font-bold">Procurement Corrections</h1>
-                            <p className="text-muted-foreground">Manage corrections for {procurement.pr_number}</p>
-                        </div>
-                    </div>
-                </div>
+                <HeroCard
+                    icon={Edit}
+                    title="Procurement Corrections"
+                    description={`Manage corrections for ${procurement.pr_number}`}
+                />
 
                 {/* Procurement Overview */}
                 <Card>

@@ -10,6 +10,7 @@ import { buildBreadcrumbs } from '@/utils/breadcrumbs';
 
 import AppLayout from '@/layouts/app-layout';
 
+import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -467,26 +468,24 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                 )}
 
                 {/* Page Header */}
-                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
-                    <CardContent className="flex flex-col gap-2 p-4 sm:p-6">
-                        <div className="flex items-center justify-between">
-                            <div className="text-primary flex items-center gap-2">
-                                <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
-                                <h1 className="text-xl font-bold sm:text-2xl">Procurement Initiation</h1>
-                            </div>
-                            {hasDraft && !showDraftBanner && draftSavedAt && (
-                                <Badge variant="secondary" className="gap-1.5 text-xs">
-                                    <Save className="h-3 w-3" />
-                                    Draft saved {new Date(draftSavedAt).toLocaleTimeString()}
-                                </Badge>
-                            )}
-                        </div>
-                        <p className="text-muted-foreground text-sm sm:text-base">
+                <HeroCard
+                    icon={FileText}
+                    title="Procurement Initiation"
+                    description={
+                        <>
                             Create a new procurement request with all required information per RA 12009 (NGPA).
                             <span className="hidden sm:inline"> Documents will be uploaded progressively after creation.</span>
-                        </p>
-                    </CardContent>
-                </Card>
+                        </>
+                    }
+                    actions={
+                        hasDraft && !showDraftBanner && draftSavedAt && (
+                            <Badge variant="secondary" className="gap-1.5 text-xs">
+                                <Save className="h-3 w-3" />
+                                Draft saved {new Date(draftSavedAt).toLocaleTimeString()}
+                            </Badge>
+                        )
+                    }
+                />
 
                 <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
                     {/* Section 1: Basic Information */}

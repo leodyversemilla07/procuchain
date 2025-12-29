@@ -1,9 +1,12 @@
 {
     "agents": [
-        "copilot"
+        "opencode"
     ],
     "editors": [
-        "vscode"
+        "opencode"
     ],
-    "guidelines": []
+    "guidelines": [
+        "laravel/fortify"
+    ],
+    "herd_mcp": true
 }

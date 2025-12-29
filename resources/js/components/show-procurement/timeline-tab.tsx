@@ -97,49 +97,57 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                     </Badge>
                 </div>
             </CardHeader>
-            <CardContent className="p-0">
-                <div className="space-y-0" role="list" aria-label="Timeline events">
+            <CardContent className="pb-6 sm:pb-8">
+                <div className="ml-4 border-l border-border/50 space-y-8 sm:ml-8" role="list" aria-label="Timeline events">
                     {Object.keys(timelineItemsByDate)
                         .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
                         .map((date, dateIndex) => {
                             const isFirstDate = dateIndex === 0;
 
                             return (
-                                <section key={date} className="border-b last:border-b-0" role="listitem">
-                                    <div className="bg-muted/80 sticky top-0 z-10 border-b p-3 backdrop-blur-sm sm:p-4">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="text-primary h-4 w-4" aria-hidden="true" />
-                                            <time dateTime={date} className="text-sm font-semibold sm:text-base">
+                                <section key={date} className="relative" role="listitem">
+                                    {/* Date Marker */}
+                                    <div className="mb-4 flex items-center -ml-[5px]">
+                                        <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30 ring-4 ring-background" />
+                                        <div className="ml-4 flex items-center gap-2">
+                                            <Calendar className="text-muted-foreground h-3.5 w-3.5" aria-hidden="true" />
+                                            <time dateTime={date} className="text-sm font-semibold text-muted-foreground">
                                                 {date}
                                             </time>
                                             {isFirstDate && (
-                                                <Badge variant="default" className="text-xs">
-                                                    Latest
+                                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                                                    Today
                                                 </Badge>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-0">
+                                    <div className="space-y-1">
                                         {timelineItemsByDate[date]
                                             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                                             .map((item, itemIndex) => (
-                                                <div key={`${item.timestamp}-${itemIndex}`} className="border-b p-3 last:border-b-0 sm:p-4">
-                                                    <TimelineEventItem item={item.raw} type={item.type} stageOrder={item.stageOrder} />
-                                                </div>
+                                                <TimelineEventItem 
+                                                    key={`${item.timestamp}-${itemIndex}`} 
+                                                    item={item.raw} 
+                                                    type={item.type} 
+                                                    stageOrder={item.stageOrder} 
+                                                />
                                             ))}
                                     </div>
                                 </section>
                             );
                         })}
                 </div>
+                
+                <div className="mt-8 ml-4 sm:ml-8 flex items-center gap-4 text-muted-foreground">
+                    <div className="h-px w-8 bg-border/50" />
+                    <span className="flex items-center gap-2 text-xs sm:text-sm">
+                        <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+                        Start of Procurement
+                    </span>
+                </div>
             </CardContent>
-            <CardFooter className="justify-center border-t py-4 sm:py-6">
-                <span className="text-muted-foreground inline-flex items-center gap-2 text-xs sm:text-sm">
-                    <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
-                    Beginning of Timeline
-                </span>
-            </CardFooter>
+            {/* Removed CardFooter as it's now integrated */}
         </Card>
     );
 }

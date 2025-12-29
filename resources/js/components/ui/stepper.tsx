@@ -21,19 +21,9 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
 
     return (
         <div className={cn('w-full', className)}>
-            {/* Progress Bar */}
-            <div className="mb-8">
-                <Progress value={progressPercentage} className="h-2" />
-                <div className="mt-2 text-right">
-                    <span className="text-sm text-muted-foreground">
-                        Step {currentStep} of {steps.length}
-                    </span>
-                </div>
-            </div>
-
             {/* Desktop Stepper - Horizontal */}
             <div className="hidden md:block">
-                <ol className="flex items-center justify-between">
+                <ol className="flex items-start justify-between">
                     {steps.map((step, index) => {
                         const isCompleted = step.id < currentStep;
                         const isCurrent = step.id === currentStep;
@@ -56,7 +46,6 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
                                                 ? 'bg-primary'
                                                 : 'bg-muted',
                                         )}
-                                        style={{ width: 'calc(100% + 1rem)' }}
                                     />
                                 )}
                                 {index !== steps.length - 1 && (
@@ -65,7 +54,6 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
                                             'absolute left-1/2 right-0 top-5 h-0.5 -translate-y-1/2',
                                             isCompleted ? 'bg-primary' : 'bg-muted',
                                         )}
-                                        style={{ width: 'calc(100% + 1rem)' }}
                                     />
                                 )}
 
