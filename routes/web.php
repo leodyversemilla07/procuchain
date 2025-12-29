@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AccountLockoutController;
+use App\Http\Controllers\Admin\ProcurementWorkflowConfigController;
+use App\Http\Controllers\Admin\StageDocumentConfigController;
 use App\Http\Controllers\Admin\UserInvitationController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\AcceptInvitationController;
@@ -22,6 +24,7 @@ use App\Http\Controllers\ProcurementCorrectionController;
 use App\Http\Controllers\ProcurementListController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\WorkflowController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -38,7 +41,7 @@ use Inertia\Inertia;
 Route::get('/', fn () => Inertia::render('home'))->name('home');
 
 Route::inertia('/about', 'about')->name('about');
-Route::inertia('/workflow', 'workflow')->name('workflow');
+Route::get('/workflow', WorkflowController::class)->name('workflow');
 Route::inertia('/team', 'team')->name('team');
 Route::inertia('/contact', 'contact')->name('contact');
 Route::inertia('/privacy', 'privacy')->name('privacy.policy');
@@ -354,19 +357,19 @@ Route::middleware(['auth'])->group(function () {
 
         // Procurement Workflow Configuration
         Route::prefix('workflow-config')->name('workflow-config.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\ProcurementWorkflowConfigController::class, 'index'])->name('index');
-            Route::get('/{mode}/edit', [\App\Http\Controllers\Admin\ProcurementWorkflowConfigController::class, 'edit'])->name('edit');
-            Route::get('/{mode}/preview', [\App\Http\Controllers\Admin\ProcurementWorkflowConfigController::class, 'preview'])->name('preview');
-            Route::put('/{mode}', [\App\Http\Controllers\Admin\ProcurementWorkflowConfigController::class, 'update'])->name('update');
-            Route::post('/{mode}/reset', [\App\Http\Controllers\Admin\ProcurementWorkflowConfigController::class, 'resetToDefaults'])->name('reset');
+            Route::get('/', [ProcurementWorkflowConfigController::class, 'index'])->name('index');
+            Route::get('/{mode}/edit', [ProcurementWorkflowConfigController::class, 'edit'])->name('edit');
+            Route::get('/{mode}/preview', [ProcurementWorkflowConfigController::class, 'preview'])->name('preview');
+            Route::put('/{mode}', [ProcurementWorkflowConfigController::class, 'update'])->name('update');
+            Route::post('/{mode}/reset', [ProcurementWorkflowConfigController::class, 'resetToDefaults'])->name('reset');
         });
 
         // Stage Document Configuration
         Route::prefix('stage-documents')->name('stage-documents.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\StageDocumentConfigController::class, 'index'])->name('index');
-            Route::get('/{mode}/{stage}/edit', [\App\Http\Controllers\Admin\StageDocumentConfigController::class, 'edit'])->name('edit');
-            Route::put('/{mode}/{stage}', [\App\Http\Controllers\Admin\StageDocumentConfigController::class, 'update'])->name('update');
-            Route::post('/{mode}/{stage}/reset', [\App\Http\Controllers\Admin\StageDocumentConfigController::class, 'resetToDefaults'])->name('reset');
+            Route::get('/', [StageDocumentConfigController::class, 'index'])->name('index');
+            Route::get('/{mode}/{stage}/edit', [StageDocumentConfigController::class, 'edit'])->name('edit');
+            Route::put('/{mode}/{stage}', [StageDocumentConfigController::class, 'update'])->name('update');
+            Route::post('/{mode}/{stage}/reset', [StageDocumentConfigController::class, 'resetToDefaults'])->name('reset');
         });
     });
 });
@@ -384,6 +387,7 @@ require __DIR__.'/settings.php';
 if (app()->environment('local')) {
     Route::get('/errors/{status}', function ($status) {
         abort_if(! in_array($status, [401, 403, 404, 419, 429, 500, 503]), 404);
+
         return Inertia::render('error', ['status' => (int) $status]);
     })->name('errors.preview');
 }
