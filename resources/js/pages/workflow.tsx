@@ -56,512 +56,123 @@ const phases = [
     },
 ];
 
-// Stage definitions with mode applicability
+// Icon mapping for stages
+const stageIcons: Record<string, LucideIcon> = {
+    procurement_initiation: Play,
+    pre_procurement_conference: Users,
+    bidding_documents: FileText,
+    request_for_quotation: ClipboardList,
+    pre_bid_conference: MessageSquare,
+    supplemental_bid_bulletin: FileCheck,
+    bid_opening: BookOpen,
+    abstract_of_quotations: ListChecks,
+    bid_evaluation: FileSearch,
+    post_qualification: Search,
+    bac_resolution: Gavel,
+    notice_of_award: Award,
+    performance_bond_contract_and_po: ShieldCheck,
+    notice_to_proceed: Target,
+    monitoring: ClipboardCheck,
+    completion: HardHat,
+    completed: CheckCircle2,
+};
+
+// Stage interface matching backend data
 interface Stage {
     id: string;
     name: string;
     phase: string;
-    icon: LucideIcon;
     description: string;
-    optional?: boolean;
-    repeatable?: boolean;
+    optional: boolean;
+    repeatable: boolean;
     details: string[];
     documents: string[];
-    modes: string[];
 }
 
-const stages: Stage[] = [
-    // Pre-Procurement Phase
-    {
-        id: 'procurement_initiation',
-        name: 'Procurement Initiation',
-        phase: 'pre_procurement',
-        icon: Play,
-        description: 'Initial stage where procurement requirements are defined and approved',
-        details: [
-            'Preparation of Purchase Request (PR)',
-            'Project Procurement Management Plan (PPMP)',
-            'Annual Investment Plan (AIP) inclusion',
-            'Budget allocation and certification',
-            'Specification preparation and market study',
-        ],
-        documents: ['Purchase Request', 'PPMP', 'AIP Entry', 'Budget Certification', 'Technical Specifications'],
-        modes: [
-            'competitive_bidding',
-            'limited_source_bidding',
-            'competitive_dialogue',
-            'unsolicited_offer',
-            'direct_contracting',
-            'direct_acquisition',
-            'repeat_order',
-            'small_value_procurement',
-            'negotiated_procurement',
-            'direct_sales',
-            'direct_procurement_sti',
-        ],
-    },
-    {
-        id: 'pre_procurement_conference',
-        name: 'Pre-Procurement Conference',
-        phase: 'pre_procurement',
-        icon: Users,
-        description: 'Optional conference to discuss procurement requirements with stakeholders',
-        optional: true,
-        details: [
-            'Review of procurement documents',
-            'Validation of technical specifications',
-            'Budget adequacy assessment',
-            'Timeline and milestone setting',
-            'Readiness confirmation by BAC',
-        ],
-        documents: ['Pre-Procurement Conference Minutes', 'Attendance Sheet', 'Readiness Checklist'],
-        modes: ['competitive_bidding', 'limited_source_bidding', 'competitive_dialogue', 'unsolicited_offer'],
-    },
-    {
-        id: 'bidding_documents',
-        name: 'Bidding Documents',
-        phase: 'pre_procurement',
-        icon: FileText,
-        description: 'Preparation and publication of official bidding documents',
-        details: [
-            'Preparation of Invitation to Bid (ITB)',
-            'Instructions to Bidders (IB)',
-            'Bid Data Sheet (BDS)',
-            'General and Special Conditions of Contract',
-            'Technical specifications and drawings',
-            'Bill of Quantities / Schedule of Requirements',
-        ],
-        documents: ['Invitation to Bid', 'Bidding Documents Package', 'PhilGEPS Posting', 'Bid Bulletin (if any)'],
-        modes: ['competitive_bidding', 'limited_source_bidding', 'competitive_dialogue', 'unsolicited_offer'],
-    },
-    {
-        id: 'request_for_quotation',
-        name: 'Request for Quotation',
-        phase: 'pre_procurement',
-        icon: ClipboardList,
-        description: 'Preparation and sending of RFQ to suppliers',
-        details: [
-            'Preparation of RFQ documents',
-            'Selection of suppliers to invite',
-            'Distribution of RFQ to at least 3 suppliers',
-            'Supplier inquiries and clarifications',
-            'Setting of submission deadline',
-        ],
-        documents: ['Request for Quotation Form', 'Technical Specifications', 'Terms of Reference'],
-        modes: [
-            'direct_contracting',
-            'direct_acquisition',
-            'repeat_order',
-            'small_value_procurement',
-            'negotiated_procurement',
-            'direct_sales',
-            'direct_procurement_sti',
-        ],
-    },
+interface WorkflowMode {
+    mode: string;
+    name: string;
+    stages: Stage[];
+}
 
-    // Procurement Phase
-    {
-        id: 'pre_bid_conference',
-        name: 'Pre-Bid Conference',
-        phase: 'procurement',
-        icon: MessageSquare,
-        description: 'Conference to clarify bidding requirements and answer bidder questions',
-        details: [
-            'Presentation of procurement requirements',
-            'Response to bidder queries and clarifications',
-            'Site visit arrangements (if applicable)',
-            'Recording of all queries and responses',
-            'Distribution of conference minutes',
-        ],
-        documents: ['Pre-Bid Conference Minutes', 'Attendance Sheet', 'Questions and Answers Summary'],
-        modes: ['competitive_bidding', 'limited_source_bidding', 'competitive_dialogue', 'unsolicited_offer'],
-    },
-    {
-        id: 'supplemental_bid_bulletin',
-        name: 'Supplemental Bid Bulletin',
-        phase: 'procurement',
-        icon: FileCheck,
-        description: 'Issuance of supplemental bulletins to modify or clarify bidding documents',
-        optional: true,
-        repeatable: true,
-        details: [
-            'Clarification of ambiguous specifications',
-            'Correction of errors in bidding documents',
-            'Response to written bidder queries',
-            'Extension of bid submission deadline',
-            'Amendment to terms and conditions',
-        ],
-        documents: ['Supplemental/Bid Bulletin', 'Amendment to Bidding Documents'],
-        modes: ['competitive_bidding', 'limited_source_bidding', 'competitive_dialogue', 'unsolicited_offer'],
-    },
-    {
-        id: 'bid_opening',
-        name: 'Bid Opening',
-        phase: 'procurement',
-        icon: BookOpen,
-        description: 'Public opening and recording of submitted bids',
-        details: [
-            'Verification of sealed bid envelopes',
-            'Checking of bid security',
-            'Opening of technical and financial proposals',
-            'Recording of bid amounts',
-            'Preliminary examination of bids',
-        ],
-        documents: ['Bid Opening Minutes', 'Attendance Sheet', 'Abstract of Bids', 'Checklist of Requirements'],
-        modes: ['competitive_bidding', 'limited_source_bidding', 'competitive_dialogue', 'unsolicited_offer'],
-    },
-    {
-        id: 'abstract_of_quotations',
-        name: 'Abstract of Quotations',
-        phase: 'procurement',
-        icon: ListChecks,
-        description: 'Compilation and evaluation of received quotations',
-        details: [
-            'Collection of all quotation submissions',
-            'Comparison of prices and terms',
-            'Verification of supplier eligibility',
-            'Determination of lowest calculated quotation',
-            'Documentation of evaluation process',
-        ],
-        documents: ['Abstract of Quotations', 'Quotation Evaluation Sheet', 'Supplier Comparison Matrix'],
-        modes: [
-            'direct_contracting',
-            'direct_acquisition',
-            'repeat_order',
-            'small_value_procurement',
-            'negotiated_procurement',
-            'direct_sales',
-            'direct_procurement_sti',
-        ],
-    },
-    {
-        id: 'bid_evaluation',
-        name: 'Bid Evaluation',
-        phase: 'procurement',
-        icon: FileSearch,
-        description: 'Technical and financial evaluation of submitted bids',
-        details: [
-            'Detailed evaluation against specifications',
-            'Verification of bid computation',
-            'Assessment of technical compliance',
-            'Financial capability evaluation',
-            'Determination of Lowest Calculated Bid (LCB)',
-        ],
-        documents: ['Technical Evaluation Report', 'Financial Evaluation Report', 'Bid Evaluation Report'],
-        modes: ['competitive_bidding', 'limited_source_bidding', 'competitive_dialogue', 'unsolicited_offer'],
-    },
-    {
-        id: 'post_qualification',
-        name: 'Post-Qualification',
-        phase: 'procurement',
-        icon: Search,
-        description: "Verification of winning bidder's qualifications and capacity",
-        details: [
-            'Verification of legal requirements',
-            'Technical capability assessment',
-            'Financial capability verification',
-            'Site inspection (if applicable)',
-            'Reference checking',
-        ],
-        documents: ['Post-Qualification Report', 'Compliance Checklist', 'Site Inspection Report'],
-        modes: ['competitive_bidding', 'limited_source_bidding', 'competitive_dialogue', 'unsolicited_offer'],
-    },
-    {
-        id: 'bac_resolution',
-        name: 'BAC Resolution',
-        phase: 'procurement',
-        icon: Gavel,
-        description: 'Formal resolution by the Bids and Awards Committee',
-        details: [
-            'Declaration of Lowest Calculated Responsive Bid',
-            'Recommendation for award',
-            'Documentation of BAC decision',
-            'Approval by Head of Procuring Entity',
-            'Filing of motion for reconsideration period',
-        ],
-        documents: ['BAC Resolution', 'Minutes of BAC Meeting', 'Recommendation Letter'],
-        modes: [
-            'competitive_bidding',
-            'limited_source_bidding',
-            'competitive_dialogue',
-            'unsolicited_offer',
-            'direct_contracting',
-            'direct_acquisition',
-            'repeat_order',
-            'small_value_procurement',
-            'negotiated_procurement',
-            'direct_sales',
-            'direct_procurement_sti',
-        ],
-    },
+interface WorkflowProps {
+    workflows: WorkflowMode[];
+}
 
-    // Post-Procurement Phase
-    {
-        id: 'notice_of_award',
-        name: 'Notice of Award',
-        phase: 'post_procurement',
-        icon: Award,
-        description: 'Official notification of contract award to winning bidder',
-        details: [
-            'Preparation and signing of NOA',
-            'Notification to winning bidder',
-            'Posting on PhilGEPS and agency website',
-            'Notice to unsuccessful bidders',
-            'Setting deadline for contract signing',
-        ],
-        documents: ['Notice of Award', 'Transmittal Letter', 'PhilGEPS Posting Confirmation'],
-        modes: [
-            'competitive_bidding',
-            'limited_source_bidding',
-            'competitive_dialogue',
-            'unsolicited_offer',
-            'direct_contracting',
-            'direct_acquisition',
-            'repeat_order',
-            'small_value_procurement',
-            'negotiated_procurement',
-            'direct_sales',
-            'direct_procurement_sti',
-        ],
-    },
-    {
-        id: 'performance_bond_contract_and_po',
-        name: 'Performance Bond, Contract & PO',
-        phase: 'post_procurement',
-        icon: ShieldCheck,
-        description: 'Submission of performance bond, contract signing, and purchase order issuance',
-        details: [
-            'Submission of performance security',
-            'Verification of bond authenticity',
-            'Contract preparation and notarization',
-            'Purchase order issuance',
-            'PhilGEPS award notice posting',
-        ],
-        documents: ['Performance Bond', 'Contract Agreement', 'Purchase Order', 'Notice to Proceed'],
-        modes: [
-            'competitive_bidding',
-            'limited_source_bidding',
-            'competitive_dialogue',
-            'unsolicited_offer',
-            'direct_contracting',
-            'direct_acquisition',
-            'repeat_order',
-            'small_value_procurement',
-            'negotiated_procurement',
-            'direct_sales',
-            'direct_procurement_sti',
-        ],
-    },
-    {
-        id: 'notice_to_proceed',
-        name: 'Notice to Proceed',
-        phase: 'post_procurement',
-        icon: Target,
-        description: 'Authorization for contractor to begin work or delivery',
-        details: [
-            'Issuance of NTP to winning bidder',
-            'Setting of contract effectivity date',
-            'Coordination with end-user unit',
-            'Mobilization preparation',
-            'Timeline confirmation',
-        ],
-        documents: ['Notice to Proceed', 'Acknowledgment Receipt'],
-        modes: [
-            'competitive_bidding',
-            'limited_source_bidding',
-            'competitive_dialogue',
-            'unsolicited_offer',
-            'direct_contracting',
-            'direct_acquisition',
-            'repeat_order',
-            'small_value_procurement',
-            'negotiated_procurement',
-            'direct_sales',
-            'direct_procurement_sti',
-        ],
-    },
-    {
-        id: 'monitoring',
-        name: 'Monitoring',
-        phase: 'post_procurement',
-        icon: ClipboardCheck,
-        description: 'Active monitoring of contract implementation',
-        details: [
-            'Progress tracking and reporting',
-            'Quality assurance inspections',
-            'Delivery verification',
-            'Issue resolution and documentation',
-            'Milestone and payment processing',
-        ],
-        documents: ['Progress Reports', 'Inspection Reports', 'Delivery Receipts', 'Payment Vouchers'],
-        modes: [
-            'competitive_bidding',
-            'limited_source_bidding',
-            'competitive_dialogue',
-            'unsolicited_offer',
-            'direct_contracting',
-            'direct_acquisition',
-            'repeat_order',
-            'small_value_procurement',
-            'negotiated_procurement',
-            'direct_sales',
-            'direct_procurement_sti',
-        ],
-    },
-    {
-        id: 'completion',
-        name: 'Completion',
-        phase: 'post_procurement',
-        icon: HardHat,
-        description: 'Final stage of contract completion and acceptance',
-        details: [
-            'Final inspection and acceptance',
-            'Preparation of completion report',
-            'Final payment processing',
-            'Performance evaluation',
-            'Contract closeout documentation',
-        ],
-        documents: ['Inspection and Acceptance Report', 'Certificate of Completion', 'Final Payment Voucher'],
-        modes: [
-            'competitive_bidding',
-            'limited_source_bidding',
-            'competitive_dialogue',
-            'unsolicited_offer',
-            'direct_contracting',
-            'direct_acquisition',
-            'repeat_order',
-            'small_value_procurement',
-            'negotiated_procurement',
-            'direct_sales',
-            'direct_procurement_sti',
-        ],
-    },
-    {
-        id: 'completed',
-        name: 'Completed',
-        phase: 'post_procurement',
-        icon: CheckCircle2,
-        description: 'Procurement process fully completed and closed',
-        details: [
-            'All deliverables received and accepted',
-            'All payments processed',
-            'Contract formally closed',
-            'Documentation archived',
-            'Performance bond released (if applicable)',
-        ],
-        documents: ['Certificate of Final Acceptance', 'Release of Performance Bond', 'Final Documentation Package'],
-        modes: [
-            'competitive_bidding',
-            'limited_source_bidding',
-            'competitive_dialogue',
-            'unsolicited_offer',
-            'direct_contracting',
-            'direct_acquisition',
-            'repeat_order',
-            'small_value_procurement',
-            'negotiated_procurement',
-            'direct_sales',
-            'direct_procurement_sti',
-        ],
-    },
-];
-
-// Procurement modes based on NGPA IRR Section 26
-const procurementModes = [
+// Procurement modes metadata (static info not in DB)
+const procurementModesMetadata: Record<string, { category: string; section: string; description: string; icon: LucideIcon }> = {
     // Competitive Modes
-    {
-        id: 'competitive_bidding',
-        name: 'Competitive Bidding',
+    competitive_bidding: {
         category: 'competitive',
         section: 'Section 27',
         description: 'Open to participation by any eligible bidder through full bidding process',
         icon: Briefcase,
     },
-    {
-        id: 'limited_source_bidding',
-        name: 'Limited Source Bidding',
+    limited_source_bidding: {
         category: 'competitive',
         section: 'Section 28',
         description: 'Direct invitation to pre-selected suppliers with known experience and proven capability',
         icon: Users,
     },
-    {
-        id: 'competitive_dialogue',
-        name: 'Competitive Dialogue',
+    competitive_dialogue: {
         category: 'competitive',
         section: 'Section 29',
         description: 'Two-stage process for complex or innovative procurement needs',
         icon: MessageSquare,
     },
-    {
-        id: 'unsolicited_offer',
-        name: 'Unsolicited Offer with Bid Matching',
+    unsolicited_offer: {
         category: 'competitive',
         section: 'Section 30',
         description: 'Consideration of unsolicited offers for new concepts or technology with bid matching',
         icon: Lightbulb,
     },
     // Alternative Modes
-    {
-        id: 'direct_contracting',
-        name: 'Direct Contracting',
+    direct_contracting: {
         category: 'alternative',
         section: 'Section 31',
         description: 'Procurement of proprietary goods or from exclusive dealer/manufacturer',
         icon: ShoppingCart,
     },
-    {
-        id: 'direct_acquisition',
-        name: 'Direct Acquisition',
+    direct_acquisition: {
         category: 'alternative',
         section: 'Section 32',
         description: 'Procurement of goods/services with ABC not exceeding ₱200,000',
         icon: Package,
     },
-    {
-        id: 'repeat_order',
-        name: 'Repeat Order',
+    repeat_order: {
         category: 'alternative',
         section: 'Section 33',
         description: 'Replenishment from previous winning bidder within 6 months (max 25% of original)',
         icon: RefreshCw,
     },
-    {
-        id: 'small_value_procurement',
-        name: 'Small Value Procurement',
+    small_value_procurement: {
         category: 'alternative',
         section: 'Section 34',
         description: 'Request for at least 3 price quotations (up to ₱2,000,000 threshold)',
         icon: ClipboardList,
     },
-    {
-        id: 'negotiated_procurement',
-        name: 'Negotiated Procurement',
+    negotiated_procurement: {
         category: 'alternative',
         section: 'Section 35',
         description: 'Direct negotiation for failed biddings, emergencies, or special cases',
         icon: Gavel,
     },
-    {
-        id: 'direct_sales',
-        name: 'Direct Sales',
+    direct_sales: {
         category: 'alternative',
         section: 'Section 36',
         description: 'Purchase from supplier that satisfactorily delivered to another government agency',
         icon: Store,
     },
-    {
-        id: 'direct_procurement_sti',
-        name: 'Direct Procurement for STI',
+    direct_procurement_sti: {
         category: 'alternative',
         section: 'Section 37',
         description: 'Procurement for science, technology, innovation, and research & development',
         icon: Zap,
     },
-];
+};
 
 function StageCard({ stage, index }: { stage: Stage; index: number }) {
-    const Icon = stage.icon;
+    const Icon = stageIcons[stage.id] || FileText;
 
     return (
         <Card className="border">
@@ -617,6 +228,9 @@ function StageCard({ stage, index }: { stage: Stage; index: number }) {
                                 +{stage.documents.length - 2} more
                             </Badge>
                         )}
+                        {stage.documents.length === 0 && (
+                            <span className="text-muted-foreground text-[10px] italic sm:text-xs">No specific documents required</span>
+                        )}
                     </div>
                 </div>
             </CardContent>
@@ -624,9 +238,7 @@ function StageCard({ stage, index }: { stage: Stage; index: number }) {
     );
 }
 
-function FlowDiagram({ selectedMode }: { selectedMode: string }) {
-    const modeStages = stages.filter((s) => s.modes.includes(selectedMode));
-
+function FlowDiagram({ stages }: { stages: Stage[] }) {
     const phaseColors: Record<string, string> = {
         pre_procurement: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
         procurement: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
@@ -639,7 +251,7 @@ function FlowDiagram({ selectedMode }: { selectedMode: string }) {
             <div className="overflow-x-auto pb-4">
                 <div className="min-w-[320px] sm:min-w-[600px] lg:min-w-[800px]">
                     {phases.map((phase, phaseIndex) => {
-                        const phaseStages = modeStages.filter((s) => s.phase === phase.id);
+                        const phaseStages = stages.filter((s) => s.phase === phase.id);
                         if (phaseStages.length === 0) return null;
                         return (
                             <div key={phase.id} className="mb-6 last:mb-0">
@@ -650,7 +262,7 @@ function FlowDiagram({ selectedMode }: { selectedMode: string }) {
                                 </div>
                                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                     {phaseStages.map((stage, index) => {
-                                        const Icon = stage.icon;
+                                        const Icon = stageIcons[stage.id] || FileText;
                                         const isLast = index === phaseStages.length - 1;
                                         const isLastPhase = phaseIndex === phases.length - 1;
                                         return (
@@ -702,9 +314,7 @@ function FlowDiagram({ selectedMode }: { selectedMode: string }) {
     );
 }
 
-function WorkflowByMode({ selectedMode }: { selectedMode: string }) {
-    const modeStages = stages.filter((s) => s.modes.includes(selectedMode));
-
+function WorkflowByMode({ stages }: { stages: Stage[] }) {
     const phaseIcons: Record<string, LucideIcon> = {
         pre_procurement: ClipboardList,
         procurement: FileSearch,
@@ -715,7 +325,7 @@ function WorkflowByMode({ selectedMode }: { selectedMode: string }) {
     return (
         <div className="space-y-12">
             {phases.map((phase) => {
-                const phaseStages = modeStages.filter((s) => s.phase === phase.id);
+                const phaseStages = stages.filter((s) => s.phase === phase.id);
                 if (phaseStages.length === 0) return null;
                 const PhaseIcon = phaseIcons[phase.id];
                 return (
@@ -751,11 +361,24 @@ function WorkflowByMode({ selectedMode }: { selectedMode: string }) {
     );
 }
 
-export default function Workflow() {
+export default function Workflow({ workflows }: WorkflowProps) {
     const [selectedMode, setSelectedMode] = useState('competitive_bidding');
-    const currentMode = procurementModes.find((m) => m.id === selectedMode)!;
-    const modeStages = stages.filter((s) => s.modes.includes(selectedMode));
-    const CurrentModeIcon = currentMode.icon;
+    
+    // Fallback if no workflows are loaded or the selected mode isn't available
+    const currentWorkflow = workflows.find((w) => w.mode === selectedMode) || workflows[0] || {
+        mode: 'unknown',
+        name: 'Unknown Mode',
+        stages: []
+    };
+
+    const currentModeMetadata = procurementModesMetadata[currentWorkflow.mode] || {
+        category: 'unknown',
+        section: '',
+        description: 'Custom Procurement Mode',
+        icon: Briefcase
+    };
+
+    const CurrentModeIcon = currentModeMetadata.icon;
 
     return (
         <>
@@ -764,30 +387,6 @@ export default function Workflow() {
                     name="description"
                     content="Explore the complete government procurement workflow in ProcuChain - from initiation to completion, with blockchain-verified transparency at every stage."
                 />
-                <meta
-                    name="keywords"
-                    content="procurement workflow, government procurement, RA 9184, RA 12009, NGPA, competitive bidding, BAC, blockchain procurement"
-                />
-
-                {/* Open Graph / Facebook */}
-                <meta property="og:type" content="website" />
-                <meta property="og:url" content={window.location.href} />
-                <meta property="og:title" content="Procurement Workflow - ProcuChain" />
-                <meta
-                    property="og:description"
-                    content="Explore the complete government procurement workflow in ProcuChain - from initiation to completion, with blockchain-verified transparency."
-                />
-                <meta property="og:image" content="/logo.png" />
-
-                {/* Twitter */}
-                <meta property="twitter:card" content="summary_large_image" />
-                <meta property="twitter:url" content={window.location.href} />
-                <meta property="twitter:title" content="Procurement Workflow - ProcuChain" />
-                <meta
-                    property="twitter:description"
-                    content="Explore the complete government procurement workflow in ProcuChain - from initiation to completion."
-                />
-                <meta property="twitter:image" content="/logo.png" />
             </Head>
             <div className="bg-background flex min-h-screen flex-col">
                 <Header />
@@ -847,16 +446,20 @@ export default function Workflow() {
                                                 Full bidding process with open competition - the default method for government procurement
                                             </p>
                                             <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-                                                {procurementModes
-                                                    .filter((m) => m.category === 'competitive')
-                                                    .map((mode) => {
-                                                        const ModeIcon = mode.icon;
+                                                {workflows
+                                                    .filter(w => {
+                                                        const meta = procurementModesMetadata[w.mode];
+                                                        return meta && meta.category === 'competitive';
+                                                    })
+                                                    .map((workflow) => {
+                                                        const meta = procurementModesMetadata[workflow.mode];
+                                                        const ModeIcon = meta.icon;
                                                         return (
                                                             <button
-                                                                key={mode.id}
-                                                                onClick={() => setSelectedMode(mode.id)}
+                                                                key={workflow.mode}
+                                                                onClick={() => setSelectedMode(workflow.mode)}
                                                                 className={`bg-card cursor-pointer rounded-lg border p-3 text-left transition-all hover:shadow-md sm:p-4 ${
-                                                                    selectedMode === mode.id
+                                                                    selectedMode === workflow.mode
                                                                         ? 'border-primary ring-primary ring-2'
                                                                         : 'hover:border-primary/50'
                                                                 }`}
@@ -866,11 +469,11 @@ export default function Workflow() {
                                                                         <ModeIcon className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
                                                                     </div>
                                                                     <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                                                                        {mode.section}
+                                                                        {meta.section}
                                                                     </Badge>
                                                                 </div>
-                                                                <h4 className="mb-1 text-sm font-semibold sm:text-base">{mode.name}</h4>
-                                                                <p className="text-muted-foreground text-xs sm:text-sm">{mode.description}</p>
+                                                                <h4 className="mb-1 text-sm font-semibold sm:text-base">{workflow.name}</h4>
+                                                                <p className="text-muted-foreground text-xs sm:text-sm">{meta.description}</p>
                                                             </button>
                                                         );
                                                     })}
@@ -886,16 +489,20 @@ export default function Workflow() {
                                                 Simplified procedures for specific circumstances when competitive bidding is not feasible
                                             </p>
                                             <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-                                                {procurementModes
-                                                    .filter((m) => m.category === 'alternative')
-                                                    .map((mode) => {
-                                                        const ModeIcon = mode.icon;
+                                                {workflows
+                                                    .filter(w => {
+                                                        const meta = procurementModesMetadata[w.mode];
+                                                        return meta && meta.category === 'alternative';
+                                                    })
+                                                    .map((workflow) => {
+                                                        const meta = procurementModesMetadata[workflow.mode];
+                                                        const ModeIcon = meta.icon;
                                                         return (
                                                             <button
-                                                                key={mode.id}
-                                                                onClick={() => setSelectedMode(mode.id)}
+                                                                key={workflow.mode}
+                                                                onClick={() => setSelectedMode(workflow.mode)}
                                                                 className={`bg-card cursor-pointer rounded-lg border p-3 text-left transition-all hover:shadow-md sm:p-4 ${
-                                                                    selectedMode === mode.id
+                                                                    selectedMode === workflow.mode
                                                                         ? 'border-primary ring-primary ring-2'
                                                                         : 'hover:border-primary/50'
                                                                 }`}
@@ -905,12 +512,12 @@ export default function Workflow() {
                                                                         <ModeIcon className="h-4 w-4 text-amber-600 sm:h-5 sm:w-5 dark:text-amber-400" />
                                                                     </div>
                                                                     <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                                                                        {mode.section}
+                                                                        {meta.section}
                                                                     </Badge>
                                                                 </div>
-                                                                <h4 className="mb-1 text-sm font-semibold sm:text-base">{mode.name}</h4>
+                                                                <h4 className="mb-1 text-sm font-semibold sm:text-base">{workflow.name}</h4>
                                                                 <p className="text-muted-foreground line-clamp-2 text-xs sm:text-sm">
-                                                                    {mode.description}
+                                                                    {meta.description}
                                                                 </p>
                                                             </button>
                                                         );
@@ -929,32 +536,32 @@ export default function Workflow() {
                                     <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
                                         <div className="flex items-center gap-3 sm:gap-4">
                                             <div
-                                                className={`rounded-lg p-2 sm:p-3 ${currentMode.category === 'competitive' ? 'bg-primary/10' : 'bg-amber-500/10'}`}
+                                                className={`rounded-lg p-2 sm:p-3 ${currentModeMetadata.category === 'competitive' ? 'bg-primary/10' : 'bg-amber-500/10'}`}
                                             >
                                                 <CurrentModeIcon
-                                                    className={`h-5 w-5 sm:h-6 sm:w-6 ${currentMode.category === 'competitive' ? 'text-primary' : 'text-amber-600 dark:text-amber-400'}`}
+                                                    className={`h-5 w-5 sm:h-6 sm:w-6 ${currentModeMetadata.category === 'competitive' ? 'text-primary' : 'text-amber-600 dark:text-amber-400'}`}
                                                 />
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-semibold sm:text-xl">{currentMode.name}</h3>
-                                                <p className="text-muted-foreground text-xs sm:text-sm">{currentMode.description}</p>
+                                                <h3 className="text-lg font-semibold sm:text-xl">{currentWorkflow.name}</h3>
+                                                <p className="text-muted-foreground text-xs sm:text-sm">{currentModeMetadata.description}</p>
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                             <Badge variant="outline" className="text-[10px] sm:text-xs">
-                                                {currentMode.section}
+                                                {currentModeMetadata.section}
                                             </Badge>
                                             <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                                                {modeStages.length} Stages
+                                                {currentWorkflow.stages.length} Stages
                                             </Badge>
                                             <Badge
                                                 className={`text-[10px] sm:text-xs ${
-                                                    currentMode.category === 'competitive'
+                                                    currentModeMetadata.category === 'competitive'
                                                         ? 'bg-primary/10 text-primary hover:bg-primary/20'
                                                         : 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400'
                                                 }`}
                                             >
-                                                {currentMode.category === 'competitive' ? 'Competitive' : 'Alternative'}
+                                                {currentModeMetadata.category === 'competitive' ? 'Competitive' : 'Alternative'}
                                             </Badge>
                                         </div>
                                     </div>
@@ -968,11 +575,11 @@ export default function Workflow() {
                                 <CardHeader className="p-4 sm:p-6">
                                     <CardTitle className="text-lg sm:text-xl">Workflow Flow Diagram</CardTitle>
                                     <CardDescription className="text-xs sm:text-sm">
-                                        Visual representation of the procurement stages for {currentMode.name}
+                                        Visual representation of the procurement stages for {currentWorkflow.name}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                                    <FlowDiagram selectedMode={selectedMode} />
+                                    <FlowDiagram stages={currentWorkflow.stages} />
                                 </CardContent>
                             </Card>
                         </div>
@@ -980,7 +587,7 @@ export default function Workflow() {
                         {/* Detailed Stages */}
                         <div>
                             <h2 className="mb-6 text-center text-2xl font-bold sm:mb-8 sm:text-3xl">Detailed Stage Information</h2>
-                            <WorkflowByMode selectedMode={selectedMode} />
+                            <WorkflowByMode stages={currentWorkflow.stages} />
                         </div>
                     </div>
                 </main>
