@@ -3,6 +3,7 @@ import { Activity, Archive, Clock, FileText, Plus } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Can } from '@/components/auth/can';
+import { HeroCard } from '@/components/hero-card';
 import { PreBidConferenceDialog } from '@/components/pre-bid-conference-dialog';
 import { PreProcurementDialog } from '@/components/pre-procurement-conference-dialog';
 import { createColumns } from '@/components/procurements-list/columns';
@@ -333,38 +334,36 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
             <Head title="Procurement List" />
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 {/* Page Header */}
-                <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
-                    <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-6">
-                        <div className="flex flex-col gap-2">
-                            <div className="text-primary flex items-center gap-2">
-                                <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
-                                <h1 className="text-xl font-bold sm:text-2xl">Procurement List</h1>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-muted-foreground text-sm sm:text-base">View and manage procurement items across all stages</p>
-                                <p className="text-muted-foreground hidden text-xs sm:block">
-                                    Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">R</kbd> Refresh
-                                    {' · '}
-                                    <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">/</kbd> Search
-                                    {auth?.permissions?.includes('create procurement') && (
-                                        <>
-                                            {' · '}
-                                            <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">N</kbd> New
-                                        </>
-                                    )}
-                                </p>
-                            </div>
+                <HeroCard
+                    icon={FileText}
+                    title="Procurement List"
+                    description={
+                        <div className="space-y-1">
+                            <p>View and manage procurement items across all stages</p>
+                            <p className="hidden text-xs sm:block opacity-80">
+                                Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">R</kbd> Refresh
+                                {' · '}
+                                <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">/</kbd> Search
+                                {auth?.permissions?.includes('create procurement') && (
+                                    <>
+                                        {' · '}
+                                        <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">N</kbd> New
+                                    </>
+                                )}
+                            </p>
                         </div>
+                    }
+                    actions={
                         <Can permission="create procurement">
-                            <Button asChild className="w-full shrink-0 sm:w-auto">
+                            <Button asChild className="shrink-0">
                                 <Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2">
                                     <Plus className="h-4 w-4" />
                                     <span>New Procurement</span>
                                 </Link>
                             </Button>
                         </Can>
-                    </CardContent>
-                </Card>
+                    }
+                />
 
                 <ProcurementStatsSummary
                     total={procurements.length}

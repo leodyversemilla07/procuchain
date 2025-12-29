@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePickerInput } from '@/components/ui/date-picker';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
@@ -392,100 +391,100 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
 
             {/* Latest Correction Summary */}
             {latestCorrection && (
-                <Card className="border-amber-200 bg-amber-50/50">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-amber-800">
+                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+                    <div className="flex items-start gap-4">
+                        <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
                             <Clock className="h-5 w-5" />
-                            Latest Correction
-                        </CardTitle>
-                        <CardDescription className="text-amber-700">Most recent correction submitted for this procurement</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
+                        </div>
+                        <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Submitted by:</span>
-                                <span className="text-sm">{latestCorrection.corrected_by}</span>
+                                <h4 className="font-semibold text-amber-900">Latest Correction</h4>
+                                <span className="text-xs font-medium text-amber-700">
+                                    {new Date(latestCorrection.timestamp).toLocaleDateString()}
+                                </span>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Date:</span>
-                                <span className="text-sm">{new Date(latestCorrection.timestamp).toLocaleDateString()}</span>
-                            </div>
-                            <div>
-                                <span className="text-sm font-medium">Reason:</span>
-                                <p className="text-muted-foreground mt-1 text-sm">{latestCorrection.reason}</p>
-                            </div>
-                            <div>
-                                <span className="text-sm font-medium">Fields corrected:</span>
-                                <div className="mt-1 flex flex-wrap gap-1">
-                                    {latestCorrection.changed_fields.map((field, index) => (
-                                        <Badge key={index} variant="outline" className="text-xs">
-                                            {formatFieldName(field)}
-                                        </Badge>
-                                    ))}
-                                </div>
+                            <p className="text-sm text-amber-800">{latestCorrection.reason}</p>
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                                <span className="font-medium text-amber-900">Changed:</span>
+                                {latestCorrection.changed_fields.map((field, index) => (
+                                    <Badge key={index} variant="outline" className="border-amber-300 bg-amber-100/50 text-amber-800 hover:bg-amber-100">
+                                        {formatFieldName(field)}
+                                    </Badge>
+                                ))}
+                                <span className="ml-auto text-amber-700">by {latestCorrection.corrected_by}</span>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             )}
 
             {/* Corrections History */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Correction History</CardTitle>
-                    <CardDescription>Complete history of all corrections made to this procurement</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {corrections.length > 0 ? (
-                        <div className="space-y-4">
-                            {corrections.map((correction, index) => (
-                                <div key={index} className="space-y-3 rounded-lg border p-4">
-                                    <div className="flex items-center justify-between">
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg">History</h3>
+                </div>
+                
+                {corrections.length > 0 ? (
+                    <div className="ml-3 border-l border-border space-y-8 pl-8 relative">
+                        {corrections.map((correction, index) => (
+                            <div key={index} className="relative">
+                                {/* Timeline Dot */}
+                                <div className="absolute -left-[37px] top-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-background ring-4 ring-background">
+                                    <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                                         <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="text-xs">
+                                            <span className="font-semibold text-sm">
                                                 {correction.correction_type_display}
-                                            </Badge>
-                                            <span className="text-muted-foreground text-sm">
-                                                {new Date(correction.timestamp).toLocaleDateString()} at{' '}
-                                                {new Date(correction.timestamp).toLocaleTimeString()}
                                             </span>
+                                            <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                                                {correction.corrected_by}
+                                            </Badge>
                                         </div>
-                                        <Badge variant="secondary" className="text-xs">
-                                            {correction.corrected_by}
-                                        </Badge>
+                                        <time className="text-xs text-muted-foreground font-mono">
+                                            {new Date(correction.timestamp).toLocaleString()}
+                                        </time>
                                     </div>
-                                    <div>
-                                        <span className="text-sm font-medium">Reason:</span>
-                                        <p className="text-muted-foreground mt-1 text-sm">{correction.reason}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-sm font-medium">Fields corrected:</span>
-                                        <div className="mt-1 flex flex-wrap gap-1">
-                                            {correction.changed_fields.map((field, fieldIndex) => (
-                                                <Badge key={fieldIndex} variant="outline" className="text-xs">
-                                                    {formatFieldName(field)}
-                                                </Badge>
-                                            ))}
-                                        </div>
+                                    
+                                    <div className="bg-muted/30 rounded-lg border p-3 text-sm">
+                                        <div className="mb-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">Reason</div>
+                                        <p>{correction.reason}</p>
+                                        
+                                        {correction.changed_fields.length > 0 && (
+                                            <>
+                                                <div className="mt-3 mb-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">Changes</div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {correction.changed_fields.map((field, fieldIndex) => (
+                                                        <Badge key={fieldIndex} variant="outline" className="bg-background text-xs">
+                                                            {formatFieldName(field)}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="rounded-xl border border-dashed p-8">
                         <Empty>
                             <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <FileText className="text-muted-foreground" />
+                                <EmptyMedia variant="icon" className="bg-muted/50 p-4 rounded-full">
+                                    <FileText className="text-muted-foreground h-8 w-8" />
                                 </EmptyMedia>
-                                <EmptyTitle>No Corrections Yet</EmptyTitle>
+                                <EmptyTitle className="mt-4">No Corrections Yet</EmptyTitle>
                                 <EmptyDescription>
                                     This procurement has not been corrected. Corrections will appear here once submitted.
                                 </EmptyDescription>
                             </EmptyHeader>
                         </Empty>
-                    )}
-                </CardContent>
-            </Card>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

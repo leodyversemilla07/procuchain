@@ -2,6 +2,7 @@ import { Calendar, Clock, FileCheck, Hash, Tag } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Stepper } from '@/components/ui/stepper';
 import { STAGE_ORDER } from '@/types/constants';
 
 import { calculateProgress } from '../../utils/show-procurement/helpers';
@@ -25,15 +26,31 @@ interface ProcurementStatus {
     phase_display_name: string;
 }
 
+interface WorkflowStage {
+    value: string;
+    display_name: string;
+    url: string;
+    is_completed: boolean;
+    is_current: boolean;
+    is_optional: boolean;
+}
+
+interface WorkflowInfo {
+    mode: string;
+    name: string;
+    stages: WorkflowStage[];
+}
+
 interface ProcurementHeaderProps {
     title: string;
     pr_number: string;
     status: ProcurementStatus;
     procurementMode?: string;
     procurementModeLabel?: string;
+    workflow?: WorkflowInfo;
 }
 
-export function ProcurementHeader({ title, pr_number, status, procurementModeLabel }: ProcurementHeaderProps) {
+export function ProcurementHeader({ title, pr_number, status, procurementModeLabel, workflow }: ProcurementHeaderProps) {
     const stageToSearch = (status?.stage_formatted || status?.stage) as (typeof STAGE_ORDER)[number];
     const stageIndex = stageToSearch ? STAGE_ORDER.indexOf(stageToSearch) + 1 : 0;
     const totalStages = STAGE_ORDER.length;
@@ -59,8 +76,22 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                     </CardDescription>
                 </div>
 
-                {/* Progress Bar */}
-                {progress > 0 && (
+                {/* Workflow Visualization or Progress Bar */}
+                {workflow ? (
+                    <div className="w-full space-y-4 pt-2">
+                        <div className="text-muted-foreground flex justify-between text-xs font-medium sm:text-sm">
+                            <span className="uppercase tracking-wider">Workflow Progress</span>
+                        </div>
+                        <Stepper
+                            steps={workflow.stages.map((stage, index) => ({
+                                id: index + 1,
+                                title: stage.display_name,
+                                description: stage.is_optional ? '(Optional)' : undefined,
+                            }))}
+                            currentStep={(workflow.stages.findIndex((s) => s.is_current) + 1) || 1}
+                        />
+                    </div>
+                ) : progress > 0 ? (
                     <div
                         className="w-full space-y-1.5 sm:space-y-2"
                         role="progressbar"
@@ -82,7 +113,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                             </div>
                         </div>
                     </div>
-                )}
+                ) : null}
 
                 {/* Status Information Grid */}
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">

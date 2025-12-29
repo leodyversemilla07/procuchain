@@ -1,8 +1,8 @@
-import { FileCheck, FileText } from 'lucide-react';
+import { FileText, Layers } from 'lucide-react';
 import { useMemo, type FC } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import type { Document } from '@/types';
 import { groupDocumentsByStage, sortStageKeys } from '../../utils/show-procurement/helpers';
@@ -19,14 +19,14 @@ export const DocumentsTab: FC<DocumentsTabProps> = ({ documents }) => {
 
     if (totalDocuments === 0) {
         return (
-            <Card className="border shadow-sm transition-shadow duration-200 hover:shadow-md">
-                <CardContent className="p-0">
+            <Card className="border-dashed shadow-sm">
+                <CardContent className="p-8">
                     <Empty>
                         <EmptyHeader>
-                            <EmptyMedia variant="icon">
-                                <FileText className="text-muted-foreground" />
+                            <EmptyMedia variant="icon" className="bg-muted/50 p-4 rounded-full">
+                                <FileText className="text-muted-foreground h-8 w-8" />
                             </EmptyMedia>
-                            <EmptyTitle>No Documents Yet</EmptyTitle>
+                            <EmptyTitle className="mt-4">No Documents Yet</EmptyTitle>
                             <EmptyDescription>Documents will appear here once they are uploaded to this procurement.</EmptyDescription>
                         </EmptyHeader>
                     </Empty>
@@ -36,64 +36,59 @@ export const DocumentsTab: FC<DocumentsTabProps> = ({ documents }) => {
     }
 
     return (
-        <Card className="border shadow-sm transition-shadow duration-200 hover:shadow-md">
-            <CardHeader className="p-4 sm:p-6">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-                        <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10">
-                            <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                            <CardTitle className="truncate text-base sm:text-lg">Procurement Documents</CardTitle>
-                            <CardDescription className="truncate text-xs sm:text-sm">Documents organized by procurement stage</CardDescription>
-                        </div>
-                    </div>
-                    <Badge variant="outline" className="hidden font-medium sm:inline-flex">
-                        {totalDocuments} {totalDocuments === 1 ? 'Document' : 'Documents'}
-                    </Badge>
+        <div className="space-y-6">
+            <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                     <Layers className="h-5 w-5 text-muted-foreground" />
+                     <h3 className="font-semibold text-lg">Procurement Documents</h3>
                 </div>
-            </CardHeader>
-            <CardContent className="p-0">
-                <div role="list" aria-label="Documents by stage">
-                    {sortedStageKeys.map((stage, stageIndex) => {
-                        const isLatestStage = stageIndex === 0;
-                        const stageDocuments = documentsByStage[stage];
+                <Badge variant="secondary">
+                    {totalDocuments} {totalDocuments === 1 ? 'File' : 'Files'}
+                </Badge>
+            </div>
 
-                        return (
-                            <section
-                                key={stage}
-                                className="border-b last:border-b-0"
-                                aria-labelledby={`stage-${stage.replace(/\s+/g, '-').toLowerCase()}`}
-                            >
-                                <div className="bg-muted/80 sticky top-0 z-10 border-b p-3 backdrop-blur-sm sm:p-4">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <h3
-                                            id={`stage-${stage.replace(/\s+/g, '-').toLowerCase()}`}
-                                            className="flex flex-wrap items-center gap-1.5 text-sm font-semibold sm:gap-2 sm:text-base"
-                                        >
-                                            <FileCheck className="text-primary h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden="true" />
-                                            <span className="truncate">{stage}</span>
-                                            <Badge variant="outline" className="ml-0.5 shrink-0 text-[10px] sm:ml-1 sm:text-xs">
-                                                {stageDocuments.length}
+            <div className="space-y-8">
+                {sortedStageKeys.map((stage, stageIndex) => {
+                    const isLatestStage = stageIndex === 0;
+                    const stageDocuments = documentsByStage[stage];
+
+                    return (
+                        <section
+                            key={stage}
+                            className="relative"
+                            aria-labelledby={`stage-${stage.replace(/\s+/g, '-').toLowerCase()}`}
+                        >
+                            {/* Sticky Header */}
+                            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 mb-2 border-b">
+                                <div className="flex items-center gap-3">
+                                    <div className={`h-8 w-1 rounded-full ${isLatestStage ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+                                    <h3
+                                        id={`stage-${stage.replace(/\s+/g, '-').toLowerCase()}`}
+                                        className="flex items-center gap-2 font-semibold"
+                                    >
+                                        <span className="text-foreground">{stage}</span>
+                                        <Badge variant="secondary" className="text-xs h-5 px-1.5 min-w-6 justify-center">
+                                            {stageDocuments.length}
+                                        </Badge>
+                                        {isLatestStage && (
+                                            <Badge variant="default" className="text-[10px] h-5 px-1.5">
+                                                Current
                                             </Badge>
-                                            {isLatestStage && (
-                                                <Badge variant="default" className="shrink-0 text-[10px] sm:text-xs">
-                                                    Latest Stage
-                                                </Badge>
-                                            )}
-                                        </h3>
-                                    </div>
+                                        )}
+                                    </h3>
                                 </div>
-                                <ul role="list">
-                                    {stageDocuments.map((doc, docIndex) => (
-                                        <DocumentItem key={`${doc.file_key}-${docIndex}`} doc={doc} />
-                                    ))}
-                                </ul>
-                            </section>
-                        );
-                    })}
-                </div>
-            </CardContent>
-        </Card>
+                            </div>
+                            
+                            {/* Document List */}
+                            <ul role="list" className="grid grid-cols-1 gap-3 sm:grid-cols-1 lg:grid-cols-1">
+                                {stageDocuments.map((doc, docIndex) => (
+                                    <DocumentItem key={`${doc.file_key}-${docIndex}`} doc={doc} />
+                                ))}
+                            </ul>
+                        </section>
+                    );
+                })}
+            </div>
+        </div>
     );
 };

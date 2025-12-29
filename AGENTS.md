@@ -1,559 +1,550 @@
-# AGENTS.md
-
-A guide for AI coding agents working on the Procuchain Laravel application.
-
-## Project Overview
-
-Procuchain is a Laravel 12 application that implements a blockchain-based procurement system using Inertia.js with React, Tailwind CSS v4, and Pest for testing. The application integrates with MultiChain for blockchain operations and follows Philippine Government Procurement Policy Board (GPPB) regulations.
-
-### Tech Stack
-- PHP 8.3.28
-- Laravel 12.42.0
-- Inertia.js v2.0.14 (Laravel) & v2.2.21 (React)
-- React 19.2.1
-- Tailwind CSS v4.1.17
-- Pest v4.1.6 (Testing)
-- PHPUnit v12.4.4
-- Laravel Fortify v1.32.1 (Authentication)
-- Laravel MCP v0.4.2 (Model Context Protocol)
-- Laravel Wayfinder v0.1.12 (Laravel) & v0.1.7 (Vite)
-- Laravel Prompts v0.3.8
-- Laravel Pint v1.26.0
-- Laravel Sail v1.51.0
-- ESLint v9.39.1
-- Prettier v3.7.4
-- MultiChain (Blockchain integration)
-- MySQL (Database)
-
-## Project Structure
-
-```
-app/
-├── Console/           # Artisan commands
-├── Contracts/         # Interfaces
-├── DataTransferObjects/ # DTOs
-├── Enums/            # PHP enums
-├── Http/
-│   ├── Controllers/  # Controllers
-│   └── Middleware/   # Custom middleware
-├── Models/           # Eloquent models
-├── Policies/         # Authorization policies
-├── Repositories/     # Repository pattern implementations
-└── Services/         # Business logic services
-
-resources/
-├── js/
-│   ├── pages/        # Inertia.js page components (kebab-case)
-│   └── components/   # Reusable React components (kebab-case)
-├── css/              # Styles
-└── views/            # Blade views (minimal, mostly for MCP/auth)
-
-routes/
-├── web.php           # Web routes
-├── auth.php          # Authentication routes
-├── settings.php      # Settings routes
-└── console.php       # Console routes
-
-tests/
-├── Feature/          # Feature tests (most tests go here)
-├── Unit/             # Unit tests
-└── Browser/          # Browser tests (Pest v4)
-```
-
-## Database Schema
-
-### Key Tables
-- **users** - User accounts with blockchain addresses, 2FA, and account lockout features
-- **roles** & **permissions** - Role-based access control (Spatie Permission)
-- **blocked_ips** - IP blocking for security
-- **user_login_logs** - Comprehensive login tracking (IP, device, browser, platform, location)
-- **document_views** - Document viewing analytics with metadata
-- **notifications** - User notifications
-- **push_subscriptions** - Web push notification subscriptions
-- **sessions** - User session management
-- **jobs**, **job_batches**, **failed_jobs** - Queue system
-- **cache**, **cache_locks** - Cache management
-
-### Security Features
-- Account lockout mechanism after failed login attempts
-- IP blocking and tracking
-- Two-factor authentication (2FA) support
-- Comprehensive audit logging
-
-### User Roles
-The application uses Spatie Permission package with the following primary roles:
-- **admin** - Full system access
-- **bac_secretariat** - BAC Secretariat role (procurement workflow management)
-- **bac_chairman** - BAC Chairman role (approval authority)
-- **hope** - Head of Procuring Entity
-
-## Setup Commands
-
-### Initial Setup
-```bash
-# Install PHP dependencies
-composer install
-
-# Install Node dependencies
-npm install
-
-# Copy environment file (if not exists)
-cp .env.example .env
-
-# Generate application key
-php artisan key:generate
-
-# Run database migrations
-php artisan migrate
-
-# Seed database (optional)
-php artisan db:seed
-```
-
-### Development
-```bash
-# Start Laravel development server
-php artisan serve
-
-# Start Vite dev server (for frontend hot reload)
-npm run dev
-
-# OR use composer script for both
-composer run dev
-
-# Build frontend assets for production
-npm run build
-```
-
-### MultiChain/Blockchain Setup
-```bash
-# Install MultiChain (if needed)
-./scripts/install_procuchain.sh
-
-# Join existing blockchain network
-./scripts/join_procuchain.sh
-```
-
-## Key Application Features
-
-### Procurement Workflow
-The application implements a comprehensive procurement workflow with multiple stages:
-
-**Pre-Procurement Phase**
-- Procurement initiation and planning
-- Pre-procurement conferences
-
-**Procurement/Bidding Phase**
-- Invitation to bid
-- Pre-bid conferences
-- Bid submission and opening
-- Bid evaluation
-- Post-qualification
-- Award and contract signing
-
-**Post-Procurement Phase**
-- Contract implementation
-- Delivery tracking
-- Acceptance and payment
-
-### Blockchain Integration
-- MultiChain-based document immutability
-- Blockchain explorer for transparency
-- Document verification system
-- Audit trail for all procurement activities
-- Smart contract support
-
-### Document Management
-- Secure file upload with chunking support (configurable threshold)
-- Document correction workflows
-- Document verification and integrity checks
-- PDF viewer integration
-- Document viewing analytics
-
-### User Management & Security
-- Role-based access control (RBAC)
-- Two-factor authentication (2FA)
-- Account lockout after failed attempts
-- IP blocking system
-- Login tracking and analytics
-- Session management
-
-### Notifications
-- Database notifications
-- Email notifications (configurable per user)
-- Web push notifications
-- Real-time updates for procurement activities
-
-### Dashboard System
-Role-specific dashboards with:
-- Recent activities
-- Procurement statistics
-- Priority actions
-- Performance analytics
-- Configurable cache TTL for performance
-
-## Code Conventions
-
-### General Rules
-- Follow **all** existing code conventions in the codebase
-- Check sibling files for correct structure, approach, and naming before creating new files
-- Use descriptive names: `isRegisteredForDiscounts` not `discount()`
-- Check for existing components to reuse before writing new ones
-- Stick to existing directory structure - don't create new base folders without approval
-
-### PHP Conventions
-- Always use curly braces for control structures, even one-liners
-- Use PHP 8 constructor property promotion: `public function __construct(public GitHub $github) {}`
-- No empty `__construct()` methods with zero parameters
-- Always use explicit return type declarations for methods and functions
-- Use appropriate PHP type hints for method parameters
-- Prefer PHPDoc blocks over inline comments
-- Enum keys should be TitleCase: `FavoritePerson`, `BestLake`, `Monthly`
-
-### Laravel Best Practices
-- Use `php artisan make:*` commands to create new files (controllers, models, migrations, etc.)
-- Pass `--no-interaction` flag to all Artisan commands
-- Use Eloquent relationships with return type hints - prefer over raw queries
-- Avoid `DB::`; prefer `Model::query()`
-- Use eager loading to prevent N+1 query problems
-- Create Form Request classes for validation (not inline in controllers)
-- Use queued jobs with `ShouldQueue` for time-consuming operations
-- Use `config('app.name')` never `env('APP_NAME')` outside config files
-- Prefer named routes and `route()` function for URL generation
-
-### Frontend Conventions (Inertia + React)
-- **Use kebab-case for all React file and folder names** (e.g., `user-profile.jsx`, `admin-dashboard/`)
-- Inertia components go in `resources/js/pages/`
-- Reusable components go in `resources/js/components/`
-- Use `Inertia::render()` for server-side routing
-- Use `router.visit()` or `<Link>` for client-side navigation
-- Use `<Form>` component from Inertia for forms (recommended)
-- Check `search-docs` tool for Inertia v2 features: polling, prefetching, deferred props, infinite scrolling
-- When using deferred props, add skeleton/loading states
-
-### Tailwind CSS v4
-- Use Tailwind classes following existing project conventions
-- Use `gap` utilities for spacing (not margins) when listing items
-- Support dark mode with `dark:` prefix if existing pages do
-- Configuration is CSS-first using `@theme` directive (no `tailwind.config.js`)
-- Import Tailwind: `@import "tailwindcss";` (not `@tailwind` directives)
-- Use new v4 utilities, not deprecated ones (e.g., `shrink-*` not `flex-shrink-*`)
-
-### Wayfinder (Type-safe Routing)
-- Import controller methods from `@/actions/` for type-safe routes
-- Prefer named imports for tree-shaking: `import { show } from '@/actions/...'`
-- Use `.form()` with forms: `<form {...store.form()}>`
-- Use `.url()` to get URL string: `show.url(1)` → `"/posts/1"`
-- Run `php artisan wayfinder:generate` after route changes
-
-## Testing Instructions
-
-### Running Tests
-```bash
-# Run all tests
-php artisan test
-
-# Run specific test file
-php artisan test tests/Feature/ExampleTest.php
-
-# Run tests matching a filter
-php artisan test --filter=testName
-
-# Run tests with coverage
-php artisan test --coverage
-```
-
-### Writing Tests (Pest)
-- **All tests must use Pest** (not PHPUnit syntax)
-- Use `php artisan make:test --pest <name>` for feature tests
-- Add `--unit` flag for unit tests: `php artisan make:test --pest --unit <name>`
-- Most tests should be **feature tests**, not unit tests
-- **Never remove test files without approval** - they are core to the application
-- Test happy paths, failure paths, and edge cases
-- Use factories for creating models: `User::factory()->create()`
-- Use specific assertions: `assertSuccessful()`, `assertForbidden()`, `assertNotFound()` (not `assertStatus()`)
-- Use datasets to simplify tests with duplicated data
-- Import Pest helpers: `use function Pest\Laravel\mock;`
-
-### Pest v4 Browser Testing
-- Browser tests go in `tests/Browser/`
-- Can use Laravel features: `Event::fake()`, `assertAuthenticated()`, `RefreshDatabase`
-- Interact with page: `click()`, `type()`, `scroll()`, `select()`, `submit()`
-- Check for errors: `assertNoJavascriptErrors()`, `assertNoConsoleLogs()`
-
-### Test Enforcement
-**Every change must be programmatically tested.** Write a new test or update an existing test, then run the affected tests to ensure they pass. Run the minimum number of tests needed using filters.
-
-## Build & Deployment
-
-### Building Assets
-```bash
-# Development build
-npm run dev
-
-# Production build
-npm run build
-
-# Build and watch
-npm run watch
-```
-
-### Code Quality
-```bash
-# Run Laravel Pint (code formatter)
-vendor/bin/pint --dirty
-
-# Run ESLint
-npm run lint
-
-# Fix ESLint issues
-npm run lint:fix
-
-# Check frontend formatting
-npm run format:check
-```
-
-**Before git add, commit, and push, you MUST run:**
-1. `vendor/bin/pint --test` (checks PHP code style - matches CI)
-2. `npm run format:check` (checks frontend formatting - matches CI)
-3. `npm run lint` (checks frontend code - matches CI)
-4. `php artisan test --filter=<relevant>` (runs tests - matches CI)
-
-**These commands match the GitHub Actions workflows** (`.github/workflows/lint.yml` and `.github/workflows/tests.yml`) that run on push/PR to `develop` and `main` branches. Running them locally ensures your code will pass CI checks.
-
-**Workflow Summary:**
-- **Lint Workflow** - Runs Pint (check only), frontend formatting check, and ESLint
-- **Tests Workflow** - Runs full test suite with Redis service
-
-### Docker/Production
-```bash
-# Build Docker image
-docker build -f Dockerfile.multichain -t procuchain .
-
-# Start services
-docker-compose up -d
-```
-
-## MCP (Model Context Protocol) Tools
-
-This project uses Laravel MCP. Available tools:
-- **Laravel Boost**: Database schema access, Artisan commands, error logs, Tinker execution, semantic documentation search
-- Use `list-artisan-commands` tool to check available Artisan parameters
-- Use `tinker` tool to execute PHP for debugging
-- Use `database-query` tool to read from database
-- Use `browser-logs` tool to read browser errors (recent logs only)
-- **Use `search-docs` tool before making changes** - gets version-specific Laravel ecosystem documentation
-
-## Documentation Search
-
-Before implementing features, **always search documentation**:
-```
-search-docs tool with queries like:
-- ['rate limiting', 'routing rate limiting', 'routing']
-- ['form component', 'useForm helper']
-- ['deferred props', 'infinite scroll']
-```
-
-Use multiple broad, simple, topic-based queries. Don't include package names in queries.
-
-## Important Files & Conventions
-
-### Configuration
-- `config/blockchain.php` - Blockchain/MultiChain settings
-- `config/multichain.php` - MultiChain specific configuration
-- `config/fortify.php` - Authentication features
-- `bootstrap/app.php` - Middleware, exceptions, routing registration
-- `bootstrap/providers.php` - Service providers
-
-### Laravel 12 Structure Changes
-- **No** `app/Console/Kernel.php` - use `bootstrap/app.php` or `routes/console.php`
-- **No** `app/Http/Kernel.php` - middleware in `bootstrap/app.php`
-- Commands in `app/Console/Commands/` auto-register
-- Middleware registered in `bootstrap/app.php`
-- Model casts use `casts()` method (not `$casts` property) - follow existing conventions
+<laravel-boost-guidelines>
+=== foundation rules ===
+
+# Laravel Boost Guidelines
+
+The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to enhance the user's satisfaction building Laravel applications.
+
+## Foundational Context
+This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
+
+- php - 8.3.29
+- inertiajs/inertia-laravel (INERTIA) - v2
+- laravel/fortify (FORTIFY) - v1
+- laravel/framework (LARAVEL) - v12
+- laravel/prompts (PROMPTS) - v0
+- laravel/wayfinder (WAYFINDER) - v0
+- laravel/mcp (MCP) - v0
+- laravel/pint (PINT) - v1
+- laravel/sail (SAIL) - v1
+- pestphp/pest (PEST) - v4
+- phpunit/phpunit (PHPUNIT) - v12
+- @inertiajs/react (INERTIA) - v2
+- @laravel/vite-plugin-wayfinder (WAYFINDER) - v0
+- react (REACT) - v19
+- tailwindcss (TAILWINDCSS) - v4
+- eslint (ESLINT) - v9
+- prettier (PRETTIER) - v3
+
+## Conventions
+- You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, naming.
+- Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
+- Check for existing components to reuse before writing a new one.
+
+## Verification Scripts
+- Do not create verification scripts or tinker when tests cover that functionality and prove it works. Unit and feature tests are more important.
+
+## Application Structure & Architecture
+- Stick to existing directory structure - don't create new base folders without approval.
+- Do not change the application's dependencies without approval.
+
+## Frontend Bundling
+- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
+
+## Replies
+- Be concise in your explanations - focus on what's important rather than explaining obvious details.
+
+## Documentation Files
+- You must only create documentation files if explicitly requested by the user.
+
+
+=== boost rules ===
+
+## Laravel Boost
+- Laravel Boost is an MCP server that comes with powerful tools designed specifically for this application. Use them.
+
+## Artisan
+- Use the `list-artisan-commands` tool when you need to call an Artisan command to double check the available parameters.
+
+## URLs
+- Whenever you share a project URL with the user you should use the `get-absolute-url` tool to ensure you're using the correct scheme, domain / IP, and port.
+
+## Tinker / Debugging
+- You should use the `tinker` tool when you need to execute PHP to debug code or query Eloquent models directly.
+- Use the `database-query` tool when you only need to read from the database.
+
+## Reading Browser Logs With the `browser-logs` Tool
+- You can read browser logs, errors, and exceptions using the `browser-logs` tool from Boost.
+- Only recent browser logs will be useful - ignore old logs.
+
+## Searching Documentation (Critically Important)
+- Boost comes with a powerful `search-docs` tool you should use before any other approaches. This tool automatically passes a list of installed packages and their versions to the remote Boost API, so it returns only version-specific documentation specific for the user's circumstance. You should pass an array of packages to filter on if you know you need docs for particular packages.
+- The 'search-docs' tool is perfect for all Laravel related packages, including Laravel, Inertia, Livewire, Filament, Tailwind, Pest, Nova, Nightwatch, etc.
+- You must use this tool to search for Laravel-ecosystem documentation before falling back to other approaches.
+- Search the documentation before making code changes to ensure we are taking the correct approach.
+- Use multiple, broad, simple, topic based queries to start. For example: `['rate limiting', 'routing rate limiting', 'routing']`.
+- Do not add package names to queries - package information is already shared. For example, use `test resource table`, not `filament 4 test resource table`.
+
+### Available Search Syntax
+- You can and should pass multiple queries at once. The most relevant results will be returned first.
+
+1. Simple Word Searches with auto-stemming - query=authentication - finds 'authenticate' and 'auth'
+2. Multiple Words (AND Logic) - query=rate limit - finds knowledge containing both "rate" AND "limit"
+3. Quoted Phrases (Exact Position) - query="infinite scroll" - Words must be adjacent and in that order
+4. Mixed Queries - query=middleware "rate limit" - "middleware" AND exact phrase "rate limit"
+5. Multiple Queries - queries=["authentication", "middleware"] - ANY of these terms
+
+
+=== php rules ===
+
+## PHP
+
+- Always use curly braces for control structures, even if it has one line.
+
+### Constructors
+- Use PHP 8 constructor property promotion in `__construct()`.
+    - <code-snippet>public function __construct(public GitHub $github) { }</code-snippet>
+- Do not allow empty `__construct()` methods with zero parameters.
+
+### Type Declarations
+- Always use explicit return type declarations for methods and functions.
+- Use appropriate PHP type hints for method parameters.
+
+<code-snippet name="Explicit Return Types and Method Params" lang="php">
+protected function isAccessible(User $user, ?string $path = null): bool
+{
+    ...
+}
+</code-snippet>
+
+## Comments
+- Prefer PHPDoc blocks over comments. Never use comments within the code itself unless there is something _very_ complex going on.
+
+## PHPDoc Blocks
+- Add useful array shape type definitions for arrays when appropriate.
+
+## Enums
+- Typically, keys in an Enum should be TitleCase. For example: `FavoritePerson`, `BestLake`, `Monthly`.
+
+
+=== herd rules ===
+
+## Laravel Herd
+
+- The application is served by Laravel Herd and will be available at: https?://[kebab-case-project-dir].test. Use the `get-absolute-url` tool to generate URLs for the user to ensure valid URLs.
+- You must not run any commands to make the site available via HTTP(s). It is _always_ available through Laravel Herd.
+
+
+=== tests rules ===
+
+## Test Enforcement
+
+- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
+- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test` with a specific filename or filter.
+
+
+=== inertia-laravel/core rules ===
+
+## Inertia Core
+
+- Inertia.js components should be placed in the `resources/js/Pages` directory unless specified differently in the JS bundler (vite.config.js).
+- Use `Inertia::render()` for server-side routing instead of traditional Blade views.
+- Use `search-docs` for accurate guidance on all things Inertia.
+
+<code-snippet lang="php" name="Inertia::render Example">
+// routes/web.php example
+Route::get('/users', function () {
+    return Inertia::render('Users/Index', [
+        'users' => User::all()
+    ]);
+});
+</code-snippet>
+
+
+=== inertia-laravel/v2 rules ===
+
+## Inertia v2
+
+- Make use of all Inertia features from v1 & v2. Check the documentation before making any changes to ensure we are taking the correct approach.
+
+### Inertia v2 New Features
+- Polling
+- Prefetching
+- Deferred props
+- Infinite scrolling using merging props and `WhenVisible`
+- Lazy loading data on scroll
+
+### Deferred Props & Empty States
+- When using deferred props on the frontend, you should add a nice empty state with pulsing / animated skeleton.
+
+### Inertia Form General Guidance
+- The recommended way to build forms when using Inertia is with the `<Form>` component - a useful example is below. Use `search-docs` with a query of `form component` for guidance.
+- Forms can also be built using the `useForm` helper for more programmatic control, or to follow existing conventions. Use `search-docs` with a query of `useForm helper` for guidance.
+- `resetOnError`, `resetOnSuccess`, and `setDefaultsOnSuccess` are available on the `<Form>` component. Use `search-docs` with a query of 'form component resetting' for guidance.
+
+
+=== laravel/core rules ===
+
+## Do Things the Laravel Way
+
+- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using the `list-artisan-commands` tool.
+- If you're creating a generic PHP class, use `php artisan make:class`.
+- Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
 
 ### Database
-- When modifying columns, include **all** previously defined attributes (or they'll be dropped)
-- Use Laravel 11+ native eager loading limits: `$query->latest()->limit(10)`
+- Always use proper Eloquent relationship methods with return type hints. Prefer relationship methods over raw queries or manual joins.
+- Use Eloquent models and relationships before suggesting raw database queries
+- Avoid `DB::`; prefer `Model::query()`. Generate code that leverages Laravel's ORM capabilities rather than bypassing them.
+- Generate code that prevents N+1 query problems by using eager loading.
+- Use Laravel's query builder for very complex database operations.
+
+### Model Creation
+- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `list-artisan-commands` to check the available options to `php artisan make:model`.
+
+### APIs & Eloquent Resources
+- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
+
+### Controllers & Validation
+- Always create Form Request classes for validation rather than inline validation in controllers. Include both validation rules and custom error messages.
+- Check sibling Form Requests to see if the application uses array or string based validation rules.
+
+### Queues
+- Use queued jobs for time-consuming operations with the `ShouldQueue` interface.
+
+### Authentication & Authorization
+- Use Laravel's built-in authentication and authorization features (gates, policies, Sanctum, etc.).
 
 ### URL Generation
-- Use `get-absolute-url` tool to ensure correct scheme/domain/port when sharing URLs with users
+- When generating links to other pages, prefer named routes and the `route()` function.
 
-### Important Routes
+### Configuration
+- Use environment variables only in configuration files - never use the `env()` function directly outside of config files. Always use `config('app.name')`, not `env('APP_NAME')`.
 
-**Authentication Routes** (`routes/auth.php`)
-- Login/Logout: `/login`, `/logout`
-- Password Reset: `/forgot-password`, `/reset-password/{token}`
-- Email Verification: `/verify-email`, `/verify-email/{id}/{hash}`
-- Two-Factor: `/two-factor-challenge`, `/settings/two-factor*`
-
-**Admin Routes** (prefix: `/admin`)
-- Dashboard: `/admin/dashboard`
-- User Management: `/admin/users` (CRUD operations)
-- Account Lockout: `/admin/accounts/locked`
-- Login Logs: `/admin/login-logs` (with blocking/unblocking)
-- Blockchain Explorer: `/admin/blockchain-explorer`
-- Procurement List: `/admin/procurements-list`
-
-**BAC Secretariat Routes** (prefix: `/bac-secretariat`)
-- Dashboard: `/bac-secretariat/dashboard`
-- Procurement Initiation: `/bac-secretariat/initiate-procurement`
-- Pre-Procurement: `/bac-secretariat/pre-procurement/{pr_number}/{stage}`
-- Procurement/Bidding: `/bac-secretariat/procurement/{pr_number}/{stage}`
-- Post-Procurement: `/bac-secretariat/post-procurement/{pr_number}/{stage}`
-- Document uploads, completion, and validation endpoints
-
-**BAC Chairman Routes** (prefix: `/bac-chairman`)
-- Dashboard: `/bac-chairman/dashboard`
-- Procurement List: `/bac-chairman/procurements-list`
-
-**HOPE Routes** (prefix: `/hope`)
-- Dashboard: `/hope/dashboard`
-- Procurement List: `/hope/procurements-list`
-
-**Document Management Routes**
-- Document Download: `/files/{fileKey}`
-- PDF Viewer: `/pdf-viewer/{fileKey}`
-- Document Correction: `/documents/{document}/correct`
-- Document Verification: `/documents/{fileKey}/verify`
-- Procurement Verification: `/procurement/{pr_number}/verification`
-
-**Settings Routes** (prefix: `/settings`)
-- Profile: `/settings/profile`
-- Password: `/settings/password`
-- Two-Factor: `/settings/two-factor`
-- Email Notifications: `/settings/email-notification`
-- Push Notifications: `/settings/push-notification`
-- Appearance: `/settings/appearance`
-
-**API Routes**
-- Procurement Actions: `/api/procurements/{pr_number}/actions`
-
-**Public Routes**
-- Home: `/`
-- About: `/about`
-- Contact: `/contact`
-- Team: `/team`
-- Workflow: `/workflow`
-- Privacy Policy: `/privacy`
-- Terms of Service: `/terms`
-
-### Available Artisan Commands
-
-**Custom Commands**
-- `multichain:setup` - Setup MultiChain blockchain for procurement
-- `smartcontract:setup` - Deploy and manage smart contracts
-- `cache:cleanup` - Clean up old cache and session data
-
-**Laravel Boost Commands**
-- `boost:mcp` - Start Laravel Boost MCP server
-- `boost:install` - Install Laravel Boost
-- `boost:update` - Update Laravel Boost guidelines
-
-**Permission Management**
-- `permission:create-role` - Create a new role
-- `permission:create-permission` - Create a new permission
-- `permission:assign-role` - Assign a role to a user
-- `permission:show` - Show roles and permissions
-- `permission:cache-reset` - Reset permission cache
-
-**Inertia Commands**
-- `inertia:start-ssr` - Start SSR server
-- `inertia:stop-ssr` - Stop SSR server
-- `inertia:check-ssr` - Check SSR server health
-
-**Wayfinder**
-- `wayfinder:generate` - Generate type-safe route definitions
-
-**Testing**
-- `test` - Run application tests
-- `pest:test` - Create new Pest test
-- `pest:dataset` - Create new dataset file
-
-## Security & Compliance
-
-- This application implements Philippine GPPB regulations (see `ngpa/` directory)
-- Authentication via Laravel Fortify
-- Authorization via Laravel Policies (in `app/Policies/`)
-- Blockchain operations logged for audit trail
-- Follow secure coding practices for government procurement systems
-
-## Common Tasks
-
-### Creating a New Feature
-1. Use `search-docs` to understand best practices
-2. Use `php artisan make:*` commands to scaffold files
-3. Follow existing code conventions in sibling files
-4. Write/update tests in `tests/Feature/`
-5. Run tests: `php artisan test --filter=<feature>`
-6. Format code: `vendor/bin/pint --dirty`
-7. Lint frontend: `npm run lint`
-
-### Adding a New Model
-```bash
-php artisan make:model Post -mfsc --pest
-# -m (migration) -f (factory) -s (seeder) -c (controller) --pest (Pest tests)
-```
-
-### Adding Form Validation
-1. Create Form Request: `php artisan make:request StorePostRequest`
-2. Add validation rules and custom error messages
-3. Check sibling Form Requests for array vs string validation rules
-4. Use in controller: `public function store(StorePostRequest $request)`
-
-### Debugging
-- Use `tinker` tool for PHP debugging
-- Use `database-query` tool for database queries
-- Use `browser-logs` tool for frontend errors
-- Check `storage/logs/laravel.log` for backend errors
-
-## Gotchas & Common Issues
+### Testing
+- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
+- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
+- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
 
 ### Vite Error
-If you see "Unable to locate file in Vite manifest" error:
-- Run `npm run build` OR
-- Ask user to run `npm run dev` or `composer run dev`
+- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
 
-### Frontend Changes Not Showing
-User may need to run:
-- `npm run build`
-- `npm run dev`
-- `composer run dev`
 
-### Migration Issues
-When modifying columns, **always** include all previous attributes or they'll be lost.
+=== laravel/v12 rules ===
 
-## Contributing Guidelines
+## Laravel 12
 
-### Commit Messages
-- Be descriptive and concise
-- Use present tense: "Add feature" not "Added feature"
-- Reference issue numbers when applicable
+- Use the `search-docs` tool to get version specific documentation.
+- Since Laravel 11, Laravel has a new streamlined file structure which this project uses.
 
-### Pull Request Format
-- Title: Clear description of changes
-- Always run `vendor/bin/pint` and `php artisan test` before committing
-- Include test coverage for new features
-- Update documentation if needed
+### Laravel 12 Structure
+- No middleware files in `app/Http/Middleware/`.
+- `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
+- `bootstrap/providers.php` contains application specific service providers.
+- **No app\Console\Kernel.php** - use `bootstrap/app.php` or `routes/console.php` for console configuration.
+- **Commands auto-register** - files in `app/Console/Commands/` are automatically available and do not require manual registration.
 
-### Code Review Checklist
-- [ ] Lint workflow passes: `vendor/bin/pint --test` & `npm run format:check` & `npm run lint`
-- [ ] Tests pass: `php artisan test`
-- [ ] Follows existing conventions
-- [ ] Documentation updated (if needed)
-- [ ] No security vulnerabilities introduced
-- [ ] GitHub Actions workflows will pass (lint.yml & tests.yml)
+### Database
+- When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
+- Laravel 11 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
 
-## Additional Resources
+### Models
+- Casts can and likely should be set in a `casts()` method on a model rather than the `$casts` property. Follow existing conventions from other models.
 
-- Laravel Documentation: https://laravel.com/docs
-- Inertia.js Documentation: https://inertiajs.com
-- Pest Documentation: https://pestphp.com
-- React Documentation: https://react.dev
-- Tailwind CSS v4: https://tailwindcss.com
-- Laravel MCP: https://laravel.com/docs/mcp
-- Model Context Protocol: https://modelcontextprotocol.io
 
----
+=== wayfinder/core rules ===
 
-**Note for Agents**: This is a living document. When in doubt, check existing code conventions, use `search-docs` tool for Laravel ecosystem guidance, and prioritize writing tests to verify your changes work correctly.
+## Laravel Wayfinder
+
+Wayfinder generates TypeScript functions and types for Laravel controllers and routes which you can import into your client side code. It provides type safety and automatic synchronization between backend routes and frontend code.
+
+### Development Guidelines
+- Always use `search-docs` to check wayfinder correct usage before implementing any features.
+- Always Prefer named imports for tree-shaking (e.g., `import { show } from '@/actions/...'`)
+- Avoid default controller imports (prevents tree-shaking)
+- Run `php artisan wayfinder:generate` after route changes if Vite plugin isn't installed
+
+### Feature Overview
+- Form Support: Use `.form()` with `--with-form` flag for HTML form attributes — `<form {...store.form()}>` → `action="/posts" method="post"`
+- HTTP Methods: Call `.get()`, `.post()`, `.patch()`, `.put()`, `.delete()` for specific methods — `show.head(1)` → `{ url: "/posts/1", method: "head" }`
+- Invokable Controllers: Import and invoke directly as functions. For example, `import StorePost from '@/actions/.../StorePostController'; StorePost()`
+- Named Routes: Import from `@/routes/` for non-controller routes. For example, `import { show } from '@/routes/post'; show(1)` for route name `post.show`
+- Parameter Binding: Detects route keys (e.g., `{post:slug}`) and accepts matching object properties — `show("my-post")` or `show({ slug: "my-post" })`
+- Query Merging: Use `mergeQuery` to merge with `window.location.search`, set values to `null` to remove — `show(1, { mergeQuery: { page: 2, sort: null } })`
+- Query Parameters: Pass `{ query: {...} }` in options to append params — `show(1, { query: { page: 1 } })` → `"/posts/1?page=1"`
+- Route Objects: Functions return `{ url, method }` shaped objects — `show(1)` → `{ url: "/posts/1", method: "get" }`
+- URL Extraction: Use `.url()` to get URL string — `show.url(1)` → `"/posts/1"`
+
+### Example Usage
+
+<code-snippet name="Wayfinder Basic Usage" lang="typescript">
+    // Import controller methods (tree-shakable)
+    import { show, store, update } from '@/actions/App/Http/Controllers/PostController'
+
+    // Get route object with URL and method...
+    show(1) // { url: "/posts/1", method: "get" }
+
+    // Get just the URL...
+    show.url(1) // "/posts/1"
+
+    // Use specific HTTP methods...
+    show.get(1) // { url: "/posts/1", method: "get" }
+    show.head(1) // { url: "/posts/1", method: "head" }
+
+    // Import named routes...
+    import { show as postShow } from '@/routes/post' // For route name 'post.show'
+    postShow(1) // { url: "/posts/1", method: "get" }
+</code-snippet>
+
+
+### Wayfinder + Inertia
+If your application uses the `<Form>` component from Inertia, you can use Wayfinder to generate form action and method automatically.
+<code-snippet name="Wayfinder Form Component (React)" lang="typescript">
+
+<Form {...store.form()}><input name="title" /></Form>
+
+</code-snippet>
+
+
+=== pint/core rules ===
+
+## Laravel Pint Code Formatter
+
+- You must run `vendor/bin/pint --dirty` before finalizing changes to ensure your code matches the project's expected style.
+- Do not run `vendor/bin/pint --test`, simply run `vendor/bin/pint` to fix any formatting issues.
+
+
+=== pest/core rules ===
+
+## Pest
+### Testing
+- If you need to verify a feature is working, write or update a Unit / Feature test.
+
+### Pest Tests
+- All tests must be written using Pest. Use `php artisan make:test --pest {name}`.
+- You must not remove any tests or test files from the tests directory without approval. These are not temporary or helper files - these are core to the application.
+- Tests should test all of the happy paths, failure paths, and weird paths.
+- Tests live in the `tests/Feature` and `tests/Unit` directories.
+- Pest tests look and behave like this:
+<code-snippet name="Basic Pest Test Example" lang="php">
+it('is true', function () {
+    expect(true)->toBeTrue();
+});
+</code-snippet>
+
+### Running Tests
+- Run the minimal number of tests using an appropriate filter before finalizing code edits.
+- To run all tests: `php artisan test`.
+- To run all tests in a file: `php artisan test tests/Feature/ExampleTest.php`.
+- To filter on a particular test name: `php artisan test --filter=testName` (recommended after making a change to a related file).
+- When the tests relating to your changes are passing, ask the user if they would like to run the entire test suite to ensure everything is still passing.
+
+### Pest Assertions
+- When asserting status codes on a response, use the specific method like `assertForbidden` and `assertNotFound` instead of using `assertStatus(403)` or similar, e.g.:
+<code-snippet name="Pest Example Asserting postJson Response" lang="php">
+it('returns all', function () {
+    $response = $this->postJson('/api/docs', []);
+
+    $response->assertSuccessful();
+});
+</code-snippet>
+
+### Mocking
+- Mocking can be very helpful when appropriate.
+- When mocking, you can use the `Pest\Laravel\mock` Pest function, but always import it via `use function Pest\Laravel\mock;` before using it. Alternatively, you can use `$this->mock()` if existing tests do.
+- You can also create partial mocks using the same import or self method.
+
+### Datasets
+- Use datasets in Pest to simplify tests which have a lot of duplicated data. This is often the case when testing validation rules, so consider going with this solution when writing tests for validation rules.
+
+<code-snippet name="Pest Dataset Example" lang="php">
+it('has emails', function (string $email) {
+    expect($email)->not->toBeEmpty();
+})->with([
+    'james' => 'james@laravel.com',
+    'taylor' => 'taylor@laravel.com',
+]);
+</code-snippet>
+
+
+=== pest/v4 rules ===
+
+## Pest 4
+
+- Pest v4 is a huge upgrade to Pest and offers: browser testing, smoke testing, visual regression testing, test sharding, and faster type coverage.
+- Browser testing is incredibly powerful and useful for this project.
+- Browser tests should live in `tests/Browser/`.
+- Use the `search-docs` tool for detailed guidance on utilizing these features.
+
+### Browser Testing
+- You can use Laravel features like `Event::fake()`, `assertAuthenticated()`, and model factories within Pest v4 browser tests, as well as `RefreshDatabase` (when needed) to ensure a clean state for each test.
+- Interact with the page (click, type, scroll, select, submit, drag-and-drop, touch gestures, etc.) when appropriate to complete the test.
+- If requested, test on multiple browsers (Chrome, Firefox, Safari).
+- If requested, test on different devices and viewports (like iPhone 14 Pro, tablets, or custom breakpoints).
+- Switch color schemes (light/dark mode) when appropriate.
+- Take screenshots or pause tests for debugging when appropriate.
+
+### Example Tests
+
+<code-snippet name="Pest Browser Test Example" lang="php">
+it('may reset the password', function () {
+    Notification::fake();
+
+    $this->actingAs(User::factory()->create());
+
+    $page = visit('/sign-in'); // Visit on a real browser...
+
+    $page->assertSee('Sign In')
+        ->assertNoJavascriptErrors() // or ->assertNoConsoleLogs()
+        ->click('Forgot Password?')
+        ->fill('email', 'nuno@laravel.com')
+        ->click('Send Reset Link')
+        ->assertSee('We have emailed your password reset link!')
+
+    Notification::assertSent(ResetPassword::class);
+});
+</code-snippet>
+
+<code-snippet name="Pest Smoke Testing Example" lang="php">
+$pages = visit(['/', '/about', '/contact']);
+
+$pages->assertNoJavascriptErrors()->assertNoConsoleLogs();
+</code-snippet>
+
+
+=== inertia-react/core rules ===
+
+## Inertia + React
+
+- Use `router.visit()` or `<Link>` for navigation instead of traditional links.
+
+<code-snippet name="Inertia Client Navigation" lang="react">
+
+import { Link } from '@inertiajs/react'
+<Link href="/">Home</Link>
+
+</code-snippet>
+
+
+=== inertia-react/v2/forms rules ===
+
+## Inertia + React Forms
+
+<code-snippet name="`<Form>` Component Example" lang="react">
+
+import { Form } from '@inertiajs/react'
+
+export default () => (
+    <Form action="/users" method="post">
+        {({
+            errors,
+            hasErrors,
+            processing,
+            wasSuccessful,
+            recentlySuccessful,
+            clearErrors,
+            resetAndClearErrors,
+            defaults
+        }) => (
+        <>
+        <input type="text" name="name" />
+
+        {errors.name && <div>{errors.name}</div>}
+
+        <button type="submit" disabled={processing}>
+            {processing ? 'Creating...' : 'Create User'}
+        </button>
+
+        {wasSuccessful && <div>User created successfully!</div>}
+        </>
+    )}
+    </Form>
+)
+
+</code-snippet>
+
+
+=== tailwindcss/core rules ===
+
+## Tailwind Core
+
+- Use Tailwind CSS classes to style HTML, check and use existing tailwind conventions within the project before writing your own.
+- Offer to extract repeated patterns into components that match the project's conventions (i.e. Blade, JSX, Vue, etc..)
+- Think through class placement, order, priority, and defaults - remove redundant classes, add classes to parent or child carefully to limit repetition, group elements logically
+- You can use the `search-docs` tool to get exact examples from the official documentation when needed.
+
+### Spacing
+- When listing items, use gap utilities for spacing, don't use margins.
+
+    <code-snippet name="Valid Flex Gap Spacing Example" lang="html">
+        <div class="flex gap-8">
+            <div>Superior</div>
+            <div>Michigan</div>
+            <div>Erie</div>
+        </div>
+    </code-snippet>
+
+
+### Dark Mode
+- If existing pages and components support dark mode, new pages and components must support dark mode in a similar way, typically using `dark:`.
+
+
+=== tailwindcss/v4 rules ===
+
+## Tailwind 4
+
+- Always use Tailwind CSS v4 - do not use the deprecated utilities.
+- `corePlugins` is not supported in Tailwind v4.
+- In Tailwind v4, configuration is CSS-first using the `@theme` directive — no separate `tailwind.config.js` file is needed.
+<code-snippet name="Extending Theme in CSS" lang="css">
+@theme {
+  --color-brand: oklch(0.72 0.11 178);
+}
+</code-snippet>
+
+- In Tailwind v4, you import Tailwind using a regular CSS `@import` statement, not using the `@tailwind` directives used in v3:
+
+<code-snippet name="Tailwind v4 Import Tailwind Diff" lang="diff">
+   - @tailwind base;
+   - @tailwind components;
+   - @tailwind utilities;
+   + @import "tailwindcss";
+</code-snippet>
+
+
+### Replaced Utilities
+- Tailwind v4 removed deprecated utilities. Do not use the deprecated option - use the replacement.
+- Opacity values are still numeric.
+
+| Deprecated |	Replacement |
+|------------+--------------|
+| bg-opacity-* | bg-black/* |
+| text-opacity-* | text-black/* |
+| border-opacity-* | border-black/* |
+| divide-opacity-* | divide-black/* |
+| ring-opacity-* | ring-black/* |
+| placeholder-opacity-* | placeholder-black/* |
+| flex-shrink-* | shrink-* |
+| flex-grow-* | grow-* |
+| overflow-ellipsis | text-ellipsis |
+| decoration-slice | box-decoration-slice |
+| decoration-clone | box-decoration-clone |
+
+
+=== laravel/fortify rules ===
+
+## Laravel Fortify
+
+Fortify is a headless authentication backend that provides authentication routes and controllers for Laravel applications.
+
+**Before implementing any authentication features, use the `search-docs` tool to get the latest docs for that specific feature.**
+
+### Configuration & Setup
+- Check `config/fortify.php` to see what's enabled. Use `search-docs` for detailed information on specific features.
+- Enable features by adding them to the `'features' => []` array: `Features::registration()`, `Features::resetPasswords()`, etc.
+- To see the all Fortify registered routes, use the `list-routes` tool with the `only_vendor: true` and `action: "Fortify"` parameters.
+- Fortify includes view routes by default (login, register). Set `'views' => false` in the configuration file to disable them if you're handling views yourself.
+
+### Customization
+- Views can be customized in `FortifyServiceProvider`'s `boot()` method using `Fortify::loginView()`, `Fortify::registerView()`, etc.
+- Customize authentication logic with `Fortify::authenticateUsing()` for custom user retrieval / validation.
+- Actions in `app/Actions/Fortify/` handle business logic (user creation, password reset, etc.). They're fully customizable, so you can modify them to change feature behavior.
+
+## Available Features
+- `Features::registration()` for user registration.
+- `Features::emailVerification()` to verify new user emails.
+- `Features::twoFactorAuthentication()` for 2FA with QR codes and recovery codes.
+  - Add options: `['confirmPassword' => true, 'confirm' => true]` to require password confirmation and OTP confirmation before enabling 2FA.
+- `Features::updateProfileInformation()` to let users update their profile.
+- `Features::updatePasswords()` to let users change their passwords.
+- `Features::resetPasswords()` for password reset via email.
+</laravel-boost-guidelines>
