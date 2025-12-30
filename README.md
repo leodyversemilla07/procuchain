@@ -40,6 +40,7 @@
 
 - [🚀 Quick Start](#-quick-start)
 - [📖 Overview](#-overview)
+- [📚 Documentation](#-documentation)
 - [✨ Features](#-features)
 - [🛠️ Technology Stack](#️-technology-stack)
 - [📦 Requirements](#-requirements)
@@ -107,6 +108,17 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 | 📊 Scattered documentation | Centralized, searchable document repository |
 
 <p align="right"><a href="#-table-of-contents">⬆️ Back to top</a></p>
+
+---
+
+## 📚 Documentation
+
+For more detailed information, please refer to the following documentation:
+
+- [🏗️ System Architecture](docs/ARCHITECTURE.md) - High-level system overview
+- [📊 Reporting Architecture](docs/REPORTING_ARCHITECTURE.md) - Detailed reporting module architecture
+- [💾 Database Schema](docs/DATABASE_SCHEMA.md) - Database tables and relationships
+- [🛣️ API Routes](docs/ROUTES.md) - API endpoints and route reference
 
 ---
 
