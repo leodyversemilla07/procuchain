@@ -54,8 +54,6 @@ class ProcurementInitiationController extends BaseController
             $procurementDataService,
             $documentRepository
         );
-
-        $this->applyProcurementMiddleware();
     }
 
     public function show(?string $id = null): Response

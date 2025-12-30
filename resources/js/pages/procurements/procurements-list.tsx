@@ -12,11 +12,11 @@ import { type ProcurementFilterOption } from '@/components/procurements-list/pro
 import { StatsGrid, type StatsGridItem } from '@/components/stats-grid';
 import { SupplementalBidBulletinDialog } from '@/components/supplemental-bid-bulletin-dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useProcurementList } from '@/hooks/use-procurement-list';
 import AppLayout from '@/layouts/app-layout';
 import procurement from '@/routes/bac-secretariat/procurement';
-import { ProcurementListItem, SharedData, Status } from '@/types';
+import procurementsRoutes from '@/routes/bac-secretariat/procurements';
+import { type ProcurementListItem, type SharedData, Status } from '@/types';
 import { getProcurementListBreadcrumbs } from '@/utils/breadcrumbs';
 import { toast } from 'sonner';
 
@@ -31,6 +31,7 @@ interface ShowProps {
     pagination?: PaginationMeta;
     error?: string;
     stageOptions?: Record<string, string>;
+    is_archived?: boolean;
 }
 
 const STAGE_FILTER_OPTIONS: ProcurementFilterOption[] = [
@@ -100,7 +101,7 @@ const ProcurementStatsSummary = ({ total, inProgress, completed, documentTotal, 
     return <StatsGrid items={items} userRole={userRole} className={className} gridClassName="sm:grid-cols-2 lg:grid-cols-4" />;
 };
 
-export default function ProcurementsList({ procurements: initialProcurements, pagination, error: initialError, stageOptions }: ShowProps) {
+export default function ProcurementsList({ procurements: initialProcurements, pagination, error: initialError, stageOptions, is_archived: isPollArchived }: ShowProps) {
     const { auth } = usePage<SharedData>().props;
     const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
     const breadcrumbs = getProcurementListBreadcrumbs(userRole);
@@ -173,20 +174,14 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
 
     const handleFilterChange = useCallback(
         (filterType: 'search' | 'stage', value: string) => {
-            const params = new URLSearchParams(window.location.search);
-
-            if (value && value !== 'all') {
-                params.set(filterType, value);
-            } else {
-                params.delete(filterType);
-            }
-
-            // Reset to first page when filters change
-            params.delete('page');
-            params.set('per_page', String(pageSize));
-
             router.get(
-                `${window.location.pathname}?${params.toString()}`,
+                procurementsRoutes.index.url({
+                    mergeQuery: {
+                        [filterType]: value && value !== 'all' ? value : null,
+                        page: null, // Reset to first page
+                        per_page: pageSize,
+                    },
+                }),
                 {},
                 {
                     replace: true,
@@ -201,12 +196,13 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
 
     const handlePageNavigate = useCallback(
         (nextPageIndex: number) => {
-            const params = new URLSearchParams(window.location.search);
-            params.set('page', String(nextPageIndex + 1));
-            params.set('per_page', String(pageSize));
-
             router.get(
-                `${window.location.pathname}?${params.toString()}`,
+                procurementsRoutes.index.url({
+                    mergeQuery: {
+                        page: nextPageIndex + 1,
+                        per_page: pageSize,
+                    },
+                }),
                 {},
                 {
                     replace: true,
@@ -221,12 +217,13 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
     );
 
     const handlePageSizeChange = useCallback((nextPageSize: number) => {
-        const params = new URLSearchParams(window.location.search);
-        params.set('page', '1');
-        params.set('per_page', String(nextPageSize));
-
         router.get(
-            `${window.location.pathname}?${params.toString()}`,
+            procurementsRoutes.index.url({
+                mergeQuery: {
+                    page: 1,
+                    per_page: nextPageSize,
+                },
+            }),
             {},
             {
                 replace: true,
@@ -337,14 +334,15 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                 <HeroCard
                     icon={FileText}
                     title="Procurement List"
+
                     description={
                         <div className="space-y-1">
-                            <p>View and manage procurement items across all stages</p>
+                            <p>View and manage {isPollArchived ? 'archived' : 'active'} procurement items across all stages</p>
                             <p className="hidden text-xs sm:block opacity-80">
                                 Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">R</kbd> Refresh
                                 {' · '}
                                 <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">/</kbd> Search
-                                {auth?.permissions?.includes('create procurement') && (
+                                {!isPollArchived && auth?.permissions?.includes('create procurement') && (
                                     <>
                                         {' · '}
                                         <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">N</kbd> New
@@ -354,14 +352,16 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                         </div>
                     }
                     actions={
-                        <Can permission="create procurement">
-                            <Button asChild className="shrink-0">
-                                <Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2">
-                                    <Plus className="h-4 w-4" />
-                                    <span>New Procurement</span>
-                                </Link>
-                            </Button>
-                        </Can>
+                        !isPollArchived && (
+                            <Can permission="create procurement">
+                                <Button asChild className="shrink-0">
+                                    <Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2">
+                                        <Plus className="h-4 w-4" />
+                                        <span>New Procurement</span>
+                                    </Link>
+                                </Button>
+                            </Can>
+                        )
                     }
                 />
 
@@ -400,6 +400,7 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                     refreshDisabled={loading}
                     isRefreshing={isPolling}
                     lastRefreshed={lastRefreshed}
+                    isArchived={isPollArchived}
                 />
             </div>
 

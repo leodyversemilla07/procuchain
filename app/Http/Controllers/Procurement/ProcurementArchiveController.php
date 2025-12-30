@@ -1,0 +1,87 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Procurement;
+
+use App\Enums\StageEnums;
+use App\Http\Controllers\Controller;
+use App\Repositories\ProcurementArchiveRepository;
+use App\Services\ProcurementDataService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class ProcurementArchiveController extends Controller
+{
+    public function __construct(
+        private readonly ProcurementArchiveRepository $archiveRepository,
+        private readonly ProcurementDataService $procurementDataService,
+    ) {
+    }
+
+    /**
+     * Archive a procurement
+     */
+    public function store(Request $request, string $pr_number): RedirectResponse
+    {
+        try {
+            // Get current status to validate stage
+            $currentStatus = $this->procurementDataService->getCurrentProcurementStatus($pr_number);
+
+            if (! $currentStatus) {
+                return back()->with('error', 'Procurement not found.');
+            }
+
+            // CRITICAL VALIDATION: Only allow archiving if stage is COMPLETED
+            $stage = $currentStatus['stage'] ?? '';
+            // Check against both the string value and enum to be safe
+            if ($stage !== StageEnums::COMPLETED->value && $stage !== 'completed') {
+                Log::warning('Attempted to archive incomplete procurement', [
+                    'pr_number' => $pr_number,
+                    'stage' => $stage,
+                    'user_id' => auth()->id(),
+                ]);
+
+                return back()->with('error', 'Only fully completed procurements can be archived.');
+            }
+
+            $this->archiveRepository->archive(
+                $pr_number,
+                (string) auth()->id(),
+                $request->input('reason')
+            );
+
+            return back()->with('success', 'Procurement archived successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to archive procurement', [
+                'pr_number' => $pr_number,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to archive procurement. Please try again.');
+        }
+    }
+
+    /**
+     * Restore an archived procurement
+     */
+    public function destroy(string $pr_number): RedirectResponse
+    {
+        try {
+            $this->archiveRepository->restore(
+                $pr_number,
+                (string) auth()->id()
+            );
+
+            return back()->with('success', 'Procurement restored successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to restore procurement', [
+                'pr_number' => $pr_number,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to restore procurement. Please try again.');
+        }
+    }
+}

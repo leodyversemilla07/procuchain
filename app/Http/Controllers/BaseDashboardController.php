@@ -21,8 +21,6 @@ abstract class BaseDashboardController extends Controller
         protected DashboardService $dashboardService,
         protected CacheStrategyInterface $cacheStrategy
     ) {
-        $this->middleware('auth');
-        $this->middleware('role:'.$this->getRoleName());
     }
 
     /**

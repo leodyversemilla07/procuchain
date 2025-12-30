@@ -20,7 +20,6 @@ class ProcurementActionsController extends Controller
     public function __construct(
         private readonly ProcurementActionService $actionService
     ) {
-        $this->middleware('auth');
     }
 
     /**

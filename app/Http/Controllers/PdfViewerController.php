@@ -20,8 +20,6 @@ class PdfViewerController extends BaseController
         private ProcurementDataService $procurementDataService,
         private DocumentRepository $documentRepository
     ) {
-        $this->middleware('auth');
-        $this->middleware('role:bac_chairman|bac_secretariat|hope|admin');
     }
 
     /**

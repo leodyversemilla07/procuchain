@@ -17,8 +17,6 @@ class DocumentDownloadController extends BaseController
         private ProcurementDataService $procurementDataService,
         private BlockchainStorageService $fileStorageService
     ) {
-        $this->middleware('auth');
-        $this->middleware('role:bac_chairman|bac_secretariat|hope|admin');
     }
 
     /**

@@ -276,9 +276,20 @@ class DashboardService
      */
     public function countOngoingProjects(Collection $procurementsByKey): int
     {
-        return $procurementsByKey->filter(function ($item) {
-            return $item['stage'] !== 'Monitoring' ||
-                ($item['stage'] === 'Monitoring' && $item['status'] !== 'Completed');
+        $completedStages = config('dashboard.completed_bidding_stages');
+
+        return $procurementsByKey->filter(function ($item) use ($completedStages) {
+            // Exclude if explicitly in completed stages list
+            if (in_array($item['stage'], $completedStages)) {
+                return false;
+            }
+            
+            // Also exclude if Enum matches COMPLETED (just in case config is missing it)
+            if ($item['stage'] === \App\Enums\StageEnums::COMPLETED->value) {
+                return false;
+            }
+
+            return true;
         })->count();
     }
 

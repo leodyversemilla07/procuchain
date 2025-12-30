@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import { RefreshCw, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ export interface ProcurementFiltersToolbarProps {
     refreshDisabled?: boolean;
     isRefreshing?: boolean;
     lastRefreshed?: Date;
+    isArchived?: boolean;
     className?: string;
 }
 
@@ -48,6 +50,7 @@ export function ProcurementFiltersToolbar({
     refreshDisabled = false,
     isRefreshing = false,
     lastRefreshed,
+    isArchived,
     className,
 }: ProcurementFiltersToolbarProps) {
     return (
@@ -82,6 +85,36 @@ export function ProcurementFiltersToolbar({
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        {/* Archive Toggle */}
+                        <div className="flex items-center bg-muted/50 rounded-lg p-1 text-sm shadow-inner self-start sm:self-center border border-border/50">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    router.get(window.location.pathname, { archived: null }, { preserveState: true, preserveScroll: true });
+                                }}
+                                className={cn(
+                                    "h-8 px-3 rounded-md transition-all text-xs font-medium",
+                                    !isArchived ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:bg-background/40"
+                                )}
+                            >
+                                Active
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    router.get(window.location.pathname, { archived: 1 }, { preserveState: true, preserveScroll: true });
+                                }}
+                                className={cn(
+                                    "h-8 px-3 rounded-md transition-all text-xs font-medium",
+                                    isArchived ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:bg-background/40"
+                                )}
+                            >
+                                Archived
+                            </Button>
+                        </div>
                     </div>
                     <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-end">
                         {lastRefreshed && (

@@ -28,6 +28,7 @@ class ProcurementDataService
     public function __construct(
         private readonly ProcurementFetcherService $fetcher,
         private readonly ProcurementFormatterService $formatter,
+        private readonly \App\Repositories\ProcurementArchiveRepository $archiveRepository,
     ) {}
 
     // =========================================================================
@@ -225,6 +226,7 @@ class ProcurementDataService
             'documents' => $documents,
             'events' => $events,
             'timeline' => $statusItems->values()->toArray(),
+            'is_archived' => $this->archiveRepository->isArchived($pr_number),
         ];
     }
 

@@ -87,11 +87,12 @@ return [
     */
 
     'completed_bidding_stages' => [
-        'Notice Of Award',
-        'Performance Bond',
-        'Contract And PO',
-        'Notice To Proceed',
-        'Monitoring',
+        // Enum values (what is likely stored in DB/Blockchain)
+        'completion',
+        'completed',
+
+        // Display names (fallback if stored as display name)
+        'Completion',
         'Completed',
     ],
 
