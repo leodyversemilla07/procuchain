@@ -20,6 +20,7 @@ export interface ProcurementListItem {
     procurement_mode_label?: string | null;
     workflow_actions?: ProcurementAction[];
     static_actions?: ProcurementAction[];
+    is_archived?: boolean;
 }
 
 export interface Procurement {

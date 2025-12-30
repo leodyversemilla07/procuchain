@@ -47,7 +47,9 @@ final class ProcurementFetcherService
         private readonly ProcurementRepository $procurementRepository,
         private readonly UserService $userService,
         private readonly ProcurementFormatterService $formatter,
+
         private readonly ProcurementActionService $actionService,
+        private readonly \App\Repositories\ProcurementArchiveRepository $archiveRepository,
     ) {}
 
     /**
@@ -69,22 +71,25 @@ final class ProcurementFetcherService
      * @param  bool  $skipActions  Skip action generation for faster initial load
      * @param  string|null  $filterByUserId  Filter procurements by creator user ID (for BAC Secretariat)
      * @param  string|null  $filterByUserAddress  Filter by blockchain address for additional security
+     * @param  bool  $archived  Filter for archived procurements (true = show archived only, false = show active only)
      * @return array<int, array<string, mixed>>
      */
-    public function fetchAllProcurements(bool $skipActions = false, ?string $filterByUserId = null, ?string $filterByUserAddress = null): array
+    public function fetchAllProcurements(bool $skipActions = false, ?string $filterByUserId = null, ?string $filterByUserAddress = null, bool $archived = false): array
     {
         // NO CACHE APPROACH: Fetch directly from blockchain with optimized queries
         // This eliminates cache invalidation complexity and stale data issues
 
-        Log::info('ProcurementFetcherService: Fetching directly from blockchain (no cache)');
+        Log::info('ProcurementFetcherService: Fetching directly from blockchain (no cache)', [
+            'archived_filter' => $archived,
+        ]);
 
-        return $this->fetchProcurementsOptimized($skipActions, $filterByUserId, $filterByUserAddress);
+        return $this->fetchProcurementsOptimized($skipActions, $filterByUserId, $filterByUserAddress, $archived);
     }
 
     /**
      * Optimized blockchain fetch without cache
      */
-    private function fetchProcurementsOptimized(bool $skipActions, ?string $filterByUserId, ?string $filterByUserAddress): array
+    private function fetchProcurementsOptimized(bool $skipActions, ?string $filterByUserId, ?string $filterByUserAddress, bool $archived): array
     {
         // Define blockchain health cache key
         $blockchainHealthKey = 'blockchain:health:procurement_fetch';
@@ -158,6 +163,30 @@ final class ProcurementFetcherService
                 ]);
                 $procurementModeMap = [];
             }
+
+            // ARCHIVE FILTERING:
+            // Fetch list of archived PR numbers
+            try {
+                $archivedPrNumbers = $this->archiveRepository->getArchivedPrNumbers();
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch archived procurements list', ['error' => $e->getMessage()]);
+                $archivedPrNumbers = [];
+            }
+
+            // Filter status items based on archived status
+            $statusItems = $statusItems->filter(function (StatusData $statusDto) use ($archivedPrNumbers, $archived) {
+                $isArchived = in_array($statusDto->prNumber, $archivedPrNumbers, true);
+
+                // If requesting archived ($archived = true), return only archived items
+                // If requesting active ($archived = false), return only non-archived items
+                return $archived ? $isArchived : ! $isArchived;
+            });
+
+            Log::info('Filtered procurements by archive status', [
+                'showing_archived' => $archived,
+                'total_archived_count' => count($archivedPrNumbers),
+                'remaining_items' => $statusItems->count(),
+            ]);
 
             // SECURITY: Filter procurements by userId and/or blockchain address if specified (for BAC Secretariat isolation)
             if ($filterByUserId !== null || $filterByUserAddress !== null) {

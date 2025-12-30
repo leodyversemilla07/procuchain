@@ -37,6 +37,7 @@ class MultichainSetup extends Command
         StreamEnums::CORRECTIONS->value,
         StreamEnums::METADATA->value,
         StreamEnums::PROCUREMENTS_CORRECTIONS->value,
+        StreamEnums::ARCHIVE->value,
     ];
 
     /**

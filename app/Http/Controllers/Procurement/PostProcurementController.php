@@ -46,7 +46,6 @@ class PostProcurementController extends BaseController
         protected ProcurementOrchestrator $orchestrator
     ) {
         $this->initializeProcurementSupport($multichain, $documentPublisher, $statusPublisher, $eventPublisher, $procurementDataService, $documentRepository);
-        $this->applyProcurementMiddleware();
     }
 
     /**

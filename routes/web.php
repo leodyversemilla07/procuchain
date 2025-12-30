@@ -137,6 +137,12 @@ Route::middleware(['auth'])->group(function () {
             ->name('verify.integrity');
         Route::get('/verification', [DocumentVerificationController::class, 'showVerificationPage'])
             ->name('verification');
+
+        // Procurement Archiving Actions
+        Route::post('/archive', [\App\Http\Controllers\Procurement\ProcurementArchiveController::class, 'store'])
+            ->name('archive');
+        Route::delete('/archive', [\App\Http\Controllers\Procurement\ProcurementArchiveController::class, 'destroy'])
+            ->name('restore');
     });
 
     // Single Document Verification

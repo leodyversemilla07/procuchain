@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\StageEnums;
+use App\Enums\UserRoleEnums;
 use App\Models\ProcurementWorkflowConfig;
 use App\Services\ProcurementDataService;
 use Exception;
@@ -28,27 +29,23 @@ class ProcurementListController extends BaseController
 
     private ProcurementDataService $procurementDataService;
 
+    private \App\Services\Procurement\ProcurementFetcherService $procurementFetcher;
+
     /**
      * Constructor
      */
-    public function __construct(ProcurementDataService $procurementDataService)
-    {
+    public function __construct(
+        ProcurementDataService $procurementDataService,
+        \App\Services\Procurement\ProcurementFetcherService $procurementFetcher
+    ) {
         $this->procurementDataService = $procurementDataService;
-        $this->setupMiddleware();
-    }
-
-    /**
-     * Set up controller middleware
-     */
-    private function setupMiddleware(): void
-    {
-        $this->middleware('auth');
+        $this->procurementFetcher = $procurementFetcher;
     }
 
     /**
      * Display a listing of procurements
      */
-    public function index(): Response
+    public function index(\Illuminate\Http\Request $request): Response
     {
         // Authorization: All authenticated users can view procurements list
         // (removed Procurement model dependency)
@@ -59,19 +56,19 @@ class ProcurementListController extends BaseController
             // Set a reasonable timeout for blockchain operations
             set_time_limit(28); // Give 2 seconds buffer
 
-            // TEMPORARY: Filtering completely disabled - all users see all procurements
+            // TEMPORARY: Filtering completely disabled
             $user = auth()->user();
+            $isBacSecretariat = $user->hasRole(UserRoleEnums::BAC_SECRETARIAT->value);
+            $showArchived = $request->boolean('archived');
 
-            Log::info('Procurement List Access', [
-                'user_id' => $user->id,
-                'user_email' => $user->email,
-                'filtering' => 'COMPLETELY DISABLED',
-            ]);
-
-            $procurements = $this->procurementDataService->fetchAndProcessProcurements(
+            // Fetch all procurements with optimizations
+            // Pass user ID filter for BAC Secretariat to only see their own procurements
+            // Pass blockchain address filter for additional security verification
+            $procurements = $this->procurementFetcher->fetchAllProcurements(
                 skipActions: false,
-                filterByUserId: null,
-                filterByUserAddress: null
+                // filterByUserId: $isBacSecretariat ? (string) $user->id : null,
+                // filterByUserAddress: $isBacSecretariat ? $user->blockchain_address : null,
+                archived: $showArchived
             );
 
             // Log result count
@@ -115,6 +112,8 @@ class ProcurementListController extends BaseController
                     'per_page' => $perPage,
                 ],
                 'stageOptions' => StageEnums::options(),
+                'filters' => compact('search', 'status', 'stage'),
+                'is_archived' => $showArchived,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve procurements list', [

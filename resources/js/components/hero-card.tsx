@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 
 export interface HeroCardProps {
     icon: LucideIcon;
-    title: string;
+    title: string | ReactNode;
     description: string | ReactNode;
     actions?: ReactNode;
     className?: string;
@@ -31,7 +31,11 @@ export const HeroCard = ({
                             <Icon className={cn('h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6', iconClassName)} />
                         </div>
                         <div>
-                            <h1 className="text-foreground text-lg font-bold sm:text-xl md:text-2xl">{title}</h1>
+                            {typeof title === 'string' ? (
+                                <h1 className="text-foreground text-lg font-bold sm:text-xl md:text-2xl">{title}</h1>
+                            ) : (
+                                <div className="text-foreground text-lg font-bold sm:text-xl md:text-2xl">{title}</div>
+                            )}
                             <div className="text-muted-foreground mt-0.5 text-xs sm:mt-1 sm:text-sm">{description}</div>
                         </div>
                     </div>

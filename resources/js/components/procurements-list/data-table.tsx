@@ -69,6 +69,7 @@ export interface ProcurementsDataTableProps {
     refreshDisabled?: boolean;
     isRefreshing?: boolean;
     lastRefreshed?: Date;
+    isArchived?: boolean;
 }
 
 export function DataTableCheckbox({ checked, onCheckedChange, disabled = false, title }: DataTableCheckboxProps) {
@@ -133,6 +134,7 @@ export function ProcurementsDataTable({
     refreshDisabled,
     isRefreshing,
     lastRefreshed,
+    isArchived,
 }: ProcurementsDataTableProps) {
     const [sorting, setSorting] = useState<SortingState>([{ id: 'last_updated', desc: true }]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -201,8 +203,8 @@ export function ProcurementsDataTable({
         const description = hasFilters
             ? 'Try adjusting your search or filters to find the procurements you need.'
             : userRole === 'bac_secretariat'
-              ? 'Create your first procurement record to start tracking progress across every stage.'
-              : 'Once procurements are created, they will appear here with full stage tracking.';
+                ? 'Create your first procurement record to start tracking progress across every stage.'
+                : 'Once procurements are created, they will appear here with full stage tracking.';
 
         return (
             <Card className="overflow-hidden">
@@ -288,6 +290,7 @@ export function ProcurementsDataTable({
                             refreshDisabled={refreshDisabled}
                             isRefreshing={isRefreshing}
                             lastRefreshed={lastRefreshed}
+                            isArchived={isArchived}
                         />
                     )}
                 </CardHeader>
