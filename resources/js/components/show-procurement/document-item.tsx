@@ -44,11 +44,11 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
 
                 {/* Main Content Row */}
                 <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                        <h4 className="font-semibold text-sm sm:text-base leading-tight mb-1 truncate" title={doc.document_type_formatted || doc.document_type}>
+                    <div className="min-w-0 flex flex-col gap-1 justify-center">
+                        <h4 className="font-semibold text-sm sm:text-base leading-tight truncate" title={doc.document_type_formatted || doc.document_type}>
                             {doc.document_type_formatted || doc.document_type || 'Unnamed Document'}
                         </h4>
-                        
+
                         {/* Meta Row */}
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                             {doc.file_size_formatted && (
@@ -63,12 +63,12 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                     {doc.formatted_date_only}
                                 </span>
                             )}
-                            
+
                             {/* Hash with copy (Subtle) */}
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <button 
+                                        <button
                                             onClick={handleCopyHash}
                                             className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer whitespace-nowrap"
                                         >
@@ -84,7 +84,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                             </TooltipProvider>
                         </div>
                     </div>
-                    
+
                     {/* Desktop Actions */}
                     <div className="hidden sm:flex items-center gap-2 shrink-0">
                         {doc.has_corrections && (
@@ -99,12 +99,12 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                             </Button>
                         )}
                         <Button variant="outline" size="sm" className="h-8" asChild>
-                             <Link href={pdf.viewer.url({ fileKey: doc.file_key })}>
+                            <Link href={pdf.viewer.url({ fileKey: doc.file_key })}>
                                 <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
                                 View
                             </Link>
                         </Button>
-                         <DropdownMenu>
+                        <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                     <MoreVertical className="h-4 w-4" />
@@ -136,7 +136,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
 
             {/* Mobile Actions (Bottom) */}
             <div className="flex sm:hidden items-center justify-between gap-2 pt-2 border-t mt-1">
-                 {doc.has_corrections && (
+                {doc.has_corrections && (
                     <Button
                         variant="ghost"
                         size="sm"
