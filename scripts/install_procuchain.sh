@@ -6,11 +6,23 @@
 #   wget https://www.multichain.com/download/multichain-2.3.3.tar.gz
 #   tar -xvzf multichain-2.3.3.tar.gz
 #   mv multichaind multichain-cli multichain-util /usr/local/bin
+#
+# Environment Variables:
+#   MULTICHAIN_CHAIN_NAME    - Chain name (default: procuchain)
+#   MULTICHAIN_RPC_ALLOW_IP  - Additional IP/CIDR to allow RPC (optional)
+#
+# Security Note:
+#   By default, RPC is only accessible from localhost (127.0.0.1).
+#   Set MULTICHAIN_RPC_ALLOW_IP to allow external connections.
+#
+# Usage:
+#   ./install_procuchain.sh
+#   MULTICHAIN_RPC_ALLOW_IP=10.0.0.0/8 ./install_procuchain.sh
 # ==========================================================
 
 set -euo pipefail
 
-CHAIN_NAME="procuchain"
+CHAIN_NAME="${MULTICHAIN_CHAIN_NAME:-procuchain}"
 MC_VERSION="2.3.3"
 ARCHIVE="multichain-${MC_VERSION}.tar.gz"
 DOWNLOAD_URL="https://www.multichain.com/download/${ARCHIVE}"
@@ -105,6 +117,10 @@ if [[ ! -f "${RPC_CONF}" ]]; then
 fi
 
 needs_restart=0
+# Set allowed RPC IPs - default to localhost only for security
+# Set MULTICHAIN_RPC_ALLOW_IP to allow external connections
+RPC_ALLOW_IP="${MULTICHAIN_RPC_ALLOW_IP:-}"
+
 if [[ -f "${RPC_CONF}" ]]; then
     if ! grep -q "^rpcport=" "${RPC_CONF}"; then
         echo "rpcport=${RPC_PORT}" >> "${RPC_CONF}"
@@ -118,8 +134,9 @@ if [[ -f "${RPC_CONF}" ]]; then
         echo "rpcallowip=127.0.0.1" >> "${RPC_CONF}"
         needs_restart=1
     fi
-    if ! grep -q '^rpcallowip=0.0.0.0/0' "${RPC_CONF}"; then
-        echo "rpcallowip=0.0.0.0/0" >> "${RPC_CONF}"
+    # Only add external RPC access if explicitly configured
+    if [[ -n "${RPC_ALLOW_IP}" ]] && ! grep -q "^rpcallowip=${RPC_ALLOW_IP}" "${RPC_CONF}"; then
+        echo "rpcallowip=${RPC_ALLOW_IP}" >> "${RPC_CONF}"
         needs_restart=1
     fi
 fi
@@ -168,10 +185,10 @@ echo "===================================================="
 echo " Laravel .env Configuration"
 echo "===================================================="
 echo "MULTICHAIN_CHAIN_NAME=${CHAIN_NAME}"
-echo "MULTICHAIN_HOST=${RPC_HOST}"
-echo "MULTICHAIN_PORT=${RPC_PORT}"
-echo "MULTICHAIN_USERNAME=${RPC_USER}"
-echo "MULTICHAIN_PASSWORD=${RPC_PASS}"
+echo "MULTICHAIN_RPC_HOST=${RPC_HOST}"
+echo "MULTICHAIN_RPC_PORT=${RPC_PORT}"
+echo "MULTICHAIN_RPC_USERNAME=${RPC_USER}"
+echo "MULTICHAIN_RPC_PASSWORD=${RPC_PASS}"
 echo "===================================================="
 
 echo ""

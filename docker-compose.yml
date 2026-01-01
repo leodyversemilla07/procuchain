@@ -49,6 +49,9 @@ services:
       - RPC_PASSWORD=multichainrpc
       - RPC_PORT=7450
       - P2P_PORT=7449
+      # Restrict RPC to Docker network (172.16.0.0/12 covers Docker's default ranges)
+      # For external access, use specific IPs instead of 0.0.0.0/0
+      - RPC_ALLOW_IP=172.16.0.0/12
     ports:
       - "7449:7449"
       - "7450:7450"
