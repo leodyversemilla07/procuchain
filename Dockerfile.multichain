@@ -39,8 +39,8 @@ ENV P2P_PORT=7449
 # Expose ports
 EXPOSE ${P2P_PORT} ${RPC_PORT}
 
-# Health check
+# Health check - uses RPC credentials from environment
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
-    CMD multichain-cli ${CHAIN_NAME} getinfo || exit 1
+    CMD multichain-cli ${CHAIN_NAME} -rpcuser=${RPC_USER} -rpcpassword=${RPC_PASSWORD} getinfo || exit 1
 
 CMD ["/usr/local/bin/docker-entrypoint.sh"]

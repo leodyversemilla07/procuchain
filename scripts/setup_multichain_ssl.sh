@@ -2,17 +2,25 @@
 
 # MultiChain SSL Setup Script
 # This script sets up SSL for your MultiChain blockchain node
+#
+# Environment Variables:
+#   MULTICHAIN_CHAIN_NAME  - Chain name (default: procuchain)
+#   MULTICHAIN_SSL_DOMAIN  - Domain for certificate (default: procuchain.tech)
+#
+# Usage:
+#   ./setup_multichain_ssl.sh
+#   MULTICHAIN_SSL_DOMAIN=mychain.example.com ./setup_multichain_ssl.sh
 
 set -e
 
-# Configuration
-BLOCKCHAIN_NAME="procuchain"
+# Configuration (with environment variable overrides)
+BLOCKCHAIN_NAME="${MULTICHAIN_CHAIN_NAME:-procuchain}"
 CERT_DIR="/etc/ssl"
-DOMAIN="procuchain.tech"
+DOMAIN="${MULTICHAIN_SSL_DOMAIN:-procuchain.tech}"
 COUNTRY="PH"
 STATE="Manila"
 CITY="Manila"
-ORG="Procuchain"
+ORG="ProcuChain"
 
 echo "=== MultiChain SSL Setup Script ==="
 echo "Blockchain: $BLOCKCHAIN_NAME"
