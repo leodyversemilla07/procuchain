@@ -25,7 +25,7 @@ class CorrectDocumentRequest extends FormRequest
         return [
             'correction_reason' => ['required', 'string', 'min:10', 'max:1000'],
             'correction_type' => ['required', Rule::in(['replace', 'invalidate'])],
-            'corrected_file' => ['required_if:correction_type,replace', 'file', 'mimes:pdf', 'max:8192'],
+            'corrected_file' => ['required_if:correction_type,replace', 'file', 'mimes:pdf', 'max:51200'],
             'pr_number' => ['required', 'string'],
             'procurement_title' => ['required', 'string'],
             'original_document_hash' => ['required', 'string'],
@@ -49,7 +49,7 @@ class CorrectDocumentRequest extends FormRequest
             'corrected_file.required_if' => 'A corrected file is required when replacing a document.',
             'corrected_file.file' => 'The corrected file must be a valid file.',
             'corrected_file.mimes' => 'Only PDF files are allowed.',
-            'corrected_file.max' => 'The corrected file must not exceed 8MB.',
+            'corrected_file.max' => 'The corrected file must not exceed 50MB.',
             'pr_number.required' => 'Procurement ID is required.',
             'pr_number.exists' => 'The specified procurement does not exist.',
             'procurement_title.required' => 'Procurement title is required.',

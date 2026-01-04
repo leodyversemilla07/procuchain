@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB to match backend limits
 
 export function formatBytes(bytes: number, decimals = 2): string {
     if (bytes === 0) return '0 Bytes';

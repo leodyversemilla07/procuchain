@@ -26,8 +26,8 @@ class PreProcurementConferenceDocumentsRequest extends FormRequest
         return [
             'pr_number' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'minutes_file' => 'required|file|mimes:pdf|max:8192',
-            'attendance_file' => 'required|file|mimes:pdf|max:8192',
+            'minutes_file' => 'required|file|mimes:pdf|max:51200',
+            'attendance_file' => 'required|file|mimes:pdf|max:51200',
             'meeting_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'participants' => 'required|array|min:1',
             'participants.*.name' => 'required|string|min:1|max:255',
@@ -43,9 +43,9 @@ class PreProcurementConferenceDocumentsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'minutes_file.max' => 'The minutes file must not exceed 8MB in size.',
+            'minutes_file.max' => 'The minutes file must not exceed 50MB in size.',
             'minutes_file.mimes' => 'Only PDF files are allowed.',
-            'attendance_file.max' => 'The attendance file must not exceed 8MB in size.',
+            'attendance_file.max' => 'The attendance file must not exceed 50MB in size.',
             'attendance_file.mimes' => 'Only PDF files are allowed.',
             'participants.required' => 'At least one participant is required.',
             'participants.array' => 'Participants must be provided as an array.',
