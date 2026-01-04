@@ -616,7 +616,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         <SelectTrigger className={hasError('description') ? 'border-destructive ring-destructive/30' : ''}>
                                             <SelectValue placeholder="Select description" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="max-h-60 overflow-y-auto">
                                             {PROCUREMENT_DESCRIPTIONS.map((desc) => (
                                                 <SelectItem key={desc.value} value={desc.value}>
                                                     {desc.label}
@@ -906,7 +906,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         <SelectTrigger className={hasError('office') ? 'border-destructive ring-destructive/30' : ''}>
                                             <SelectValue placeholder="Select office" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="max-h-60 overflow-y-auto">
                                             {MUNICIPAL_OFFICES.map((office) => (
                                                 <SelectItem key={office.value} value={office.value}>
                                                     {office.label}
@@ -934,7 +934,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         <SelectTrigger>
                                             <SelectValue placeholder="Same as Office" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="max-h-60 overflow-y-auto">
                                             {MUNICIPAL_OFFICES.map((office) => (
                                                 <SelectItem key={office.value} value={office.value}>
                                                     {office.label}

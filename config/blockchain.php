@@ -175,15 +175,18 @@ return [
         'max_batch_size' => env('BLOCKCHAIN_MAX_BATCH_SIZE', 10),
 
         // Chunking configuration for large files
-        // When enabled, files larger than chunk_threshold will be split
+        // When enabled, files larger than chunk_threshold will be split into
+        // multiple blockchain transactions and stored in the file.chunks stream
         'chunking' => [
-            // Enable chunking for large files (currently disabled - single-transaction storage)
-            'enabled' => env('BLOCKCHAIN_CHUNKING_ENABLED', false),
+            // Enable chunking for large files (REQUIRED for files > 1.5MB with 4MB tx limit)
+            'enabled' => env('BLOCKCHAIN_CHUNKING_ENABLED', true),
 
-            // Files larger than this will be chunked (if chunking is enabled)
-            'chunk_threshold' => env('BLOCKCHAIN_CHUNK_THRESHOLD', 1048576), // 1MB
+            // Files larger than this will be chunked (accounting for hex encoding = 2x size)
+            // With 4MB tx limit, raw file threshold should be ~1.5MB
+            'chunk_threshold' => env('BLOCKCHAIN_CHUNK_THRESHOLD', 1572864), // 1.5MB
 
-            // Size of each chunk when splitting large files
+            // Size of each chunk when splitting large files (before hex encoding)
+            // 1MB raw = 2MB hex, safely under 4MB limit with metadata overhead
             'chunk_size' => env('BLOCKCHAIN_CHUNK_SIZE', 1048576), // 1MB per chunk
 
             // Stream for storing file chunks

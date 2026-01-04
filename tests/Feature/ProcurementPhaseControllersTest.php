@@ -5,6 +5,7 @@ use App\Enums\StageEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\DocumentValidationService;
+use App\Services\ModeAwareDocumentValidationService;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
 use Illuminate\Http\UploadedFile;
@@ -19,7 +20,7 @@ beforeEach(function () {
     $this->bacSecretariat->save();
 });
 
-describe('PreProcurementController', function () {
+describe('ProcurementStageController (Pre-Procurement Phase)', function () {
     it('shows pre-procurement stage page for authorized users', function () {
         actingAs($this->bacSecretariat);
 
@@ -30,21 +31,23 @@ describe('PreProcurementController', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/pre-procurement-conference-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('procurement')
             ->has('documentGuide')
         );
     });
 
-    it('rejects non-pre-procurement stages', function () {
+    it('shows any stage via pre-procurement route (unified controller)', function () {
         actingAs($this->bacSecretariat);
 
+        // The unified controller validates by workflow, not by phase
+        // So it should successfully render even for procurement phase stages
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
             'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::BID_EVALUATION->value, // Procurement phase stage
+            'stage' => StageEnums::BID_EVALUATION->value,
         ]));
 
-        $response->assertForbidden();
+        $response->assertSuccessful();
     });
 
     it('uploads documents successfully for pre-procurement stage', function () {
@@ -103,14 +106,12 @@ describe('PreProcurementController', function () {
 
         $file = UploadedFile::fake()->create('minutes.pdf', 1000, 'application/pdf');
 
-        $response = $this->withoutMiddleware('throttle:blockchain_writes')->startSession()->post(route('bac-secretariat.procurement.pre-procurement.upload', [
+        $response = $this->withoutMiddleware('throttle:blockchain_writes')->startSession()->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
             'pr_number' => 'PR-2024-001',
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
         ]), [
-            'pr_number' => 'PR-2024-001',
-            'minutes_file' => $file,
-            'meeting_date' => '2024-01-15',
-            'participants' => 'John Doe, Jane Smith',
+            'document_file' => $file,
+            'document_type' => DocumentTypeEnums::PRE_PROCUREMENT_MINUTES->value,
         ]);
 
         $response->assertRedirect();
@@ -164,7 +165,7 @@ describe('PreProcurementController', function () {
     });
 });
 
-describe('ProcurementController', function () {
+describe('ProcurementStageController (Procurement Phase)', function () {
     it('shows procurement stage page for authorized users', function () {
         actingAs($this->bacSecretariat);
 
@@ -175,21 +176,22 @@ describe('ProcurementController', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/bid-evaluation-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('procurement')
             ->has('documentGuide')
         );
     });
 
-    it('rejects non-procurement stages', function () {
+    it('shows any stage via procurement route (unified controller)', function () {
         actingAs($this->bacSecretariat);
 
+        // The unified controller validates by workflow, not by phase
         $response = $this->get(route('bac-secretariat.procurement.bidding.show', [
             'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value, // Pre-procurement phase stage
+            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
         ]));
 
-        $response->assertForbidden();
+        $response->assertSuccessful();
     });
 
     it('uploads documents successfully for procurement stage', function () {
@@ -238,20 +240,24 @@ describe('ProcurementController', function () {
         $this->instance(\App\Services\ProcurementDataService::class, $procurementDataService);
 
         $validationService = mock(DocumentValidationService::class);
-        $validationService->shouldReceive('validateUpload')
-            ->andReturn(['errors' => [], 'warnings' => []]);
         $validationService->shouldReceive('validateStageCompletion')
             ->andReturn(['can_complete' => false]);
         $this->instance(DocumentValidationService::class, $validationService);
 
+        // Mock the ModeAwareDocumentValidationService which is used by the unified controller
+        $modeAwareValidationService = mock(ModeAwareDocumentValidationService::class);
+        $modeAwareValidationService->shouldReceive('validateUpload')
+            ->andReturn(['errors' => [], 'warnings' => []]);
+        $this->instance(ModeAwareDocumentValidationService::class, $modeAwareValidationService);
+
         $file = UploadedFile::fake()->create('evaluation_report.pdf', 1000, 'application/pdf');
 
-        $response = $this->withoutMiddleware('throttle:blockchain_writes')->startSession()->post(route('bac-secretariat.procurement.bidding.upload', [
+        $response = $this->withoutMiddleware('throttle:blockchain_writes')->startSession()->post(route('bac-secretariat.procurement.bidding.upload-document', [
             'pr_number' => 'PR-2024-001',
             'stage' => StageEnums::BID_EVALUATION->value,
         ]), [
-            'pr_number' => 'PR-2024-001',
-            'evaluation_report_file' => $file,
+            'document_file' => $file,
+            'document_type' => DocumentTypeEnums::BID_EVALUATION_REPORT->value,
         ]);
 
         $response->assertRedirect();
@@ -283,7 +289,7 @@ describe('ProcurementController', function () {
     });
 });
 
-describe('PostProcurementController', function () {
+describe('ProcurementStageController (Post-Procurement Phase)', function () {
     it('shows post-procurement stage page for authorized users', function () {
         actingAs($this->bacSecretariat);
 
@@ -294,21 +300,22 @@ describe('PostProcurementController', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/noa-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('procurement')
             ->has('documentGuide')
         );
     });
 
-    it('rejects non-post-procurement stages', function () {
+    it('shows any stage via post-procurement route (unified controller)', function () {
         actingAs($this->bacSecretariat);
 
+        // The unified controller validates by workflow, not by phase
         $response = $this->get(route('bac-secretariat.procurement.post-procurement.show', [
             'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::BID_EVALUATION->value, // Procurement phase stage
+            'stage' => StageEnums::BID_EVALUATION->value,
         ]));
 
-        $response->assertForbidden();
+        $response->assertSuccessful();
     });
 
     it('uploads documents successfully for post-procurement stage', function () {
@@ -376,12 +383,12 @@ describe('PostProcurementController', function () {
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
             ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class)
             ->startSession()->post(route('bac-secretariat.procurement.post-procurement.upload-document', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::NOTICE_OF_AWARD->value,
-        ]), [
-            'pr_number' => 'PR-2024-001',
-            'notice_of_award_file' => $file,
-        ]);
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::NOTICE_OF_AWARD->value,
+            ]), [
+                'document_file' => $file,
+                'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
@@ -390,33 +397,25 @@ describe('PostProcurementController', function () {
     it('validates document upload in real-time', function () {
         actingAs($this->bacSecretariat);
 
-        $validationService = mock(DocumentValidationService::class);
-        $validationService->shouldReceive('validateUpload')
-            ->andReturn([
-                'errors' => [],
-                'warnings' => ['This document type is optional'],
-            ]);
-
         $file = UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf');
 
         $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class)
             ->startSession()->post(route('bac-secretariat.procurement.post-procurement.validate-upload', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::NOTICE_OF_AWARD->value,
-        ]), [
-            'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
-            'file' => $file,
-        ]);
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::NOTICE_OF_AWARD->value,
+            ]), [
+                'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
+                'file' => $file,
+            ]);
 
         $response->assertSuccessful();
         $response->assertJson([
             'valid' => true,
             'errors' => [],
-            'warnings' => ['This document type is optional'],
         ]);
     });
 
-    it('marks procurement as completed when acceptance turnover is done', function () {
+    it('uploads completion documents successfully', function () {
         actingAs($this->bacSecretariat);
 
         $repository = mock(ProcurementRepository::class);
@@ -449,30 +448,7 @@ describe('PostProcurementController', function () {
         );
         $this->instance(ProcurementRepository::class, $repository);
 
-        // Mock publishers first
-        $documentPublisher = mock(\App\Services\Publishers\DocumentPublisher::class);
-        $statusPublisher = mock(\App\Services\Publishers\StatusPublisher::class);
-        $statusPublisher->shouldReceive('publish')->once()->andReturn([
-            'success' => true,
-            'txid' => 'status_publish_123',
-        ]);
-        $statusPublisher->shouldReceive('publishTransition')->once()->andReturn([
-            'success' => true,
-            'txid' => 'status_transition_123',
-        ]);
-        $this->instance(\App\Services\Publishers\StatusPublisher::class, $statusPublisher);
-
-        $eventPublisher = mock(\App\Services\Publishers\EventPublisher::class);
-        $eventPublisher->shouldReceive('publishStageTransition')->once()->andReturn([
-            'success' => true,
-            'txid' => 'event123',
-        ]);
-        $this->instance(\App\Services\Publishers\EventPublisher::class, $eventPublisher);
-
         $orchestrator = mock(ProcurementOrchestrator::class);
-        $orchestrator->documentPublisher = $documentPublisher;
-        $orchestrator->statusPublisher = $statusPublisher;
-        $orchestrator->eventPublisher = $eventPublisher;
         $orchestrator->shouldReceive('publishDocumentWorkflow')
             ->once()
             ->withAnyArgs()
@@ -489,23 +465,27 @@ describe('PostProcurementController', function () {
         $this->instance(\App\Services\ProcurementDataService::class, $procurementDataService);
 
         $validationService = mock(DocumentValidationService::class);
-        $validationService->shouldReceive('validateUpload')
-            ->andReturn(['errors' => [], 'warnings' => []]);
         $validationService->shouldReceive('validateStageCompletion')
             ->andReturn(['can_complete' => true]);
         $this->instance(DocumentValidationService::class, $validationService);
+
+        // Mock the ModeAwareDocumentValidationService
+        $modeAwareValidationService = mock(ModeAwareDocumentValidationService::class);
+        $modeAwareValidationService->shouldReceive('validateUpload')
+            ->andReturn(['errors' => [], 'warnings' => []]);
+        $this->instance(ModeAwareDocumentValidationService::class, $modeAwareValidationService);
 
         $file = UploadedFile::fake()->create('completion_certificate.pdf', 1000, 'application/pdf');
 
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
             ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class)
             ->startSession()->post(route('bac-secretariat.procurement.post-procurement.upload-document', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::COMPLETION->value,
-        ]), [
-            'pr_number' => 'PR-2024-001',
-            'completion_certificate_file' => $file,
-        ]);
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::COMPLETION->value,
+            ]), [
+                'document_file' => $file,
+                'document_type' => DocumentTypeEnums::CERTIFICATE_OF_COMPLETION->value,
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');

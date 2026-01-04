@@ -208,7 +208,8 @@ describe('BlockchainStorageService - On-Chain Storage', function () {
             $retrieved = $service->retrieveFile('test/file.pdf');
 
             expect($retrieved['content'])->toBe($fileContent);
-            expect($retrieved['data_txid'])->toBe('found_txid');
+            expect($retrieved['storage_method'])->toBe('on_chain');
+            expect($retrieved['hash'])->toBe(hash('sha256', $fileContent));
         });
 
         it('throws exception for non-existent file', function () {

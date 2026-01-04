@@ -16,10 +16,8 @@ use App\Http\Controllers\HopeController;
 use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PdfViewerController;
-use App\Http\Controllers\Procurement\PostProcurementController;
-use App\Http\Controllers\Procurement\PreProcurementController;
-use App\Http\Controllers\Procurement\ProcurementController;
 use App\Http\Controllers\Procurement\ProcurementInitiationController;
+use App\Http\Controllers\Procurement\ProcurementStageController;
 use App\Http\Controllers\ProcurementCorrectionController;
 use App\Http\Controllers\ProcurementListController;
 use App\Http\Controllers\ReportController;
@@ -169,37 +167,37 @@ Route::middleware(['auth'])->group(function () {
                 ->name('procurement.initiation.validate-upload');
 
             // Pre-Procurement Phase (Stages 1-3)
-            Route::post('/pre-procurement/{pr_number}/{stage}/upload-document', [PreProcurementController::class, 'uploadSingleDocument'])
+            Route::post('/pre-procurement/{pr_number}/{stage}/upload-document', [ProcurementStageController::class, 'uploadSingleDocument'])
                 ->name('procurement.pre-procurement.upload-document');
-            Route::post('/pre-procurement/{pr_number}/{stage}/complete', [PreProcurementController::class, 'markStageComplete'])
+            Route::post('/pre-procurement/{pr_number}/{stage}/complete', [ProcurementStageController::class, 'markStageComplete'])
                 ->name('procurement.pre-procurement.complete');
-            Route::post('/pre-procurement/{pr_number}/{stage}/skip', [PreProcurementController::class, 'skipStage'])
+            Route::post('/pre-procurement/{pr_number}/{stage}/skip', [ProcurementStageController::class, 'skipStage'])
                 ->name('procurement.pre-procurement.skip');
-            Route::post('/publish-pre-procurement-conference-decision', [PreProcurementController::class, 'publishDecision'])
+            Route::post('/publish-pre-procurement-conference-decision', [ProcurementStageController::class, 'publishDecision'])
                 ->name('publish-pre-procurement-conference-decision');
-            Route::post('/publish-pre-bid-conference-decision', [PreProcurementController::class, 'publishPreBidDecision'])
+            Route::post('/publish-pre-bid-conference-decision', [ProcurementStageController::class, 'publishPreBidDecision'])
                 ->name('publish-pre-bid-conference-decision');
-            Route::post('/publish-supplemental-bid-bulletin-decision', [PreProcurementController::class, 'publishSupplementalBidBulletinDecision'])
+            Route::post('/publish-supplemental-bid-bulletin-decision', [ProcurementStageController::class, 'publishSupplementalBidBulletinDecision'])
                 ->name('publish-supplemental-bid-bulletin-decision');
 
             // Procurement Phase (Stages 4-9)
-            Route::post('/procurement/{pr_number}/{stage}/upload-document', [ProcurementController::class, 'uploadSingleDocument'])
+            Route::post('/procurement/{pr_number}/{stage}/upload-document', [ProcurementStageController::class, 'uploadSingleDocument'])
                 ->name('procurement.bidding.upload-document');
-            Route::post('/procurement/{pr_number}/{stage}/complete', [ProcurementController::class, 'markStageComplete'])
+            Route::post('/procurement/{pr_number}/{stage}/complete', [ProcurementStageController::class, 'markStageComplete'])
                 ->name('procurement.bidding.complete');
-            Route::post('/procurement/{pr_number}/{stage}/skip', [ProcurementController::class, 'skipStage'])
+            Route::post('/procurement/{pr_number}/{stage}/skip', [ProcurementStageController::class, 'skipStage'])
                 ->name('procurement.bidding.skip');
-            Route::post('/procurement/{pr_number}/{stage}/repeat', [ProcurementController::class, 'repeatStage'])
+            Route::post('/procurement/{pr_number}/{stage}/repeat', [ProcurementStageController::class, 'repeatStage'])
                 ->name('procurement.bidding.repeat');
 
             // Post-Procurement Phase (Stages 10-15)
-            Route::post('/post-procurement/{pr_number}/{stage}/upload-document', [PostProcurementController::class, 'uploadSingleDocument'])
+            Route::post('/post-procurement/{pr_number}/{stage}/upload-document', [ProcurementStageController::class, 'uploadSingleDocument'])
                 ->name('procurement.post-procurement.upload-document');
-            Route::post('/post-procurement/{pr_number}/{stage}/complete', [PostProcurementController::class, 'markStageComplete'])
+            Route::post('/post-procurement/{pr_number}/{stage}/complete', [ProcurementStageController::class, 'markStageComplete'])
                 ->name('procurement.post-procurement.complete');
-            Route::post('/post-procurement/{pr_number}/{stage}/skip', [PostProcurementController::class, 'skipStage'])
+            Route::post('/post-procurement/{pr_number}/{stage}/skip', [ProcurementStageController::class, 'skipStage'])
                 ->name('procurement.post-procurement.skip');
-            Route::post('/post-procurement/{pr_number}/delivery-details', [PostProcurementController::class, 'updateDeliveryDetails'])
+            Route::post('/post-procurement/{pr_number}/delivery-details', [ProcurementStageController::class, 'updateDeliveryDetails'])
                 ->name('procurement.post-procurement.delivery-details');
 
             // Legacy route deprecation notices
@@ -231,33 +229,33 @@ Route::middleware(['auth'])->group(function () {
             ->name('procurement.initiation.show');
 
         // Pre-Procurement Phase Routes (Stages 1-3)
-        Route::get('/pre-procurement/{pr_number}/{stage}', [PreProcurementController::class, 'show'])
+        Route::get('/pre-procurement/{pr_number}/{stage}', [ProcurementStageController::class, 'show'])
             ->name('procurement.pre-procurement.show');
-        Route::get('/pre-procurement/{pr_number}/{stage}/document-guide', [PreProcurementController::class, 'documentGuide'])
+        Route::get('/pre-procurement/{pr_number}/{stage}/document-guide', [ProcurementStageController::class, 'documentGuide'])
             ->name('procurement.pre-procurement.document-guide');
-        Route::get('/pre-procurement/{pr_number}/{stage}/check-completion', [PreProcurementController::class, 'checkCompletion'])
+        Route::get('/pre-procurement/{pr_number}/{stage}/check-completion', [ProcurementStageController::class, 'checkCompletion'])
             ->name('procurement.pre-procurement.check-completion');
-        Route::post('/pre-procurement/{pr_number}/{stage}/validate-upload', [PreProcurementController::class, 'validateUpload'])
+        Route::post('/pre-procurement/{pr_number}/{stage}/validate-upload', [ProcurementStageController::class, 'validateUpload'])
             ->name('procurement.pre-procurement.validate-upload');
 
         // Procurement Phase Routes (Stages 4-9)
-        Route::get('/procurement/{pr_number}/{stage}', [ProcurementController::class, 'show'])
+        Route::get('/procurement/{pr_number}/{stage}', [ProcurementStageController::class, 'show'])
             ->name('procurement.bidding.show');
-        Route::get('/procurement/{pr_number}/{stage}/document-guide', [ProcurementController::class, 'documentGuide'])
+        Route::get('/procurement/{pr_number}/{stage}/document-guide', [ProcurementStageController::class, 'documentGuide'])
             ->name('procurement.bidding.document-guide');
-        Route::get('/procurement/{pr_number}/{stage}/check-completion', [ProcurementController::class, 'checkCompletion'])
+        Route::get('/procurement/{pr_number}/{stage}/check-completion', [ProcurementStageController::class, 'checkCompletion'])
             ->name('procurement.bidding.check-completion');
-        Route::post('/procurement/{pr_number}/{stage}/validate-upload', [ProcurementController::class, 'validateUpload'])
+        Route::post('/procurement/{pr_number}/{stage}/validate-upload', [ProcurementStageController::class, 'validateUpload'])
             ->name('procurement.bidding.validate-upload');
 
         // Post-Procurement Phase Routes (Stages 10-15)
-        Route::get('/post-procurement/{pr_number}/{stage}', [PostProcurementController::class, 'show'])
+        Route::get('/post-procurement/{pr_number}/{stage}', [ProcurementStageController::class, 'show'])
             ->name('procurement.post-procurement.show');
-        Route::get('/post-procurement/{pr_number}/{stage}/document-guide', [PostProcurementController::class, 'documentGuide'])
+        Route::get('/post-procurement/{pr_number}/{stage}/document-guide', [ProcurementStageController::class, 'documentGuide'])
             ->name('procurement.post-procurement.document-guide');
-        Route::get('/post-procurement/{pr_number}/{stage}/check-completion', [PostProcurementController::class, 'checkCompletion'])
+        Route::get('/post-procurement/{pr_number}/{stage}/check-completion', [ProcurementStageController::class, 'checkCompletion'])
             ->name('procurement.post-procurement.check-completion');
-        Route::post('/post-procurement/{pr_number}/{stage}/validate-upload', [PostProcurementController::class, 'validateUpload'])
+        Route::post('/post-procurement/{pr_number}/{stage}/validate-upload', [ProcurementStageController::class, 'validateUpload'])
             ->name('procurement.post-procurement.validate-upload');
     });
 
