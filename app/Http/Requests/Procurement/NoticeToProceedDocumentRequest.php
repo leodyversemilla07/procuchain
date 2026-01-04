@@ -26,7 +26,7 @@ class NoticeToProceedDocumentRequest extends FormRequest
         return [
             'pr_number' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'ntp_file' => 'required|file|mimes:pdf|max:8192',
+            'ntp_file' => 'required|file|mimes:pdf|max:51200',
             'issuance_date' => 'required|date_format:Y-m-d|before_or_equal:today',
         ];
     }
@@ -39,7 +39,7 @@ class NoticeToProceedDocumentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'ntp_file.max' => 'The notice to proceed file must not exceed 8MB in size.',
+            'ntp_file.max' => 'The notice to proceed file must not exceed 50MB in size.',
             'ntp_file.mimes' => 'Only PDF files are allowed.',
         ];
     }

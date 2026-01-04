@@ -66,7 +66,7 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
                     </EmptyMedia>
                     <div className="flex flex-col gap-1">
                         <EmptyTitle className="text-sm">Drop file or click to browse</EmptyTitle>
-                        <EmptyDescription className="text-xs">PDF only, max 10MB</EmptyDescription>
+                        <EmptyDescription className="text-xs">PDF only, max 50MB</EmptyDescription>
                     </div>
                     <Input id={inputId} type="file" accept={accept} className="hidden" onChange={onFileChange} required={required} />
                 </Empty>

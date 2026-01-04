@@ -209,11 +209,11 @@ describe('BiddingDocumentsRequest', function () {
             expect($validator->errors()->has('bidding_document_file'))->toBeTrue();
         });
 
-        test('it rejects files exceeding 10MB', function () {
+        test('it rejects files exceeding 50MB', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 10241, 'application/pdf'),
+                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 51201, 'application/pdf'), // 50MB + 1KB
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -226,11 +226,11 @@ describe('BiddingDocumentsRequest', function () {
             expect($validator->errors()->has('bidding_document_file'))->toBeTrue();
         });
 
-        test('it accepts files up to 8MB', function () {
+        test('it accepts files up to 50MB', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 8192), // 8MB
+                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 51200), // 50MB
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -417,7 +417,7 @@ describe('BiddingDocumentsRequest', function () {
             $data = [
                 'pr_number' => 'PROC-2024-001',
                 'procurement_title' => 'Construction of Municipal Building',
-                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 10241, 'application/pdf'),
+                'bidding_document_file' => UploadedFile::fake()->create('bidding.pdf', 51201, 'application/pdf'), // 50MB + 1KB
                 'issuance_date' => '2024-01-15',
                 'validity_period_start' => '2024-01-20',
                 'validity_period_end' => '2024-02-20',
@@ -426,7 +426,7 @@ describe('BiddingDocumentsRequest', function () {
             $request = new BiddingDocumentsRequest;
             $validator = Validator::make($data, $request->rules(), $request->messages());
 
-            expect($validator->errors()->first('bidding_document_file'))->toContain('8MB');
+            expect($validator->errors()->first('bidding_document_file'))->toContain('50MB');
         });
 
         test('it provides custom message for file type', function () {

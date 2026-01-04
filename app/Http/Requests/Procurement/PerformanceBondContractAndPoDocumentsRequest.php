@@ -26,11 +26,11 @@ class PerformanceBondContractAndPoDocumentsRequest extends FormRequest
         return [
             'pr_number' => 'required|string|max:50',
             'procurement_title' => 'required|string|min:5|max:255',
-            'performance_bond_file' => 'nullable|file|mimes:pdf|max:8192',
+            'performance_bond_file' => 'nullable|file|mimes:pdf|max:51200',
             'submission_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'bond_amount' => 'required|numeric|min:0',
-            'contract_file' => 'nullable|file|mimes:pdf|max:8192',
-            'po_file' => 'nullable|file|mimes:pdf|max:8192',
+            'contract_file' => 'nullable|file|mimes:pdf|max:51200',
+            'po_file' => 'nullable|file|mimes:pdf|max:51200',
             'signing_date' => 'required|date_format:Y-m-d|before_or_equal:today',
         ];
     }
@@ -43,11 +43,11 @@ class PerformanceBondContractAndPoDocumentsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'performance_bond_file.max' => 'The performance bond file must not exceed 8MB in size.',
+            'performance_bond_file.max' => 'The performance bond file must not exceed 50MB in size.',
             'performance_bond_file.mimes' => 'Only PDF files are allowed.',
-            'contract_file.max' => 'The contract file must not exceed 8MB in size.',
+            'contract_file.max' => 'The contract file must not exceed 50MB in size.',
             'contract_file.mimes' => 'Only PDF files are allowed.',
-            'po_file.max' => 'The purchase order file must not exceed 8MB in size.',
+            'po_file.max' => 'The purchase order file must not exceed 50MB in size.',
             'po_file.mimes' => 'Only PDF files are allowed.',
             'bond_amount.numeric' => 'The bond amount must be a valid number.',
             'bond_amount.min' => 'The bond amount cannot be negative.',
