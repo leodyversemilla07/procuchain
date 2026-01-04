@@ -197,17 +197,39 @@ export function ProcurementsDataTable({
         const params = new URLSearchParams(window.location.search);
         const hasSearch = Boolean(params.get('search'));
         const hasStage = params.get('stage') && params.get('stage') !== 'all';
-        const hasFilters = hasSearch || hasStage;
+        const hasFilters = hasSearch || hasStage || isArchived;
 
-        const title = hasFilters ? 'No procurements match your search' : 'No procurements available yet';
+        const title = hasFilters
+            ? isArchived
+                ? 'No archived procurements'
+                : 'No procurements match your search'
+            : 'No procurements available yet';
         const description = hasFilters
-            ? 'Try adjusting your search or filters to find the procurements you need.'
+            ? isArchived
+                ? 'There are no archived procurements at this time. Switch to Active to view current procurements.'
+                : 'Try adjusting your search or filters to find the procurements you need.'
             : userRole === 'bac_secretariat'
                 ? 'Create your first procurement record to start tracking progress across every stage.'
                 : 'Once procurements are created, they will appear here with full stage tracking.';
 
         return (
             <Card className="overflow-hidden">
+                {searchValue !== undefined && onSearchChange && stageValue !== undefined && onStageChange && stageOptions && onRefresh && (
+                    <CardHeader className="pb-4">
+                        <ProcurementFiltersToolbar
+                            searchValue={searchValue}
+                            onSearchChange={onSearchChange}
+                            stageValue={stageValue}
+                            onStageChange={onStageChange}
+                            stageOptions={stageOptions}
+                            onRefresh={onRefresh}
+                            refreshDisabled={refreshDisabled}
+                            isRefreshing={isRefreshing}
+                            lastRefreshed={lastRefreshed}
+                            isArchived={isArchived}
+                        />
+                    </CardHeader>
+                )}
                 <CardContent className="flex justify-center px-6 py-12">
                     <Empty>
                         <EmptyHeader>

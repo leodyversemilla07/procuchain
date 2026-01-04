@@ -1,7 +1,5 @@
 import { markStageComplete as initMarkStageComplete, uploadSingleDocument as initUploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
-import { markStageComplete as postMarkStageComplete, updateDeliveryDetails, uploadSingleDocument as postUploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PostProcurementController';
-import { markStageComplete as preMarkStageComplete, uploadSingleDocument as preUploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/PreProcurementController';
-import { markStageComplete as procMarkStageComplete, uploadSingleDocument as procUploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementController';
+import { markStageComplete, updateDeliveryDetails, uploadSingleDocument } from '@/actions/App/Http/Controllers/Procurement/ProcurementStageController';
 import FileUploadArea from '@/components/file-upload-area';
 import { HeroCard } from '@/components/hero-card';
 import { ModeBadge } from '@/components/procurement/workflow-progress-indicator';
@@ -17,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePickerInput } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,7 +29,7 @@ import { UserRole } from '@/types/enums';
 import { handleFlashSuccess } from '@/utils/blockchain-toast';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
 import { Head, Link, router } from '@inertiajs/react';
-import { AlertCircle, ArrowRight, CheckCircle2, Clock, FileCheck2, Lock, MapPin, Send } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, FileCheck2, Lock, MapPin } from 'lucide-react';
 import React, { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -70,6 +68,8 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         documentName: '',
     });
 
+    const [completeDialog, setCompleteDialog] = useState(false);
+
     // NTP Specific State
     const [deliveryForm, setDeliveryForm] = useState({
         delivery_location: procurement.delivery_location || '',
@@ -90,7 +90,7 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         return { isCompleted, isCurrent, isFuture };
     }, [workflowInfo, procurement.stage_value, procurement.current_stage]);
 
-    const { isCompleted: isStageCompleted, isCurrent: isStageCurrent, isFuture: isStageFuture } = stageStatus;
+    const { isCompleted: isStageCompleted, isFuture: isStageFuture } = stageStatus;
 
     const phase = useMemo(() => {
         if (!documentGuide) return 'procurement';
@@ -111,17 +111,27 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         }
 
         switch (phase) {
-            case 'pre_procurement': return { upload: preUploadSingleDocument, complete: preMarkStageComplete };
-            case 'post_procurement': return { upload: postUploadSingleDocument, complete: postMarkStageComplete };
-            default: return { upload: procUploadSingleDocument, complete: procMarkStageComplete };
+            case 'pre_procurement': return {
+                upload: uploadSingleDocument['/bac-secretariat/pre-procurement/{pr_number}/{stage}/upload-document'],
+                complete: markStageComplete['/bac-secretariat/pre-procurement/{pr_number}/{stage}/complete']
+            };
+            case 'post_procurement': return {
+                upload: uploadSingleDocument['/bac-secretariat/post-procurement/{pr_number}/{stage}/upload-document'],
+                complete: markStageComplete['/bac-secretariat/post-procurement/{pr_number}/{stage}/complete']
+            };
+            default: return {
+                upload: uploadSingleDocument['/bac-secretariat/procurement/{pr_number}/{stage}/upload-document'],
+                complete: markStageComplete['/bac-secretariat/procurement/{pr_number}/{stage}/complete']
+            };
         }
     }, [phase, procurement.stage_value]);
 
     const handleMarkComplete = () => {
+        setCompleteDialog(false);
         setIsMarkingComplete(true);
         const { complete } = getActions();
         router.post(
-            complete({ pr_number: procurement.pr_number, stage: procurement.stage_value as any }).url,
+            complete({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url,
             {},
             {
                 onSuccess: (page) => {
@@ -161,7 +171,7 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         setIsUploading(true);
 
         router.post(
-            upload({ pr_number: procurement.pr_number, stage: procurement.stage_value as any }).url,
+            upload({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url,
             { document_file: file, document_type: confirmDialog.documentValue, description: confirmDialog.documentName },
             {
                 onSuccess: () => {
@@ -422,8 +432,8 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
                                 ) : (
                                     <Button
                                         disabled={!allRequiredUploaded || isUploading || isMarkingComplete}
-                                        onClick={handleMarkComplete}
-                                        className="w-full h-12 text-sm font-bold uppercase tracking-tight shadow-lg transition-all hover:translate-y-[-1px] active:translate-y-[0px]"
+                                        onClick={() => setCompleteDialog(true)}
+                                        className="w-full h-12 text-sm font-bold uppercase tracking-tight shadow-lg transition-all hover:-translate-y-px active:translate-y-0"
                                     >
                                         {isMarkingComplete ? <Spinner className="h-4 w-4 mr-2" /> : <CheckCircle2 className="h-5 w-5 mr-2" />}
                                         Mark as Complete
@@ -444,6 +454,24 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isUploading} className="rounded-lg">Wait, go back</AlertDialogCancel>
                         <AlertDialogAction onClick={handleConfirmUpload} disabled={isUploading} className="rounded-lg px-8">Confirm</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={completeDialog} onOpenChange={(open) => !isMarkingComplete && setCompleteDialog(open)}>
+                <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-2xl font-black">Mark Stage as Complete?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will finalize <strong>{documentGuide?.stage_display_name || 'this stage'}</strong> for <strong>{procurement.pr_number}</strong> and record it on the blockchain. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isMarkingComplete} className="rounded-lg">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleMarkComplete} disabled={isMarkingComplete} className="rounded-lg px-8">
+                            {isMarkingComplete ? <Spinner className="h-4 w-4 mr-2" /> : null}
+                            Confirm
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
