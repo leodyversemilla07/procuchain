@@ -190,7 +190,7 @@ export default function ReportIndex() {
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent className="max-h-60 overflow-y-auto">
                                                 {months.map((month, index) => (
                                                     <SelectItem key={index} value={(index + 1).toString()}>
                                                         {month}
