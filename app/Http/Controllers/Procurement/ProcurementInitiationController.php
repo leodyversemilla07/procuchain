@@ -557,8 +557,13 @@ class ProcurementInitiationController extends BaseController
 
             // Get the next stage action URL using ProcurementActionService
             $actionService = app(\App\Services\Procurement\ProcurementActionService::class);
-            $actions = $actionService->getActions($pr_number);
-            $nextStageAction = collect($actions['workflow_actions'])->first();
+            $workflowActions = $actionService->getAvailableActions(
+                $pr_number,
+                $nextStage->value,
+                $nextStageStatus->value,
+                'bac_secretariat'
+            );
+            $nextStageAction = collect($workflowActions)->first();
 
             return back()->with('success', [
                 'message' => "Procurement Initiation completed! Moved to {$nextStage->getDisplayName()} stage.",
