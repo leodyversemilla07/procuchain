@@ -516,46 +516,14 @@ class ProcurementStageController extends BaseController
     public function publishDecision(PreProcurementConferenceDecisionRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $pr_number = $validated['pr_number'];
-        $user = auth()->user();
-        $userAddress = $user->blockchain_address;
 
-        try {
-            $procurement = $this->findProcurementById($pr_number);
-            $result = $this->decisionPublisher->publishDecision(
-                decisionType: 'pre_procurement_conference',
-                prNumber: $pr_number,
-                procurementTitle: $validated['procurement_title'],
-                wasHeld: $validated['conference_held'],
-                userAddress: $userAddress,
-                procurement: $procurement
-            );
-
-            if (! $result['success']) {
-                return redirect()->back()->withErrors([
-                    'error' => $result['error'] ?? 'Failed to publish decision to blockchain.',
-                ]);
-            }
-
-            if ($result['held']) {
-                $route = $this->decisionPublisher->getUploadRoute('pre_procurement_conference', $pr_number);
-
-                return redirect()->route($route['route'], $route['params'])
-                    ->with('success', 'Decision recorded. Please upload conference documents.');
-            }
-
-            return redirect()->route('bac-secretariat.procurements.index')
-                ->with('success', 'Pre-Procurement Conference decision recorded successfully. Publishing to blockchain in the background.');
-        } catch (\Exception $e) {
-            Log::error('Failed to publish Pre-Procurement Conference decision', [
-                'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
-            ]);
-
-            return redirect()->back()->withErrors([
-                'error' => 'Failed to publish decision to blockchain. Please try again.',
-            ]);
-        }
+        return $this->handleDecisionPublishing(
+            decisionType: 'pre_procurement_conference',
+            prNumber: $validated['pr_number'],
+            procurementTitle: $validated['procurement_title'],
+            wasHeld: $validated['conference_held'],
+            successMessage: 'Pre-Procurement Conference decision recorded successfully. Publishing to blockchain in the background.'
+        );
     }
 
     /**
@@ -565,46 +533,14 @@ class ProcurementStageController extends BaseController
     public function publishPreBidDecision(PreBidConferenceDecisionRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $pr_number = $validated['pr_number'];
-        $user = auth()->user();
-        $userAddress = $user->blockchain_address;
 
-        try {
-            $procurement = $this->findProcurementById($pr_number);
-            $result = $this->decisionPublisher->publishDecision(
-                decisionType: 'pre_bid_conference',
-                prNumber: $pr_number,
-                procurementTitle: $validated['procurement_title'],
-                wasHeld: $validated['conference_held'],
-                userAddress: $userAddress,
-                procurement: $procurement
-            );
-
-            if (! $result['success']) {
-                return redirect()->back()->withErrors([
-                    'error' => $result['error'] ?? 'Failed to publish decision to blockchain.',
-                ]);
-            }
-
-            if ($result['held']) {
-                $route = $this->decisionPublisher->getUploadRoute('pre_bid_conference', $pr_number);
-
-                return redirect()->route($route['route'], $route['params'])
-                    ->with('success', 'Decision recorded. Please upload conference documents.');
-            }
-
-            return redirect()->route('bac-secretariat.procurements.index')
-                ->with('success', 'Pre-Bid Conference skipped. Proceeding to Supplemental Bid Bulletin stage.');
-        } catch (\Exception $e) {
-            Log::error('Failed to publish Pre-Bid Conference decision', [
-                'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
-            ]);
-
-            return redirect()->back()->withErrors([
-                'error' => 'Failed to publish decision to blockchain. Please try again.',
-            ]);
-        }
+        return $this->handleDecisionPublishing(
+            decisionType: 'pre_bid_conference',
+            prNumber: $validated['pr_number'],
+            procurementTitle: $validated['procurement_title'],
+            wasHeld: $validated['conference_held'],
+            successMessage: 'Pre-Bid Conference skipped. Proceeding to Supplemental Bid Bulletin stage.'
+        );
     }
 
     /**
@@ -614,46 +550,14 @@ class ProcurementStageController extends BaseController
     public function publishSupplementalBidBulletinDecision(SupplementalBidBulletinDecisionRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $pr_number = $validated['pr_number'];
-        $user = auth()->user();
-        $userAddress = $user->blockchain_address;
 
-        try {
-            $procurement = $this->findProcurementById($pr_number);
-            $result = $this->decisionPublisher->publishDecision(
-                decisionType: 'supplemental_bid_bulletin',
-                prNumber: $pr_number,
-                procurementTitle: $validated['procurement_title'],
-                wasHeld: $validated['supplemental_bid_needed'],
-                userAddress: $userAddress,
-                procurement: $procurement
-            );
-
-            if (! $result['success']) {
-                return redirect()->back()->withErrors([
-                    'error' => $result['error'] ?? 'Failed to publish decision to blockchain.',
-                ]);
-            }
-
-            if ($result['held']) {
-                $route = $this->decisionPublisher->getUploadRoute('supplemental_bid_bulletin', $pr_number);
-
-                return redirect()->route($route['route'], $route['params'])
-                    ->with('success', 'Decision recorded. Please upload supplemental bid bulletin documents.');
-            }
-
-            return redirect()->route('bac-secretariat.procurements.index')
-                ->with('success', 'Supplemental Bid Bulletin skipped. Proceeding to Bid Opening stage.');
-        } catch (\Exception $e) {
-            Log::error('Failed to publish Supplemental Bid Bulletin decision', [
-                'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
-            ]);
-
-            return redirect()->back()->withErrors([
-                'error' => 'Failed to publish decision to blockchain. Please try again.',
-            ]);
-        }
+        return $this->handleDecisionPublishing(
+            decisionType: 'supplemental_bid_bulletin',
+            prNumber: $validated['pr_number'],
+            procurementTitle: $validated['procurement_title'],
+            wasHeld: $validated['supplemental_bid_needed'],
+            successMessage: 'Supplemental Bid Bulletin skipped. Proceeding to Bid Opening stage.'
+        );
     }
 
     // ==========================================
@@ -843,6 +747,57 @@ class ProcurementStageController extends BaseController
     // ==========================================
     // Private Helper Methods
     // ==========================================
+
+    /**
+     * Unified handler for publishing procurement decisions.
+     */
+    private function handleDecisionPublishing(
+        string $decisionType,
+        string $prNumber,
+        string $procurementTitle,
+        bool $wasHeld,
+        string $successMessage
+    ): RedirectResponse {
+        $user = auth()->user();
+        $userAddress = $user->blockchain_address;
+
+        try {
+            $procurement = $this->findProcurementById($prNumber);
+            $result = $this->decisionPublisher->publishDecision(
+                decisionType: $decisionType,
+                prNumber: $prNumber,
+                procurementTitle: $procurementTitle,
+                wasHeld: $wasHeld,
+                userAddress: $userAddress,
+                procurement: $procurement
+            );
+
+            if (! $result['success']) {
+                return redirect()->back()->withErrors([
+                    'error' => $result['error'] ?? 'Failed to publish decision to blockchain.',
+                ]);
+            }
+
+            if ($result['held']) {
+                $route = $this->decisionPublisher->getUploadRoute($decisionType, $prNumber);
+
+                return redirect()->route($route['route'], $route['params'])
+                    ->with('success', 'Decision recorded. Please upload relevant documents.');
+            }
+
+            return redirect()->route('bac-secretariat.procurements.index')
+                ->with('success', $successMessage);
+        } catch (\Exception $e) {
+            Log::error("Failed to publish {$decisionType} decision", [
+                'pr_number' => $prNumber,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->withErrors([
+                'error' => 'Failed to publish decision to blockchain. Please try again.',
+            ]);
+        }
+    }
 
     /**
      * Handle automatic stage transition when accessing a post-procurement stage.
