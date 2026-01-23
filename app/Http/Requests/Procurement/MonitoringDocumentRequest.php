@@ -2,20 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use App\Enums\UserRoleEnums;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
-
-class MonitoringDocumentRequest extends FormRequest
+class MonitoringDocumentRequest extends BaseProcurementRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return Auth::check() && Auth::user()->hasRole(UserRoleEnums::BAC_SECRETARIAT->value);
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,9 +12,8 @@ class MonitoringDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pr_number' => 'required|string|max:50',
-            'procurement_title' => 'required|string|min:5|max:255',
-            'compliance_file' => 'required|file|mimes:pdf|max:51200',
+            ...$this->commonRules(),
+            ...$this->documentRules('compliance_file'),
             'report_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'report_notes' => 'required|string|min:5|max:1000',
         ];
@@ -40,8 +27,8 @@ class MonitoringDocumentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'compliance_file.max' => 'The compliance file must not exceed 50MB in size.',
-            'compliance_file.mimes' => 'Only PDF files are allowed.',
+            ...$this->commonMessages(),
+            ...$this->documentMessages('compliance_file', 'compliance file'),
         ];
     }
 }
