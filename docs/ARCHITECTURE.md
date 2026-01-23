@@ -59,9 +59,9 @@ graph TD
     - `file.data` & `file.metadata`: On-chain file storage.
 - **Smart Filters**: JavaScript-based validation rules running on the blockchain node ensure data integrity before writes are accepted.
 
-### 3. Service Layer
+### 3. Service Layer Architecture
 
-- **Role**: Business logic isolation to maintain clean controllers and reusable components.
+- **Role**: Business logic isolation to maintain clean controllers and reusable components. The service layer is designed to be modular, following the Single Responsibility Principle.
 
 ```mermaid
 graph LR
@@ -70,19 +70,32 @@ graph LR
     Orchestrator --> DecisionPub["DecisionPublisher"]
     Orchestrator --> DocPub["DocumentPublisher"]
     Orchestrator --> StatusPub["StatusPublisher"]
+    Controller --> Monitor["BlockchainMonitoringService"]
 
     DocPub --> BC["MultiChain Streams"]
     StatusPub --> BC
     DecisionPub --> BC
+    Monitor --> BC
 ```
 
-- **Key Services**:
-    - `StageStatusMapper`: Single source of truth for mapping procurement stages to their corresponding initial, ongoing, and completion statuses.
-    - `DecisionPublisher`: Consolidates the logic for publishing conference (Pre-Procurement, Pre-Bid) and bulletin decisions to the blockchain, handling both "held" and "skipped" scenarios.
+- **Core Services**:
+    - `StageStatusMapper`: The single source of truth for mapping procurement stages to their corresponding initial, ongoing, and completion statuses. This centralizes logic that was previously fragmented across multiple traits and controllers.
+    - `DecisionPublisher`: Consolidates the logic for publishing conference (Pre-Procurement, Pre-Bid) and bulletin decisions to the blockchain. It handles both "held" (awaiting documents) and "skipped" (immediate transition to next stage) scenarios with consistent event logging.
+    - `BlockchainMonitoringService`: Provides real-time health checks for the blockchain connection. It implements a **Circuit Breaker Pattern** (CLOSED, OPEN, HALF-OPEN states) to prevent system hammering when the blockchain node is unreachable, allowing for automated recovery detection.
     - `ProcurementOrchestrator`: Coordinates complex multi-step operations involving both database and blockchain writes.
     - `DocumentPublisher` & `StatusPublisher`: Specialized services for writing specific data types to MultiChain streams.
 
-### 4. Request & Validation Architecture
+### 4. Reporting Module Architecture
+
+The reporting module provides high-level analytics and document generation capabilities, leveraging a hybrid data retrieval strategy.
+
+- **Components**:
+    - `ReportController`: Handles HTTP requests for report generation, exporting (PDF/CSV/JSON), and semantic searching.
+    - `ReportGenerationService`: Manages the report generation lifecycle, including parameter processing, data aggregation, and time-series data generation for visualizations.
+    - `SemanticSearchService`: Provides advanced search capabilities across procurement data. It performs filtered searches and calculates aggregated statistics (counts by status, stage, mode, etc.).
+- **Data Retrieval**: It primarily interacts with `ProcurementDataService` to fetch and process on-chain data, which is then filtered and aggregated in-memory for performance.
+
+### 5. Request & Validation Architecture
 
 - **Base Architecture**: Standardized validation using specialized Form Request classes.
 - **BaseProcurementRequest**: An abstract base class that enforces:
@@ -92,14 +105,14 @@ graph LR
 - **Reusable Traits**:
     - `HasConferenceValidation`: Shared validation logic for conference-related documents, including minutes, attendance files, meeting dates, and participant lists.
 
-### 5. Asynchronous Processing
+### 6. Asynchronous Processing
 
 - **Queue**: Database-driven queue system handles time-consuming tasks to keep the UI responsive.
     - Blockchain writes (publishing documents).
     - Email notifications.
     - File processing.
 
-### 6. Data Flow
+### 7. Data Flow
 
 #### Document Upload Flow
 
