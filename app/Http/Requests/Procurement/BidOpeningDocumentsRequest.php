@@ -2,20 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use App\Enums\UserRoleEnums;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
-
-class BidOpeningDocumentsRequest extends FormRequest
+class BidOpeningDocumentsRequest extends BaseProcurementRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return Auth::check() && Auth::user()->hasRole(UserRoleEnums::BAC_SECRETARIAT->value);
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,10 +12,8 @@ class BidOpeningDocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pr_number' => 'required|string|max:50',
-            'procurement_title' => 'required|string|min:5|max:255',
-            'bid_documents' => 'required|array|min:1',
-            'bid_documents.*' => 'required|file|mimes:pdf|max:51200',
+            ...$this->commonRules(),
+            ...$this->multipleDocumentRules('bid_documents'),
             'bidders_data' => 'required|array|min:1',
             'bidders_data.*.bidder_name' => 'required|string|min:1|max:255',
             'bidders_data.*.bid_value' => 'required|numeric|min:0',
@@ -43,8 +29,8 @@ class BidOpeningDocumentsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'bid_documents.*.max' => 'Each bid document must not exceed 50MB in size.',
-            'bid_documents.*.mimes' => 'Only PDF files are allowed.',
+            ...$this->commonMessages(),
+            ...$this->documentMessages('bid_documents'),
             'bidders_data.*.bid_value.numeric' => 'The bid value must be a valid number.',
             'bidders_data.*.bid_value.min' => 'The bid value cannot be negative.',
         ];

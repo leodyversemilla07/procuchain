@@ -2,20 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use App\Enums\UserRoleEnums;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
-
-class BidEvaluationDocumentsRequest extends FormRequest
+class BidEvaluationDocumentsRequest extends BaseProcurementRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return Auth::check() && Auth::user()->hasRole(UserRoleEnums::BAC_SECRETARIAT->value);
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,10 +12,9 @@ class BidEvaluationDocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pr_number' => 'required|string|max:50',
-            'procurement_title' => 'required|string|min:5|max:255',
-            'summary_file' => 'required|file|mimes:pdf|max:51200',
-            'abstract_file' => 'required|file|mimes:pdf|max:51200',
+            ...$this->commonRules(),
+            ...$this->documentRules('summary_file'),
+            ...$this->documentRules('abstract_file'),
             'evaluation_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'evaluators' => 'required|array|min:1',
             'evaluators.*.name' => 'required|string|min:1|max:255',
@@ -43,10 +30,9 @@ class BidEvaluationDocumentsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'summary_file.max' => 'The summary file must not exceed 50MB in size.',
-            'summary_file.mimes' => 'Only PDF files are allowed.',
-            'abstract_file.max' => 'The abstract file must not exceed 50MB in size.',
-            'abstract_file.mimes' => 'Only PDF files are allowed.',
+            ...$this->commonMessages(),
+            ...$this->documentMessages('summary_file', 'summary file'),
+            ...$this->documentMessages('abstract_file', 'abstract file'),
             'evaluators.required' => 'At least one evaluator is required.',
             'evaluators.array' => 'Evaluators must be provided as an array.',
             'evaluators.min' => 'At least one evaluator is required.',

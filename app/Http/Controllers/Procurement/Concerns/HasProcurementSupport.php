@@ -7,12 +7,12 @@ use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Repositories\ProcurementRepository;
 use App\Services\Manager;
+use App\Services\Procurement\StageStatusMapper;
 use App\Services\ProcurementDataService;
 use App\Services\ProcurementWorkflowService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
-use Illuminate\Http\RedirectResponse;
 
 trait HasProcurementSupport
 {
@@ -30,6 +30,8 @@ trait HasProcurementSupport
 
     protected ProcurementWorkflowService $workflowService;
 
+    protected StageStatusMapper $stageStatusMapper;
+
     /**
      * Initialize procurement support dependencies
      */
@@ -40,7 +42,8 @@ trait HasProcurementSupport
         EventPublisher $eventPublisher,
         ProcurementDataService $procurementDataService,
         \App\Repositories\DocumentRepository $documentRepository,
-        ?ProcurementWorkflowService $workflowService = null
+        ?ProcurementWorkflowService $workflowService = null,
+        ?StageStatusMapper $stageStatusMapper = null
     ): void {
         $this->multiChain = $multichain;
         $this->documentPublisher = $documentPublisher;
@@ -49,6 +52,7 @@ trait HasProcurementSupport
         $this->procurementDataService = $procurementDataService;
         $this->documentRepository = $documentRepository;
         $this->workflowService = $workflowService ?? app(ProcurementWorkflowService::class);
+        $this->stageStatusMapper = $stageStatusMapper ?? app(StageStatusMapper::class);
     }
 
     /**
@@ -65,43 +69,8 @@ trait HasProcurementSupport
         // Get procurement mode for mode-aware status determination
         $mode = $this->getProcurementMode($prNumber);
 
-        // Validate that stage exists in the procurement's mode workflow
-        if ($mode && ! $stage->existsInModeWorkflow($mode)) {
-            // Stage doesn't exist in this mode's workflow - return generic submitted status
-            return \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED;
-        }
-
-        return match ($stage) {
-            // Pre-Procurement Phase
-            StageEnums::PROCUREMENT_INITIATION => \App\Enums\StatusEnums::PROCUREMENT_INITIATED,
-            StageEnums::PRE_PROCUREMENT_CONFERENCE => \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED,  // Entry status; changes to PRE_PROCUREMENT_CONFERENCE_HELD after dialog decision
-            StageEnums::BIDDING_DOCUMENTS => \App\Enums\StatusEnums::PRE_PROCUREMENT_CONFERENCE_COMPLETED,  // Entry status from previous stage completion; upload changes to BIDDING_DOCUMENTS_PUBLISHED
-            StageEnums::REQUEST_FOR_QUOTATION => \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED,  // Initial status when entering RFQ stage; changes to QUOTATIONS_RECEIVED after upload
-
-            // Procurement/Bidding Phase
-            StageEnums::PRE_BID_CONFERENCE => \App\Enums\StatusEnums::BIDDING_DOCUMENTS_PUBLISHED,  // Entry status from previous stage; dialog decision changes to PRE_BID_CONFERENCE_HELD
-            StageEnums::SUPPLEMENTAL_BID_BULLETIN => \App\Enums\StatusEnums::PRE_BID_CONFERENCE_COMPLETED,  // Entry status; dialog decision changes to SUPPLEMENTAL_BULLETINS_ONGOING
-            StageEnums::BID_OPENING => \App\Enums\StatusEnums::SUPPLEMENTAL_BULLETINS_COMPLETED,  // Entry status from previous stage; upload changes to BIDS_OPENED
-            StageEnums::ABSTRACT_OF_QUOTATIONS => \App\Enums\StatusEnums::QUOTATIONS_RECEIVED,  // Enters with quotations_received (from RFQ completion); upload changes to ABSTRACT_PREPARED
-            StageEnums::BID_EVALUATION => \App\Enums\StatusEnums::BIDS_OPENED,  // Entry status from previous stage; upload changes to BIDS_EVALUATED
-            StageEnums::POST_QUALIFICATION => \App\Enums\StatusEnums::BIDS_EVALUATED,  // Entry status from previous stage; upload changes to POST_QUALIFICATION_VERIFIED
-            StageEnums::BAC_RESOLUTION => $mode && in_array($mode, [\App\Enums\ProcurementModeEnums::SMALL_VALUE_PROCUREMENT, \App\Enums\ProcurementModeEnums::DIRECT_CONTRACTING, \App\Enums\ProcurementModeEnums::REPEAT_ORDER, \App\Enums\ProcurementModeEnums::DIRECT_SALES, \App\Enums\ProcurementModeEnums::DIRECT_PROCUREMENT_FOR_STI], true)
-                ? \App\Enums\StatusEnums::ABSTRACT_PREPARED  // SVP and RFQ-based modes: entry status from Abstract of Quotations; upload changes to RESOLUTION_RECORDED
-                : \App\Enums\StatusEnums::POST_QUALIFICATION_VERIFIED,  // Competitive Bidding modes: entry status from Post-Qualification; upload changes to RESOLUTION_RECORDED
-
-            // Post-Procurement Phase
-            StageEnums::NOTICE_OF_AWARD => \App\Enums\StatusEnums::RESOLUTION_RECORDED,  // Entry status from previous stage; upload changes to AWARDED
-            StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO => \App\Enums\StatusEnums::AWARDED,  // Entry status from previous stage; upload changes to PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED
-            StageEnums::NOTICE_TO_PROCEED => \App\Enums\StatusEnums::PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED,  // Entry status from previous stage; upload changes to NTP_RECORDED
-            StageEnums::MONITORING => \App\Enums\StatusEnums::NTP_RECORDED,  // Entry status from previous stage; upload changes to MONITORING_COMPLETED
-            StageEnums::COMPLETION => \App\Enums\StatusEnums::MONITORING_COMPLETED,  // Entry status from previous stage; upload changes to COMPLETION_DOCUMENTS_UPLOADED
-            StageEnums::COMPLETED => \App\Enums\StatusEnums::COMPLETED,
-
-            default => \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED,
-        };
+        return $this->stageStatusMapper->getInitialStatus($stage, $mode);
     }
-
-
 
     /**
      * Helper to find procurement by id from the STATUS stream.
@@ -326,7 +295,7 @@ trait HasProcurementSupport
         foreach ($workflowStages as $index => $stage) {
             $isCompleted = $index < $currentIndex;
             $isCurrent = $stage->value === $currentProcurementStage;
-            
+
             // Generate URL for the stage based on its phase
             $url = '#';
             if ($stage === StageEnums::PROCUREMENT_INITIATION) {

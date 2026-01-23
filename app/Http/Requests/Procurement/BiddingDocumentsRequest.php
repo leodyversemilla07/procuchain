@@ -2,20 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use App\Enums\UserRoleEnums;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
-
-class BiddingDocumentsRequest extends FormRequest
+class BiddingDocumentsRequest extends BaseProcurementRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return Auth::check() && Auth::user()->hasRole(UserRoleEnums::BAC_SECRETARIAT->value);
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,9 +12,8 @@ class BiddingDocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pr_number' => 'required|string|max:50',
-            'procurement_title' => 'required|string|min:5|max:255',
-            'bidding_document_file' => 'required|file|mimes:pdf|max:51200',
+            ...$this->commonRules(),
+            ...$this->documentRules('bidding_document_file'),
             'issuance_date' => 'required|date_format:Y-m-d|before_or_equal:today',
             'validity_period_start' => 'required|date_format:Y-m-d|before_or_equal:validity_period_end',
             'validity_period_end' => 'required|date_format:Y-m-d|after:validity_period_start',
@@ -41,8 +28,8 @@ class BiddingDocumentsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'bidding_document_file.max' => 'The bidding documents file must not exceed 50MB in size.',
-            'bidding_document_file.mimes' => 'Only PDF files are allowed.',
+            ...$this->commonMessages(),
+            ...$this->documentMessages('bidding_document_file', 'bidding documents file'),
             'validity_period_start.before_or_equal' => 'The validity period start date must be before or equal to the end date.',
             'validity_period_end.after' => 'The validity period end date must be after the start date.',
         ];

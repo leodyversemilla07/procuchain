@@ -2,20 +2,8 @@
 
 namespace App\Http\Requests\Procurement;
 
-use App\Enums\UserRoleEnums;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
-
-class PreBidConferenceDecisionRequest extends FormRequest
+class PreBidConferenceDecisionRequest extends BaseProcurementRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return Auth::check() && Auth::user()->hasRole(UserRoleEnums::BAC_SECRETARIAT->value);
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,8 +12,7 @@ class PreBidConferenceDecisionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pr_number' => 'required|string|max:50',
-            'procurement_title' => 'required|string|min:5|max:255',
+            ...$this->commonRules(),
             'conference_held' => 'required|boolean',
         ];
     }
