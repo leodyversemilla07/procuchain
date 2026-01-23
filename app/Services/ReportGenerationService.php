@@ -7,7 +7,7 @@ namespace App\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
-final class ReportGenerationService
+class ReportGenerationService
 {
     public function __construct(
         private readonly SemanticSearchService $semanticSearchService
