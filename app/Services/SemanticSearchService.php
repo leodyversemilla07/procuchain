@@ -6,7 +6,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 
-final class SemanticSearchService
+class SemanticSearchService
 {
     public function __construct(
         private readonly ProcurementDataService $procurementDataService
