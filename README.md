@@ -99,13 +99,13 @@ ProcuChain is a blockchain-powered document management system for Bids and Award
 
 ### Why ProcuChain?
 
-| Challenge | Solution |
-|-----------|----------|
-| Document tampering | SHA-256 hashes stored on blockchain |
-| Lack of transparency | Complete audit trail for every action |
-| Manual workflow tracking | Automated 15-stage procurement workflow |
-| Unauthorized access | Role-based permissions with 2FA |
-| Scattered documentation | Centralized, searchable document repository |
+| Challenge                | Solution                                    |
+| ------------------------ | ------------------------------------------- |
+| Document tampering       | SHA-256 hashes stored on blockchain         |
+| Lack of transparency     | Complete audit trail for every action       |
+| Manual workflow tracking | Automated 15-stage procurement workflow     |
+| Unauthorized access      | Role-based permissions with 2FA             |
+| Scattered documentation  | Centralized, searchable document repository |
 
 <p align="right"><a href="#table-of-contents"> Back to top</a></p>
 
@@ -117,6 +117,7 @@ For more detailed information, please refer to the following documentation:
 
 - [System Architecture](docs/ARCHITECTURE.md) - High-level system overview
 - [Reporting Architecture](docs/REPORTING_ARCHITECTURE.md) - Detailed reporting module architecture
+- [Testing Guide](docs/TESTING.md) - Test environment and troubleshooting
 - [Database Schema](docs/DATABASE_SCHEMA.md) - Database tables and relationships
 - [API Routes](docs/ROUTES.md) - API endpoints and route reference
 
@@ -156,15 +157,15 @@ For more detailed information, please refer to the following documentation:
 - **Authorization**: Spatie Laravel Permission 6.21 for role-based access control
 - **Type-Safe Routes**: Laravel Wayfinder 0.1.12 for TypeScript route generation
 - **Notifications**:
- - Resend API for transactional email notifications
- - WebPush browser notifications with VAPID protocol
+- Resend API for transactional email notifications
+- WebPush browser notifications with VAPID protocol
 - **Development**:
- - Hot module replacement with Vite
- - Database-driven development stack
- - Concurrently for multi-process management
- - Optional SSR with Inertia SSR server
- - TypeScript 5.7.2 for type safety
- - ESLint 9.39.1 & Prettier 3.7.4 for code quality
+- Hot module replacement with Vite
+- Database-driven development stack
+- Concurrently for multi-process management
+- Optional SSR with Inertia SSR server
+- TypeScript 5.7.2 for type safety
+- ESLint 9.39.1 & Prettier 3.7.4 for code quality
 
 <p align="right"><a href="#table-of-contents"> Back to top</a></p>
 
@@ -190,14 +191,14 @@ graph TD
     Client["React + Inertia.js Frontend"]
     Server["Laravel 12.x API Backend"]
     Chain["MultiChain Blockchain (8 Streams)"]
-    
+
     Styles["Tailwind CSS v4"]
     DB[("MySQL 8.0+")]
     Filters["Smart Filters (Validation)"]
 
     Client <-->|HTTP/JSON| Server
     Server <-->|RPC| Chain
-    
+
     Client --> Styles
     Server --> DB
     Chain --> Filters
@@ -208,14 +209,14 @@ High level components:
 - **Web/API Layer**: Laravel 12 + Inertia React SPA with SSR support
 - **Document Storage**: On-chain storage in blockchain (file content stored as hex in `file.data` stream, metadata in `file.metadata` stream)
 - **Blockchain Layer**: MultiChain with 8 streams:
- - `procurement.metadata` - Core procurement metadata
- - `procurement.documents` - Document metadata and file hashes
- - `procurement.status` - Procurement status transitions
- - `procurement.events` - Audit event logs
- - `procurement.corrections` - Document correction trail
- - `file.data` - Actual file content storage (hex-encoded)
- - `file.metadata` - File metadata and integrity tracking with SHA-256 hashes
- - `file.chunks` - Large file chunks
+- `procurement.metadata` - Core procurement metadata
+- `procurement.documents` - Document metadata and file hashes
+- `procurement.status` - Procurement status transitions
+- `procurement.events` - Audit event logs
+- `procurement.corrections` - Document correction trail
+- `file.data` - Actual file content storage (hex-encoded)
+- `file.metadata` - File metadata and integrity tracking with SHA-256 hashes
+- `file.chunks` - Large file chunks
 - **Service Layer**: 20+ specialized services for business logic isolation
 - **Job Queue**: Database-driven async job processing for blockchain operations
 - **Roles / Addresses**: Distinct blockchain addresses per functional role (admin, BAC secretariat, BAC chairman, HOPE)
@@ -307,15 +308,15 @@ ProcuChain leverages MultiChain's capabilities to provide:
 
 ##### MultiChain vs Other Blockchains:
 
-| Feature | MultiChain | Ethereum | Bitcoin |
-|---------|-----------|----------|---------|
-| **Deployment** | Private/Permissioned | Public | Public |
-| **Setup Time** | Seconds | N/A | N/A |
-| **Transaction Speed** | 1000+ TPS | ~15 TPS | ~7 TPS |
-| **Fees** | None | Gas fees | Transaction fees |
-| **Permission Control** | Granular | Open | Open |
-| **Data Storage** | Native streams | Contract storage | Limited OP_RETURN |
-| **Use Case** | Enterprise apps | DApps & DeFi | Currency |
+| Feature                | MultiChain           | Ethereum         | Bitcoin           |
+| ---------------------- | -------------------- | ---------------- | ----------------- |
+| **Deployment**         | Private/Permissioned | Public           | Public            |
+| **Setup Time**         | Seconds              | N/A              | N/A               |
+| **Transaction Speed**  | 1000+ TPS            | ~15 TPS          | ~7 TPS            |
+| **Fees**               | None                 | Gas fees         | Transaction fees  |
+| **Permission Control** | Granular             | Open             | Open              |
+| **Data Storage**       | Native streams       | Contract storage | Limited OP_RETURN |
+| **Use Case**           | Enterprise apps      | DApps & DeFi     | Currency          |
 
 For more information, visit [MultiChain Official Documentation](https://www.multichain.com/developers/).
 
@@ -356,10 +357,12 @@ The setup command performs the following operations:
 1. **Connection Check**: Verifies connectivity to the MultiChain node
 2. **Address Setup**: Generates new blockchain addresses for roles that don't have them configured, or uses existing configured addresses
 3. **Stream Creation**: Creates the following streams if they don't exist:
- - `procurement.documents`
- - `procurement.status`
- - `procurement.events`
- - `procurement.corrections`
+
+- `procurement.documents`
+- `procurement.status`
+- `procurement.events`
+- `procurement.corrections`
+
 4. **Permission Grants**: Assigns appropriate permissions to each role address based on the configuration
 5. **Address Persistence**: Updates the `.env` file with newly generated addresses and syncs user records in the database
 
@@ -381,7 +384,7 @@ After the script finishes update your local `.env` with the printed `MULTICHAIN_
 
 **Available Options:**
 
-| Option | Purpose |
+| Option    | Purpose                                                     |
 | --------- | ----------------------------------------------------------- |
 | `--check` | Only check connection to MultiChain node (no setup actions) |
 
@@ -429,40 +432,44 @@ Smart Filters ensure data integrity and enforce business rules directly on the b
 
 ### Implemented Smart Contracts
 
-| Filter Name | Type | Target | Purpose |
-|-------------|------|--------|---------|
-| `tx_procurement_validation` | Transaction | All transactions | Validates procurement transaction structure |
-| `sf_document_validation` | Stream | `procurement.documents` | Validates document hash, metadata, and structure |
-| `sf_status_validation` | Stream | `procurement.status` | Validates status transitions and workflow rules |
-| `sf_file_metadata_validation` | Stream | `file.metadata` | Validates file integrity and metadata |
-| `sf_event_validation` | Stream | `procurement.events` | Validates audit event structure |
-| `sf_corrections_validation` | Stream | `procurement.corrections` | Validates correction data |
+| Filter Name                   | Type        | Target                    | Purpose                                          |
+| ----------------------------- | ----------- | ------------------------- | ------------------------------------------------ |
+| `tx_procurement_validation`   | Transaction | All transactions          | Validates procurement transaction structure      |
+| `sf_document_validation`      | Stream      | `procurement.documents`   | Validates document hash, metadata, and structure |
+| `sf_status_validation`        | Stream      | `procurement.status`      | Validates status transitions and workflow rules  |
+| `sf_file_metadata_validation` | Stream      | `file.metadata`           | Validates file integrity and metadata            |
+| `sf_event_validation`         | Stream      | `procurement.events`      | Validates audit event structure                  |
+| `sf_corrections_validation`   | Stream      | `procurement.corrections` | Validates correction data                        |
 
 ### Business Rules Enforced
 
 The smart contracts enforce the following business rules:
 
 1. **Document Validation**:
- - Required fields: `pr_number`, `file_key`, `hash`, `document_type`, `stage`
- - Valid SHA-256 hash format (64 hex characters)
- - Timestamp presence
- - Valid document types and stages
+
+- Required fields: `pr_number`, `file_key`, `hash`, `document_type`, `stage`
+- Valid SHA-256 hash format (64 hex characters)
+- Timestamp presence
+- Valid document types and stages
 
 2. **Status Transitions**:
- - Valid stage progression (PRE_PROCUREMENT → BIDDING → EVALUATION → POST_QUALIFICATION → AWARD → CONTRACTING → COMPLETED)
- - Required fields: `pr_number`, `from_stage`, `to_stage`, `actor`
- - Cannot skip stages (except for early termination)
- - Backward transitions only for special cases (corrections)
+
+- Valid stage progression (PRE_PROCUREMENT → BIDDING → EVALUATION → POST_QUALIFICATION → AWARD → CONTRACTING → COMPLETED)
+- Required fields: `pr_number`, `from_stage`, `to_stage`, `actor`
+- Cannot skip stages (except for early termination)
+- Backward transitions only for special cases (corrections)
 
 3. **File Integrity**:
- - Valid hash format
- - File size must be positive
- - Required metadata fields
+
+- Valid hash format
+- File size must be positive
+- Required metadata fields
 
 4. **Audit Events**:
- - Required fields: `action`, `actor`, `timestamp`
- - Valid action types
- - Immutable event records
+
+- Required fields: `action`, `actor`, `timestamp`
+- Valid action types
+- Immutable event records
 
 ### Smart Contract Commands
 
@@ -541,63 +548,63 @@ Validates: pr_number, hash format, document_type, stage
 
 Environment variables (core subset):
 
-| Key | Purpose | Example |
+| Key                                  | Purpose                    | Example                    |
 | ------------------------------------ | -------------------------- | -------------------------- |
-| `APP_ENV` | Environment name | `local` |
-| `APP_KEY` | Encryption key (generated) | _(generated)_ |
-| `APP_DEBUG` | Debug mode | `true` |
-| `APP_URL` | Application URL | `http://127.0.0.1:8000` |
-| `DB_CONNECTION` | Database driver | `mysql` |
-| `DB_HOST` / `DB_PORT` | DB host/port | `127.0.0.1` / `3306` |
-| `DB_DATABASE` | Database name | `procuchain` |
-| `DB_USERNAME` / `DB_PASSWORD` | DB credentials | `root` / `(empty)` |
-| `MULTICHAIN_HOST` | MultiChain RPC host | `your_multichain_host` |
-| `MULTICHAIN_PORT` | MultiChain RPC port | `7000` |
-| `MULTICHAIN_CHAIN_NAME` | Chain name | `procuchain` |
-| `MULTICHAIN_USERNAME` | RPC username | `multichainrpc` |
-| `MULTICHAIN_PASSWORD` | RPC password | `your_multichain_password` |
-| `MULTICHAIN_USE_SSL` | Use SSL for RPC | `false` |
-| `MULTICHAIN_VERIFY_SSL` | Verify SSL certificates | `false` |
-| `MULTICHAIN_CONNECTION_TIMEOUT` | Connection timeout (sec) | `30` |
-| `MULTICHAIN_MAX_RETRIES` | Max retry attempts | `3` |
-| `MULTICHAIN_ADMIN_ADDRESS` | Admin blockchain address | _(generated by setup)_ |
-| `MULTICHAIN_BAC_SECRETARIAT_ADDRESS` | BAC Secretariat address | _(generated by setup)_ |
-| `MULTICHAIN_BAC_CHAIRMAN_ADDRESS` | BAC Chairman address | _(generated by setup)_ |
-| `MULTICHAIN_HOPE_ADDRESS` | HOPE blockchain address | _(generated by setup)_ |
+| `APP_ENV`                            | Environment name           | `local`                    |
+| `APP_KEY`                            | Encryption key (generated) | _(generated)_              |
+| `APP_DEBUG`                          | Debug mode                 | `true`                     |
+| `APP_URL`                            | Application URL            | `http://127.0.0.1:8000`    |
+| `DB_CONNECTION`                      | Database driver            | `mysql`                    |
+| `DB_HOST` / `DB_PORT`                | DB host/port               | `127.0.0.1` / `3306`       |
+| `DB_DATABASE`                        | Database name              | `procuchain`               |
+| `DB_USERNAME` / `DB_PASSWORD`        | DB credentials             | `root` / `(empty)`         |
+| `MULTICHAIN_HOST`                    | MultiChain RPC host        | `your_multichain_host`     |
+| `MULTICHAIN_PORT`                    | MultiChain RPC port        | `7000`                     |
+| `MULTICHAIN_CHAIN_NAME`              | Chain name                 | `procuchain`               |
+| `MULTICHAIN_USERNAME`                | RPC username               | `multichainrpc`            |
+| `MULTICHAIN_PASSWORD`                | RPC password               | `your_multichain_password` |
+| `MULTICHAIN_USE_SSL`                 | Use SSL for RPC            | `false`                    |
+| `MULTICHAIN_VERIFY_SSL`              | Verify SSL certificates    | `false`                    |
+| `MULTICHAIN_CONNECTION_TIMEOUT`      | Connection timeout (sec)   | `30`                       |
+| `MULTICHAIN_MAX_RETRIES`             | Max retry attempts         | `3`                        |
+| `MULTICHAIN_ADMIN_ADDRESS`           | Admin blockchain address   | _(generated by setup)_     |
+| `MULTICHAIN_BAC_SECRETARIAT_ADDRESS` | BAC Secretariat address    | _(generated by setup)_     |
+| `MULTICHAIN_BAC_CHAIRMAN_ADDRESS`    | BAC Chairman address       | _(generated by setup)_     |
+| `MULTICHAIN_HOPE_ADDRESS`            | HOPE blockchain address    | _(generated by setup)_     |
 
 **Additional Configuration:**
 
 - **File Storage**: Local filesystem with blockchain metadata tracking
 
- ```bash
- FILESYSTEM_DISK=local_blockchain
- ```
+```bash
+FILESYSTEM_DISK=local_blockchain
+```
 
 - **Email Configuration**: Resend settings for notifications
 
- ```bash
- MAIL_MAILER=resend
- RESEND_API_KEY=your_resend_api_key
- MAIL_FROM_ADDRESS=noreply@yourdomain.com
- MAIL_FROM_NAME="${APP_NAME}"
- ```
+```bash
+MAIL_MAILER=resend
+RESEND_API_KEY=your_resend_api_key
+MAIL_FROM_ADDRESS=noreply@yourdomain.com
+MAIL_FROM_NAME="${APP_NAME}"
+```
 
 - **WebPush Notifications**: Browser push notifications (VAPID keys provided)
 
- ```bash
- VAPID_PUBLIC_KEY="your_vapid_public_key"
- VAPID_PRIVATE_KEY="your_vapid_private_key"
- VAPID_SUBJECT="mailto:admin@example.com"
- ```
+```bash
+VAPID_PUBLIC_KEY="your_vapid_public_key"
+VAPID_PRIVATE_KEY="your_vapid_private_key"
+VAPID_SUBJECT="mailto:admin@example.com"
+```
 
 - **Error Tracking**: Sentry for real-time error monitoring
 
- ```bash
- SENTRY_LARAVEL_DSN=your_sentry_dsn
- SENTRY_TRACES_SAMPLE_RATE=1.0 # Performance monitoring (0.0 to 1.0)
- SENTRY_ENABLE_LOGS=false # Enable log capture
- SENTRY_SEND_DEFAULT_PII=false # Send user data (be careful with privacy)
- ```
+```bash
+SENTRY_LARAVEL_DSN=your_sentry_dsn
+SENTRY_TRACES_SAMPLE_RATE=1.0 # Performance monitoring (0.0 to 1.0)
+SENTRY_ENABLE_LOGS=false # Enable log capture
+SENTRY_SEND_DEFAULT_PII=false # Send user data (be careful with privacy)
+```
 
 - **Queue**: Database-driven queue system
 - **Cache**: Database-driven cache system
@@ -627,6 +634,12 @@ Vite is configured in vite.config.ts with laravel-vite-plugin to handle both cli
 
 The project uses [Pest](https://pestphp.com/) for expressive tests.
 
+The testing environment is configured to run efficiently without external dependencies like Redis. It uses:
+
+- **Database**: SQLite in-memory (`:memory:`)
+- **Cache**: `array` driver
+- **Queue**: `sync` driver
+
 Run all tests:
 
 ```bash
@@ -644,6 +657,8 @@ Run a single file:
 ```bash
 php artisan test tests/Feature/SomeFeatureTest.php
 ```
+
+For more detailed information, see [Testing Documentation](docs/TESTING.md).
 
 <p align="right"><a href="#table-of-contents"> Back to top</a></p>
 
@@ -676,10 +691,12 @@ vendor/bin/pint
 ## Scripts
 
 Composer scripts:
+
 - composer run dev — Runs PHP server, queue listener, and Vite dev server concurrently.
 - composer run dev:ssr — Builds SSR and starts PHP server, queue listener, logs (pail), and Inertia SSR server.
 
 NPM scripts:
+
 - npm run dev — Start Vite dev server.
 - npm run build — Build client and SSR bundles.
 - npm run build:ssr — Build SSR (also builds client).
@@ -690,10 +707,12 @@ NPM scripts:
 - npm run format:check — Check formatting with Prettier.
 
 Procfile (for platforms like Heroku):
+
 - web: php artisan inertia:start-ssr & heroku-php-apache2 public/
 - worker: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
 
 Docker (database only):
+
 - docker-compose up -d — Starts MySQL 8.4 and phpMyAdmin (mapped to ports 3307 and 8081).
 
 <p align="right"><a href="#table-of-contents"> Back to top</a></p>
@@ -706,13 +725,17 @@ Docker (database only):
 2. Optimize Laravel (`php artisan config:cache && php artisan route:cache && php artisan view:cache`).
 3. Boot MultiChain node & ensure RPC reachable.
 4. Check connection to MultiChain node:
- ```bash
- php artisan multichain:setup --check
- ```
+
+```bash
+php artisan multichain:setup --check
+```
+
 5. Execute setup to create addresses, streams, and permissions:
- ```bash
- php artisan multichain:setup
- ```
+
+```bash
+php artisan multichain:setup
+```
+
 6. Store generated addresses securely from `.env` file; optionally re-cache config.
 7. Health check (app endpoint + verify MultiChain integration).
 
@@ -724,14 +747,14 @@ For subsequent deployments, re-run the setup command to ensure streams exist and
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
+| Symptom                                   | Cause                                          | Fix                                                       |
 | ----------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- |
-| Setup command fails with connection error | MultiChain node not running or RPC unreachable | Check node status; verify RPC credentials in `.env` |
-| Permission grant failures | Node RPC issue or invalid configuration | Check MultiChain logs; verify permission matrix in config |
-| Streams already exist but no data | Missing subscription or permissions | Re-run setup command to ensure proper permissions |
-| Addresses not updating in application | Config cache stale | `php artisan config:clear` |
-| `.env` file not updated | File permissions issue | Check file is writable |
-| Connection check passes but setup fails | Permission or stream creation issues | Check MultiChain node logs for detailed error messages |
+| Setup command fails with connection error | MultiChain node not running or RPC unreachable | Check node status; verify RPC credentials in `.env`       |
+| Permission grant failures                 | Node RPC issue or invalid configuration        | Check MultiChain logs; verify permission matrix in config |
+| Streams already exist but no data         | Missing subscription or permissions            | Re-run setup command to ensure proper permissions         |
+| Addresses not updating in application     | Config cache stale                             | `php artisan config:clear`                                |
+| `.env` file not updated                   | File permissions issue                         | Check file is writable                                    |
+| Connection check passes but setup fails   | Permission or stream creation issues           | Check MultiChain node logs for detailed error messages    |
 
 <p align="right"><a href="#table-of-contents"> Back to top</a></p>
 
@@ -740,6 +763,7 @@ For subsequent deployments, re-run the setup command to ensure streams exist and
 ## Usage
 
 ### Getting Started
+
 1. Access the system through your web browser at the configured `APP_URL`
 2. Login with authorized credentials (default seeded users or created by admin)
 3. Complete two-factor authentication setup (recommended for all users)
@@ -747,6 +771,7 @@ For subsequent deployments, re-run the setup command to ensure streams exist and
 ### Role-Specific Workflows
 
 #### Admin Users
+
 - Manage user accounts and assign roles
 - Monitor login activity and security logs
 - View blockchain explorer for transaction verification
@@ -754,6 +779,7 @@ For subsequent deployments, re-run the setup command to ensure streams exist and
 - Access comprehensive system analytics
 
 #### BAC Secretariat
+
 - Create new procurement projects
 - Upload documents for all 15 procurement stages
 - Publish documents to blockchain for immutability
@@ -761,18 +787,21 @@ For subsequent deployments, re-run the setup command to ensure streams exist and
 - Monitor procurement progress and blockchain publishing status
 
 #### BAC Chairman
+
 - Review and approve procurement documents
 - Monitor procurement workflows
 - View blockchain-verified document integrity
 - Access audit trails for transparency
 
 #### HOPE (Head of Procuring Entity)
+
 - Executive oversight of all procurements
 - Monitor procurement progress and status
 - Review blockchain-verified audit trails
 - Access high-level procurement analytics
 
 ### Document Management
+
 - **Upload**: Securely upload documents to cloud storage (S3-compatible)
 - **Blockchain Publishing**: Documents automatically published to blockchain with SHA-256 hash
 - **Verification**: Verify document integrity by comparing blockchain hash with current file
@@ -781,6 +810,7 @@ For subsequent deployments, re-run the setup command to ensure streams exist and
 - **Download**: Secure file downloads with authentication
 
 ### Workflow Stages (15 Stages)
+
 1. Procurement Initiation
 2. Pre-Procurement Conference
 3. Bidding Documents
@@ -800,6 +830,7 @@ For subsequent deployments, re-run the setup command to ensure streams exist and
 Each stage requires specific documents and follows defined status transitions (22 statuses total).
 
 ### Blockchain Features
+
 - **Immutable Records**: All document metadata and status changes recorded on blockchain
 - **Transaction Verification**: View transaction IDs (txid) for each blockchain operation
 - **Correction Tracking**: Document corrections tracked without deleting originals
@@ -824,7 +855,7 @@ procuchain/
 │ │ ├── Controllers/ # Request handlers (Admin, BAC, HOPE, Auth, Settings)
 │ │ ├── Middleware/ # Auth, RBAC, rate limiting
 │ │ └── Requests/ # Form validation rules
-│ 
+│
 │ ├── Libraries/ # MultichainClient (JSON-RPC)
 │ ├── Mail/ # Email notification classes
 │ ├── Models/ # Eloquent ORM models (4 primary models)
@@ -890,6 +921,7 @@ procuchain/
 ### Key Directories Explained
 
 **Services (20+ specialized services):**
+
 - **Blockchain**: BlockchainHealthService, BlockchainMonitoringService, BlockchainStorageService
 - **Publishers**: DocumentPublisher, StatusPublisher, EventPublisher, CorrectionPublisher, ProcurementOrchestrator
 - **Procurement**: ProcurementDataService, ProcurementStageTransitionService, StageDocumentRequirements, DocumentValidationService
@@ -898,6 +930,7 @@ procuchain/
 - **Utilities**: FileStorageService, CacheStrategyService, NotificationService, UserService, DashboardCacheKeys
 
 **Models (4 primary models):**
+
 - **User** - Authentication, roles, 2FA, account lockout
 - **UserLoginLog** - Comprehensive audit trail with device detection
 - **BlockedIp** - IP blocking system
@@ -906,6 +939,7 @@ procuchain/
 **Note:** Procurement data is managed through blockchain streams and database queries, not a dedicated Eloquent model.
 
 **Background Processing:**
+
 - Queue-based blockchain operations to prevent HTTP timeouts
 - Async document publishing via Laravel's queue system
 - Database-driven queue (jobs table)
@@ -918,6 +952,7 @@ procuchain/
 ## Security
 
 ### Authentication & Authorization
+
 - **Multi-factor Authentication (2FA)**: Time-based OTP (TOTP) via Google2FA with encrypted recovery codes
 - **Session Management**: Database-driven sessions with secure token handling
 - **Password Security**: Bcrypt hashing with 12 rounds
@@ -925,6 +960,7 @@ procuchain/
 - **Rate Limiting**: Throttling on login and sensitive API endpoints
 
 ### Account Protection
+
 - **Account Lockout**: Automatic lockout after configurable failed login attempts (default: 5 attempts)
 - **Lockout Duration**: Configurable temporary lock (default: 30 minutes) with auto-unlock
 - **IP Blocking**: Manual and automatic IP blocking system with expiration support
@@ -932,6 +968,7 @@ procuchain/
 - **Email Notifications**: Security alerts for account events (lockout, unlock, suspicious activity)
 
 ### Data Security
+
 - **Encryption at Rest**: Database encryption (configurable)
 - **Encryption in Transit**: TLS 1.2+ for all external connections
 - **File Integrity Verification**: SHA-256 hashes stored on blockchain for tamper detection
@@ -940,16 +977,18 @@ procuchain/
 - **Environment Variables**: Secure credential storage in `.env` file
 
 ### Access Control
+
 - **Role-Based Access Control (RBAC)**: Spatie Laravel Permission with 4 primary roles:
- - Admin: Full system access and user management
- - BAC Secretariat: Document management and workflow coordination
- - BAC Chairman: Approval and oversight functions
- - HOPE: Executive oversight and monitoring
+- Admin: Full system access and user management
+- BAC Secretariat: Document management and workflow coordination
+- BAC Chairman: Approval and oversight functions
+- HOPE: Executive oversight and monitoring
 - **Permission Matrix**: Granular permissions for blockchain operations
 - **Principle of Least Privilege**: Minimal required permissions per role
 - **Middleware Protection**: Route-level authorization checks
 
 ### Blockchain Security
+
 - **Immutable Audit Trail**: All blockchain writes are permanent via MultiChain streams
 - **Permission-Based Access**: Blockchain-level permissions for write/read/admin operations
 - **Address Isolation**: Distinct addresses per role for accountability
@@ -957,6 +996,7 @@ procuchain/
 - **No Data Deletion**: Document corrections tracked without deleting original records
 
 ### Best Practices
+
 - Environment isolation: Never reuse production addresses in non-production environments
 - Regular backups of `.env` file and MultiChain configuration (blockchain data backed up automatically by MultiChain nodes)
 - Proper MultiChain node security with RPC authentication
@@ -972,6 +1012,7 @@ procuchain/
 ## Performance & Optimization
 
 ### Caching Strategies
+
 - **Database Caching**: Query result caching with cache invalidation
 - **Dashboard Caching**: Role-specific dashboard data caching
 - **Config Caching**: Production config compilation (`php artisan config:cache`)
@@ -979,6 +1020,7 @@ procuchain/
 - **View Caching**: Compiled Blade templates (`php artisan view:cache`)
 
 ### Frontend Optimizations
+
 - **Vite Code Splitting**: Automatic chunk splitting for optimal loading
 - **Lazy Loading**: Component-level code splitting
 - **Asset Optimization**: Minification and tree-shaking
@@ -986,12 +1028,14 @@ procuchain/
 - **SSR Support**: Optional server-side rendering for improved SEO
 
 ### Database Optimizations
+
 - **Strategic Indexes**: Indexes on frequently queried columns (blockchain_status, dates, foreign keys)
 - **Eager Loading**: Prevent N+1 query problems with relationship loading
 - **Connection Pooling**: Persistent database connections
 - **Query Builder**: Efficient query construction with Eloquent ORM
 
 ### Blockchain Optimizations
+
 - **Async Publishing**: Background job processing for blockchain operations
 - **Retry Logic**: Exponential backoff for failed blockchain operations
 - **Circuit Breaker**: Prevent cascade failures with health monitoring
@@ -1004,9 +1048,11 @@ procuchain/
 ## Monitoring & Logging
 
 ### Error Tracking with Sentry
+
 ProcuChain uses [Sentry](https://sentry.io) for real-time error tracking and performance monitoring.
 
 **Configuration:**
+
 ```bash
 # Already configured in .env
 SENTRY_LARAVEL_DSN=your_sentry_dsn
@@ -1014,6 +1060,7 @@ SENTRY_TRACES_SAMPLE_RATE=1.0 # 100% transaction sampling for performance monito
 ```
 
 **Features:**
+
 - **Real-time Error Tracking**: Automatic error capture and reporting
 - **Performance Monitoring**: Track slow database queries, API calls, and HTTP requests
 - **Release Tracking**: Monitor errors by deployment version
@@ -1021,6 +1068,7 @@ SENTRY_TRACES_SAMPLE_RATE=1.0 # 100% transaction sampling for performance monito
 - **Environment Separation**: Separate error tracking for local, staging, and production
 
 **Testing Sentry:**
+
 ```bash
 # Send a test event to verify configuration
 php artisan sentry:test
@@ -1028,30 +1076,35 @@ php artisan sentry:test
 
 **Sentry Dashboard:**
 Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
+
 - Real-time error alerts
 - Performance metrics and slow queries
 - User impact analysis
 - Error frequency and trends
 
 **Best Practices:**
+
 - Review Sentry issues daily in production
 - Set up alert rules for critical errors
 - Use releases to track error trends after deployments
 - Configure issue assignment rules for your team
 
 ### Application Logs
+
 - **Laravel Logs**: `storage/logs/laravel.log` for application errors and events
 - **Laravel Pail**: Real-time log viewing with `php artisan pail`
 - **Laravel Boost**: `browser-logs` tool for frontend error tracking
 - **Sentry Logs**: Real-time error tracking with stack traces and context
 
 ### Audit Trails
+
 - **User Login Logs**: Comprehensive tracking with device detection and IP logging
 - **Document Views**: Track who viewed documents, when, and for how long
 - **Blockchain Events**: All blockchain operations logged to audit stream
 - **Status Changes**: Complete history of procurement status transitions
 
 ### Health Monitoring
+
 - **Sentry Performance**: Database query performance, HTTP request timing
 - **MultiChain Node**: Connection status and RPC health checks
 - **Database**: Connection monitoring and query performance
@@ -1065,6 +1118,7 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 ## API & Integration
 
 ### Available Tools (Laravel Boost MCP)
+
 - `application-info`: Get PHP version, Laravel version, installed packages
 - `database-schema`: Read complete database schema with relationships
 - `database-query`: Execute read-only SQL queries
@@ -1076,6 +1130,7 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 - `last-error`: Get details of last backend error
 
 ### External Services
+
 - **Resend API**: Transactional email delivery
 - **WebPush/VAPID**: Browser push notifications
 - **MultiChain RPC**: Blockchain operations via JSON-RPC 2.0
@@ -1087,18 +1142,21 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 ## Development Guidelines
 
 ### Code Quality Standards
+
 - **PHP**: Laravel Pint with PSR-12 compliance
 - **JavaScript/TypeScript**: ESLint 9 with React plugins, Prettier formatting
 - **Type Safety**: TypeScript 5.7.2 for frontend type checking
 - **Documentation**: PHPDoc blocks for all public methods
 
 ### Testing
+
 - **Framework**: Pest 4.1.6 for expressive testing
 - **Types**: Feature tests and unit tests
 - **Factories**: Model factories for test data generation
 - **Coverage**: Test all happy paths, failure paths, and edge cases
 
 ### Git Workflow
+
 - **Branch**: `main` (protected branch)
 - **Repository**: `leodyversemilla07/procuchain`
 - **Commits**: Descriptive commit messages
@@ -1111,6 +1169,7 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 ## Database Schema Overview
 
 ### Core Tables (18 total)
+
 - **users** (20 columns): User accounts with blockchain addresses, 2FA, account lockout
 - **user_login_logs** (14 columns): Comprehensive login audit trail with device detection
 - **document_views** (15 columns): Document access tracking
@@ -1127,6 +1186,7 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 **Note:** Procurement data is stored on the blockchain via MultiChain streams, not in the MySQL database.
 
 ### Blockchain Integration Fields
+
 - `blockchain_txid`: Transaction ID from MultiChain for documents stream
 - `data_txid`: Transaction ID for file content on file.data stream (critical for file retrieval)
 - `metadata_txid`: Transaction ID for file metadata on file.metadata stream
@@ -1143,6 +1203,7 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 ## Known Issues & Future Enhancements
 
 ### Planned Enhancements
+
 - API documentation with OpenAPI/Swagger
 - Automated backup scheduling for blockchain and database
 - Application Performance Monitoring (APM) integration
@@ -1160,6 +1221,7 @@ Visit [sentry.io/organizations/your-org/issues](https://sentry.io) to view:
 ## Contributing
 
 Contributions are welcome! Please:
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Run tests and code quality checks
@@ -1189,8 +1251,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Contact & Support
 
-**Project Maintainer:** Leodyver Semilla 
-**Email:** [admin@example.com](mailto:admin@example.com) 
+**Project Maintainer:** Leodyver Semilla
+**Email:** [admin@example.com](mailto:admin@example.com)
 **Repository:** [github.com/leodyversemilla07/procuchain](https://github.com/leodyversemilla07/procuchain)
 
 For bug reports, feature requests, or general inquiries, please open an issue on GitHub or contact the maintainer directly.
@@ -1203,16 +1265,16 @@ For bug reports, feature requests, or general inquiries, please open an issue on
 
 This project is built on the shoulders of giants. Special thanks to:
 
-| Technology | Purpose |
-|------------|----------|
-| [Laravel](https://laravel.com/) | The PHP framework for web artisans |
-| [React](https://react.dev/) | UI component library |
-| [Inertia.js](https://inertiajs.com/) | Modern monolith architecture |
-| [MultiChain](https://www.multichain.com/) | Enterprise blockchain platform |
-| [Tailwind CSS](https://tailwindcss.com/) | Utility-first CSS framework |
-| [shadcn/ui](https://ui.shadcn.com/) | Beautifully designed components |
-| [Pest](https://pestphp.com/) | Elegant PHP testing framework |
-| [Spatie](https://spatie.be/) | Laravel Permission package |
+| Technology                                | Purpose                            |
+| ----------------------------------------- | ---------------------------------- |
+| [Laravel](https://laravel.com/)           | The PHP framework for web artisans |
+| [React](https://react.dev/)               | UI component library               |
+| [Inertia.js](https://inertiajs.com/)      | Modern monolith architecture       |
+| [MultiChain](https://www.multichain.com/) | Enterprise blockchain platform     |
+| [Tailwind CSS](https://tailwindcss.com/)  | Utility-first CSS framework        |
+| [shadcn/ui](https://ui.shadcn.com/)       | Beautifully designed components    |
+| [Pest](https://pestphp.com/)              | Elegant PHP testing framework      |
+| [Spatie](https://spatie.be/)              | Laravel Permission package         |
 
 <p align="right"><a href="#table-of-contents"> Back to top</a></p>
 
