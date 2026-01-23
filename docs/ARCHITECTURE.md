@@ -15,23 +15,23 @@ graph TD
     %% Main Architecture Diagram
     UserNode["User (Browser)"] -->|HTTPS| WebServer["Web Server (Nginx/Apache)"]
     WebServer -->|Request| LaravelApp["Laravel App Layer"]
-    
+
     subgraph "Application Layer"
         LaravelApp -->|Render| InertiaFrontend["Inertia.js / React Frontend"]
         LaravelApp -->|Job Dispatch| QueueWorker["Queue Worker (Database)"]
     end
-    
+
     subgraph "Data Persistence"
         LaravelApp -->|Read/Write| MySQLDB[("MySQL Database")]
         LaravelApp -->|Storage| FileStorage["File Storage (Local/S3)"]
     end
-    
+
     subgraph "Blockchain Layer"
         LaravelApp -->|RPC| MultiChainNode["MultiChain Node"]
         QueueWorker -->|RPC| MultiChainNode
         MultiChainNode -->|Streams| BCStreams["Blockchain Streams"]
     end
-    
+
     subgraph "Services"
         LaravelApp -->|SMTP/API| EmailService["Email Service (Resend)"]
         LaravelApp -->|VAPID| PushService["WebPush Service"]
@@ -41,12 +41,14 @@ graph TD
 ## Core Components
 
 ### 1. Web/API Layer (Laravel 12 + Inertia)
+
 - **Framework**: Laravel 12 serves as the core backend framework.
 - **Frontend**: Inertia.js with React 19 acts as the "glue" between backend and frontend, allowing for a modern SPA experience without the complexity of a separate API.
 - **Authentication**: Laravel Fortify handles authentication flows (Login, 2FA).
 - **Authorization**: Spatie Permission handles role-based access control (Admin, BAC Secretariat, BAC Chairman, HOPE).
 
 ### 2. Blockchain Layer (MultiChain)
+
 - **Role**: Provides an immutable ledger for procurement activities.
 - **Streams**: Data is organized into independent "streams" (key-value databases on the chain).
     - `procurement.metadata`: Core procurement info.
@@ -57,15 +59,50 @@ graph TD
     - `file.data` & `file.metadata`: On-chain file storage.
 - **Smart Filters**: JavaScript-based validation rules running on the blockchain node ensure data integrity before writes are accepted.
 
-### 3. Asynchronous Processing
+### 3. Service Layer
+
+- **Role**: Business logic isolation to maintain clean controllers and reusable components.
+
+```mermaid
+graph LR
+    Controller["Procurement Controllers"] --> Mapper["StageStatusMapper"]
+    Controller --> Orchestrator["ProcurementOrchestrator"]
+    Orchestrator --> DecisionPub["DecisionPublisher"]
+    Orchestrator --> DocPub["DocumentPublisher"]
+    Orchestrator --> StatusPub["StatusPublisher"]
+
+    DocPub --> BC["MultiChain Streams"]
+    StatusPub --> BC
+    DecisionPub --> BC
+```
+
+- **Key Services**:
+    - `StageStatusMapper`: Single source of truth for mapping procurement stages to their corresponding initial, ongoing, and completion statuses.
+    - `DecisionPublisher`: Consolidates the logic for publishing conference (Pre-Procurement, Pre-Bid) and bulletin decisions to the blockchain, handling both "held" and "skipped" scenarios.
+    - `ProcurementOrchestrator`: Coordinates complex multi-step operations involving both database and blockchain writes.
+    - `DocumentPublisher` & `StatusPublisher`: Specialized services for writing specific data types to MultiChain streams.
+
+### 4. Request & Validation Architecture
+
+- **Base Architecture**: Standardized validation using specialized Form Request classes.
+- **BaseProcurementRequest**: An abstract base class that enforces:
+    - **Authorization**: Ensures only users with the `BAC_SECRETARIAT` role can perform procurement actions.
+    - **Shared Rules**: Common validation for `pr_number` and `procurement_title`.
+    - **Helper Methods**: Standardized rules for single (`documentRules()`) and multiple (`multipleDocumentRules()`) PDF uploads.
+- **Reusable Traits**:
+    - `HasConferenceValidation`: Shared validation logic for conference-related documents, including minutes, attendance files, meeting dates, and participant lists.
+
+### 5. Asynchronous Processing
+
 - **Queue**: Database-driven queue system handles time-consuming tasks to keep the UI responsive.
     - Blockchain writes (publishing documents).
     - Email notifications.
     - File processing.
 
-### 4. Data Flow
+### 6. Data Flow
 
 #### Document Upload Flow
+
 1. User uploads file via React Frontend.
 2. Controller receives file, validates MIME type and size.
 3. File is temporarily stored in local storage.
@@ -77,6 +114,7 @@ graph TD
 5. User is notified via WebPush/Email upon success.
 
 #### Workflow Transition Flow
+
 1. User triggers a stage completion (e.g., "Finish Bidding").
 2. Controller validates requirements (e.g., are all required documents uploaded?).
 3. **Transaction**: New status written to `procurement.status` stream on blockchain.
@@ -84,6 +122,10 @@ graph TD
 
 ## Directory Structure
 
+- `app/Http/Requests/Procurement`: Specialized Form Request classes.
+- `app/Http/Requests/Procurement/Traits`: Reusable validation traits (e.g., `HasConferenceValidation`).
+- `app/Services/Procurement`: Procurement-specific business logic (e.g., `StageStatusMapper`).
+- `app/Services/Publishers`: Blockchain publishing services (e.g., `DecisionPublisher`, `DocumentPublisher`).
 - `app/Http/Controllers`: Request handling.
 - `app/Services`: Business logic isolation (e.g., `BlockchainService`, `ReportGenerationService`).
 - `app/Models`: Eloquent ORM models.
