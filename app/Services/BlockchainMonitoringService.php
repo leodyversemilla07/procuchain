@@ -10,8 +10,15 @@ use Illuminate\Support\Facades\Log;
  * Blockchain Monitoring Service
  *
  * Provides health checks and status monitoring for the blockchain connection.
- * Implements circuit breaker pattern to prevent hammering a dead blockchain node.
+ * Implements circuit breaker pattern with half-open state to prevent hammering
+ * a dead blockchain node while allowing recovery detection.
+ *
  * Used by BlockchainExplorerController to display health metrics.
+ *
+ * Circuit Breaker States:
+ * - CLOSED: Normal operation, requests pass through
+ * - OPEN: Blocking requests after failure threshold reached
+ * - HALF-OPEN: Testing if service recovered before fully closing
  */
 class BlockchainMonitoringService
 {
@@ -19,15 +26,23 @@ class BlockchainMonitoringService
 
     private const HEALTH_CHECK_KEY = 'blockchain:health_check';
 
-    private const FAILURE_THRESHOLD = 5; // Open circuit after 5 failures
+    /**
+     * Configurable thresholds loaded from config/blockchain.php
+     */
+    private int $failureThreshold;
 
-    private const RECOVERY_TIME = 300; // 5 minutes before attempting recovery
+    private int $recoveryTime;
 
-    private const HEALTH_CHECK_TTL = 60; // Cache health check for 1 minute
+    private int $healthCheckTtl;
 
     public function __construct(
         private Manager $multichain
-    ) {}
+    ) {
+        // Load configuration values from config/blockchain.php
+        $this->failureThreshold = config('blockchain.health_check.failure_threshold', 5);
+        $this->recoveryTime = config('blockchain.health_check.recovery_time', 300);
+        $this->healthCheckTtl = config('blockchain.health_check.health_check_ttl', 60);
+    }
 
     /**
      * Check if blockchain is healthy and available
@@ -42,7 +57,7 @@ class BlockchainMonitoringService
         }
 
         // Try to get cached health status
-        return Cache::remember(self::HEALTH_CHECK_KEY, self::HEALTH_CHECK_TTL, function () {
+        return Cache::remember(self::HEALTH_CHECK_KEY, $this->healthCheckTtl, function () {
             return $this->performHealthCheck();
         });
     }
@@ -79,6 +94,9 @@ class BlockchainMonitoringService
 
     /**
      * Check if circuit breaker is open (blocking requests)
+     *
+     * Implements half-open state: when recovery time passes, attempts
+     * a test request before fully closing the circuit.
      */
     public function isCircuitOpen(): bool
     {
@@ -90,10 +108,34 @@ class BlockchainMonitoringService
 
         // Check if recovery time has passed
         if (time() >= $circuitState['recovery_time']) {
-            Log::info('Circuit breaker attempting recovery');
-            $this->closeCircuit();
+            Log::info('Circuit breaker attempting recovery - entering half-open state');
 
-            return false;
+            // Try a test request before fully closing circuit (half-open state)
+            try {
+                $info = $this->multichain->getinfo();
+
+                if (isset($info['nodeaddress'])) {
+                    Log::info('Circuit breaker recovery successful - closing circuit');
+                    $this->closeCircuit();
+
+                    return false; // Circuit is now closed (healthy)
+                }
+
+                // Test failed, extend recovery time
+                Log::warning('Circuit breaker recovery test failed - staying open');
+                $this->extendRecoveryTime();
+
+                return true; // Circuit stays open
+            } catch (\Exception $e) {
+                Log::warning('Circuit breaker recovery failed - staying open', [
+                    'error' => $e->getMessage(),
+                ]);
+
+                // Extend recovery time for next attempt
+                $this->extendRecoveryTime();
+
+                return true; // Circuit stays open
+            }
         }
 
         return true;
@@ -121,10 +163,10 @@ class BlockchainMonitoringService
 
         $circuitState['failures']++;
 
-        // Open circuit if threshold reached
-        if ($circuitState['failures'] >= self::FAILURE_THRESHOLD && ! $circuitState['opened_at']) {
+        // Open circuit if threshold reached (using configurable threshold)
+        if ($circuitState['failures'] >= $this->failureThreshold && ! $circuitState['opened_at']) {
             $circuitState['opened_at'] = time();
-            $circuitState['recovery_time'] = time() + self::RECOVERY_TIME;
+            $circuitState['recovery_time'] = time() + $this->recoveryTime;
 
             Log::error('CIRCUIT BREAKER OPENED - Blockchain appears down', [
                 'consecutive_failures' => $circuitState['failures'],
@@ -132,7 +174,7 @@ class BlockchainMonitoringService
             ]);
         }
 
-        Cache::put(self::CIRCUIT_BREAKER_KEY, $circuitState, self::RECOVERY_TIME + 60);
+        Cache::put(self::CIRCUIT_BREAKER_KEY, $circuitState, $this->recoveryTime + 60);
         Cache::forget(self::HEALTH_CHECK_KEY);
     }
 
@@ -148,6 +190,28 @@ class BlockchainMonitoringService
         }
 
         Cache::forget(self::CIRCUIT_BREAKER_KEY);
+    }
+
+    /**
+     * Extend recovery time for failed recovery attempts
+     *
+     * When half-open state test fails, extends the recovery window
+     * to prevent constant retry attempts against a down service.
+     */
+    private function extendRecoveryTime(): void
+    {
+        $circuitState = Cache::get(self::CIRCUIT_BREAKER_KEY);
+
+        if ($circuitState) {
+            // Extend by another recovery period
+            $circuitState['recovery_time'] = time() + $this->recoveryTime;
+
+            Cache::put(self::CIRCUIT_BREAKER_KEY, $circuitState, $this->recoveryTime + 60);
+
+            Log::info('Circuit breaker recovery time extended', [
+                'next_attempt' => date('Y-m-d H:i:s', $circuitState['recovery_time']),
+            ]);
+        }
     }
 
     /**

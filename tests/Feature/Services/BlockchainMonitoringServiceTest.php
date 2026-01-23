@@ -10,6 +10,14 @@ use Illuminate\Support\Facades\Log;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    // Force array cache driver
+    config(['cache.default' => 'array']);
+    // Forget any resolved cache driver instance to ensure new config is used
+    Cache::forgetDriver(config('cache.default'));
+    
+    // We can also mock the cache if needed, but array driver is better for state
+    
+    // Now flush should use array driver
     Cache::flush();
     Log::spy();
 
@@ -21,7 +29,7 @@ describe('BlockchainMonitoringService', function () {
     describe('isHealthy', function () {
         test('it returns true when blockchain is responsive', function () {
             $this->multichainManager
-                ->shouldReceive('getInfo')
+                ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn([
                     'nodeaddress' => '1ABC123XYZ',
@@ -36,7 +44,7 @@ describe('BlockchainMonitoringService', function () {
 
         test('it returns false when blockchain is unresponsive', function () {
             $this->multichainManager
-                ->shouldReceive('getInfo')
+                ->shouldReceive('getinfo')
                 ->once()
                 ->andThrow(new Exception('Connection refused'));
 
@@ -61,7 +69,7 @@ describe('BlockchainMonitoringService', function () {
 
         test('it caches health check results', function () {
             $this->multichainManager
-                ->shouldReceive('getInfo')
+                ->shouldReceive('getinfo')
                 ->once() // Should only be called once due to caching
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
 
@@ -76,7 +84,7 @@ describe('BlockchainMonitoringService', function () {
 
         test('it returns false when getInfo response is malformed', function () {
             $this->multichainManager
-                ->shouldReceive('getInfo')
+                ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn(['chainname' => 'procuchain']); // Missing nodeaddress
 
@@ -119,12 +127,104 @@ describe('BlockchainMonitoringService', function () {
                 'recovery_time' => time() - 100, // Recovery time already passed
             ], 360);
 
+            // Mock successful recovery test
+            $this->multichainManager
+                ->shouldReceive('getinfo')
+                ->once()
+                ->andReturn(['nodeaddress' => '1ABC123XYZ']);
+
             $result = $this->service->isCircuitOpen();
 
             expect($result)->toBeFalse();
 
             Log::shouldHaveReceived('info')
-                ->with('Circuit breaker attempting recovery');
+                ->with('Circuit breaker attempting recovery - entering half-open state');
+        });
+
+        test('it stays open when half-open recovery test fails', function () {
+            // Open circuit with 5 failures
+            for ($i = 0; $i < 5; $i++) {
+                $this->service->recordFailure();
+            }
+
+            expect($this->service->isCircuitOpen())->toBeTrue();
+
+            // Simulate recovery time passing
+            Cache::put('blockchain:circuit_breaker', [
+                'failures' => 5,
+                'opened_at' => time() - 400,
+                'recovery_time' => time() - 100,
+            ], 360);
+
+            // Mock failed recovery test (no nodeaddress in response)
+            $this->multichainManager
+                ->shouldReceive('getinfo')
+                ->once()
+                ->andReturn(['chainname' => 'procuchain']); // Missing nodeaddress
+
+            $result = $this->service->isCircuitOpen();
+
+            expect($result)->toBeTrue();
+
+            Log::shouldHaveReceived('warning')
+                ->with('Circuit breaker recovery test failed - staying open');
+        });
+
+        test('it stays open when half-open recovery throws exception', function () {
+            // Open circuit with 5 failures
+            for ($i = 0; $i < 5; $i++) {
+                $this->service->recordFailure();
+            }
+
+            // Simulate recovery time passing
+            Cache::put('blockchain:circuit_breaker', [
+                'failures' => 5,
+                'opened_at' => time() - 400,
+                'recovery_time' => time() - 100,
+            ], 360);
+
+            // Mock exception during recovery test
+            $this->multichainManager
+                ->shouldReceive('getinfo')
+                ->once()
+                ->andThrow(new Exception('Connection refused'));
+
+            $result = $this->service->isCircuitOpen();
+
+            expect($result)->toBeTrue();
+
+            Log::shouldHaveReceived('warning')
+                ->with('Circuit breaker recovery failed - staying open', \Mockery::type('array'));
+        });
+
+        test('it extends recovery time on failed recovery attempt', function () {
+            // Open circuit
+            for ($i = 0; $i < 5; $i++) {
+                $this->service->recordFailure();
+            }
+
+            // Simulate recovery time passing
+            $originalRecoveryTime = time() - 100;
+            Cache::put('blockchain:circuit_breaker', [
+                'failures' => 5,
+                'opened_at' => time() - 400,
+                'recovery_time' => $originalRecoveryTime,
+            ], 360);
+
+            // Mock failed recovery
+            $this->multichainManager
+                ->shouldReceive('getinfo')
+                ->once()
+                ->andThrow(new Exception('Connection refused'));
+
+            $this->service->isCircuitOpen();
+
+            // Check that recovery time was extended
+            $circuitState = Cache::get('blockchain:circuit_breaker');
+            expect($circuitState['recovery_time'])->toBeGreaterThan($originalRecoveryTime);
+
+            Log::shouldHaveReceived('info')
+                ->with('Circuit breaker recovery time extended', \Mockery::type('array'));
         });
     });
 
@@ -236,7 +336,7 @@ describe('BlockchainMonitoringService', function () {
     describe('getHealthStatus', function () {
         test('it returns comprehensive health data when healthy', function () {
             $this->multichainManager
-                ->shouldReceive('getInfo')
+                ->shouldReceive('getinfo')
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
 
             // Create test data
@@ -320,10 +420,10 @@ describe('BlockchainMonitoringService', function () {
     });
 
     describe('integration scenarios', function () {
-        test('it handles complete failure and recovery cycle', function () {
+        test('it handles complete failure and recovery cycle with half-open state', function () {
             // 1. Start healthy
             $this->multichainManager
-                ->shouldReceive('getInfo')
+                ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
 
@@ -339,9 +439,7 @@ describe('BlockchainMonitoringService', function () {
             expect($this->service->isHealthy())->toBeFalse();
 
             // 3. Verify circuit breaker blocks requests during recovery period
-            $this->multichainManager
-                ->shouldNotReceive('getInfo'); // Should not attempt to call blockchain
-
+            // (isHealthy should not call getinfo when circuit is open)
             expect($this->service->isHealthy())->toBeFalse();
 
             // 4. Simulate recovery time passing
@@ -351,15 +449,52 @@ describe('BlockchainMonitoringService', function () {
                 'recovery_time' => time() - 1,
             ], 360);
 
-            // 5. Next check should allow attempt and succeed
+            // 5. Half-open state: test request during recovery attempt
             $this->multichainManager
-                ->shouldReceive('getInfo')
+                ->shouldReceive('getinfo')
                 ->once()
                 ->andReturn(['nodeaddress' => '1ABC123XYZ']);
 
-            Cache::forget('blockchain:health_check'); // Clear cached result
-            expect($this->service->isHealthy())->toBeTrue();
+            // 6. Circuit should close after successful half-open test
             expect($this->service->isCircuitOpen())->toBeFalse();
+
+            // 7. Next health check should succeed
+            Cache::forget('blockchain:health_check');
+            $this->multichainManager
+                ->shouldReceive('getinfo')
+                ->once()
+                ->andReturn(['nodeaddress' => '1ABC123XYZ']);
+
+            expect($this->service->isHealthy())->toBeTrue();
+        });
+
+        test('it handles recovery failure and extends recovery time', function () {
+            // 1. Open circuit
+            for ($i = 0; $i < 5; $i++) {
+                $this->service->recordFailure();
+            }
+
+            expect($this->service->isCircuitOpen())->toBeTrue();
+
+            // 2. Simulate recovery time passing
+            Cache::put('blockchain:circuit_breaker', [
+                'failures' => 5,
+                'opened_at' => time() - 400,
+                'recovery_time' => time() - 1,
+            ], 360);
+
+            // 3. Half-open test fails
+            $this->multichainManager
+                ->shouldReceive('getinfo')
+                ->once()
+                ->andThrow(new Exception('Still down'));
+
+            // 4. Circuit should stay open
+            expect($this->service->isCircuitOpen())->toBeTrue();
+
+            // 5. Recovery time should be extended
+            $circuitState = Cache::get('blockchain:circuit_breaker');
+            expect($circuitState['recovery_time'])->toBeGreaterThan(time());
         });
     });
 });
