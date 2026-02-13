@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
 
 export interface Step {
     id: number;
@@ -17,8 +16,6 @@ export interface StepperProps {
 }
 
 export function Stepper({ steps, currentStep, onStepClick, className }: StepperProps) {
-    const progressPercentage = ((currentStep - 1) / (steps.length - 1)) * 100;
-
     return (
         <div className={cn('w-full', className)}>
             {/* Desktop Stepper - Horizontal */}

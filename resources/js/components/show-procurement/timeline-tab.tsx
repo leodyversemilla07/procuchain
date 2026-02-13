@@ -2,7 +2,7 @@ import { Calendar, CheckCircle, Clock } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import type { Event, TimelineItem } from '@/types';
 import { TimelineEventItem } from './timeline-event-item';
@@ -98,7 +98,7 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                 </div>
             </CardHeader>
             <CardContent className="pb-6 sm:pb-8">
-                <div className="ml-4 border-l border-border/50 space-y-8 sm:ml-8" role="list" aria-label="Timeline events">
+                <div className="border-border/50 ml-4 space-y-8 border-l sm:ml-8" role="list" aria-label="Timeline events">
                     {Object.keys(timelineItemsByDate)
                         .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
                         .map((date, dateIndex) => {
@@ -107,15 +107,15 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                             return (
                                 <section key={date} className="relative" role="listitem">
                                     {/* Date Marker */}
-                                    <div className="mb-4 flex items-center -ml-[5px]">
-                                        <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30 ring-4 ring-background" />
+                                    <div className="mb-4 -ml-[5px] flex items-center">
+                                        <div className="bg-muted-foreground/30 ring-background h-2.5 w-2.5 rounded-full ring-4" />
                                         <div className="ml-4 flex items-center gap-2">
                                             <Calendar className="text-muted-foreground h-3.5 w-3.5" aria-hidden="true" />
-                                            <time dateTime={date} className="text-sm font-semibold text-muted-foreground">
+                                            <time dateTime={date} className="text-muted-foreground text-sm font-semibold">
                                                 {date}
                                             </time>
                                             {isFirstDate && (
-                                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                                                <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
                                                     Today
                                                 </Badge>
                                             )}
@@ -126,21 +126,16 @@ export function TimelineTab({ timeline, events }: TimelineTabProps) {
                                         {timelineItemsByDate[date]
                                             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                                             .map((item, itemIndex) => (
-                                                <TimelineEventItem 
-                                                    key={`${item.timestamp}-${itemIndex}`} 
-                                                    item={item.raw} 
-                                                    type={item.type} 
-                                                    stageOrder={item.stageOrder} 
-                                                />
+                                                <TimelineEventItem key={`${item.timestamp}-${itemIndex}`} item={item.raw} type={item.type} />
                                             ))}
                                     </div>
                                 </section>
                             );
                         })}
                 </div>
-                
-                <div className="mt-8 ml-4 sm:ml-8 flex items-center gap-4 text-muted-foreground">
-                    <div className="h-px w-8 bg-border/50" />
+
+                <div className="text-muted-foreground mt-8 ml-4 flex items-center gap-4 sm:ml-8">
+                    <div className="bg-border/50 h-px w-8" />
                     <span className="flex items-center gap-2 text-xs sm:text-sm">
                         <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
                         Start of Procurement
