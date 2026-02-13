@@ -127,8 +127,7 @@ function detectWindows11(): boolean {
 
         // If we have 2 or more positive indicators, likely Windows 11
         return positiveIndicators >= 2;
-    } catch (error) {
-        console.warn('Error detecting Windows 11:', error);
+    } catch {
         return false;
     }
 }

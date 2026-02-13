@@ -230,14 +230,7 @@ export default function AdminDashboard() {
         const seen = new Set<string>();
         return recentProcurements
             .filter((procurement) => {
-                // Filter out null/undefined items
-                if (!procurement) {
-                    console.warn('Null/undefined procurement detected');
-                    return false;
-                }
-                // Filter out procurements without IDs first
-                if (!procurement.id) {
-                    console.warn('Procurement without ID detected:', procurement);
+                if (!procurement || !procurement.id) {
                     return false;
                 }
                 if (seen.has(procurement.id)) {
