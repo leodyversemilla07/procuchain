@@ -1,27 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
-import {
-    AlertCircle,
-    Award,
-    Check,
-    CheckCircle,
-    Clock,
-    FileCheck,
-    FileQuestion,
-    FileText,
-    HelpCircle,
-    ListChecks,
-    Milestone,
-    Monitor,
-    PlayCircle,
-} from 'lucide-react';
-import { createElement, type ReactNode } from 'react';
-
 import { Stage, Status } from '@/types';
-
-const buildIcon = (Icon: LucideIcon, extraClassName?: string): ReactNode =>
-    createElement(Icon, { className: extraClassName ? `h-3 w-3 ${extraClassName}` : 'h-3 w-3' });
-
-const fallbackIcon = buildIcon(HelpCircle);
 
 export const DEFAULT_STATUS_BADGE_STYLE = 'bg-[#CEDDDD] text-[#014D4E] border border-[#CEDDDD] hover:bg-[#C2F4EE]';
 export const DEFAULT_STAGE_BADGE_STYLE = DEFAULT_STATUS_BADGE_STYLE;
@@ -69,50 +46,5 @@ export const STAGE_BADGE_STYLES: Record<Stage, string> = {
     [Stage.COMPLETED]: 'bg-[#357C78] text-white border border-[#357C78] hover:bg-[#A7DAD8]',
 };
 
-export const STATUS_BADGE_ICONS: Record<Status, ReactNode> = {
-    [Status.PROCUREMENT_INITIATED]: buildIcon(Check),
-    [Status.PROCUREMENT_SUBMITTED]: buildIcon(Check),
-    [Status.PRE_PROCUREMENT_CONFERENCE_HELD]: buildIcon(Milestone),
-    [Status.PRE_PROCUREMENT_CONFERENCE_SKIPPED]: buildIcon(Milestone, 'text-gray-500'),
-    [Status.PRE_PROCUREMENT_CONFERENCE_COMPLETED]: buildIcon(CheckCircle),
-    [Status.BIDDING_DOCUMENTS_PUBLISHED]: buildIcon(FileText),
-    [Status.PRE_BID_CONFERENCE_HELD]: buildIcon(Milestone),
-    [Status.PRE_BID_CONFERENCE_SKIPPED]: buildIcon(Milestone, 'text-gray-500'),
-    [Status.PRE_BID_CONFERENCE_COMPLETED]: buildIcon(CheckCircle),
-    [Status.SUPPLEMENTAL_BID_BULLETINS_ONGOING]: buildIcon(Clock),
-    [Status.SUPPLEMENTAL_BID_BULLETINS_COMPLETED]: buildIcon(CheckCircle),
-    [Status.BIDS_OPENED]: buildIcon(ListChecks),
-    [Status.BIDS_EVALUATED]: buildIcon(ListChecks),
-    [Status.POST_QUALIFICATION_VERIFIED]: buildIcon(FileCheck),
-    [Status.POST_QUALIFICATION_FAILED]: buildIcon(AlertCircle),
-    [Status.RESOLUTION_RECORDED]: buildIcon(FileCheck),
-    [Status.AWARDED]: buildIcon(Award),
-    [Status.PERFORMANCE_BOND_CONTRACT_AND_PO_RECORDED]: buildIcon(FileCheck),
-    [Status.NTP_RECORDED]: buildIcon(PlayCircle),
-    [Status.MONITORING_COMPLETED]: buildIcon(Monitor),
-    [Status.COMPLETION_DOCUMENTS_UPLOADED]: buildIcon(FileCheck),
-    [Status.COMPLETED]: buildIcon(CheckCircle),
-};
-
-export const STAGE_BADGE_ICONS: Record<Stage, ReactNode> = {
-    [Stage.PROCUREMENT_INITIATION]: buildIcon(FileText),
-    [Stage.PRE_PROCUREMENT_CONFERENCE]: buildIcon(Milestone),
-    [Stage.BIDDING_DOCUMENTS]: buildIcon(FileText),
-    [Stage.PRE_BID_CONFERENCE]: buildIcon(Milestone),
-    [Stage.SUPPLEMENTAL_BID_BULLETIN]: buildIcon(FileQuestion),
-    [Stage.BID_OPENING]: buildIcon(ListChecks),
-    [Stage.BID_EVALUATION]: buildIcon(ListChecks),
-    [Stage.POST_QUALIFICATION]: buildIcon(FileCheck),
-    [Stage.BAC_RESOLUTION]: buildIcon(FileCheck),
-    [Stage.NOTICE_OF_AWARD]: buildIcon(Award),
-    [Stage.PERFORMANCE_BOND_CONTRACT_AND_PO]: buildIcon(FileText),
-    [Stage.NOTICE_TO_PROCEED]: buildIcon(PlayCircle),
-    [Stage.MONITORING]: buildIcon(Monitor),
-    [Stage.COMPLETION]: buildIcon(CheckCircle),
-    [Stage.COMPLETED]: buildIcon(CheckCircle),
-};
-
 export const getStatusBadgeStyle = (status: Status): string => STATUS_BADGE_STYLES[status] ?? DEFAULT_STATUS_BADGE_STYLE;
 export const getStageBadgeStyle = (stage: Stage): string => STAGE_BADGE_STYLES[stage] ?? DEFAULT_STAGE_BADGE_STYLE;
-export const getStatusBadgeIcon = (status: Status): ReactNode => STATUS_BADGE_ICONS[status] ?? fallbackIcon;
-export const getStageBadgeIcon = (stage: Stage): ReactNode => STAGE_BADGE_ICONS[stage] ?? fallbackIcon;
