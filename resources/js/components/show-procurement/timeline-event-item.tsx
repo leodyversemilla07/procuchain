@@ -1,4 +1,4 @@
-import { Activity, ArrowUpCircle, CheckCircle2, FileCheck, FileText, AlertCircle } from 'lucide-react';
+import { Activity, AlertCircle, ArrowUpCircle, FileCheck, FileText } from 'lucide-react';
 import type { FC, JSX } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -8,33 +8,32 @@ import type { Event, TimelineItem } from '@/types';
 interface TimelineEventItemProps {
     item: TimelineItem | Event;
     type: 'stage_change' | 'event';
-    stageOrder: number;
 }
 
-export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type, stageOrder }) => {
+export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type }) => {
     const formattedTimeOnly = 'formatted_time_only' in item ? item.formatted_time_only : '';
-    
+
     // Determine Icon and Styles
     let Icon = Activity;
-    let iconClassName = "text-muted-foreground";
-    let borderClassName = "border-muted-foreground/20";
-    
+    let iconClassName = 'text-muted-foreground';
+    let borderClassName = 'border-muted-foreground/20';
+
     if (type === 'stage_change') {
         Icon = ArrowUpCircle;
-        iconClassName = "text-primary";
-        borderClassName = "border-primary";
+        iconClassName = 'text-primary';
+        borderClassName = 'border-primary';
     } else {
         const eventItem = item as Event;
         if (eventItem.document_count && eventItem.document_count > 0) {
             Icon = FileCheck;
-            iconClassName = "text-blue-500";
-            borderClassName = "border-blue-200 dark:border-blue-800";
+            iconClassName = 'text-blue-500';
+            borderClassName = 'border-blue-200 dark:border-blue-800';
         } else if (eventItem.event_type === 'correction') {
             Icon = AlertCircle;
-            iconClassName = "text-amber-500";
-            borderClassName = "border-amber-200 dark:border-amber-800";
+            iconClassName = 'text-amber-500';
+            borderClassName = 'border-amber-200 dark:border-amber-800';
         } else {
-             Icon = FileText;
+            Icon = FileText;
         }
     }
 
@@ -45,15 +44,13 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type, stag
             return (
                 <div className="flex flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-foreground">
-                            Stage Update
-                        </span>
-                        <Badge variant="default" className="text-xs hover:bg-primary">
+                        <span className="text-foreground text-sm font-semibold">Stage Update</span>
+                        <Badge variant="default" className="hover:bg-primary text-xs">
                             {stageItem.stage_formatted || stageItem.stage}
                         </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                        Status: <span className="font-medium text-foreground/80">{stageItem.status_formatted || stageItem.status}</span>
+                    <p className="text-muted-foreground text-sm">
+                        Status: <span className="text-foreground/80 font-medium">{stageItem.status_formatted || stageItem.status}</span>
                     </p>
                 </div>
             );
@@ -66,7 +63,7 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type, stag
             eventDetails = (
                 <div className="space-y-1.5">
                     <p>{eventItem.details}</p>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md w-fit">
+                    <div className="text-muted-foreground bg-muted/50 flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-xs">
                         <FileText className="h-3 w-3" />
                         <span>
                             {eventItem.document_count} {eventItem.document_count === 1 ? 'document' : 'documents'} processed
@@ -79,41 +76,39 @@ export const TimelineEventItem: FC<TimelineEventItemProps> = ({ item, type, stag
         return (
             <div className="flex flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground">
+                    <span className="text-foreground text-sm font-semibold">
                         {eventItem.event_type_formatted || eventItem.event_type.replace(/_/g, ' ')}
                     </span>
                     {eventItem.category && eventItem.category !== 'stage_transition' && (
-                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-muted-foreground">
+                        <Badge variant="outline" className="text-muted-foreground h-5 px-1.5 text-[10px]">
                             {eventItem.category_formatted || eventItem.category}
                         </Badge>
                     )}
                 </div>
-                <div className="text-sm text-muted-foreground">
-                    {eventDetails}
-                </div>
+                <div className="text-muted-foreground text-sm">{eventDetails}</div>
             </div>
         );
     };
 
     return (
-        <div className="relative pl-8 sm:pl-10 py-1 group">
+        <div className="group relative py-1 pl-8 sm:pl-10">
             {/* Timeline Dot/Icon */}
-            <div className={cn(
-                "absolute left-0 top-1.5 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border-2 bg-background ring-4 ring-background transition-colors duration-200 group-hover:ring-muted/50 z-10",
-                borderClassName
-            )}>
-                <Icon className={cn("h-4 w-4", iconClassName)} />
+            <div
+                className={cn(
+                    'bg-background ring-background group-hover:ring-muted/50 absolute top-1.5 left-0 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border-2 ring-4 transition-colors duration-200',
+                    borderClassName,
+                )}
+            >
+                <Icon className={cn('h-4 w-4', iconClassName)} />
             </div>
 
             {/* Content Container */}
             <div className="flex flex-col gap-1">
-                 {/* Time Stamp (Above title for better scanning) */}
-                 <time className="text-xs font-mono text-muted-foreground/70 mb-0.5">
-                    {formattedTimeOnly}
-                 </time>
-                 
-                 {/* Main Content */}
-                 {renderContent()}
+                {/* Time Stamp (Above title for better scanning) */}
+                <time className="text-muted-foreground/70 mb-0.5 font-mono text-xs">{formattedTimeOnly}</time>
+
+                {/* Main Content */}
+                {renderContent()}
             </div>
         </div>
     );
