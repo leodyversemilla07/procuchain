@@ -2,11 +2,8 @@
     "agents": [
         "opencode"
     ],
-    "editors": [
-        "opencode"
-    ],
-    "guidelines": [
+    "guidelines": true,
+    "packages": [
         "laravel/fortify"
-    ],
-    "herd_mcp": true
+    ]
 }
