@@ -817,39 +817,17 @@ describe('DashboardService', function () {
     });
 
     describe('countOngoingProjects', function () {
-        test('it counts procurements not in completed stage', function () {
-            $procurements = collect([
-                'PR-001' => ['stage' => 'Pre-Procurement', 'status' => 'Active'],
-                'PR-002' => ['stage' => 'Bidding', 'status' => 'Active'],
-                'PR-003' => ['stage' => 'Post-Qualification', 'status' => 'Active'],
-            ]);
-
-            $result = $this->service->countOngoingProjects($procurements);
-
-            expect($result)->toBe(3);
-        });
-
         test('it excludes completed monitoring projects', function () {
             $procurements = collect([
-                'PR-001' => ['stage' => 'Pre-Procurement', 'status' => 'Active'],
-                'PR-002' => ['stage' => 'Monitoring', 'status' => 'Completed'],
-                'PR-003' => ['stage' => 'Bidding', 'status' => 'Active'],
+                'PR-001' => ['stage' => 'Pre-Procurement'],
+                'PR-002' => ['stage' => 'Bidding'],
+                'PR-003' => ['stage' => 'Notice Of Award'],
+                'PR-004' => ['stage' => 'completed'], // This should be excluded
             ]);
 
             $result = $this->service->countOngoingProjects($procurements);
 
-            expect($result)->toBe(2); // PR-001 and PR-003
-        });
-
-        test('it includes monitoring projects that are not completed', function () {
-            $procurements = collect([
-                'PR-001' => ['stage' => 'Monitoring', 'status' => 'In Progress'],
-                'PR-002' => ['stage' => 'Monitoring', 'status' => 'Active'],
-            ]);
-
-            $result = $this->service->countOngoingProjects($procurements);
-
-            expect($result)->toBe(2);
+            expect($result)->toBe(3); // PR-001, PR-002, PR-003
         });
 
         test('it handles empty collection', function () {
@@ -862,8 +840,8 @@ describe('DashboardService', function () {
     describe('countCompletedBiddings', function () {
         test('it counts procurements in post-award stages', function () {
             $procurements = collect([
-                'PR-001' => ['stage' => 'Notice Of Award'],
-                'PR-002' => ['stage' => 'Contract And PO'],
+                'PR-001' => ['stage' => 'completed'],
+                'PR-002' => ['stage' => 'completion'],
                 'PR-003' => ['stage' => 'Pre-Procurement'],
             ]);
 
@@ -874,17 +852,17 @@ describe('DashboardService', function () {
 
         test('it includes all configured completed bidding stages', function () {
             $procurements = collect([
-                'PR-001' => ['stage' => 'Notice Of Award'],
-                'PR-002' => ['stage' => 'Performance Bond'],
-                'PR-003' => ['stage' => 'Contract And PO'],
-                'PR-004' => ['stage' => 'Notice To Proceed'],
+                'PR-001' => ['stage' => 'completion'],
+                'PR-002' => ['stage' => 'completed'],
+                'PR-003' => ['stage' => 'Completion'],
+                'PR-004' => ['stage' => 'Completed'],
                 'PR-005' => ['stage' => 'Monitoring'],
-                'PR-006' => ['stage' => 'Completed'],
+                'PR-006' => ['stage' => 'Bidding'],
             ]);
 
             $result = $this->service->countCompletedBiddings($procurements);
 
-            expect($result)->toBe(6); // All are completed bidding stages
+            expect($result)->toBe(4); // completion, completed, Completion, Completed
         });
 
         test('it excludes pre-award stages', function () {
@@ -892,7 +870,7 @@ describe('DashboardService', function () {
                 'PR-001' => ['stage' => 'Pre-Procurement'],
                 'PR-002' => ['stage' => 'Bidding'],
                 'PR-003' => ['stage' => 'Bid Evaluation'],
-                'PR-004' => ['stage' => 'Notice Of Award'], // Only this counts
+                'PR-004' => ['stage' => 'completed'], // Only this counts
             ]);
 
             $result = $this->service->countCompletedBiddings($procurements);
@@ -924,15 +902,15 @@ describe('DashboardService', function () {
             $procurements = collect([
                 'PR-001' => ['stage' => 'Pre-Procurement', 'status' => 'Active'],
                 'PR-002' => ['stage' => 'Bidding', 'status' => 'Active'],
-                'PR-003' => ['stage' => 'Notice Of Award', 'status' => 'Active'],
-                'PR-004' => ['stage' => 'Monitoring', 'status' => 'Completed'],
+                'PR-003' => ['stage' => 'completed', 'status' => 'Active'],
+                'PR-004' => ['stage' => 'completed', 'status' => 'Completed'],
             ]);
 
             $result = $this->service->calculateStats($procurements, 15);
 
-            // Ongoing: All except Monitoring+Completed (PR-004)
-            expect($result['ongoingProjects'])->toBe(3); // PR-001, PR-002, PR-003
-            expect($result['completedBiddings'])->toBe(2); // PR-003, PR-004 (both in post-award stages)
+            // Ongoing: All except completed stages (PR-003, PR-004)
+            expect($result['ongoingProjects'])->toBe(2); // PR-001, PR-002
+            expect($result['completedBiddings'])->toBe(2); // PR-003, PR-004
             expect($result['totalDocuments'])->toBe(15);
         });
 
