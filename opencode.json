@@ -4,22 +4,20 @@
         "laravel-boost": {
             "type": "local",
             "enabled": true,
-            "command": [
-                "php",
-                "artisan",
-                "boost:mcp"
-            ]
+            "command": ["php", "artisan", "boost:mcp"]
         },
         "herd": {
             "type": "local",
             "enabled": true,
-            "command": [
-                "php",
-                "C:/Users/Leodyver/.config/herd/bin/herd-mcp.phar"
-            ],
+            "command": ["php", "C:/Users/Leodyver/.config/herd/bin/herd-mcp.phar"],
             "environment": {
                 "SITE_PATH": "C:\\Users\\Leodyver\\Herd\\procuchain"
             }
+        },
+        "shadcn": {
+            "type": "local",
+            "enabled": true,
+            "command": ["npx", "shadcn@latest", "mcp"]
         }
     }
 }
