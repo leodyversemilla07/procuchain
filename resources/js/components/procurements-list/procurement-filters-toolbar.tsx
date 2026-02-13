@@ -74,10 +74,10 @@ export function ProcurementFiltersToolbar({
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <Select value={stageValue} onValueChange={onStageChange}>
-                            <SelectTrigger className="h-10 w-full sm:w-[180px]">
+                            <SelectTrigger className="h-10 w-full sm:w-45">
                                 <SelectValue placeholder={stageOptions[0]?.label ?? 'Select stage'} />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-72">
                                 {stageOptions.map((option) => (
                                     <SelectItem key={option.value} value={option.value}>
                                         {option.label}
