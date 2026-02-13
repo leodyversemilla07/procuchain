@@ -9,11 +9,11 @@ services:
       MYSQL_PASSWORD: procuchain
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3307:3306"
+      - '3307:3306'
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-pprocuchain", "-uprocuchain"]
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-pprocuchain', '-uprocuchain']
       interval: 10s
       timeout: 5s
       retries: 10
@@ -25,11 +25,11 @@ services:
     container_name: procuchain-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -48,18 +48,19 @@ services:
       PMA_PASSWORD: root
       UPLOAD_LIMIT: 100M
     ports:
-      - "8080:80"
+      - '8080:80'
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - procuchain
 
+  # Single MultiChain Node for Development
   multichain:
     build:
       context: .
       dockerfile: Dockerfile.multichain
-    container_name: procuchain-multichain-dev
+    container_name: procuchain-multichain
     restart: unless-stopped
     environment:
       - CHAIN_NAME=procuchain-dev
@@ -67,21 +68,34 @@ services:
       - RPC_PASSWORD=multichainrpc
       - RPC_PORT=7450
       - P2P_PORT=7449
-      # Restrict RPC to Docker network (172.16.0.0/12 covers Docker's default ranges)
-      # For external access, use specific IPs instead of 0.0.0.0/0
-      - RPC_ALLOW_IP=172.16.0.0/12
+      - RPC_ALLOW_IP=0.0.0.0/0
     ports:
-      - "7449:7449"
-      - "7450:7450"
+      - '7449:7449'
+      - '7450:7450'
     volumes:
       - multichain_data:/home/multichain/.multichain
     healthcheck:
-      test: ["CMD", "multichain-cli", "procuchain-dev", "getinfo"]
+      test: ['CMD', 'multichain-cli', 'procuchain-dev', '-rpcuser=multichainrpc', '-rpcpassword=multichainrpc', 'getinfo']
       interval: 30s
       timeout: 10s
       retries: 5
     networks:
       - procuchain
+
+  # HAProxy Load Balancer (single node for future scaling)
+  haproxy:
+    build:
+      context: .
+      dockerfile: haproxy/Dockerfile
+    container_name: procuchain-haproxy
+    restart: unless-stopped
+    ports:
+      - '7451:7451'
+      - '8404:8404'
+    networks:
+      - procuchain
+    depends_on:
+      - multichain
 
 volumes:
   mysql_data:
