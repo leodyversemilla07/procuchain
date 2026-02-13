@@ -96,8 +96,6 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                 }
             });
 
-            console.log('Submitting form data:', Object.fromEntries(formData.entries()));
-
             router.post(`/procurements/${prNumber}/corrections`, formData, {
                 onSuccess: () => {
                     toast.success('Procurement correction submitted successfully.');
@@ -407,7 +405,11 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                                 <span className="font-medium text-amber-900">Changed:</span>
                                 {latestCorrection.changed_fields.map((field, index) => (
-                                    <Badge key={index} variant="outline" className="border-amber-300 bg-amber-100/50 text-amber-800 hover:bg-amber-100">
+                                    <Badge
+                                        key={index}
+                                        variant="outline"
+                                        className="border-amber-300 bg-amber-100/50 text-amber-800 hover:bg-amber-100"
+                                    >
                                         {formatFieldName(field)}
                                     </Badge>
                                 ))}
@@ -421,40 +423,40 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
             {/* Corrections History */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg">History</h3>
+                    <h3 className="text-lg font-semibold">History</h3>
                 </div>
-                
+
                 {corrections.length > 0 ? (
-                    <div className="ml-3 border-l border-border space-y-8 pl-8 relative">
+                    <div className="border-border relative ml-3 space-y-8 border-l pl-8">
                         {corrections.map((correction, index) => (
                             <div key={index} className="relative">
                                 {/* Timeline Dot */}
-                                <div className="absolute -left-[37px] top-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-background ring-4 ring-background">
-                                    <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+                                <div className="bg-background ring-background absolute top-1.5 -left-[37px] flex h-5 w-5 items-center justify-center rounded-full border ring-4">
+                                    <div className="bg-muted-foreground h-2 w-2 rounded-full" />
                                 </div>
 
                                 <div className="flex flex-col gap-2">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-sm">
-                                                {correction.correction_type_display}
-                                            </span>
-                                            <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                                            <span className="text-sm font-semibold">{correction.correction_type_display}</span>
+                                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
                                                 {correction.corrected_by}
                                             </Badge>
                                         </div>
-                                        <time className="text-xs text-muted-foreground font-mono">
+                                        <time className="text-muted-foreground font-mono text-xs">
                                             {new Date(correction.timestamp).toLocaleString()}
                                         </time>
                                     </div>
-                                    
+
                                     <div className="bg-muted/30 rounded-lg border p-3 text-sm">
-                                        <div className="mb-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">Reason</div>
+                                        <div className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">Reason</div>
                                         <p>{correction.reason}</p>
-                                        
+
                                         {correction.changed_fields.length > 0 && (
                                             <>
-                                                <div className="mt-3 mb-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">Changes</div>
+                                                <div className="text-muted-foreground mt-3 mb-2 text-xs font-medium tracking-wide uppercase">
+                                                    Changes
+                                                </div>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {correction.changed_fields.map((field, fieldIndex) => (
                                                         <Badge key={fieldIndex} variant="outline" className="bg-background text-xs">
@@ -473,7 +475,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                     <div className="rounded-xl border border-dashed p-8">
                         <Empty>
                             <EmptyHeader>
-                                <EmptyMedia variant="icon" className="bg-muted/50 p-4 rounded-full">
+                                <EmptyMedia variant="icon" className="bg-muted/50 rounded-full p-4">
                                     <FileText className="text-muted-foreground h-8 w-8" />
                                 </EmptyMedia>
                                 <EmptyTitle className="mt-4">No Corrections Yet</EmptyTitle>
