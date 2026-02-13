@@ -291,7 +291,7 @@ describe('Stream Operations', function () {
         $streams = StreamEnums::cases();
 
         expect($streams)->toBeArray()
-            ->toHaveCount(9);  // 6 procurement + 3 file streams
+            ->toHaveCount(10);  // 7 procurement + 3 file streams
 
         $values = array_map(fn ($case) => $case->value, $streams);
 
@@ -301,6 +301,7 @@ describe('Stream Operations', function () {
             ->toContain('procurement.events')
             ->toContain('procurement.corrections')
             ->toContain('procurement.metadata.corrections')
+            ->toContain('procurement.archive')
             ->toContain('file.data')
             ->toContain('file.metadata')
             ->toContain('file.chunks');
@@ -373,7 +374,7 @@ describe('Stream Operations', function () {
         $values = StreamEnums::values();
 
         expect($values)->toBeArray()
-            ->toHaveCount(9)
+            ->toHaveCount(10)
             ->toContain('procurement.metadata')
             ->toContain('file.data');
     });
@@ -382,7 +383,7 @@ describe('Stream Operations', function () {
         $options = StreamEnums::options();
 
         expect($options)->toBeArray()
-            ->toHaveCount(9)
+            ->toHaveCount(10)
             ->toHaveKey('procurement.metadata')
             ->toHaveKey('file.data');
 
@@ -526,7 +527,7 @@ describe('Individual Stream Coverage', function () {
             }
         }
 
-        expect($procurementCount)->toBe(6)
+        expect($procurementCount)->toBe(7)
             ->and($fileCount)->toBe(3);
     });
 });
