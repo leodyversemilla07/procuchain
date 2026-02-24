@@ -1,9 +1,10 @@
 {
     "agents": [
+        "copilot",
         "opencode"
     ],
     "guidelines": true,
     "packages": [
-        "laravel/fortify"
+        "spatie/laravel-permission"
     ]
 }
