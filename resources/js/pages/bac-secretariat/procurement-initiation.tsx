@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+import { useBlockchainJob } from '@/hooks/use-blockchain-job';
 import { Spinner } from '@/components/ui/spinner';
 import { AlertCircle, Building2, CheckCircle2, DollarSign, FileText, Save, Trash2, Upload } from 'lucide-react';
 
@@ -115,6 +116,7 @@ interface HeaderProps {
 
 export default function ProcurementInitiationForm({ categories = [], procurementModes = [], negotiatedProcurementTypes = [] }: HeaderProps) {
     const { auth } = usePage<{ auth: { user: { name: string; email: string } } }>().props;
+    const { submitAndPoll } = useBlockchainJob();
 
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [{ title: 'Procurement Initiation', href: '#' }]);
 
@@ -355,7 +357,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
         );
     }, [data]);
 
-    const handleCreateProcurement = useCallback(() => {
+    const handleCreateProcurement = useCallback(async () => {
         if (!isFormValid()) {
             toast.error('Please complete all required fields', {
                 description: 'Fill in all required fields before submitting.',
@@ -365,53 +367,47 @@ export default function ProcurementInitiationForm({ categories = [], procurement
 
         const submissionToast = toast.loading('Creating Procurement...');
 
-        // Prepare data for submission (no documents)
-        const submissionData = {
-            pr_number: data.pr_number,
-            app_reference: data.app_reference,
-            title: data.title,
-            description: data.description,
-            other_description: data.other_description,
-            abc_amount: data.abc_amount,
-            funding_source: data.funding_source,
-            other_funding_source: data.other_funding_source,
-            category: data.category,
-            procurement_mode: data.procurement_mode,
-            negotiated_procurement_type: data.negotiated_procurement_type || null,
-            office: data.office,
-            end_user: data.end_user,
-            other_end_user: data.other_end_user,
-            prepared_by: data.prepared_by,
-        };
+        const formData = new FormData();
+        formData.append('pr_number', data.pr_number);
+        formData.append('app_reference', data.app_reference);
+        formData.append('title', data.title);
+        formData.append('description', data.description);
+        formData.append('other_description', data.other_description);
+        formData.append('abc_amount', data.abc_amount);
+        formData.append('funding_source', data.funding_source);
+        formData.append('other_funding_source', data.other_funding_source);
+        formData.append('category', data.category);
+        formData.append('procurement_mode', data.procurement_mode);
+        formData.append('negotiated_procurement_type', data.negotiated_procurement_type || '');
+        formData.append('office', data.office);
+        formData.append('end_user', data.end_user);
+        formData.append('other_end_user', data.other_end_user);
+        formData.append('prepared_by', data.prepared_by);
 
-        router.post(initiate().url, submissionData, {
-            onSuccess: () => {
-                // Clear draft on successful submission
-                localStorage.removeItem(DRAFT_STORAGE_KEY);
-                setHasDraft(false);
+        try {
+            await submitAndPoll(initiate().url, formData);
 
-                toast.success('Procurement created successfully!', {
-                    id: submissionToast,
-                    description: 'Redirecting to procurement list. You can upload documents from there.',
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            setHasDraft(false);
+
+            toast.success('Procurement created successfully!', {
+                id: submissionToast,
+                description: 'Redirecting to procurement list. You can upload documents from there.',
+            });
+
+            setTimeout(() => {
+                router.visit(procurementListIndex['/bac-secretariat/procurements-list'].url(), {
+                    preserveState: false,
+                    replace: true,
                 });
-
-                // Always redirect to procurement list after creation
-                setTimeout(() => {
-                    router.visit(procurementListIndex['/bac-secretariat/procurements-list'].url(), {
-                        preserveState: false,
-                        replace: true,
-                    });
-                }, 1500);
-            },
-            onError: (formErrors: Record<string, string>) => {
-                toast.error('Failed to submit', {
-                    id: submissionToast,
-                    description: Object.values(formErrors)[0],
-                });
-            },
-            preserveScroll: true,
-        });
-    }, [data, isFormValid]);
+            }, 1500);
+        } catch (err) {
+            toast.error('Failed to submit', {
+                id: submissionToast,
+                description: err instanceof Error ? err.message : 'Unknown error',
+            });
+        }
+    }, [data, isFormValid, submitAndPoll]);
 
     const onSubmit = useCallback(
         (e: React.FormEvent) => {
