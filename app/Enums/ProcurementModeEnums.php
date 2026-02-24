@@ -170,8 +170,8 @@ enum ProcurementModeEnums: string
     }
 
     /**
-     * Check if this is an alternative (non-competitive) procurement mode
-    /**
+     * Check if this is an alternative (non-competitive) procurement mode.
+     *
      * Per NGPA IRR Sections 31-37, alternative modes have simplified requirements:
      * - Direct Contracting (Sec. 31)
      * - Direct Acquisition (Sec. 32) - ≤₱200,000
