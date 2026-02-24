@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class SemanticSearchService
@@ -11,6 +12,12 @@ class SemanticSearchService
     public function __construct(
         private readonly ProcurementDataService $procurementDataService
     ) {}
+
+    /**
+     * Cache TTL for procurement list used by search/reports (seconds).
+     * Short enough to avoid stale data, long enough to serve burst requests cheaply.
+     */
+    private const PROCUREMENT_CACHE_TTL = 120;
 
     /**
      * Search procurements using semantic search with optional filters
@@ -21,11 +28,7 @@ class SemanticSearchService
     public function search(string $query = '', array $filters = []): array
     {
         try {
-            $procurements = $this->procurementDataService->fetchAndProcessProcurements(
-                skipActions: false,
-                filterByUserId: null,
-                filterByUserAddress: null
-            );
+            $procurements = $this->fetchCachedProcurements();
 
             $results = $this->applyFilters($procurements, $query, $filters);
 
@@ -52,6 +55,26 @@ class SemanticSearchService
                 'error' => $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Fetch all procurements with a short-lived cache.
+     *
+     * The main listing page fetches directly from the blockchain (no cache) to
+     * stay real-time. Search and report endpoints can tolerate a small lag, so
+     * we cache here to avoid repeated full blockchain fetches within a burst.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchCachedProcurements(): array
+    {
+        return Cache::remember('search:procurements:all', self::PROCUREMENT_CACHE_TTL, function () {
+            return $this->procurementDataService->fetchAndProcessProcurements(
+                skipActions: false,
+                filterByUserId: null,
+                filterByUserAddress: null
+            );
+        });
     }
 
     /**
