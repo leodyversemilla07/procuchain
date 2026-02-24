@@ -17,8 +17,7 @@ class ProcurementArchiveController extends Controller
     public function __construct(
         private readonly ProcurementArchiveRepository $archiveRepository,
         private readonly ProcurementDataService $procurementDataService,
-    ) {
-    }
+    ) {}
 
     /**
      * Archive a procurement

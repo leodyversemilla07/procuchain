@@ -6,14 +6,13 @@ namespace App\Repositories;
 
 use App\Enums\StreamEnums;
 use App\Services\Manager;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Procurement Archive Repository
  *
  * Handles archiving and restoring procurements using the 'procurement.archive' stream.
- * 
+ *
  * Data Structure:
  * key: pr_number
  * data: {
@@ -51,7 +50,7 @@ class ProcurementArchiveRepository
             'pr_number' => $prNumber,
             'user_id' => $userId,
         ]);
-        
+
         // Clear caches
         \App\Services\DashboardCacheKeys::clearAllProcurementCaches();
     }
@@ -84,7 +83,7 @@ class ProcurementArchiveRepository
 
     /**
      * Get all archived procurement IDs
-     * 
+     *
      * @return array<string> List of PR numbers that are currently archived
      */
     public function getArchivedPrNumbers(): array
@@ -107,6 +106,7 @@ class ProcurementArchiveRepository
                     // unless 'local-ordering' is true (which we set to false)
                     // The last item is the most recent one.
                     $latest = collect($group)->last();
+
                     return $latest['data']['json']['action'] ?? 'restore';
                 });
 
@@ -117,8 +117,9 @@ class ProcurementArchiveRepository
                 ->toArray();
         } catch (\Exception $e) {
             Log::error('Failed to fetch archived procurements', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return [];
         }
     }
@@ -130,7 +131,7 @@ class ProcurementArchiveRepository
     {
         try {
             $items = $this->multichain->liststreamkeyitems(StreamEnums::ARCHIVE->value, $prNumber);
-            
+
             if (empty($items)) {
                 return false;
             }

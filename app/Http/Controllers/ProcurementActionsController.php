@@ -19,8 +19,7 @@ class ProcurementActionsController extends Controller
 {
     public function __construct(
         private readonly ProcurementActionService $actionService
-    ) {
-    }
+    ) {}
 
     /**
      * Get available actions for a procurement

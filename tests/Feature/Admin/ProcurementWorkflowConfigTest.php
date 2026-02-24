@@ -142,7 +142,7 @@ describe('ProcurementWorkflowConfigController', function () {
             // Verify it was reset to defaults
             $config = ProcurementWorkflowConfig::forMode('small_value_procurement')->first();
             $defaultStages = StageEnums::getStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
-            
+
             expect(count($config->stages))->toBe(count($defaultStages));
         });
     });

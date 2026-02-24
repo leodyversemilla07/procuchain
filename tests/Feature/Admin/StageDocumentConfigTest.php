@@ -117,7 +117,7 @@ describe('StageDocumentConfigController', function () {
             $config = StageDocumentConfig::forStage('procurement_initiation')
                 ->forMode('small_value_procurement')
                 ->first();
-            
+
             expect($config->required_documents)->toBe($requiredDocs);
             expect($config->optional_documents)->toBe($optionalDocs);
         });
