@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\AcceptInvitationController;
 use App\Http\Controllers\BacChairmanController;
 use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\BlockchainExplorerController;
+use App\Http\Controllers\BlockchainJobStatusController;
 use App\Http\Controllers\DocumentCorrectionController;
 use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\DocumentVerificationController;
@@ -87,6 +88,10 @@ Route::middleware(['auth'])->group(function () {
     // Blockchain Status Polling (All Authenticated Users)
     Route::get('/procurements/{pr_number}/blockchain-status', [ProcurementListController::class, 'getBlockchainStatus'])
         ->name('procurements.blockchain-status');
+
+    // Async Blockchain Job Status Polling
+    Route::get('/blockchain-job/{jobId}/status', [BlockchainJobStatusController::class, 'status'])
+        ->name('blockchain.job.status');
 
     /*
     |----------------------------------------------------------------------

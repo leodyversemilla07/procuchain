@@ -7,6 +7,7 @@ use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Http\Requests\Procurement\CorrectProcurementRequest;
+use App\Jobs\BlockchainWriteJob;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementCorrectionRepository;
@@ -17,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -31,84 +33,59 @@ class ProcurementCorrectionController extends Controller
         private readonly ProcurementDataService $procurementDataService
     ) {}
 
-    /**
-     * Submit a correction for procurement metadata.
-     */
-    public function correctProcurement(CorrectProcurementRequest $request, string $prNumber): RedirectResponse
+    public function correctProcurement(CorrectProcurementRequest $request, string $prNumber): JsonResponse
     {
         $validated = $request->validated();
 
         try {
-            // Fetch the original procurement from blockchain - Try METADATA stream first
             $originalProcurement = $this->procurementRepository->findByProcurement($prNumber);
 
-            // Fallback to STATUS stream if METADATA stream fails (provides resilience)
             if (! $originalProcurement) {
                 Log::warning('Procurement not found in METADATA stream for correction, attempting fallback to STATUS stream', [
                     'pr_number' => $prNumber,
-                    'user' => auth()->user()->email,
+                    'user'      => auth()->user()->email,
                 ]);
 
                 $statusData = $this->procurementDataService->fetchStatusItems($prNumber)->first();
                 if (! $statusData) {
-                    Log::error('Procurement not found in both METADATA and STATUS streams for correction', [
-                        'pr_number' => $prNumber,
-                        'user' => auth()->user()->email,
-                    ]);
-
-                    return redirect()->back()->withErrors(['error' => 'Procurement not found in blockchain. Please ensure the procurement has been properly initiated.']);
+                    return response()->json(['error' => 'Procurement not found in blockchain.'], 404);
                 }
 
-                // Create a temporary ProcurementData DTO from STATUS stream data
                 $originalProcurement = new ProcurementData(
-                    prNumber: $prNumber,
-                    title: $statusData['procurement_title'] ?? 'N/A',
-                    status: StatusEnums::tryFrom($statusData['current_status'] ?? '') ?? StatusEnums::PROCUREMENT_SUBMITTED,
-                    stage: StageEnums::tryFrom($statusData['stage'] ?? '') ?? StageEnums::PROCUREMENT_INITIATION,
-                    procurementMode: ProcurementModeEnums::PUBLIC_BIDDING, // Default for corrections
-                    timestamp: $statusData['timestamp'] ?? now()->toIso8601String(),
-                    userAddress: $statusData['user_address'] ?? auth()->user()->blockchain_address ?? '',
+                    prNumber:        $prNumber,
+                    title:           $statusData['procurement_title'] ?? 'N/A',
+                    status:          StatusEnums::tryFrom($statusData['current_status'] ?? '') ?? StatusEnums::PROCUREMENT_SUBMITTED,
+                    stage:           StageEnums::tryFrom($statusData['stage'] ?? '') ?? StageEnums::PROCUREMENT_INITIATION,
+                    procurementMode: ProcurementModeEnums::PUBLIC_BIDDING,
+                    timestamp:       $statusData['timestamp'] ?? now()->toIso8601String(),
+                    userAddress:     $statusData['user_address'] ?? auth()->user()->blockchain_address ?? '',
                 );
-
-                Log::info('Using STATUS stream fallback for procurement correction', [
-                    'pr_number' => $prNumber,
-                    'title' => $originalProcurement->title,
-                ]);
             }
 
-            // Get user's blockchain address
-            $userAddress = auth()->user()->blockchain_address ?? '';
-
-            // Extract corrected data from request
             $correctedData = $this->extractCorrectedData($validated);
+            $jobId         = Str::uuid()->toString();
 
-            // Use ProcurementCorrectionPublisher for atomic correction publishing
-            $result = $this->procurementCorrectionPublisher->publishCorrection(
-                originalProcurement: $originalProcurement,
-                correctedData: $correctedData,
-                reason: $validated['correction_reason'],
-                correctedBy: auth()->user()->name ?? 'System',
-                userAddress: $userAddress
-            );
+            BlockchainWriteJob::dispatch('correct_procurement', [
+                'original_procurement' => $originalProcurement->toBlockchainArray(),
+                'corrected_data'       => $correctedData,
+                'reason'               => $validated['correction_reason'],
+                'corrected_by'         => auth()->user()->name ?? 'System',
+                'user_address'         => auth()->user()->blockchain_address ?? '',
+                'pr_number'            => $prNumber,
+            ], $jobId);
 
-            Log::info('Procurement correction published to blockchain', [
-                'pr_number' => $prNumber,
-                'correction_txid' => $result['correction_txid'],
-                'changed_fields' => array_keys($result['changed_fields']),
-            ]);
-
-            // Send notification to relevant stakeholders
-            // $this->sendCorrectionNotification($originalProcurement, $result, $validated['correction_reason']);
-
-            return redirect()->back()->with('success', 'Procurement correction submitted successfully. Correction TX: '.$result['correction_txid']);
+            return response()->json([
+                'job_id' => $jobId,
+                'status' => 'pending',
+            ], 202);
         } catch (\Exception $e) {
             Log::error('Failed to submit procurement correction', [
                 'pr_number' => $prNumber,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'error'     => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
             ]);
 
-            return redirect()->back()->withErrors(['error' => 'Failed to submit correction: '.$e->getMessage()]);
+            return response()->json(['error' => 'Failed to submit correction: '.$e->getMessage()], 500);
         }
     }
 

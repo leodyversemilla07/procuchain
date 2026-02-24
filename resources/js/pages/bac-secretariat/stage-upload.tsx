@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Spinner } from '@/components/ui/spinner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useBlockchainJob } from '@/hooks/use-blockchain-job';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, WorkflowInfo } from '@/types';
 import type { DocumentGuide } from '@/types/document-guide';
@@ -69,6 +70,7 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
     });
 
     const [completeDialog, setCompleteDialog] = useState(false);
+    const { submitAndPoll } = useBlockchainJob();
 
     // NTP Specific State
     const [deliveryForm, setDeliveryForm] = useState({
@@ -126,27 +128,24 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         }
     }, [phase, procurement.stage_value]);
 
-    const handleMarkComplete = () => {
+    const handleMarkComplete = async () => {
         setCompleteDialog(false);
         setIsMarkingComplete(true);
         const { complete } = getActions();
-        router.post(
-            complete({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url,
-            {},
-            {
-                onSuccess: (page) => {
-                    handleFlashSuccess(page as { props: Record<string, unknown> }, 'Stage marked as complete!');
-                    const flash = page.props.flash as Record<string, unknown> | undefined;
-                    const response = flash?.success as { blockchain?: { next_stage_name?: string; next_stage_url?: string } } | undefined;
-                    if (response?.blockchain?.next_stage_name) {
-                        setNextStageInfo({ name: response.blockchain.next_stage_name, url: response.blockchain.next_stage_url! });
-                    }
-                },
-                onError: () => toast.error('Failed to mark stage as complete'),
-                onFinish: () => setIsMarkingComplete(false),
-                preserveScroll: true,
-            },
-        );
+        const url = complete({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url;
+        try {
+            const result = await submitAndPoll(url, new FormData());
+            toast.success('Stage marked as complete!');
+            const blockchain = result.result as { next_stage_name?: string; next_stage_url?: string } | undefined;
+            if (blockchain?.next_stage_name) {
+                setNextStageInfo({ name: blockchain.next_stage_name, url: blockchain.next_stage_url! });
+            }
+            router.reload();
+        } catch (err) {
+            toast.error('Failed to mark stage as complete', { description: err instanceof Error ? err.message : undefined });
+        } finally {
+            setIsMarkingComplete(false);
+        }
     };
 
     const handleFileChange = (documentValue: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,49 +161,52 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         setConfirmDialog({ open: true, documentValue, documentName });
     };
 
-    const handleConfirmUpload = useCallback(() => {
+    const handleConfirmUpload = useCallback(async () => {
         const file = files[confirmDialog.documentValue];
         const { upload } = getActions();
         if (!file) return;
 
         const uploadToast = toast.loading('Uploading document...');
         setIsUploading(true);
+        setConfirmDialog({ open: false, documentValue: confirmDialog.documentValue, documentName: confirmDialog.documentName });
 
-        router.post(
-            upload({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url,
-            { document_file: file, document_type: confirmDialog.documentValue, description: confirmDialog.documentName },
-            {
-                onSuccess: () => {
-                    toast.success('Document uploaded successfully!', { id: uploadToast });
-                    setFiles((prev) => ({ ...prev, [confirmDialog.documentValue]: null }));
-                    setConfirmDialog({ open: false, documentValue: '', documentName: '' });
-                    setIsUploading(false);
-                },
-                onError: (errors) => {
-                    toast.error('Upload failed', { id: uploadToast, description: errors.message || 'Error' });
-                    setIsUploading(false);
-                },
-                preserveScroll: true,
-                only: ['uploadedDocuments'],
-                forceFormData: true,
-            },
-        );
-    }, [confirmDialog, files, procurement.pr_number, getActions, procurement.stage_value]);
+        const formData = new FormData();
+        formData.append('document_file', file);
+        formData.append('document_type', confirmDialog.documentValue);
+        formData.append('description', confirmDialog.documentName);
 
-    const handleSaveDeliveryDetails = useCallback(() => {
+        try {
+            await submitAndPoll(
+                upload({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url,
+                formData,
+            );
+            toast.success('Document uploaded successfully!', { id: uploadToast });
+            setFiles((prev) => ({ ...prev, [confirmDialog.documentValue]: null }));
+            setConfirmDialog({ open: false, documentValue: '', documentName: '' });
+            router.reload({ only: ['uploadedDocuments'] });
+        } catch (err) {
+            toast.error('Upload failed', { id: uploadToast, description: err instanceof Error ? err.message : 'Error' });
+        } finally {
+            setIsUploading(false);
+        }
+    }, [confirmDialog, files, procurement.pr_number, getActions, procurement.stage_value, submitAndPoll]);
+
+    const handleSaveDeliveryDetails = useCallback(async () => {
         setIsSavingDelivery(true);
-        router.post(updateDeliveryDetails({ pr_number: procurement.pr_number }).url,
-            {
-                delivery_location: deliveryForm.delivery_location,
-                delivery_date: deliveryForm.delivery_date,
-                delivery_term_days: parseInt(deliveryForm.delivery_term_days),
-            },
-            {
-                onSuccess: () => { toast.success('Delivery details saved'); setDeliveryDetailsSaved(true); },
-                onFinish: () => setIsSavingDelivery(false),
-                preserveScroll: true,
-            });
-    }, [deliveryForm, procurement.pr_number]);
+        const formData = new FormData();
+        formData.append('delivery_location', deliveryForm.delivery_location);
+        formData.append('delivery_date', deliveryForm.delivery_date);
+        formData.append('delivery_term_days', deliveryForm.delivery_term_days);
+        try {
+            await submitAndPoll(updateDeliveryDetails({ pr_number: procurement.pr_number }).url, formData);
+            toast.success('Delivery details saved');
+            setDeliveryDetailsSaved(true);
+        } catch (err) {
+            toast.error('Failed to save delivery details', { description: err instanceof Error ? err.message : undefined });
+        } finally {
+            setIsSavingDelivery(false);
+        }
+    }, [deliveryForm, procurement.pr_number, submitAndPoll]);
 
     const uploadedRequiredCount = documentGuide ? documentGuide.required_documents.filter((doc) => uploadedDocuments.includes(doc.value)).length : 0;
     const calculatedPercentage = documentGuide && documentGuide.counts.required_count > 0 ? Math.round((uploadedRequiredCount / documentGuide.counts.required_count) * 100) : 100;
