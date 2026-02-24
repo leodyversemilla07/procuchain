@@ -283,7 +283,7 @@ class DashboardService
             if (in_array($item['stage'], $completedStages)) {
                 return false;
             }
-            
+
             // Also exclude if Enum matches COMPLETED (just in case config is missing it)
             if ($item['stage'] === \App\Enums\StageEnums::COMPLETED->value) {
                 return false;

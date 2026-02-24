@@ -27,7 +27,7 @@ class WorkflowController extends Controller
         $workflows = $workflowConfigs->map(function ($config) use ($documentConfigs) {
             $mode = $config->procurement_mode;
             $stages = $config->getStagesAsEnums();
-            
+
             // Map stages to their details and documents
             $stageDetails = collect($stages)->map(function ($stageEnum) use ($mode, $config, $documentConfigs) {
                 // Find document config for this stage/mode
@@ -74,9 +74,9 @@ class WorkflowController extends Controller
                 StageEnums::PROCUREMENT_INITIATION,
                 StageEnums::PRE_PROCUREMENT_CONFERENCE,
                 StageEnums::BIDDING_DOCUMENTS,
-                StageEnums::REQUEST_FOR_QUOTATION
+                StageEnums::REQUEST_FOR_QUOTATION,
             ]) => 'pre_procurement',
-            
+
             in_array($stage, [
                 StageEnums::PRE_BID_CONFERENCE,
                 StageEnums::SUPPLEMENTAL_BID_BULLETIN,
@@ -84,18 +84,18 @@ class WorkflowController extends Controller
                 StageEnums::ABSTRACT_OF_QUOTATIONS,
                 StageEnums::BID_EVALUATION,
                 StageEnums::POST_QUALIFICATION,
-                StageEnums::BAC_RESOLUTION
+                StageEnums::BAC_RESOLUTION,
             ]) => 'procurement',
-            
+
             in_array($stage, [
                 StageEnums::NOTICE_OF_AWARD,
                 StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO,
                 StageEnums::NOTICE_TO_PROCEED,
                 StageEnums::MONITORING,
                 StageEnums::COMPLETION,
-                StageEnums::COMPLETED
+                StageEnums::COMPLETED,
             ]) => 'post_procurement',
-            
+
             default => 'unknown',
         };
     }

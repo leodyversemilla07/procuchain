@@ -20,8 +20,7 @@ abstract class BaseDashboardController extends Controller
         protected Manager $multichain,
         protected DashboardService $dashboardService,
         protected CacheStrategyInterface $cacheStrategy
-    ) {
-    }
+    ) {}
 
     /**
      * Display the dashboard for the role
@@ -117,7 +116,7 @@ abstract class BaseDashboardController extends Controller
         return $this->cacheStrategy->rememberLarge(
             $cacheKey,
             now()->addMinutes(config('dashboard.cache_ttl.procurements')),
-            function () use ($roleLabel, $isBacSecretariat, $user) {
+            function () use ($roleLabel) {
                 Log::info("Cache miss: Recalculating procurementsByKey for {$roleLabel} Dashboard");
                 $states = $this->multichain->liststreamitems(
                     StreamEnums::STATUS->value,

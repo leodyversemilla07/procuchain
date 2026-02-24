@@ -190,7 +190,7 @@ class ProcurementWorkflowConfigController extends Controller
         $workflowPreview = [];
         foreach ($stages as $stage) {
             $documentGuide = $this->documentConfigService->getStageDocumentGuide($stage, $modeEnum);
-            
+
             $workflowPreview[] = [
                 'stage' => $stage->value,
                 'display_name' => $stage->getDisplayName(),
@@ -208,15 +208,15 @@ class ProcurementWorkflowConfigController extends Controller
         $phases = [
             'pre_procurement' => [
                 'name' => 'Pre-Procurement Phase',
-                'stages' => array_filter($workflowPreview, fn($s) => $s['phase'] === 'pre_procurement'),
+                'stages' => array_filter($workflowPreview, fn ($s) => $s['phase'] === 'pre_procurement'),
             ],
             'procurement' => [
                 'name' => 'Procurement Phase',
-                'stages' => array_filter($workflowPreview, fn($s) => $s['phase'] === 'procurement'),
+                'stages' => array_filter($workflowPreview, fn ($s) => $s['phase'] === 'procurement'),
             ],
             'post_procurement' => [
                 'name' => 'Post-Procurement Phase',
-                'stages' => array_filter($workflowPreview, fn($s) => $s['phase'] === 'post_procurement'),
+                'stages' => array_filter($workflowPreview, fn ($s) => $s['phase'] === 'post_procurement'),
             ],
         ];
 
@@ -226,7 +226,7 @@ class ProcurementWorkflowConfigController extends Controller
         }
 
         // Get all modes for the dropdown
-        $allModes = array_map(fn(ProcurementModeEnums $m) => [
+        $allModes = array_map(fn (ProcurementModeEnums $m) => [
             'value' => $m->value,
             'display_name' => $m->getDisplayName(),
             'description' => $m->getDescription(),
@@ -247,8 +247,8 @@ class ProcurementWorkflowConfigController extends Controller
                 'total_stages' => count($stages),
                 'optional_stages' => count($optionalStages),
                 'required_stages' => count($stages) - count($optionalStages),
-                'total_required_documents' => array_sum(array_map(fn($s) => $s['document_counts']['required_count'], $workflowPreview)),
-                'total_optional_documents' => array_sum(array_map(fn($s) => $s['document_counts']['optional_count'], $workflowPreview)),
+                'total_required_documents' => array_sum(array_map(fn ($s) => $s['document_counts']['required_count'], $workflowPreview)),
+                'total_optional_documents' => array_sum(array_map(fn ($s) => $s['document_counts']['optional_count'], $workflowPreview)),
             ],
             'allModes' => $allModes,
         ]);

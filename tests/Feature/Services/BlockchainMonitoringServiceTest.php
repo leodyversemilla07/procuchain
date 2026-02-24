@@ -14,9 +14,9 @@ beforeEach(function () {
     config(['cache.default' => 'array']);
     // Forget any resolved cache driver instance to ensure new config is used
     Cache::forgetDriver(config('cache.default'));
-    
+
     // We can also mock the cache if needed, but array driver is better for state
-    
+
     // Now flush should use array driver
     Cache::flush();
     Log::spy();

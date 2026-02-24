@@ -130,7 +130,7 @@ class ReportController extends Controller
                 $filename = 'procurement-report-'.now()->format('Y-m-d-His').'.csv';
 
                 return response()->streamDownload(
-                    fn () => print($exportData),
+                    fn () => print ($exportData),
                     $filename,
                     ['Content-Type' => 'text/csv']
                 );

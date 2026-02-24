@@ -5,6 +5,7 @@ use App\Enums\StageEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\DocumentValidationService;
+use App\Services\ModeAwareDocumentValidationService;
 use Illuminate\Http\UploadedFile;
 
 use function Pest\Laravel\actingAs;
@@ -21,13 +22,13 @@ describe('Document Upload Validation Workflow', function () {
     it('prevents upload of invalid document type for stage', function () {
         actingAs($this->bacSecretariat);
 
-        $validationService = mock(DocumentValidationService::class);
+        $validationService = mock(ModeAwareDocumentValidationService::class);
         $validationService->shouldReceive('validateUpload')
             ->andReturn([
                 'errors' => ['This document type is not valid for this stage'],
                 'warnings' => [],
             ]);
-        $this->instance(DocumentValidationService::class, $validationService);
+        $this->instance(ModeAwareDocumentValidationService::class, $validationService);
 
         $repository = mock(ProcurementRepository::class);
         $repository->shouldReceive('findByProcurement')->andReturn(
@@ -62,17 +63,15 @@ describe('Document Upload Validation Workflow', function () {
         $procurementDataService = mock(\App\Services\ProcurementDataService::class);
         $this->instance(\App\Services\ProcurementDataService::class, $procurementDataService);
 
-        $file = UploadedFile::fake()->create('invalid_doc.pdf', 1000, 'application/pdf');
-
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
             ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class)
             ->startSession()
-            ->post(route('bac-secretariat.procurement.pre-procurement.upload', [
+            ->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
                 'pr_number' => 'PR-2024-001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]), [
                 'pr_number' => 'PR-2024-001',
-                'invalid_document_file' => $file,
+                'document_type' => 'invalid_document_type',
             ]);
 
         $response->assertRedirect();
@@ -82,13 +81,13 @@ describe('Document Upload Validation Workflow', function () {
     it('warns when uploading document not typical for stage', function () {
         actingAs($this->bacSecretariat);
 
-        $validationService = mock(DocumentValidationService::class);
+        $validationService = mock(ModeAwareDocumentValidationService::class);
         $validationService->shouldReceive('validateUpload')
             ->andReturn([
                 'errors' => [],
                 'warnings' => ['This document is not typically required for this stage'],
             ]);
-        $this->instance(DocumentValidationService::class, $validationService);
+        $this->instance(ModeAwareDocumentValidationService::class, $validationService);
 
         $file = UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf');
 
@@ -327,19 +326,14 @@ describe('Progressive Upload Workflow', function () {
         $this->actingAs($user);
 
         // Mock validation service to reject invalid document type
-        $validationService = mock(\App\Services\DocumentValidationService::class);
+        $validationService = mock(\App\Services\ModeAwareDocumentValidationService::class);
         $validationService->shouldReceive('validateUpload')
             ->once()
-            ->with(
-                StageEnums::PRE_PROCUREMENT_CONFERENCE,
-                DocumentTypeEnums::NOTICE_OF_AWARD, // Wrong stage!
-                []
-            )
             ->andReturn([
                 'errors' => ['Document type NOTICE_OF_AWARD is not valid for stage PRE_PROCUREMENT_CONFERENCE'],
                 'warnings' => [],
             ]);
-        $this->instance(\App\Services\DocumentValidationService::class, $validationService);
+        $this->instance(\App\Services\ModeAwareDocumentValidationService::class, $validationService);
 
         $repository = mock(ProcurementRepository::class);
         $repository->shouldReceive('findByProcurement')

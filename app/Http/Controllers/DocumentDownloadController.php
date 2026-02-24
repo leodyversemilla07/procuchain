@@ -16,8 +16,7 @@ class DocumentDownloadController extends BaseController
     public function __construct(
         private ProcurementDataService $procurementDataService,
         private BlockchainStorageService $fileStorageService
-    ) {
-    }
+    ) {}
 
     /**
      * Securely download a file with authentication validation

@@ -19,8 +19,7 @@ class PdfViewerController extends BaseController
     public function __construct(
         private ProcurementDataService $procurementDataService,
         private DocumentRepository $documentRepository
-    ) {
-    }
+    ) {}
 
     /**
      * Show PDF viewer page with comprehensive statistics
