@@ -13,8 +13,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\StageEnums;
 use App\Enums\UserRoleEnums;
-use App\Models\ProcurementWorkflowConfig;
 use App\Services\ProcurementDataService;
+use App\Services\Procurement\ProcurementDetailService;
 use Exception;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
@@ -31,15 +31,19 @@ class ProcurementListController extends BaseController
 
     private \App\Services\Procurement\ProcurementListAggregatorService $listAggregator;
 
+    private ProcurementDetailService $detailService;
+
     /**
      * Constructor
      */
     public function __construct(
         ProcurementDataService $procurementDataService,
-        \App\Services\Procurement\ProcurementListAggregatorService $listAggregator
+        \App\Services\Procurement\ProcurementListAggregatorService $listAggregator,
+        ProcurementDetailService $detailService
     ) {
         $this->procurementDataService = $procurementDataService;
         $this->listAggregator = $listAggregator;
+        $this->detailService = $detailService;
     }
 
     /**
@@ -173,153 +177,14 @@ class ProcurementListController extends BaseController
      */
     public function show(string $pr_number): Response
     {
-        // Authorization: All authenticated users can view procurement details
-        // (removed Procurement model dependency)
-
         try {
             $this->validatepr_number($pr_number);
 
             Log::info('Fetching procurement details', ['pr_number' => $pr_number]);
 
-            $statusItems = $this->procurementDataService->fetchStatusItems($pr_number);
-            $currentStatus = $statusItems->first();
+            $result = $this->detailService->getDetail($pr_number);
 
-            if (! $currentStatus) {
-                return $this->renderNotFound();
-            }
-
-            $documents = $this->procurementDataService->fetchAndProcessAllDocuments($pr_number);
-            $events = $this->procurementDataService->fetchAndProcessEvents($pr_number);
-
-            $this->procurementDataService->preloadUserNames(collect($events));
-
-            // Fetch procurement details from blockchain
-            $procurementRepository = app(\App\Repositories\ProcurementRepository::class);
-            $procurementDetails = $procurementRepository->findByProcurement($pr_number);
-
-            $procurementData = $this->procurementDataService->buildProcurementData(
-                $pr_number,
-                $currentStatus,
-                $documents,
-                $events,
-                $statusItems
-            );
-
-            // Workflow Visualization Logic
-            $workflowInfo = null;
-            if ($procurementDetails) {
-                $procurementMode = $procurementDetails->procurementMode;
-                $currentStageValue = $currentStatus['stage'];
-
-                // Get workflow config
-                $workflowConfig = ProcurementWorkflowConfig::forMode($procurementMode)->active()->first();
-
-                // Get stages list (either from config or default enum)
-                $stages = $workflowConfig
-                    ? $workflowConfig->getStagesAsEnums()
-                    : StageEnums::getStagesForMode($procurementMode);
-
-                // Determine current stage index for completion status
-                $currentStageIndex = -1;
-                $stagesList = array_values($stages); // Ensure 0-indexed array
-                foreach ($stagesList as $index => $stage) {
-                    if ($stage->value === $currentStageValue) {
-                        $currentStageIndex = $index;
-                        break;
-                    }
-                }
-
-                $workflowStages = collect($stagesList)->map(function ($stage, $index) use ($currentStageIndex, $currentStageValue, $workflowConfig) {
-                    $isCompleted = $index < $currentStageIndex;
-                    $isCurrent = $stage->value === $currentStageValue;
-
-                    return [
-                        'value' => $stage->value,
-                        'display_name' => $stage->getDisplayName(),
-                        'url' => '#', // No direct link for view-only progress
-                        'is_completed' => $isCompleted,
-                        'is_current' => $isCurrent,
-                        'is_optional' => $workflowConfig ? $workflowConfig->isStageOptional($stage) : false,
-                    ];
-                })->toArray();
-
-                $workflowInfo = [
-                    'mode' => $procurementMode->value,
-                    'name' => $procurementMode->getDisplayName(),
-                    'stages' => $workflowStages,
-                ];
-            }
-
-            // Add procurement details to response if available
-            if ($procurementDetails) {
-                $procurementData['details'] = [
-                    'pr_number' => $procurementDetails->prNumber,
-                    'app_reference' => $procurementDetails->appReference,
-                    'title' => $procurementDetails->title,
-                    'description' => $procurementDetails->description,
-                    'abc_amount' => $procurementDetails->abcAmount,
-                    'abc_amount_formatted' => $procurementDetails->getFormattedAbcAmount(),
-                    'funding_source' => $procurementDetails->fundingSource,
-                    'category' => $procurementDetails->category->value,
-                    'category_label' => $procurementDetails->category->label(),
-                    'procurement_mode' => $procurementDetails->procurementMode->value,
-                    'procurement_mode_label' => $procurementDetails->procurementMode->label(),
-                    'office' => $procurementDetails->office,
-                    'end_user' => $procurementDetails->endUser,
-                    // Delivery details are optional - populated at Contract Implementation stage per NGPA IRR
-                    'delivery_location' => $procurementDetails->deliveryLocation,
-                    'delivery_date' => $procurementDetails->deliveryDate?->toIso8601String(),
-                    'delivery_date_formatted' => $procurementDetails->getFormattedDeliveryDate(),
-                    'delivery_term_days' => $procurementDetails->deliveryTermDays,
-                    'prepared_by' => $procurementDetails->preparedBy,
-                    'bac_resolution_number' => $procurementDetails->bacResolutionNumber,
-                    'bac_resolution_date' => $procurementDetails->bacResolutionDate?->toIso8601String(),
-                    'bac_resolution_date_formatted' => $procurementDetails->getFormattedBacResolutionDate(),
-                    'philgeps_reference' => $procurementDetails->philgepsReference,
-                    'philgeps_posting_date' => $procurementDetails->philgepsPostingDate?->toIso8601String(),
-                    'philgeps_posting_date_formatted' => $procurementDetails->getFormattedPhilgepsPostingDate(),
-                    'approved_by' => $procurementDetails->approvedBy,
-                    'approval_date' => $procurementDetails->approvalDate?->toIso8601String(),
-                    'approval_date_formatted' => $procurementDetails->getFormattedApprovalDate(),
-                    'created_at' => $procurementDetails->createdAt->toIso8601String(),
-                    'created_at_formatted' => $procurementDetails->getFormattedCreatedAt(),
-                ];
-
-                // Add correction information
-                $procurementCorrectionRepository = app(\App\Repositories\ProcurementCorrectionRepository::class);
-                $hasCorrections = $procurementCorrectionRepository->hasCorrections($pr_number);
-                $latestCorrection = $hasCorrections ? $procurementCorrectionRepository->getLatest($pr_number) : null;
-                $allCorrections = $hasCorrections ? $procurementCorrectionRepository->findByProcurement($pr_number) : [];
-
-                $procurementData['details']['has_corrections'] = $hasCorrections;
-                $procurementData['details']['latest_correction'] = $latestCorrection ? [
-                    'timestamp' => $latestCorrection->timestamp->toIso8601String(),
-                    'corrected_by' => $latestCorrection->correctedBy,
-                    'reason' => $latestCorrection->reason,
-                    'changed_fields' => $latestCorrection->getChangedFields(),
-                ] : null;
-                $procurementData['details']['corrections'] = array_map(function ($correction) {
-                    return [
-                        'pr_number' => $correction->prNumber,
-                        'timestamp' => $correction->timestamp->toIso8601String(),
-                        'reason' => $correction->reason,
-                        'corrected_by' => $correction->correctedBy,
-                        'correction_type' => $correction->correctionType,
-                        'correction_type_display' => ucwords(str_replace('_', ' ', $correction->correctionType)),
-                        'changed_fields' => $correction->getChangedFields(),
-                        'metadata' => $correction->toBlockchainArray(),
-                    ];
-                }, $allCorrections);
-            }
-
-            Log::debug('Current status data', [
-                'current_status' => $currentStatus,
-                'procurement_data_status' => $procurementData['status'] ?? null,
-            ]);
-
-            if ($procurementData === null) {
-                Log::warning('Procurement details not found after cache check', ['pr_number' => $pr_number]);
-
+            if ($result === null) {
                 return $this->renderNotFound();
             }
 
@@ -328,8 +193,8 @@ class ProcurementListController extends BaseController
             ]);
 
             return Inertia::render('procurements/show-procurement', [
-                'procurement' => $procurementData,
-                'workflow' => $workflowInfo,
+                'procurement' => $result['procurement'],
+                'workflow' => $result['workflow'],
                 'now' => now()->toIso8601String(),
             ]);
         } catch (\Exception $e) {
