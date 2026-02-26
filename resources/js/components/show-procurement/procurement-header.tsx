@@ -80,7 +80,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                 {workflow ? (
                     <div className="w-full space-y-4 pt-2">
                         <div className="text-muted-foreground flex justify-between text-xs font-medium sm:text-sm">
-                            <span className="uppercase tracking-wider">Workflow Progress</span>
+                            <span className="tracking-wider uppercase">Workflow Progress</span>
                         </div>
                         <Stepper
                             steps={workflow.stages.map((stage, index) => ({
@@ -88,7 +88,7 @@ export function ProcurementHeader({ title, pr_number, status, procurementModeLab
                                 title: stage.display_name,
                                 description: stage.is_optional ? '(Optional)' : undefined,
                             }))}
-                            currentStep={(workflow.stages.findIndex((s) => s.is_current) + 1) || 1}
+                            currentStep={workflow.stages.findIndex((s) => s.is_current) + 1 || 1}
                         />
                     </div>
                 ) : progress > 0 ? (

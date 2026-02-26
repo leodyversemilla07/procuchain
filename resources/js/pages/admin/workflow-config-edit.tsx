@@ -6,22 +6,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
-import {
-    closestCenter,
-    DndContext,
-    DragEndEvent,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    useSortable,
-    verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { closestCenter, DndContext, DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Head, router, useForm } from '@inertiajs/react';
 import { AlertTriangle, GitBranch, GripVertical, RotateCcw, Save } from 'lucide-react';
@@ -29,7 +15,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 // Wayfinder imports
-import { update, resetToDefaults } from '@/actions/App/Http/Controllers/Admin/ProcurementWorkflowConfigController';
+import { resetToDefaults, update } from '@/actions/App/Http/Controllers/Admin/ProcurementWorkflowConfigController';
 
 interface Stage {
     value: string;
@@ -92,23 +78,15 @@ function SortableStageItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${isSelected ? 'border-primary/50 bg-primary/5' : 'border-border bg-muted/30 opacity-60'
-                } ${isDragging ? 'shadow-lg' : ''}`}
+            className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
+                isSelected ? 'border-primary/50 bg-primary/5' : 'border-border bg-muted/30 opacity-60'
+            } ${isDragging ? 'shadow-lg' : ''}`}
         >
-            <button
-                type="button"
-                className="cursor-grab touch-none active:cursor-grabbing"
-                {...attributes}
-                {...listeners}
-            >
+            <button type="button" className="cursor-grab touch-none active:cursor-grabbing" {...attributes} {...listeners}>
                 <GripVertical className="text-muted-foreground h-4 w-4" />
             </button>
 
-            <Checkbox
-                id={`stage-${stage.value}`}
-                checked={isSelected}
-                onCheckedChange={() => onToggleStage(stage.value)}
-            />
+            <Checkbox id={`stage-${stage.value}`} checked={isSelected} onCheckedChange={() => onToggleStage(stage.value)} />
 
             <div className="flex-1 space-y-0.5">
                 <Label htmlFor={`stage-${stage.value}`} className="cursor-pointer font-medium">
@@ -130,15 +108,8 @@ function SortableStageItem({
                 )}
                 {isSelected && (
                     <div className="flex items-center gap-1.5">
-                        <Checkbox
-                            id={`optional-${stage.value}`}
-                            checked={isOptional}
-                            onCheckedChange={() => onToggleOptional(stage.value)}
-                        />
-                        <Label
-                            htmlFor={`optional-${stage.value}`}
-                            className="text-muted-foreground cursor-pointer text-xs"
-                        >
+                        <Checkbox id={`optional-${stage.value}`} checked={isOptional} onCheckedChange={() => onToggleOptional(stage.value)} />
+                        <Label htmlFor={`optional-${stage.value}`} className="text-muted-foreground cursor-pointer text-xs">
                             Optional
                         </Label>
                     </div>
@@ -182,16 +153,14 @@ export default function WorkflowConfigEdit({
         }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
-        })
+        }),
     );
 
     const isModified =
-        JSON.stringify(selectedStages) !== JSON.stringify(currentStages) ||
-        JSON.stringify(optionalStages) !== JSON.stringify(currentOptionalStages);
+        JSON.stringify(selectedStages) !== JSON.stringify(currentStages) || JSON.stringify(optionalStages) !== JSON.stringify(currentOptionalStages);
 
     const isDifferentFromDefault =
-        JSON.stringify(selectedStages) !== JSON.stringify(defaultStages) ||
-        JSON.stringify(optionalStages) !== JSON.stringify(defaultOptionalStages);
+        JSON.stringify(selectedStages) !== JSON.stringify(defaultStages) || JSON.stringify(optionalStages) !== JSON.stringify(defaultOptionalStages);
 
     const handleToggleStage = (stageValue: string) => {
         if (selectedStages.includes(stageValue)) {
@@ -199,9 +168,7 @@ export default function WorkflowConfigEdit({
             setOptionalStages(optionalStages.filter((s) => s !== stageValue));
         } else {
             // Add to selected stages in the current order position
-            const newSelected = stageOrder.filter(
-                (s) => selectedStages.includes(s) || s === stageValue
-            );
+            const newSelected = stageOrder.filter((s) => selectedStages.includes(s) || s === stageValue);
             setSelectedStages(newSelected);
         }
     };
@@ -285,7 +252,7 @@ export default function WorkflowConfigEdit({
                     toast.error('Failed to save workflow configuration');
                     setIsSubmitting(false);
                 },
-            }
+            },
         );
     };
 
@@ -306,47 +273,28 @@ export default function WorkflowConfigEdit({
                 onError: () => {
                     toast.error('Failed to reset workflow configuration');
                 },
-            }
+            },
         );
     };
 
     // Get stages for each phase in the current order
     const getOrderedPhaseStages = (phase: string) => {
-        return stageOrder
-            .map((value) => allStages.find((s) => s.value === value))
-            .filter((s): s is Stage => s !== undefined && s.phase === phase);
+        return stageOrder.map((value) => allStages.find((s) => s.value === value)).filter((s): s is Stage => s !== undefined && s.phase === phase);
     };
 
     const preProcurementStages = getOrderedPhaseStages('pre_procurement');
     const procurementStages = getOrderedPhaseStages('procurement');
     const postProcurementStages = getOrderedPhaseStages('post_procurement');
 
-    const PhaseCard = ({
-        title,
-        description,
-        stages,
-        phase,
-    }: {
-        title: string;
-        description: string;
-        stages: Stage[];
-        phase: string;
-    }) => (
+    const PhaseCard = ({ title, description, stages, phase }: { title: string; description: string; stages: Stage[]; phase: string }) => (
         <Card>
             <CardHeader className="pb-3">
                 <CardTitle className="text-lg">{title}</CardTitle>
                 <CardDescription>{description}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={(e) => handleDragEnd(e, phase)}
-                >
-                    <SortableContext
-                        items={stages.map((s) => s.value)}
-                        strategy={verticalListSortingStrategy}
-                    >
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e, phase)}>
+                    <SortableContext items={stages.map((s) => s.value)} strategy={verticalListSortingStrategy}>
                         {stages.map((stage) => (
                             <SortableStageItem
                                 key={stage.value}
@@ -360,11 +308,7 @@ export default function WorkflowConfigEdit({
                         ))}
                     </SortableContext>
                 </DndContext>
-                {stages.length === 0 && (
-                    <p className="text-muted-foreground py-4 text-center text-sm">
-                        No stages in this phase
-                    </p>
-                )}
+                {stages.length === 0 && <p className="text-muted-foreground py-4 text-center text-sm">No stages in this phase</p>}
             </CardContent>
         </Card>
     );
@@ -393,11 +337,7 @@ export default function WorkflowConfigEdit({
                                     </Button>
                                 </>
                             )}
-                            <Button
-                                onClick={handleSave}
-                                disabled={!isModified || isSubmitting || processing}
-                                size="sm"
-                            >
+                            <Button onClick={handleSave} disabled={!isModified || isSubmitting || processing} size="sm">
                                 <Save className="mr-2 h-4 w-4" />
                                 {isSubmitting ? 'Saving...' : 'Save Changes'}
                             </Button>
@@ -410,9 +350,7 @@ export default function WorkflowConfigEdit({
                     <Card className="border-yellow-500/50 bg-yellow-500/5">
                         <CardContent className="flex items-center gap-3 p-4">
                             <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                            <p className="text-sm">
-                                You have unsaved changes. Click "Save Changes" to apply them.
-                            </p>
+                            <p className="text-sm">You have unsaved changes. Click "Save Changes" to apply them.</p>
                         </CardContent>
                     </Card>
                 )}
@@ -430,18 +368,14 @@ export default function WorkflowConfigEdit({
                 {/* Summary */}
                 <div className="flex items-center gap-6 text-sm">
                     <div>
-                        <span className="text-muted-foreground">Selected stages:</span>{' '}
-                        <span className="font-medium">{selectedStages.length}</span>
+                        <span className="text-muted-foreground">Selected stages:</span> <span className="font-medium">{selectedStages.length}</span>
                     </div>
                     <div>
-                        <span className="text-muted-foreground">Optional stages:</span>{' '}
-                        <span className="font-medium">{optionalStages.length}</span>
+                        <span className="text-muted-foreground">Optional stages:</span> <span className="font-medium">{optionalStages.length}</span>
                     </div>
                     <div>
                         <span className="text-muted-foreground">Required stages:</span>{' '}
-                        <span className="font-medium">
-                            {selectedStages.length - optionalStages.length}
-                        </span>
+                        <span className="font-medium">{selectedStages.length - optionalStages.length}</span>
                     </div>
                 </div>
 
@@ -449,18 +383,8 @@ export default function WorkflowConfigEdit({
 
                 {/* Stage Lists by Phase */}
                 <div className="grid gap-6 lg:grid-cols-3">
-                    <PhaseCard
-                        title="Pre-Procurement"
-                        description="Planning & Preparation"
-                        stages={preProcurementStages}
-                        phase="pre_procurement"
-                    />
-                    <PhaseCard
-                        title="Procurement"
-                        description="Bidding & Evaluation"
-                        stages={procurementStages}
-                        phase="procurement"
-                    />
+                    <PhaseCard title="Pre-Procurement" description="Planning & Preparation" stages={preProcurementStages} phase="pre_procurement" />
+                    <PhaseCard title="Procurement" description="Bidding & Evaluation" stages={procurementStages} phase="procurement" />
                     <PhaseCard
                         title="Post-Procurement"
                         description="Award & Implementation"

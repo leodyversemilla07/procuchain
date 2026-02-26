@@ -1,3 +1,4 @@
+import { accept } from '@/actions/App/Http/Controllers/Auth/AcceptInvitationController';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import AuthLayout from '@/layouts/auth-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { CheckCircle2, Clock, Loader2, Mail, Shield, User } from 'lucide-react';
-import { accept } from '@/actions/App/Http/Controllers/Auth/AcceptInvitationController';
 
 interface Invitation {
     email: string;

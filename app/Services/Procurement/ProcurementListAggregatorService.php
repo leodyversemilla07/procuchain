@@ -8,10 +8,10 @@ use App\DataTransferObjects\StatusData;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Models\User;
-use App\Repositories\ProcurementRepository;
-use App\Repositories\StatusRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementArchiveRepository;
+use App\Repositories\ProcurementRepository;
+use App\Repositories\StatusRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -274,7 +274,7 @@ final class ProcurementListAggregatorService
 
         Log::info('Filtered procurements by userId and/or blockchain address', [
             'filter_user_id' => $filterByUserId,
-            'filter_user_address' => $filterByUserAddress ? substr($filterByUserAddress, 0, 10) . '...' : null,
+            'filter_user_address' => $filterByUserAddress ? substr($filterByUserAddress, 0, 10).'...' : null,
             'total_procurements' => count($prNumbers),
             'filtered_count' => $filtered->count(),
         ]);

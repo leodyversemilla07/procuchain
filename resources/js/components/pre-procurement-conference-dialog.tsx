@@ -188,11 +188,7 @@ export function PreProcurementDialog({ open, onOpenChange, pr_number, procuremen
                         >
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={processing || conferenceHeld === undefined}
-                            className="min-h-11 w-full sm:w-auto"
-                        >
+                        <Button type="submit" disabled={processing || conferenceHeld === undefined} className="min-h-11 w-full sm:w-auto">
                             {processing ? (
                                 <span className="flex items-center gap-2">
                                     <Spinner />

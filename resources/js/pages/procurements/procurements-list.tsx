@@ -101,7 +101,13 @@ const ProcurementStatsSummary = ({ total, inProgress, completed, documentTotal, 
     return <StatsGrid items={items} userRole={userRole} className={className} gridClassName="sm:grid-cols-2 lg:grid-cols-4" />;
 };
 
-export default function ProcurementsList({ procurements: initialProcurements, pagination, error: initialError, stageOptions, is_archived: isPollArchived }: ShowProps) {
+export default function ProcurementsList({
+    procurements: initialProcurements,
+    pagination,
+    error: initialError,
+    stageOptions,
+    is_archived: isPollArchived,
+}: ShowProps) {
     const { auth } = usePage<SharedData>().props;
     const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
     const breadcrumbs = getProcurementListBreadcrumbs(userRole);
@@ -334,11 +340,10 @@ export default function ProcurementsList({ procurements: initialProcurements, pa
                 <HeroCard
                     icon={FileText}
                     title="Procurement List"
-
                     description={
                         <div className="space-y-1">
                             <p>View and manage {isPollArchived ? 'archived' : 'active'} procurement items across all stages</p>
-                            <p className="hidden text-xs sm:block opacity-80">
+                            <p className="hidden text-xs opacity-80 sm:block">
                                 Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">R</kbd> Refresh
                                 {' · '}
                                 <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">/</kbd> Search

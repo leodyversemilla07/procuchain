@@ -54,7 +54,7 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
 
     return (
         <Card className="border shadow-sm">
-            <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+            <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-4">
                 <div className="flex items-center gap-3">
                     <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg sm:h-10 sm:w-10">
                         <FileText className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
@@ -68,21 +68,21 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
             <CardContent className="p-0">
                 <div className="grid gap-6 p-4 sm:p-6">
                     {/* Primary Info Section */}
-                    <div className="rounded-lg bg-muted/30 p-4 border space-y-4">
+                    <div className="bg-muted/30 space-y-4 rounded-lg border p-4">
                         <div className="flex flex-col gap-1">
-                            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Procurement Title</label>
-                            <h3 className="text-base sm:text-lg font-semibold leading-tight">{details.title}</h3>
+                            <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Procurement Title</label>
+                            <h3 className="text-base leading-tight font-semibold sm:text-lg">{details.title}</h3>
                         </div>
-                        
+
                         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
                             <div className="space-y-1">
-                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">PR Number</label>
+                                <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">PR Number</label>
                                 <div className="flex items-center gap-2">
                                     <span className="font-mono font-medium">{details.pr_number}</span>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-muted-foreground hover:text-foreground h-6 w-6"
                                         onClick={() => copyToClipboard(details.pr_number, 'PR Number')}
                                     >
                                         <Copy className="h-3 w-3" />
@@ -91,13 +91,13 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                             </div>
                             {details.app_reference && (
                                 <div className="space-y-1">
-                                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">AIP Code Reference</label>
+                                    <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">AIP Code Reference</label>
                                     <p className="font-medium">{details.app_reference}</p>
                                 </div>
                             )}
                             <div className="space-y-1 sm:col-span-2">
-                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
-                                <p className="text-sm text-muted-foreground line-clamp-3 hover:line-clamp-none transition-all">
+                                <label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Description</label>
+                                <p className="text-muted-foreground line-clamp-3 text-sm transition-all hover:line-clamp-none">
                                     {details.description}
                                 </p>
                             </div>
@@ -107,31 +107,21 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                     <div className="grid gap-6 md:grid-cols-2">
                         {/* Financial & Classification */}
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                            <div className="text-primary flex items-center gap-2 border-b pb-2 font-semibold">
                                 <Banknote className="h-4 w-4" />
                                 <span>Financial & Classification</span>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
-                                <DetailItem 
-                                    label="ABC Amount" 
-                                    value={details.abc_amount_formatted} 
-                                    className="text-primary font-bold text-lg"
-                                />
+                                <DetailItem label="ABC Amount" value={details.abc_amount_formatted} className="text-primary text-lg font-bold" />
                                 <DetailItem label="Funding Source" value={details.funding_source} />
-                                <DetailItem 
-                                    label="Category" 
-                                    value={<Badge variant="secondary">{details.category_label}</Badge>} 
-                                />
-                                <DetailItem 
-                                    label="Procurement Mode" 
-                                    value={<Badge variant="outline">{details.procurement_mode_label}</Badge>} 
-                                />
+                                <DetailItem label="Category" value={<Badge variant="secondary">{details.category_label}</Badge>} />
+                                <DetailItem label="Procurement Mode" value={<Badge variant="outline">{details.procurement_mode_label}</Badge>} />
                             </div>
                         </div>
 
                         {/* Office & Stakeholders */}
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                            <div className="text-primary flex items-center gap-2 border-b pb-2 font-semibold">
                                 <Building2 className="h-4 w-4" />
                                 <span>Office & Stakeholders</span>
                             </div>
@@ -150,21 +140,29 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                     <div className="grid gap-6 md:grid-cols-2">
                         {/* Legal & Reference */}
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                            <div className="text-primary flex items-center gap-2 border-b pb-2 font-semibold">
                                 <ClipboardList className="h-4 w-4" />
                                 <span>Reference & Legal</span>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <DetailItem label="BAC Resolution No." value={details.bac_resolution_number} />
-                                <DetailItem label="BAC Res. Date" value={details.bac_resolution_date_formatted} icon={<Calendar className="h-3 w-3" />} />
+                                <DetailItem
+                                    label="BAC Res. Date"
+                                    value={details.bac_resolution_date_formatted}
+                                    icon={<Calendar className="h-3 w-3" />}
+                                />
                                 <DetailItem label="PhilGEPS Ref." value={details.philgeps_reference} />
-                                <DetailItem label="PhilGEPS Posting" value={details.philgeps_posting_date_formatted} icon={<Calendar className="h-3 w-3" />} />
+                                <DetailItem
+                                    label="PhilGEPS Posting"
+                                    value={details.philgeps_posting_date_formatted}
+                                    icon={<Calendar className="h-3 w-3" />}
+                                />
                             </div>
                         </div>
 
                         {/* Timeline & Delivery */}
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
+                            <div className="text-primary flex items-center gap-2 border-b pb-2 font-semibold">
                                 <Clock className="h-4 w-4" />
                                 <span>Timeline & Delivery</span>
                             </div>
@@ -175,10 +173,10 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
                                     <DetailItem label="Delivery Location" value={details.delivery_location} icon={<MapPin className="h-3 w-3" />} />
                                 )}
                                 {(details.delivery_date_formatted || details.delivery_term_days) && (
-                                    <DetailItem 
-                                        label="Delivery Term" 
-                                        value={details.delivery_date_formatted || `${details.delivery_term_days} Days`} 
-                                        icon={<Calendar className="h-3 w-3" />} 
+                                    <DetailItem
+                                        label="Delivery Term"
+                                        value={details.delivery_date_formatted || `${details.delivery_term_days} Days`}
+                                        icon={<Calendar className="h-3 w-3" />}
                                     />
                                 )}
                             </div>
@@ -190,28 +188,26 @@ export const DetailsTab: FC<DetailsTabProps> = ({ details }) => {
     );
 };
 
-const DetailItem = ({ 
-    label, 
-    value, 
-    icon, 
-    className 
-}: { 
-    label: string, 
-    value?: string | number | React.ReactNode, 
-    icon?: React.ReactNode,
-    className?: string 
+const DetailItem = ({
+    label,
+    value,
+    icon,
+    className,
+}: {
+    label: string;
+    value?: string | number | React.ReactNode;
+    icon?: React.ReactNode;
+    className?: string;
 }) => {
     if (!value) return null;
-    
+
     return (
         <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+            <label className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
                 {icon}
                 {label}
             </label>
-            <div className={cn("text-sm font-medium", className)}>
-                {value}
-            </div>
+            <div className={cn('text-sm font-medium', className)}>{value}</div>
         </div>
     );
 };

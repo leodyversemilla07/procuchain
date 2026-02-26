@@ -8,8 +8,8 @@ import { Edit, Eye, GitBranch, RotateCcw, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Wayfinder imports
-import { edit as workflowConfigEdit, preview as workflowConfigPreview } from '@/routes/admin/workflow-config';
 import { resetToDefaults } from '@/actions/App/Http/Controllers/Admin/ProcurementWorkflowConfigController';
+import { edit as workflowConfigEdit, preview as workflowConfigPreview } from '@/routes/admin/workflow-config';
 
 interface WorkflowConfig {
     mode: string;
@@ -58,7 +58,7 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
                 onError: () => {
                     toast.error('Failed to reset workflow configuration');
                 },
-            }
+            },
         );
     };
 
@@ -91,11 +91,7 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
                         <span className="font-medium">{config.stage_count}</span>
                         <span className="text-muted-foreground">stages</span>
                     </div>
-                    {config.optional_stage_count > 0 && (
-                        <div className="text-muted-foreground">
-                            ({config.optional_stage_count} optional)
-                        </div>
-                    )}
+                    {config.optional_stage_count > 0 && <div className="text-muted-foreground">({config.optional_stage_count} optional)</div>}
                 </div>
 
                 {config.updated_at && (
@@ -119,12 +115,7 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
                     </Link>
                 </Button>
                 {config.is_customized && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleResetConfig(config.mode)}
-                        title="Reset to defaults"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => handleResetConfig(config.mode)} title="Reset to defaults">
                         <RotateCcw className="h-4 w-4" />
                     </Button>
                 )}

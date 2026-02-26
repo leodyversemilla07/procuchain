@@ -87,7 +87,7 @@ export function ProcurementFiltersToolbar({
                         </Select>
 
                         {/* Archive Toggle */}
-                        <div className="flex items-center bg-muted/50 rounded-lg p-1 text-sm shadow-inner self-start sm:self-center border border-border/50">
+                        <div className="bg-muted/50 border-border/50 flex items-center self-start rounded-lg border p-1 text-sm shadow-inner sm:self-center">
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -95,8 +95,8 @@ export function ProcurementFiltersToolbar({
                                     router.get(window.location.pathname, { archived: null }, { preserveState: true, preserveScroll: true });
                                 }}
                                 className={cn(
-                                    "h-8 px-3 rounded-md transition-all text-xs font-medium",
-                                    !isArchived ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:bg-background/40"
+                                    'h-8 rounded-md px-3 text-xs font-medium transition-all',
+                                    !isArchived ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/40',
                                 )}
                             >
                                 Active
@@ -108,8 +108,8 @@ export function ProcurementFiltersToolbar({
                                     router.get(window.location.pathname, { archived: 1 }, { preserveState: true, preserveScroll: true });
                                 }}
                                 className={cn(
-                                    "h-8 px-3 rounded-md transition-all text-xs font-medium",
-                                    isArchived ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:bg-background/40"
+                                    'h-8 rounded-md px-3 text-xs font-medium transition-all',
+                                    isArchived ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/40',
                                 )}
                             >
                                 Archived

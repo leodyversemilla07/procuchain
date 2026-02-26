@@ -199,18 +199,14 @@ export function ProcurementsDataTable({
         const hasStage = params.get('stage') && params.get('stage') !== 'all';
         const hasFilters = hasSearch || hasStage || isArchived;
 
-        const title = hasFilters
-            ? isArchived
-                ? 'No archived procurements'
-                : 'No procurements match your search'
-            : 'No procurements available yet';
+        const title = hasFilters ? (isArchived ? 'No archived procurements' : 'No procurements match your search') : 'No procurements available yet';
         const description = hasFilters
             ? isArchived
                 ? 'There are no archived procurements at this time. Switch to Active to view current procurements.'
                 : 'Try adjusting your search or filters to find the procurements you need.'
             : userRole === 'bac_secretariat'
-                ? 'Create your first procurement record to start tracking progress across every stage.'
-                : 'Once procurements are created, they will appear here with full stage tracking.';
+              ? 'Create your first procurement record to start tracking progress across every stage.'
+              : 'Once procurements are created, they will appear here with full stage tracking.';
 
         return (
             <Card className="overflow-hidden">
