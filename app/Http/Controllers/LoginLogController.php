@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BlockedIpService;
-use App\Services\LoginService;
+use App\Services\LoginAnalyticsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +13,7 @@ use Inertia\Response;
 class LoginLogController extends Controller
 {
     public function __construct(
-        private LoginService $loginLogger,
+        private LoginAnalyticsService $loginAnalytics,
         private BlockedIpService $blockedIpService
     ) {}
 
@@ -23,14 +23,14 @@ class LoginLogController extends Controller
     public function index(): Response
     {
         try {
-            $recentLogins = $this->loginLogger->getRecentLogins(50);
-            $statistics = $this->loginLogger->getLoginStatistics();
+            $recentLogins = $this->loginAnalytics->getRecentLogins(50);
+            $statistics = $this->loginAnalytics->getLoginStatistics();
 
             return Inertia::render('admin/login-logs', [
                 'recentLogins' => $recentLogins,
                 'statistics' => $statistics,
                 // Defer suspicious activities analysis - loads after initial page render
-                'suspiciousActivities' => Inertia::defer(fn () => $this->loginLogger->getSuspiciousActivities()),
+                'suspiciousActivities' => Inertia::defer(fn () => $this->loginAnalytics->getSuspiciousActivities()),
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch login logs', [
@@ -54,7 +54,7 @@ class LoginLogController extends Controller
     {
         try {
             $limit = $request->get('limit', 50);
-            $recentLogins = $this->loginLogger->getRecentLogins($limit);
+            $recentLogins = $this->loginAnalytics->getRecentLogins($limit);
 
             return response()->json([
                 'success' => true,
@@ -79,7 +79,7 @@ class LoginLogController extends Controller
     public function statistics()
     {
         try {
-            $statistics = $this->loginLogger->getLoginStatistics();
+            $statistics = $this->loginAnalytics->getLoginStatistics();
 
             return response()->json([
                 'success' => true,
@@ -104,7 +104,7 @@ class LoginLogController extends Controller
     public function suspicious()
     {
         try {
-            $activities = $this->loginLogger->getSuspiciousActivities();
+            $activities = $this->loginAnalytics->getSuspiciousActivities();
 
             return response()->json([
                 'success' => true,
