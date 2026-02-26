@@ -1,60 +1,4 @@
 services:
-  mysql:
-    image: mysql:9.4
-    container_name: procuchain-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: procuchain
-      MYSQL_USER: procuchain
-      MYSQL_PASSWORD: procuchain
-      MYSQL_ROOT_PASSWORD: root
-    ports:
-      - '3307:3306'
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-pprocuchain', '-uprocuchain']
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks:
-      - procuchain
-
-  redis:
-    image: redis:7-alpine
-    container_name: procuchain-redis
-    restart: unless-stopped
-    ports:
-      - '6379:6379'
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    command: redis-server --appendonly yes
-    networks:
-      - procuchain
-
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: procuchain-phpmyadmin
-    restart: unless-stopped
-    environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-      PMA_USER: root
-      PMA_PASSWORD: root
-      UPLOAD_LIMIT: 100M
-    ports:
-      - '8080:80'
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - procuchain
-
   # Single MultiChain Node for Development
   multichain:
     build:
@@ -98,10 +42,6 @@ services:
       - multichain
 
 volumes:
-  mysql_data:
-    driver: local
-  redis_data:
-    driver: local
   multichain_data:
     driver: local
 
