@@ -29,17 +29,17 @@ class ProcurementListController extends BaseController
 
     private ProcurementDataService $procurementDataService;
 
-    private \App\Services\Procurement\ProcurementFetcherService $procurementFetcher;
+    private \App\Services\Procurement\ProcurementListAggregatorService $listAggregator;
 
     /**
      * Constructor
      */
     public function __construct(
         ProcurementDataService $procurementDataService,
-        \App\Services\Procurement\ProcurementFetcherService $procurementFetcher
+        \App\Services\Procurement\ProcurementListAggregatorService $listAggregator
     ) {
         $this->procurementDataService = $procurementDataService;
-        $this->procurementFetcher = $procurementFetcher;
+        $this->listAggregator = $listAggregator;
     }
 
     /**
@@ -64,7 +64,7 @@ class ProcurementListController extends BaseController
             // Fetch all procurements with optimizations
             // Pass user ID filter for BAC Secretariat to only see their own procurements
             // Pass blockchain address filter for additional security verification
-            $procurements = $this->procurementFetcher->fetchAllProcurements(
+            $procurements = $this->listAggregator->fetchAllProcurements(
                 skipActions: false,
                 // filterByUserId: $isBacSecretariat ? (string) $user->id : null,
                 // filterByUserAddress: $isBacSecretariat ? $user->blockchain_address : null,

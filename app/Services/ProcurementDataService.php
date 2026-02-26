@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Services\Procurement\ProcurementFetcherService;
 use App\Services\Procurement\ProcurementFormatterService;
+use App\Services\Procurement\ProcurementListAggregatorService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -15,12 +16,14 @@ use Illuminate\Support\Collection;
  * This service acts as a facade/orchestrator for procurement data operations,
  * delegating to specialized services:
  *
- * - ProcurementFetcherService: Data fetching and aggregation from blockchain
+ * - ProcurementFetcherService: Single-procurement data fetching from blockchain
+ * - ProcurementListAggregatorService: Bulk procurement list aggregation
  * - ProcurementFormatterService: Formatting dates, stages, statuses, currencies
  *
  * All public methods maintain backward compatibility with existing code.
  *
  * @see \App\Services\Procurement\ProcurementFetcherService
+ * @see \App\Services\Procurement\ProcurementListAggregatorService
  * @see \App\Services\Procurement\ProcurementFormatterService
  */
 class ProcurementDataService
@@ -29,6 +32,7 @@ class ProcurementDataService
         private readonly ProcurementFetcherService $fetcher,
         private readonly ProcurementFormatterService $formatter,
         private readonly \App\Repositories\ProcurementArchiveRepository $archiveRepository,
+        private readonly ProcurementListAggregatorService $listAggregator,
     ) {}
 
     // =========================================================================
@@ -45,7 +49,7 @@ class ProcurementDataService
      */
     public function fetchAndProcessProcurements(bool $skipActions = false, ?string $filterByUserId = null, ?string $filterByUserAddress = null): array
     {
-        return $this->fetcher->fetchAllProcurements($skipActions, $filterByUserId, $filterByUserAddress);
+        return $this->listAggregator->fetchAllProcurements($skipActions, $filterByUserId, $filterByUserAddress);
     }
 
     /**
