@@ -27,9 +27,7 @@ export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurem
     const handleSuccess = (held: boolean) => {
         onOpenChange(false);
 
-        const message = held
-            ? 'You will now proceed to upload pre-bid conference documents.'
-            : 'The pre-bid conference stage has been skipped.';
+        const message = held ? 'You will now proceed to upload pre-bid conference documents.' : 'The pre-bid conference stage has been skipped.';
 
         toast.success('Decision submitted successfully!', { description: message });
 
@@ -188,11 +186,7 @@ export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurem
                         >
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={processing || conferenceHeld === undefined}
-                            className="min-h-11 w-full sm:w-auto"
-                        >
+                        <Button type="submit" disabled={processing || conferenceHeld === undefined} className="min-h-11 w-full sm:w-auto">
                             {processing ? (
                                 <span className="flex items-center gap-2">
                                     <Spinner />

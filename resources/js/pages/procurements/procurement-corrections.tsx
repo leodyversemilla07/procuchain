@@ -90,11 +90,7 @@ export default function ProcurementCorrections({ procurement, corrections, docum
 
             <div className="w-full space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header */}
-                <HeroCard
-                    icon={Edit}
-                    title="Procurement Corrections"
-                    description={`Manage corrections for ${procurement.pr_number}`}
-                />
+                <HeroCard icon={Edit} title="Procurement Corrections" description={`Manage corrections for ${procurement.pr_number}`} />
 
                 {/* Procurement Overview */}
                 <Card>

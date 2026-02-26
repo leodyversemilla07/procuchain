@@ -7,25 +7,27 @@ interface ErrorProps {
 }
 
 export default function Error({ status }: ErrorProps) {
-    const title = {
-        503: '503: Service Unavailable',
-        500: '500: Server Error',
-        404: '404: Page Not Found',
-        403: '403: Forbidden',
-        401: '401: Unauthorized',
-        419: '419: Page Expired',
-        429: '429: Too Many Requests',
-    }[status] || 'Error';
+    const title =
+        {
+            503: '503: Service Unavailable',
+            500: '500: Server Error',
+            404: '404: Page Not Found',
+            403: '403: Forbidden',
+            401: '401: Unauthorized',
+            419: '419: Page Expired',
+            429: '429: Too Many Requests',
+        }[status] || 'Error';
 
-    const description = {
-        503: 'Sorry, we are doing some maintenance. Please check back soon.',
-        500: 'Whoops, something went wrong on our servers.',
-        404: 'Sorry, the page you are looking for could not be found.',
-        403: 'Sorry, you are forbidden from accessing this page.',
-        401: 'Sorry, you are not authorized to access this page.',
-        419: 'Sorry, your session has expired. Please refresh and try again.',
-        429: 'Too many requests. Please wait a moment and try again.',
-    }[status] || 'An unexpected error has occurred.';
+    const description =
+        {
+            503: 'Sorry, we are doing some maintenance. Please check back soon.',
+            500: 'Whoops, something went wrong on our servers.',
+            404: 'Sorry, the page you are looking for could not be found.',
+            403: 'Sorry, you are forbidden from accessing this page.',
+            401: 'Sorry, you are not authorized to access this page.',
+            419: 'Sorry, your session has expired. Please refresh and try again.',
+            429: 'Too many requests. Please wait a moment and try again.',
+        }[status] || 'An unexpected error has occurred.';
 
     return (
         <>
@@ -38,15 +40,11 @@ export default function Error({ status }: ErrorProps) {
 
                     <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">{title}</h1>
 
-                    <p className="text-muted-foreground mb-8 text-lg">
-                        {description}
-                    </p>
+                    <p className="text-muted-foreground mb-8 text-lg">{description}</p>
 
                     <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
                         <Button size="lg" asChild>
-                            <Link href={home.url()}>
-                                Go back home
-                            </Link>
+                            <Link href={home.url()}>Go back home</Link>
                         </Button>
                         <Button size="lg" variant="outline" onClick={() => window.location.reload()}>
                             Try again
@@ -55,9 +53,9 @@ export default function Error({ status }: ErrorProps) {
                 </div>
 
                 {/* Aesthetic background elements */}
-                <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
                     <div className="bg-primary/5 absolute -top-[10%] -left-[10%] h-[40%] w-[40%] rounded-full blur-3xl"></div>
-                    <div className="bg-primary/5 absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full blur-3xl"></div>
+                    <div className="bg-primary/5 absolute -right-[10%] -bottom-[10%] h-[40%] w-[40%] rounded-full blur-3xl"></div>
                 </div>
             </div>
         </>

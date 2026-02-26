@@ -348,22 +348,22 @@ export default function ShowProcurement({ procurement, workflow, error }: ShowPr
                             procurement={
                                 procurement.details
                                     ? {
-                                        title: procurement.details.title,
-                                        description: procurement.details.description,
-                                        abc_amount: procurement.details.abc_amount,
-                                        formatted_abc_amount: procurement.details.abc_amount_formatted,
-                                        funding_source: procurement.details.funding_source,
-                                        category: procurement.details.category,
-                                        procurement_mode: procurement.details.procurement_mode,
-                                        office: procurement.details.office,
-                                        end_user: procurement.details.end_user || '',
-                                        bac_resolution_number: procurement.details.bac_resolution_number || '',
-                                        bac_resolution_date: procurement.details.bac_resolution_date || '',
-                                        philgeps_reference: procurement.details.philgeps_reference || '',
-                                        philgeps_posting_date: procurement.details.philgeps_posting_date || '',
-                                        approved_by: procurement.details.approved_by || '',
-                                        approval_date: procurement.details.approval_date || '',
-                                    }
+                                          title: procurement.details.title,
+                                          description: procurement.details.description,
+                                          abc_amount: procurement.details.abc_amount,
+                                          formatted_abc_amount: procurement.details.abc_amount_formatted,
+                                          funding_source: procurement.details.funding_source,
+                                          category: procurement.details.category,
+                                          procurement_mode: procurement.details.procurement_mode,
+                                          office: procurement.details.office,
+                                          end_user: procurement.details.end_user || '',
+                                          bac_resolution_number: procurement.details.bac_resolution_number || '',
+                                          bac_resolution_date: procurement.details.bac_resolution_date || '',
+                                          philgeps_reference: procurement.details.philgeps_reference || '',
+                                          philgeps_posting_date: procurement.details.philgeps_posting_date || '',
+                                          approved_by: procurement.details.approved_by || '',
+                                          approval_date: procurement.details.approval_date || '',
+                                      }
                                     : undefined
                             }
                         />

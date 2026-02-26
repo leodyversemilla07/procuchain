@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\Verification\CompletenessResult;
 use App\DataTransferObjects\Verification\ComplianceResult;
 use App\DataTransferObjects\Verification\CrossReferenceResult;
@@ -12,8 +11,8 @@ use App\DataTransferObjects\Verification\VerificationReportDTO;
 use App\DataTransferObjects\Verification\VerificationResult;
 use App\Enums\StageEnums;
 use App\Repositories\DocumentRepository;
-use App\Services\Verification\DocumentComplianceVerifier;
 use App\Services\Verification\DocumentCompletenessVerifier;
+use App\Services\Verification\DocumentComplianceVerifier;
 use App\Services\Verification\DocumentCrossReferenceVerifier;
 use App\Services\Verification\DocumentIntegrityVerifier;
 use Illuminate\Support\Facades\Log;

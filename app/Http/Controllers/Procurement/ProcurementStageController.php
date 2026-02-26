@@ -21,7 +21,6 @@ use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
 use App\Services\Publishers\StatusPublisher;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
@@ -192,35 +191,35 @@ class ProcurementStageController extends BaseController
 
             // Store file temporarily and dispatch async blockchain write
             $tempPath = $file->store('temp/blockchain-uploads');
-            $jobId    = Str::uuid()->toString();
+            $jobId = Str::uuid()->toString();
 
             BlockchainWriteJob::dispatch('upload_document', [
-                'pr_number'         => $pr_number,
+                'pr_number' => $pr_number,
                 'procurement_title' => $procurement->title,
-                'user_address'      => $userAddress,
-                'stage'             => $stage->value,
-                'status'            => $procurement->status,
-                'current_status'    => (StatusEnums::tryFrom($procurement->status) ?? $this->getOngoingStatusForStage($stage))->value,
-                'document_type'     => $documentType->value,
-                'uploaded_by'       => $user->name,
-                'description'       => $request->input('description'),
-                'stage_metadata'    => $request->input('metadata', []),
-                'temp_file_path'    => $tempPath,
+                'user_address' => $userAddress,
+                'stage' => $stage->value,
+                'status' => $procurement->status,
+                'current_status' => (StatusEnums::tryFrom($procurement->status) ?? $this->getOngoingStatusForStage($stage))->value,
+                'document_type' => $documentType->value,
+                'uploaded_by' => $user->name,
+                'description' => $request->input('description'),
+                'stage_metadata' => $request->input('metadata', []),
+                'temp_file_path' => $tempPath,
                 'original_filename' => $file->getClientOriginalName(),
-                'mime_type'         => $file->getMimeType() ?? 'application/octet-stream',
+                'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
             ], $jobId);
 
             return response()->json([
-                'job_id'        => $jobId,
-                'status'        => 'pending',
+                'job_id' => $jobId,
+                'status' => 'pending',
                 'document_type' => $documentType->getDisplayName(),
             ], 202);
         } catch (\Exception $e) {
             Log::error('Failed to upload single document', [
                 'pr_number' => $pr_number,
-                'stage'     => $stage->value,
-                'error'     => $e->getMessage(),
-                'trace'     => $e->getTraceAsString(),
+                'stage' => $stage->value,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json(['message' => 'An error occurred while uploading the document'], 500);
@@ -264,43 +263,43 @@ class ProcurementStageController extends BaseController
                 return response()->json(['error' => 'Procurement not found.'], 404);
             }
 
-            $user           = auth()->user();
-            $userAddress    = $user->blockchain_address ?? $user->email;
+            $user = auth()->user();
+            $userAddress = $user->blockchain_address ?? $user->email;
             $previousStatus = StatusEnums::tryFrom($procurement->status);
             $completionStatus = $this->getCompletionStatusForStage($stage);
 
             // Resolve next stage synchronously (reads workflow config + cache)
-            $nextStage       = $this->getNextStageForProcurement($pr_number, $stage);
+            $nextStage = $this->getNextStageForProcurement($pr_number, $stage);
             $nextStageStatus = $nextStage ? $this->getInitialStatusForStage($pr_number, $nextStage) : null;
 
             // Dispatch all blockchain writes to the queue
             $jobId = Str::uuid()->toString();
 
             BlockchainWriteJob::dispatch('mark_stage_complete', [
-                'pr_number'         => $pr_number,
+                'pr_number' => $pr_number,
                 'procurement_title' => $procurement->title,
-                'user_address'      => $userAddress,
-                'current_stage'     => $stage->value,
+                'user_address' => $userAddress,
+                'current_stage' => $stage->value,
                 'completion_status' => $completionStatus->value,
-                'previous_status'   => $previousStatus?->value,
-                'next_stage'        => $nextStage?->value,
+                'previous_status' => $previousStatus?->value,
+                'next_stage' => $nextStage?->value,
                 'next_stage_status' => $nextStageStatus?->value,
-                'procurement_mode'  => $procurement->procurementMode->value,
-                'document_count'    => count($uploadedDocuments),
+                'procurement_mode' => $procurement->procurementMode->value,
+                'document_count' => count($uploadedDocuments),
                 'is_pre_procurement' => $stage->isPreProcurement(),
             ], $jobId);
 
             return response()->json([
-                'job_id'          => $jobId,
-                'status'          => 'pending',
-                'next_stage'      => $nextStage?->value,
+                'job_id' => $jobId,
+                'status' => 'pending',
+                'next_stage' => $nextStage?->value,
                 'next_stage_name' => $nextStage?->getDisplayName(),
             ], 202);
         } catch (\Exception $e) {
             Log::error('Error marking stage as complete', [
                 'pr_number' => $pr_number,
-                'stage'     => $stage->value,
-                'error'     => $e->getMessage(),
+                'stage' => $stage->value,
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to mark stage as complete. Please try again.'], 500);
@@ -317,9 +316,9 @@ class ProcurementStageController extends BaseController
         try {
             $jobId = Str::uuid()->toString();
             BlockchainWriteJob::dispatch('skip_stage', [
-                'pr_number'    => $pr_number,
-                'stage'        => $stage->value,
-                'reason'       => $request->input('reason', 'Stage marked as optional and skipped by user.'),
+                'pr_number' => $pr_number,
+                'stage' => $stage->value,
+                'reason' => $request->input('reason', 'Stage marked as optional and skipped by user.'),
                 'user_address' => auth()->user()->blockchain_address ?? auth()->user()->email,
             ], $jobId);
 
@@ -327,8 +326,8 @@ class ProcurementStageController extends BaseController
         } catch (\Exception $e) {
             Log::error('Error skipping stage', [
                 'pr_number' => $pr_number,
-                'stage'     => $stage->value,
-                'error'     => $e->getMessage(),
+                'stage' => $stage->value,
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => $e->getMessage()], 500);
@@ -457,9 +456,9 @@ class ProcurementStageController extends BaseController
         try {
             $jobId = Str::uuid()->toString();
             BlockchainWriteJob::dispatch('repeat_stage', [
-                'pr_number'    => $pr_number,
-                'stage'        => $stage->value,
-                'reason'       => $request->input('reason', 'Additional bulletin required'),
+                'pr_number' => $pr_number,
+                'stage' => $stage->value,
+                'reason' => $request->input('reason', 'Additional bulletin required'),
                 'user_address' => auth()->user()->blockchain_address ?? auth()->user()->email,
             ], $jobId);
 
@@ -467,8 +466,8 @@ class ProcurementStageController extends BaseController
         } catch (\Exception $e) {
             Log::error('Error repeating stage', [
                 'pr_number' => $pr_number,
-                'stage'     => $stage->value,
-                'error'     => $e->getMessage(),
+                'stage' => $stage->value,
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to repeat stage. Please try again.'], 500);
@@ -492,19 +491,19 @@ class ProcurementStageController extends BaseController
         try {
             $jobId = Str::uuid()->toString();
             BlockchainWriteJob::dispatch('update_delivery_details', [
-                'pr_number'        => $pr_number,
+                'pr_number' => $pr_number,
                 'delivery_location' => $request->input('delivery_location'),
-                'delivery_date'    => $request->input('delivery_date'),
+                'delivery_date' => $request->input('delivery_date'),
                 'delivery_term_days' => (int) $request->input('delivery_term_days'),
-                'user_address'     => auth()->user()->blockchain_address ?? auth()->user()->email,
+                'user_address' => auth()->user()->blockchain_address ?? auth()->user()->email,
             ], $jobId);
 
             return response()->json(['job_id' => $jobId, 'status' => 'pending'], 202);
         } catch (\Exception $e) {
             Log::error('Failed to update delivery details', [
                 'pr_number' => $pr_number,
-                'error'     => $e->getMessage(),
-                'trace'     => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json(['error' => 'Failed to update delivery details. Please try again.'], 500);
@@ -527,22 +526,22 @@ class ProcurementStageController extends BaseController
         try {
             $jobId = Str::uuid()->toString();
             BlockchainWriteJob::dispatch('publish_decision', [
-                'decision_type'     => $decisionType,
-                'pr_number'         => $prNumber,
+                'decision_type' => $decisionType,
+                'pr_number' => $prNumber,
                 'procurement_title' => $procurementTitle,
-                'was_held'          => $wasHeld,
-                'user_address'      => auth()->user()->blockchain_address ?? auth()->user()->email,
+                'was_held' => $wasHeld,
+                'user_address' => auth()->user()->blockchain_address ?? auth()->user()->email,
             ], $jobId);
 
             return response()->json([
                 'job_id' => $jobId,
                 'status' => 'pending',
-                'held'   => $wasHeld,
+                'held' => $wasHeld,
             ], 202);
         } catch (\Exception $e) {
             Log::error("Failed to dispatch {$decisionType} decision job", [
                 'pr_number' => $prNumber,
-                'error'     => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to publish decision to blockchain. Please try again.'], 500);

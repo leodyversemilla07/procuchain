@@ -9,7 +9,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Edit, FileText, Settings } from 'lucide-react';
 
 // Wayfinder imports
-import { index as stageDocumentsIndex, edit as stageDocumentsEdit } from '@/routes/admin/stage-documents';
+import { edit as stageDocumentsEdit, index as stageDocumentsIndex } from '@/routes/admin/stage-documents';
 
 interface StageConfig {
     stage: string;
@@ -54,10 +54,14 @@ export default function StageDocumentConfigs({
     postProcurement,
 }: PageProps) {
     const handleModeChange = (newMode: string) => {
-        router.get(stageDocumentsIndex().url, { mode: newMode }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        router.get(
+            stageDocumentsIndex().url,
+            { mode: newMode },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
     };
 
     const formatDate = (dateString: string | null) => {
@@ -77,9 +81,7 @@ export default function StageDocumentConfigs({
             </CardHeader>
             <CardContent>
                 {stages.length === 0 ? (
-                    <div className="text-muted-foreground py-8 text-center text-sm">
-                        No stages in this phase for {selectedModeDisplayName}
-                    </div>
+                    <div className="text-muted-foreground py-8 text-center text-sm">No stages in this phase for {selectedModeDisplayName}</div>
                 ) : (
                     <Table>
                         <TableHeader>
@@ -98,9 +100,7 @@ export default function StageDocumentConfigs({
                                     <TableCell>
                                         <div className="space-y-0.5">
                                             <div className="font-medium">{stage.display_name}</div>
-                                            <div className="text-muted-foreground line-clamp-1 text-xs">
-                                                {stage.description}
-                                            </div>
+                                            <div className="text-muted-foreground line-clamp-1 text-xs">{stage.description}</div>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-center">
@@ -114,9 +114,7 @@ export default function StageDocumentConfigs({
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <span className="text-muted-foreground text-sm">
-                                            {stage.total_count}
-                                        </span>
+                                        <span className="text-muted-foreground text-sm">{stage.total_count}</span>
                                     </TableCell>
                                     <TableCell>
                                         {stage.is_customized ? (
@@ -125,15 +123,11 @@ export default function StageDocumentConfigs({
                                                     Customized
                                                 </Badge>
                                                 {stage.updated_at && (
-                                                    <div className="text-muted-foreground text-xs">
-                                                        {formatDate(stage.updated_at)}
-                                                    </div>
+                                                    <div className="text-muted-foreground text-xs">{formatDate(stage.updated_at)}</div>
                                                 )}
                                             </div>
                                         ) : (
-                                            <span className="text-muted-foreground text-xs">
-                                                Default
-                                            </span>
+                                            <span className="text-muted-foreground text-xs">Default</span>
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -175,26 +169,20 @@ export default function StageDocumentConfigs({
                         <Settings className="text-muted-foreground h-5 w-5" />
                         <div className="flex-1">
                             <Label className="text-sm font-medium">Procurement Mode</Label>
-                            <p className="text-muted-foreground text-xs">
-                                Select a procurement mode to view and configure its stage documents
-                            </p>
+                            <p className="text-muted-foreground text-xs">Select a procurement mode to view and configure its stage documents</p>
                         </div>
                         <Select value={selectedMode} onValueChange={handleModeChange}>
                             <SelectTrigger className="w-[300px]">
                                 <SelectValue placeholder="Select mode" />
                             </SelectTrigger>
                             <SelectContent>
-                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                                    Competitive Modes
-                                </div>
+                                <div className="text-muted-foreground px-2 py-1.5 text-xs font-semibold">Competitive Modes</div>
                                 {competitiveModes.map((mode) => (
                                     <SelectItem key={mode.value} value={mode.value}>
                                         {mode.display_name}
                                     </SelectItem>
                                 ))}
-                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                                    Alternative Modes
-                                </div>
+                                <div className="text-muted-foreground px-2 py-1.5 text-xs font-semibold">Alternative Modes</div>
                                 {alternativeModes.map((mode) => (
                                     <SelectItem key={mode.value} value={mode.value}>
                                         {mode.display_name}
@@ -209,19 +197,14 @@ export default function StageDocumentConfigs({
                 <div className="grid gap-4 md:grid-cols-3">
                     <Card>
                         <CardContent className="p-4">
-                            <div className="text-2xl font-bold">
-                                {preProcurement.length + procurement.length + postProcurement.length}
-                            </div>
+                            <div className="text-2xl font-bold">{preProcurement.length + procurement.length + postProcurement.length}</div>
                             <p className="text-muted-foreground text-sm">Total Stages</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardContent className="p-4">
                             <div className="text-2xl font-bold">
-                                {[...preProcurement, ...procurement, ...postProcurement].reduce(
-                                    (sum, s) => sum + s.required_count,
-                                    0
-                                )}
+                                {[...preProcurement, ...procurement, ...postProcurement].reduce((sum, s) => sum + s.required_count, 0)}
                             </div>
                             <p className="text-muted-foreground text-sm">Required Documents</p>
                         </CardContent>
@@ -229,9 +212,7 @@ export default function StageDocumentConfigs({
                     <Card>
                         <CardContent className="p-4">
                             <div className="text-2xl font-bold">
-                                {[...preProcurement, ...procurement, ...postProcurement].filter(
-                                    (s) => s.is_customized
-                                ).length}
+                                {[...preProcurement, ...procurement, ...postProcurement].filter((s) => s.is_customized).length}
                             </div>
                             <p className="text-muted-foreground text-sm">Customized Stages</p>
                         </CardContent>
@@ -240,21 +221,9 @@ export default function StageDocumentConfigs({
 
                 {/* Stage Tables by Phase */}
                 <div className="space-y-6">
-                    <StageTable
-                        stages={preProcurement}
-                        title="Pre-Procurement Phase"
-                        description="Planning & Preparation stages"
-                    />
-                    <StageTable
-                        stages={procurement}
-                        title="Procurement Phase"
-                        description="Bidding & Evaluation stages"
-                    />
-                    <StageTable
-                        stages={postProcurement}
-                        title="Post-Procurement Phase"
-                        description="Award & Implementation stages"
-                    />
+                    <StageTable stages={preProcurement} title="Pre-Procurement Phase" description="Planning & Preparation stages" />
+                    <StageTable stages={procurement} title="Procurement Phase" description="Bidding & Evaluation stages" />
+                    <StageTable stages={postProcurement} title="Post-Procurement Phase" description="Award & Implementation stages" />
                 </div>
             </div>
         </AppLayout>

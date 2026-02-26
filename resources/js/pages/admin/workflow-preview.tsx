@@ -128,29 +128,31 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                                 <Badge variant={mode.is_alternative_mode ? 'secondary' : 'default'} className="text-xs">
                                     {mode.is_alternative_mode ? 'Alternative' : 'Competitive'}
                                 </Badge>
-                                <Badge variant="outline" className="text-xs">{mode.irr_section}</Badge>
+                                <Badge variant="outline" className="text-xs">
+                                    {mode.irr_section}
+                                </Badge>
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                         <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
-                            <div className="rounded-lg bg-primary/10 p-2 text-center sm:p-3">
+                            <div className="bg-primary/10 rounded-lg p-2 text-center sm:p-3">
                                 <p className="text-primary text-xl font-bold sm:text-2xl">{summary.total_stages}</p>
                                 <p className="text-muted-foreground text-[10px] sm:text-xs">Total Stages</p>
                             </div>
-                            <div className="rounded-lg bg-primary/10 p-2 text-center sm:p-3">
+                            <div className="bg-primary/10 rounded-lg p-2 text-center sm:p-3">
                                 <p className="text-primary text-xl font-bold sm:text-2xl">{summary.required_stages}</p>
                                 <p className="text-muted-foreground text-[10px] sm:text-xs">Required</p>
                             </div>
-                            <div className="rounded-lg bg-muted p-2 text-center sm:p-3">
+                            <div className="bg-muted rounded-lg p-2 text-center sm:p-3">
                                 <p className="text-muted-foreground text-xl font-bold sm:text-2xl">{summary.optional_stages}</p>
                                 <p className="text-muted-foreground text-[10px] sm:text-xs">Optional</p>
                             </div>
-                            <div className="rounded-lg bg-primary/10 p-2 text-center sm:p-3">
+                            <div className="bg-primary/10 rounded-lg p-2 text-center sm:p-3">
                                 <p className="text-primary text-xl font-bold sm:text-2xl">{summary.total_required_documents}</p>
                                 <p className="text-muted-foreground text-[10px] sm:text-xs">Req. Docs</p>
                             </div>
-                            <div className="col-span-2 rounded-lg bg-muted p-2 text-center sm:p-3 md:col-span-1">
+                            <div className="bg-muted col-span-2 rounded-lg p-2 text-center sm:p-3 md:col-span-1">
                                 <p className="text-muted-foreground text-xl font-bold sm:text-2xl">{summary.total_optional_documents}</p>
                                 <p className="text-muted-foreground text-[10px] sm:text-xs">Opt. Docs</p>
                             </div>
@@ -164,10 +166,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                         if (phase.stages.length === 0) return null;
 
                         return (
-                            <Card
-                                key={phaseKey}
-                                className="border-sidebar-border/70 dark:border-sidebar-border"
-                            >
+                            <Card key={phaseKey} className="border-sidebar-border/70 dark:border-sidebar-border">
                                 <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <PhaseIcon phase={phaseKey} />
@@ -188,7 +187,9 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                                                         </div>
                                                         <div className="min-w-0">
                                                             <CardTitle className="text-sm sm:text-base">{stage.display_name}</CardTitle>
-                                                            <CardDescription className="line-clamp-2 text-[10px] sm:text-xs">{stage.description}</CardDescription>
+                                                            <CardDescription className="line-clamp-2 text-[10px] sm:text-xs">
+                                                                {stage.description}
+                                                            </CardDescription>
                                                         </div>
                                                     </div>
                                                     <div className="ml-8 flex flex-wrap items-center gap-1 sm:ml-0 sm:gap-2">
@@ -218,10 +219,12 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                                                             </div>
                                                             <div className="space-y-1 rounded-md border p-2 sm:space-y-2">
                                                                 {stage.required_documents.map((doc) => (
-                                                                    <div key={doc.value} className="rounded-md bg-primary/5 p-1.5 sm:p-2">
+                                                                    <div key={doc.value} className="bg-primary/5 rounded-md p-1.5 sm:p-2">
                                                                         <p className="text-[10px] font-medium sm:text-xs">{doc.display_name}</p>
                                                                         {doc.description && (
-                                                                            <p className="text-muted-foreground hidden text-[10px] sm:block">{doc.description}</p>
+                                                                            <p className="text-muted-foreground hidden text-[10px] sm:block">
+                                                                                {doc.description}
+                                                                            </p>
                                                                         )}
                                                                     </div>
                                                                 ))}
@@ -241,10 +244,12 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                                                             </div>
                                                             <div className="space-y-1 rounded-md border p-2 sm:space-y-2">
                                                                 {stage.optional_documents.map((doc) => (
-                                                                    <div key={doc.value} className="rounded-md bg-muted/50 p-1.5 sm:p-2">
+                                                                    <div key={doc.value} className="bg-muted/50 rounded-md p-1.5 sm:p-2">
                                                                         <p className="text-[10px] font-medium sm:text-xs">{doc.display_name}</p>
                                                                         {doc.description && (
-                                                                            <p className="text-muted-foreground hidden text-[10px] sm:block">{doc.description}</p>
+                                                                            <p className="text-muted-foreground hidden text-[10px] sm:block">
+                                                                                {doc.description}
+                                                                            </p>
                                                                         )}
                                                                     </div>
                                                                 ))}
@@ -254,7 +259,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
 
                                                     {/* No documents */}
                                                     {stage.required_documents.length === 0 && stage.optional_documents.length === 0 && (
-                                                        <div className="col-span-2 rounded-md bg-muted/50 p-4 text-center">
+                                                        <div className="bg-muted/50 col-span-2 rounded-md p-4 text-center">
                                                             <p className="text-muted-foreground text-sm">No documents configured for this stage</p>
                                                         </div>
                                                     )}

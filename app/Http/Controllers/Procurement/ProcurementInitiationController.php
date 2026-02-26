@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Procurement;
 
-use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
@@ -22,7 +21,6 @@ use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
 use App\Services\Publishers\StatusPublisher;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
@@ -152,7 +150,7 @@ class ProcurementInitiationController extends BaseController
     public function initiate(InitiateProcurementRequest $request): JsonResponse
     {
         $prNumber = $request->input('pr_number');
-        $user     = auth()->user();
+        $user = auth()->user();
 
         // Duplicate check stays synchronous
         $existing = $this->procurements->findByProcurement($prNumber);
@@ -163,35 +161,35 @@ class ProcurementInitiationController extends BaseController
         }
 
         $procurementData = [
-            'pr_number'               => $prNumber,
-            'app_reference'           => $request->input('app_reference'),
-            'title'                   => $request->input('title'),
-            'description'             => $request->input('description'),
-            'abc_amount'              => (float) $request->input('abc_amount'),
-            'funding_source'          => $request->input('funding_source'),
-            'category'                => $request->input('category'),
-            'procurement_mode'        => $request->input('procurement_mode'),
+            'pr_number' => $prNumber,
+            'app_reference' => $request->input('app_reference'),
+            'title' => $request->input('title'),
+            'description' => $request->input('description'),
+            'abc_amount' => (float) $request->input('abc_amount'),
+            'funding_source' => $request->input('funding_source'),
+            'category' => $request->input('category'),
+            'procurement_mode' => $request->input('procurement_mode'),
             'negotiated_procurement_type' => $request->input('negotiated_procurement_type'),
-            'office'                  => $request->input('office'),
-            'end_user'                => $request->input('end_user'),
-            'prepared_by'             => $request->input('prepared_by') ?? $user->name,
-            'status'                  => 'draft',
-            'user_id'                 => (string) $user->id,
-            'user_address'            => $user->blockchain_address,
-            'created_at'              => now()->toIso8601String(),
+            'office' => $request->input('office'),
+            'end_user' => $request->input('end_user'),
+            'prepared_by' => $request->input('prepared_by') ?? $user->name,
+            'status' => 'draft',
+            'user_id' => (string) $user->id,
+            'user_address' => $user->blockchain_address,
+            'created_at' => now()->toIso8601String(),
         ];
 
         $jobId = Str::uuid()->toString();
 
         BlockchainWriteJob::dispatch('initiate_procurement', [
             'procurement_data' => $procurementData,
-            'user_name'        => $user->name,
-            'pr_number'        => $prNumber,
+            'user_name' => $user->name,
+            'pr_number' => $prNumber,
         ], $jobId);
 
         return response()->json([
-            'job_id'    => $jobId,
-            'status'    => 'pending',
+            'job_id' => $jobId,
+            'status' => 'pending',
             'pr_number' => $prNumber,
         ], 202);
     }
@@ -274,35 +272,35 @@ class ProcurementInitiationController extends BaseController
 
             // Store file temporarily and dispatch async blockchain write
             $tempPath = $file->store('temp/blockchain-uploads');
-            $jobId    = Str::uuid()->toString();
+            $jobId = Str::uuid()->toString();
 
             BlockchainWriteJob::dispatch('upload_document', [
-                'pr_number'         => $pr_number,
+                'pr_number' => $pr_number,
                 'procurement_title' => $procurement->title,
-                'user_address'      => $userAddress,
-                'stage'             => $stage->value,
-                'status'            => $procurement->status,
-                'current_status'    => (\App\Enums\StatusEnums::tryFrom($procurement->status) ?? \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED)->value,
-                'document_type'     => $documentType->value,
-                'uploaded_by'       => $user->name,
-                'description'       => $request->input('description'),
-                'stage_metadata'    => $request->input('metadata', []),
-                'temp_file_path'    => $tempPath,
+                'user_address' => $userAddress,
+                'stage' => $stage->value,
+                'status' => $procurement->status,
+                'current_status' => (\App\Enums\StatusEnums::tryFrom($procurement->status) ?? \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED)->value,
+                'document_type' => $documentType->value,
+                'uploaded_by' => $user->name,
+                'description' => $request->input('description'),
+                'stage_metadata' => $request->input('metadata', []),
+                'temp_file_path' => $tempPath,
                 'original_filename' => $file->getClientOriginalName(),
-                'mime_type'         => $file->getMimeType() ?? 'application/octet-stream',
+                'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
             ], $jobId);
 
             return response()->json([
-                'job_id'        => $jobId,
-                'status'        => 'pending',
+                'job_id' => $jobId,
+                'status' => 'pending',
                 'document_type' => $documentType->getDisplayName(),
             ], 202);
         } catch (\Exception $e) {
             \Log::error('Failed to upload single document', [
                 'pr_number' => $pr_number,
-                'stage'     => $stage->value,
-                'error'     => $e->getMessage(),
-                'trace'     => $e->getTraceAsString(),
+                'stage' => $stage->value,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json(['message' => 'An error occurred while uploading the document'], 500);
@@ -370,8 +368,8 @@ class ProcurementInitiationController extends BaseController
 
         try {
             $uploadedDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
-            $mode              = $this->getProcurementMode($pr_number);
-            $documentGuide     = $this->modeAwareValidationService->getStageDocumentGuide($stage, $mode);
+            $mode = $this->getProcurementMode($pr_number);
+            $documentGuide = $this->modeAwareValidationService->getStageDocumentGuide($stage, $mode);
 
             if (count($uploadedDocuments) < $documentGuide['counts']['required_count']) {
                 return response()->json(['error' => 'Cannot mark stage as complete. Please upload all required documents first.'], 422);
@@ -382,9 +380,9 @@ class ProcurementInitiationController extends BaseController
                 return response()->json(['error' => 'Procurement not found.'], 404);
             }
 
-            $user         = auth()->user();
-            $userAddress  = $user->blockchain_address ?? $user->email;
-            $nextStage    = $this->getNextStageForProcurement($pr_number, $stage);
+            $user = auth()->user();
+            $userAddress = $user->blockchain_address ?? $user->email;
+            $nextStage = $this->getNextStageForProcurement($pr_number, $stage);
 
             if (! $nextStage) {
                 return response()->json(['error' => 'Unable to determine next stage for this procurement mode.'], 422);
@@ -396,26 +394,26 @@ class ProcurementInitiationController extends BaseController
 
             BlockchainWriteJob::dispatch('mark_stage_complete', [
                 'operation_variant' => 'initiation_complete',
-                'pr_number'         => $pr_number,
+                'pr_number' => $pr_number,
                 'procurement_title' => $procurement->title,
-                'user_address'      => $userAddress,
-                'current_stage'     => $stage->value,
-                'next_stage'        => $nextStage->value,
+                'user_address' => $userAddress,
+                'current_stage' => $stage->value,
+                'next_stage' => $nextStage->value,
                 'next_stage_status' => $nextStageStatus->value,
-                'document_count'    => count($uploadedDocuments),
+                'document_count' => count($uploadedDocuments),
             ], $jobId);
 
             return response()->json([
-                'job_id'          => $jobId,
-                'status'          => 'pending',
-                'next_stage'      => $nextStage->value,
+                'job_id' => $jobId,
+                'status' => 'pending',
+                'next_stage' => $nextStage->value,
                 'next_stage_name' => $nextStage->getDisplayName(),
             ], 202);
         } catch (\Exception $e) {
             Log::error('Failed to mark Procurement Initiation stage as complete', [
                 'pr_number' => $pr_number,
-                'error'     => $e->getMessage(),
-                'trace'     => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json(['error' => 'Failed to mark stage as complete: '.$e->getMessage()], 500);

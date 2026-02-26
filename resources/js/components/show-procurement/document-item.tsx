@@ -32,25 +32,28 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
     }, [doc.hash]);
 
     return (
-        <li className="group relative flex flex-col gap-2 p-3 sm:p-4 rounded-xl border bg-card hover:shadow-sm transition-all duration-200">
+        <li className="group bg-card relative flex flex-col gap-2 rounded-xl border p-3 transition-all duration-200 hover:shadow-sm sm:p-4">
             {/* Header Row: Icon, Title/Meta, and Actions */}
             <div className="flex items-center gap-3 sm:gap-4">
                 {/* Left Icon */}
                 <div className="shrink-0">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
                         <FileText className="h-5 w-5" />
                     </div>
                 </div>
 
                 {/* Main Content Row */}
-                <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex flex-col gap-1 justify-center">
-                        <h4 className="font-semibold text-sm sm:text-base leading-tight truncate" title={doc.document_type_formatted || doc.document_type}>
+                <div className="flex min-w-0 flex-1 items-center justify-between gap-4">
+                    <div className="flex min-w-0 flex-col justify-center gap-1">
+                        <h4
+                            className="truncate text-sm leading-tight font-semibold sm:text-base"
+                            title={doc.document_type_formatted || doc.document_type}
+                        >
                             {doc.document_type_formatted || doc.document_type || 'Unnamed Document'}
                         </h4>
 
                         {/* Meta Row */}
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                             {doc.file_size_formatted && (
                                 <span className="flex items-center gap-1 whitespace-nowrap">
                                     <HardDrive className="h-3 w-3" />
@@ -70,7 +73,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                     <TooltipTrigger asChild>
                                         <button
                                             onClick={handleCopyHash}
-                                            className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer whitespace-nowrap"
+                                            className="hover:text-foreground flex cursor-pointer items-center gap-1 whitespace-nowrap transition-colors"
                                         >
                                             <Hash className="h-3 w-3" />
                                             <span className="font-mono">{shortenHash(doc.hash || '', 6, 4)}</span>
@@ -78,7 +81,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                     </TooltipTrigger>
                                     <TooltipContent>
                                         <p className="font-mono text-xs">{doc.hash}</p>
-                                        <p className="text-[10px] text-muted-foreground text-center mt-1">Click to copy</p>
+                                        <p className="text-muted-foreground mt-1 text-center text-[10px]">Click to copy</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
@@ -86,13 +89,13 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                     </div>
 
                     {/* Desktop Actions */}
-                    <div className="hidden sm:flex items-center gap-2 shrink-0">
+                    <div className="hidden shrink-0 items-center gap-2 sm:flex">
                         {doc.has_corrections && (
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setShowCorrectionDetails(true)}
-                                className="h-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                className="h-8 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
                             >
                                 <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
                                 Corrections
@@ -135,23 +138,16 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
             )}
 
             {/* Mobile Actions (Bottom) */}
-            <div className="flex sm:hidden items-center justify-between gap-2 pt-2 border-t mt-1">
+            <div className="mt-1 flex items-center justify-between gap-2 border-t pt-2 sm:hidden">
                 {doc.has_corrections && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowCorrectionDetails(true)}
-                        className="text-amber-600 h-8 text-xs px-2"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => setShowCorrectionDetails(true)} className="h-8 px-2 text-xs text-amber-600">
                         <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
                         Corrections
                     </Button>
                 )}
-                <div className="flex gap-2 ml-auto">
+                <div className="ml-auto flex gap-2">
                     <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
-                        <Link href={pdf.viewer.url({ fileKey: doc.file_key })}>
-                            View
-                        </Link>
+                        <Link href={pdf.viewer.url({ fileKey: doc.file_key })}>View</Link>
                     </Button>
                     <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
                         <a href={files.download.url({ fileKey: doc.file_key })} target="_blank" rel="noopener noreferrer">

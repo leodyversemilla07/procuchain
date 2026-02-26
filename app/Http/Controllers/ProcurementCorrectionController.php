@@ -15,7 +15,6 @@ use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 use App\Services\Publishers\ProcurementCorrectionPublisher;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -43,7 +42,7 @@ class ProcurementCorrectionController extends Controller
             if (! $originalProcurement) {
                 Log::warning('Procurement not found in METADATA stream for correction, attempting fallback to STATUS stream', [
                     'pr_number' => $prNumber,
-                    'user'      => auth()->user()->email,
+                    'user' => auth()->user()->email,
                 ]);
 
                 $statusData = $this->procurementDataService->fetchStatusItems($prNumber)->first();
@@ -52,26 +51,26 @@ class ProcurementCorrectionController extends Controller
                 }
 
                 $originalProcurement = new ProcurementData(
-                    prNumber:        $prNumber,
-                    title:           $statusData['procurement_title'] ?? 'N/A',
-                    status:          StatusEnums::tryFrom($statusData['current_status'] ?? '') ?? StatusEnums::PROCUREMENT_SUBMITTED,
-                    stage:           StageEnums::tryFrom($statusData['stage'] ?? '') ?? StageEnums::PROCUREMENT_INITIATION,
+                    prNumber: $prNumber,
+                    title: $statusData['procurement_title'] ?? 'N/A',
+                    status: StatusEnums::tryFrom($statusData['current_status'] ?? '') ?? StatusEnums::PROCUREMENT_SUBMITTED,
+                    stage: StageEnums::tryFrom($statusData['stage'] ?? '') ?? StageEnums::PROCUREMENT_INITIATION,
                     procurementMode: ProcurementModeEnums::PUBLIC_BIDDING,
-                    timestamp:       $statusData['timestamp'] ?? now()->toIso8601String(),
-                    userAddress:     $statusData['user_address'] ?? auth()->user()->blockchain_address ?? '',
+                    timestamp: $statusData['timestamp'] ?? now()->toIso8601String(),
+                    userAddress: $statusData['user_address'] ?? auth()->user()->blockchain_address ?? '',
                 );
             }
 
             $correctedData = $this->extractCorrectedData($validated);
-            $jobId         = Str::uuid()->toString();
+            $jobId = Str::uuid()->toString();
 
             BlockchainWriteJob::dispatch('correct_procurement', [
                 'original_procurement' => $originalProcurement->toBlockchainArray(),
-                'corrected_data'       => $correctedData,
-                'reason'               => $validated['correction_reason'],
-                'corrected_by'         => auth()->user()->name ?? 'System',
-                'user_address'         => auth()->user()->blockchain_address ?? '',
-                'pr_number'            => $prNumber,
+                'corrected_data' => $correctedData,
+                'reason' => $validated['correction_reason'],
+                'corrected_by' => auth()->user()->name ?? 'System',
+                'user_address' => auth()->user()->blockchain_address ?? '',
+                'pr_number' => $prNumber,
             ], $jobId);
 
             return response()->json([
@@ -81,8 +80,8 @@ class ProcurementCorrectionController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to submit procurement correction', [
                 'pr_number' => $prNumber,
-                'error'     => $e->getMessage(),
-                'trace'     => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json(['error' => 'Failed to submit correction: '.$e->getMessage()], 500);

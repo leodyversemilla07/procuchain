@@ -363,19 +363,20 @@ function WorkflowByMode({ stages }: { stages: Stage[] }) {
 
 export default function Workflow({ workflows }: WorkflowProps) {
     const [selectedMode, setSelectedMode] = useState('competitive_bidding');
-    
+
     // Fallback if no workflows are loaded or the selected mode isn't available
-    const currentWorkflow = workflows.find((w) => w.mode === selectedMode) || workflows[0] || {
-        mode: 'unknown',
-        name: 'Unknown Mode',
-        stages: []
-    };
+    const currentWorkflow = workflows.find((w) => w.mode === selectedMode) ||
+        workflows[0] || {
+            mode: 'unknown',
+            name: 'Unknown Mode',
+            stages: [],
+        };
 
     const currentModeMetadata = procurementModesMetadata[currentWorkflow.mode] || {
         category: 'unknown',
         section: '',
         description: 'Custom Procurement Mode',
-        icon: Briefcase
+        icon: Briefcase,
     };
 
     const CurrentModeIcon = currentModeMetadata.icon;
@@ -447,7 +448,7 @@ export default function Workflow({ workflows }: WorkflowProps) {
                                             </p>
                                             <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                                                 {workflows
-                                                    .filter(w => {
+                                                    .filter((w) => {
                                                         const meta = procurementModesMetadata[w.mode];
                                                         return meta && meta.category === 'competitive';
                                                     })
@@ -490,7 +491,7 @@ export default function Workflow({ workflows }: WorkflowProps) {
                                             </p>
                                             <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                                                 {workflows
-                                                    .filter(w => {
+                                                    .filter((w) => {
                                                         const meta = procurementModesMetadata[w.mode];
                                                         return meta && meta.category === 'alternative';
                                                     })

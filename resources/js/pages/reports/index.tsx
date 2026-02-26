@@ -1,19 +1,19 @@
-import AppLayout from '@/layouts/app-layout';
+import { exportMethod, generate } from '@/actions/App/Http/Controllers/ReportController';
+import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { BarChart3, Calendar, Download, FileText, TrendingUp, Search } from 'lucide-react';
+import { BarChart3, Calendar, Download, FileText, Search, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-import { generate, exportMethod } from '@/actions/App/Http/Controllers/ReportController';
-import { HeroCard } from '@/components/hero-card';
 
 interface ReportFilters {
     filter_type: 'month' | 'year' | 'quarter' | 'date_range';
@@ -56,9 +56,7 @@ export default function ReportIndex() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Reports', href: '/reports' },
-    ];
+    const breadcrumbs: BreadcrumbItem[] = [{ title: 'Reports', href: '/reports' }];
 
     const handleFilterChange = (key: keyof ReportFilters, value: string | number | undefined) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -128,26 +126,13 @@ export default function ReportIndex() {
 
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
-    const months = [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December',
-    ];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Semantic Search & Reports" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b from-background to-muted/20 p-4 sm:gap-6 sm:p-6">
+            <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
                 <HeroCard
                     icon={Search}
                     title="Semantic Search & Reports"
@@ -163,10 +148,7 @@ export default function ReportIndex() {
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             <div className="space-y-2">
                                 <Label>Filter Type</Label>
-                                <Select
-                                    value={filters.filter_type}
-                                    onValueChange={(value) => handleFilterChange('filter_type', value)}
-                                >
+                                <Select value={filters.filter_type} onValueChange={(value) => handleFilterChange('filter_type', value)}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
@@ -263,10 +245,7 @@ export default function ReportIndex() {
                             {filters.filter_type === 'year' && (
                                 <div className="space-y-2">
                                     <Label>Year</Label>
-                                    <Select
-                                        value={filters.year?.toString()}
-                                        onValueChange={(value) => handleFilterChange('year', parseInt(value))}
-                                    >
+                                    <Select value={filters.year?.toString()} onValueChange={(value) => handleFilterChange('year', parseInt(value))}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
@@ -345,9 +324,7 @@ export default function ReportIndex() {
                             )}
                         </div>
 
-                        {error && (
-                            <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
-                        )}
+                        {error && <div className="bg-destructive/10 text-destructive rounded-md p-4 text-sm">{error}</div>}
                     </CardContent>
                 </Card>
 
@@ -357,7 +334,7 @@ export default function ReportIndex() {
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Total Procurements</CardTitle>
-                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                    <FileText className="text-muted-foreground h-4 w-4" />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">{reportData.summary.total_count}</div>
@@ -367,36 +344,30 @@ export default function ReportIndex() {
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Total ABC Amount</CardTitle>
-                                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                                    <TrendingUp className="text-muted-foreground h-4 w-4" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">
-                                        ₱{reportData.summary.total_abc_amount.toLocaleString()}
-                                    </div>
+                                    <div className="text-2xl font-bold">₱{reportData.summary.total_abc_amount.toLocaleString()}</div>
                                 </CardContent>
                             </Card>
 
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Unique Stages</CardTitle>
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <Calendar className="text-muted-foreground h-4 w-4" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">
-                                        {Object.keys(reportData.summary.by_stage).length}
-                                    </div>
+                                    <div className="text-2xl font-bold">{Object.keys(reportData.summary.by_stage).length}</div>
                                 </CardContent>
                             </Card>
 
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Procurement Modes</CardTitle>
-                                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                                    <BarChart3 className="text-muted-foreground h-4 w-4" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">
-                                        {Object.keys(reportData.summary.by_mode).length}
-                                    </div>
+                                    <div className="text-2xl font-bold">{Object.keys(reportData.summary.by_mode).length}</div>
                                 </CardContent>
                             </Card>
                         </div>
@@ -405,9 +376,7 @@ export default function ReportIndex() {
                             <Card className="w-full">
                                 <CardHeader>
                                     <CardTitle>Procurement Trends</CardTitle>
-                                    <CardDescription>
-                                        Procurement activity over the selected period
-                                    </CardDescription>
+                                    <CardDescription>Procurement activity over the selected period</CardDescription>
                                 </CardHeader>
                                 <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
                                     <ChartContainer
@@ -419,22 +388,11 @@ export default function ReportIndex() {
                                         }}
                                         className="aspect-auto h-[350px] w-full"
                                     >
-                                        <AreaChart
-                                            data={reportData.time_series}
-                                            margin={{ left: 12, right: 12, top: 12, bottom: 12 }}
-                                        >
+                                        <AreaChart data={reportData.time_series} margin={{ left: 12, right: 12, top: 12, bottom: 12 }}>
                                             <defs>
                                                 <linearGradient id="fillCount" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop
-                                                        offset="5%"
-                                                        stopColor="hsl(var(--primary))"
-                                                        stopOpacity={0.8}
-                                                    />
-                                                    <stop
-                                                        offset="95%"
-                                                        stopColor="hsl(var(--primary))"
-                                                        stopOpacity={0.1}
-                                                    />
+                                                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                                                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
                                                 </linearGradient>
                                             </defs>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -491,9 +449,7 @@ export default function ReportIndex() {
                                     <div className="space-y-2">
                                         {Object.entries(reportData.summary.by_status).map(([status, count]) => (
                                             <div key={status} className="flex items-center justify-between">
-                                                <span className="text-sm capitalize">
-                                                    {status.replace(/_/g, ' ')}
-                                                </span>
+                                                <span className="text-sm capitalize">{status.replace(/_/g, ' ')}</span>
                                                 <Badge variant="secondary">{count}</Badge>
                                             </div>
                                         ))}
@@ -509,9 +465,7 @@ export default function ReportIndex() {
                                     <div className="space-y-2">
                                         {Object.entries(reportData.summary.by_mode).map(([mode, count]) => (
                                             <div key={mode} className="flex items-center justify-between">
-                                                <span className="text-sm capitalize">
-                                                    {mode.replace(/_/g, ' ')}
-                                                </span>
+                                                <span className="text-sm capitalize">{mode.replace(/_/g, ' ')}</span>
                                                 <Badge variant="secondary">{count}</Badge>
                                             </div>
                                         ))}

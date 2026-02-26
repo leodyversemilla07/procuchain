@@ -113,14 +113,15 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                             <TooltipTrigger asChild>
                                                 <Link
                                                     href={stage.url || '#'}
-                                                    className={`hover:scale-110 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all sm:h-8 sm:w-8 ${stage.is_current
-                                                        ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
-                                                        : stage.is_completed
-                                                            ? 'border-green-500 bg-green-500 text-white dark:border-green-600 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700'
-                                                            : stage.is_optional
+                                                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all hover:scale-110 sm:h-8 sm:w-8 ${
+                                                        stage.is_current
+                                                            ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
+                                                            : stage.is_completed
+                                                              ? 'border-green-500 bg-green-500 text-white hover:bg-green-600 dark:border-green-600 dark:bg-green-600 dark:hover:bg-green-700'
+                                                              : stage.is_optional
                                                                 ? 'border-muted-foreground/50 text-muted-foreground/50 hover:bg-muted/50 border-dashed'
                                                                 : 'border-muted-foreground/30 text-muted-foreground/30 hover:bg-muted/30'
-                                                        }`}
+                                                    }`}
                                                 >
                                                     {stage.is_completed ? (
                                                         <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -180,14 +181,15 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                     <TooltipTrigger asChild>
                                         <Link
                                             href={stage.url || '#'}
-                                            className={`hover:scale-110 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-all ${stage.is_current
-                                                ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
-                                                : stage.is_completed
-                                                    ? 'border-green-500 bg-green-500 text-white dark:border-green-600 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700'
-                                                    : stage.is_optional
+                                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-all hover:scale-110 ${
+                                                stage.is_current
+                                                    ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
+                                                    : stage.is_completed
+                                                      ? 'border-green-500 bg-green-500 text-white hover:bg-green-600 dark:border-green-600 dark:bg-green-600 dark:hover:bg-green-700'
+                                                      : stage.is_optional
                                                         ? 'border-muted-foreground/50 text-muted-foreground/50 hover:bg-muted/50 border-dashed'
                                                         : 'border-muted-foreground/30 text-muted-foreground/30 hover:bg-muted/30'
-                                                }`}
+                                            }`}
                                         >
                                             {stage.is_completed ? (
                                                 <CheckCircle2 className="h-4 w-4" />

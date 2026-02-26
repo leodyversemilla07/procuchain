@@ -21,8 +21,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-import { useBlockchainJob } from '@/hooks/use-blockchain-job';
 import { Spinner } from '@/components/ui/spinner';
+import { useBlockchainJob } from '@/hooks/use-blockchain-job';
 import { AlertCircle, Building2, CheckCircle2, DollarSign, FileText, Save, Trash2, Upload } from 'lucide-react';
 
 import { FUNDING_SOURCES, MUNICIPAL_OFFICES } from '@/types/constants';
@@ -474,7 +474,9 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                         </>
                     }
                     actions={
-                        hasDraft && !showDraftBanner && draftSavedAt && (
+                        hasDraft &&
+                        !showDraftBanner &&
+                        draftSavedAt && (
                             <Badge variant="secondary" className="gap-1.5 text-xs">
                                 <Save className="h-3 w-3" />
                                 Draft saved {new Date(draftSavedAt).toLocaleTimeString()}

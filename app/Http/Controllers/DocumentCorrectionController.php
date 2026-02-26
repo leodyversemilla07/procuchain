@@ -9,7 +9,6 @@ use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -34,41 +33,41 @@ class DocumentCorrectionController extends Controller
                 return response()->json(['error' => 'Document not found in blockchain.'], 404);
             }
 
-            $pr_number        = $originalDocument->prNumber;
+            $pr_number = $originalDocument->prNumber;
             $procurementTitle = $originalDocument->procurementTitle;
 
             if (! $pr_number || ! $procurementTitle) {
                 return response()->json(['error' => 'Invalid document: missing procurement information.'], 422);
             }
 
-            $userAddress    = auth()->user()->blockchain_address ?? '';
-            $action         = $validated['correction_type'] === 'replace' ? 'replace' : 'invalidate';
+            $userAddress = auth()->user()->blockchain_address ?? '';
+            $action = $validated['correction_type'] === 'replace' ? 'replace' : 'invalidate';
             $correctionType = match ($validated['correction_type']) {
-                'replace'    => 'document_correction',
+                'replace' => 'document_correction',
                 'invalidate' => 'status_correction',
-                'hash'       => 'hash_correction',
-                default      => 'metadata_correction',
+                'hash' => 'hash_correction',
+                default => 'metadata_correction',
             };
 
             // Store replacement file temporarily (if provided)
             $jobData = [
-                'pr_number'             => $pr_number,
-                'procurement_title'     => $procurementTitle,
-                'original_txid'         => $txid,
+                'pr_number' => $pr_number,
+                'procurement_title' => $procurementTitle,
+                'original_txid' => $txid,
                 'original_document_hash' => $originalDocument->hash ?? '',
-                'correction_type'       => $correctionType,
-                'action'                => $action,
-                'reason'                => $validated['correction_reason'],
-                'corrected_by'          => auth()->user()->name ?? 'System',
-                'user_address'          => $userAddress,
-                'original_stage'        => $originalDocument->stage ?? null,
+                'correction_type' => $correctionType,
+                'action' => $action,
+                'reason' => $validated['correction_reason'],
+                'corrected_by' => auth()->user()->name ?? 'System',
+                'user_address' => $userAddress,
+                'original_stage' => $originalDocument->stage ?? null,
             ];
 
             if ($request->hasFile('corrected_file')) {
-                $corrFile                     = $request->file('corrected_file');
-                $jobData['temp_file_path']    = $corrFile->store('temp/blockchain-uploads');
+                $corrFile = $request->file('corrected_file');
+                $jobData['temp_file_path'] = $corrFile->store('temp/blockchain-uploads');
                 $jobData['original_filename'] = $corrFile->getClientOriginalName();
-                $jobData['mime_type']         = $corrFile->getMimeType() ?? 'application/octet-stream';
+                $jobData['mime_type'] = $corrFile->getMimeType() ?? 'application/octet-stream';
             }
 
             $jobId = Str::uuid()->toString();
@@ -80,7 +79,7 @@ class DocumentCorrectionController extends Controller
             ], 202);
         } catch (\Exception $e) {
             Log::error('Failed to submit document correction', [
-                'txid'  => $txid,
+                'txid' => $txid,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

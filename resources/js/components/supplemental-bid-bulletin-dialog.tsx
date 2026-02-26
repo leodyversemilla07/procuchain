@@ -110,9 +110,7 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
                             <Label
                                 htmlFor="supplemental-yes"
                                 className={`hover:border-primary/50 hover:bg-accent/50 m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all ${
-                                    supplementalBidNeeded === true
-                                        ? 'border-primary bg-primary/5 ring-primary/20 ring-2'
-                                        : 'border-border'
+                                    supplementalBidNeeded === true ? 'border-primary bg-primary/5 ring-primary/20 ring-2' : 'border-border'
                                 }`}
                             >
                                 <RadioGroupItem value="true" id="supplemental-yes" />
@@ -124,9 +122,7 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
                             <Label
                                 htmlFor="supplemental-no"
                                 className={`hover:border-primary/50 hover:bg-accent/50 m-0 flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-all ${
-                                    supplementalBidNeeded === false
-                                        ? 'border-primary bg-primary/5 ring-primary/20 ring-2'
-                                        : 'border-border'
+                                    supplementalBidNeeded === false ? 'border-primary bg-primary/5 ring-primary/20 ring-2' : 'border-border'
                                 }`}
                             >
                                 <RadioGroupItem value="false" id="supplemental-no" />
@@ -186,11 +182,7 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
                         >
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={processing || supplementalBidNeeded === undefined}
-                            className="min-h-11 w-full sm:w-auto"
-                        >
+                        <Button type="submit" disabled={processing || supplementalBidNeeded === undefined} className="min-h-11 w-full sm:w-auto">
                             {processing ? (
                                 <span className="flex items-center gap-2">
                                     <Spinner />
@@ -209,4 +201,3 @@ export function SupplementalBidBulletinDialog({ open, onOpenChange, pr_number, p
         </Dialog>
     );
 }
-
