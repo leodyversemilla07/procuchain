@@ -8,419 +8,39 @@ use App\DataTransferObjects\CorrectionData;
 use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\EventData;
 use App\DataTransferObjects\StatusData;
-use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
-use App\Models\User;
 use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
-use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
-use App\Services\UserService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Service for fetching and aggregating procurement data from blockchain repositories
+ * Service for fetching single-procurement data from blockchain repositories
  *
  * Handles:
- * - Fetching status, documents, events, corrections from repositories
- * - Aggregating data across multiple repositories
- * - User name resolution and caching
- * - Sorting and filtering raw blockchain data
+ * - Fetching status, documents, events, corrections for a specific procurement
+ * - Document lookup by file key
+ * - Sorting raw blockchain data
+ *
+ * Bulk listing operations are handled by ProcurementListAggregatorService.
+ * User name resolution is handled by UserNameResolverService.
+ *
+ * @see ProcurementListAggregatorService
+ * @see UserNameResolverService
  */
 final class ProcurementFetcherService
 {
-    /**
-     * @var array<string, string>
-     */
-    private array $userCache = [];
-
     public function __construct(
         private readonly StatusRepository $statusRepository,
         private readonly DocumentRepository $documentRepository,
         private readonly EventRepository $eventRepository,
         private readonly CorrectionRepository $correctionRepository,
-        private readonly ProcurementRepository $procurementRepository,
-        private readonly UserService $userService,
         private readonly ProcurementFormatterService $formatter,
-
-        private readonly ProcurementActionService $actionService,
-        private readonly \App\Repositories\ProcurementArchiveRepository $archiveRepository,
+        private readonly UserNameResolverService $userNameResolver,
     ) {}
-
-    /**
-     * Fetch and process all procurement data for listing
-     *
-     * Performance optimizations applied (per MultiChain official docs):
-     * - Key-based queries (liststreamkeys + liststreamkeyitems) - 10x faster
-     * - verbose=false on all queries - 60% data transfer reduction
-     * - local-ordering=true for faster execution
-     * - Batch queries to prevent N+1 problems
-     * - Short cache TTL (5min) for balance between speed and freshness
-     * - Optional action generation skipping for faster initial load
-     *
-     * Security:
-     * - BAC Secretariat users can only see their own procurements
-     * - Filtering by both userId (creator) and blockchain_address (identity verification)
-     * - Admin, BAC Chairman, and HOPE can see all procurements
-     *
-     * @param  bool  $skipActions  Skip action generation for faster initial load
-     * @param  string|null  $filterByUserId  Filter procurements by creator user ID (for BAC Secretariat)
-     * @param  string|null  $filterByUserAddress  Filter by blockchain address for additional security
-     * @param  bool  $archived  Filter for archived procurements (true = show archived only, false = show active only)
-     * @return array<int, array<string, mixed>>
-     */
-    public function fetchAllProcurements(bool $skipActions = false, ?string $filterByUserId = null, ?string $filterByUserAddress = null, bool $archived = false): array
-    {
-        // NO CACHE APPROACH: Fetch directly from blockchain with optimized queries
-        // This eliminates cache invalidation complexity and stale data issues
-
-        Log::info('ProcurementFetcherService: Fetching directly from blockchain (no cache)', [
-            'archived_filter' => $archived,
-        ]);
-
-        return $this->fetchProcurementsOptimized($skipActions, $filterByUserId, $filterByUserAddress, $archived);
-    }
-
-    /**
-     * Optimized blockchain fetch without cache
-     */
-    private function fetchProcurementsOptimized(bool $skipActions, ?string $filterByUserId, ?string $filterByUserAddress, bool $archived): array
-    {
-        // Define blockchain health cache key
-        $blockchainHealthKey = 'blockchain:health:procurement_fetch';
-
-        try {
-            Log::info('ProcurementFetcherService: Starting OPTIMIZED fetch from blockchain');
-
-            // Set a reasonable timeout for the entire operation
-            set_time_limit(22); // Leave 8 seconds buffer before PHP's 30s limit
-
-            // Fetch enough status items to cover all procurements
-            // Using lower limit since StatusRepository now uses optimized single-query method
-            // The repository will internally fetch enough items to find all unique procurements
-            //
-            // SCALING: If blockchain grows significantly, consider:
-            // 1. Moving these to config('procurement.list_limits.status') and config('procurement.list_limits.documents')
-            // 2. Adding pagination to the procurement list UI
-            // 3. Implementing background sync to database for faster queries
-            $statusLimit = 50; // Repository will fetch 10x this (~500 items) to find all unique PRs
-            $documentLimit = 100; // Increased to ensure accurate document counts as data grows
-
-            Log::info('Fetching with limits', [
-                'status_limit' => $statusLimit,
-                'document_limit' => $documentLimit,
-            ]);
-
-            // OPTIMIZATION 1: Use optimized repository method with further reduced limit
-            try {
-                $statusDtos = $this->statusRepository->getLatestByProcurement($statusLimit);
-                $statusItems = collect($statusDtos);
-            } catch (\Exception $e) {
-                Log::error('Failed to fetch status items, returning empty', [
-                    'error' => $e->getMessage(),
-                ]);
-
-                return [];
-            }
-
-            // OPTIMIZATION 2: Fetch documents with further reduced limit
-            try {
-                $documentDtos = $this->documentRepository->all($documentLimit, 0);
-            } catch (\Exception $e) {
-                Log::warning('Failed to fetch documents, continuing without document counts', [
-                    'error' => $e->getMessage(),
-                ]);
-                $documentDtos = [];
-            }
-
-            Log::info('ProcurementFetcherService: Fetched data from repositories (OPTIMIZED)', [
-                'status_count' => $statusItems->count(),
-                'document_count' => count($documentDtos),
-                'optimized' => true,
-            ]);
-
-            // OPTIMIZATION 3: Batch user preloading
-            $this->preloadUserNamesFromDtos($statusItems);
-
-            // OPTIMIZATION 4: Use efficient array operations for document counting
-            $documentCountMap = [];
-            foreach ($documentDtos as $doc) {
-                $prNumber = $doc->prNumber;
-                $documentCountMap[$prNumber] = ($documentCountMap[$prNumber] ?? 0) + 1;
-            }
-
-            // Build procurement mode map (RESTORED - needed for frontend display)
-            try {
-                $procurementModeMap = $this->buildProcurementModeMap($statusItems);
-            } catch (\Exception $e) {
-                Log::warning('Failed to build mode map, continuing without mode info', [
-                    'error' => $e->getMessage(),
-                ]);
-                $procurementModeMap = [];
-            }
-
-            // ARCHIVE FILTERING:
-            // Fetch list of archived PR numbers
-            try {
-                $archivedPrNumbers = $this->archiveRepository->getArchivedPrNumbers();
-            } catch (\Exception $e) {
-                Log::warning('Failed to fetch archived procurements list', ['error' => $e->getMessage()]);
-                $archivedPrNumbers = [];
-            }
-
-            // Filter status items based on archived status
-            $statusItems = $statusItems->filter(function (StatusData $statusDto) use ($archivedPrNumbers, $archived) {
-                $isArchived = in_array($statusDto->prNumber, $archivedPrNumbers, true);
-
-                // If requesting archived ($archived = true), return only archived items
-                // If requesting active ($archived = false), return only non-archived items
-                return $archived ? $isArchived : ! $isArchived;
-            });
-
-            Log::info('Filtered procurements by archive status', [
-                'showing_archived' => $archived,
-                'total_archived_count' => count($archivedPrNumbers),
-                'remaining_items' => $statusItems->count(),
-            ]);
-
-            // SECURITY: Filter procurements by userId and/or blockchain address if specified (for BAC Secretariat isolation)
-            if ($filterByUserId !== null || $filterByUserAddress !== null) {
-                // Get all procurement metadata for filtering
-                $prNumbers = $statusItems->pluck('prNumber')->unique()->values()->all();
-
-                // EMERGENCY TIMEOUT PREVENTION: Limit batch size to prevent blockchain timeout
-                // Reduced from 30 to 20 for extra safety
-                if (count($prNumbers) > 20) {
-                    Log::warning('Too many procurements to filter, limiting to 20 to prevent timeout', [
-                        'total' => count($prNumbers),
-                        'limiting_to' => 20,
-                    ]);
-                    $prNumbers = array_slice($prNumbers, 0, 20);
-                }
-
-                try {
-                    $procurements = $this->procurementRepository->findManyByProcurement($prNumbers);
-                } catch (\Exception $e) {
-                    Log::error('Failed to fetch procurement metadata for filtering, showing all', [
-                        'error' => $e->getMessage(),
-                    ]);
-                    // If we can't filter, just show what we have
-                    $procurements = [];
-                }
-
-                // Filter to only include procurements created by the specified user
-                $allowedPrNumbers = [];
-                foreach ($procurements as $prNumber => $procurement) {
-                    if ($procurement) {
-                        // Check userId if filter is provided
-                        $userIdMatch = $filterByUserId === null || $procurement->userId === $filterByUserId;
-
-                        // Note: ProcurementData doesn't store blockchain address directly,
-                        // but we can still filter StatusData by userAddress below
-                        if ($userIdMatch) {
-                            $allowedPrNumbers[] = $prNumber;
-                        }
-                    }
-                }
-
-                // Filter status items to only allowed procurement numbers
-                $statusItems = $statusItems->filter(function (StatusData $statusDto) use ($allowedPrNumbers, $filterByUserAddress) {
-                    // Check if procurement is in allowed list (user created it)
-                    $prNumberAllowed = in_array($statusDto->prNumber, $allowedPrNumbers, true);
-
-                    // Check if user has interacted with this procurement via blockchain
-                    $addressAllowed = $filterByUserAddress === null || $statusDto->userAddress === $filterByUserAddress;
-
-                    // Use OR logic: Show if user created it OR interacted with it
-                    // This allows BAC Secretariat to see procurements they're working on
-                    return $prNumberAllowed || $addressAllowed;
-                });
-
-                Log::info('Filtered procurements by userId and/or blockchain address', [
-                    'filter_user_id' => $filterByUserId,
-                    'filter_user_address' => $filterByUserAddress ? substr($filterByUserAddress, 0, 10).'...' : null,
-                    'total_procurements' => count($prNumbers),
-                    'filtered_count' => $statusItems->count(),
-                ]);
-            }
-
-            // Process status items to get latest status per procurement
-            $result = $statusItems
-                ->map(function (StatusData $statusDto) use ($documentCountMap, $procurementModeMap, $skipActions) {
-                    $originalTimestamp = $statusDto->timestamp;
-                    $displayTimestamp = Carbon::parse($statusDto->timestamp)->toDateString();
-
-                    $stageEnum = StageEnums::tryFrom($statusDto->stage);
-                    $phase = $stageEnum?->getPhase() ?? 'unknown';
-                    $phaseDisplayName = $stageEnum?->getPhaseDisplayName() ?? 'Unknown';
-                    $phaseProgress = $stageEnum?->getPhaseProgress() ?? [
-                        'phase' => 'unknown',
-                        'progress' => 0,
-                        'current_stage_in_phase' => 0,
-                        'total_stages_in_phase' => 0,
-                    ];
-
-                    // Get procurement mode for this item
-                    $modeInfo = $procurementModeMap[$statusDto->prNumber] ?? null;
-                    $modeEnum = isset($modeInfo['value']) ? ProcurementModeEnums::tryFrom($modeInfo['value']) : null;
-
-                    // Get user role for action determination
-                    $userRole = $this->getCurrentUserRole();
-
-                    // Get available actions from the action service (skip if requested for performance)
-                    // Pass the mode directly to avoid additional blockchain lookups
-                    $workflowActions = [];
-                    $staticActions = [];
-
-                    if (! $skipActions) {
-                        try {
-                            $workflowActions = $this->actionService->getAvailableActions(
-                                $statusDto->prNumber,
-                                $statusDto->stage,
-                                $statusDto->currentStatus,
-                                $userRole,
-                                $modeEnum
-                            );
-                            $staticActions = $this->actionService->getStaticActions($statusDto->prNumber, $userRole);
-                        } catch (\Exception $e) {
-                            Log::debug('Failed to fetch actions for procurement, using empty actions', [
-                                'pr_number' => $statusDto->prNumber,
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
-                    }
-
-                    return [
-                        'id' => $statusDto->prNumber,
-                        'title' => $statusDto->procurementTitle,
-                        'stage' => $statusDto->stage,
-                        'stage_formatted' => $this->formatter->formatStageName($statusDto->stage),
-                        'phase' => $phase,
-                        'phase_display' => $phaseDisplayName,
-                        'phase_progress' => $phaseProgress,
-                        'current_status' => $statusDto->currentStatus,
-                        'status_formatted' => $this->formatter->formatStatus($statusDto->currentStatus),
-                        'timestamp' => $originalTimestamp,
-                        'display_date' => $displayTimestamp,
-                        'last_updated' => $displayTimestamp,
-                        'user_address' => $statusDto->userAddress,
-                        'user' => $this->getUserName($statusDto->userAddress),
-                        'document_count' => $documentCountMap[$statusDto->prNumber] ?? 0,
-                        'metadata' => $statusDto->metadata,
-                        'procurement_mode' => $modeInfo['value'] ?? null,
-                        'procurement_mode_label' => $modeInfo['label'] ?? null,
-                        'mode' => $modeInfo['value'] ?? 'unknown',
-                        'abc_amount' => $modeInfo['abc_amount'] ?? 0,
-                        'workflow_actions' => $workflowActions,
-                        'static_actions' => $staticActions,
-                    ];
-                })
-                ->groupBy('id')
-                ->map(function ($group) {
-                    return $group->sortByDesc(function ($item) {
-                        $timestamp = $item['timestamp'] ?? '0';
-                        $unixTimestamp = $timestamp instanceof Carbon ? $timestamp->timestamp : strtotime($timestamp);
-
-                        // Prioritize transitions when timestamps are identical
-                        $isTransition = isset($item['metadata']['transition']) && $item['metadata']['transition'] === true;
-                        $priorityOffset = $isTransition ? 0.001 : 0;
-
-                        return $unixTimestamp + $priorityOffset;
-                    })->first();
-                })
-                ->sortByDesc(function ($item) {
-                    // Sort all procurements by timestamp in descending order (newest first)
-                    $timestamp = $item['timestamp'] ?? '0';
-
-                    return $timestamp instanceof Carbon ? $timestamp->timestamp : strtotime($timestamp);
-                })
-                ->values()
-                ->all();
-
-            Log::info('ProcurementFetcherService: Final procurements result count', ['count' => count($result)]);
-
-            // Mark blockchain as healthy since we succeeded
-            Cache::put($blockchainHealthKey, true, now()->addMinutes(5));
-
-            return $result;
-        } catch (\Exception $e) {
-            Log::error('Failed to fetch procurement data, blockchain may be unavailable', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            // CIRCUIT BREAKER: Mark blockchain as unhealthy for 2 minutes
-            if (str_contains($e->getMessage(), 'execution time') || str_contains($e->getMessage(), 'timeout')) {
-                Cache::put($blockchainHealthKey, false, now()->addMinutes(2));
-                Log::warning('Blockchain marked as unhealthy due to timeout');
-            }
-
-            // Return empty array to allow page to load with error message
-            return [];
-        }
-    }
-
-    /**
-     * Build a map of procurement modes by PR number (OPTIMIZED)
-     * Uses batch fetching to avoid N+1 query problem
-     *
-     * @return array<string, array{value: string, label: string}>
-     */
-    private function buildProcurementModeMap(Collection $statusItems): array
-    {
-        try {
-            $prNumbers = $statusItems->pluck('prNumber')->unique()->values()->all();
-
-            // OPTIMIZATION: Batch fetch all procurements in one query instead of N queries
-            $procurements = $this->procurementRepository->findManyByProcurement($prNumbers);
-
-            $modeMap = [];
-            foreach ($procurements as $prNumber => $procurement) {
-                if ($procurement && $procurement->procurementMode) {
-                    $modeMap[$prNumber] = [
-                        'value' => $procurement->procurementMode->value,
-                        'label' => $procurement->procurementMode->getDisplayName(),
-                        'abc_amount' => $procurement->abcAmount ?? 0,
-                    ];
-                }
-            }
-
-            Log::debug('Built procurement mode map', [
-                'total_procurements' => count($prNumbers),
-                'with_modes' => count($modeMap),
-            ]);
-
-            return $modeMap;
-        } catch (\Exception $e) {
-            Log::warning('Failed to build procurement mode map, blockchain may be unavailable', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
-    }
-
-    /**
-     * Get the current authenticated user's role
-     */
-    private function getCurrentUserRole(): string
-    {
-        $user = Auth::user();
-
-        if (! $user instanceof User) {
-            return 'guest';
-        }
-
-        // Get the first role from the user's roles
-        $roles = $user->getRoleNames();
-
-        return $roles->first() ?? 'guest';
-    }
 
     /**
      * Fetch status items for a specific procurement
@@ -712,16 +332,7 @@ final class ProcurementFetcherService
      */
     public function preloadUserNames(Collection $items): void
     {
-        $addresses = $items->pluck('data.json.user_address')->unique()->filter()->all();
-        if (empty($addresses)) {
-            return;
-        }
-
-        $names = User::whereIn('blockchain_address', $addresses)
-            ->pluck('name', 'blockchain_address')
-            ->all();
-
-        $this->userCache = $names;
+        $this->userNameResolver->preloadFromRawItems($items);
     }
 
     /**
@@ -729,24 +340,6 @@ final class ProcurementFetcherService
      */
     public function getUserName(string $address): string
     {
-        return $this->userCache[$address] ?? $this->userService->getUserNameByAddress($address);
-    }
-
-    /**
-     * Preload user names from DTOs for performance
-     */
-    private function preloadUserNamesFromDtos(Collection $statusDtos): void
-    {
-        $addresses = $statusDtos->map(fn (StatusData $dto) => $dto->userAddress)
-            ->unique()
-            ->filter()
-            ->toArray();
-
-        $this->userService->preloadUserNames($addresses);
-
-        $this->userCache = [];
-        foreach ($addresses as $address) {
-            $this->userCache[$address] = $this->userService->getUserNameByAddress($address);
-        }
+        return $this->userNameResolver->resolve($address);
     }
 }
