@@ -2,7 +2,8 @@
 
 use App\Mail\AccountLockedMail;
 use App\Models\User;
-use App\Services\LoginService;
+use App\Services\AccountLockoutService;
+use App\Services\LoginLoggerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -10,7 +11,8 @@ use Illuminate\Support\Facades\Mail;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->loginTrackingService = app(LoginService::class);
+    $this->loginLogger = app(LoginLoggerService::class);
+    $this->accountLockout = app(AccountLockoutService::class);
 });
 
 test('sends account locked email when account is locked after failed attempts', function () {
@@ -21,6 +23,7 @@ test('sends account locked email when account is locked after failed attempts', 
         'name' => 'Test User',
         'failed_login_attempts' => 2, // One more attempt will lock the account
         'account_locked' => false,
+        'email_notifications_enabled' => true,
     ]);    // Create a mock request for the failed login
     $request = Request::create('/login', 'POST', [
         'email' => $user->email,
@@ -29,7 +32,8 @@ test('sends account locked email when account is locked after failed attempts', 
     $request->headers->set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
     // This should lock the account and send email
-    $this->loginTrackingService->logFailedLogin($user->email, $request);
+    $this->loginLogger->logFailedLogin($user->email, $request);
+    $this->accountLockout->handleFailedLoginAttempt($user);
 
     // Refresh user to get updated data
     $user->refresh();
@@ -63,7 +67,8 @@ test('does not send email when account is already locked', function () {
     $request->headers->set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
     // This should not send another email since account is already locked
-    $this->loginTrackingService->logFailedLogin($user->email, $request);
+    $this->loginLogger->logFailedLogin($user->email, $request);
+    $this->accountLockout->handleFailedLoginAttempt($user);
 
     Mail::assertNotSent(AccountLockedMail::class);
 });
@@ -83,7 +88,8 @@ test('does not send email when account is not locked after failed attempt', func
     ]);
     $request->headers->set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
-    $this->loginTrackingService->logFailedLogin($user->email, $request);
+    $this->loginLogger->logFailedLogin($user->email, $request);
+    $this->accountLockout->handleFailedLoginAttempt($user);
 
     // Refresh user to get updated data
     $user->refresh();
@@ -108,7 +114,7 @@ test('resets failed login attempts on successful login', function () {
     ]);
     $request->headers->set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
-    $this->loginTrackingService->logLogin($user, $request);
+    $this->loginLogger->logLogin($user, $request);
 
     $user->refresh();
 
@@ -129,7 +135,8 @@ test('handles failed login attempt with proper tracking', function () {
     ]);
     $request->headers->set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
-    $this->loginTrackingService->logFailedLogin($user->email, $request);
+    $this->loginLogger->logFailedLogin($user->email, $request);
+    $this->accountLockout->handleFailedLoginAttempt($user);
 
     $user->refresh();
 
@@ -151,7 +158,8 @@ test('locks account after exactly 3 failed attempts', function () {
     ]);
     $request->headers->set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
-    $this->loginTrackingService->logFailedLogin($user->email, $request);
+    $this->loginLogger->logFailedLogin($user->email, $request);
+    $this->accountLockout->handleFailedLoginAttempt($user);
 
     $user->refresh();
 
@@ -175,7 +183,8 @@ test('sets correct lock expiration time', function () {
     $request->headers->set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
     $beforeLock = now();
-    $this->loginTrackingService->logFailedLogin($user->email, $request);
+    $this->loginLogger->logFailedLogin($user->email, $request);
+    $this->accountLockout->handleFailedLoginAttempt($user);
     $afterLock = now();
 
     $user->refresh();
