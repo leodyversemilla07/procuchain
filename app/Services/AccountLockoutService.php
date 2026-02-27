@@ -2,12 +2,11 @@
 
 namespace App\Services;
 
-use App\Mail\AccountLockedMail;
+use App\Events\AccountLocked;
 use App\Models\User;
 use App\Models\UserLoginLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class AccountLockoutService
 {
@@ -37,27 +36,11 @@ class AccountLockoutService
                     'locked_until' => $user->lock_expires_at,
                 ]);
 
-                // Send account locked notification email if user has email notifications enabled
-                if ($user->email_notifications_enabled) {
-                    try {
-                        Mail::to($user->email)->send(new AccountLockedMail(
-                            $user,
-                            'Account locked due to multiple failed login attempts',
-                            "{$lockDurationMinutes} minutes"
-                        ));
-
-                        Log::info('Account locked notification email sent', [
-                            'user_id' => $user->id,
-                            'user_email' => $user->email,
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::error('Failed to send account locked notification email', [
-                            'user_id' => $user->id,
-                            'user_email' => $user->email,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                }
+                AccountLocked::dispatch(
+                    $user,
+                    'Account locked due to multiple failed login attempts',
+                    "{$lockDurationMinutes} minutes",
+                );
             } else {
                 Log::info('Failed login attempt recorded', [
                     'user_id' => $user->id,
@@ -215,27 +198,7 @@ class AccountLockoutService
                 'duration_hours' => $durationHours,
             ]);
 
-            // Send account locked notification email if user has email notifications enabled
-            if ($user->email_notifications_enabled) {
-                try {
-                    Mail::to($user->email)->send(new AccountLockedMail(
-                        $user,
-                        $reason,
-                        "{$durationHours} hours"
-                    ));
-                    Log::info('Account locked notification email sent for manual lock', [
-                        'user_id' => $user->id,
-                        'user_email' => $user->email,
-                        'reason' => $reason,
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('Failed to send account locked notification email for manual lock', [
-                        'user_id' => $user->id,
-                        'user_email' => $user->email,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
+            AccountLocked::dispatch($user, $reason, "{$durationHours} hours");
 
             return true;
         } catch (\Exception $e) {

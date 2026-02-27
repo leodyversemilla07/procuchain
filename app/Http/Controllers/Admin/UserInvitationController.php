@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\UserInvited;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\SendInvitationRequest;
-use App\Mail\UserInvitationMail;
 use App\Models\UserInvitation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -86,7 +84,7 @@ class UserInvitationController extends Controller
             $acceptUrl = route('invitation.show', ['token' => $invitation->token]);
 
             // Send invitation email
-            Mail::to($invitation->email)->send(new UserInvitationMail($invitation, $acceptUrl));
+            UserInvited::dispatch($invitation, $acceptUrl);
 
             Log::info('User invitation sent', [
                 'invitation_id' => $invitation->id,
@@ -128,7 +126,7 @@ class UserInvitationController extends Controller
             $acceptUrl = route('invitation.show', ['token' => $invitation->token]);
 
             // Resend email
-            Mail::to($invitation->email)->send(new UserInvitationMail($invitation, $acceptUrl));
+            UserInvited::dispatch($invitation, $acceptUrl);
 
             Log::info('User invitation resent', [
                 'invitation_id' => $invitation->id,

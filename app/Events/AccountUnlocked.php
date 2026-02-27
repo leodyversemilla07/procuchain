@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Events;
+
+use App\Models\User;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+class AccountUnlocked
+{
+    use Dispatchable, SerializesModels;
+
+    public function __construct(
+        public readonly User $user,
+        public readonly string $reason,
+        public readonly bool $isAutoUnlock,
+        public readonly string $unlockedBy,
+    ) {}
+}

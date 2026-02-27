@@ -2,9 +2,7 @@
 
 namespace App\Models\Concerns;
 
-use App\Mail\AccountUnlockedMail;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
+use App\Events\AccountUnlocked;
 
 /**
  * Provides account lock management for a User model.
@@ -67,35 +65,12 @@ trait HasAccountLock
             'locked_reason' => null,
         ]);
 
-        // Send unlock notification email only if account was actually locked and user has email notifications enabled
-        if ($this->email_notifications_enabled) {
-            try {
-                $reason = $isAutoUnlock
-                    ? 'Account automatically unlocked after lock period expired'
-                    : $unlockedBy;
-
-                Mail::to($this->email)->send(new AccountUnlockedMail(
-                    $this,
-                    $reason,
-                    $isAutoUnlock,
-                    $unlockedBy
-                ));
-
-                Log::info('Account unlocked notification email sent', [
-                    'user_id' => $this->id,
-                    'user_email' => $this->email,
-                    'auto_unlock' => $isAutoUnlock,
-                    'unlocked_by' => $unlockedBy,
-                    'reason' => $reason,
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to send account unlocked notification email', [
-                    'user_id' => $this->id,
-                    'user_email' => $this->email,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        AccountUnlocked::dispatch(
+            $this,
+            $isAutoUnlock ? 'Account automatically unlocked after lock period expired' : $unlockedBy,
+            $isAutoUnlock,
+            $unlockedBy,
+        );
     }
 
     /**

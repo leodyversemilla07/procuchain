@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Mail\NewLocationLoginAlert;
+use App\Events\SuspiciousLoginDetected;
 use App\Models\User;
 use App\Models\UserLoginLog;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Geographic Login Anomaly Detection Service
@@ -222,20 +221,7 @@ class GeoLoginAnomalyService
      */
     private function sendNewLocationAlert(User $user, array $location, string $ipAddress, ?string $userAgent): void
     {
-        try {
-            Mail::to($user->email)->queue(new NewLocationLoginAlert(
-                user: $user,
-                location: $location,
-                ipAddress: $ipAddress,
-                userAgent: $userAgent,
-                loginTime: now()
-            ));
-        } catch (\Exception $e) {
-            Log::error('GeoLoginAnomaly: Failed to send alert email', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        SuspiciousLoginDetected::dispatch($user, $location, $ipAddress, $userAgent);
     }
 
     /**

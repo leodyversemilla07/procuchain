@@ -528,7 +528,7 @@ describe('AccountLockoutService', function () {
             });
 
             Log::shouldHaveReceived('info')
-                ->with('Account locked notification email sent for manual lock', \Mockery::type('array'))
+                ->with('Account locked notification sent', \Mockery::type('array'))
                 ->once();
         });
 
@@ -572,7 +572,7 @@ describe('AccountLockoutService', function () {
             $this->service->lockAccount($user, 'Test lock');
 
             Log::shouldHaveReceived('error')
-                ->with('Failed to send account locked notification email for manual lock', \Mockery::type('array'))
+                ->with('Failed to send account locked notification', \Mockery::type('array'))
                 ->once();
         });
 
