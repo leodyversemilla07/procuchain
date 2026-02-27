@@ -4,7 +4,7 @@ This guide explains the testing infrastructure for ProcuChain, including how to 
 
 ## Overview
 
-ProcuChain uses [Pest](https://pestphp.com/) as its testing framework, built on top of PHPUnit. The testing environment is designed to be **fast, isolated, and dependency-free** for Unit and Feature tests.
+ProcuChain uses [Pest](https://pestphp.com/) as its testing framework, built on top of PHPUnit. The test suite contains **1,202 tests with 4,404 assertions**.
 
 Key features of the test setup:
 
@@ -143,3 +143,33 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 1. Remove the `final` keyword from the class definition (recommended for services that need testing).
 2. Or use interfaces for dependency injection and mock the interface instead.
+3. Or mock the leaf dependency (e.g., `Manager`) instead of the intermediate service.
+
+## Test Coverage by Layer
+
+### Unit Tests (`tests/Unit/`)
+
+| Directory | Test File | Tests | Coverage |
+|---|---|---|---|
+| `Services/Verification/` | `DocumentVerifierTest.php` | 18 | IntegrityVerifier, CompletenessVerifier, CrossReferenceVerifier, ComplianceVerifier |
+| `Jobs/Handlers/` | `BlockchainWriteJobHandlerTest.php` | 34 | All 6 handlers + dispatch routing + HandlesTempFiles trait |
+| `Services/Procurement/` | `ProcurementCorrectionServiceTest.php` | 23 | Correction service methods, formatting, fallback lookup |
+| `Services/Procurement/` | `ProcurementDetailServiceTest.php` | 7 | Detail composition, list aggregation, archive filtering |
+| `Services/Procurement/` | `ProcurementSupportServiceTest.php` | 12 | Stage validation, workflow navigation, optional stages |
+| `Services/Blockchain/` | `FileOperationsTest.php` | 8 | FileUploader (single/chunked), FileRetriever, key generation |
+| `Models/Concerns/` | `HasAccountLockTest.php` | 7 | Lock/unlock, expiration, failed attempts |
+| `Services/` | `PdfViewerServiceTest.php` | 4 | Document data preparation, view stats |
+| `DataTransferObjects/` | `VerificationDTOsTest.php` | varies | Verification result DTOs |
+| `Enums/` | `DocumentTypeEnumsTest.php` | varies | Enum behavior |
+| Other unit tests | Various | varies | Publishers, formatters, requests |
+
+### Feature Tests (`tests/Feature/`)
+
+Feature tests cover end-to-end HTTP flows including:
+- Procurement workflow controllers
+- Authentication and account lockout
+- Blockchain monitoring and health checks
+- Dashboard and analytics
+- Document operations and corrections
+- Event/Listener integration (`EventListenerTest.php` — 14 tests)
+- Report generation

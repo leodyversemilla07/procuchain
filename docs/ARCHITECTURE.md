@@ -61,29 +61,88 @@ graph TD
 
 ### 3. Service Layer Architecture
 
-- **Role**: Business logic isolation to maintain clean controllers and reusable components. The service layer is designed to be modular, following the Single Responsibility Principle.
+- **Role**: Business logic isolation to maintain clean controllers and reusable components. The service layer is designed to be modular, following the Single Responsibility Principle. Controllers are thin — they receive requests, delegate to services, and return responses.
 
 ```mermaid
 graph LR
-    Controller["Procurement Controllers"] --> Mapper["StageStatusMapper"]
-    Controller --> Orchestrator["ProcurementOrchestrator"]
-    Orchestrator --> DecisionPub["DecisionPublisher"]
-    Orchestrator --> DocPub["DocumentPublisher"]
-    Orchestrator --> StatusPub["StatusPublisher"]
-    Controller --> Monitor["BlockchainMonitoringService"]
+    Controller["Procurement Controllers"] --> ActionSvc["ProcurementActionService"]
+    Controller --> SupportSvc["ProcurementSupportService"]
+    Controller --> DetailSvc["ProcurementDetailService"]
+    Controller --> CorrSvc["ProcurementCorrectionService"]
+    Controller --> AggSvc["ProcurementListAggregatorService"]
+
+    Controller -->|dispatch| BWJ["BlockchainWriteJob"]
+    BWJ --> InitHandler["ProcurementInitiationHandler"]
+    BWJ --> DocHandler["DocumentUploadHandler"]
+    BWJ --> CorrHandler["CorrectionHandler"]
+    BWJ --> StageHandler["StageCompletionHandler"]
+    BWJ --> TransHandler["StageTransitionHandler"]
+    BWJ --> UpdateHandler["ProcurementUpdateHandler"]
+
+    InitHandler --> Orchestrator["ProcurementOrchestrator"]
+    DocHandler --> DocPub["DocumentPublisher"]
+    CorrHandler --> CorrPub["CorrectionPublisher"]
+    StageHandler --> StatusPub["StatusPublisher"]
+    TransHandler --> StatusPub
+    UpdateHandler --> DecisionPub["DecisionPublisher"]
 
     DocPub --> BC["MultiChain Streams"]
     StatusPub --> BC
     DecisionPub --> BC
+    CorrPub --> BC
+
+    Controller --> Monitor["BlockchainMonitoringService"]
     Monitor --> BC
+
+    subgraph "Blockchain Storage"
+        StorageSvc["BlockchainStorageService"] --> Uploader["FileUploader"]
+        StorageSvc --> Retriever["FileRetriever"]
+        Uploader --> BC
+        Retriever --> BC
+    end
+
+    subgraph "Document Verification"
+        VerifSvc["DocumentVerificationService"] --> IntVerifier["IntegrityVerifier"]
+        VerifSvc --> CompVerifier["CompletenessVerifier"]
+        VerifSvc --> XRefVerifier["CrossReferenceVerifier"]
+        VerifSvc --> ComplVerifier["ComplianceVerifier"]
+        IntVerifier --> StorageSvc
+    end
 ```
 
 - **Core Services**:
     - `StageStatusMapper`: The single source of truth for mapping procurement stages to their corresponding initial, ongoing, and completion statuses. This centralizes logic that was previously fragmented across multiple traits and controllers.
+    - `ProcurementSupportService`: Supports procurement workflow operations — stage validation, optional stage detection, auto-transitions, and workflow-aware navigation between stages.
+    - `ProcurementActionService`: Resolves available UI actions for a procurement based on its current stage, status, and procurement mode. Action definitions are stored in `config/procurement-actions.php`.
+    - `ProcurementDetailService`: Composes full procurement detail views including workflow visualization data, formatted details, and correction history.
+    - `ProcurementListAggregatorService`: Aggregates procurement list data from blockchain with security filtering, archive status, and document counts.
+    - `ProcurementCorrectionService`: Handles procurement correction business logic — finding procurements with fallback, formatting correction history, and assembling page data.
     - `DecisionPublisher`: Consolidates the logic for publishing conference (Pre-Procurement, Pre-Bid) and bulletin decisions to the blockchain. It handles both "held" (awaiting documents) and "skipped" (immediate transition to next stage) scenarios with consistent event logging.
     - `BlockchainMonitoringService`: Provides real-time health checks for the blockchain connection. It implements a **Circuit Breaker Pattern** (CLOSED, OPEN, HALF-OPEN states) to prevent system hammering when the blockchain node is unreachable, allowing for automated recovery detection.
     - `ProcurementOrchestrator`: Coordinates complex multi-step operations involving both database and blockchain writes.
     - `DocumentPublisher` & `StatusPublisher`: Specialized services for writing specific data types to MultiChain streams.
+
+- **Blockchain Storage** (facade pattern):
+    - `BlockchainStorageService`: Delegates to `FileUploader` (chunked uploads with SHA-256 hashing) and `FileRetriever` (reassembles chunked files with integrity verification).
+
+- **Document Verification** (strategy pattern):
+    - `DocumentVerificationService`: Orchestrates 4 specialized verifiers:
+        - `DocumentIntegrityVerifier`: SHA-256 hash comparison against blockchain-stored content.
+        - `DocumentCompletenessVerifier`: Validates required documents per stage via `DocumentValidationService`.
+        - `DocumentCrossReferenceVerifier`: PR number consistency and chronological stage order.
+        - `DocumentComplianceVerifier`: RA 9184/RA 12009 regulatory compliance (document types, PDF format, timeline requirements).
+
+- **Job Handlers** (command pattern):
+    - `BlockchainWriteJob`: Thin dispatcher (89 LOC) that routes 9 blockchain operations to 6 focused handler classes via a match statement. Results cached in Redis. Retries up to 3 times with 90-second timeout.
+
+- **Events & Listeners** (auto-discovered):
+    - `ProcurementInitiated` → `LogProcurementInitiation`
+    - `StageCompleted` → `NotifyStageCompletion`
+    - `DocumentUploaded` → `LogDocumentUpload`
+    - `UserInvited` → `SendUserInvitationMail`
+
+- **Dashboard Services**:
+    - `DashboardService` delegates to `StatisticsCalculator` (counts, totals, averages) and `ModeAnalyzer` (procurement mode distribution analysis).
 
 ### 4. Reporting Module Architecture
 
@@ -108,9 +167,15 @@ The reporting module provides high-level analytics and document generation capab
 ### 6. Asynchronous Processing
 
 - **Queue**: Database-driven queue system handles time-consuming tasks to keep the UI responsive.
-    - Blockchain writes (publishing documents).
-    - Email notifications.
-    - File processing.
+    - `BlockchainWriteJob` dispatches to 6 specialized handlers:
+        - `ProcurementInitiationHandler`: Initiates procurements via `ProcurementOrchestrator`.
+        - `DocumentUploadHandler`: Reconstitutes temp files, publishes documents with `HandlesTempFiles` trait.
+        - `CorrectionHandler`: Publishes document and procurement corrections.
+        - `StageCompletionHandler`: Marks stages complete with auto-transition support.
+        - `StageTransitionHandler`: Skips optional stages or repeats stages per NGPA provisions.
+        - `ProcurementUpdateHandler`: Updates delivery details and publishes decisions.
+    - Email notifications (queued via `ShouldQueue` interface).
+    - File processing and blockchain storage operations.
 
 ### 7. Data Flow
 
@@ -137,11 +202,19 @@ The reporting module provides high-level analytics and document generation capab
 
 - `app/Http/Requests/Procurement`: Specialized Form Request classes.
 - `app/Http/Requests/Procurement/Traits`: Reusable validation traits (e.g., `HasConferenceValidation`).
-- `app/Services/Procurement`: Procurement-specific business logic (e.g., `StageStatusMapper`).
-- `app/Services/Publishers`: Blockchain publishing services (e.g., `DecisionPublisher`, `DocumentPublisher`).
-- `app/Http/Controllers`: Request handling.
-- `app/Services`: Business logic isolation (e.g., `BlockchainService`, `ReportGenerationService`).
+- `app/Services/Procurement`: Procurement-specific business logic (e.g., `StageStatusMapper`, `ProcurementSupportService`, `ProcurementDetailService`, `ProcurementListAggregatorService`, `ProcurementCorrectionService`, `ProcurementActionService`).
+- `app/Services/Publishers`: Blockchain publishing services (e.g., `DecisionPublisher`, `DocumentPublisher`, `CorrectionPublisher`, `ProcurementCorrectionPublisher`).
+- `app/Services/Blockchain`: Blockchain file operations (`FileUploader`, `FileRetriever`).
+- `app/Services/Verification`: Document verification services (integrity, completeness, cross-reference, compliance).
+- `app/Services/Dashboard`: Dashboard analytics (`StatisticsCalculator`, `ModeAnalyzer`).
+- `app/Jobs/Handlers`: Blockchain write job handlers (6 specialized handlers for different operation types).
+- `app/Events`: Domain events (`ProcurementInitiated`, `StageCompleted`, `DocumentUploaded`, `UserInvited`).
+- `app/Listeners`: Event listeners (auto-discovered by Laravel 12 — no manual registration needed).
+- `app/Models/Concerns`: Reusable model traits (`HasAccountLock`).
+- `app/Http/Controllers`: Request handling (thin controllers that delegate to services).
+- `app/Services`: Business logic isolation (e.g., `BlockchainStorageService`, `ReportGenerationService`, `PdfViewerService`).
 - `app/Models`: Eloquent ORM models.
+- `config/procurement-actions.php`: Procurement action definitions (stage/status → UI actions mapping).
 - `resources/js`: React frontend application.
 - `resources/blockchain/filters`: Smart logic for MultiChain stream validation.
 - `routes`: Application route definitions.

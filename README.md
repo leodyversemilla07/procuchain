@@ -18,7 +18,7 @@
 
 <p align="center">
  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
- <img src="https://img.shields.io/badge/php-8.3.28-8892BF.svg" alt="PHP Version">
+ <img src="https://img.shields.io/badge/php-8.4+-8892BF.svg" alt="PHP Version">
  <img src="https://img.shields.io/badge/Laravel-12.42.0-FF2D20.svg" alt="Laravel">
  <img src="https://img.shields.io/badge/React-19.2.1-61DAFB.svg" alt="React">
  <img src="https://img.shields.io/badge/MultiChain-2.3.3-green.svg" alt="MultiChain">
@@ -217,7 +217,7 @@ High level components:
 - `file.data` - Actual file content storage (hex-encoded)
 - `file.metadata` - File metadata and integrity tracking with SHA-256 hashes
 - `file.chunks` - Large file chunks
-- **Service Layer**: 20+ specialized services for business logic isolation
+- **Service Layer**: 35+ specialized services for business logic isolation
 - **Job Queue**: Database-driven async job processing for blockchain operations
 - **Roles / Addresses**: Distinct blockchain addresses per functional role (admin, BAC secretariat, BAC chairman, HOPE)
 - **Permission Matrix**: Config-driven grants for global & per-stream rights
@@ -632,7 +632,7 @@ Vite is configured in vite.config.ts with laravel-vite-plugin to handle both cli
 
 ## Testing
 
-The project uses [Pest](https://pestphp.com/) for expressive tests.
+The project uses [Pest](https://pestphp.com/) for expressive tests — **1,202 tests with 4,404 assertions**.
 
 The testing environment is configured to run efficiently without external dependencies like Redis. It uses:
 
@@ -657,6 +657,16 @@ Run a single file:
 ```bash
 php artisan test tests/Feature/SomeFeatureTest.php
 ```
+
+### Test Organization
+
+- **Feature tests** (`tests/Feature/`): End-to-end HTTP tests for controllers and workflows
+- **Unit tests** (`tests/Unit/`): Isolated tests for services, handlers, DTOs, and traits
+  - `Services/Verification/` — Document verification services (integrity, completeness, compliance, cross-reference)
+  - `Jobs/Handlers/` — BlockchainWriteJob handler dispatch routing and handler logic
+  - `Services/Procurement/` — Correction, detail, aggregator, and support services
+  - `Services/Blockchain/` — FileUploader and FileRetriever operations
+  - `Models/Concerns/` — HasAccountLock trait behavior
 
 For more detailed information, see [Testing Documentation](docs/TESTING.md).
 
@@ -851,21 +861,31 @@ procuchain/
 │ ├── Console/Commands/ # Artisan commands (MultichainSetup, etc.)
 │ ├── Contracts/ # Interface definitions
 │ ├── Enums/ # Business logic enums (StageEnums, StatusEnums, StreamEnums)
+│ ├── Events/ # Domain events (ProcurementInitiated, StageCompleted, etc.)
 │ ├── Http/
 │ │ ├── Controllers/ # Request handlers (Admin, BAC, HOPE, Auth, Settings)
 │ │ ├── Middleware/ # Auth, RBAC, rate limiting
 │ │ └── Requests/ # Form validation rules
 │
+│ ├── Jobs/ # Queue jobs
+│ │ └── Handlers/ # BlockchainWriteJob handler classes (6 handlers)
 │ ├── Libraries/ # MultichainClient (JSON-RPC)
+│ ├── Listeners/ # Event listeners (auto-discovered by Laravel 12)
 │ ├── Mail/ # Email notification classes
 │ ├── Models/ # Eloquent ORM models (4 primary models)
+│ │ └── Concerns/ # Reusable model traits (HasAccountLock)
 │ ├── Notifications/ # Email and push notifications
-│ ├── Policies/ # Authorization policies
 │ ├── Providers/ # Service providers
-│ └── Services/ # Business logic layer (20+ specialized services)
+│ └── Services/ # Business logic layer (35+ specialized services)
+│     ├── Blockchain/ # FileUploader, FileRetriever
+│     ├── Dashboard/ # StatisticsCalculator, ModeAnalyzer
+│     ├── Procurement/ # ProcurementSupportService, DetailService, etc.
+│     ├── Publishers/ # Blockchain stream publishers
+│     └── Verification/ # Document verification services (4 verifiers)
 ├── bootstrap/ # Framework bootstrap files
 ├── config/ # Application configuration
-│ └── multichain.php # MultiChain blockchain configuration
+│ ├── multichain.php # MultiChain blockchain configuration
+│ └── procurement-actions.php # Procurement action definitions (extracted config)
 ├── database/ # Migrations, seeders, factories
 │ ├── factories/ # Model factories for testing
 │ ├── migrations/ # Database schema
@@ -920,14 +940,18 @@ procuchain/
 
 ### Key Directories Explained
 
-**Services (20+ specialized services):**
+**Services (35+ specialized services):**
 
-- **Blockchain**: BlockchainHealthService, BlockchainMonitoringService, BlockchainStorageService
-- **Publishers**: DocumentPublisher, StatusPublisher, EventPublisher, CorrectionPublisher, ProcurementOrchestrator
-- **Procurement**: ProcurementDataService, ProcurementStageTransitionService, StageDocumentRequirements, DocumentValidationService
-- **Security**: LoginService, AccountLockoutService, BlockedIpService, DeviceDetectionService, LoginLoggerService
-- **Analytics**: DashboardService, AdminAnalyticsService, LoginAnalyticsService
-- **Utilities**: FileStorageService, CacheStrategyService, NotificationService, UserService, DashboardCacheKeys
+- **Blockchain**: BlockchainHealthService, BlockchainMonitoringService, BlockchainStorageService → FileUploader, FileRetriever
+- **Publishers**: DocumentPublisher, StatusPublisher, EventPublisher, CorrectionPublisher, ProcurementCorrectionPublisher, ProcurementOrchestrator
+- **Procurement**: ProcurementDataService, ProcurementStageTransitionService, ProcurementSupportService, ProcurementDetailService, ProcurementListAggregatorService, ProcurementCorrectionService, ProcurementActionService, StageDocumentRequirements, DocumentValidationService
+- **Verification**: DocumentIntegrityVerifier, DocumentCompletenessVerifier, DocumentCrossReferenceVerifier, DocumentComplianceVerifier
+- **Jobs/Handlers**: BlockchainWriteJob → ProcurementInitiationHandler, DocumentUploadHandler, CorrectionHandler, StageCompletionHandler, StageTransitionHandler, ProcurementUpdateHandler
+- **Events**: ProcurementInitiated, StageCompleted, DocumentUploaded, UserInvited (with auto-discovered listeners)
+- **Dashboard**: DashboardService → StatisticsCalculator, ModeAnalyzer
+- **Security**: AccountLockoutService, BlockedIpService, DeviceDetectionService, LoginLoggerService
+- **Analytics**: AdminAnalyticsService, LoginAnalyticsService
+- **Utilities**: PdfViewerService, FileStorageService, CacheStrategyService, NotificationService, UserService, DashboardCacheKeys
 
 **Models (4 primary models):**
 
@@ -940,10 +964,12 @@ procuchain/
 
 **Background Processing:**
 
-- Queue-based blockchain operations to prevent HTTP timeouts
+- `BlockchainWriteJob` dispatches to 6 specialized handler classes (command pattern)
+- Handlers: `ProcurementInitiationHandler`, `DocumentUploadHandler`, `CorrectionHandler`, `StageCompletionHandler`, `StageTransitionHandler`, `ProcurementUpdateHandler`
 - Async document publishing via Laravel's queue system
 - Database-driven queue (jobs table)
-- Retry logic with exponential backoff
+- Retry logic with exponential backoff (3 retries, 90-second timeout)
+- Results cached in Redis under `blockchain_job:{jobId}`
 
 <p align="right"><a href="#table-of-contents"> Back to top</a></p>
 
