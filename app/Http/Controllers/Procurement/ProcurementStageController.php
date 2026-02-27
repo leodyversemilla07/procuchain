@@ -69,7 +69,7 @@ class ProcurementStageController extends BaseController
         $procurement = $this->findProcurementById($pr_number);
 
         // Auto-transition for post-procurement stages
-        if ($stage->isPostProcurement()) {
+        if ($stage->isPostProcurement() && $procurement) {
             $this->handleAutoStageTransition($pr_number, $procurement, $stage);
         }
 
