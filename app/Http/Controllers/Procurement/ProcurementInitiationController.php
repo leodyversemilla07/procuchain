@@ -8,18 +8,14 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
-use App\Http\Controllers\Procurement\Concerns\HasProcurementSupport;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
 use App\Repositories\ProcurementRepository;
 use App\Services\DocumentValidationService;
-use App\Services\Manager;
 use App\Services\ModeAwareDocumentValidationService;
-use App\Services\ProcurementDataService;
-use App\Services\Publishers\EventPublisher;
+use App\Services\Procurement\ProcurementSupportService;
 use App\Services\Publishers\ProcurementOrchestrator;
-use App\Services\Publishers\StatusPublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -30,31 +26,13 @@ use Inertia\Response;
 
 class ProcurementInitiationController extends BaseController
 {
-    use HasProcurementSupport;
-
-    // Issue #3 & #13 Fix: Inject orchestrator for atomic workflow operations
     public function __construct(
-        Manager $multichain,
-        \App\Services\Publishers\DocumentPublisher $documentPublisher,
-        StatusPublisher $statusPublisher,
-        EventPublisher $eventPublisher,
-        ProcurementDataService $procurementDataService,
-        \App\Repositories\DocumentRepository $documentRepository,
+        private readonly ProcurementSupportService $procurementSupport,
         private readonly ProcurementRepository $procurements,
         private readonly ProcurementOrchestrator $orchestrator,
         protected DocumentValidationService $validationService,
         protected ModeAwareDocumentValidationService $modeAwareValidationService
-    ) {
-        // Initialize trait dependencies (includes statusPublisher and eventPublisher)
-        $this->initializeProcurementSupport(
-            $multichain,
-            $documentPublisher,
-            $statusPublisher,
-            $eventPublisher,
-            $procurementDataService,
-            $documentRepository
-        );
-    }
+    ) {}
 
     public function show(?string $id = null): Response
     {
@@ -89,7 +67,7 @@ class ProcurementInitiationController extends BaseController
             ]);
 
             // Get procurement mode for mode-aware document requirements
-            $mode = $this->getProcurementMode($id);
+            $mode = $this->procurementSupport->getProcurementMode($id);
 
             return Inertia::render('bac-secretariat/stage-upload', [
                 'procurement' => [
@@ -99,12 +77,12 @@ class ProcurementInitiationController extends BaseController
                     'stage_value' => StageEnums::PROCUREMENT_INITIATION->value,
                     'current_stage' => $latestStatus?->stage ?? StageEnums::PROCUREMENT_INITIATION->value,
                 ],
-                'workflowInfo' => $this->getWorkflowInfo($id, StageEnums::PROCUREMENT_INITIATION),
+                'workflowInfo' => $this->procurementSupport->getWorkflowInfo($id, StageEnums::PROCUREMENT_INITIATION),
                 'documentGuide' => $this->modeAwareValidationService->getStageDocumentGuide(
                     StageEnums::PROCUREMENT_INITIATION,
                     $mode
                 ),
-                'uploadedDocuments' => $this->getUploadedDocumentTypes(
+                'uploadedDocuments' => $this->procurementSupport->getUploadedDocumentTypes(
                     $id,
                     StageEnums::PROCUREMENT_INITIATION
                 ),
@@ -216,14 +194,14 @@ class ProcurementInitiationController extends BaseController
             }
 
             // Fetch already uploaded documents for this stage
-            $existingDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
+            $existingDocuments = $this->procurementSupport->getUploadedDocumentTypes($pr_number, $stage);
             $existingDocumentEnums = array_filter(
                 array_map(fn ($docType) => DocumentTypeEnums::tryFrom($docType), $existingDocuments),
                 fn ($enum) => $enum !== null
             );
 
             // Get procurement mode for mode-aware validation
-            $mode = $this->getProcurementMode($pr_number);
+            $mode = $this->procurementSupport->getProcurementMode($pr_number);
 
             // Validate the single document upload (prevents duplicates)
             $validation = $this->modeAwareValidationService->validateUpload(
@@ -248,7 +226,7 @@ class ProcurementInitiationController extends BaseController
                     'user' => $user->email,
                 ]);
 
-                $statusData = $this->findProcurementById($pr_number);
+                $statusData = $this->procurementSupport->findProcurementById($pr_number);
                 if (! $statusData) {
                     \Log::error('Procurement not found in both METADATA and STATUS streams', [
                         'pr_number' => $pr_number,
@@ -264,7 +242,7 @@ class ProcurementInitiationController extends BaseController
                     title: $statusData['procurement_title'] ?? 'N/A',
                     status: \App\Enums\StatusEnums::tryFrom($statusData['current_status'] ?? '') ?? \App\Enums\StatusEnums::PROCUREMENT_SUBMITTED,
                     stage: \App\Enums\StageEnums::tryFrom($statusData['stage'] ?? '') ?? $stage,
-                    procurementMode: $this->getProcurementMode($pr_number) ?? \App\Enums\ProcurementModeEnums::PUBLIC_BIDDING,
+                    procurementMode: $this->procurementSupport->getProcurementMode($pr_number) ?? \App\Enums\ProcurementModeEnums::PUBLIC_BIDDING,
                     timestamp: $statusData['timestamp'] ?? now()->toIso8601String(),
                     userAddress: $statusData['user_address'] ?? $userAddress,
                 );
@@ -324,14 +302,14 @@ class ProcurementInitiationController extends BaseController
         }
 
         // Get already uploaded documents
-        $existingDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
+        $existingDocuments = $this->procurementSupport->getUploadedDocumentTypes($pr_number, $stage);
         $existingDocumentEnums = array_filter(
             array_map(fn ($docType) => DocumentTypeEnums::tryFrom($docType), $existingDocuments),
             fn ($enum) => $enum !== null
         );
 
         // Get procurement mode for mode-aware validation
-        $mode = $this->getProcurementMode($pr_number);
+        $mode = $this->procurementSupport->getProcurementMode($pr_number);
 
         $validation = $this->modeAwareValidationService->validateUpload(
             $stage,
@@ -353,7 +331,7 @@ class ProcurementInitiationController extends BaseController
     public function documentGuide(Request $request, string $pr_number): JsonResponse
     {
         $stage = StageEnums::PROCUREMENT_INITIATION;
-        $mode = $this->getProcurementMode($pr_number);
+        $mode = $this->procurementSupport->getProcurementMode($pr_number);
         $guide = $this->modeAwareValidationService->getStageDocumentGuide($stage, $mode);
 
         return response()->json($guide);
@@ -367,8 +345,8 @@ class ProcurementInitiationController extends BaseController
         $stage = StageEnums::PROCUREMENT_INITIATION;
 
         try {
-            $uploadedDocuments = $this->getUploadedDocumentTypes($pr_number, $stage);
-            $mode = $this->getProcurementMode($pr_number);
+            $uploadedDocuments = $this->procurementSupport->getUploadedDocumentTypes($pr_number, $stage);
+            $mode = $this->procurementSupport->getProcurementMode($pr_number);
             $documentGuide = $this->modeAwareValidationService->getStageDocumentGuide($stage, $mode);
 
             if (count($uploadedDocuments) < $documentGuide['counts']['required_count']) {
@@ -382,13 +360,13 @@ class ProcurementInitiationController extends BaseController
 
             $user = auth()->user();
             $userAddress = $user->blockchain_address ?? $user->email;
-            $nextStage = $this->getNextStageForProcurement($pr_number, $stage);
+            $nextStage = $this->procurementSupport->getNextStageForProcurement($pr_number, $stage);
 
             if (! $nextStage) {
                 return response()->json(['error' => 'Unable to determine next stage for this procurement mode.'], 422);
             }
 
-            $nextStageStatus = $this->getInitialStatusForStage($pr_number, $nextStage);
+            $nextStageStatus = $this->procurementSupport->getInitialStatusForStage($pr_number, $nextStage);
 
             $jobId = Str::uuid()->toString();
 

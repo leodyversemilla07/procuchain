@@ -1,59 +1,33 @@
 <?php
 
-namespace App\Http\Controllers\Procurement\Concerns;
+namespace App\Services\Procurement;
 
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
+use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\Manager;
-use App\Services\Procurement\StageStatusMapper;
 use App\Services\ProcurementDataService;
 use App\Services\ProcurementWorkflowService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
+use Illuminate\Support\Facades\Log;
 
-trait HasProcurementSupport
+class ProcurementSupportService
 {
-    protected Manager $multichain;
-
-    protected DocumentPublisher $documentPublisher;
-
-    protected StatusPublisher $statusPublisher;
-
-    protected EventPublisher $eventPublisher;
-
-    protected ProcurementDataService $procurementDataService;
-
-    protected \App\Repositories\DocumentRepository $documentRepository;
-
-    protected ProcurementWorkflowService $workflowService;
-
-    protected StageStatusMapper $stageStatusMapper;
-
-    /**
-     * Initialize procurement support dependencies
-     */
-    protected function initializeProcurementSupport(
-        Manager $multichain,
-        DocumentPublisher $documentPublisher,
-        StatusPublisher $statusPublisher,
-        EventPublisher $eventPublisher,
-        ProcurementDataService $procurementDataService,
-        \App\Repositories\DocumentRepository $documentRepository,
-        ?ProcurementWorkflowService $workflowService = null,
-        ?StageStatusMapper $stageStatusMapper = null
-    ): void {
-        $this->multiChain = $multichain;
-        $this->documentPublisher = $documentPublisher;
-        $this->statusPublisher = $statusPublisher;
-        $this->eventPublisher = $eventPublisher;
-        $this->procurementDataService = $procurementDataService;
-        $this->documentRepository = $documentRepository;
-        $this->workflowService = $workflowService ?? app(ProcurementWorkflowService::class);
-        $this->stageStatusMapper = $stageStatusMapper ?? app(StageStatusMapper::class);
-    }
+    public function __construct(
+        protected Manager $multichain,
+        protected DocumentPublisher $documentPublisher,
+        protected StatusPublisher $statusPublisher,
+        protected EventPublisher $eventPublisher,
+        protected ProcurementDataService $procurementDataService,
+        protected DocumentRepository $documentRepository,
+        protected ProcurementWorkflowService $workflowService,
+        protected StageStatusMapper $stageStatusMapper
+    ) {}
 
     /**
      * Get the initial/default status when entering a new stage.
@@ -62,9 +36,9 @@ trait HasProcurementSupport
      *
      * @param  string  $prNumber  The procurement reference number (to determine mode)
      * @param  StageEnums  $stage  The stage being entered
-     * @return \App\Enums\StatusEnums The appropriate status for entering that stage
+     * @return StatusEnums The appropriate status for entering that stage
      */
-    protected function getInitialStatusForStage(string $prNumber, StageEnums $stage): \App\Enums\StatusEnums
+    public function getInitialStatusForStage(string $prNumber, StageEnums $stage): StatusEnums
     {
         // Get procurement mode for mode-aware status determination
         $mode = $this->getProcurementMode($prNumber);
@@ -78,7 +52,7 @@ trait HasProcurementSupport
      *
      * @param  string|int  $id
      */
-    protected function findProcurementById($id): ?array
+    public function findProcurementById($id): ?array
     {
         $statusItems = $this->procurementDataService->fetchStatusItems($id);
 
@@ -93,7 +67,7 @@ trait HasProcurementSupport
      *
      * @return string[] Array of document type enum values (e.g., ['purchase_request', 'ppmp'])
      */
-    protected function getUploadedDocumentTypes(string $pr_number, \App\Enums\StageEnums $stage): array
+    public function getUploadedDocumentTypes(string $pr_number, StageEnums $stage): array
     {
         try {
             // Fetch all documents for this procurement from blockchain
@@ -109,7 +83,7 @@ trait HasProcurementSupport
 
             return array_unique($uploadedTypes);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to fetch uploaded documents', [
+            Log::error('Failed to fetch uploaded documents', [
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
                 'error' => $e->getMessage(),
@@ -122,7 +96,7 @@ trait HasProcurementSupport
     /**
      * Get the procurement data DTO from blockchain.
      */
-    protected function getProcurementData(string $prNumber): ?ProcurementData
+    public function getProcurementData(string $prNumber): ?ProcurementData
     {
         return app(ProcurementRepository::class)->findByProcurement($prNumber);
     }
@@ -130,7 +104,7 @@ trait HasProcurementSupport
     /**
      * Get the procurement mode for a specific procurement.
      */
-    protected function getProcurementMode(string $prNumber): ?ProcurementModeEnums
+    public function getProcurementMode(string $prNumber): ?ProcurementModeEnums
     {
         $procurement = $this->getProcurementData($prNumber);
 
@@ -146,7 +120,7 @@ trait HasProcurementSupport
      * @param  StageEnums  $currentStage  The current stage
      * @return StageEnums|null The next stage, or null if at end of workflow
      */
-    protected function getNextStageForProcurement(string $prNumber, StageEnums $currentStage): ?StageEnums
+    public function getNextStageForProcurement(string $prNumber, StageEnums $currentStage): ?StageEnums
     {
         $mode = $this->getProcurementMode($prNumber);
 
@@ -174,7 +148,7 @@ trait HasProcurementSupport
      * @param  string  $prNumber  The procurement reference number
      * @param  StageEnums  $stage  The stage to check
      */
-    protected function stageExistsInWorkflow(string $prNumber, StageEnums $stage): bool
+    public function stageExistsInWorkflow(string $prNumber, StageEnums $stage): bool
     {
         $mode = $this->getProcurementMode($prNumber);
 
@@ -193,7 +167,7 @@ trait HasProcurementSupport
      * @param  string  $prNumber  The procurement reference number
      * @param  StageEnums  $stage  The stage to validate
      */
-    protected function validateStageInWorkflow(string $prNumber, StageEnums $stage): void
+    public function validateStageInWorkflow(string $prNumber, StageEnums $stage): void
     {
         if (! $this->stageExistsInWorkflow($prNumber, $stage)) {
             abort(403, 'This stage is not applicable for this procurement mode');
@@ -207,7 +181,7 @@ trait HasProcurementSupport
      * @param  string  $prNumber  The procurement reference number
      * @param  StageEnums  $stage  The stage to check
      */
-    protected function isStageOptional(string $prNumber, StageEnums $stage): bool
+    public function isStageOptional(string $prNumber, StageEnums $stage): bool
     {
         $mode = $this->getProcurementMode($prNumber);
 
@@ -225,7 +199,7 @@ trait HasProcurementSupport
      * @param  string  $prNumber  The procurement reference number
      * @return array<StageEnums>
      */
-    protected function getWorkflowStages(string $prNumber): array
+    public function getWorkflowStages(string $prNumber): array
     {
         $mode = $this->getProcurementMode($prNumber);
 
@@ -253,7 +227,7 @@ trait HasProcurementSupport
      *     }
      * }
      */
-    protected function getWorkflowInfo(string $prNumber, StageEnums $currentStage): array
+    public function getWorkflowInfo(string $prNumber, StageEnums $currentStage): array
     {
         $mode = $this->getProcurementMode($prNumber);
         $procurement = $this->findProcurementById($prNumber);
@@ -356,7 +330,7 @@ trait HasProcurementSupport
      *
      * @throws \Exception If the stage cannot be skipped
      */
-    protected function performSkipStage(string $prNumber, StageEnums $stage, ?string $reason = null): array
+    public function performSkipStage(string $prNumber, StageEnums $stage, ?string $reason = null): array
     {
         // Verify stage is optional for this procurement's mode
         if (! $this->isStageOptional($prNumber, $stage)) {
@@ -377,7 +351,7 @@ trait HasProcurementSupport
             prNumber: $prNumber,
             procurementTitle: $procurement->title,
             stage: $stage,
-            currentStatus: \App\Enums\StatusEnums::STAGE_SKIPPED,
+            currentStatus: StatusEnums::STAGE_SKIPPED,
             userAddress: $userAddress,
             previousStatus: null,
             metadata: [
@@ -442,5 +416,132 @@ trait HasProcurementSupport
                 'next_stage' => $nextStage?->value,
             ],
         ];
+    }
+
+    /**
+     * Handle automatic stage transition when accessing a post-procurement stage.
+     *
+     * For example: accessing Notice of Award while still at BAC Resolution + resolution_recorded
+     *
+     * Uses mode-aware workflow to determine valid transitions.
+     */
+    public function handleAutoStageTransition(string $prNumber, array $procurement, StageEnums $targetStage): void
+    {
+        $currentStageValue = $procurement['stage'] ?? null;
+        $currentStatusValue = $procurement['current_status'] ?? null;
+
+        if (! $currentStageValue || ! $currentStatusValue) {
+            return;
+        }
+
+        $currentStage = StageEnums::tryFrom($currentStageValue);
+        $currentStatus = StatusEnums::tryFrom($currentStatusValue);
+
+        if (! $currentStage || ! $currentStatus) {
+            return;
+        }
+
+        // If already at the target stage, no transition needed
+        if ($currentStage === $targetStage) {
+            return;
+        }
+
+        // Get the completion status for the current stage
+        $completionStatus = $this->getCompletionStatusForStage($currentStage);
+
+        // Check if current stage is completed (status matches completion status)
+        if ($currentStatus !== $completionStatus) {
+            return;
+        }
+
+        // Get the mode-aware next stage for this procurement
+        $expectedNextStage = $this->getNextStageForProcurement($prNumber, $currentStage);
+
+        // Verify that the target stage is the expected next stage in the workflow
+        if ($expectedNextStage !== $targetStage) {
+            return;
+        }
+
+        // Perform the auto-transition
+        $this->publishStageTransition($prNumber, $procurement, $currentStage, $targetStage, $currentStatus);
+
+        Log::info('Auto stage transition triggered', [
+            'pr_number' => $prNumber,
+            'from_stage' => $currentStage->value,
+            'to_stage' => $targetStage->value,
+            'status' => $currentStatus->value,
+        ]);
+    }
+
+    /**
+     * Publish stage transition to blockchain.
+     */
+    public function publishStageTransition(
+        string $prNumber,
+        array $procurement,
+        StageEnums $fromStage,
+        StageEnums $toStage,
+        StatusEnums $currentStatus
+    ): void {
+        try {
+            $user = auth()->user();
+            $userAddress = $user->blockchain_address ?? 'unknown';
+
+            // Publish the new stage status
+            $this->statusPublisher->publish(
+                prNumber: $prNumber,
+                procurementTitle: $procurement['procurement_title'] ?? '',
+                stage: $toStage,
+                currentStatus: $currentStatus,
+                userAddress: $userAddress,
+                metadata: [
+                    'auto_transition' => true,
+                    'from_stage' => $fromStage->value,
+                    'to_stage' => $toStage->value,
+                    'description' => sprintf('Auto-transitioned from %s to %s', $fromStage->getDisplayName(), $toStage->getDisplayName()),
+                ]
+            );
+
+            // Publish event for the transition
+            $this->eventPublisher->publish(
+                prNumber: $prNumber,
+                procurementTitle: $procurement['procurement_title'] ?? '',
+                stage: $toStage->value,
+                eventType: 'stage_transition',
+                category: 'workflow',
+                severity: 'info',
+                details: sprintf('Stage transitioned from %s to %s', $fromStage->getDisplayName(), $toStage->getDisplayName()),
+                documentCount: 0,
+                userAddress: $userAddress,
+                metadata: [
+                    'auto_transition' => true,
+                    'from_stage' => $fromStage->value,
+                    'to_stage' => $toStage->value,
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to publish stage transition', [
+                'pr_number' => $prNumber,
+                'from_stage' => $fromStage->value,
+                'to_stage' => $toStage->value,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Get the appropriate completion status for a given stage.
+     */
+    public function getCompletionStatusForStage(StageEnums $stage): StatusEnums
+    {
+        return $this->stageStatusMapper->getCompletionStatus($stage);
+    }
+
+    /**
+     * Get the ongoing status for a stage (used during document uploads).
+     */
+    public function getOngoingStatusForStage(StageEnums $stage): StatusEnums
+    {
+        return $this->stageStatusMapper->getOngoingStatus($stage);
     }
 }
