@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
  * - Handles correction records in procurement.corrections stream
  * - Supports both replacement and invalidation corrections
  */
-final class CorrectionPublisher
+class CorrectionPublisher
 {
     public function __construct(
         private CorrectionRepository $corrections,

@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
  * Handles the atomic publishing of procurement-level corrections to blockchain.
  * Supports corrections to procurement titles, descriptions, ABC amounts, dates, etc.
  */
-final class ProcurementCorrectionPublisher
+class ProcurementCorrectionPublisher
 {
     public function __construct(
         private ProcurementCorrectionRepository $procurementCorrections
