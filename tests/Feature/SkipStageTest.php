@@ -16,8 +16,7 @@ use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
-use App\Services\Publishers\EventPublisher;
-use App\Services\Publishers\StatusPublisher;
+use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\mock;
@@ -104,6 +103,7 @@ describe('Optional Stage Detection', function () {
 
 describe('Skip Optional Stage', function () {
     it('can skip an optional pre-procurement stage', function () {
+        Queue::fake();
         actingAs($this->bacSecretariat);
 
         // Mock the procurement repository
@@ -112,26 +112,6 @@ describe('Skip Optional Stage', function () {
             ->with('PR-2024-001')
             ->andReturn($this->mockProcurementData);
         $this->instance(ProcurementRepository::class, $repository);
-
-        // Mock the status publisher
-        $statusPublisher = mock(StatusPublisher::class);
-        $statusPublisher->shouldReceive('publish')
-            ->once()
-            ->andReturn(['status_txid' => 'mock_status_txid']);
-        $statusPublisher->shouldReceive('publishTransition')
-            ->once()
-            ->andReturn(['status_txid' => 'mock_transition_txid']);
-        $this->instance(StatusPublisher::class, $statusPublisher);
-
-        // Mock the event publisher
-        $eventPublisher = mock(EventPublisher::class);
-        $eventPublisher->shouldReceive('publish')
-            ->once()
-            ->andReturn(['event_txid' => 'mock_event_txid']);
-        $eventPublisher->shouldReceive('publishStageTransition')
-            ->once()
-            ->andReturn(['event_txid' => 'mock_transition_event_txid']);
-        $this->instance(EventPublisher::class, $eventPublisher);
 
         // Mock the Manager for blockchain operations
         $multichain = mock(\App\Services\Manager::class);
@@ -146,13 +126,14 @@ describe('Skip Optional Stage', function () {
             'reason' => 'Not required for this procurement type',
         ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
+        $response->assertStatus(202)->assertJsonStructure(['job_id', 'status']);
+        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
     });
 });
 
 describe('Cannot Skip Required Stage', function () {
     it('returns error when trying to skip a required stage', function () {
+        Queue::fake();
         actingAs($this->bacSecretariat);
 
         // Create procurement with SVP mode where RFQ is required
@@ -195,14 +176,14 @@ describe('Cannot Skip Required Stage', function () {
             ->andReturn([]);
         $this->instance(\App\Services\Manager::class, $multichain);
 
-        // RFQ is required for SVP, so skipping should fail
+        // RFQ is required for SVP - controller dispatches job async, validation happens in job
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.skip', [
             'pr_number' => 'PR-2024-002',
             'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
         ]));
 
-        $response->assertRedirect();
-        $response->assertSessionHas('error');
+        $response->assertStatus(202)->assertJsonStructure(['job_id', 'status']);
+        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
     });
 });
 

@@ -141,6 +141,8 @@ class StageDocumentConfigService
             'mode_display_name' => $mode->getDisplayName(),
             'phase' => $stage->getPhase(),
             'description' => $stage->getDescription(),
+            'ngpa_reference' => $mode->getIrrSection(),
+            'is_alternative_mode' => $mode->isAlternativeMode(),
             'required_documents' => array_map(fn (DocumentTypeEnums $doc) => [
                 'value' => $doc->value,
                 'display_name' => $doc->getDisplayName(),

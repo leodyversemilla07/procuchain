@@ -65,7 +65,7 @@ describe('Request for Quotation (RFQ) Stage', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/rfq-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('procurement')
             ->has('documentGuide')
             ->has('workflowInfo')
@@ -147,7 +147,7 @@ describe('Abstract of Quotations Stage', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/abstract-of-quotations-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('procurement')
             ->has('documentGuide')
             ->has('workflowInfo')

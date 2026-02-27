@@ -7,6 +7,7 @@ use App\Repositories\ProcurementRepository;
 use App\Services\DocumentValidationService;
 use App\Services\ModeAwareDocumentValidationService;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\mock;
@@ -166,6 +167,7 @@ describe('Document Upload Validation Workflow', function () {
 
 describe('Progressive Upload Workflow', function () {
     it('uploads single document progressively', function () {
+        Queue::fake();
         actingAs($this->bacSecretariat);
 
         $repository = mock(ProcurementRepository::class);
@@ -198,24 +200,10 @@ describe('Progressive Upload Workflow', function () {
         );
         $this->instance(ProcurementRepository::class, $repository);
 
-        $orchestrator = mock(\App\Services\Publishers\ProcurementOrchestrator::class);
-        $orchestrator->shouldReceive('publishDocumentWorkflow')->once()->andReturn([
-            'success' => true,
-            'document_txid' => 'doc123',
-            'status_txid' => 'status123',
-            'event_txid' => 'event123',
-        ]);
-        $this->instance(\App\Services\Publishers\ProcurementOrchestrator::class, $orchestrator);
-
-        $procurementDataService = mock(\App\Services\ProcurementDataService::class);
-        $this->instance(\App\Services\ProcurementDataService::class, $procurementDataService);
-
-        $validationService = mock(DocumentValidationService::class);
+        $validationService = mock(ModeAwareDocumentValidationService::class);
         $validationService->shouldReceive('validateUpload')
             ->andReturn(['errors' => [], 'warnings' => []]);
-        $validationService->shouldReceive('validateStageCompletion')
-            ->andReturn(['can_complete' => false, 'completion_percentage' => 33]);
-        $this->instance(DocumentValidationService::class, $validationService);
+        $this->instance(ModeAwareDocumentValidationService::class, $validationService);
 
         $file = UploadedFile::fake()->create('minutes.pdf', 1000, 'application/pdf');
 
@@ -230,8 +218,10 @@ describe('Progressive Upload Workflow', function () {
                 'description' => 'Meeting minutes for pre-procurement conference',
             ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
+        $response->assertStatus(202)
+            ->assertJsonStructure(['job_id', 'status', 'document_type']);
+
+        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
     });
 
     it('tracks upload progress via completion percentage', function () {
@@ -383,7 +373,7 @@ describe('Progressive Upload Workflow', function () {
                 'description' => 'Invalid document for this stage',
             ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHasErrors('message');
+        $response->assertStatus(422)
+            ->assertJson(['message' => 'Document type NOTICE_OF_AWARD is not valid for stage PRE_PROCUREMENT_CONFERENCE']);
     });
 });
