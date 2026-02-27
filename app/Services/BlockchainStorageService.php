@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Log;
  *
  * @see config/blockchain.php for upload limits and chunking configuration
  */
-final class BlockchainStorageService implements BlockchainStorageInterface
+class BlockchainStorageService implements BlockchainStorageInterface
 {
     /**
      * Maximum chunk size for on-chain storage
