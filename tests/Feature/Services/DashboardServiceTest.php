@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
 use App\Repositories\ProcurementRepository;
+use App\Services\Dashboard\ModeAnalyzer;
+use App\Services\Dashboard\StatisticsCalculator;
 use App\Services\DashboardService;
 use App\Services\Manager;
 use App\Services\UserService;
@@ -35,7 +37,9 @@ beforeEach(function () {
         $this->eventRepository,
         $this->documentRepository,
         $this->userService,
-        $this->procurementRepository
+        $this->procurementRepository,
+        new StatisticsCalculator,
+        new ModeAnalyzer
     );
 });
 describe('DashboardService', function () {

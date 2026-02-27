@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
 use App\Repositories\ProcurementRepository;
+use App\Services\Dashboard\ModeAnalyzer;
+use App\Services\Dashboard\StatisticsCalculator;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -39,7 +41,9 @@ class DashboardService
         private EventRepository $eventRepository,
         private DocumentRepository $documentRepository,
         private UserService $userService,
-        private ProcurementRepository $procurementRepository
+        private ProcurementRepository $procurementRepository,
+        private StatisticsCalculator $statisticsCalculator,
+        private ModeAnalyzer $modeAnalyzer
     ) {}
 
     /**
@@ -276,21 +280,7 @@ class DashboardService
      */
     public function countOngoingProjects(Collection $procurementsByKey): int
     {
-        $completedStages = config('dashboard.completed_bidding_stages');
-
-        return $procurementsByKey->filter(function ($item) use ($completedStages) {
-            // Exclude if explicitly in completed stages list
-            if (in_array($item['stage'], $completedStages)) {
-                return false;
-            }
-
-            // Also exclude if Enum matches COMPLETED (just in case config is missing it)
-            if ($item['stage'] === \App\Enums\StageEnums::COMPLETED->value) {
-                return false;
-            }
-
-            return true;
-        })->count();
+        return $this->statisticsCalculator->countOngoingProjects($procurementsByKey);
     }
 
     /**
@@ -301,9 +291,7 @@ class DashboardService
      */
     public function countCompletedBiddings(Collection $procurementsByKey): int
     {
-        return $procurementsByKey->filter(function ($item) {
-            return in_array($item['stage'], config('dashboard.completed_bidding_stages'));
-        })->count();
+        return $this->statisticsCalculator->countCompletedBiddings($procurementsByKey);
     }
 
     /**
@@ -313,11 +301,7 @@ class DashboardService
      */
     public function getEmptyStats(): array
     {
-        return [
-            'ongoingProjects' => 0,
-            'completedBiddings' => 0,
-            'totalDocuments' => 0,
-        ];
+        return $this->statisticsCalculator->getEmptyStats();
     }
 
     /**
@@ -329,11 +313,7 @@ class DashboardService
      */
     public function calculateStats(Collection $procurementsByKey, int $totalDocuments): array
     {
-        return [
-            'ongoingProjects' => $this->countOngoingProjects($procurementsByKey),
-            'completedBiddings' => $this->countCompletedBiddings($procurementsByKey),
-            'totalDocuments' => $totalDocuments,
-        ];
+        return $this->statisticsCalculator->calculateStats($procurementsByKey, $totalDocuments);
     }
 
     /**
@@ -344,37 +324,7 @@ class DashboardService
      */
     public function groupProcurementsByPhase(Collection $procurementsByKey): array
     {
-        $grouped = [
-            'pre_procurement' => [],
-            'procurement' => [],
-            'post_procurement' => [],
-        ];
-
-        foreach ($procurementsByKey as $procurement) {
-            $stageEnum = \App\Enums\StageEnums::tryFrom($procurement['stage']);
-            if ($stageEnum) {
-                $phase = $stageEnum->getPhase();
-                $grouped[$phase][] = $procurement;
-            }
-        }
-
-        return [
-            'pre_procurement' => [
-                'title' => 'Pre-Procurement (Planning & Preparation)',
-                'count' => count($grouped['pre_procurement']),
-                'procurements' => $grouped['pre_procurement'],
-            ],
-            'procurement' => [
-                'title' => 'Procurement (Bidding & Evaluation)',
-                'count' => count($grouped['procurement']),
-                'procurements' => $grouped['procurement'],
-            ],
-            'post_procurement' => [
-                'title' => 'Post-Procurement (Award & Implementation)',
-                'count' => count($grouped['post_procurement']),
-                'procurements' => $grouped['post_procurement'],
-            ],
-        ];
+        return $this->statisticsCalculator->groupProcurementsByPhase($procurementsByKey);
     }
 
     /**
@@ -385,44 +335,7 @@ class DashboardService
      */
     public function getPhaseStatistics(Collection $procurementsByKey): array
     {
-        $stats = [
-            'pre_procurement' => 0,
-            'procurement' => 0,
-            'post_procurement' => 0,
-        ];
-
-        foreach ($procurementsByKey as $procurement) {
-            $stageEnum = \App\Enums\StageEnums::tryFrom($procurement['stage']);
-            if ($stageEnum) {
-                $phase = $stageEnum->getPhase();
-                $stats[$phase]++;
-            }
-        }
-
-        return [
-            'pre_procurement' => [
-                'label' => 'Pre-Procurement',
-                'count' => $stats['pre_procurement'],
-                'percentage' => $procurementsByKey->count() > 0
-                    ? round(($stats['pre_procurement'] / $procurementsByKey->count()) * 100, 1)
-                    : 0,
-            ],
-            'procurement' => [
-                'label' => 'Procurement',
-                'count' => $stats['procurement'],
-                'percentage' => $procurementsByKey->count() > 0
-                    ? round(($stats['procurement'] / $procurementsByKey->count()) * 100, 1)
-                    : 0,
-            ],
-            'post_procurement' => [
-                'label' => 'Post-Procurement',
-                'count' => $stats['post_procurement'],
-                'percentage' => $procurementsByKey->count() > 0
-                    ? round(($stats['post_procurement'] / $procurementsByKey->count()) * 100, 1)
-                    : 0,
-            ],
-            'total' => $procurementsByKey->count(),
-        ];
+        return $this->statisticsCalculator->getPhaseStatistics($procurementsByKey);
     }
 
     /**
@@ -489,36 +402,7 @@ class DashboardService
      */
     public function getModeDistribution(Collection $procurementsByKey): array
     {
-        $distribution = [];
-        $total = $procurementsByKey->count();
-
-        foreach ($procurementsByKey as $procurement) {
-            $mode = $procurement['procurement_mode'] ?? 'unknown';
-            $label = $procurement['procurement_mode_label'] ?? 'Unknown';
-
-            if (! isset($distribution[$mode])) {
-                $distribution[$mode] = [
-                    'mode' => $mode,
-                    'label' => $label,
-                    'count' => 0,
-                    'percentage' => 0,
-                ];
-            }
-
-            $distribution[$mode]['count']++;
-        }
-
-        // Calculate percentages
-        foreach ($distribution as $mode => $data) {
-            $distribution[$mode]['percentage'] = $total > 0
-                ? round(($data['count'] / $total) * 100, 1)
-                : 0;
-        }
-
-        // Sort by count descending
-        uasort($distribution, fn ($a, $b) => $b['count'] <=> $a['count']);
-
-        return array_values($distribution);
+        return $this->modeAnalyzer->getModeDistribution($procurementsByKey);
     }
 
     /**
@@ -533,46 +417,7 @@ class DashboardService
      */
     public function getModeTypeStatistics(Collection $procurementsByKey): array
     {
-        $competitive = 0;
-        $alternative = 0;
-        $unknown = 0;
-
-        foreach ($procurementsByKey as $procurement) {
-            $isAlternative = $procurement['is_alternative_mode'] ?? null;
-
-            if ($isAlternative === true) {
-                $alternative++;
-            } elseif ($isAlternative === false) {
-                $competitive++;
-            } else {
-                $unknown++;
-            }
-        }
-
-        $total = $procurementsByKey->count();
-
-        return [
-            'competitive' => [
-                'label' => 'Competitive Bidding Modes',
-                'description' => 'Public Bidding, Limited Source Bidding, etc.',
-                'ngpa_reference' => 'IRR Sections 27-30',
-                'count' => $competitive,
-                'percentage' => $total > 0 ? round(($competitive / $total) * 100, 1) : 0,
-            ],
-            'alternative' => [
-                'label' => 'Alternative Modes',
-                'description' => 'Direct Contracting, SVP, Negotiated, etc.',
-                'ngpa_reference' => 'IRR Sections 31-37',
-                'count' => $alternative,
-                'percentage' => $total > 0 ? round(($alternative / $total) * 100, 1) : 0,
-            ],
-            'unknown' => [
-                'label' => 'Unclassified',
-                'count' => $unknown,
-                'percentage' => $total > 0 ? round(($unknown / $total) * 100, 1) : 0,
-            ],
-            'total' => $total,
-        ];
+        return $this->modeAnalyzer->getModeTypeStatistics($procurementsByKey);
     }
 
     /**
@@ -583,29 +428,7 @@ class DashboardService
      */
     public function groupProcurementsByMode(Collection $procurementsByKey): array
     {
-        $grouped = [];
-
-        foreach ($procurementsByKey as $procurement) {
-            $mode = $procurement['procurement_mode'] ?? 'unknown';
-            $label = $procurement['procurement_mode_label'] ?? 'Unknown';
-
-            if (! isset($grouped[$mode])) {
-                $grouped[$mode] = [
-                    'mode' => $mode,
-                    'label' => $label,
-                    'procurements' => [],
-                    'count' => 0,
-                ];
-            }
-
-            $grouped[$mode]['procurements'][] = $procurement;
-            $grouped[$mode]['count']++;
-        }
-
-        // Sort by count descending
-        uasort($grouped, fn ($a, $b) => $b['count'] <=> $a['count']);
-
-        return array_values($grouped);
+        return $this->modeAnalyzer->groupProcurementsByMode($procurementsByKey);
     }
 
     /**
@@ -618,10 +441,6 @@ class DashboardService
      */
     public function getModeStatistics(Collection $procurementsByKey): array
     {
-        return [
-            'distribution' => $this->getModeDistribution($procurementsByKey),
-            'type_breakdown' => $this->getModeTypeStatistics($procurementsByKey),
-            'by_mode' => $this->groupProcurementsByMode($procurementsByKey),
-        ];
+        return $this->modeAnalyzer->getModeStatistics($procurementsByKey);
     }
 }
