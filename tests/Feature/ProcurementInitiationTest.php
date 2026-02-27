@@ -3,10 +3,12 @@
 use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
+use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Services\Manager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -15,6 +17,7 @@ uses(RefreshDatabase::class)->group('procurement', 'integration');
 
 beforeEach(function () {
     Storage::fake('local');
+    Queue::fake();
 
     // Mock MultiChain Manager for CI environment (no blockchain node available)
     $mockMultichain = Mockery::mock(Manager::class);
@@ -111,11 +114,10 @@ test('can initiate procurement with all required documents for goods', function 
             ],
         ]);
 
-    $response->assertRedirect()
-        ->assertSessionHas('success');
+    $response->assertStatus(202)
+        ->assertJsonStructure(['job_id', 'status', 'pr_number']);
 
-    // Procurement was successfully initiated and published to blockchain
-    // Files are published to blockchain, not stored in local storage
+    Queue::assertPushed(BlockchainWriteJob::class);
 });
 
 /**
@@ -157,8 +159,10 @@ test('consulting services requires terms of reference not technical specificatio
             ],
         ]);
 
-    $response->assertRedirect()
-        ->assertSessionHas('success');
+    $response->assertStatus(202)
+        ->assertJsonStructure(['job_id', 'status', 'pr_number']);
+
+    Queue::assertPushed(BlockchainWriteJob::class);
 });
 
 /**
@@ -367,12 +371,13 @@ test('can add optional supporting documents', function () {
             ],
         ]);
 
-    $response->assertRedirect()
-        ->assertSessionHas('success');
+    $response->assertStatus(202)
+        ->assertJsonStructure(['job_id', 'status', 'pr_number']);
 
-    // Verify 6 documents were successfully uploaded (4 mandatory + 2 optional)
-    // Files are published to blockchain, not stored in local storage
-}); /**
+    Queue::assertPushed(BlockchainWriteJob::class);
+});
+
+/**
  * Test: Unauthenticated users cannot access
  */
 test('unauthenticated users cannot access procurement initiation', function () {
@@ -469,8 +474,10 @@ test('can mark procurement initiation stage as complete when all documents uploa
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
 
-    $response->assertRedirect()
-        ->assertSessionHas('success');
+    $response->assertStatus(202)
+        ->assertJsonStructure(['job_id', 'status', 'next_stage', 'next_stage_name']);
+
+    Queue::assertPushed(BlockchainWriteJob::class);
 });
 
 /**
@@ -489,6 +496,6 @@ test('cannot mark procurement initiation stage as complete without required docu
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
 
-    $response->assertRedirect()
-        ->assertSessionHas('error');
+    $response->assertStatus(422)
+        ->assertJson(['error' => 'Cannot mark stage as complete. Please upload all required documents first.']);
 });

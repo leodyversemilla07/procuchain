@@ -70,7 +70,10 @@ final class ProcurementListAggregatorService
                 'archived_filter' => $archived,
             ]);
 
-            set_time_limit(22);
+            // Set a reasonable timeout for blockchain operations (skip in testing)
+            if (! app()->runningUnitTests()) {
+                set_time_limit(22);
+            }
 
             $statusItems = $this->fetchStatusItems();
             if ($statusItems->isEmpty()) {

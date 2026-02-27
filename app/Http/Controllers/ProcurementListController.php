@@ -58,7 +58,10 @@ class ProcurementListController extends BaseController
             Log::info('Fetching procurements list');
 
             // Set a reasonable timeout for blockchain operations
-            set_time_limit(28); // Give 2 seconds buffer
+            // Set a reasonable timeout for blockchain operations (skip in testing)
+            if (! app()->runningUnitTests()) {
+                set_time_limit(28); // Give 2 seconds buffer
+            }
 
             // TEMPORARY: Filtering completely disabled
             $user = auth()->user();

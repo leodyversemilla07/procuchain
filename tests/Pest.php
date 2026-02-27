@@ -1,5 +1,11 @@
 <?php
 
+// Disable Guzzle's shutdown task queue to prevent stale HTTP calls during teardown
+\GuzzleHttp\Promise\Utils::queue()->disableShutdown();
+
+// Ensure unlimited execution time during tests (prevents shutdown timeouts)
+set_time_limit(0);
+
 /*
 |--------------------------------------------------------------------------
 | Test Case

@@ -164,7 +164,7 @@ describe('Pre-Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/pre-procurement-conference-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
             ->has('workflowInfo.workflow')
         );
@@ -180,7 +180,7 @@ describe('Pre-Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/bidding-documents-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
             ->has('workflowInfo.workflow')
         );
@@ -197,7 +197,7 @@ describe('Pre-Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/rfq-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
             ->has('workflowInfo.workflow')
         );
@@ -215,7 +215,7 @@ describe('Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/pre-bid-conference-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -230,7 +230,7 @@ describe('Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/supplemental-bid-bulletin-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -245,7 +245,7 @@ describe('Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/bid-opening-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -260,7 +260,7 @@ describe('Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/bid-evaluation-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -275,7 +275,7 @@ describe('Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/post-qualification-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -290,7 +290,7 @@ describe('Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/bac-resolution-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -306,7 +306,7 @@ describe('Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/abstract-of-quotations-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -323,7 +323,7 @@ describe('Post-Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/noa-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -338,7 +338,7 @@ describe('Post-Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/performance-bond-contract-po-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -353,7 +353,7 @@ describe('Post-Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/ntp-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -368,7 +368,7 @@ describe('Post-Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/monitoring-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -383,7 +383,7 @@ describe('Post-Procurement Stage Pages with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/completion-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });
@@ -429,7 +429,7 @@ describe('Procurement Initiation with Workflow Info', function () {
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/procurement-stage/procurement-initiation-upload')
+            ->component('bac-secretariat/stage-upload')
             ->has('workflowInfo')
         );
     });

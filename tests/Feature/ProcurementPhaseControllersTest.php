@@ -6,9 +6,8 @@ use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\DocumentValidationService;
 use App\Services\ModeAwareDocumentValidationService;
-use App\Services\Publishers\EventPublisher;
-use App\Services\Publishers\ProcurementOrchestrator;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\mock;
@@ -51,6 +50,7 @@ describe('ProcurementStageController (Pre-Procurement Phase)', function () {
     });
 
     it('uploads documents successfully for pre-procurement stage', function () {
+        Queue::fake();
         actingAs($this->bacSecretariat);
 
         // Mock the repository
@@ -84,16 +84,6 @@ describe('ProcurementStageController (Pre-Procurement Phase)', function () {
         );
         $this->instance(ProcurementRepository::class, $repository);
 
-        // Mock the orchestrator
-        $orchestrator = mock(ProcurementOrchestrator::class);
-        $orchestrator->shouldReceive('publishDocumentWorkflow')->once()->andReturn([
-            'success' => true,
-            'document_txid' => 'doc123',
-            'status_txid' => 'status123',
-            'event_txid' => 'event123',
-        ]);
-        $this->instance(ProcurementOrchestrator::class, $orchestrator);
-
         $procurementDataService = mock(\App\Services\ProcurementDataService::class);
         $this->instance(\App\Services\ProcurementDataService::class, $procurementDataService);
 
@@ -114,8 +104,8 @@ describe('ProcurementStageController (Pre-Procurement Phase)', function () {
             'document_type' => DocumentTypeEnums::PRE_PROCUREMENT_MINUTES->value,
         ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
+        $response->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'document_type']);
+        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
     });
 
     it('provides document guide for stage', function () {
@@ -148,11 +138,8 @@ describe('ProcurementStageController (Pre-Procurement Phase)', function () {
     });
 
     it('handles pre-procurement conference decision', function () {
+        Queue::fake();
         actingAs($this->bacSecretariat);
-
-        $eventPublisher = mock(EventPublisher::class);
-        $eventPublisher->shouldReceive('publish')->once();
-        $this->instance(EventPublisher::class, $eventPublisher);
 
         $response = $this->withoutMiddleware('throttle:blockchain_writes')->startSession()->post(route('bac-secretariat.publish-pre-procurement-conference-decision'), [
             'pr_number' => 'PR-2024-001',
@@ -160,8 +147,8 @@ describe('ProcurementStageController (Pre-Procurement Phase)', function () {
             'conference_held' => true,
         ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
+        $response->assertStatus(202)->assertJsonStructure(['job_id', 'status']);
+        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
     });
 });
 
@@ -195,6 +182,7 @@ describe('ProcurementStageController (Procurement Phase)', function () {
     });
 
     it('uploads documents successfully for procurement stage', function () {
+        Queue::fake();
         actingAs($this->bacSecretariat);
 
         $repository = mock(ProcurementRepository::class);
@@ -227,15 +215,6 @@ describe('ProcurementStageController (Procurement Phase)', function () {
         );
         $this->instance(ProcurementRepository::class, $repository);
 
-        $orchestrator = mock(ProcurementOrchestrator::class);
-        $orchestrator->shouldReceive('publishDocumentWorkflow')->once()->andReturn([
-            'success' => true,
-            'document_txid' => 'doc123',
-            'status_txid' => 'status123',
-            'event_txid' => 'event123',
-        ]);
-        $this->instance(ProcurementOrchestrator::class, $orchestrator);
-
         $procurementDataService = mock(\App\Services\ProcurementDataService::class);
         $this->instance(\App\Services\ProcurementDataService::class, $procurementDataService);
 
@@ -260,8 +239,8 @@ describe('ProcurementStageController (Procurement Phase)', function () {
             'document_type' => DocumentTypeEnums::BID_EVALUATION_REPORT->value,
         ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
+        $response->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'document_type']);
+        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
     });
 
     it('checks stage completion status', function () {
@@ -319,6 +298,7 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
     });
 
     it('uploads documents successfully for post-procurement stage', function () {
+        Queue::fake();
         actingAs($this->bacSecretariat);
 
         $repository = mock(ProcurementRepository::class);
@@ -351,23 +331,6 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
         );
         $this->instance(ProcurementRepository::class, $repository);
 
-        // Mock publishers first
-        $documentPublisher = mock(\App\Services\Publishers\DocumentPublisher::class);
-        $statusPublisher = mock(\App\Services\Publishers\StatusPublisher::class);
-        $eventPublisher = mock(\App\Services\Publishers\EventPublisher::class);
-
-        $orchestrator = mock(ProcurementOrchestrator::class);
-        $orchestrator->documentPublisher = $documentPublisher;
-        $orchestrator->statusPublisher = $statusPublisher;
-        $orchestrator->eventPublisher = $eventPublisher;
-        $orchestrator->shouldReceive('publishDocumentWorkflow')->once()->andReturn([
-            'success' => true,
-            'document_txid' => 'doc123',
-            'status_txid' => 'status123',
-            'event_txid' => 'event123',
-        ]);
-        $this->instance(ProcurementOrchestrator::class, $orchestrator);
-
         $procurementDataService = mock(\App\Services\ProcurementDataService::class);
         $this->instance(\App\Services\ProcurementDataService::class, $procurementDataService);
 
@@ -390,8 +353,8 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
                 'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
             ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
+        $response->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'document_type']);
+        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
     });
 
     it('validates document upload in real-time', function () {
@@ -416,6 +379,7 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
     });
 
     it('uploads completion documents successfully', function () {
+        Queue::fake();
         actingAs($this->bacSecretariat);
 
         $repository = mock(ProcurementRepository::class);
@@ -447,18 +411,6 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
             )
         );
         $this->instance(ProcurementRepository::class, $repository);
-
-        $orchestrator = mock(ProcurementOrchestrator::class);
-        $orchestrator->shouldReceive('publishDocumentWorkflow')
-            ->once()
-            ->withAnyArgs()
-            ->andReturn([
-                'success' => true,
-                'document_txid' => 'doc123',
-                'status_txid' => 'status123',
-                'event_txid' => 'event123',
-            ]);
-        $this->instance(ProcurementOrchestrator::class, $orchestrator);
 
         $procurementDataService = mock(\App\Services\ProcurementDataService::class);
         $procurementDataService->shouldReceive('fetchStatusItems')->andReturn(collect());
@@ -487,8 +439,8 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
                 'document_type' => DocumentTypeEnums::CERTIFICATE_OF_COMPLETION->value,
             ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
+        $response->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'document_type']);
+        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
     });
 });
 
