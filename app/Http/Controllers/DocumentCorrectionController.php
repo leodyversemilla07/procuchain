@@ -71,7 +71,7 @@ class DocumentCorrectionController extends Controller
             }
 
             $jobId = Str::uuid()->toString();
-            BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId);
+            BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId, auth()->id());
 
             return response()->json([
                 'job_id' => $jobId,

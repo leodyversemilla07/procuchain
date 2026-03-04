@@ -163,7 +163,7 @@ class ProcurementInitiationController extends BaseController
             'procurement_data' => $procurementData,
             'user_name' => $user->name,
             'pr_number' => $prNumber,
-        ], $jobId);
+        ], $jobId, $user->id);
 
         return response()->json([
             'job_id' => $jobId,
@@ -266,7 +266,7 @@ class ProcurementInitiationController extends BaseController
                 'temp_file_path' => $tempPath,
                 'original_filename' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
-            ], $jobId);
+            ], $jobId, $user->id);
 
             return response()->json([
                 'job_id' => $jobId,
@@ -379,7 +379,7 @@ class ProcurementInitiationController extends BaseController
                 'next_stage' => $nextStage->value,
                 'next_stage_status' => $nextStageStatus->value,
                 'document_count' => count($uploadedDocuments),
-            ], $jobId);
+            ], $jobId, auth()->id());
 
             return response()->json([
                 'job_id' => $jobId,

@@ -6,6 +6,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { notifications as notificationsPage } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
 import { locked as adminAccountsLocked } from '@/routes/admin/accounts';
+import adminAuditLog from '@/routes/admin/audit-log';
 import adminBlockchain from '@/routes/admin/blockchain';
 import { index as adminInvitations } from '@/routes/admin/invitations';
 import adminLoginLogs from '@/routes/admin/login-logs';
@@ -23,7 +24,22 @@ import { index as hopeProcurementsList } from '@/routes/hope/procurements';
 import { index as reportsIndex } from '@/routes/reports';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BarChart3, Bell, Blocks, Eye, FileText, GitBranch, LayoutGrid, Mail, Shield, ShieldOff, Table2, Upload, Users } from 'lucide-react';
+import {
+    BarChart3,
+    Bell,
+    Blocks,
+    Eye,
+    FileText,
+    GitBranch,
+    LayoutGrid,
+    Mail,
+    ScrollText,
+    Shield,
+    ShieldOff,
+    Table2,
+    Upload,
+    Users,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermissions>): NavItem[] => {
@@ -141,6 +157,12 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
             title: 'Login Logs',
             href: adminLoginLogs.index.url(),
             icon: Shield,
+        });
+
+        items.push({
+            title: 'Audit Log',
+            href: adminAuditLog.index.url(),
+            icon: ScrollText,
         });
 
         items.push({

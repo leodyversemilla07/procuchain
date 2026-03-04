@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
+use App\Contracts\CorrectionRepositoryInterface;
 use App\DataTransferObjects\CorrectionData;
-use App\Repositories\CorrectionRepository;
 use App\Services\BlockchainStorageService;
 use Exception;
 use Illuminate\Http\UploadedFile;
@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Log;
 class CorrectionPublisher
 {
     public function __construct(
-        private CorrectionRepository $corrections,
+        private CorrectionRepositoryInterface $corrections,
         private BlockchainStorageService $fileStorage
     ) {}
 

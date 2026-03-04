@@ -191,7 +191,7 @@ class ProcurementStageController extends BaseController
                 'temp_file_path' => $tempPath,
                 'original_filename' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
-            ], $jobId);
+            ], $jobId, $user->id);
 
             return response()->json([
                 'job_id' => $jobId,
@@ -271,7 +271,7 @@ class ProcurementStageController extends BaseController
                 'procurement_mode' => $procurement->procurementMode->value,
                 'document_count' => count($uploadedDocuments),
                 'is_pre_procurement' => $stage->isPreProcurement(),
-            ], $jobId);
+            ], $jobId, $user->id);
 
             return response()->json([
                 'job_id' => $jobId,
@@ -304,7 +304,7 @@ class ProcurementStageController extends BaseController
                 'stage' => $stage->value,
                 'reason' => $request->input('reason', 'Stage marked as optional and skipped by user.'),
                 'user_address' => auth()->user()->blockchain_address ?? auth()->user()->email,
-            ], $jobId);
+            ], $jobId, auth()->id());
 
             return response()->json(['job_id' => $jobId, 'status' => 'pending'], 202);
         } catch (\Exception $e) {
@@ -444,7 +444,7 @@ class ProcurementStageController extends BaseController
                 'stage' => $stage->value,
                 'reason' => $request->input('reason', 'Additional bulletin required'),
                 'user_address' => auth()->user()->blockchain_address ?? auth()->user()->email,
-            ], $jobId);
+            ], $jobId, auth()->id());
 
             return response()->json(['job_id' => $jobId, 'status' => 'pending'], 202);
         } catch (\Exception $e) {
@@ -480,7 +480,7 @@ class ProcurementStageController extends BaseController
                 'delivery_date' => $request->input('delivery_date'),
                 'delivery_term_days' => (int) $request->input('delivery_term_days'),
                 'user_address' => auth()->user()->blockchain_address ?? auth()->user()->email,
-            ], $jobId);
+            ], $jobId, auth()->id());
 
             return response()->json(['job_id' => $jobId, 'status' => 'pending'], 202);
         } catch (\Exception $e) {
@@ -515,7 +515,7 @@ class ProcurementStageController extends BaseController
                 'procurement_title' => $procurementTitle,
                 'was_held' => $wasHeld,
                 'user_address' => auth()->user()->blockchain_address ?? auth()->user()->email,
-            ], $jobId);
+            ], $jobId, auth()->id());
 
             return response()->json([
                 'job_id' => $jobId,

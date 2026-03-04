@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
+use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\DataTransferObjects\ProcurementCorrectionData;
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
-use App\Repositories\ProcurementCorrectionRepository;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Log;
 class ProcurementCorrectionPublisher
 {
     public function __construct(
-        private ProcurementCorrectionRepository $procurementCorrections
+        private ProcurementCorrectionRepositoryInterface $procurementCorrections
     ) {}
 
     /**

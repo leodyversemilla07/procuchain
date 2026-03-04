@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\AccountLockoutService;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,8 @@ use Inertia\Response;
 class AccountLockoutController extends Controller
 {
     public function __construct(
-        private AccountLockoutService $accountLockout
+        private AccountLockoutService $accountLockout,
+        private AuditLogger $auditLogger
     ) {}
 
     /**
@@ -80,6 +82,13 @@ class AccountLockoutController extends Controller
                     'unlocked_user_email' => $user->email,
                     'reason' => $validated['reason'] ?? 'Manually unlocked by admin',
                 ]);
+
+                $this->auditLogger->log(
+                    action: 'account.unlocked',
+                    subjectType: 'user',
+                    subjectId: (string) $user->id,
+                    newValues: ['email' => $user->email, 'reason' => $validated['reason'] ?? 'Manually unlocked by admin']
+                );
 
                 // Return JSON response for API calls
                 if ($request->expectsJson() || $request->is('admin/accounts/*/unlock')) {
@@ -151,6 +160,13 @@ class AccountLockoutController extends Controller
                     'duration_hours' => $durationHours,
                 ]);
 
+                $this->auditLogger->log(
+                    action: 'account.locked',
+                    subjectType: 'user',
+                    subjectId: (string) $user->id,
+                    newValues: ['email' => $user->email, 'reason' => $validated['reason'], 'duration_hours' => $durationHours]
+                );
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Account locked successfully',
@@ -189,6 +205,13 @@ class AccountLockoutController extends Controller
                     'user_id' => $user->id,
                     'user_email' => $user->email,
                 ]);
+
+                $this->auditLogger->log(
+                    action: 'account.attempts_reset',
+                    subjectType: 'user',
+                    subjectId: (string) $user->id,
+                    newValues: ['email' => $user->email]
+                );
 
                 // Return JSON response for API calls
                 if (request()->expectsJson() || request()->is('admin/accounts/*/reset-attempts')) {
@@ -270,6 +293,11 @@ class AccountLockoutController extends Controller
             ]);
 
             if ($successCount > 0) {
+                $this->auditLogger->log(
+                    action: 'account.bulk_unlocked',
+                    subjectType: 'user',
+                    newValues: ['account_ids' => $accountIds, 'success_count' => $successCount]
+                );
                 $message = $successCount === 1
                     ? 'Successfully unlocked 1 account'
                     : "Successfully unlocked {$successCount} accounts";
@@ -325,6 +353,11 @@ class AccountLockoutController extends Controller
             ]);
 
             if ($successCount > 0) {
+                $this->auditLogger->log(
+                    action: 'account.bulk_attempts_reset',
+                    subjectType: 'user',
+                    newValues: ['account_ids' => $accountIds, 'success_count' => $successCount]
+                );
                 $message = $successCount === 1
                     ? 'Successfully reset attempts for 1 account'
                     : "Successfully reset attempts for {$successCount} accounts";

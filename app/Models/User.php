@@ -67,6 +67,7 @@ class User extends Authenticatable
         'last_failed_login_at',
         'locked_reason',
         'email_notifications_enabled',
+        'notification_preferences',
         'two_factor_secret',
         'two_factor_recovery_codes',
         'two_factor_confirmed_at',
@@ -107,10 +108,61 @@ class User extends Authenticatable
             'lock_expires_at' => 'datetime',
             'last_failed_login_at' => 'datetime',
             'email_notifications_enabled' => 'boolean',
+            'notification_preferences' => 'json',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Return the default notification preference structure.
+     *
+     * @return array<string, array<string, bool>>
+     */
+    public static function getDefaultNotificationPreferences(): array
+    {
+        return [
+            'procurement_stage_updates' => ['email' => true, 'push' => true],
+            'procurement_corrections' => ['email' => true, 'push' => true],
+            'document_uploads' => ['email' => false, 'push' => true],
+            'account_security' => ['email' => true, 'push' => true],
+            'user_invitations' => ['email' => true, 'push' => false],
+            'system_announcements' => ['email' => true, 'push' => true],
+        ];
+    }
+
+    /**
+     * Get merged notification preferences (user overrides merged into defaults).
+     *
+     * @return array<string, array<string, bool>>
+     */
+    public function getMergedNotificationPreferences(): array
+    {
+        $defaults = self::getDefaultNotificationPreferences();
+        $saved = $this->notification_preferences ?? [];
+
+        foreach ($defaults as $type => $channels) {
+            if (isset($saved[$type])) {
+                $defaults[$type] = array_merge($channels, $saved[$type]);
+            }
+        }
+
+        return $defaults;
+    }
+
+    /**
+     * Check whether a notification of the given type and channel is enabled for this user.
+     */
+    public function isNotificationEnabled(string $eventType, string $channel): bool
+    {
+        if ($channel === 'email' && ! $this->email_notifications_enabled) {
+            return false;
+        }
+
+        $prefs = $this->getMergedNotificationPreferences();
+
+        return (bool) ($prefs[$eventType][$channel] ?? false);
     }
 
     /**

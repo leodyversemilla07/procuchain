@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
+use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\DataTransferObjects\ProcurementCorrectionData;
 use App\Enums\StreamEnums;
 use App\Services\Manager;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Repository for managing procurement.metadata.corrections stream
  */
-final readonly class ProcurementCorrectionRepository
+final readonly class ProcurementCorrectionRepository implements ProcurementCorrectionRepositoryInterface
 {
     public function __construct(
         private Manager $multichain

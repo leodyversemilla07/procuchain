@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Procurement;
 
+use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\StageEnums;
 use App\Models\ProcurementWorkflowConfig;
-use App\Repositories\ProcurementCorrectionRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +24,7 @@ final class ProcurementDetailService
     public function __construct(
         private readonly ProcurementDataService $dataService,
         private readonly ProcurementRepository $procurementRepository,
-        private readonly ProcurementCorrectionRepository $correctionRepository,
+        private readonly ProcurementCorrectionRepositoryInterface $correctionRepository,
     ) {}
 
     /**

@@ -10,6 +10,8 @@ use App\Jobs\Handlers\ProcurementInitiationHandler;
 use App\Jobs\Handlers\ProcurementUpdateHandler;
 use App\Jobs\Handlers\StageCompletionHandler;
 use App\Jobs\Handlers\StageTransitionHandler;
+use App\Models\User;
+use App\Notifications\BlockchainJobFailedNotification;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,6 +20,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Handles all asynchronous blockchain write operations via the Redis queue.
@@ -44,6 +47,7 @@ class BlockchainWriteJob implements ShouldQueue
         public readonly string $operation,
         public readonly array $data,
         public readonly string $jobId,
+        public readonly ?int $userId = null,
     ) {}
 
     public function handle(): void
@@ -84,5 +88,43 @@ class BlockchainWriteJob implements ShouldQueue
 
             throw $e;
         }
+    }
+
+    /**
+     * Handle permanent job failure after all retries are exhausted.
+     *
+     * Notifies the submitting user so they can re-submit the action
+     * rather than silently losing the blockchain write.
+     */
+    public function failed(Throwable $exception): void
+    {
+        Cache::put("blockchain_job:{$this->jobId}", [
+            'status' => 'failed',
+            'error' => $exception->getMessage(),
+        ], now()->addHour());
+
+        Log::error("BlockchainWriteJob[{$this->operation}]: permanently failed after all retries", [
+            'job_id' => $this->jobId,
+            'pr_number' => $this->data['pr_number'] ?? 'N/A',
+            'user_id' => $this->userId,
+            'error' => $exception->getMessage(),
+        ]);
+
+        if (! $this->userId) {
+            return;
+        }
+
+        $user = User::find($this->userId);
+
+        if (! $user) {
+            return;
+        }
+
+        $user->notify(new BlockchainJobFailedNotification(
+            operation: $this->operation,
+            prNumber: $this->data['pr_number'] ?? 'N/A',
+            jobId: $this->jobId,
+            errorMessage: $exception->getMessage(),
+        ));
     }
 }

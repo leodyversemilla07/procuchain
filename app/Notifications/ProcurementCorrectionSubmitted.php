@@ -34,9 +34,13 @@ class ProcurementCorrectionSubmitted extends Notification
      */
     public function via(object $notifiable): array
     {
-        $channels = ['database', WebPushChannel::class];
+        $channels = ['database'];
 
-        if ($notifiable->email_notifications_enabled ?? true) {
+        if ($notifiable->isNotificationEnabled('procurement_corrections', 'push')) {
+            $channels[] = WebPushChannel::class;
+        }
+
+        if ($notifiable->isNotificationEnabled('procurement_corrections', 'email')) {
             $channels[] = 'mail';
         }
 

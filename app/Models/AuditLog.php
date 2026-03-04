@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class AuditLog extends Model
+{
+    /** @var list<string> */
+    protected $fillable = [
+        'user_id',
+        'action',
+        'subject_type',
+        'subject_id',
+        'old_values',
+        'new_values',
+        'ip_address',
+        'user_agent',
+    ];
+
+    /** Audit logs are never updated — only created. */
+    const UPDATED_AT = null;
+
+    public function casts(): array
+    {
+        return [
+            'old_values' => 'array',
+            'new_values' => 'array',
+        ];
+    }
+
+    public function actor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id')->withTrashed();
+    }
+}
