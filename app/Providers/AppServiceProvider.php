@@ -4,13 +4,19 @@ namespace App\Providers;
 
 use App\Contracts\BlockchainStorageInterface;
 use App\Contracts\CacheStrategyInterface;
+use App\Contracts\CorrectionRepositoryInterface;
 use App\Contracts\DocumentPublisherInterface;
 use App\Contracts\DocumentRepositoryInterface;
 use App\Contracts\EventPublisherInterface;
 use App\Contracts\NotificationServiceInterface;
+use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\Contracts\ProcurementRepositoryInterface;
 use App\Contracts\StatusPublisherInterface;
+use App\Policies\DocumentPolicy;
+use App\Policies\ProcurementPolicy;
+use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
+use App\Repositories\ProcurementCorrectionRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\BlockchainStorageService;
 use App\Services\CacheStrategyService;
@@ -20,6 +26,7 @@ use App\Services\ProcurementStageTransitionService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -42,6 +49,8 @@ class AppServiceProvider extends ServiceProvider
         // Register interface bindings - Repositories
         $this->app->bind(ProcurementRepositoryInterface::class, ProcurementRepository::class);
         $this->app->bind(DocumentRepositoryInterface::class, DocumentRepository::class);
+        $this->app->bind(CorrectionRepositoryInterface::class, CorrectionRepository::class);
+        $this->app->bind(ProcurementCorrectionRepositoryInterface::class, ProcurementCorrectionRepository::class);
 
         // Register interface bindings - Publishers
         $this->app->bind(DocumentPublisherInterface::class, DocumentPublisher::class);
@@ -58,6 +67,21 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
+
+        // Register procurement policy abilities as named Gates (no Eloquent model binding).
+        Gate::define('view-procurement', [ProcurementPolicy::class, 'view']);
+        Gate::define('create-procurement', [ProcurementPolicy::class, 'create']);
+        Gate::define('archive-procurement', [ProcurementPolicy::class, 'archive']);
+        Gate::define('restore-procurement', [ProcurementPolicy::class, 'restore']);
+        Gate::define('correct-procurement', [ProcurementPolicy::class, 'correct']);
+        Gate::define('approve-procurement', [ProcurementPolicy::class, 'approve']);
+        Gate::define('publish-procurement', [ProcurementPolicy::class, 'publish']);
+
+        // Register document policy abilities as named Gates.
+        Gate::define('view-document', [DocumentPolicy::class, 'view']);
+        Gate::define('download-document', [DocumentPolicy::class, 'download']);
+        Gate::define('upload-document', [DocumentPolicy::class, 'upload']);
+        Gate::define('correct-document', [DocumentPolicy::class, 'correct']);
 
         // Register custom rate limiter for blockchain writes (Issue #20: use config)
         RateLimiter::for('blockchain_writes', function ($request) {

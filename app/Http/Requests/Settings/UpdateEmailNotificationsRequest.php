@@ -23,6 +23,7 @@ class UpdateEmailNotificationsRequest extends FormRequest
     {
         return [
             'email_notifications_enabled' => ['required', 'boolean'],
+            'notification_preferences' => ['sometimes', 'array'],
         ];
     }
 

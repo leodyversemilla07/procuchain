@@ -34,7 +34,7 @@ class ProcurementCorrectionController extends Controller
                 'corrected_by' => auth()->user()->name ?? 'System',
                 'user_address' => auth()->user()->blockchain_address ?? '',
                 'pr_number' => $prNumber,
-            ], $jobId);
+            ], $jobId, auth()->id());
 
             return response()->json([
                 'job_id' => $jobId,

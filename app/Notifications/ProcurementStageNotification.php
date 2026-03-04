@@ -40,9 +40,13 @@ class ProcurementStageNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        $channels = ['database', WebPushChannel::class];
+        $channels = ['database'];
 
-        if ($notifiable->email_notifications_enabled) {
+        if ($notifiable->isNotificationEnabled('procurement_stage_updates', 'push')) {
+            $channels[] = WebPushChannel::class;
+        }
+
+        if ($notifiable->isNotificationEnabled('procurement_stage_updates', 'email')) {
             $channels[] = 'mail';
         }
 

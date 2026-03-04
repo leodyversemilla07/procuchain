@@ -24,6 +24,8 @@ class ProcurementArchiveController extends Controller
      */
     public function store(Request $request, string $pr_number): RedirectResponse
     {
+        $this->authorize('archive-procurement');
+
         try {
             // Get current status to validate stage
             $currentStatus = $this->procurementDataService->getCurrentProcurementStatus($pr_number);
@@ -67,6 +69,8 @@ class ProcurementArchiveController extends Controller
      */
     public function destroy(string $pr_number): RedirectResponse
     {
+        $this->authorize('restore-procurement');
+
         try {
             $this->archiveRepository->restore(
                 $pr_number,

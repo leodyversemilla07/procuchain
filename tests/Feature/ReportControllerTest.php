@@ -233,6 +233,53 @@ test('report can be exported as CSV', function () {
     $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
 });
 
+test('report can be exported as PDF', function () {
+    $mockReportService = Mockery::mock(ReportGenerationService::class);
+    $mockReportService->shouldReceive('generateReport')
+        ->once()
+        ->andReturn([
+            'success' => true,
+            'summary' => [
+                'total_count' => 2,
+                'total_abc_amount' => 2500000,
+                'by_status' => ['active' => 2],
+                'by_stage' => ['bid_opening' => 1, 'post_qualification' => 1],
+                'by_mode' => ['public_bidding' => 2],
+            ],
+            'data' => [
+                [
+                    'id' => 'PR-2026-001',
+                    'title' => 'Test Procurement One',
+                    'current_status' => 'active',
+                    'stage' => 'bid_opening',
+                    'mode' => 'public_bidding',
+                    'abc_amount' => 1000000,
+                ],
+                [
+                    'id' => 'PR-2026-002',
+                    'title' => 'Test Procurement Two',
+                    'current_status' => 'active',
+                    'stage' => 'post_qualification',
+                    'mode' => 'public_bidding',
+                    'abc_amount' => 1500000,
+                ],
+            ],
+        ]);
+
+    $this->app->instance(ReportGenerationService::class, $mockReportService);
+
+    $response = $this->postJson('/reports/export', [
+        'filter_type' => 'month',
+        'month' => 1,
+        'year' => 2026,
+        'format' => 'pdf',
+    ]);
+
+    $response->assertSuccessful();
+    $response->assertHeader('Content-Type', 'application/pdf');
+    expect($response->headers->get('Content-Disposition'))->toContain('procurement-report-');
+});
+
 test('semantic search requires query parameter', function () {
     $response = $this->postJson('/search', []);
 

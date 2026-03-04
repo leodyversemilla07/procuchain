@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Procurement;
 
+use App\Contracts\CorrectionRepositoryInterface;
 use App\DataTransferObjects\CorrectionData;
 use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\EventData;
 use App\DataTransferObjects\StatusData;
 use App\Enums\StageEnums;
-use App\Repositories\CorrectionRepository;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
 use App\Repositories\StatusRepository;
@@ -37,7 +37,7 @@ final class ProcurementFetcherService
         private readonly StatusRepository $statusRepository,
         private readonly DocumentRepository $documentRepository,
         private readonly EventRepository $eventRepository,
-        private readonly CorrectionRepository $correctionRepository,
+        private readonly CorrectionRepositoryInterface $correctionRepository,
         private readonly ProcurementFormatterService $formatter,
         private readonly UserNameResolverService $userNameResolver,
     ) {}

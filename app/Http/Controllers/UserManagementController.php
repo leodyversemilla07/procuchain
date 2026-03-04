@@ -7,6 +7,7 @@ use App\Http\Requests\User\ResetUserPasswordRequest;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\Services\Manager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,8 @@ use Inertia\Response;
 
 class UserManagementController extends Controller
 {
+    public function __construct(protected AuditLogger $auditLogger) {}
+
     /**
      * Display user management page
      */
@@ -103,6 +106,13 @@ class UserManagementController extends Controller
                 'blockchain_address' => $blockchainAddress,
             ]);
 
+            $this->auditLogger->log(
+                action: 'user.created',
+                subjectType: 'user',
+                subjectId: (string) $user->id,
+                newValues: ['name' => $user->name, 'email' => $user->email, 'role' => $validated['role']]
+            );
+
             return redirect()->back()->with('success', 'User created successfully with blockchain address.');
         } catch (\Exception $e) {
             Log::error('Failed to create user', [
@@ -146,6 +156,13 @@ class UserManagementController extends Controller
                 'user_role' => $validated['role'],
             ]);
 
+            $this->auditLogger->log(
+                action: 'user.updated',
+                subjectType: 'user',
+                subjectId: (string) $user->id,
+                newValues: ['name' => $validated['name'], 'email' => $validated['email'], 'role' => $validated['role']]
+            );
+
             return redirect()->back()->with('success', 'User updated successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to update user', [
@@ -172,11 +189,19 @@ class UserManagementController extends Controller
             }
 
             $userEmail = $user->email;
+            $userId = $user->id;
             $user->delete();
             Log::info('Admin deleted user', [
                 'admin_id' => Auth::id(),
                 'deleted_user_email' => $userEmail,
             ]);
+
+            $this->auditLogger->log(
+                action: 'user.deleted',
+                subjectType: 'user',
+                subjectId: (string) $userId,
+                oldValues: ['email' => $userEmail]
+            );
 
             return redirect()->back()->with('success', 'User deleted successfully.');
         } catch (\Exception $e) {
@@ -195,7 +220,7 @@ class UserManagementController extends Controller
      */
     public function bulkDelete(BulkDeleteUsersRequest $request)
     {
-        $this->authorize('delete', User::class);
+        $this->authorize('deleteAny', User::class);
 
         $validated = $request->validated();
 
@@ -214,6 +239,7 @@ class UserManagementController extends Controller
             }
 
             // Perform bulk deletion within a transaction
+            $currentUserId = Auth::id();
             DB::transaction(function () use ($userIds, $usersToDelete, $currentUserId) {
                 User::whereIn('id', $userIds)->delete();
 
@@ -234,6 +260,15 @@ class UserManagementController extends Controller
 
             $deletedCount = count($userIds);
             $message = $deletedCount === 1 ? 'User deleted successfully.' : "{$deletedCount} users deleted successfully.";
+
+            $this->auditLogger->log(
+                action: 'user.bulk_deleted',
+                subjectType: 'user',
+                oldValues: [
+                    'user_ids' => $userIds,
+                    'emails' => $usersToDelete->pluck('email')->toArray(),
+                ]
+            );
 
             return redirect()->back()->with('success', $message);
         } catch (\Exception $e) {
@@ -277,6 +312,13 @@ class UserManagementController extends Controller
                     'reason' => $validated['reason'],
                     'timestamp' => now()->toDateTimeString(),
                 ]);
+
+                $this->auditLogger->log(
+                    action: 'user.password_reset_sent',
+                    subjectType: 'user',
+                    subjectId: (string) $user->id,
+                    newValues: ['email' => $user->email, 'reason' => $validated['reason']]
+                );
 
                 return redirect()->back()->with('success', "Password reset link sent to {$user->email}");
             } else {

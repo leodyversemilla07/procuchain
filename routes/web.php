@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ProcurementWorkflowConfigController;
 use App\Http\Controllers\Admin\StageDocumentConfigController;
 use App\Http\Controllers\Admin\UserInvitationController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AcceptInvitationController;
 use App\Http\Controllers\BacChairmanController;
 use App\Http\Controllers\BacSecretariatController;
@@ -143,8 +144,10 @@ Route::middleware(['auth'])->group(function () {
 
         // Procurement Archiving Actions
         Route::post('/archive', [\App\Http\Controllers\Procurement\ProcurementArchiveController::class, 'store'])
+            ->middleware('role:admin|bac_secretariat')
             ->name('archive');
         Route::delete('/archive', [\App\Http\Controllers\Procurement\ProcurementArchiveController::class, 'destroy'])
+            ->middleware('role:admin|bac_secretariat')
             ->name('restore');
     });
 
@@ -307,6 +310,9 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         // Dashboard
         Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
+
+        // Audit Log
+        Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
 
         // Procurement List Views
         Route::get('/procurements-list', [ProcurementListController::class, 'index'])
