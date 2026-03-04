@@ -24,6 +24,7 @@ describe('User Model - Configuration', function () {
             'last_failed_login_at',
             'locked_reason',
             'email_notifications_enabled',
+            'notification_preferences',
             'two_factor_secret',
             'two_factor_recovery_codes',
             'two_factor_confirmed_at',
