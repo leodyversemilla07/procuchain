@@ -856,8 +856,6 @@ describe('StageTransitionHandler', function () {
         ]);
     })->throws(Exception::class, 'Procurement not found: PR-NOTFOUND');
 
-    // StatusEnums::STAGE_ONGOING is referenced in StageTransitionHandler::executeRepeat()
-    // but is not defined in the StatusEnums enum — pre-existing bug.
     it('executeRepeat repeats stages with event and status publishing', function () {
         $statusPublisher = Mockery::mock(StatusPublisher::class);
         $eventPublisher = Mockery::mock(EventPublisher::class);
@@ -921,7 +919,7 @@ describe('StageTransitionHandler', function () {
         expect($result['status_txid'])->toBe('rep-st-1')
             ->and($result['event_txid'])->toBe('rep-ev-1')
             ->and($result['stage'])->toBe(StageEnums::SUPPLEMENTAL_BID_BULLETIN->value);
-    })->skip('StatusEnums::STAGE_ONGOING is not defined in the enum (pre-existing bug)');
+    });
 
     it('executeRepeat throws when procurement not found', function () {
         $statusPublisher = Mockery::mock(StatusPublisher::class);

@@ -344,7 +344,7 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
         $file = UploadedFile::fake()->create('notice_of_award.pdf', 1000, 'application/pdf');
 
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
-            ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class)
+            ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
             ->startSession()->post(route('bac-secretariat.procurement.post-procurement.upload-document', [
                 'pr_number' => 'PR-2024-001',
                 'stage' => StageEnums::NOTICE_OF_AWARD->value,
@@ -362,7 +362,7 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
 
         $file = UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf');
 
-        $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class)
+        $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
             ->startSession()->post(route('bac-secretariat.procurement.post-procurement.validate-upload', [
                 'pr_number' => 'PR-2024-001',
                 'stage' => StageEnums::NOTICE_OF_AWARD->value,
@@ -430,7 +430,7 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
         $file = UploadedFile::fake()->create('completion_certificate.pdf', 1000, 'application/pdf');
 
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
-            ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class)
+            ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
             ->startSession()->post(route('bac-secretariat.procurement.post-procurement.upload-document', [
                 'pr_number' => 'PR-2024-001',
                 'stage' => StageEnums::COMPLETION->value,
