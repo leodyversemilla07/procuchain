@@ -30,7 +30,7 @@ test('password can be confirmed', function () {
     ]);
     $user->assignRole(UserRoleEnums::BAC_SECRETARIAT->value);
 
-    $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
+    $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
         ->actingAs($user)
         ->withSession(['url.intended' => route('bac-secretariat.dashboard')])
         ->post(route('password.confirm.store'), [
@@ -46,7 +46,7 @@ test('password confirmation fails with wrong password', function () {
         'password' => bcrypt('password'),
     ]);
 
-    $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
+    $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
         ->actingAs($user)
         ->post(route('password.confirm.store'), [
             'password' => 'wrong-password',
@@ -63,7 +63,7 @@ test('password confirmation redirects to bac chairman dashboard', function () {
     ]);
     $user->assignRole(UserRoleEnums::BAC_CHAIRMAN->value);
 
-    $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
+    $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
         ->actingAs($user)
         ->post(route('password.confirm.store'), [
             'password' => 'password',
@@ -79,7 +79,7 @@ test('password confirmation redirects to hope dashboard', function () {
     ]);
     $user->assignRole(UserRoleEnums::HOPE->value);
 
-    $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
+    $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
         ->actingAs($user)
         ->post(route('password.confirm.store'), [
             'password' => 'password',
@@ -95,7 +95,7 @@ test('password confirmation redirects to admin dashboard', function () {
     ]);
     $user->assignRole(UserRoleEnums::ADMIN->value);
 
-    $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
+    $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
         ->actingAs($user)
         ->post(route('password.confirm.store'), [
             'password' => 'password',

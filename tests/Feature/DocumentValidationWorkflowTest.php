@@ -65,7 +65,7 @@ describe('Document Upload Validation Workflow', function () {
         $this->instance(\App\Services\ProcurementDataService::class, $procurementDataService);
 
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
-            ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class)
+            ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
             ->startSession()
             ->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
                 'pr_number' => 'PR-2024-001',
