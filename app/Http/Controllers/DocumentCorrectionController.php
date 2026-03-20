@@ -24,6 +24,8 @@ class DocumentCorrectionController extends Controller
 
     public function correctDocument(CorrectDocumentRequest $request, string $txid): JsonResponse
     {
+        $this->authorize('correct-document', $txid);
+
         $validated = $request->validated();
 
         try {
@@ -93,6 +95,8 @@ class DocumentCorrectionController extends Controller
      */
     public function getCorrectionHistory(Request $request, string $procurement): JsonResponse
     {
+        $this->authorize('view-procurement', $procurement);
+
         try {
             // Fetch corrections for this procurement using repository
             $correctionDtos = $this->correctionRepository->findByProcurement($procurement);
@@ -190,6 +194,8 @@ class DocumentCorrectionController extends Controller
      */
     public function checkCorrection(Request $request, string $txid): JsonResponse
     {
+        $this->authorize('view-document', $txid);
+
         $validated = $request->validate([
             'txid' => 'required|string|size:64',
         ]);

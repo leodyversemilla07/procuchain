@@ -1,9 +1,12 @@
 <?php
 
+use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
+use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -151,6 +154,14 @@ describe('DocumentPolicy', function () {
         it('denies users with no role from correcting documents', function () {
             expect($this->guest->can('correct-document'))->toBeFalse();
         });
+
+        it('denies bac_secretariat from correcting inaccessible procurement documents', function () {
+            $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
+
+            bindInaccessibleDocumentContext($this, str_repeat('a', 64), 'PR-LOCKED', true);
+
+            expect($this->secretariat->can('correct-document', str_repeat('a', 64)))->toBeFalse();
+        });
     });
 
     describe('download route authorization (HTTP)', function () {
@@ -167,13 +178,12 @@ describe('DocumentPolicy', function () {
     });
 });
 
-function bindInaccessibleDocumentContext($testCase, string $fileKey, string $prNumber): void
+function bindInaccessibleDocumentContext($testCase, string $reference, string $prNumber, bool $isTxid = false): void
 {
     $dataService = \Mockery::mock(ProcurementDataService::class);
     $dataService->shouldReceive('getDocumentDataByFileKey')
-        ->once()
-        ->with($fileKey)
-        ->andReturn([
+        ->zeroOrMoreTimes()
+        ->andReturn($isTxid ? null : [
             'pr_number' => $prNumber,
         ]);
     $dataService->shouldReceive('fetchStatusItems')
@@ -183,6 +193,15 @@ function bindInaccessibleDocumentContext($testCase, string $fileKey, string $prN
             ['user_address' => 'different-address'],
         ]));
 
+    $documentRepository = \Mockery::mock(DocumentRepository::class);
+    $documentRepository->shouldReceive('findByFileKey')
+        ->once()
+        ->with($reference)
+        ->andReturn($isTxid ? null : inaccessibleDocumentFixture($reference, $prNumber));
+    $documentRepository->shouldReceive('findByTxid')
+        ->zeroOrMoreTimes()
+        ->andReturn($isTxid ? inaccessibleDocumentFixture('locked-file.pdf', $prNumber, $reference) : null);
+
     $repository = \Mockery::mock(ProcurementRepository::class);
     $repository->shouldReceive('findByProcurement')
         ->once()
@@ -190,6 +209,7 @@ function bindInaccessibleDocumentContext($testCase, string $fileKey, string $prN
         ->andReturn(inaccessibleDocumentProcurementFixture($prNumber));
 
     app()->instance(ProcurementDataService::class, $dataService);
+    app()->instance(DocumentRepository::class, $documentRepository);
     app()->instance(ProcurementRepository::class, $repository);
 }
 
@@ -208,4 +228,25 @@ function inaccessibleDocumentProcurementFixture(string $prNumber): ProcurementDa
         'user_id' => '999',
         'created_at' => now()->toIso8601String(),
     ]);
+}
+
+function inaccessibleDocumentFixture(string $fileKey, string $prNumber, string $txid = 'metadata-txid'): DocumentData
+{
+    return new DocumentData(
+        prNumber: $prNumber,
+        procurementTitle: 'Locked Procurement',
+        userAddress: 'different-address',
+        stage: 'procurement_initiation',
+        status: 'draft',
+        documentType: 'test_document',
+        fileKey: $fileKey,
+        fileName: 'test.pdf',
+        fileSize: 1000,
+        mimeType: 'application/pdf',
+        hash: 'hash',
+        dataTxid: $txid,
+        metadataTxid: 'metadata-txid',
+        uploadedBy: 'System',
+        timestamp: Carbon::now(),
+    );
 }

@@ -128,6 +128,7 @@ final class DocumentVerificationController extends Controller
     {
         // Decode the file key (may be URL encoded)
         $decodedFileKey = urldecode($fileKey);
+        $this->authorize('view-document', $decodedFileKey);
 
         Log::info('Verifying single document', [
             'file_key' => $decodedFileKey,
