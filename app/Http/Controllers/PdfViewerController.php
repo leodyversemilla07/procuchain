@@ -22,7 +22,7 @@ class PdfViewerController extends BaseController
      */
     public function showPdfViewer(Request $request, string $fileKey): Response
     {
-        Gate::authorize('view-document');
+        Gate::authorize('view-document', $fileKey);
 
         Log::info('PDF Viewer requested', ['file_key' => $fileKey]);
 

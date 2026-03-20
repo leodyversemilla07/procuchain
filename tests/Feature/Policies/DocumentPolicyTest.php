@@ -1,6 +1,9 @@
 <?php
 
+use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
+use App\Repositories\ProcurementRepository;
+use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -12,6 +15,7 @@ beforeEach(function () {
         'view documents',
         'download documents',
         'upload documents',
+        'view procurement',
         'edit procurement',
         'approve procurement',
     ];
@@ -22,23 +26,23 @@ beforeEach(function () {
 
     $bacSecretariatRole = Role::firstOrCreate(['name' => 'bac_secretariat']);
     $bacSecretariatRole->givePermissionTo([
-        'view documents', 'download documents', 'upload documents', 'edit procurement',
+        'view documents', 'download documents', 'upload documents', 'view procurement', 'edit procurement',
     ]);
 
     $bacChairmanRole = Role::firstOrCreate(['name' => 'bac_chairman']);
     $bacChairmanRole->givePermissionTo([
-        'view documents', 'download documents', 'approve procurement',
+        'view documents', 'download documents', 'view procurement', 'approve procurement',
     ]);
 
     $hopeRole = Role::firstOrCreate(['name' => 'hope']);
     $hopeRole->givePermissionTo([
-        'view documents', 'download documents', 'approve procurement',
+        'view documents', 'download documents', 'view procurement', 'approve procurement',
     ]);
 
     $adminRole = Role::firstOrCreate(['name' => 'admin']);
     $adminRole->givePermissionTo([
         'view documents', 'download documents', 'upload documents',
-        'edit procurement', 'approve procurement',
+        'view procurement', 'edit procurement', 'approve procurement',
     ]);
 
     $this->secretariat = User::factory()->create()->assignRole('bac_secretariat');
@@ -69,6 +73,14 @@ describe('DocumentPolicy', function () {
         it('denies users with no role from viewing documents', function () {
             expect($this->guest->can('view-document'))->toBeFalse();
         });
+
+        it('denies bac_secretariat from viewing inaccessible procurement documents', function () {
+            $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
+
+            bindInaccessibleDocumentContext($this, 'locked-file', 'PR-LOCKED');
+
+            expect($this->secretariat->can('view-document', 'locked-file'))->toBeFalse();
+        });
     });
 
     describe('download-document', function () {
@@ -90,6 +102,14 @@ describe('DocumentPolicy', function () {
 
         it('denies users with no role from downloading', function () {
             expect($this->guest->can('download-document'))->toBeFalse();
+        });
+
+        it('denies bac_secretariat from downloading inaccessible procurement documents', function () {
+            $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
+
+            bindInaccessibleDocumentContext($this, 'locked-file', 'PR-LOCKED');
+
+            expect($this->secretariat->can('download-document', 'locked-file'))->toBeFalse();
         });
     });
 
@@ -146,3 +166,46 @@ describe('DocumentPolicy', function () {
         });
     });
 });
+
+function bindInaccessibleDocumentContext($testCase, string $fileKey, string $prNumber): void
+{
+    $dataService = \Mockery::mock(ProcurementDataService::class);
+    $dataService->shouldReceive('getDocumentDataByFileKey')
+        ->once()
+        ->with($fileKey)
+        ->andReturn([
+            'pr_number' => $prNumber,
+        ]);
+    $dataService->shouldReceive('fetchStatusItems')
+        ->once()
+        ->with($prNumber)
+        ->andReturn(collect([
+            ['user_address' => 'different-address'],
+        ]));
+
+    $repository = \Mockery::mock(ProcurementRepository::class);
+    $repository->shouldReceive('findByProcurement')
+        ->once()
+        ->with($prNumber)
+        ->andReturn(inaccessibleDocumentProcurementFixture($prNumber));
+
+    app()->instance(ProcurementDataService::class, $dataService);
+    app()->instance(ProcurementRepository::class, $repository);
+}
+
+function inaccessibleDocumentProcurementFixture(string $prNumber): ProcurementData
+{
+    return ProcurementData::fromArray([
+        'pr_number' => $prNumber,
+        'title' => 'Locked Procurement',
+        'description' => 'Fixture',
+        'abc_amount' => 1000,
+        'funding_source' => 'General Fund',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'office' => 'BAC Office',
+        'status' => 'draft',
+        'user_id' => '999',
+        'created_at' => now()->toIso8601String(),
+    ]);
+}
