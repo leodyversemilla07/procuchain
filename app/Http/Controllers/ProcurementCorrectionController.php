@@ -20,6 +20,8 @@ class ProcurementCorrectionController extends Controller
 
     public function correctProcurement(CorrectProcurementRequest $request, string $prNumber): JsonResponse
     {
+        $this->authorize('correct-procurement', $prNumber);
+
         $validated = $request->validated();
 
         try {
@@ -58,6 +60,8 @@ class ProcurementCorrectionController extends Controller
      */
     public function getProcurementCorrectionHistory(Request $request, string $pr_number): JsonResponse
     {
+        $this->authorize('view-procurement', $pr_number);
+
         try {
             $corrections = $this->correctionService->getCorrectionHistory($pr_number);
 
@@ -85,6 +89,8 @@ class ProcurementCorrectionController extends Controller
      */
     public function checkProcurementCorrection(Request $request, string $prNumber): JsonResponse
     {
+        $this->authorize('view-procurement', $prNumber);
+
         $request->validate([
             'pr_number' => 'required|string',
         ]);
@@ -109,6 +115,8 @@ class ProcurementCorrectionController extends Controller
      */
     public function showProcurementCorrectionsPage(string $prNumber): InertiaResponse
     {
+        $this->authorize('view-procurement', $prNumber);
+
         try {
             $pageData = $this->correctionService->getCorrectionPageData($prNumber);
 

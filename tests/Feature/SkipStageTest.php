@@ -50,7 +50,7 @@ beforeEach(function () {
         approvedBy: null,
         approvalDate: null,
         status: 'in_progress',
-        userId: 'test@example.com',
+        userId: (string) $this->bacSecretariat->id,
         createdAt: now()
     );
 });
@@ -159,7 +159,7 @@ describe('Cannot Skip Required Stage', function () {
             approvedBy: null,
             approvalDate: null,
             status: 'in_progress',
-            userId: 'test@example.com',
+            userId: (string) $this->bacSecretariat->id,
             createdAt: now()
         );
 

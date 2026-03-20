@@ -13,7 +13,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\StageEnums;
 use App\Enums\UserRoleEnums;
-use App\Repositories\ProcurementRepository;
 use App\Services\Procurement\ProcurementDetailService;
 use App\Services\ProcurementDataService;
 use Exception;
@@ -34,21 +33,17 @@ class ProcurementListController extends BaseController
 
     private ProcurementDetailService $detailService;
 
-    private ProcurementRepository $procurementRepository;
-
     /**
      * Constructor
      */
     public function __construct(
         ProcurementDataService $procurementDataService,
         \App\Services\Procurement\ProcurementListAggregatorService $listAggregator,
-        ProcurementDetailService $detailService,
-        ProcurementRepository $procurementRepository
+        ProcurementDetailService $detailService
     ) {
         $this->procurementDataService = $procurementDataService;
         $this->listAggregator = $listAggregator;
         $this->detailService = $detailService;
-        $this->procurementRepository = $procurementRepository;
     }
 
     /**
@@ -56,8 +51,7 @@ class ProcurementListController extends BaseController
      */
     public function index(\Illuminate\Http\Request $request): Response
     {
-        // Authorization: All authenticated users can view procurements list
-        // (removed Procurement model dependency)
+        $this->authorize('view-procurement');
 
         try {
             Log::info('Fetching procurements list');
@@ -181,7 +175,7 @@ class ProcurementListController extends BaseController
      */
     public function show(string $pr_number): Response
     {
-        $this->ensureProcurementAccess($pr_number);
+        $this->authorize('view-procurement', $pr_number);
 
         try {
             $this->validatepr_number($pr_number);
@@ -245,7 +239,7 @@ class ProcurementListController extends BaseController
      */
     public function getBlockchainStatus(string $pr_number): JsonResponse
     {
-        $this->ensureProcurementAccess($pr_number);
+        $this->authorize('view-procurement', $pr_number);
 
         try {
             // Fetch documents from blockchain for this procurement
@@ -331,41 +325,5 @@ class ProcurementListController extends BaseController
             'user_id' => (string) $user->id,
             'user_address' => $user->blockchain_address,
         ];
-    }
-
-    private function ensureProcurementAccess(string $prNumber): void
-    {
-        $user = auth()->user();
-
-        if (! $user || ! $user->hasRole(UserRoleEnums::BAC_SECRETARIAT->value)) {
-            return;
-        }
-
-        if ($this->canBacSecretariatAccessProcurement($user, $prNumber)) {
-            return;
-        }
-
-        abort(403);
-    }
-
-    private function canBacSecretariatAccessProcurement(\App\Models\User $user, string $prNumber): bool
-    {
-        $procurement = $this->procurementRepository->findByProcurement($prNumber);
-
-        if ($procurement !== null && $procurement->userId === (string) $user->id) {
-            return true;
-        }
-
-        if (empty($user->blockchain_address)) {
-            return false;
-        }
-
-        return $this->procurementDataService
-            ->fetchStatusItems($prNumber)
-            ->contains(function ($statusItem) use ($user) {
-                $userAddress = (string) data_get($statusItem, 'user_address', data_get($statusItem, 'userAddress', ''));
-
-                return $userAddress === $user->blockchain_address;
-            });
     }
 }

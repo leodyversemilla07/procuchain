@@ -55,7 +55,7 @@ describe('Document Upload Validation Workflow', function () {
                 approvedBy: null,
                 approvalDate: null,
                 status: 'in_progress',
-                userId: 'test@example.com',
+                userId: (string) $this->bacSecretariat->id,
                 createdAt: now()
             )
         );
@@ -194,7 +194,7 @@ describe('Progressive Upload Workflow', function () {
                 approvedBy: null,
                 approvalDate: null,
                 status: 'in_progress',
-                userId: 'test@example.com',
+                userId: (string) $this->bacSecretariat->id,
                 createdAt: now()
             )
         );
@@ -351,7 +351,7 @@ describe('Progressive Upload Workflow', function () {
                     approvedBy: null,
                     approvalDate: null,
                     status: 'in_progress',
-                    userId: 'test@example.com',
+                    userId: (string) $user->id,
                     createdAt: now()
                 )
             );

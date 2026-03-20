@@ -33,6 +33,8 @@ final class DocumentVerificationController extends Controller
      */
     public function verify(VerifyProcurementRequest $request, string $prNumber): JsonResponse
     {
+        $this->authorize('view-procurement', $prNumber);
+
         Log::info('Starting procurement verification', [
             'pr_number' => $prNumber,
             'user_id' => auth()->id(),
@@ -89,6 +91,8 @@ final class DocumentVerificationController extends Controller
      */
     public function verifyIntegrity(string $prNumber): JsonResponse
     {
+        $this->authorize('view-procurement', $prNumber);
+
         Log::info('Starting integrity verification', [
             'pr_number' => $prNumber,
             'user_id' => auth()->id(),
@@ -146,6 +150,8 @@ final class DocumentVerificationController extends Controller
      */
     public function showVerificationPage(string $prNumber): Response
     {
+        $this->authorize('view-procurement', $prNumber);
+
         $report = $this->verificationService->generateVerificationReport($prNumber);
 
         // Fetch procurement status information

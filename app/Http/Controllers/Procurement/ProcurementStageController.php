@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Procurement;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Http\Controllers\Controller as BaseController;
 use App\Http\Requests\Procurement\PreBidConferenceDecisionRequest;
 use App\Http\Requests\Procurement\PreProcurementConferenceDecisionRequest;
 use App\Http\Requests\Procurement\SupplementalBidBulletinDecisionRequest;
@@ -16,7 +17,6 @@ use App\Services\Publishers\DecisionPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -45,6 +45,8 @@ class ProcurementStageController extends BaseController
      */
     public function show(Request $request, string $pr_number, StageEnums $stage): Response
     {
+        $this->authorize('view-procurement', $pr_number);
+
         // Validate that stage exists in the procurement's mode workflow
         if (! $this->procurementSupport->stageExistsInWorkflow($pr_number, $stage)) {
             abort(403, 'This stage is not applicable for this procurement mode');
@@ -97,6 +99,8 @@ class ProcurementStageController extends BaseController
         string $pr_number,
         StageEnums $stage
     ): JsonResponse {
+        $this->authorize('view-procurement', $pr_number);
+
         // Validate that stage exists in the procurement's mode workflow
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
@@ -215,6 +219,8 @@ class ProcurementStageController extends BaseController
      */
     public function documentGuide(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
+        $this->authorize('view-procurement', $pr_number);
+
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
         $mode = $this->procurementSupport->getProcurementMode($pr_number);
@@ -228,6 +234,8 @@ class ProcurementStageController extends BaseController
      */
     public function markStageComplete(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
+        $this->authorize('view-procurement', $pr_number);
+
         // Validate that stage exists in the procurement's mode workflow
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
@@ -295,6 +303,8 @@ class ProcurementStageController extends BaseController
      */
     public function skipStage(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
+        $this->authorize('view-procurement', $pr_number);
+
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
         try {
@@ -323,6 +333,8 @@ class ProcurementStageController extends BaseController
      */
     public function checkCompletion(string $pr_number, StageEnums $stage): JsonResponse
     {
+        $this->authorize('view-procurement', $pr_number);
+
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
         $completionCheck = $this->validationService->validateStageCompletion($stage, []);
@@ -335,6 +347,8 @@ class ProcurementStageController extends BaseController
      */
     public function validateUpload(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
+        $this->authorize('view-procurement', $pr_number);
+
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
         $documentTypeValue = $request->input('document_type');
@@ -427,6 +441,8 @@ class ProcurementStageController extends BaseController
      */
     public function repeatStage(Request $request, string $pr_number, StageEnums $stage): JsonResponse
     {
+        $this->authorize('view-procurement', $pr_number);
+
         if (! $stage->isProcurement()) {
             abort(403, 'Invalid stage for Procurement phase');
         }
@@ -472,6 +488,8 @@ class ProcurementStageController extends BaseController
         \App\Http\Requests\Procurement\UpdateDeliveryDetailsRequest $request,
         string $pr_number
     ): JsonResponse {
+        $this->authorize('view-procurement', $pr_number);
+
         try {
             $jobId = Str::uuid()->toString();
             BlockchainWriteJob::dispatch('update_delivery_details', [
@@ -507,6 +525,8 @@ class ProcurementStageController extends BaseController
         string $procurementTitle,
         bool $wasHeld,
     ): JsonResponse {
+        $this->authorize('view-procurement', $prNumber);
+
         try {
             $jobId = Str::uuid()->toString();
             BlockchainWriteJob::dispatch('publish_decision', [
