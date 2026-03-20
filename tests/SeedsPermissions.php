@@ -7,6 +7,11 @@ use Spatie\Permission\Models\Role;
 
 trait SeedsPermissions
 {
+    protected function seedPermissions(): void
+    {
+        $this->seedPermissionsAndRoles();
+    }
+
     protected function seedPermissionsAndRoles(): void
     {
         // Reset cached roles and permissions
