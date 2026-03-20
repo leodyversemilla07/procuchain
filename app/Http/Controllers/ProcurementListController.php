@@ -13,6 +13,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\StageEnums;
 use App\Enums\UserRoleEnums;
+use App\Repositories\ProcurementRepository;
 use App\Services\Procurement\ProcurementDetailService;
 use App\Services\ProcurementDataService;
 use Exception;
@@ -33,17 +34,21 @@ class ProcurementListController extends BaseController
 
     private ProcurementDetailService $detailService;
 
+    private ProcurementRepository $procurementRepository;
+
     /**
      * Constructor
      */
     public function __construct(
         ProcurementDataService $procurementDataService,
         \App\Services\Procurement\ProcurementListAggregatorService $listAggregator,
-        ProcurementDetailService $detailService
+        ProcurementDetailService $detailService,
+        ProcurementRepository $procurementRepository
     ) {
         $this->procurementDataService = $procurementDataService;
         $this->listAggregator = $listAggregator;
         $this->detailService = $detailService;
+        $this->procurementRepository = $procurementRepository;
     }
 
     /**
@@ -63,25 +68,21 @@ class ProcurementListController extends BaseController
                 set_time_limit(28); // Give 2 seconds buffer
             }
 
-            // TEMPORARY: Filtering completely disabled
             $user = auth()->user();
-            $isBacSecretariat = $user->hasRole(UserRoleEnums::BAC_SECRETARIAT->value);
+            $visibilityFilters = $this->getVisibilityFilters($user);
             $showArchived = $request->boolean('archived');
 
-            // Fetch all procurements with optimizations
-            // Pass user ID filter for BAC Secretariat to only see their own procurements
-            // Pass blockchain address filter for additional security verification
             $procurements = $this->listAggregator->fetchAllProcurements(
                 skipActions: false,
-                // filterByUserId: $isBacSecretariat ? (string) $user->id : null,
-                // filterByUserAddress: $isBacSecretariat ? $user->blockchain_address : null,
+                filterByUserId: $visibilityFilters['user_id'],
+                filterByUserAddress: $visibilityFilters['user_address'],
                 archived: $showArchived
             );
 
             // Log result count
             Log::info('Procurement List Result', [
                 'user_id' => $user->id,
-                'filtering' => 'COMPLETELY DISABLED',
+                'filtering' => $visibilityFilters['user_id'] !== null || $visibilityFilters['user_address'] !== null ? 'BAC secretariat scoped' : 'role-wide',
                 'count' => count($procurements),
             ]);
 
@@ -180,6 +181,8 @@ class ProcurementListController extends BaseController
      */
     public function show(string $pr_number): Response
     {
+        $this->ensureProcurementAccess($pr_number);
+
         try {
             $this->validatepr_number($pr_number);
 
@@ -242,6 +245,8 @@ class ProcurementListController extends BaseController
      */
     public function getBlockchainStatus(string $pr_number): JsonResponse
     {
+        $this->ensureProcurementAccess($pr_number);
+
         try {
             // Fetch documents from blockchain for this procurement
             $documentRepository = app(\App\Repositories\DocumentRepository::class);
@@ -307,5 +312,60 @@ class ProcurementListController extends BaseController
                 'documents' => [],
             ]);
         }
+    }
+
+    /**
+     * @param  \App\Models\User  $user
+     * @return array{user_id: ?string, user_address: ?string}
+     */
+    private function getVisibilityFilters($user): array
+    {
+        if (! $user->hasRole(UserRoleEnums::BAC_SECRETARIAT->value)) {
+            return [
+                'user_id' => null,
+                'user_address' => null,
+            ];
+        }
+
+        return [
+            'user_id' => (string) $user->id,
+            'user_address' => $user->blockchain_address,
+        ];
+    }
+
+    private function ensureProcurementAccess(string $prNumber): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->hasRole(UserRoleEnums::BAC_SECRETARIAT->value)) {
+            return;
+        }
+
+        if ($this->canBacSecretariatAccessProcurement($user, $prNumber)) {
+            return;
+        }
+
+        abort(403);
+    }
+
+    private function canBacSecretariatAccessProcurement(\App\Models\User $user, string $prNumber): bool
+    {
+        $procurement = $this->procurementRepository->findByProcurement($prNumber);
+
+        if ($procurement !== null && $procurement->userId === (string) $user->id) {
+            return true;
+        }
+
+        if (empty($user->blockchain_address)) {
+            return false;
+        }
+
+        return $this->procurementDataService
+            ->fetchStatusItems($prNumber)
+            ->contains(function ($statusItem) use ($user) {
+                $userAddress = (string) data_get($statusItem, 'user_address', data_get($statusItem, 'userAddress', ''));
+
+                return $userAddress === $user->blockchain_address;
+            });
     }
 }

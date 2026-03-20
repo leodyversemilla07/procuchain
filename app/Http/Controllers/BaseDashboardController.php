@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
 use App\Enums\StreamEnums;
+use App\Enums\UserRoleEnums;
 use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
 use App\Services\Manager;
@@ -30,6 +31,7 @@ abstract class BaseDashboardController extends Controller
         try {
             $roleName = $this->getRoleName();
             $roleLabel = $this->getRoleLabel();
+            $cacheUserId = $this->getDashboardCacheUserId($roleName);
 
             Log::info("Fetching {$roleLabel} Dashboard data");
 
@@ -48,7 +50,7 @@ abstract class BaseDashboardController extends Controller
             );
 
             $stats = $this->cacheStrategy->rememberSmall(
-                DashboardCacheKeys::stats($roleName),
+                DashboardCacheKeys::stats($roleName, $cacheUserId),
                 now()->addMinutes(config('dashboard.cache_ttl.stats')),
                 function () use ($procurementsByKey, $roleLabel) {
                     Log::info("Cache miss: Recalculating {$roleLabel} Dashboard stats");
@@ -58,7 +60,7 @@ abstract class BaseDashboardController extends Controller
             );
 
             $procurementDistribution = $this->cacheStrategy->rememberLarge(
-                DashboardCacheKeys::procurementDistribution($roleName),
+                DashboardCacheKeys::procurementDistribution($roleName, $cacheUserId),
                 now()->addMinutes(config('dashboard.cache_ttl.distribution')),
                 fn () => $this->dashboardService->getProcurementDistributionData($procurementsByKey)
             );
@@ -98,25 +100,19 @@ abstract class BaseDashboardController extends Controller
      * Uses database cache since this is typically large blockchain data
      *
      * NOTE: Procurement visibility by role:
-     * - TEMPORARY: Filtering completely disabled - all users see all procurements
-     * - This matches the behavior of ProcurementListController
-     * - Previously: BAC Secretariat saw only their own procurements (created or interacted with)
+     * - BAC Secretariat sees only procurements they created or interacted with
+     * - Admin, BAC Chairman, and HOPE see all procurements
      */
     protected function getCachedProcurements(string $roleName, string $roleLabel)
     {
         $user = auth()->user();
-
-        // TEMPORARY: Filtering completely disabled - all users see all procurements
-        // This matches the behavior of ProcurementListController
-        $isBacSecretariat = false; // Disabled: $roleName === 'bac_secretariat';
-
-        // Use role-based cache key (not user-specific since filtering is disabled)
-        $cacheKey = DashboardCacheKeys::procurements($roleName);
+        $isBacSecretariat = $roleName === UserRoleEnums::BAC_SECRETARIAT->value;
+        $cacheKey = DashboardCacheKeys::procurements($roleName, $this->getDashboardCacheUserId($roleName));
 
         return $this->cacheStrategy->rememberLarge(
             $cacheKey,
             now()->addMinutes(config('dashboard.cache_ttl.procurements')),
-            function () use ($roleLabel) {
+            function () use ($isBacSecretariat, $roleLabel, $user) {
                 Log::info("Cache miss: Recalculating procurementsByKey for {$roleLabel} Dashboard");
                 $states = $this->multichain->liststreamitems(
                     StreamEnums::STATUS->value,
@@ -132,15 +128,13 @@ abstract class BaseDashboardController extends Controller
 
                 $procurementsByKey = $this->dashboardService->getProcurementsByKey($states);
 
-                // TEMPORARY: Filtering disabled - all users see all procurements
-                // Previously: Filter for BAC Secretariat users
-                // if ($isBacSecretariat) {
-                //     $procurementsByKey = $this->filterProcurementsByUser(
-                //         $procurementsByKey,
-                //         (string) $user->id,
-                //         $user->blockchain_address
-                //     );
-                // }
+                if ($isBacSecretariat && $user !== null) {
+                    $procurementsByKey = $this->filterProcurementsByUser(
+                        $procurementsByKey,
+                        (string) $user->id,
+                        $user->blockchain_address
+                    );
+                }
 
                 return $procurementsByKey;
             }
@@ -209,9 +203,10 @@ abstract class BaseDashboardController extends Controller
         try {
             $roleName = $this->getRoleName();
             $roleLabel = $this->getRoleLabel();
+            $cacheUserId = $this->getDashboardCacheUserId($roleName);
 
             $totalDocuments = $this->cacheStrategy->rememberSmall(
-                DashboardCacheKeys::totalDocuments($roleName),
+                DashboardCacheKeys::totalDocuments($roleName, $cacheUserId),
                 now()->addMinutes(config('dashboard.cache_ttl.stats')),
                 function () use ($procurementsByKey, $roleLabel) {
                     Log::info("Cache miss: Recalculating total documents for {$roleLabel} Dashboard stats");
@@ -223,10 +218,21 @@ abstract class BaseDashboardController extends Controller
             return $this->dashboardService->calculateStats($procurementsByKey, $totalDocuments);
         } catch (\Exception $e) {
             Log::error("Failed to calculate {$this->getRoleLabel()} Dashboard stats", ['error' => $e->getMessage()]);
-            Cache::forget(DashboardCacheKeys::totalDocuments($this->getRoleName()));
+            Cache::forget(DashboardCacheKeys::totalDocuments($this->getRoleName(), $this->getDashboardCacheUserId($this->getRoleName())));
 
             return $this->dashboardService->getEmptyStats();
         }
+    }
+
+    protected function getDashboardCacheUserId(string $roleName): ?string
+    {
+        if ($roleName !== UserRoleEnums::BAC_SECRETARIAT->value) {
+            return null;
+        }
+
+        $userId = auth()->id();
+
+        return $userId === null ? null : (string) $userId;
     }
 
     /**
