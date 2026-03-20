@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\DocumentView;
 use App\Models\User;
+use App\Repositories\DocumentRepository;
 use App\Services\ProcurementDataService;
 
 /**
@@ -22,6 +23,7 @@ class DocumentPolicy
 {
     public function __construct(
         private readonly ProcurementDataService $procurementDataService,
+        private readonly DocumentRepository $documentRepository,
         private readonly ProcurementPolicy $procurementPolicy,
     ) {}
 
@@ -61,12 +63,16 @@ class DocumentPolicy
      * Determine whether the user can submit a document correction.
      * Allowed for Admin, BAC Chairman, and BAC Secretariat.
      */
-    public function correct(User $user): bool
+    public function correct(User $user, ?string $documentReference = null): bool
     {
-        return $user->hasAnyPermission([
+        if (! $user->hasAnyPermission([
             'edit procurement',
             'approve procurement',
-        ]);
+        ])) {
+            return false;
+        }
+
+        return $this->canAccessScopedDocument($user, $documentReference);
     }
 
     private function canAccessScopedDocument(User $user, ?string $fileKey = null): bool
@@ -86,6 +92,13 @@ class DocumentPolicy
 
     private function resolveProcurementNumber(string $fileKey): ?string
     {
+        $document = $this->documentRepository->findByFileKey($fileKey)
+            ?? $this->documentRepository->findByTxid($fileKey);
+
+        if ($document !== null && $document->prNumber !== '') {
+            return $document->prNumber;
+        }
+
         $documentData = $this->procurementDataService->getDocumentDataByFileKey($fileKey)
             ?? $this->procurementDataService->validateDocumentExistsInBlockchain($fileKey);
 
