@@ -74,9 +74,9 @@ describe('BAC Secretariat Dashboard Browser Flow', function () {
     it('displays procurements list', function () {
         $this->actingAs($this->bacSecretariat);
 
-        $page = visit('/procurements');
+        $page = visit(route('bac-secretariat.procurements.index'));
 
-        $page->assertSee('Procurement')
+        $page->assertSee('Procurement List')
             ->assertNoJavascriptErrors();
     });
 });

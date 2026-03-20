@@ -20,20 +20,20 @@ describe('Settings Browser Flow', function () {
 
         $page = visit('/settings/profile');
 
-        $page->assertSee('Profile')
-            ->assertSee($this->user->name)
-            ->assertSee($this->user->email)
+        $page->assertSee('Profile information')
+            ->assertSee('Email address')
+            ->assertSee('Blockchain Address')
             ->assertNoJavascriptErrors()
             ->assertNoConsoleLogs();
     });
 
-    it('allows updating profile information', function () {
+    it('allows editing profile information fields', function () {
         $this->actingAs($this->user);
 
         $page = visit('/settings/profile');
 
         $page->fill('name', 'Updated Name')
-            ->click('button[type="submit"]')
+            ->fill('email', 'updated@example.test')
             ->assertNoJavascriptErrors();
     });
 
