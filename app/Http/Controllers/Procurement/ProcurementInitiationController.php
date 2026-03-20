@@ -8,6 +8,7 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
+use App\Http\Controllers\Controller as BaseController;
 use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
@@ -18,7 +19,6 @@ use App\Services\Procurement\ProcurementSupportService;
 use App\Services\Publishers\ProcurementOrchestrator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -37,6 +37,8 @@ class ProcurementInitiationController extends BaseController
     public function show(?string $id = null): Response
     {
         if ($id) {
+            $this->authorize('view-procurement', $id);
+
             $procurement = $this->procurements->findByProcurement($id);
 
             if (! $procurement) {
@@ -179,6 +181,8 @@ class ProcurementInitiationController extends BaseController
         UploadSingleDocumentRequest $request,
         string $pr_number
     ): JsonResponse {
+        $this->authorize('view-procurement', $pr_number);
+
         $stage = StageEnums::PROCUREMENT_INITIATION;
         $user = auth()->user();
         $userAddress = $user->blockchain_address;
@@ -290,6 +294,8 @@ class ProcurementInitiationController extends BaseController
      */
     public function validateUpload(Request $request, string $pr_number): JsonResponse
     {
+        $this->authorize('view-procurement', $pr_number);
+
         $stage = StageEnums::PROCUREMENT_INITIATION;
         $documentTypeValue = $request->input('document_type');
 
@@ -330,6 +336,8 @@ class ProcurementInitiationController extends BaseController
      */
     public function documentGuide(Request $request, string $pr_number): JsonResponse
     {
+        $this->authorize('view-procurement', $pr_number);
+
         $stage = StageEnums::PROCUREMENT_INITIATION;
         $mode = $this->procurementSupport->getProcurementMode($pr_number);
         $guide = $this->modeAwareValidationService->getStageDocumentGuide($stage, $mode);
@@ -342,6 +350,8 @@ class ProcurementInitiationController extends BaseController
      */
     public function markStageComplete(Request $request, string $pr_number): JsonResponse
     {
+        $this->authorize('view-procurement', $pr_number);
+
         $stage = StageEnums::PROCUREMENT_INITIATION;
 
         try {

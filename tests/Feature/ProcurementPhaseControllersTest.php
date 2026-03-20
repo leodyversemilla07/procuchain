@@ -78,7 +78,7 @@ describe('ProcurementStageController (Pre-Procurement Phase)', function () {
                 approvedBy: null,
                 approvalDate: null,
                 status: 'in_progress',
-                userId: 'test@example.com',
+                userId: (string) $this->bacSecretariat->id,
                 createdAt: now()
             )
         );
@@ -209,7 +209,7 @@ describe('ProcurementStageController (Procurement Phase)', function () {
                 approvedBy: null,
                 approvalDate: null,
                 status: 'in_progress',
-                userId: 'test@example.com',
+                userId: (string) $this->bacSecretariat->id,
                 createdAt: now()
             )
         );
@@ -325,7 +325,7 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
                 approvedBy: null,
                 approvalDate: null,
                 status: 'in_progress',
-                userId: 'test@example.com',
+                userId: (string) $this->bacSecretariat->id,
                 createdAt: now()
             )
         );
@@ -406,7 +406,7 @@ describe('ProcurementStageController (Post-Procurement Phase)', function () {
                 approvedBy: null,
                 approvalDate: null,
                 status: 'in_progress',
-                userId: 'test@example.com',
+                userId: (string) $this->bacSecretariat->id,
                 createdAt: now()
             )
         );

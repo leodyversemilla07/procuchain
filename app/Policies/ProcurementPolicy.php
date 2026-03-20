@@ -3,6 +3,8 @@
 namespace App\Policies;
 
 use App\Models\User;
+use App\Repositories\ProcurementRepository;
+use App\Services\ProcurementDataService;
 
 /**
  * Procurement policy.
@@ -20,12 +22,25 @@ use App\Models\User;
  */
 class ProcurementPolicy
 {
+    public function __construct(
+        private readonly ProcurementRepository $procurementRepository,
+        private readonly ProcurementDataService $procurementDataService,
+    ) {}
+
     /**
      * Determine whether the user can view procurement records.
      */
-    public function view(User $user): bool
+    public function view(User $user, ?string $prNumber = null): bool
     {
-        return $user->hasPermissionTo('view procurement');
+        if (! $user->hasPermissionTo('view procurement')) {
+            return false;
+        }
+
+        if (! $user->isBacSecretariat() || $prNumber === null) {
+            return true;
+        }
+
+        return $this->canBacSecretariatAccessProcurement($user, $prNumber);
     }
 
     /**
@@ -40,26 +55,38 @@ class ProcurementPolicy
      * Determine whether the user can archive a completed procurement.
      * Restricted to BAC Secretariat and Admin only.
      */
-    public function archive(User $user): bool
+    public function archive(User $user, ?string $prNumber = null): bool
     {
-        return $user->hasPermissionTo('manage procurements');
+        if (! $user->hasPermissionTo('manage procurements')) {
+            return false;
+        }
+
+        return $this->canAccessScopedProcurement($user, $prNumber);
     }
 
     /**
      * Determine whether the user can restore an archived procurement.
      * Restricted to BAC Secretariat and Admin only.
      */
-    public function restore(User $user): bool
+    public function restore(User $user, ?string $prNumber = null): bool
     {
-        return $user->hasPermissionTo('manage procurements');
+        if (! $user->hasPermissionTo('manage procurements')) {
+            return false;
+        }
+
+        return $this->canAccessScopedProcurement($user, $prNumber);
     }
 
     /**
      * Determine whether the user can correct procurement metadata on the blockchain.
      */
-    public function correct(User $user): bool
+    public function correct(User $user, ?string $prNumber = null): bool
     {
-        return $user->hasPermissionTo('edit procurement');
+        if (! $user->hasPermissionTo('edit procurement')) {
+            return false;
+        }
+
+        return $this->canAccessScopedProcurement($user, $prNumber);
     }
 
     /**
@@ -76,5 +103,40 @@ class ProcurementPolicy
     public function publish(User $user): bool
     {
         return $user->hasPermissionTo('publish to blockchain');
+    }
+
+    private function canAccessScopedProcurement(User $user, ?string $prNumber = null): bool
+    {
+        if (! $user->isBacSecretariat() || $prNumber === null) {
+            return true;
+        }
+
+        return $this->canBacSecretariatAccessProcurement($user, $prNumber);
+    }
+
+    private function canBacSecretariatAccessProcurement(User $user, string $prNumber): bool
+    {
+        $procurement = $this->procurementRepository->findByProcurement($prNumber);
+
+        if ($procurement !== null && $procurement->userId === (string) $user->id) {
+            return true;
+        }
+
+        $statusItems = $this->procurementDataService->fetchStatusItems($prNumber);
+
+        if ($procurement === null && $statusItems->isEmpty()) {
+            return true;
+        }
+
+        if (empty($user->blockchain_address)) {
+            return false;
+        }
+
+        return $statusItems
+            ->contains(function ($statusItem) use ($user) {
+                $userAddress = (string) data_get($statusItem, 'user_address', data_get($statusItem, 'userAddress', ''));
+
+                return $userAddress === $user->blockchain_address;
+            });
     }
 }

@@ -1,6 +1,9 @@
 <?php
 
+use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
+use App\Repositories\ProcurementRepository;
+use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -57,6 +60,70 @@ describe('ProcurementPolicy', function () {
             expect($this->secretariat->can('view-procurement'))->toBeTrue();
         });
 
+        it('allows bac_secretariat to view their own procurement by pr number', function () {
+            $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
+
+            $repository = \Mockery::mock(ProcurementRepository::class);
+            $repository->shouldReceive('findByProcurement')
+                ->once()
+                ->with('PR-OWNED')
+                ->andReturn(policyProcurementFixture('PR-OWNED', (string) $this->secretariat->id));
+
+            $dataService = \Mockery::mock(ProcurementDataService::class);
+            $dataService->shouldNotReceive('fetchStatusItems');
+
+            $this->app->instance(ProcurementRepository::class, $repository);
+            $this->app->instance(ProcurementDataService::class, $dataService);
+
+            expect($this->secretariat->can('view-procurement', 'PR-OWNED'))->toBeTrue();
+        });
+
+        it('allows bac_secretariat to view a procurement they interacted with', function () {
+            $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
+
+            $repository = \Mockery::mock(ProcurementRepository::class);
+            $repository->shouldReceive('findByProcurement')
+                ->once()
+                ->with('PR-TOUCHED')
+                ->andReturn(policyProcurementFixture('PR-TOUCHED', '999'));
+
+            $dataService = \Mockery::mock(ProcurementDataService::class);
+            $dataService->shouldReceive('fetchStatusItems')
+                ->once()
+                ->with('PR-TOUCHED')
+                ->andReturn(collect([
+                    ['user_address' => 'secretariat-address'],
+                ]));
+
+            $this->app->instance(ProcurementRepository::class, $repository);
+            $this->app->instance(ProcurementDataService::class, $dataService);
+
+            expect($this->secretariat->can('view-procurement', 'PR-TOUCHED'))->toBeTrue();
+        });
+
+        it('denies bac_secretariat from viewing procurements they do not own or touch', function () {
+            $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
+
+            $repository = \Mockery::mock(ProcurementRepository::class);
+            $repository->shouldReceive('findByProcurement')
+                ->once()
+                ->with('PR-BLOCKED')
+                ->andReturn(policyProcurementFixture('PR-BLOCKED', '999'));
+
+            $dataService = \Mockery::mock(ProcurementDataService::class);
+            $dataService->shouldReceive('fetchStatusItems')
+                ->once()
+                ->with('PR-BLOCKED')
+                ->andReturn(collect([
+                    ['user_address' => 'different-address'],
+                ]));
+
+            $this->app->instance(ProcurementRepository::class, $repository);
+            $this->app->instance(ProcurementDataService::class, $dataService);
+
+            expect($this->secretariat->can('view-procurement', 'PR-BLOCKED'))->toBeFalse();
+        });
+
         it('allows bac_chairman to view', function () {
             expect($this->chairman->can('view-procurement'))->toBeTrue();
         });
@@ -97,6 +164,29 @@ describe('ProcurementPolicy', function () {
             expect($this->secretariat->can('archive-procurement'))->toBeTrue();
         });
 
+        it('denies bac_secretariat from archiving procurements they do not own or touch', function () {
+            $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
+
+            $repository = \Mockery::mock(ProcurementRepository::class);
+            $repository->shouldReceive('findByProcurement')
+                ->once()
+                ->with('PR-BLOCKED')
+                ->andReturn(policyProcurementFixture('PR-BLOCKED', '999'));
+
+            $dataService = \Mockery::mock(ProcurementDataService::class);
+            $dataService->shouldReceive('fetchStatusItems')
+                ->once()
+                ->with('PR-BLOCKED')
+                ->andReturn(collect([
+                    ['user_address' => 'different-address'],
+                ]));
+
+            $this->app->instance(ProcurementRepository::class, $repository);
+            $this->app->instance(ProcurementDataService::class, $dataService);
+
+            expect($this->secretariat->can('archive-procurement', 'PR-BLOCKED'))->toBeFalse();
+        });
+
         it('allows admin to archive', function () {
             expect($this->admin->can('archive-procurement'))->toBeTrue();
         });
@@ -119,6 +209,29 @@ describe('ProcurementPolicy', function () {
             expect($this->secretariat->can('restore-procurement'))->toBeTrue();
         });
 
+        it('denies bac_secretariat from restoring procurements they do not own or touch', function () {
+            $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
+
+            $repository = \Mockery::mock(ProcurementRepository::class);
+            $repository->shouldReceive('findByProcurement')
+                ->once()
+                ->with('PR-BLOCKED')
+                ->andReturn(policyProcurementFixture('PR-BLOCKED', '999'));
+
+            $dataService = \Mockery::mock(ProcurementDataService::class);
+            $dataService->shouldReceive('fetchStatusItems')
+                ->once()
+                ->with('PR-BLOCKED')
+                ->andReturn(collect([
+                    ['user_address' => 'different-address'],
+                ]));
+
+            $this->app->instance(ProcurementRepository::class, $repository);
+            $this->app->instance(ProcurementDataService::class, $dataService);
+
+            expect($this->secretariat->can('restore-procurement', 'PR-BLOCKED'))->toBeFalse();
+        });
+
         it('allows admin to restore', function () {
             expect($this->admin->can('restore-procurement'))->toBeTrue();
         });
@@ -135,6 +248,29 @@ describe('ProcurementPolicy', function () {
     describe('correct-procurement', function () {
         it('allows bac_secretariat to correct', function () {
             expect($this->secretariat->can('correct-procurement'))->toBeTrue();
+        });
+
+        it('denies bac_secretariat from correcting procurements they do not own or touch', function () {
+            $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
+
+            $repository = \Mockery::mock(ProcurementRepository::class);
+            $repository->shouldReceive('findByProcurement')
+                ->once()
+                ->with('PR-BLOCKED')
+                ->andReturn(policyProcurementFixture('PR-BLOCKED', '999'));
+
+            $dataService = \Mockery::mock(ProcurementDataService::class);
+            $dataService->shouldReceive('fetchStatusItems')
+                ->once()
+                ->with('PR-BLOCKED')
+                ->andReturn(collect([
+                    ['user_address' => 'different-address'],
+                ]));
+
+            $this->app->instance(ProcurementRepository::class, $repository);
+            $this->app->instance(ProcurementDataService::class, $dataService);
+
+            expect($this->secretariat->can('correct-procurement', 'PR-BLOCKED'))->toBeFalse();
         });
 
         it('allows admin to correct', function () {
@@ -205,3 +341,20 @@ describe('ProcurementPolicy', function () {
         });
     });
 });
+
+function policyProcurementFixture(string $prNumber, string $userId): ProcurementData
+{
+    return ProcurementData::fromArray([
+        'pr_number' => $prNumber,
+        'title' => 'Policy Fixture',
+        'description' => 'Fixture',
+        'abc_amount' => 1000,
+        'funding_source' => 'General Fund',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'office' => 'BAC Office',
+        'status' => 'draft',
+        'user_id' => $userId,
+        'created_at' => now()->toIso8601String(),
+    ]);
+}

@@ -41,7 +41,7 @@ beforeEach(function () {
         approvedBy: null,
         approvalDate: null,
         status: 'in_progress',
-        userId: 'test@example.com',
+        userId: (string) $this->bacSecretariat->id,
         createdAt: now()
     );
 
