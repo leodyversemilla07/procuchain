@@ -6,8 +6,8 @@
 
 <div align="center">
 
-[![Laravel Version](https://img.shields.io/badge/Laravel-12.36.1-red.svg)](https://laravel.com)
-[![PHP Version](https://img.shields.io/badge/PHP-8.3.27+-blue.svg)](https://php.net)
+[![Laravel Version](https://img.shields.io/badge/Laravel-13.x-red.svg)](https://laravel.com)
+[![PHP Version](https://img.shields.io/badge/PHP-8.3+-blue.svg)](https://php.net)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-green.svg)](LICENSE)
 
 *A Laravel-integrated wrapper for the official MultiChain JSON-RPC API library, providing seamless blockchain integration with automatic connection management, retry logic, and Laravel conventions.*
@@ -86,8 +86,8 @@ The library is already integrated into this Laravel application. The Manager is 
 
 ### Requirements
 
-- **PHP**: 8.3.27 or higher
-- **Laravel**: 12.36.1 or higher
+- **PHP**: 8.3 or higher
+- **Laravel**: 13.x or higher
 - **MultiChain Node**: 2.x or higher
 - **Extensions**: BCMath, JSON, cURL
 

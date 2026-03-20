@@ -19,10 +19,10 @@
 <p align="center">
  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
  <img src="https://img.shields.io/badge/php-8.4+-8892BF.svg" alt="PHP Version">
- <img src="https://img.shields.io/badge/Laravel-12.42.0-FF2D20.svg" alt="Laravel">
- <img src="https://img.shields.io/badge/React-19.2.1-61DAFB.svg" alt="React">
+ <img src="https://img.shields.io/badge/Laravel-13.0.0-FF2D20.svg" alt="Laravel">
+ <img src="https://img.shields.io/badge/React-19.2.4-61DAFB.svg" alt="React">
  <img src="https://img.shields.io/badge/MultiChain-2.3.3-green.svg" alt="MultiChain">
- <img src="https://img.shields.io/badge/Tailwind_CSS-4.1.17-38B2AC.svg" alt="Tailwind CSS">
+ <img src="https://img.shields.io/badge/Tailwind_CSS-4.1.18-38B2AC.svg" alt="Tailwind CSS">
  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome">
 </p>
 
@@ -143,12 +143,12 @@ For more detailed information, please refer to the following documentation:
 
 ## Technology Stack
 
-- **Backend**: Laravel 12.42.0 with PHP 8.3.28
-- **Frontend**: React 19.2.1 with Inertia.js v2.0.14 (Laravel) & v2.2.21 (React) for SPA experience
+- **Backend**: Laravel 13.0.0 with PHP 8.4.12
+- **Frontend**: React 19.2.4 with Inertia.js v2.0.22 (Laravel) & v2.3.13 (React) for SPA experience
 - **Database**: MySQL 8.0+ with database-driven sessions, cache, and queue
 - **Blockchain**: MultiChain (Community Edition) for immutable document integrity and audit trails
 - **File Storage**: On-chain storage directly in blockchain (zero external storage costs, automatic node replication, Heroku-compatible)
-- **Styling**: Tailwind CSS v4.1.17 for responsive design
+- **Styling**: Tailwind CSS v4.1.18 for responsive design
 - **UI Components**: Radix UI primitives with shadcn/ui patterns
 - **Build Tools**: Vite 7.1+ for fast frontend asset compilation with HMR
 - **Testing**: Pest v4.1.6 for expressive PHP testing
@@ -173,7 +173,7 @@ For more detailed information, please refer to the following documentation:
 
 ## Requirements
 
-- PHP 8.3.28 or higher
+- PHP 8.3 or higher
 - Composer 2.x
 - Node.js 18+ and npm
 - MySQL 8.0+ (or MariaDB 10.6+)
@@ -189,7 +189,7 @@ For more detailed information, please refer to the following documentation:
 ```mermaid
 graph TD
     Client["React + Inertia.js Frontend"]
-    Server["Laravel 12.x API Backend"]
+    Server["Laravel 13.x API Backend"]
     Chain["MultiChain Blockchain (8 Streams)"]
 
     Styles["Tailwind CSS v4"]
@@ -206,7 +206,7 @@ graph TD
 
 High level components:
 
-- **Web/API Layer**: Laravel 12 + Inertia React SPA with SSR support
+- **Web/API Layer**: Laravel 13 + Inertia React SPA with SSR support
 - **Document Storage**: On-chain storage in blockchain (file content stored as hex in `file.data` stream, metadata in `file.metadata` stream)
 - **Blockchain Layer**: MultiChain with 8 streams:
 - `procurement.metadata` - Core procurement metadata
@@ -231,7 +231,7 @@ High level components:
 
 ### Prerequisites
 
-- PHP 8.2 or higher
+- PHP 8.3 or higher
 - Composer
 - Node.js and npm
 - MySQL database
@@ -870,7 +870,7 @@ procuchain/
 │ ├── Jobs/ # Queue jobs
 │ │ └── Handlers/ # BlockchainWriteJob handler classes (6 handlers)
 │ ├── Libraries/ # MultichainClient (JSON-RPC)
-│ ├── Listeners/ # Event listeners (auto-discovered by Laravel 12)
+│ ├── Listeners/ # Event listeners (auto-discovered by Laravel 13)
 │ ├── Mail/ # Email notification classes
 │ ├── Models/ # Eloquent ORM models (4 primary models)
 │ │ └── Concerns/ # Reusable model traits (HasAccountLock)
