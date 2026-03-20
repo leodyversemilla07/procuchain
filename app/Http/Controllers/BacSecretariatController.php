@@ -42,12 +42,14 @@ class BacSecretariatController extends BaseDashboardController
 
     protected function getAdditionalDashboardData($procurementsByKey, string $roleName): array
     {
+        $cacheUserId = $this->getDashboardCacheUserId($roleName);
+
         // Defer priority actions - they're heavy and can load after initial render
         return [
-            'priorityActions' => \Inertia\Inertia::defer(function () use ($procurementsByKey, $roleName) {
+            'priorityActions' => \Inertia\Inertia::defer(function () use ($cacheUserId, $procurementsByKey, $roleName) {
                 // Use database cache for potentially large priority actions list
                 return Cache::store('database')->remember(
-                    \App\Services\DashboardCacheKeys::priorityActions($roleName),
+                    \App\Services\DashboardCacheKeys::priorityActions($roleName, $cacheUserId),
                     now()->addMinutes(config('dashboard.cache_ttl.priority_actions')),
                     function () use ($procurementsByKey) {
                         $allPriorityActions = $this->getPriorityActions($procurementsByKey);
@@ -68,9 +70,11 @@ class BacSecretariatController extends BaseDashboardController
 
     protected function getDashboardStats($procurementsByKey, int $pendingActions): array
     {
+        $cacheUserId = $this->getDashboardCacheUserId($this->getRoleName());
+
         // Get all priority actions count - small data, can use default cache
         $allPriorityActionsCount = Cache::remember(
-            \App\Services\DashboardCacheKeys::priorityActionsCount($this->getRoleName()),
+            \App\Services\DashboardCacheKeys::priorityActionsCount($this->getRoleName(), $cacheUserId),
             now()->addMinutes(config('dashboard.cache_ttl.priority_actions')),
             function () use ($procurementsByKey) {
                 return count($this->getPriorityActions($procurementsByKey));

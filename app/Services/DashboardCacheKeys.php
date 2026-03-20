@@ -15,17 +15,17 @@ class DashboardCacheKeys
     /**
      * Get cache key for procurements by key data
      */
-    public static function procurements(string $role): string
+    public static function procurements(string $role, string|int|null $userId = null): string
     {
-        return "dashboard:{$role}:procurements_by_key";
+        return self::appendUserScope("dashboard:{$role}:procurements_by_key", $userId);
     }
 
     /**
      * Get cache key for dashboard statistics
      */
-    public static function stats(string $role): string
+    public static function stats(string $role, string|int|null $userId = null): string
     {
-        return "dashboard:{$role}:stats";
+        return self::appendUserScope("dashboard:{$role}:stats", $userId);
     }
 
     /**
@@ -39,33 +39,33 @@ class DashboardCacheKeys
     /**
      * Get cache key for total documents count
      */
-    public static function totalDocuments(string $role): string
+    public static function totalDocuments(string $role, string|int|null $userId = null): string
     {
-        return "dashboard:{$role}:total_documents";
+        return self::appendUserScope("dashboard:{$role}:total_documents", $userId);
     }
 
     /**
      * Get cache key for procurement distribution data
      */
-    public static function procurementDistribution(string $role): string
+    public static function procurementDistribution(string $role, string|int|null $userId = null): string
     {
-        return "dashboard:{$role}:procurement_distribution";
+        return self::appendUserScope("dashboard:{$role}:procurement_distribution", $userId);
     }
 
     /**
      * Get cache key for priority actions (BAC Secretariat)
      */
-    public static function priorityActions(string $role): string
+    public static function priorityActions(string $role, string|int|null $userId = null): string
     {
-        return "dashboard:{$role}:priority_actions";
+        return self::appendUserScope("dashboard:{$role}:priority_actions", $userId);
     }
 
     /**
      * Get cache key for priority actions count (BAC Secretariat)
      */
-    public static function priorityActionsCount(string $role): string
+    public static function priorityActionsCount(string $role, string|int|null $userId = null): string
     {
-        return "dashboard:{$role}:priority_actions_count";
+        return self::appendUserScope("dashboard:{$role}:priority_actions_count", $userId);
     }
 
     /**
@@ -113,16 +113,34 @@ class DashboardCacheKeys
 
         // Also clear user-specific BAC Secretariat cache
         if ($role === 'bac_secretariat') {
-            // Clear all user-specific procurement caches
-            // These are stored in database cache as well
             try {
                 $cacheTable = config('cache.stores.database.table', 'cache');
-                $prefix = self::procurements($role).':user:';
+                $prefix = "dashboard:{$role}:%:user:%";
                 \Illuminate\Support\Facades\DB::table($cacheTable)
-                    ->where('key', 'like', $prefix.'%')
+                    ->where('key', 'like', $prefix)
                     ->delete();
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::warning('Failed to clear user-specific caches', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            try {
+                $cacheStore = Cache::getStore();
+                if (method_exists($cacheStore, 'getRedis')) {
+                    $redis = $cacheStore->getRedis();
+                    $prefix = config('cache.prefix', 'laravel_cache');
+                    $keys = $redis->keys($prefix.":dashboard:{$role}:*:user:*");
+
+                    if (! empty($keys)) {
+                        foreach ($keys as $key) {
+                            $cleanKey = str_replace($prefix.':', '', $key);
+                            Cache::forget($cleanKey);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to clear user-specific Redis caches', [
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -219,5 +237,14 @@ class DashboardCacheKeys
             self::priorityActionsCount($role),
             self::userActivityAnalytics($role),
         ];
+    }
+
+    private static function appendUserScope(string $key, string|int|null $userId): string
+    {
+        if ($userId === null || $userId === '') {
+            return $key;
+        }
+
+        return "{$key}:user:{$userId}";
     }
 }
