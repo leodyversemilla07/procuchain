@@ -24,7 +24,7 @@ class DocumentDownloadController extends BaseController
      */
     public function downloadFile(Request $request, string $fileKey)
     {
-        Gate::authorize('download-document');
+        Gate::authorize('download-document', $fileKey);
 
         try {
             if (empty($fileKey)) {
