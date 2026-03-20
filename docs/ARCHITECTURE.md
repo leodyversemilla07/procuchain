@@ -40,9 +40,9 @@ graph TD
 
 ## Core Components
 
-### 1. Web/API Layer (Laravel 12 + Inertia)
+### 1. Web/API Layer (Laravel 13 + Inertia)
 
-- **Framework**: Laravel 12 serves as the core backend framework.
+- **Framework**: Laravel 13 serves as the core backend framework.
 - **Frontend**: Inertia.js with React 19 acts as the "glue" between backend and frontend, allowing for a modern SPA experience without the complexity of a separate API.
 - **Authentication**: Laravel Fortify handles authentication flows (Login, 2FA).
 - **Authorization**: Spatie Permission handles role-based access control (Admin, BAC Secretariat, BAC Chairman, HOPE).
@@ -209,7 +209,7 @@ The reporting module provides high-level analytics and document generation capab
 - `app/Services/Dashboard`: Dashboard analytics (`StatisticsCalculator`, `ModeAnalyzer`).
 - `app/Jobs/Handlers`: Blockchain write job handlers (6 specialized handlers for different operation types).
 - `app/Events`: Domain events (`ProcurementInitiated`, `StageCompleted`, `DocumentUploaded`, `UserInvited`).
-- `app/Listeners`: Event listeners (auto-discovered by Laravel 12 — no manual registration needed).
+- `app/Listeners`: Event listeners (auto-discovered by Laravel 13 — no manual registration needed).
 - `app/Models/Concerns`: Reusable model traits (`HasAccountLock`).
 - `app/Http/Controllers`: Request handling (thin controllers that delegate to services).
 - `app/Services`: Business logic isolation (e.g., `BlockchainStorageService`, `ReportGenerationService`, `PdfViewerService`).

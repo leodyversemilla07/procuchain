@@ -208,7 +208,7 @@ curl -X POST /search \
 - Client-side chart rendering
 
 ## Code Quality
-- ✅ Follows Laravel 12 conventions
+- ✅ Follows Laravel 13 conventions
 - ✅ Uses PHP 8.3 features (readonly, constructor property promotion)
 - ✅ Strict typing enabled
 - ✅ Comprehensive PHPDoc comments
@@ -245,7 +245,7 @@ curl -X POST /search \
 7. Add email delivery for reports
 
 ## Dependencies
-- Laravel 12.x
+- Laravel 13.x
 - Carbon (date/time library)
 - Inertia.js v2
 - React 19.x

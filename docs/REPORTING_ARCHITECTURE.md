@@ -308,9 +308,9 @@ POST /reports/export
 ┌─────────────────────────────────────────────┐
 │              FRONTEND LAYER                 │
 │                                             │
-│  React 19.2.1                               │
+│  React 19.2.4                               │
 │  TypeScript                                 │
-│  Inertia.js v2.2.21                         │
+│  Inertia.js v2.3.13                         │
 │  Recharts (visualization)                   │
 │  Tailwind CSS v4                            │
 └─────────────────┬───────────────────────────┘
@@ -320,8 +320,8 @@ POST /reports/export
 ┌─────────────────┴───────────────────────────┐
 │              BACKEND LAYER                  │
 │                                             │
-│  Laravel 12.42.0                            │
-│  PHP 8.3.28                                 │
+│  Laravel 13.0.0                             │
+│  PHP 8.4.12                                 │
 │  Carbon (date library)                      │
 └─────────────────┬───────────────────────────┘
                   │
