@@ -1,92 +1,131 @@
-# Database Schema Documentation
+# Database Schema
 
-This document outlines the database schema for the ProcuChain application.
+This document summarizes the MySQL schema used by ProcuChain.
 
-## Core Tables
+## Overview
+
+MySQL stores mutable application state. Immutable procurement history and file integrity records live on MultiChain instead.
+
+At a high level, MySQL is responsible for:
+
+- identity and access management
+- workflow/document configuration
+- notifications and user preferences
+- queues, cache, and sessions
+- security and audit records
+
+## Core Application Tables
 
 ### `users`
-Stores user account information.
 
-| Column | Type | Nullable | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | bigint | No | Primary Key |
-| `name` | string | No | User's full name |
-| `email` | string | No | Unique email address |
-| `blockchain_address` | string | Yes | MultiChain address associated with the user role |
-| `email_verified_at` | timestamp | Yes | Timestamp of email verification |
-| `password` | string | No | Hashed password |
-| `account_locked` | boolean | No | Default: `false`. Indicates if account is locked |
-| `locked_at` | timestamp | Yes | When the account was locked |
-| `lock_expires_at` | timestamp | Yes | When the lock expires |
-| `failed_login_attempts` | integer | No | Default: 0. Counter for failed logins |
-| `last_failed_login_at` | timestamp | Yes | Timestamp of last failed attempt |
-| `locked_reason` | string | Yes | Reason for account locking |
-| `two_factor_secret` | text | Yes | 2FA secret key |
-| `two_factor_recovery_codes` | text | Yes | 2FA recovery codes |
-| `two_factor_confirmed_at` | timestamp | Yes | When 2FA was confirmed |
-| `email_notifications_enabled` | boolean | No | Default: `true`. |
-| `remember_token` | string | Yes | "Remember me" token |
-| `created_at` | timestamp | Yes | Creation timestamp |
-| `updated_at` | timestamp | Yes | Update timestamp |
+Primary application users.
+
+Important fields include:
+
+- `name`
+- `email`
+- `password`
+- `blockchain_address`
+- account lockout fields
+- two-factor fields
+- notification preference fields
+
+This table links Laravel identities to role-based blockchain addresses.
 
 ### `procurement_workflow_configs`
-Stores workflow configuration for each procurement mode.
 
-| Column | Type | Nullable | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | bigint | No | Primary Key |
-| `procurement_mode` | string | No | Unique identifier for mode (e.g., 'public_bidding') |
-| `display_name` | string | No | Human-readable name |
-| `description` | text | Yes | Description of the mode |
-| `stages` | json | No | Array of stage identifiers |
-| `optional_stages` | json | Yes | Array of optional stage identifiers |
-| `is_active` | boolean | No | Default: `true`. |
-| `updated_by` | foreignId | Yes | User ID who last updated this config (set null on delete) |
-| `created_at` | timestamp | Yes | Creation timestamp |
-| `updated_at` | timestamp | Yes | Update timestamp |
+Admin-managed workflow definitions per procurement mode.
+
+Key columns:
+
+- `procurement_mode`
+- `display_name`
+- `description`
+- `stages`
+- `optional_stages`
+- `is_active`
+- `updated_by`
 
 ### `stage_document_configs`
-Stores document requirements for each stage/mode combination.
 
-| Column | Type | Nullable | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | bigint | No | Primary Key |
-| `stage` | string | No | Stage identifier |
-| `procurement_mode` | string | No | Procurement mode identifier |
-| `stage_display_name` | string | No | Display name for the stage |
-| `required_documents` | json | No | List of required document types |
-| `optional_documents` | json | Yes | List of optional document types |
-| `is_active` | boolean | No | Default: `true`. |
-| `updated_by` | foreignId | Yes | User ID who last updated this config (set null on delete) |
-| `created_at` | timestamp | Yes | Creation timestamp |
-| `updated_at` | timestamp | Yes | Update timestamp |
+Admin-managed document requirements per stage and procurement mode.
 
-## Permission Tables (Spatie Permission)
+Key columns:
 
-The application uses the `spatie/laravel-permission` package.
+- `stage`
+- `procurement_mode`
+- `stage_display_name`
+- `required_documents`
+- `optional_documents`
+- `is_active`
+- `updated_by`
 
-### `permissions`
-| Column | Type | Description |
-| :--- | :--- | :--- |
-| `id` | bigint | Primary Key |
-| `name` | string | Permission name |
-| `guard_name` | string | Guard name (usually 'web') |
-| `created_at`, `updated_at`| | |
+These two configuration tables are the first lookup layer for `WorkflowDefinitionService`.
 
-### `roles`
-| Column | Type | Description |
-| :--- | :--- | :--- |
-| `id` | bigint | Primary Key |
-| `name` | string | Role name (e.g., 'admin', 'bac_secretariat') |
-| `guard_name` | string | Guard name |
-| `created_at`, `updated_at`| | |
+## Authorization Tables
 
-### Pivot Tables
-- `model_has_permissions`: Assigns permissions to users.
-- `model_has_roles`: Assigns roles to users.
-- `role_has_permissions`: Assigns permissions to roles.
+Managed through Spatie Laravel Permission:
 
-## Other Tables
+- `roles`
+- `permissions`
+- `model_has_roles`
+- `model_has_permissions`
+- `role_has_permissions`
 
-- `password_reset_tokens`: Stores tokens for password reset requests.
-- `sessions`: database driver for storing user sessions.
+## Security and Audit Tables
+
+- `audit_logs`
+- `user_login_logs`
+- `blocked_ips`
+- `password_reset_tokens`
+
+These support account monitoring, security operations, and admin review tooling.
+
+## Notification and User Preference Tables
+
+- `notifications`
+- `push_subscriptions`
+- `user_invitations`
+
+These support in-app notifications, browser push notifications, and invitation-based user onboarding.
+
+## Laravel Infrastructure Tables
+
+- `migrations`
+- `jobs`
+- `job_batches`
+- `failed_jobs`
+- `sessions`
+- `cache`
+- `cache_locks`
+
+The application currently uses database-backed queue, cache, and session infrastructure in normal operation.
+
+## What Is Not in MySQL
+
+Procurement records themselves are not treated as a primary MySQL dataset. The immutable procurement state lives on MultiChain:
+
+- procurement metadata
+- status history
+- document metadata
+- events
+- corrections
+- archive records
+- file storage records
+
+MySQL stores the configuration and operational context around those records, not the authoritative immutable history.
+
+## How Schema and Runtime Interact
+
+Important runtime relationships:
+
+- `users.blockchain_address` ties Laravel users to chain permissions and audit identity
+- workflow configuration tables override enum/service defaults through `WorkflowDefinitionService`
+- notifications, invitations, and security tables power admin and settings screens
+- queue/cache/session tables support asynchronous blockchain publishing and UI responsiveness
+
+## Related Documents
+
+- [Architecture](ARCHITECTURE.md)
+- [Blockchain Schema](BLOCKCHAIN_SCHEMA.md)
+- [Route Reference](ROUTES.md)
