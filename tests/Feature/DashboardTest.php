@@ -4,105 +4,70 @@ use App\Contracts\CacheStrategyInterface;
 use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
+use App\Services\AdminAnalyticsService;
 use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
 use App\Services\Manager;
 use App\Services\ProcurementStageTransitionService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Spatie\Permission\Models\Role;
-
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 test('guests are redirected to login for all dashboards', function () {
-    // Test Bids and Awards Committee Secretariat Dashboard
-    $this->get(route('bac-secretariat.dashboard'))->assertRedirect('/login');
-
-    // Test Bids and Awards Committee Chairman Dashboard
-    $this->get(route('bac-chairman.dashboard'))->assertRedirect('/login');
-
-    // Test Head of Procuring Entity Dashboard
-    $this->get(route('hope.dashboard'))->assertRedirect('/login');
-
-    // Test Admin dashboard
-    $this->get(route('admin.dashboard'))->assertRedirect('/login');
+    foreach ([
+        'bac-secretariat.dashboard',
+        'bac-chairman.dashboard',
+        'hope.dashboard',
+        'admin.dashboard',
+    ] as $routeName) {
+        $this->get(route($routeName))->assertRedirect('/login');
+    }
 });
 
-test('users can access their role-specific dashboard', function () {
-    // Test BAC Secretariat user
-    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
-    $secretariatUser = User::factory()->create();
-    $secretariatUser->assignRole('bac_secretariat');
-    $this->actingAs($secretariatUser);
-    $this->get(route('bac-secretariat.dashboard'))->assertOk();
-    $this->post('/logout');
+test('users can access only their role-specific dashboard', function () {
+    $cases = [
+        [
+            'role' => 'bac_secretariat',
+            'allowed' => 'bac-secretariat.dashboard',
+            'blocked' => ['bac-chairman.dashboard', 'hope.dashboard', 'admin.dashboard'],
+        ],
+        [
+            'role' => 'bac_chairman',
+            'allowed' => 'bac-chairman.dashboard',
+            'blocked' => ['bac-secretariat.dashboard', 'hope.dashboard', 'admin.dashboard'],
+        ],
+        [
+            'role' => 'hope',
+            'allowed' => 'hope.dashboard',
+            'blocked' => ['bac-secretariat.dashboard', 'bac-chairman.dashboard', 'admin.dashboard'],
+        ],
+        [
+            'role' => 'admin',
+            'allowed' => 'admin.dashboard',
+            'blocked' => ['bac-secretariat.dashboard', 'bac-chairman.dashboard', 'hope.dashboard'],
+        ],
+    ];
 
-    // Test BAC Chairman user
-    Role::firstOrCreate(['name' => 'bac_chairman', 'guard_name' => 'web']);
-    $chairmanUser = User::factory()->create();
-    $chairmanUser->assignRole('bac_chairman');
-    $this->actingAs($chairmanUser);
-    $this->get(route('bac-chairman.dashboard'))->assertOk();
-    $this->post('/logout');
+    foreach ($cases as $case) {
+        bindDashboardDependencies();
 
-    // Test Hope user
-    Role::firstOrCreate(['name' => 'hope', 'guard_name' => 'web']);
-    $hopeUser = User::factory()->create();
-    $hopeUser->assignRole('hope');
-    $this->actingAs($hopeUser);
-    $this->get(route('hope.dashboard'))->assertOk();
-    $this->post('/logout');
+        $user = User::factory()->create([
+            'blockchain_address' => "{$case['role']}-address",
+        ]);
+        $user->assignRole($case['role']);
 
-    // Test Admin user
-    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-    $adminUser = User::factory()->create();
-    $adminUser->assignRole('admin');
-    $this->actingAs($adminUser);
-    $this->get(route('admin.dashboard'))->assertOk();
-});
+        $this->actingAs($user);
+        $this->get(route($case['allowed']))->assertOk();
 
-test('users cannot access dashboards for other roles', function () {
-    // BAC Secretariat user cannot access other dashboards
-    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
-    $secretariatUser = User::factory()->create();
-    $secretariatUser->assignRole('bac_secretariat');
-    $this->actingAs($secretariatUser);
-    $this->get(route('bac-chairman.dashboard'))->assertForbidden();
-    $this->get(route('hope.dashboard'))->assertForbidden();
-    $this->post('/logout');
+        foreach ($case['blocked'] as $blockedRoute) {
+            $this->get(route($blockedRoute))->assertForbidden();
+        }
 
-    // BAC Chairman user cannot access other dashboards
-    Role::firstOrCreate(['name' => 'bac_chairman', 'guard_name' => 'web']);
-    $chairmanUser = User::factory()->create();
-    $chairmanUser->assignRole('bac_chairman');
-    $this->actingAs($chairmanUser);
-    $this->get(route('bac-secretariat.dashboard'))->assertForbidden();
-    $this->get(route('hope.dashboard'))->assertForbidden();
-    $this->post('/logout');
-
-    // Hope user cannot access other dashboards
-    Role::firstOrCreate(['name' => 'hope', 'guard_name' => 'web']);
-    $hopeUser = User::factory()->create();
-    $hopeUser->assignRole('hope');
-    $this->actingAs($hopeUser);
-    $this->get(route('bac-secretariat.dashboard'))->assertForbidden();
-    $this->get(route('bac-chairman.dashboard'))->assertForbidden();
-    $this->get(route('admin.dashboard'))->assertForbidden();
-    $this->post('/logout');
-
-    // Admin user cannot access other dashboards
-    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-    $adminUser = User::factory()->create();
-    $adminUser->assignRole('admin');
-    $this->actingAs($adminUser);
-    $this->get(route('bac-secretariat.dashboard'))->assertForbidden();
-    $this->get(route('bac-chairman.dashboard'))->assertForbidden();
-    $this->get(route('hope.dashboard'))->assertForbidden();
+        $this->post('/logout');
+    }
 });
 
 test('bac secretariat dashboard uses user scoped cache keys and filtered procurements', function () {
     Cache::flush();
-
-    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web']);
 
     $secretariatUser = User::factory()->create([
         'blockchain_address' => 'secretariat-address',
@@ -127,7 +92,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
     ]);
 
     $filteredExpectation = function ($collection) {
-        return $collection instanceof \Illuminate\Support\Collection
+        return $collection instanceof Collection
             && $collection->keys()->all() === ['PR-001'];
     };
 
@@ -205,16 +170,102 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
         ->withAnyArgs()
         ->andReturn(null);
 
+    $analyticsService = \Mockery::mock(AdminAnalyticsService::class);
+    $analyticsService->shouldReceive('getUserActivityAnalytics')
+        ->zeroOrMoreTimes()
+        ->andReturn(null);
+
     $this->app->instance(Manager::class, $manager);
     $this->app->instance(DashboardService::class, $dashboardService);
     $this->app->instance(CacheStrategyInterface::class, $cacheStrategy);
     $this->app->instance(ProcurementRepository::class, $procurementRepository);
     $this->app->instance(ProcurementStageTransitionService::class, $stageTransitionService);
+    $this->app->instance(AdminAnalyticsService::class, $analyticsService);
 
     $this->actingAs($secretariatUser);
 
     $this->get(route('bac-secretariat.dashboard'))->assertOk();
 });
+
+function bindDashboardDependencies(): void
+{
+    $manager = \Mockery::mock(Manager::class);
+    $manager->shouldReceive('liststreamitems')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+
+    $dashboardService = \Mockery::mock(DashboardService::class);
+    $dashboardService->shouldReceive('getProcurementsByKey')
+        ->zeroOrMoreTimes()
+        ->andReturn(collect());
+    $dashboardService->shouldReceive('getRecentActivities')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+    $dashboardService->shouldReceive('getTotalDocuments')
+        ->zeroOrMoreTimes()
+        ->andReturn(0);
+    $dashboardService->shouldReceive('calculateStats')
+        ->zeroOrMoreTimes()
+        ->andReturn([
+            'total' => 0,
+            'pending' => 0,
+            'completed' => 0,
+            'pendingActions' => 0,
+        ]);
+    $dashboardService->shouldReceive('getProcurementDistributionData')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+    $dashboardService->shouldReceive('getRecentProcurements')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+    $dashboardService->shouldReceive('getPhaseStatistics')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+    $dashboardService->shouldReceive('groupProcurementsByPhase')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+    $dashboardService->shouldReceive('getModeStatistics')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+    $dashboardService->shouldReceive('getEmptyStats')
+        ->zeroOrMoreTimes()
+        ->andReturn([
+            'total' => 0,
+            'pending' => 0,
+            'completed' => 0,
+            'pendingActions' => 0,
+        ]);
+
+    $cacheStrategy = \Mockery::mock(CacheStrategyInterface::class);
+    $cacheStrategy->shouldReceive('rememberLarge')
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(fn ($key, $ttl, $callback) => $callback());
+    $cacheStrategy->shouldReceive('rememberSmall')
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(fn ($key, $ttl, $callback) => $callback());
+
+    $procurementRepository = \Mockery::mock(ProcurementRepository::class);
+    $procurementRepository->shouldReceive('findManyByProcurement')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+
+    $stageTransitionService = \Mockery::mock(ProcurementStageTransitionService::class);
+    $stageTransitionService->shouldReceive('getPriorityAction')
+        ->zeroOrMoreTimes()
+        ->andReturn(null);
+
+    $analyticsService = \Mockery::mock(AdminAnalyticsService::class);
+    $analyticsService->shouldReceive('getUserActivityAnalytics')
+        ->zeroOrMoreTimes()
+        ->andReturn(null);
+
+    app()->instance(Manager::class, $manager);
+    app()->instance(DashboardService::class, $dashboardService);
+    app()->instance(CacheStrategyInterface::class, $cacheStrategy);
+    app()->instance(ProcurementRepository::class, $procurementRepository);
+    app()->instance(ProcurementStageTransitionService::class, $stageTransitionService);
+    app()->instance(AdminAnalyticsService::class, $analyticsService);
+}
 
 function dashboardProcurementFixture(string $prNumber, string $userId): ProcurementData
 {

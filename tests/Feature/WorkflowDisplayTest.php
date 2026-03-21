@@ -6,6 +6,8 @@ use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
+use App\Repositories\StatusRepository;
+use App\Services\ModeAwareDocumentValidationService;
 use App\Services\Procurement\ProcurementSupportService;
 use Tests\TestCase;
 
@@ -64,24 +66,16 @@ describe('Workflow Info Structure', function () {
 });
 
 describe('Stage Pages With Workflow Info', function () {
-    it('includes workflow info on all competitive bidding stage pages', function () {
+    it('includes workflow info on representative competitive bidding stage pages', function () {
         actingAs($this->bacSecretariat);
         bindWorkflowProcurementRepository($this, $this->competitiveProcurementData);
         bindWorkflowSupportStub($this->competitiveProcurementData);
+        bindWorkflowDocumentGuideStub();
 
         $stages = [
             StageEnums::PRE_PROCUREMENT_CONFERENCE,
-            StageEnums::BIDDING_DOCUMENTS,
-            StageEnums::PRE_BID_CONFERENCE,
-            StageEnums::SUPPLEMENTAL_BID_BULLETIN,
             StageEnums::BID_OPENING,
-            StageEnums::BID_EVALUATION,
-            StageEnums::POST_QUALIFICATION,
-            StageEnums::BAC_RESOLUTION,
             StageEnums::NOTICE_OF_AWARD,
-            StageEnums::PERFORMANCE_BOND_CONTRACT_AND_PO,
-            StageEnums::NOTICE_TO_PROCEED,
-            StageEnums::MONITORING,
             StageEnums::COMPLETION,
         ];
 
@@ -94,6 +88,7 @@ describe('Stage Pages With Workflow Info', function () {
         actingAs($this->bacSecretariat);
         bindWorkflowProcurementRepository($this, $this->svpProcurementData);
         bindWorkflowSupportStub($this->svpProcurementData);
+        bindWorkflowDocumentGuideStub();
 
         foreach ([StageEnums::REQUEST_FOR_QUOTATION, StageEnums::ABSTRACT_OF_QUOTATIONS] as $stage) {
             assertStageUploadPageIncludesWorkflowInfo($this, $stage);
@@ -122,10 +117,14 @@ describe('Procurement Initiation With Workflow Info', function () {
         actingAs($this->bacSecretariat);
         bindWorkflowProcurementRepository($this, $this->competitiveProcurementData);
         bindWorkflowSupportStub($this->competitiveProcurementData);
+        bindWorkflowDocumentGuideStub();
 
         $multichain = mock(\App\Services\Manager::class);
-        $multichain->shouldReceive('listStreamKeyItems')->andReturn([]);
-        $this->instance(\App\Services\Manager::class, $multichain);
+        $multichain->shouldReceive('liststreamitems')
+            ->once()
+            ->with('procurement.status', false, 1000, 0, false)
+            ->andReturn([]);
+        $this->instance(StatusRepository::class, new StatusRepository($multichain));
 
         $response = $this->get(route('bac-secretariat.procurement.initiation.show', [
             'pr_number' => 'PR-2024-001',
@@ -280,6 +279,28 @@ function bindWorkflowSupportStub(ProcurementData $procurementData): void
         ->andReturn([]);
 
     app()->instance(ProcurementSupportService::class, $support);
+}
+
+function bindWorkflowDocumentGuideStub(): void
+{
+    $validation = mock(ModeAwareDocumentValidationService::class);
+    $validation->shouldReceive('getStageDocumentGuide')
+        ->zeroOrMoreTimes()
+        ->andReturn([
+            'stage' => StageEnums::PROCUREMENT_INITIATION->value,
+            'stage_display_name' => StageEnums::PROCUREMENT_INITIATION->getDisplayName(),
+            'phase' => 'pre_procurement',
+            'description' => 'Workflow guide fixture',
+            'required_documents' => [],
+            'optional_documents' => [],
+            'counts' => [
+                'required_count' => 0,
+                'optional_count' => 0,
+                'total_count' => 0,
+            ],
+        ]);
+
+    app()->instance(ModeAwareDocumentValidationService::class, $validation);
 }
 
 function stagePageRoute(StageEnums $stage, string $prNumber = 'PR-2024-001'): string

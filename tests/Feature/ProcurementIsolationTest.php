@@ -1,143 +1,198 @@
 <?php
 
+use App\DataTransferObjects\ProcurementData;
+use App\DataTransferObjects\StatusData;
 use App\Models\User;
-use App\Services\ProcurementDataService;
-use Illuminate\Support\Facades\Cache;
+use App\Repositories\DocumentRepository;
+use App\Repositories\ProcurementArchiveRepository;
+use App\Repositories\ProcurementRepository;
+use App\Repositories\StatusRepository;
+use App\Services\DashboardCacheKeys;
+use App\Services\Manager;
+use App\Services\Procurement\ProcurementActionService;
+use App\Services\Procurement\ProcurementFormatterService;
+use App\Services\Procurement\ProcurementListAggregatorService;
+use App\Services\Procurement\UserNameResolverService;
+use App\Services\UserService;
 use Spatie\Permission\Models\Role;
 
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+use function Pest\Laravel\mock;
+
 beforeEach(function () {
-    // Clear cache before each test
-    Cache::flush();
-
-    // Ensure roles exist
-    if (! Role::where('name', 'admin')->exists()) {
-        Role::create(['name' => 'admin', 'guard_name' => 'web']);
-    }
-    if (! Role::where('name', 'bac_secretariat')->exists()) {
-        Role::create(['name' => 'bac_secretariat', 'guard_name' => 'web']);
-    }
-    if (! Role::where('name', 'bac_chairman')->exists()) {
-        Role::create(['name' => 'bac_chairman', 'guard_name' => 'web']);
-    }
-    if (! Role::where('name', 'hope')->exists()) {
-        Role::create(['name' => 'hope', 'guard_name' => 'web']);
+    foreach (['admin', 'bac_secretariat', 'bac_chairman', 'hope'] as $role) {
+        Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
     }
 });
 
-it('bac secretariat user can only see their own procurements', function () {
-    // Create two BAC Secretariat users
-    $user1 = User::factory()->create(['email' => 'bac1@test.com']);
-    $user1->assignRole('bac_secretariat');
+it('renders the procurement list page for each supported role', function () {
+    $cases = [
+        ['role' => 'bac_secretariat', 'route' => 'bac-secretariat.procurements.index'],
+        ['role' => 'bac_chairman', 'route' => 'bac-chairman.procurements.index'],
+        ['role' => 'hope', 'route' => 'hope.procurements.index'],
+        ['role' => 'admin', 'route' => 'admin.procurements.index'],
+    ];
 
-    $user2 = User::factory()->create(['email' => 'bac2@test.com']);
-    $user2->assignRole('bac_secretariat');
+    foreach ($cases as $case) {
+        $user = User::factory()->create([
+            'blockchain_address' => "{$case['role']}-address",
+        ]);
+        $user->assignRole($case['role']);
 
-    // Act as user1 and fetch procurements list
-    $this->actingAs($user1);
-    $response = $this->get('/bac-secretariat/procurements-list');
+        app()->instance(ProcurementListAggregatorService::class, buildIsolationAggregator());
 
-    // Should successfully load the page
-    $response->assertSuccessful();
-    $response->assertInertia(fn ($page) => $page
-        ->component('procurements/procurements-list')
-        ->has('procurements') // Should have procurements array (may be empty if none in blockchain)
-    );
+        actingAs($user);
+
+        get(route($case['route']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('procurements/procurements-list')
+                ->has('procurements', 0)
+            );
+    }
 });
 
-it('admin user can see all procurements', function () {
-    // Create admin user
-    $admin = User::factory()->create(['email' => 'admin@test.com']);
-    $admin->assignRole('admin');
+it('filters procurements for bac secretariat ownership or blockchain interaction', function () {
+    $secretariat = User::factory()->create([
+        'blockchain_address' => 'secretariat-address',
+    ]);
 
-    // Act as admin and fetch procurements list
-    $this->actingAs($admin);
-    $response = $this->get('/admin/procurements-list');
-
-    // Should successfully load the page with all procurements
-    $response->assertSuccessful();
-    $response->assertInertia(fn ($page) => $page
-        ->component('procurements/procurements-list')
-        ->has('procurements') // Should have procurements array
+    $aggregator = buildIsolationAggregator(
+        repositoryFixtures: [
+            'PR-OWNED' => isolationProcurementFixture('PR-OWNED', (string) $secretariat->id),
+            'PR-TOUCHED' => isolationProcurementFixture('PR-TOUCHED', '999'),
+            'PR-BLOCKED' => isolationProcurementFixture('PR-BLOCKED', '888'),
+        ],
+        statusFixtures: [
+            isolationStatusFixture('PR-OWNED', 'different-address', 'Owned Procurement'),
+            isolationStatusFixture('PR-TOUCHED', 'secretariat-address', 'Touched Procurement'),
+            isolationStatusFixture('PR-BLOCKED', 'different-address', 'Blocked Procurement'),
+        ],
     );
-});
 
-it('bac chairman user can see all procurements', function () {
-    // Create BAC Chairman user
-    $chairman = User::factory()->create(['email' => 'chairman@test.com']);
-    $chairman->assignRole('bac_chairman');
-
-    // Act as chairman and fetch procurements list
-    $this->actingAs($chairman);
-    $response = $this->get('/bac-chairman/procurements-list');
-
-    // Should successfully load the page with all procurements
-    $response->assertSuccessful();
-    $response->assertInertia(fn ($page) => $page
-        ->component('procurements/procurements-list')
-        ->has('procurements') // Should have procurements array
-    );
-});
-
-it('hope user can see all procurements', function () {
-    // Create HOPE user
-    $hope = User::factory()->create(['email' => 'hope@test.com']);
-    $hope->assignRole('hope');
-
-    // Act as hope and fetch procurements list
-    $this->actingAs($hope);
-    $response = $this->get('/hope/procurements-list');
-
-    // Should successfully load the page with all procurements
-    $response->assertSuccessful();
-    $response->assertInertia(fn ($page) => $page
-        ->component('procurements/procurements-list')
-        ->has('procurements') // Should have procurements array
-    );
-});
-
-it('procurement data service applies userId and blockchain address filters correctly', function () {
-    $service = app(ProcurementDataService::class);
-
-    // Test without filter (should work without errors)
-    $allProcurements = $service->fetchAndProcessProcurements(skipActions: true, filterByUserId: null, filterByUserAddress: null);
-    expect($allProcurements)->toBeArray();
-
-    // Test with userId filter only
-    $filteredByUserId = $service->fetchAndProcessProcurements(skipActions: true, filterByUserId: '1', filterByUserAddress: null);
-    expect($filteredByUserId)->toBeArray();
-
-    // Test with blockchain address filter only
-    $filteredByAddress = $service->fetchAndProcessProcurements(skipActions: true, filterByUserId: null, filterByUserAddress: '1E5xwFFW2cfkKEy1GgL67TksMnVpDzmJYn42nq');
-    expect($filteredByAddress)->toBeArray();
-
-    // Test with both filters (dual-layer security)
-    $filteredByBoth = $service->fetchAndProcessProcurements(
+    $procurements = $aggregator->fetchAllProcurements(
         skipActions: true,
-        filterByUserId: '1',
-        filterByUserAddress: '1E5xwFFW2cfkKEy1GgL67TksMnVpDzmJYn42nq'
+        filterByUserId: (string) $secretariat->id,
+        filterByUserAddress: 'secretariat-address',
     );
-    expect($filteredByBoth)->toBeArray();
+
+    expect(collect($procurements)->pluck('id')->all())
+        ->toHaveCount(2)
+        ->toContain('PR-OWNED', 'PR-TOUCHED');
 });
 
-it('cache key is different for different users and addresses', function () {
-    // Clear cache
-    Cache::flush();
+it('returns all procurements when no visibility filters are applied', function () {
+    $aggregator = buildIsolationAggregator(
+        repositoryFixtures: [
+            'PR-OWNED' => isolationProcurementFixture('PR-OWNED', '1'),
+            'PR-TOUCHED' => isolationProcurementFixture('PR-TOUCHED', '2'),
+            'PR-BLOCKED' => isolationProcurementFixture('PR-BLOCKED', '3'),
+        ],
+        statusFixtures: [
+            isolationStatusFixture('PR-OWNED', 'first-address', 'Owned Procurement'),
+            isolationStatusFixture('PR-TOUCHED', 'second-address', 'Touched Procurement'),
+            isolationStatusFixture('PR-BLOCKED', 'third-address', 'Blocked Procurement'),
+        ],
+    );
 
-    $service = app(ProcurementDataService::class);
+    $procurements = $aggregator->fetchAllProcurements(skipActions: true);
 
-    // Fetch for user 1
-    $service->fetchAndProcessProcurements(skipActions: true, filterByUserId: '1', filterByUserAddress: null);
-
-    // Fetch for user 2
-    $service->fetchAndProcessProcurements(skipActions: true, filterByUserId: '2', filterByUserAddress: null);
-
-    // Fetch for user 1 with blockchain address
-    $service->fetchAndProcessProcurements(skipActions: true, filterByUserId: '1', filterByUserAddress: '1E5xwFFW2cfkKEy1GgL67TksMnVpDzmJYn42nq');
-
-    // Fetch for all users (admin)
-    $service->fetchAndProcessProcurements(skipActions: true, filterByUserId: null, filterByUserAddress: null);
-
-    // All four should have separate cache entries
-    // (This test verifies cache isolation but can't directly test cache keys)
-    expect(true)->toBeTrue();
+    expect(collect($procurements)->pluck('id')->all())
+        ->toHaveCount(3)
+        ->toContain('PR-OWNED', 'PR-TOUCHED', 'PR-BLOCKED');
 });
+
+it('builds distinct dashboard cache keys for scoped and unscoped access', function () {
+    expect(DashboardCacheKeys::procurements('bac_secretariat', '1'))
+        ->toBe('dashboard:bac_secretariat:procurements_by_key:user:1');
+
+    expect(DashboardCacheKeys::stats('bac_secretariat', '1'))
+        ->toBe('dashboard:bac_secretariat:stats:user:1');
+
+    expect(DashboardCacheKeys::procurements('admin'))
+        ->toBe('dashboard:admin:procurements_by_key');
+
+    expect(DashboardCacheKeys::stats('admin'))
+        ->toBe('dashboard:admin:stats');
+});
+
+/**
+ * @param  array<string, ProcurementData>  $repositoryFixtures
+ * @param  array<int, StatusData>  $statusFixtures
+ */
+function buildIsolationAggregator(array $repositoryFixtures = [], array $statusFixtures = []): ProcurementListAggregatorService
+{
+    $repository = mock(ProcurementRepository::class);
+    $repository->shouldReceive('findManyByProcurement')
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(function (array $prNumbers) use ($repositoryFixtures): array {
+            $result = [];
+            foreach ($prNumbers as $prNumber) {
+                $result[$prNumber] = $repositoryFixtures[$prNumber] ?? null;
+            }
+
+            return $result;
+        });
+
+    $manager = mock(Manager::class);
+    $manager->shouldReceive('liststreamitems')
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(function (string $stream) use ($statusFixtures): array {
+            if ($stream === 'procurement.status') {
+                return collect($statusFixtures)
+                    ->map(fn (StatusData $status) => [
+                        'keys' => [$status->prNumber],
+                        'data' => ['json' => $status->toBlockchainArray()],
+                        'blocktime' => $status->timestamp->timestamp,
+                    ])
+                    ->all();
+            }
+
+            return [];
+        });
+
+    return new ProcurementListAggregatorService(
+        new StatusRepository($manager),
+        new DocumentRepository($manager),
+        $repository,
+        new ProcurementArchiveRepository($manager),
+        new ProcurementFormatterService,
+        new ProcurementActionService($repository),
+        new UserNameResolverService(app(UserService::class)),
+    );
+}
+
+function isolationProcurementFixture(string $prNumber, string $userId): ProcurementData
+{
+    return ProcurementData::fromArray([
+        'pr_number' => $prNumber,
+        'title' => 'Isolation Fixture',
+        'description' => 'Fixture',
+        'abc_amount' => 1000,
+        'funding_source' => 'General Fund',
+        'category' => 'goods',
+        'procurement_mode' => 'competitive_bidding',
+        'office' => 'BAC Office',
+        'status' => 'draft',
+        'user_id' => $userId,
+        'created_at' => now()->toIso8601String(),
+    ]);
+}
+
+function isolationStatusFixture(
+    string $prNumber,
+    string $userAddress,
+    string $title,
+): StatusData {
+    return new StatusData(
+        prNumber: $prNumber,
+        procurementTitle: $title,
+        stage: 'procurement_initiation',
+        currentStatus: 'draft',
+        userAddress: $userAddress,
+        timestamp: now(),
+        previousStatus: null,
+        metadata: [],
+    );
+}
