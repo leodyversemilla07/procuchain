@@ -5,21 +5,240 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\DocumentValidationService;
+use App\Services\ModeAwareDocumentValidationService;
+use App\Services\Procurement\ProcurementSupportService;
+use App\Services\ProcurementDataService;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\mock;
 
 beforeEach(function () {
-    $this->bacSecretariat = User::factory()->create();
+    $this->bacSecretariat = User::factory()->create([
+        'blockchain_address' => 'test_address_123',
+    ]);
     $this->bacSecretariat->assignRole('bac_secretariat');
-    $this->bacSecretariat->blockchain_address = 'test_address_123';
-    $this->bacSecretariat->save();
 
-    // Mock SVP procurement data (RFQ and Abstract stages are in SVP workflow)
-    $this->svpProcurementData = new ProcurementData(
+    $this->svpProcurementData = buildSvpProcurementData($this->bacSecretariat);
+});
+
+describe('SVP Stage Pages', function () {
+    it('renders RFQ and Abstract stage pages with workflow info', function () {
+        actingAs($this->bacSecretariat);
+        bindSvpStageSupportStubs($this->svpProcurementData);
+        bindSvpModeAwareValidationStub();
+
+        $routes = [
+            stagePageRoute(StageEnums::REQUEST_FOR_QUOTATION),
+            stagePageRoute(StageEnums::ABSTRACT_OF_QUOTATIONS),
+        ];
+
+        foreach ($routes as $route) {
+            $response = $this->get($route);
+
+            $response->assertSuccessful();
+            $response->assertInertia(fn ($page) => $page
+                ->component('bac-secretariat/stage-upload')
+                ->has('procurement')
+                ->has('documentGuide')
+                ->has('workflowInfo', fn ($workflow) => $workflow
+                    ->has('mode')
+                    ->has('workflow')
+                    ->has('workflow.stages')
+                    ->has('workflow.total_stages')
+                    ->has('workflow.current_index')
+                    ->has('workflow.progress_percentage')
+                )
+            );
+        }
+    });
+
+    it('returns document guides for RFQ and Abstract stages', function () {
+        actingAs($this->bacSecretariat);
+        bindSvpStageSupportStubs($this->svpProcurementData);
+
+        $guideMap = [
+            StageEnums::REQUEST_FOR_QUOTATION->value => [
+                'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
+                'stage_display_name' => StageEnums::REQUEST_FOR_QUOTATION->getDisplayName(),
+                'phase' => 'pre_procurement',
+                'description' => 'RFQ guide',
+                'required_documents' => [
+                    ['value' => DocumentTypeEnums::REQUEST_FOR_QUOTATION->value],
+                ],
+                'optional_documents' => [],
+                'counts' => [
+                    'required_count' => 1,
+                    'optional_count' => 0,
+                    'total_count' => 1,
+                ],
+            ],
+            StageEnums::ABSTRACT_OF_QUOTATIONS->value => [
+                'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
+                'stage_display_name' => StageEnums::ABSTRACT_OF_QUOTATIONS->getDisplayName(),
+                'phase' => 'procurement',
+                'description' => 'Abstract guide',
+                'required_documents' => [
+                    ['value' => DocumentTypeEnums::ABSTRACT_OF_QUOTATIONS->value],
+                ],
+                'optional_documents' => [],
+                'counts' => [
+                    'required_count' => 1,
+                    'optional_count' => 0,
+                    'total_count' => 1,
+                ],
+            ],
+        ];
+
+        bindSvpModeAwareValidationStub($guideMap);
+
+        $cases = [
+            [
+                'route' => route('bac-secretariat.procurement.pre-procurement.document-guide', [
+                    'pr_number' => 'PR-2024-001',
+                    'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
+                ]),
+                'expected_stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
+            ],
+            [
+                'route' => route('bac-secretariat.procurement.bidding.document-guide', [
+                    'pr_number' => 'PR-2024-001',
+                    'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
+                ]),
+                'expected_stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
+            ],
+        ];
+
+        foreach ($cases as $case) {
+            $response = $this->get($case['route']);
+
+            $response->assertSuccessful();
+            $response->assertJsonPath('stage', $case['expected_stage']);
+        }
+    });
+
+    it('checks completion status for RFQ and Abstract stages', function () {
+        actingAs($this->bacSecretariat);
+        bindSvpStageSupportStubs($this->svpProcurementData);
+
+        $validation = mock(DocumentValidationService::class);
+        $validation->shouldReceive('validateStageCompletion')
+            ->times(2)
+            ->andReturn(
+                [
+                    'can_complete' => false,
+                    'completion_percentage' => 0,
+                    'missing_documents' => [DocumentTypeEnums::REQUEST_FOR_QUOTATION->value],
+                ],
+                [
+                    'can_complete' => false,
+                    'completion_percentage' => 0,
+                    'missing_documents' => [DocumentTypeEnums::ABSTRACT_OF_QUOTATIONS->value],
+                ],
+            );
+        app()->instance(DocumentValidationService::class, $validation);
+
+        $cases = [
+            route('bac-secretariat.procurement.pre-procurement.check-completion', [
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
+            ]),
+            route('bac-secretariat.procurement.bidding.check-completion', [
+                'pr_number' => 'PR-2024-001',
+                'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
+            ]),
+        ];
+
+        foreach ($cases as $route) {
+            $response = $this->get($route);
+
+            $response->assertSuccessful();
+            $response->assertJsonPath('can_complete', false);
+            $response->assertJsonPath('completion_percentage', 0);
+        }
+    });
+});
+
+describe('Mode-Aware Stage Navigation', function () {
+    it('validates stage inclusion and next-stage mappings for RFQ and Abstract', function () {
+        $svpStages = StageEnums::getStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
+        $competitiveStages = StageEnums::getStagesForMode(ProcurementModeEnums::COMPETITIVE_BIDDING);
+        $rfqNextStages = StageEnums::REQUEST_FOR_QUOTATION->getNextStagesForMode(
+            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+        );
+        $abstractNextStages = StageEnums::ABSTRACT_OF_QUOTATIONS->getNextStagesForMode(
+            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
+        );
+
+        expect($svpStages)->toContain(StageEnums::REQUEST_FOR_QUOTATION);
+        expect($svpStages)->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
+        expect($competitiveStages)->not->toContain(StageEnums::REQUEST_FOR_QUOTATION);
+        expect($competitiveStages)->not->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
+        expect($rfqNextStages)->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
+        expect($abstractNextStages)->toContain(StageEnums::BAC_RESOLUTION);
+    });
+
+    it('validates which procurement modes include RFQ and Abstract stages', function () {
+        expect(StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_CONTRACTING))
+            ->toContain(StageEnums::REQUEST_FOR_QUOTATION);
+        expect(StageEnums::getStagesForMode(ProcurementModeEnums::REPEAT_ORDER))
+            ->toContain(StageEnums::REQUEST_FOR_QUOTATION);
+        expect(StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_SALES))
+            ->toContain(StageEnums::REQUEST_FOR_QUOTATION);
+        expect(StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_PROCUREMENT_FOR_STI))
+            ->toContain(StageEnums::REQUEST_FOR_QUOTATION);
+        expect(StageEnums::getStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT))
+            ->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
+        expect(StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_CONTRACTING))
+            ->not->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
+    });
+});
+
+describe('Stage Display Names and Storage Paths', function () {
+    it('returns the expected RFQ and Abstract metadata', function () {
+        expect(StageEnums::REQUEST_FOR_QUOTATION->getDisplayName())->toBe('Request for Quotation');
+        expect(StageEnums::ABSTRACT_OF_QUOTATIONS->getDisplayName())->toBe('Abstract of Quotations');
+        expect(StageEnums::REQUEST_FOR_QUOTATION->getStoragePathSegment())->toBe('RequestForQuotation');
+        expect(StageEnums::ABSTRACT_OF_QUOTATIONS->getStoragePathSegment())->toBe('AbstractOfQuotations');
+        expect(StageEnums::REQUEST_FOR_QUOTATION->getDescription())->toContain('RFQ');
+        expect(StageEnums::ABSTRACT_OF_QUOTATIONS->getDescription())->toContain('quotations');
+    });
+});
+
+describe('Authorization for New Stages', function () {
+    it('denies RFQ and Abstract access to non-bac-secretariat users', function () {
+        $regularUser = User::factory()->create();
+
+        actingAs($regularUser);
+
+        $routes = [
+            stagePageRoute(StageEnums::REQUEST_FOR_QUOTATION),
+            stagePageRoute(StageEnums::ABSTRACT_OF_QUOTATIONS),
+        ];
+
+        foreach ($routes as $route) {
+            $this->get($route)->assertForbidden();
+        }
+    });
+
+    it('denies RFQ and Abstract access to unauthenticated users', function () {
+        $routes = [
+            stagePageRoute(StageEnums::REQUEST_FOR_QUOTATION),
+            stagePageRoute(StageEnums::ABSTRACT_OF_QUOTATIONS),
+        ];
+
+        foreach ($routes as $route) {
+            $this->get($route)->assertRedirect(route('login'));
+        }
+    });
+});
+
+function buildSvpProcurementData(User $user): ProcurementData
+{
+    return new ProcurementData(
         prNumber: 'PR-2024-001',
         appReference: 'APP-2024-001',
         title: 'Test Procurement',
@@ -41,322 +260,107 @@ beforeEach(function () {
         approvedBy: null,
         approvalDate: null,
         status: 'in_progress',
-        userId: (string) $this->bacSecretariat->id,
-        createdAt: now()
+        userId: (string) $user->id,
+        createdAt: now(),
     );
+}
 
-    // Helper to mock the repository with SVP procurement
-    $this->mockSvpRepository = function () {
-        $repository = mock(ProcurementRepository::class);
-        $repository->shouldReceive('findByProcurement')->andReturn($this->svpProcurementData);
-        $this->instance(ProcurementRepository::class, $repository);
-    };
-});
+function bindSvpStageSupportStubs(ProcurementData $procurementData): void
+{
+    $repository = mock(ProcurementRepository::class);
+    $repository->shouldReceive('findByProcurement')
+        ->zeroOrMoreTimes()
+        ->andReturn($procurementData);
+    app()->instance(ProcurementRepository::class, $repository);
 
-describe('Request for Quotation (RFQ) Stage', function () {
-    it('shows RFQ stage page for authorized users', function () {
-        actingAs($this->bacSecretariat);
-        ($this->mockSvpRepository)();
-
-        $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
+    $dataService = mock(ProcurementDataService::class);
+    $dataService->shouldReceive('fetchStatusItems')
+        ->zeroOrMoreTimes()
+        ->andReturn(collect([
+            ['user_address' => User::findOrFail((int) $procurementData->userId)->blockchain_address],
         ]));
+    app()->instance(ProcurementDataService::class, $dataService);
 
-        $response->assertSuccessful();
-        $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/stage-upload')
-            ->has('procurement')
-            ->has('documentGuide')
-            ->has('workflowInfo')
-        );
-    });
+    $support = mock(ProcurementSupportService::class);
+    $support->shouldReceive('validateStageInWorkflow')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    $support->shouldReceive('stageExistsInWorkflow')
+        ->zeroOrMoreTimes()
+        ->andReturn(true);
+    $support->shouldReceive('findProcurementById')
+        ->zeroOrMoreTimes()
+        ->andReturn([
+            'procurement_title' => $procurementData->title,
+            'current_status' => $procurementData->status,
+            'stage' => StageEnums::PROCUREMENT_INITIATION->value,
+        ]);
+    $support->shouldReceive('handleAutoStageTransition')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    $support->shouldReceive('getProcurementMode')
+        ->zeroOrMoreTimes()
+        ->andReturn($procurementData->procurementMode);
+    $support->shouldReceive('getWorkflowInfo')
+        ->zeroOrMoreTimes()
+        ->andReturn([
+            'mode' => [
+                'value' => $procurementData->procurementMode->value,
+            ],
+            'workflow' => [
+                'stages' => [],
+                'total_stages' => 2,
+                'current_index' => 0,
+                'progress_percentage' => 0,
+            ],
+        ]);
+    $support->shouldReceive('getUploadedDocumentTypes')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+    $support->shouldReceive('getOngoingStatusForStage')
+        ->zeroOrMoreTimes()
+        ->andReturn(StatusEnums::PROCUREMENT_SUBMITTED);
+    app()->instance(ProcurementSupportService::class, $support);
+}
 
-    it('includes workflowInfo with mode details for RFQ page', function () {
-        actingAs($this->bacSecretariat);
-        ($this->mockSvpRepository)();
+function bindSvpModeAwareValidationStub(?array $guideMap = null): void
+{
+    $validation = mock(ModeAwareDocumentValidationService::class);
+    $validation->shouldReceive('getStageDocumentGuide')
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(function (StageEnums $stage) use ($guideMap) {
+            if ($guideMap !== null && isset($guideMap[$stage->value])) {
+                return $guideMap[$stage->value];
+            }
 
-        $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
+            return [
+                'stage' => $stage->value,
+                'stage_display_name' => $stage->getDisplayName(),
+                'phase' => $stage->isPreProcurement() ? 'pre_procurement' : 'procurement',
+                'description' => 'Stage guide',
+                'required_documents' => [],
+                'optional_documents' => [],
+                'counts' => [
+                    'required_count' => 0,
+                    'optional_count' => 0,
+                    'total_count' => 0,
+                ],
+            ];
+        });
+    app()->instance(ModeAwareDocumentValidationService::class, $validation);
+}
+
+function stagePageRoute(StageEnums $stage): string
+{
+    if ($stage->isPreProcurement()) {
+        return route('bac-secretariat.procurement.pre-procurement.show', [
             'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
-        ]));
+            'stage' => $stage->value,
+        ]);
+    }
 
-        $response->assertSuccessful();
-        $response->assertInertia(fn ($page) => $page
-            ->has('workflowInfo', fn ($workflow) => $workflow
-                ->has('mode')
-                ->has('workflow')
-                ->has('workflow.stages')
-                ->has('workflow.total_stages')
-                ->has('workflow.current_index')
-                ->has('workflow.progress_percentage')
-            )
-        );
-    });
-
-    it('provides document guide for RFQ stage', function () {
-        actingAs($this->bacSecretariat);
-        ($this->mockSvpRepository)();
-
-        $validationService = mock(DocumentValidationService::class);
-        $validationService->shouldReceive('getStageDocumentGuide')
-            ->andReturn([
-                'required' => [DocumentTypeEnums::REQUEST_FOR_QUOTATION],
-                'optional' => [],
-                'uploaded' => [],
-            ]);
-        $this->instance(DocumentValidationService::class, $validationService);
-
-        $response = $this->get(route('bac-secretariat.procurement.pre-procurement.document-guide', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
-        ]));
-
-        $response->assertSuccessful();
-    });
-
-    it('checks RFQ stage completion status', function () {
-        actingAs($this->bacSecretariat);
-
-        $validationService = mock(DocumentValidationService::class);
-        $validationService->shouldReceive('validateStageCompletion')
-            ->andReturn([
-                'can_complete' => false,
-                'completion_percentage' => 0,
-                'missing_documents' => [DocumentTypeEnums::REQUEST_FOR_QUOTATION->value],
-            ]);
-
-        $response = $this->get(route('bac-secretariat.procurement.pre-procurement.check-completion', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
-        ]));
-
-        $response->assertSuccessful();
-    });
-});
-
-describe('Abstract of Quotations Stage', function () {
-    it('shows Abstract of Quotations stage page for authorized users', function () {
-        actingAs($this->bacSecretariat);
-        ($this->mockSvpRepository)();
-
-        $response = $this->get(route('bac-secretariat.procurement.bidding.show', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
-        ]));
-
-        $response->assertSuccessful();
-        $response->assertInertia(fn ($page) => $page
-            ->component('bac-secretariat/stage-upload')
-            ->has('procurement')
-            ->has('documentGuide')
-            ->has('workflowInfo')
-        );
-    });
-
-    it('includes workflowInfo with mode details for Abstract page', function () {
-        actingAs($this->bacSecretariat);
-        ($this->mockSvpRepository)();
-
-        $response = $this->get(route('bac-secretariat.procurement.bidding.show', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
-        ]));
-
-        $response->assertSuccessful();
-        $response->assertInertia(fn ($page) => $page
-            ->has('workflowInfo', fn ($workflow) => $workflow
-                ->has('mode')
-                ->has('workflow')
-                ->has('workflow.stages')
-                ->has('workflow.total_stages')
-                ->has('workflow.current_index')
-                ->has('workflow.progress_percentage')
-            )
-        );
-    });
-
-    it('provides document guide for Abstract stage', function () {
-        actingAs($this->bacSecretariat);
-        ($this->mockSvpRepository)();
-
-        $validationService = mock(DocumentValidationService::class);
-        $validationService->shouldReceive('getStageDocumentGuide')
-            ->andReturn([
-                'required' => [DocumentTypeEnums::ABSTRACT_OF_QUOTATIONS],
-                'optional' => [],
-                'uploaded' => [],
-            ]);
-        $this->instance(DocumentValidationService::class, $validationService);
-
-        $response = $this->get(route('bac-secretariat.procurement.bidding.document-guide', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
-        ]));
-
-        $response->assertSuccessful();
-    });
-
-    it('checks Abstract stage completion status', function () {
-        actingAs($this->bacSecretariat);
-
-        $validationService = mock(DocumentValidationService::class);
-        $validationService->shouldReceive('validateStageCompletion')
-            ->andReturn([
-                'can_complete' => false,
-                'completion_percentage' => 0,
-                'missing_documents' => [DocumentTypeEnums::ABSTRACT_OF_QUOTATIONS->value],
-            ]);
-
-        $response = $this->get(route('bac-secretariat.procurement.bidding.check-completion', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
-        ]));
-
-        $response->assertSuccessful();
-    });
-});
-
-describe('Mode-Aware Stage Navigation', function () {
-    it('validates RFQ stage exists in SVP mode workflow', function () {
-        $stages = StageEnums::getStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
-
-        expect($stages)->toContain(StageEnums::REQUEST_FOR_QUOTATION);
-        expect($stages)->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
-    });
-
-    it('validates RFQ stage does not exist in Competitive Bidding workflow', function () {
-        $stages = StageEnums::getStagesForMode(ProcurementModeEnums::COMPETITIVE_BIDDING);
-
-        expect($stages)->not->toContain(StageEnums::REQUEST_FOR_QUOTATION);
-        expect($stages)->not->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
-    });
-
-    it('validates correct next stage for RFQ in SVP mode', function () {
-        $nextStages = StageEnums::REQUEST_FOR_QUOTATION->getNextStagesForMode(
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
-        );
-
-        expect($nextStages)->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
-    });
-
-    it('validates correct next stage for Abstract in SVP mode', function () {
-        $nextStages = StageEnums::ABSTRACT_OF_QUOTATIONS->getNextStagesForMode(
-            ProcurementModeEnums::SMALL_VALUE_PROCUREMENT
-        );
-
-        expect($nextStages)->toContain(StageEnums::BAC_RESOLUTION);
-    });
-
-    it('validates Direct Contracting mode includes RFQ stage', function () {
-        $stages = StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_CONTRACTING);
-
-        expect($stages)->toContain(StageEnums::REQUEST_FOR_QUOTATION);
-    });
-
-    it('validates Repeat Order mode includes RFQ stage', function () {
-        $stages = StageEnums::getStagesForMode(ProcurementModeEnums::REPEAT_ORDER);
-
-        expect($stages)->toContain(StageEnums::REQUEST_FOR_QUOTATION);
-    });
-
-    it('validates Direct Sales mode includes RFQ stage', function () {
-        $stages = StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_SALES);
-
-        expect($stages)->toContain(StageEnums::REQUEST_FOR_QUOTATION);
-    });
-
-    it('validates Direct Procurement for STI includes RFQ stage', function () {
-        $stages = StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_PROCUREMENT_FOR_STI);
-
-        expect($stages)->toContain(StageEnums::REQUEST_FOR_QUOTATION);
-    });
-
-    it('validates only SVP mode has Abstract of Quotations stage', function () {
-        // SVP has Abstract
-        $svpStages = StageEnums::getStagesForMode(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
-        expect($svpStages)->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
-
-        // Direct Contracting does not have Abstract
-        $dcStages = StageEnums::getStagesForMode(ProcurementModeEnums::DIRECT_CONTRACTING);
-        expect($dcStages)->not->toContain(StageEnums::ABSTRACT_OF_QUOTATIONS);
-    });
-});
-
-describe('Stage Display Names and Storage Paths', function () {
-    it('has correct display name for RFQ stage', function () {
-        expect(StageEnums::REQUEST_FOR_QUOTATION->getDisplayName())
-            ->toBe('Request for Quotation');
-    });
-
-    it('has correct display name for Abstract stage', function () {
-        expect(StageEnums::ABSTRACT_OF_QUOTATIONS->getDisplayName())
-            ->toBe('Abstract of Quotations');
-    });
-
-    it('has correct storage path for RFQ stage', function () {
-        expect(StageEnums::REQUEST_FOR_QUOTATION->getStoragePathSegment())
-            ->toBe('RequestForQuotation');
-    });
-
-    it('has correct storage path for Abstract stage', function () {
-        expect(StageEnums::ABSTRACT_OF_QUOTATIONS->getStoragePathSegment())
-            ->toBe('AbstractOfQuotations');
-    });
-
-    it('has correct description for RFQ stage', function () {
-        expect(StageEnums::REQUEST_FOR_QUOTATION->getDescription())
-            ->toContain('RFQ');
-    });
-
-    it('has correct description for Abstract stage', function () {
-        expect(StageEnums::ABSTRACT_OF_QUOTATIONS->getDescription())
-            ->toContain('quotations');
-    });
-});
-
-describe('Authorization for New Stages', function () {
-    it('denies RFQ access to non-bac-secretariat users', function () {
-        $regularUser = User::factory()->create();
-
-        actingAs($regularUser);
-
-        $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
-        ]));
-
-        $response->assertForbidden();
-    });
-
-    it('denies Abstract access to non-bac-secretariat users', function () {
-        $regularUser = User::factory()->create();
-
-        actingAs($regularUser);
-
-        $response = $this->get(route('bac-secretariat.procurement.bidding.show', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
-        ]));
-
-        $response->assertForbidden();
-    });
-
-    it('denies RFQ access to unauthenticated users', function () {
-        $response = $this->get(route('bac-secretariat.procurement.pre-procurement.show', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::REQUEST_FOR_QUOTATION->value,
-        ]));
-
-        $response->assertRedirect(route('login'));
-    });
-
-    it('denies Abstract access to unauthenticated users', function () {
-        $response = $this->get(route('bac-secretariat.procurement.bidding.show', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::ABSTRACT_OF_QUOTATIONS->value,
-        ]));
-
-        $response->assertRedirect(route('login'));
-    });
-});
+    return route('bac-secretariat.procurement.bidding.show', [
+        'pr_number' => 'PR-2024-001',
+        'stage' => $stage->value,
+    ]);
+}
