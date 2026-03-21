@@ -6,7 +6,6 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Models\StageDocumentConfig;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Stage Document Configuration Service
@@ -16,13 +15,8 @@ use Illuminate\Support\Facades\Cache;
  */
 class StageDocumentConfigService
 {
-    private const CACHE_TTL = 300; // 5 minutes
-
-    private const CACHE_PREFIX = 'docs.';
-
     public function __construct(
-        private readonly StageDocumentRequirements $defaultRequirements,
-        private readonly ModeAwareDocumentRequirements $modeAwareRequirements
+        private readonly WorkflowDefinitionService $workflowDefinitionService
     ) {}
 
     /**
@@ -32,21 +26,7 @@ class StageDocumentConfigService
      */
     public function getRequiredDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
     {
-        $cacheKey = self::CACHE_PREFIX."required.{$stage->value}.{$mode->value}";
-
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($stage, $mode) {
-            $config = StageDocumentConfig::forStage($stage)
-                ->forMode($mode)
-                ->active()
-                ->first();
-
-            if ($config) {
-                return $config->getRequiredDocumentsAsEnums();
-            }
-
-            // Fallback to hardcoded mode-aware defaults
-            return $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
-        });
+        return $this->workflowDefinitionService->getRequiredDocuments($stage, $mode);
     }
 
     /**
@@ -56,21 +36,7 @@ class StageDocumentConfigService
      */
     public function getOptionalDocuments(StageEnums $stage, ProcurementModeEnums $mode): array
     {
-        $cacheKey = self::CACHE_PREFIX."optional.{$stage->value}.{$mode->value}";
-
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($stage, $mode) {
-            $config = StageDocumentConfig::forStage($stage)
-                ->forMode($mode)
-                ->active()
-                ->first();
-
-            if ($config) {
-                return $config->getOptionalDocumentsAsEnums();
-            }
-
-            // Fallback to hardcoded mode-aware defaults
-            return $this->modeAwareRequirements->getOptionalDocuments($stage, $mode);
-        });
+        return $this->workflowDefinitionService->getOptionalDocuments($stage, $mode);
     }
 
     /**
@@ -78,14 +44,7 @@ class StageDocumentConfigService
      */
     public function getDocumentCounts(StageEnums $stage, ProcurementModeEnums $mode): array
     {
-        $required = $this->getRequiredDocuments($stage, $mode);
-        $optional = $this->getOptionalDocuments($stage, $mode);
-
-        return [
-            'required_count' => count($required),
-            'optional_count' => count($optional),
-            'total_count' => count($required) + count($optional),
-        ];
+        return $this->workflowDefinitionService->getDocumentCounts($stage, $mode);
     }
 
     /**
@@ -96,23 +55,7 @@ class StageDocumentConfigService
      */
     public function getMissingDocuments(StageEnums $stage, ProcurementModeEnums $mode, array $uploadedTypes): array
     {
-        $required = $this->getRequiredDocuments($stage, $mode);
-        $missing = [];
-
-        foreach ($required as $requiredDoc) {
-            $found = false;
-            foreach ($uploadedTypes as $uploadedDoc) {
-                if ($uploadedDoc === $requiredDoc) {
-                    $found = true;
-                    break;
-                }
-            }
-            if (! $found) {
-                $missing[] = $requiredDoc;
-            }
-        }
-
-        return $missing;
+        return $this->workflowDefinitionService->getMissingDocuments($stage, $mode, $uploadedTypes);
     }
 
     /**
@@ -130,31 +73,7 @@ class StageDocumentConfigService
      */
     public function getStageDocumentGuide(StageEnums $stage, ProcurementModeEnums $mode): array
     {
-        $requiredDocs = $this->getRequiredDocuments($stage, $mode);
-        $optionalDocs = $this->getOptionalDocuments($stage, $mode);
-        $counts = $this->getDocumentCounts($stage, $mode);
-
-        return [
-            'stage' => $stage->value,
-            'stage_display_name' => $stage->getDisplayName(),
-            'mode' => $mode->value,
-            'mode_display_name' => $mode->getDisplayName(),
-            'phase' => $stage->getPhase(),
-            'description' => $stage->getDescription(),
-            'ngpa_reference' => $mode->getIrrSection(),
-            'is_alternative_mode' => $mode->isAlternativeMode(),
-            'required_documents' => array_map(fn (DocumentTypeEnums $doc) => [
-                'value' => $doc->value,
-                'display_name' => $doc->getDisplayName(),
-                'description' => $doc->getDescription(),
-            ], $requiredDocs),
-            'optional_documents' => array_map(fn (DocumentTypeEnums $doc) => [
-                'value' => $doc->value,
-                'display_name' => $doc->getDisplayName(),
-                'description' => $doc->getDescription(),
-            ], $optionalDocs),
-            'counts' => $counts,
-        ];
+        return $this->workflowDefinitionService->getStageDocumentGuide($stage, $mode);
     }
 
     /**
@@ -176,24 +95,7 @@ class StageDocumentConfigService
      */
     public function clearCache(?StageEnums $stage = null, ?ProcurementModeEnums $mode = null): void
     {
-        if ($stage && $mode) {
-            Cache::forget(self::CACHE_PREFIX."required.{$stage->value}.{$mode->value}");
-            Cache::forget(self::CACHE_PREFIX."optional.{$stage->value}.{$mode->value}");
-        } elseif ($mode) {
-            // Clear all stages for a mode
-            foreach (StageEnums::cases() as $s) {
-                Cache::forget(self::CACHE_PREFIX."required.{$s->value}.{$mode->value}");
-                Cache::forget(self::CACHE_PREFIX."optional.{$s->value}.{$mode->value}");
-            }
-        } else {
-            // Clear all
-            foreach (ProcurementModeEnums::cases() as $m) {
-                foreach (StageEnums::cases() as $s) {
-                    Cache::forget(self::CACHE_PREFIX."required.{$s->value}.{$m->value}");
-                    Cache::forget(self::CACHE_PREFIX."optional.{$s->value}.{$m->value}");
-                }
-            }
-        }
+        $this->workflowDefinitionService->clearCache($mode, $stage);
     }
 
     /**
@@ -229,7 +131,7 @@ class StageDocumentConfigService
             ]
         );
 
-        $this->clearCache($stage, $mode);
+        $this->workflowDefinitionService->clearCache($mode, $stage);
 
         return $config;
     }
@@ -239,9 +141,8 @@ class StageDocumentConfigService
      */
     public function resetToDefaults(StageEnums $stage, ProcurementModeEnums $mode, ?int $updatedBy = null): StageDocumentConfig
     {
-        // Get defaults from ModeAwareDocumentRequirements
-        $defaultRequired = $this->modeAwareRequirements->getRequiredDocuments($stage, $mode);
-        $defaultOptional = $this->modeAwareRequirements->getOptionalDocuments($stage, $mode);
+        $defaultRequired = $this->workflowDefinitionService->getDefaultRequiredDocuments($stage, $mode);
+        $defaultOptional = $this->workflowDefinitionService->getDefaultOptionalDocuments($stage, $mode);
 
         return $this->saveDocumentConfig($stage, $mode, $defaultRequired, $defaultOptional, $updatedBy);
     }

@@ -1,3 +1,6 @@
+import { NetworkStatusCard } from '@/components/admin/blockchain-explorer/network-status-card';
+import { OverviewStatsGrid } from '@/components/admin/blockchain-explorer/overview-stats-grid';
+import { SearchBar } from '@/components/admin/blockchain-explorer/search-bar';
 import { HeroCard } from '@/components/hero-card';
 import {
     AlertDialog,
@@ -15,12 +18,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
+import { formatBlockchainDate, formatBytes, formatPingTime, getSyncStatus, truncateHash } from '@/lib/blockchain-explorer';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes/admin';
 import blockchain from '@/routes/admin/blockchain';
@@ -35,11 +37,9 @@ import {
     ChevronRight,
     Database,
     Loader2,
-    Network,
     RefreshCw,
     Search,
     Shield,
-    TrendingUp,
     Users,
     Wallet,
     XCircle,
@@ -202,45 +202,6 @@ export default function BlockchainExplorer({
         return () => stop();
     }, [autoRefresh, start, stop]);
 
-    // Format timestamp to human-readable date (following MultiChain Explorer pattern)
-    const formatDate = (timestamp: number) => {
-        const date = new Date(timestamp * 1000);
-        return date.toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-    };
-
-    // Format bytes to human-readable size
-    const formatBytes = (bytes: number) => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-    };
-
-    // Truncate hash for display (following MultiChain Explorer pattern)
-    const truncateHash = (hash: string, length: number = 10) => {
-        return hash.length > length ? hash.substring(0, length) + '...' : hash;
-    };
-
-    // Helper function to format ping time
-    const formatPingTime = (pingtime?: number) => {
-        if (!pingtime) return 'N/A';
-        return `${(pingtime * 1000).toFixed(2)}ms`;
-    };
-
-    // Helper function to get sync status
-    const getSyncStatus = (synced_blocks: number, startingheight: number) => {
-        if (synced_blocks >= startingheight) return 'Fully Synced';
-        return `${synced_blocks}/${startingheight} blocks`;
-    };
-
     const handleSearch = async () => {
         if (!searchQuery.trim()) {
             toast.error('Please enter a search query');
@@ -345,31 +306,7 @@ export default function BlockchainExplorer({
         >
             <Head title="Blockchain Explorer" />
             <div className="from-background to-muted/20 flex h-full flex-1 flex-col gap-4 rounded-xl bg-linear-to-b p-4 sm:gap-6 sm:p-6">
-                {/* Network Status Indicator */}
-                <Card className="border-emerald-500/20 bg-emerald-500/5">
-                    <CardContent className="py-3">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                            <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <div className="h-3 w-3 rounded-full bg-emerald-500" />
-                                    <div className="absolute inset-0 h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-75" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium">Network Status: Online</p>
-                                    <p className="text-muted-foreground text-xs">
-                                        {overview?.connections || 0} active connections • Last updated{' '}
-                                        {overview?.blocks ? formatDistanceToNow(new Date(), { addSuffix: true }) : 'N/A'}
-                                    </p>
-                                </div>
-                            </div>
-                            {autoRefresh && (
-                                <Badge variant="secondary" className="self-start sm:self-auto">
-                                    Auto-refresh enabled
-                                </Badge>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+                <NetworkStatusCard overview={overview} autoRefresh={autoRefresh} />
 
                 {/* Hero Card Header */}
                 <HeroCard
@@ -396,124 +333,9 @@ export default function BlockchainExplorer({
                     }
                 />
 
-                {/* Search Bar */}
-                <Card>
-                    <CardContent>
-                        <div className="flex flex-col gap-3 sm:flex-row">
-                            <div className="relative flex-1">
-                                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                                <Input
-                                    placeholder="Search blocks, transactions, addresses..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    className="pl-10"
-                                    disabled={isSearching}
-                                />
-                            </div>
-                            <Button onClick={handleSearch} disabled={isSearching} className="sm:w-auto">
-                                {isSearching ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Searching...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Search className="mr-2 h-4 w-4" />
-                                        Search
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                <SearchBar searchQuery={searchQuery} isSearching={isSearching} onSearchQueryChange={setSearchQuery} onSearch={handleSearch} />
 
-                {/* Overview Stats */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Chain Height</CardTitle>
-                            <TrendingUp className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            {isRefreshing || !overview ? (
-                                <>
-                                    <Skeleton className="mb-2 h-8 w-24" />
-                                    <Skeleton className="h-3 w-32" />
-                                </>
-                            ) : (
-                                <>
-                                    <div className="text-xl font-bold sm:text-2xl">{overview.blocks.toLocaleString()}</div>
-                                    <p className="text-muted-foreground mt-1 text-xs">
-                                        {overview.chain} | {overview.protocol}
-                                    </p>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Connections</CardTitle>
-                            <Network className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            {isRefreshing || !overview ? (
-                                <>
-                                    <Skeleton className="mb-2 h-8 w-16" />
-                                    <Skeleton className="h-3 w-24" />
-                                </>
-                            ) : (
-                                <>
-                                    <div className="text-xl font-bold sm:text-2xl">{overview.connections}</div>
-                                    <p className="text-muted-foreground mt-1 text-xs">Active peers</p>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Streams</CardTitle>
-                            <Database className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            {isRefreshing || !overview ? (
-                                <>
-                                    <Skeleton className="mb-2 h-8 w-16" />
-                                    <Skeleton className="h-3 w-28" />
-                                </>
-                            ) : (
-                                <>
-                                    <div className="text-xl font-bold sm:text-2xl">{streams.length}</div>
-                                    <p className="text-muted-foreground mt-1 text-xs">
-                                        {streams.filter((s: StreamInfo) => s.subscribed).length} subscribed
-                                    </p>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Wallet Addresses</CardTitle>
-                            <Wallet className="text-muted-foreground h-4 w-4" />
-                        </CardHeader>
-                        <CardContent>
-                            {isRefreshing || !overview ? (
-                                <>
-                                    <Skeleton className="mb-2 h-8 w-16" />
-                                    <Skeleton className="h-3 w-32" />
-                                </>
-                            ) : (
-                                <>
-                                    <div className="text-xl font-bold sm:text-2xl">{addresses.length}</div>
-                                    <p className="text-muted-foreground mt-1 text-xs">Managed addresses</p>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                <OverviewStatsGrid isRefreshing={isRefreshing} overview={overview} streams={streams} addresses={addresses} />
 
                 {/* Main Content Tabs */}
                 <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1">
@@ -726,7 +548,9 @@ export default function BlockchainExplorer({
                                                             <TableCell className="font-mono text-xs">{truncateHash(block.miner, 16)}</TableCell>
                                                             <TableCell className="text-right">{block.tx_count}</TableCell>
                                                             <TableCell className="text-right">{formatBytes(block.size)}</TableCell>
-                                                            <TableCell className="text-muted-foreground text-xs">{formatDate(block.time)}</TableCell>
+                                                            <TableCell className="text-muted-foreground text-xs">
+                                                                {formatBlockchainDate(block.time)}
+                                                            </TableCell>
                                                         </TableRow>
                                                     ))}
                                                 </TableBody>
@@ -794,7 +618,7 @@ export default function BlockchainExplorer({
                                                     </div>
                                                     <div>
                                                         <div className="text-muted-foreground text-xs">Time</div>
-                                                        <div className="mt-1 text-sm">{formatDate(block.time)}</div>
+                                                        <div className="mt-1 text-sm">{formatBlockchainDate(block.time)}</div>
                                                     </div>
                                                 </div>
                                             )}
@@ -838,7 +662,7 @@ export default function BlockchainExplorer({
                                                         <TableCell>{formatBytes(block.size)}</TableCell>
                                                         <TableCell className="text-muted-foreground text-xs">
                                                             <div className="flex flex-col gap-1">
-                                                                <span>{formatDate(block.time)}</span>
+                                                                <span>{formatBlockchainDate(block.time)}</span>
                                                                 <span className="text-muted-foreground text-xs">
                                                                     ({formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true })})
                                                                 </span>

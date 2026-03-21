@@ -7,7 +7,9 @@
     "dev": "vite",
     "format": "prettier --write resources/",
     "format:check": "prettier --check resources/",
-    "lint": "eslint . --fix",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "test:js": "tsc -p tsconfig.tests.json && node --test \"storage/framework/cache/ts-tests/tests/js/**/*.test.js\"",
     "types": "tsc --noEmit",
     "ssr": "node resources/js/ssr.tsx",
     "heroku-postbuild": "npm install && npm run build:ssr"

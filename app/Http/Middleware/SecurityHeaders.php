@@ -26,10 +26,11 @@ class SecurityHeaders
     {
         /** @var Response $response */
         $response = $next($request);
+        $isProduction = app()->environment('production');
 
         // HTTP Strict Transport Security - enforce HTTPS for 1 year
         // Only set in production to avoid issues in local development
-        if (app()->environment('production')) {
+        if ($isProduction) {
             $response->headers->set(
                 'Strict-Transport-Security',
                 'max-age=31536000; includeSubDomains; preload'
@@ -45,16 +46,28 @@ class SecurityHeaders
         // Referrer policy - send full URL on same-origin, origin only on cross-origin
         $response->headers->set('Referrer-Policy', 'no-referrer-when-downgrade');
 
-        // Content Security Policy - allows inline scripts and styles for Inertia/Vite
-        // Adjust these directives based on your specific requirements
+        $profile = $isProduction ? 'production' : 'development';
+        $cspConfig = (array) config("security.csp.{$profile}", []);
+        $directiveMap = [
+            'script_src' => 'script-src',
+            'style_src' => 'style-src',
+            'img_src' => 'img-src',
+            'connect_src' => 'connect-src',
+            'font_src' => 'font-src',
+            'worker_src' => 'worker-src',
+        ];
+        $directives = ["default-src 'self'"];
+
+        foreach ($directiveMap as $configKey => $directiveName) {
+            $sources = array_filter((array) ($cspConfig[$configKey] ?? []));
+
+            if ($sources !== []) {
+                $directives[] = "{$directiveName} ".implode(' ', $sources);
+            }
+        }
+
         $csp = implode('; ', [
-            "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:", // unsafe-inline/eval needed for Vite HMR
-            "style-src 'self' 'unsafe-inline' https:", // unsafe-inline needed for Tailwind
-            "img-src 'self' data: https: blob:", // blob: for PDF viewer
-            "font-src 'self' data: https:",
-            "connect-src 'self' https: wss:", // wss: for WebSockets if used
-            "worker-src 'self' blob:", // blob: for PDF.js worker, 'self' for local worker
+            ...$directives,
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

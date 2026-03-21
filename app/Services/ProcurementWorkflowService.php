@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Models\ProcurementWorkflowConfig;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Procurement Workflow Service
@@ -15,9 +14,9 @@ use Illuminate\Support\Facades\Cache;
  */
 class ProcurementWorkflowService
 {
-    private const CACHE_TTL = 300; // 5 minutes
-
-    private const CACHE_PREFIX = 'workflow.';
+    public function __construct(
+        private readonly WorkflowDefinitionService $workflowDefinitionService
+    ) {}
 
     /**
      * Get stages for a specific procurement mode.
@@ -26,18 +25,7 @@ class ProcurementWorkflowService
      */
     public function getStagesForMode(ProcurementModeEnums $mode): array
     {
-        $cacheKey = self::CACHE_PREFIX."stages.{$mode->value}";
-
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($mode) {
-            $config = ProcurementWorkflowConfig::forMode($mode)->active()->first();
-
-            if ($config) {
-                return $config->getStagesAsEnums();
-            }
-
-            // Fallback to hardcoded defaults from StageEnums
-            return StageEnums::getStagesForMode($mode);
-        });
+        return $this->workflowDefinitionService->getStagesForMode($mode);
     }
 
     /**
@@ -47,18 +35,7 @@ class ProcurementWorkflowService
      */
     public function getOptionalStagesForMode(ProcurementModeEnums $mode): array
     {
-        $cacheKey = self::CACHE_PREFIX."optional.{$mode->value}";
-
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($mode) {
-            $config = ProcurementWorkflowConfig::forMode($mode)->active()->first();
-
-            if ($config) {
-                return $config->getOptionalStagesAsEnums();
-            }
-
-            // Fallback to hardcoded defaults from StageEnums
-            return StageEnums::getOptionalStagesForMode($mode);
-        });
+        return $this->workflowDefinitionService->getOptionalStagesForMode($mode);
     }
 
     /**
@@ -66,9 +43,7 @@ class ProcurementWorkflowService
      */
     public function isStageInWorkflow(StageEnums $stage, ProcurementModeEnums $mode): bool
     {
-        $stages = $this->getStagesForMode($mode);
-
-        return in_array($stage, $stages, true);
+        return $this->workflowDefinitionService->isStageInWorkflow($stage, $mode);
     }
 
     /**
@@ -76,9 +51,7 @@ class ProcurementWorkflowService
      */
     public function isStageOptional(StageEnums $stage, ProcurementModeEnums $mode): bool
     {
-        $optionalStages = $this->getOptionalStagesForMode($mode);
-
-        return in_array($stage, $optionalStages, true);
+        return $this->workflowDefinitionService->isStageOptional($stage, $mode);
     }
 
     /**
@@ -181,16 +154,7 @@ class ProcurementWorkflowService
      */
     public function clearCache(?ProcurementModeEnums $mode = null): void
     {
-        if ($mode) {
-            Cache::forget(self::CACHE_PREFIX."stages.{$mode->value}");
-            Cache::forget(self::CACHE_PREFIX."optional.{$mode->value}");
-        } else {
-            // Clear all mode caches
-            foreach (ProcurementModeEnums::cases() as $m) {
-                Cache::forget(self::CACHE_PREFIX."stages.{$m->value}");
-                Cache::forget(self::CACHE_PREFIX."optional.{$m->value}");
-            }
-        }
+        $this->workflowDefinitionService->clearCache($mode);
     }
 
     /**

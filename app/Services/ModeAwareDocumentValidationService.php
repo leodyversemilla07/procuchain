@@ -21,8 +21,7 @@ use App\Enums\StageEnums;
 class ModeAwareDocumentValidationService
 {
     public function __construct(
-        private readonly StageDocumentConfigService $documentConfigService,
-        private readonly ProcurementWorkflowService $workflowService,
+        private readonly WorkflowDefinitionService $workflowDefinitionService,
         private readonly StageDocumentRequirements $baseRequirements
     ) {}
 
@@ -41,7 +40,7 @@ class ModeAwareDocumentValidationService
         }
 
         // Check if stage exists in mode workflow (using database-backed service)
-        if (! $this->workflowService->isStageInWorkflow($stage, $mode)) {
+        if (! $this->workflowDefinitionService->isStageInWorkflow($stage, $mode)) {
             return [
                 'valid' => false,
                 'errors' => [
@@ -55,8 +54,8 @@ class ModeAwareDocumentValidationService
             ];
         }
 
-        $requiredDocs = $this->documentConfigService->getRequiredDocuments($stage, $mode);
-        $optionalDocs = $this->documentConfigService->getOptionalDocuments($stage, $mode);
+        $requiredDocs = $this->workflowDefinitionService->getRequiredDocuments($stage, $mode);
+        $optionalDocs = $this->workflowDefinitionService->getOptionalDocuments($stage, $mode);
 
         $allValidDocs = array_merge($requiredDocs, $optionalDocs);
 
@@ -69,11 +68,11 @@ class ModeAwareDocumentValidationService
         if (! $isValid) {
             // Check if it's valid for any stage in the mode workflow (using database-backed service)
             $validInWorkflow = false;
-            $modeStages = $this->workflowService->getStagesForMode($mode);
+            $modeStages = $this->workflowDefinitionService->getStagesForMode($mode);
 
             foreach ($modeStages as $workflowStage) {
-                $stageRequiredDocs = $this->documentConfigService->getRequiredDocuments($workflowStage, $mode);
-                $stageOptionalDocs = $this->documentConfigService->getOptionalDocuments($workflowStage, $mode);
+                $stageRequiredDocs = $this->workflowDefinitionService->getRequiredDocuments($workflowStage, $mode);
+                $stageOptionalDocs = $this->workflowDefinitionService->getOptionalDocuments($workflowStage, $mode);
                 $stageAllDocs = array_merge($stageRequiredDocs, $stageOptionalDocs);
 
                 if (in_array($documentType, $stageAllDocs, true)) {
@@ -138,7 +137,7 @@ class ModeAwareDocumentValidationService
         }
 
         // Check if stage exists in mode workflow (using database-backed service)
-        if (! $this->workflowService->isStageInWorkflow($stage, $mode)) {
+        if (! $this->workflowDefinitionService->isStageInWorkflow($stage, $mode)) {
             return [
                 'can_complete' => false,
                 'required_documents' => [],
@@ -149,8 +148,8 @@ class ModeAwareDocumentValidationService
             ];
         }
 
-        $requiredDocs = $this->documentConfigService->getRequiredDocuments($stage, $mode);
-        $missing = $this->documentConfigService->getMissingDocuments($stage, $mode, $uploadedDocumentEnums);
+        $requiredDocs = $this->workflowDefinitionService->getRequiredDocuments($stage, $mode);
+        $missing = $this->workflowDefinitionService->getMissingDocuments($stage, $mode, $uploadedDocumentEnums);
 
         $canComplete = empty($missing);
         $completionPercentage = $this->calculateCompletionPercentage($stage, $uploadedDocumentEnums, $mode);
@@ -178,7 +177,7 @@ class ModeAwareDocumentValidationService
         if ($mode === null) {
             $requiredDocs = $this->baseRequirements->getRequiredDocuments($stage);
         } else {
-            $requiredDocs = $this->documentConfigService->getRequiredDocuments($stage, $mode);
+            $requiredDocs = $this->workflowDefinitionService->getRequiredDocuments($stage, $mode);
         }
 
         if (empty($requiredDocs)) {
@@ -207,7 +206,7 @@ class ModeAwareDocumentValidationService
             return $this->getBaseStageDocumentGuide($stage);
         }
 
-        return $this->documentConfigService->getStageDocumentGuide($stage, $mode);
+        return $this->workflowDefinitionService->getStageDocumentGuide($stage, $mode);
     }
 
     /**
@@ -218,7 +217,7 @@ class ModeAwareDocumentValidationService
     public function getRequirementsComparison(StageEnums $stage, ProcurementModeEnums $mode): array
     {
         $baseRequired = $this->baseRequirements->getRequiredDocuments($stage);
-        $modeRequired = $this->documentConfigService->getRequiredDocuments($stage, $mode);
+        $modeRequired = $this->workflowDefinitionService->getRequiredDocuments($stage, $mode);
 
         // Calculate difference using enum values for comparison
         $baseRequiredValues = array_map(fn ($doc) => $doc->value, $baseRequired);

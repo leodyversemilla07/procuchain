@@ -37,23 +37,33 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+        $user = $request->user();
+        $roles = $user?->getRoleNames()->values()->toArray() ?? [];
+        $permissions = $user?->getAllPermissions()->pluck('name')->values()->toArray() ?? [];
 
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
-                'user' => $request->user(),
-                'roles' => $request->user() ? $request->user()->getRoleNames()->toArray() : [],
-                'permissions' => $request->user() ? $request->user()->getAllPermissions()->pluck('name')->toArray() : [],
+                'user' => $user ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $roles[0] ?? $user->getPrimaryRole(),
+                    'avatar' => $user->avatar ?? '',
+                    'blockchain_address' => $user->blockchain_address,
+                ] : null,
+                'roles' => $roles,
+                'permissions' => $permissions,
                 'can' => [
-                    'manageProcurement' => $request->user()?->canManageProcurement() ?? false,
-                    'approveProcurement' => $request->user()?->canApproveProcurement() ?? false,
-                    'manageDocuments' => $request->user()?->canManageDocuments() ?? false,
-                    'viewDocuments' => $request->user()?->canViewDocuments() ?? false,
-                    'manageStages' => $request->user()?->canManageStages() ?? false,
-                    'accessBlockchain' => $request->user()?->canAccessBlockchain() ?? false,
-                    'manageUsers' => $request->user()?->canManageUsers() ?? false,
+                    'manageProcurement' => $user?->canManageProcurement() ?? false,
+                    'approveProcurement' => $user?->canApproveProcurement() ?? false,
+                    'manageDocuments' => $user?->canManageDocuments() ?? false,
+                    'viewDocuments' => $user?->canViewDocuments() ?? false,
+                    'manageStages' => $user?->canManageStages() ?? false,
+                    'accessBlockchain' => $user?->canAccessBlockchain() ?? false,
+                    'manageUsers' => $user?->canManageUsers() ?? false,
                 ],
             ],
             'flash' => [

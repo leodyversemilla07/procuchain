@@ -1,58 +1,27 @@
-import {
-    markStageComplete as initMarkStageComplete,
-    uploadSingleDocument as initUploadSingleDocument,
-} from '@/actions/App/Http/Controllers/Procurement/ProcurementInitiationController';
-import {
-    markStageComplete,
-    updateDeliveryDetails,
-    uploadSingleDocument,
-} from '@/actions/App/Http/Controllers/Procurement/ProcurementStageController';
-import FileUploadArea from '@/components/file-upload-area';
 import { HeroCard } from '@/components/hero-card';
-import { ModeBadge } from '@/components/procurement/workflow-progress-indicator';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { CompletionDialog } from '@/components/procurement/stage-upload/completion-dialog';
+import { DeliveryDetailsPanel } from '@/components/procurement/stage-upload/delivery-details-panel';
+import { DocumentUploadList } from '@/components/procurement/stage-upload/document-upload-list';
+import { StageCompletionFooter } from '@/components/procurement/stage-upload/stage-completion-footer';
+import type { ConfirmDialogState, StageUploadProcurement } from '@/components/procurement/stage-upload/types';
+import { UploadConfirmDialog } from '@/components/procurement/stage-upload/upload-confirm-dialog';
+import { WorkflowProgressPanel } from '@/components/procurement/stage-upload/workflow-progress-panel';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatePickerInput } from '@/components/ui/date-picker';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { Spinner } from '@/components/ui/spinner';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useBlockchainJob } from '@/hooks/use-blockchain-job';
+import { useStageActions } from '@/hooks/use-stage-actions';
 import AppLayout from '@/layouts/app-layout';
+import { getStageCompletionPercentage, getUploadedRequiredCount, hasUploadedAllRequiredDocuments } from '@/lib/stage-upload';
 import { BreadcrumbItem, WorkflowInfo } from '@/types';
 import type { DocumentGuide } from '@/types/document-guide';
 import { UserRole } from '@/types/enums';
 import { buildBreadcrumbs, getProcurementsListBreadcrumb } from '@/utils/breadcrumbs';
-import { Head, Link, router } from '@inertiajs/react';
-import { ArrowRight, CheckCircle2, Clock, FileCheck2, Lock, MapPin } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { FileCheck2 } from 'lucide-react';
 import React, { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface StageUploadProps {
-    procurement: {
-        pr_number: string;
-        title: string;
-        status?: string;
-        stage_value?: string;
-        current_stage?: string;
-        // Delivery details for NTP stage
-        delivery_location?: string;
-        delivery_date?: string;
-        delivery_date_formatted?: string;
-        delivery_term_days?: number;
-    };
+    procurement: StageUploadProcurement;
     workflowInfo?: WorkflowInfo;
     documentGuide?: DocumentGuide;
     uploadedDocuments?: string[];
@@ -65,11 +34,7 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
     const [isMarkingComplete, setIsMarkingComplete] = useState(false);
     const [isSavingDelivery, setIsSavingDelivery] = useState(false);
     const [nextStageInfo, setNextStageInfo] = useState<{ name: string; url: string } | null>(null);
-    const [confirmDialog, setConfirmDialog] = useState<{
-        open: boolean;
-        documentValue: string;
-        documentName: string;
-    }>({
+    const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
         open: false,
         documentValue: '',
         documentName: '',
@@ -104,6 +69,7 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         if (!documentGuide) return 'procurement';
         return documentGuide.phase;
     }, [documentGuide]);
+    const actions = useStageActions(procurement.stage_value, phase);
 
     const breadcrumbs: BreadcrumbItem[] = buildBreadcrumbs(UserRole.BAC_SECRETARIAT, [
         getProcurementsListBreadcrumb(UserRole.BAC_SECRETARIAT),
@@ -113,35 +79,10 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         },
     ]);
 
-    const getActions = useCallback(() => {
-        if (procurement.stage_value === 'procurement_initiation') {
-            return { upload: initUploadSingleDocument, complete: initMarkStageComplete };
-        }
-
-        switch (phase) {
-            case 'pre_procurement':
-                return {
-                    upload: uploadSingleDocument['/bac-secretariat/pre-procurement/{pr_number}/{stage}/upload-document'],
-                    complete: markStageComplete['/bac-secretariat/pre-procurement/{pr_number}/{stage}/complete'],
-                };
-            case 'post_procurement':
-                return {
-                    upload: uploadSingleDocument['/bac-secretariat/post-procurement/{pr_number}/{stage}/upload-document'],
-                    complete: markStageComplete['/bac-secretariat/post-procurement/{pr_number}/{stage}/complete'],
-                };
-            default:
-                return {
-                    upload: uploadSingleDocument['/bac-secretariat/procurement/{pr_number}/{stage}/upload-document'],
-                    complete: markStageComplete['/bac-secretariat/procurement/{pr_number}/{stage}/complete'],
-                };
-        }
-    }, [phase, procurement.stage_value]);
-
     const handleMarkComplete = async () => {
         setCompleteDialog(false);
         setIsMarkingComplete(true);
-        const { complete } = getActions();
-        const url = complete({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url;
+        const url = actions.complete({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url;
         try {
             const result = await submitAndPoll(url, new FormData());
             toast.success('Stage marked as complete!');
@@ -157,9 +98,11 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         }
     };
 
-    const handleFileChange = (documentValue: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) setFiles((prev) => ({ ...prev, [documentValue]: file }));
+    const handleFileChange = (documentValue: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setFiles((previous) => ({ ...previous, [documentValue]: file }));
+        }
     };
 
     const handleUploadClick = (documentValue: string, documentName: string) => {
@@ -172,8 +115,9 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
 
     const handleConfirmUpload = useCallback(async () => {
         const file = files[confirmDialog.documentValue];
-        const { upload } = getActions();
-        if (!file) return;
+        if (!file) {
+            return;
+        }
 
         const uploadToast = toast.loading('Uploading document...');
         setIsUploading(true);
@@ -185,9 +129,9 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         formData.append('description', confirmDialog.documentName);
 
         try {
-            await submitAndPoll(upload({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url, formData);
+            await submitAndPoll(actions.upload({ pr_number: procurement.pr_number, stage: procurement.stage_value as string }).url, formData);
             toast.success('Document uploaded successfully!', { id: uploadToast });
-            setFiles((prev) => ({ ...prev, [confirmDialog.documentValue]: null }));
+            setFiles((previous) => ({ ...previous, [confirmDialog.documentValue]: null }));
             setConfirmDialog({ open: false, documentValue: '', documentName: '' });
             router.reload({ only: ['uploadedDocuments'] });
         } catch (err) {
@@ -195,7 +139,7 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         } finally {
             setIsUploading(false);
         }
-    }, [confirmDialog, files, procurement.pr_number, getActions, procurement.stage_value, submitAndPoll]);
+    }, [actions, confirmDialog, files, procurement.pr_number, procurement.stage_value, submitAndPoll]);
 
     const handleSaveDeliveryDetails = useCallback(async () => {
         setIsSavingDelivery(true);
@@ -204,7 +148,7 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         formData.append('delivery_date', deliveryForm.delivery_date);
         formData.append('delivery_term_days', deliveryForm.delivery_term_days);
         try {
-            await submitAndPoll(updateDeliveryDetails({ pr_number: procurement.pr_number }).url, formData);
+            await submitAndPoll(actions.deliveryDetails({ pr_number: procurement.pr_number }).url, formData);
             toast.success('Delivery details saved');
             setDeliveryDetailsSaved(true);
         } catch (err) {
@@ -212,14 +156,31 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
         } finally {
             setIsSavingDelivery(false);
         }
-    }, [deliveryForm, procurement.pr_number, submitAndPoll]);
+    }, [actions, deliveryForm, procurement.pr_number, submitAndPoll]);
 
-    const uploadedRequiredCount = documentGuide ? documentGuide.required_documents.filter((doc) => uploadedDocuments.includes(doc.value)).length : 0;
-    const calculatedPercentage =
-        documentGuide && documentGuide.counts.required_count > 0
-            ? Math.round((uploadedRequiredCount / documentGuide.counts.required_count) * 100)
-            : 100;
-    const allRequiredUploaded = documentGuide && uploadedRequiredCount === documentGuide.counts.required_count;
+    const handleDeliveryFormChange = useCallback((field: keyof typeof deliveryForm, value: string) => {
+        setDeliveryForm((previous) => ({ ...previous, [field]: value }));
+    }, []);
+
+    const handleDragStateChange = useCallback((documentValue: string, isDocumentDragging: boolean) => {
+        setDragging((previous) => ({ ...previous, [documentValue]: isDocumentDragging }));
+    }, []);
+
+    const handleFileDrop = useCallback((documentValue: string, file: File | null) => {
+        if (!file) {
+            return;
+        }
+
+        setFiles((previous) => ({ ...previous, [documentValue]: file }));
+    }, []);
+
+    const handleRemoveFile = useCallback((documentValue: string) => {
+        setFiles((previous) => ({ ...previous, [documentValue]: null }));
+    }, []);
+
+    const uploadedRequiredCount = getUploadedRequiredCount(documentGuide, uploadedDocuments);
+    const calculatedPercentage = getStageCompletionPercentage(documentGuide, uploadedRequiredCount);
+    const allRequiredUploaded = hasUploadedAllRequiredDocuments(documentGuide, uploadedRequiredCount);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -241,302 +202,83 @@ export default function StageUpload({ procurement, workflowInfo, documentGuide, 
                             <Badge variant="outline" className="font-mono text-[10px] sm:text-xs">
                                 {procurement.pr_number}
                             </Badge>
-                            {workflowInfo && <ModeBadge workflowInfo={workflowInfo} />}
                         </div>
                     }
                 />
 
                 <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
-                    {/* LEFT SIDEBAR: Progress */}
-                    <Card className="border-sidebar-border/70 dark:border-sidebar-border h-fit shadow-md">
-                        <CardHeader className="border-b pb-4">
-                            <CardTitle className="text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-tight uppercase">
-                                <Clock className="h-3.5 w-3.5" />
-                                Workflow Progress
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6 p-6">
-                            {workflowInfo && (
-                                <div className="space-y-6">
-                                    {/* Progress Circles */}
-                                    <div className="flex flex-wrap gap-2.5">
-                                        {workflowInfo.workflow.stages.map((stage, index) => (
-                                            <TooltipProvider key={stage.value}>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Link
-                                                            href={stage.url || '#'}
-                                                            className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all hover:scale-110 ${
-                                                                stage.value === procurement.stage_value
-                                                                    ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
-                                                                    : stage.is_completed
-                                                                      ? 'border-green-500 bg-green-500 text-white shadow-sm'
-                                                                      : stage.is_optional
-                                                                        ? 'border-muted-foreground/40 text-muted-foreground/40 border-dashed'
-                                                                        : 'border-muted-foreground/20 text-muted-foreground/20 bg-muted/30'
-                                                            }`}
-                                                        >
-                                                            {stage.is_completed ? (
-                                                                <CheckCircle2 className="h-4 w-4" />
-                                                            ) : (
-                                                                <span className="text-xs font-bold">{index + 1}</span>
-                                                            )}
-                                                        </Link>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="right" className="flex flex-col gap-1">
-                                                        <span className="font-bold">{stage.display_name}</span>
-                                                        <span className="text-[10px] opacity-70">Step {index + 1}</span>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        ))}
-                                    </div>
+                    <WorkflowProgressPanel
+                        procurement={procurement}
+                        workflowInfo={workflowInfo}
+                        documentGuide={documentGuide}
+                        completionPercentage={calculatedPercentage}
+                        uploadedRequiredCount={uploadedRequiredCount}
+                    >
+                        {procurement.stage_value === 'notice_to_proceed' && (
+                            <DeliveryDetailsPanel
+                                deliveryForm={deliveryForm}
+                                isStageCompleted={isStageCompleted}
+                                deliveryDetailsSaved={deliveryDetailsSaved}
+                                isStageFuture={isStageFuture}
+                                isSavingDelivery={isSavingDelivery}
+                                onDeliveryFormChange={handleDeliveryFormChange}
+                                onSaveDeliveryDetails={handleSaveDeliveryDetails}
+                            />
+                        )}
+                    </WorkflowProgressPanel>
 
-                                    {/* Requirements Progress */}
-                                    {documentGuide && (
-                                        <div className="space-y-3 border-t pt-4">
-                                            <div className="flex items-center justify-between text-xs font-bold">
-                                                <span className="text-muted-foreground tracking-wider uppercase">Completion</span>
-                                                <span className="text-primary">{calculatedPercentage}%</span>
-                                            </div>
-                                            <Progress value={calculatedPercentage} className="h-2 rounded-full" />
-                                            <p className="text-muted-foreground text-[10px] italic">
-                                                {uploadedRequiredCount} of {documentGuide.counts.required_count} required documents uploaded
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* Legend */}
-                                    <div className="space-y-2 border-t pt-4 text-[10px]">
-                                        <div className="flex items-center gap-2">
-                                            <div className="bg-primary h-2 w-2 rounded-full" /> <span>Current Stage</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 rounded-full bg-green-500" /> <span>Completed</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="bg-muted/30 border-muted-foreground/20 h-2 w-2 rounded-full border" />{' '}
-                                            <span>Pending</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="border-muted-foreground/50 h-2 w-2 rounded-full border border-dashed" />{' '}
-                                            <span>Optional</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* NTP Delivery Details (Sidebar) */}
-                            {procurement.stage_value === 'notice_to_proceed' && (
-                                <div className="mt-4 space-y-4 border-t pt-6">
-                                    <h4 className="text-muted-foreground flex items-center gap-2 text-xs font-bold uppercase">
-                                        <MapPin className="h-3.5 w-3.5" />
-                                        Delivery Info
-                                    </h4>
-                                    <div className="space-y-3">
-                                        <div className="space-y-1">
-                                            <Label className="text-[10px] tracking-tighter uppercase opacity-70">Location</Label>
-                                            <Input
-                                                value={deliveryForm.delivery_location}
-                                                onChange={(e) => setDeliveryForm((p) => ({ ...p, delivery_location: e.target.value }))}
-                                                disabled={isStageCompleted || deliveryDetailsSaved || isStageFuture}
-                                                className="bg-muted/30 h-8 text-xs"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <Label className="text-[10px] tracking-tighter uppercase opacity-70">Date</Label>
-                                            <DatePickerInput
-                                                id="delivery_date"
-                                                value={deliveryForm.delivery_date}
-                                                onChange={(val) => setDeliveryForm((p) => ({ ...p, delivery_date: val }))}
-                                                disabled={isStageCompleted || deliveryDetailsSaved || isStageFuture}
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <Label className="text-[10px] tracking-tighter uppercase opacity-70">Term (Days)</Label>
-                                            <Input
-                                                type="number"
-                                                value={deliveryForm.delivery_term_days}
-                                                onChange={(e) => setDeliveryForm((p) => ({ ...p, delivery_term_days: e.target.value }))}
-                                                disabled={isStageCompleted || deliveryDetailsSaved || isStageFuture}
-                                                className="bg-muted/30 h-8 text-xs"
-                                            />
-                                        </div>
-                                        {!deliveryDetailsSaved && !isStageCompleted && !isStageFuture && (
-                                            <Button onClick={handleSaveDeliveryDetails} disabled={isSavingDelivery} className="h-8 w-full text-xs">
-                                                {isSavingDelivery ? <Spinner className="h-3 w-3" /> : 'Save Details'}
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* MAIN CONTENT: Tasks */}
                     <div className="space-y-6 lg:col-span-2">
-                        <Card className="border-sidebar-border/70 dark:border-sidebar-border min-h-[400px] shadow-md">
-                            <CardContent className="space-y-8 p-6">
-                                {isStageFuture ? (
-                                    <div className="text-muted-foreground flex flex-col items-center justify-center py-20 text-center opacity-30">
-                                        <Lock size={48} className="mb-4" />
-                                        <h3 className="text-foreground text-lg font-semibold">Stage is Locked</h3>
-                                        <p className="mt-1 max-w-xs text-xs italic">Please finish the current stage tasks first.</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-6">
-                                        {documentGuide &&
-                                            [...documentGuide.required_documents, ...documentGuide.optional_documents].map((doc) => {
-                                                const isUploaded = uploadedDocuments.includes(doc.value);
-                                                const isRequired = documentGuide.required_documents.some((r) => r.value === doc.value);
-                                                return (
-                                                    <div
-                                                        key={doc.value}
-                                                        className="bg-card/50 hover:bg-card relative rounded-2xl border p-5 transition-all hover:shadow-sm"
-                                                    >
-                                                        <div className="mb-4 flex items-start justify-between">
-                                                            <div className="space-y-1 text-left">
-                                                                <div className="flex items-center gap-2">
-                                                                    <h4 className="text-base font-semibold">{doc.display_name}</h4>
-                                                                    {isRequired && (
-                                                                        <Badge
-                                                                            variant="destructive"
-                                                                            className="h-4 px-1 text-[9px] font-bold uppercase"
-                                                                        >
-                                                                            Required
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                                {doc.description && (
-                                                                    <p className="text-muted-foreground text-xs leading-relaxed">{doc.description}</p>
-                                                                )}
-                                                            </div>
-                                                            {isUploaded && (
-                                                                <Badge className="bg-green-500 py-0 text-[10px] hover:bg-green-600">
-                                                                    <CheckCircle2 className="mr-1 h-3 w-3" /> UPLOADED
-                                                                </Badge>
-                                                            )}
-                                                        </div>
+                        <DocumentUploadList
+                            documentGuide={documentGuide}
+                            uploadedDocuments={uploadedDocuments}
+                            files={files}
+                            dragging={dragging}
+                            isStageCompleted={isStageCompleted}
+                            isStageFuture={isStageFuture}
+                            isUploading={isUploading}
+                            onFileChange={handleFileChange}
+                            onDragStateChange={handleDragStateChange}
+                            onFileDrop={handleFileDrop}
+                            onRemoveFile={handleRemoveFile}
+                            onUploadClick={handleUploadClick}
+                        />
 
-                                                        {!isUploaded && !isStageCompleted && (
-                                                            <div className="flex flex-col items-stretch gap-4 lg:flex-row">
-                                                                <div className="flex-1">
-                                                                    <FileUploadArea
-                                                                        label=""
-                                                                        file={files[doc.value] || null}
-                                                                        isDragging={dragging[doc.value] || false}
-                                                                        onFileChange={handleFileChange(doc.value)}
-                                                                        onDragEnter={(e) => {
-                                                                            e.preventDefault();
-                                                                            setDragging((p) => ({ ...p, [doc.value]: true }));
-                                                                        }}
-                                                                        onDragLeave={(e) => {
-                                                                            e.preventDefault();
-                                                                            setDragging((p) => ({ ...p, [doc.value]: false }));
-                                                                        }}
-                                                                        onDragOver={(e) => e.preventDefault()}
-                                                                        onDrop={(e) => {
-                                                                            e.preventDefault();
-                                                                            setDragging((p) => ({ ...p, [doc.value]: false }));
-                                                                            const f = e.dataTransfer.files[0];
-                                                                            if (f) setFiles((p) => ({ ...p, [doc.value]: f }));
-                                                                        }}
-                                                                        onRemove={() => setFiles((p) => ({ ...p, [doc.value]: null }))}
-                                                                        inputId={`file-${doc.value}`}
-                                                                    />
-                                                                </div>
-                                                                <Button
-                                                                    onClick={() => handleUploadClick(doc.value, doc.display_name)}
-                                                                    disabled={!files[doc.value] || isUploading}
-                                                                    className="shadow-sm transition-transform active:scale-95 lg:h-auto lg:w-[120px]"
-                                                                >
-                                                                    {isUploading ? <Spinner className="h-5 w-5" /> : 'UPLOAD'}
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                    </div>
-                                )}
-                            </CardContent>
-
-                            <CardFooter className="bg-muted/5 flex flex-col gap-4 rounded-b-xl border-t p-6">
-                                {isStageCompleted ? (
-                                    <div className="flex w-full items-center justify-between rounded-xl border border-green-500/20 bg-green-500/10 p-4">
-                                        <div className="flex items-center gap-3 text-green-700">
-                                            <div className="rounded-full bg-green-500 p-1">
-                                                <CheckCircle2 className="h-4 w-4 text-white" />
-                                            </div>
-                                            <span className="text-xs font-bold tracking-tight uppercase">Stage Complete</span>
-                                        </div>
-                                        {nextStageInfo && (
-                                            <Button asChild variant="outline" className="border-green-500/20 bg-white text-green-700">
-                                                <Link href={nextStageInfo.url}>
-                                                    NEXT: {nextStageInfo.name} <ArrowRight className="ml-2 h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                        )}
-                                    </div>
-                                ) : isStageFuture ? (
-                                    <Button disabled className="h-12 w-full font-black uppercase">
-                                        <Lock className="mr-2 h-4 w-4" /> Locked
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        disabled={!allRequiredUploaded || isUploading || isMarkingComplete}
-                                        onClick={() => setCompleteDialog(true)}
-                                        className="h-12 w-full text-sm font-bold tracking-tight uppercase shadow-lg transition-all hover:-translate-y-px active:translate-y-0"
-                                    >
-                                        {isMarkingComplete ? <Spinner className="mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
-                                        Mark as Complete
-                                    </Button>
-                                )}
-                            </CardFooter>
-                        </Card>
+                        <StageCompletionFooter
+                            isStageCompleted={isStageCompleted}
+                            isStageFuture={isStageFuture}
+                            nextStageInfo={nextStageInfo}
+                            allRequiredUploaded={allRequiredUploaded}
+                            isUploading={isUploading}
+                            isMarkingComplete={isMarkingComplete}
+                            onMarkComplete={() => setCompleteDialog(true)}
+                        />
                     </div>
                 </div>
             </div>
 
-            <AlertDialog open={confirmDialog.open} onOpenChange={(open) => !isUploading && setConfirmDialog({ ...confirmDialog, open })}>
-                <AlertDialogContent className="rounded-2xl">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="text-2xl font-black">Confirm Upload</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Attach <strong>{confirmDialog.documentName}</strong> to the blockchain?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isUploading} className="rounded-lg">
-                            Wait, go back
-                        </AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmUpload} disabled={isUploading} className="rounded-lg px-8">
-                            Confirm
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <UploadConfirmDialog
+                dialog={confirmDialog}
+                isUploading={isUploading}
+                onOpenChange={(open) => {
+                    if (!isUploading) {
+                        setConfirmDialog((previous) => ({ ...previous, open }));
+                    }
+                }}
+                onConfirm={handleConfirmUpload}
+            />
 
-            <AlertDialog open={completeDialog} onOpenChange={(open) => !isMarkingComplete && setCompleteDialog(open)}>
-                <AlertDialogContent className="rounded-2xl">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="text-2xl font-black">Mark Stage as Complete?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will finalize <strong>{documentGuide?.stage_display_name || 'this stage'}</strong> for{' '}
-                            <strong>{procurement.pr_number}</strong> and record it on the blockchain. This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isMarkingComplete} className="rounded-lg">
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction onClick={handleMarkComplete} disabled={isMarkingComplete} className="rounded-lg px-8">
-                            {isMarkingComplete ? <Spinner className="mr-2 h-4 w-4" /> : null}
-                            Confirm
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <CompletionDialog
+                open={completeDialog}
+                isMarkingComplete={isMarkingComplete}
+                stageName={documentGuide?.stage_display_name || 'this stage'}
+                prNumber={procurement.pr_number}
+                onOpenChange={(open) => {
+                    if (!isMarkingComplete) {
+                        setCompleteDialog(open);
+                    }
+                }}
+                onConfirm={handleMarkComplete}
+            />
         </AppLayout>
     );
 }
