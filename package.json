@@ -9,8 +9,9 @@
     "format:check": "prettier --check resources/",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "test:js": "tsc -p tsconfig.tests.json && node --test \"storage/framework/cache/ts-tests/tests/js/**/*.test.js\"",
-    "types": "tsc --noEmit",
+    "wayfinder:generate": "php artisan wayfinder:generate --no-interaction",
+    "test:js": "npm run wayfinder:generate && tsc -p tsconfig.tests.json && node --test \"storage/framework/cache/ts-tests/tests/js/**/*.test.js\"",
+    "types": "npm run wayfinder:generate && tsc --noEmit",
     "ssr": "node resources/js/ssr.tsx",
     "heroku-postbuild": "npm install && npm run build:ssr"
   },

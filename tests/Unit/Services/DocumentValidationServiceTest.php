@@ -3,11 +3,20 @@
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Services\DocumentValidationService;
+use App\Services\ModeAwareDocumentRequirements;
 use App\Services\StageDocumentRequirements;
+use App\Services\WorkflowDefinitionService;
 
 beforeEach(function () {
     $this->requirements = new StageDocumentRequirements;
-    $this->service = new DocumentValidationService($this->requirements);
+    $this->workflowDefinitionService = new WorkflowDefinitionService(
+        $this->requirements,
+        new ModeAwareDocumentRequirements($this->requirements),
+    );
+    $this->service = new DocumentValidationService(
+        $this->requirements,
+        $this->workflowDefinitionService,
+    );
 });
 
 describe('DocumentValidationService', function () {

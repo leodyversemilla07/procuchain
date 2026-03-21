@@ -10,10 +10,10 @@ use App\Services\Manager;
 use App\Services\Procurement\ProcurementSupportService;
 use App\Services\Procurement\StageStatusMapper;
 use App\Services\ProcurementDataService;
-use App\Services\ProcurementWorkflowService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
+use App\Services\WorkflowDefinitionService;
 use Illuminate\Support\Facades\Log;
 
 beforeEach(function () {
@@ -25,7 +25,7 @@ beforeEach(function () {
     $this->eventPublisher = Mockery::mock(EventPublisher::class);
     $this->procurementDataService = Mockery::mock(ProcurementDataService::class);
     $this->documentRepository = Mockery::mock(DocumentRepository::class);
-    $this->workflowService = Mockery::mock(ProcurementWorkflowService::class);
+    $this->workflowDefinitionService = Mockery::mock(WorkflowDefinitionService::class);
     $this->stageStatusMapper = Mockery::mock(StageStatusMapper::class);
 
     $this->service = new ProcurementSupportService(
@@ -35,7 +35,7 @@ beforeEach(function () {
         $this->eventPublisher,
         $this->procurementDataService,
         $this->documentRepository,
-        $this->workflowService,
+        $this->workflowDefinitionService,
         $this->stageStatusMapper,
     );
 });
@@ -114,11 +114,19 @@ describe('ProcurementSupportService', function () {
         it('returns correct next stage from workflow service', function () {
             mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
 
-            $this->workflowService
-                ->shouldReceive('getNextStagesForMode')
-                ->with(StageEnums::PROCUREMENT_INITIATION, ProcurementModeEnums::COMPETITIVE_BIDDING)
+            $this->workflowDefinitionService
+                ->shouldReceive('getStagesForMode')
+                ->with(ProcurementModeEnums::COMPETITIVE_BIDDING)
                 ->once()
-                ->andReturn([StageEnums::PRE_PROCUREMENT_CONFERENCE]);
+                ->andReturn([
+                    StageEnums::PROCUREMENT_INITIATION,
+                    StageEnums::PRE_PROCUREMENT_CONFERENCE,
+                ]);
+            $this->workflowDefinitionService
+                ->shouldReceive('getOptionalStagesForMode')
+                ->with(ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->once()
+                ->andReturn([]);
 
             $result = $this->service->getNextStageForProcurement('PR-2025-001', StageEnums::PROCUREMENT_INITIATION);
 
@@ -128,9 +136,17 @@ describe('ProcurementSupportService', function () {
         it('returns null when at end of workflow', function () {
             mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
 
-            $this->workflowService
-                ->shouldReceive('getNextStagesForMode')
-                ->with(StageEnums::COMPLETED, ProcurementModeEnums::COMPETITIVE_BIDDING)
+            $this->workflowDefinitionService
+                ->shouldReceive('getStagesForMode')
+                ->with(ProcurementModeEnums::COMPETITIVE_BIDDING)
+                ->once()
+                ->andReturn([
+                    StageEnums::PROCUREMENT_INITIATION,
+                    StageEnums::COMPLETED,
+                ]);
+            $this->workflowDefinitionService
+                ->shouldReceive('getOptionalStagesForMode')
+                ->with(ProcurementModeEnums::COMPETITIVE_BIDDING)
                 ->once()
                 ->andReturn([]);
 
@@ -157,7 +173,7 @@ describe('ProcurementSupportService', function () {
         it('returns true when stage exists in workflow', function () {
             mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
 
-            $this->workflowService
+            $this->workflowDefinitionService
                 ->shouldReceive('isStageInWorkflow')
                 ->with(StageEnums::BID_OPENING, ProcurementModeEnums::COMPETITIVE_BIDDING)
                 ->once()
@@ -171,7 +187,7 @@ describe('ProcurementSupportService', function () {
         it('returns false when stage does not exist in workflow', function () {
             mockProcurementRepo(ProcurementModeEnums::SMALL_VALUE_PROCUREMENT);
 
-            $this->workflowService
+            $this->workflowDefinitionService
                 ->shouldReceive('isStageInWorkflow')
                 ->with(StageEnums::PRE_BID_CONFERENCE, ProcurementModeEnums::SMALL_VALUE_PROCUREMENT)
                 ->once()
@@ -198,7 +214,7 @@ describe('ProcurementSupportService', function () {
         it('returns true for optional stages', function () {
             mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
 
-            $this->workflowService
+            $this->workflowDefinitionService
                 ->shouldReceive('isStageOptional')
                 ->with(StageEnums::PRE_BID_CONFERENCE, ProcurementModeEnums::COMPETITIVE_BIDDING)
                 ->once()
@@ -212,7 +228,7 @@ describe('ProcurementSupportService', function () {
         it('returns false for required stages', function () {
             mockProcurementRepo(ProcurementModeEnums::COMPETITIVE_BIDDING);
 
-            $this->workflowService
+            $this->workflowDefinitionService
                 ->shouldReceive('isStageOptional')
                 ->with(StageEnums::PROCUREMENT_INITIATION, ProcurementModeEnums::COMPETITIVE_BIDDING)
                 ->once()

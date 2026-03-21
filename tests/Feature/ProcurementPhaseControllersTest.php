@@ -8,7 +8,6 @@ use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
-use App\Services\DocumentValidationService;
 use App\Services\ModeAwareDocumentValidationService;
 use App\Services\Procurement\ProcurementSupportService;
 use App\Services\ProcurementDataService;
@@ -75,7 +74,7 @@ describe('ProcurementStageController (Actions)', function () {
     it('uploads documents successfully for each phase', function () {
         Queue::fake();
         actingAs($this->bacSecretariat);
-        bindUploadStubs(buildPhaseProcurementData($this->bacSecretariat), canComplete: false);
+        bindUploadStubs(buildPhaseProcurementData($this->bacSecretariat));
 
         $cases = [
             [
@@ -353,14 +352,22 @@ function bindModeAwareValidationStub(array $uploadResult = ['errors' => [], 'war
     app()->instance(ModeAwareDocumentValidationService::class, $modeAwareValidation);
 }
 
-function bindDocumentValidationStub(array $completion = ['can_complete' => false]): void
+function bindCompletionValidationStub(array $completion = ['can_complete' => false]): void
 {
-    $validation = mock(DocumentValidationService::class);
+    $validation = mock(ModeAwareDocumentValidationService::class);
     $validation->shouldReceive('validateStageCompletion')
         ->zeroOrMoreTimes()
-        ->andReturn($completion);
+        ->andReturn(array_merge([
+            'required_documents' => [],
+            'uploaded_documents' => [],
+            'missing_documents' => [],
+            'completion_percentage' => 0,
+            'mode' => ProcurementModeEnums::COMPETITIVE_BIDDING->value,
+            'mode_display_name' => ProcurementModeEnums::COMPETITIVE_BIDDING->getDisplayName(),
+            'is_alternative_mode' => false,
+        ], $completion));
 
-    app()->instance(DocumentValidationService::class, $validation);
+    app()->instance(ModeAwareDocumentValidationService::class, $validation);
 }
 
 function bindPhasePageStubs(ProcurementData $procurementData): void
@@ -371,13 +378,12 @@ function bindPhasePageStubs(ProcurementData $procurementData): void
     bindModeAwareValidationStub();
 }
 
-function bindUploadStubs(ProcurementData $procurementData, bool $canComplete): void
+function bindUploadStubs(ProcurementData $procurementData): void
 {
     bindProcurementRepositoryStub($procurementData);
     bindProcurementDataServiceStub(User::findOrFail((int) $procurementData->userId));
     bindSupportServiceStub($procurementData);
     bindModeAwareValidationStub();
-    bindDocumentValidationStub(['can_complete' => $canComplete]);
 }
 
 function bindModeAwareGuideStubs(ProcurementData $procurementData): void
@@ -412,7 +418,7 @@ function bindCompletionValidationStubs(ProcurementData $procurementData, array $
 {
     bindProcurementDataServiceStub(User::findOrFail((int) $procurementData->userId));
     bindSupportServiceStub($procurementData);
-    bindDocumentValidationStub($completion);
+    bindCompletionValidationStub($completion);
 }
 
 function bindValidateUploadStubs(ProcurementData $procurementData): void
