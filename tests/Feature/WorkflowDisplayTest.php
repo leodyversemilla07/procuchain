@@ -40,7 +40,7 @@ describe('Workflow Info Structure', function () {
         actingAs($this->bacSecretariat);
         bindWorkflowProcurementRepository($this, $this->svpProcurementData);
 
-        $response = $this->get(stagePageRoute(StageEnums::REQUEST_FOR_QUOTATION));
+        $response = $this->get(workflowStagePageRoute(StageEnums::REQUEST_FOR_QUOTATION));
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
@@ -142,7 +142,7 @@ describe('Mode-Specific Workflow Validation', function () {
     it('returns workflow info even when the procurement mode is not yet available', function () {
         actingAs($this->bacSecretariat);
 
-        $response = $this->get(stagePageRoute(StageEnums::REQUEST_FOR_QUOTATION, 'PR-NEW-001'));
+        $response = $this->get(workflowStagePageRoute(StageEnums::REQUEST_FOR_QUOTATION, 'PR-NEW-001'));
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
@@ -182,7 +182,7 @@ describe('Workflow Progress Calculation', function () {
 
 describe('Access Control For Stage Pages', function () {
     it('denies access to unauthenticated users', function () {
-        $response = $this->get(stagePageRoute(StageEnums::REQUEST_FOR_QUOTATION));
+        $response = $this->get(workflowStagePageRoute(StageEnums::REQUEST_FOR_QUOTATION));
 
         $response->assertRedirect(route('login'));
     });
@@ -192,7 +192,7 @@ describe('Access Control For Stage Pages', function () {
 
         actingAs($regularUser);
 
-        $response = $this->get(stagePageRoute(StageEnums::REQUEST_FOR_QUOTATION));
+        $response = $this->get(workflowStagePageRoute(StageEnums::REQUEST_FOR_QUOTATION));
 
         $response->assertForbidden();
     });
@@ -303,7 +303,7 @@ function bindWorkflowDocumentGuideStub(): void
     app()->instance(ModeAwareDocumentValidationService::class, $validation);
 }
 
-function stagePageRoute(StageEnums $stage, string $prNumber = 'PR-2024-001'): string
+function workflowStagePageRoute(StageEnums $stage, string $prNumber = 'PR-2024-001'): string
 {
     if ($stage->isPreProcurement()) {
         return route('bac-secretariat.procurement.pre-procurement.show', [
@@ -327,7 +327,7 @@ function stagePageRoute(StageEnums $stage, string $prNumber = 'PR-2024-001'): st
 
 function assertStageUploadPageIncludesWorkflowInfo(TestCase $testCase, StageEnums $stage): void
 {
-    $response = $testCase->get(stagePageRoute($stage));
+    $response = $testCase->get(workflowStagePageRoute($stage));
 
     $response->assertSuccessful();
     $response->assertInertia(fn ($page) => $page
