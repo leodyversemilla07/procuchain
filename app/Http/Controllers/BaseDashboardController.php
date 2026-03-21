@@ -10,6 +10,7 @@ use App\Services\DashboardService;
 use App\Services\Manager;
 use Exception;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -107,38 +108,82 @@ abstract class BaseDashboardController extends Controller
     {
         $user = auth()->user();
         $isBacSecretariat = $roleName === UserRoleEnums::BAC_SECRETARIAT->value;
-        $cacheKey = DashboardCacheKeys::procurements($roleName, $this->getDashboardCacheUserId($roleName));
+        $cacheUserId = $this->getDashboardCacheUserId($roleName);
+        $cacheKey = DashboardCacheKeys::procurements($roleName, $cacheUserId);
+        $snapshotKey = DashboardCacheKeys::procurementsSnapshot($roleName, $cacheUserId);
 
-        return $this->cacheStrategy->rememberLarge(
-            $cacheKey,
-            now()->addMinutes(config('dashboard.cache_ttl.procurements')),
-            function () use ($isBacSecretariat, $roleLabel, $user) {
-                Log::info("Cache miss: Recalculating procurementsByKey for {$roleLabel} Dashboard");
-                $states = $this->multichain->liststreamitems(
-                    StreamEnums::STATUS->value,
-                    true,
-                    config('dashboard.stream_limits.status_items'),
-                    0,
-                    false
-                );
-
-                if ($states === null) {
-                    throw new Exception("Failed to retrieve status stream items for {$roleLabel} procurementsByKey cache");
-                }
-
-                $procurementsByKey = $this->dashboardService->getProcurementsByKey($states);
-
-                if ($isBacSecretariat && $user !== null) {
-                    $procurementsByKey = $this->filterProcurementsByUser(
-                        $procurementsByKey,
-                        (string) $user->id,
-                        $user->blockchain_address
+        try {
+            return $this->cacheStrategy->rememberLarge(
+                $cacheKey,
+                now()->addMinutes(config('dashboard.cache_ttl.procurements')),
+                function () use ($isBacSecretariat, $roleLabel, $snapshotKey, $user) {
+                    Log::info("Cache miss: Recalculating procurementsByKey for {$roleLabel} Dashboard");
+                    $states = $this->multichain->liststreamitems(
+                        StreamEnums::STATUS->value,
+                        true,
+                        config('dashboard.stream_limits.status_items'),
+                        0,
+                        false
                     );
-                }
 
-                return $procurementsByKey;
+                    if ($states === null) {
+                        throw new Exception("Failed to retrieve status stream items for {$roleLabel} procurementsByKey cache");
+                    }
+
+                    $procurementsByKey = $this->dashboardService->getProcurementsByKey($states);
+
+                    if ($isBacSecretariat && $user !== null) {
+                        $procurementsByKey = $this->filterProcurementsByUser(
+                            $procurementsByKey,
+                            (string) $user->id,
+                            $user->blockchain_address
+                        );
+                    }
+
+                    $this->cacheStrategy->putLarge(
+                        $snapshotKey,
+                        $procurementsByKey,
+                        now()->addDay()
+                    );
+
+                    return $procurementsByKey;
+                }
+            );
+        } catch (\Exception $e) {
+            Log::warning("Failed to refresh {$roleLabel} dashboard procurements, attempting snapshot fallback", [
+                'error' => $e->getMessage(),
+                'cache_key' => $cacheKey,
+                'snapshot_key' => $snapshotKey,
+            ]);
+
+            $snapshot = Cache::store('database')->get($snapshotKey);
+
+            if ($snapshot instanceof Collection) {
+                Log::info("Using cached procurements snapshot for {$roleLabel} Dashboard", [
+                    'snapshot_key' => $snapshotKey,
+                    'count' => $snapshot->count(),
+                ]);
+
+                return $snapshot;
             }
-        );
+
+            if (is_array($snapshot)) {
+                $snapshotCollection = collect($snapshot);
+
+                Log::info("Using cached procurements snapshot array for {$roleLabel} Dashboard", [
+                    'snapshot_key' => $snapshotKey,
+                    'count' => $snapshotCollection->count(),
+                ]);
+
+                return $snapshotCollection;
+            }
+
+            Log::warning("No cached procurements snapshot available for {$roleLabel} Dashboard", [
+                'snapshot_key' => $snapshotKey,
+            ]);
+
+            return collect();
+        }
     }
 
     /**

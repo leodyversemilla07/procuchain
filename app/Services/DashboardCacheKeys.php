@@ -21,6 +21,14 @@ class DashboardCacheKeys
     }
 
     /**
+     * Get cache key for the last known good procurements snapshot.
+     */
+    public static function procurementsSnapshot(string $role, string|int|null $userId = null): string
+    {
+        return self::appendUserScope("dashboard:{$role}:procurements_by_key_snapshot", $userId);
+    }
+
+    /**
      * Get cache key for dashboard statistics
      */
     public static function stats(string $role, string|int|null $userId = null): string
@@ -88,6 +96,7 @@ class DashboardCacheKeys
         // Keys stored in database cache (large data via rememberLarge)
         $databaseKeys = [
             self::procurements($role),
+            self::procurementsSnapshot($role),
             self::recentActivities($role),
             self::procurementDistribution($role),
             self::priorityActions($role),
@@ -229,6 +238,7 @@ class DashboardCacheKeys
     {
         return [
             self::procurements($role),
+            self::procurementsSnapshot($role),
             self::stats($role),
             self::recentActivities($role),
             self::totalDocuments($role),
