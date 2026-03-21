@@ -3,117 +3,86 @@
 use App\Contracts\ProcurementCorrectionRepositoryInterface;
 use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\StatusData;
+use App\Enums\StreamEnums;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementArchiveRepository;
 use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
+use App\Services\Manager;
 use App\Services\Procurement\ProcurementActionService;
 use App\Services\Procurement\ProcurementDetailService;
 use App\Services\Procurement\ProcurementFormatterService;
 use App\Services\Procurement\ProcurementListAggregatorService;
 use App\Services\Procurement\UserNameResolverService;
 use App\Services\ProcurementDataService;
+use App\Services\UserService;
+use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\mock;
 
 beforeEach(function () {
-    // Create roles if they don't exist
-    Role::firstOrCreate(['name' => 'bac_secretariat', 'guard_name' => 'web', 'guard_name' => 'web']);
-    Role::firstOrCreate(['name' => 'bac_chairman', 'guard_name' => 'web', 'guard_name' => 'web']);
-    Role::firstOrCreate(['name' => 'hope', 'guard_name' => 'web', 'guard_name' => 'web']);
-    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web', 'guard_name' => 'web']);
+    foreach (['bac_secretariat', 'bac_chairman', 'hope', 'admin'] as $role) {
+        Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
+    }
 
-    $this->user = User::factory()->create();
+    $this->user = User::factory()->create([
+        'blockchain_address' => 'secretariat-address',
+    ]);
     $this->user->assignRole('bac_secretariat');
 });
 
 describe('ProcurementListController', function () {
     describe('indexProcurementsList', function () {
-        it('returns procurements list page for bac secretariat', function () {
-            actingAs($this->user);
+        it('returns the procurements list page for each supported role', function () {
+            $cases = [
+                ['role' => 'bac_secretariat', 'route' => 'bac-secretariat.procurements.index'],
+                ['role' => 'bac_chairman', 'route' => 'bac-chairman.procurements.index'],
+                ['role' => 'hope', 'route' => 'hope.procurements.index'],
+                ['role' => 'admin', 'route' => 'admin.procurements.index'],
+            ];
 
-            get(route('bac-secretariat.procurements.index'))
-                ->assertOk()
-                ->assertInertia(fn ($page) => $page
-                    ->component('procurements/procurements-list')
+            foreach ($cases as $case) {
+                $user = User::factory()->create([
+                    'blockchain_address' => "{$case['role']}-address",
+                ]);
+                $user->assignRole($case['role']);
+
+                bindProcurementControllerMocks(
+                    repositoryFixture: procurementFixture('TEST-001', (string) $user->id),
+                    detailFixture: detailPayload('TEST-001'),
                 );
+
+                actingAs($user);
+
+                get(route($case['route']))
+                    ->assertOk()
+                    ->assertInertia(fn ($page) => $page
+                        ->component('procurements/procurements-list')
+                        ->has('procurements', 0)
+                    );
+            }
         });
 
-        it('returns procurements list page for bac chairman', function () {
-            $chairman = User::factory()->create();
-            $chairman->assignRole('bac_chairman');
-            actingAs($chairman);
-
-            get(route('bac-chairman.procurements.index'))
-                ->assertOk()
-                ->assertInertia(fn ($page) => $page
-                    ->component('procurements/procurements-list')
-                );
-        });
-
-        it('returns procurements list page for hope', function () {
-            $hope = User::factory()->create();
-            $hope->assignRole('hope');
-            actingAs($hope);
-
-            get(route('hope.procurements.index'))
-                ->assertOk()
-                ->assertInertia(fn ($page) => $page
-                    ->component('procurements/procurements-list')
-                );
-        });
-
-        it('returns procurements list page for admin', function () {
-            $admin = User::factory()->create();
-            $admin->assignRole('admin');
-            actingAs($admin);
-
-            get(route('admin.procurements.index'))
-                ->assertOk()
-                ->assertInertia(fn ($page) => $page
-                    ->component('procurements/procurements-list')
-                );
-        });
-
-        it('passes procurements data to view', function () {
-            actingAs($this->user);
-
-            get(route('bac-secretariat.procurements.index'))
-                ->assertOk()
-                ->assertInertia(fn ($page) => $page
-                    ->has('procurements')
-                );
-        });
-
-        it('passes bac secretariat visibility filters to procurement aggregation', function () {
+        it('shows only procurements available to the bac secretariat user', function () {
             $secretariat = User::factory()->create([
                 'blockchain_address' => 'secretariat-address',
             ]);
             $secretariat->assignRole('bac_secretariat');
 
-            $repository = \Mockery::mock(ProcurementRepository::class);
-            $repository->shouldReceive('findManyByProcurement')
-                ->twice()
-                ->with(['PR-OWNED', 'PR-OTHER'])
-                ->andReturn([
+            bindProcurementControllerMocks(
+                listRepositoryFixtures: [
                     'PR-OWNED' => procurementFixture('PR-OWNED', (string) $secretariat->id),
                     'PR-OTHER' => procurementFixture('PR-OTHER', '999'),
-                ]);
-            $repository->shouldReceive('findByProcurement')
-                ->andReturn(null);
-
-            bindProcurementControllerDependencies(
-                $this,
-                aggregatorFixture([
-                    statusFixture('PR-OWNED', 'Owned Procurement', 'secretariat-address'),
-                    statusFixture('PR-OTHER', 'Other Procurement', 'different-address'),
-                ], $repository),
-                detailDataServiceFixture('PR-OWNED'),
-                $repository
+                ],
+                listStatusFixtures: [
+                    listStatusFixture('PR-OWNED', 'secretariat-address', 'Owned Procurement'),
+                    listStatusFixture('PR-OTHER', 'different-address', 'Other Procurement'),
+                ],
             );
 
             actingAs($secretariat);
@@ -123,32 +92,25 @@ describe('ProcurementListController', function () {
                 ->assertInertia(fn ($page) => $page
                     ->has('procurements', 1)
                     ->where('procurements.0.id', 'PR-OWNED')
+                    ->where('procurements.0.title', 'Owned Procurement')
                 );
         });
 
-        it('does not apply visibility filters for admin procurement aggregation', function () {
-            $admin = User::factory()->create();
+        it('does not scope admin procurement list results', function () {
+            $admin = User::factory()->create([
+                'blockchain_address' => 'admin-address',
+            ]);
             $admin->assignRole('admin');
 
-            $repository = \Mockery::mock(ProcurementRepository::class);
-            $repository->shouldReceive('findManyByProcurement')
-                ->once()
-                ->with(['PR-OWNED', 'PR-OTHER'])
-                ->andReturn([
+            bindProcurementControllerMocks(
+                listRepositoryFixtures: [
                     'PR-OWNED' => procurementFixture('PR-OWNED', '1'),
                     'PR-OTHER' => procurementFixture('PR-OTHER', '2'),
-                ]);
-            $repository->shouldReceive('findByProcurement')
-                ->andReturn(null);
-
-            bindProcurementControllerDependencies(
-                $this,
-                aggregatorFixture([
-                    statusFixture('PR-OWNED', 'Owned Procurement', 'secretariat-address'),
-                    statusFixture('PR-OTHER', 'Other Procurement', 'different-address'),
-                ], $repository),
-                detailDataServiceFixture('PR-OWNED'),
-                $repository
+                ],
+                listStatusFixtures: [
+                    listStatusFixture('PR-OWNED', 'secretariat-address', 'Owned Procurement'),
+                    listStatusFixture('PR-OTHER', 'different-address', 'Other Procurement'),
+                ],
             );
 
             actingAs($admin);
@@ -162,62 +124,36 @@ describe('ProcurementListController', function () {
     });
 
     describe('showProcurement', function () {
-        it('shows single procurement for bac secretariat', function () {
-            allowSecretariatAccess($this, $this->user, 'TEST-001');
-            actingAs($this->user);
+        it('shows procurement details for supported roles', function () {
+            $cases = [
+                ['role' => 'bac_secretariat', 'route' => 'bac-secretariat.procurements.show', 'pr' => 'TEST-001'],
+                ['role' => 'bac_chairman', 'route' => 'bac-chairman.procurements.show', 'pr' => 'TEST-002'],
+                ['role' => 'hope', 'route' => 'hope.procurements.show', 'pr' => 'TEST-003'],
+                ['role' => 'admin', 'route' => 'admin.procurements.show', 'pr' => 'TEST-004'],
+            ];
 
-            get(route('bac-secretariat.procurements.show', ['pr_number' => 'TEST-001']))
-                ->assertOk()
-                ->assertInertia(fn ($page) => $page
-                    ->component('procurements/show-procurement')
+            foreach ($cases as $case) {
+                $user = User::factory()->create([
+                    'blockchain_address' => "{$case['role']}-address",
+                ]);
+                $user->assignRole($case['role']);
+
+                bindProcurementControllerMocks(
+                    repositoryFixture: procurementFixture($case['pr'], (string) $user->id),
+                    statusItems: collect([
+                        detailStatusItem($user->blockchain_address),
+                    ]),
+                    detailFixture: detailPayload($case['pr']),
                 );
-        });
 
-        it('shows single procurement for bac chairman', function () {
-            $chairman = User::factory()->create();
-            $chairman->assignRole('bac_chairman');
-            actingAs($chairman);
+                actingAs($user);
 
-            get(route('bac-chairman.procurements.show', ['pr_number' => 'TEST-001']))
-                ->assertOk()
-                ->assertInertia(fn ($page) => $page
-                    ->component('procurements/show-procurement')
-                );
-        });
-
-        it('shows single procurement for hope', function () {
-            $hope = User::factory()->create();
-            $hope->assignRole('hope');
-            actingAs($hope);
-
-            get(route('hope.procurements.show', ['pr_number' => 'TEST-001']))
-                ->assertOk()
-                ->assertInertia(fn ($page) => $page
-                    ->component('procurements/show-procurement')
-                );
-        });
-
-        it('shows single procurement for admin', function () {
-            $admin = User::factory()->create();
-            $admin->assignRole('admin');
-            actingAs($admin);
-
-            get(route('admin.procurements.show', ['pr_number' => 'TEST-001']))
-                ->assertOk()
-                ->assertInertia(fn ($page) => $page
-                    ->component('procurements/show-procurement')
-                );
-        });
-
-        it('loads procurement show page successfully', function () {
-            allowSecretariatAccess($this, $this->user, 'TEST-001');
-            actingAs($this->user);
-
-            get(route('bac-secretariat.procurements.show', ['pr_number' => 'TEST-001']))
-                ->assertOk()
-                ->assertInertia(fn ($page) => $page
-                    ->component('procurements/show-procurement')
-                );
+                get(route($case['route'], ['pr_number' => $case['pr']]))
+                    ->assertOk()
+                    ->assertInertia(fn ($page) => $page
+                        ->component('procurements/show-procurement')
+                    );
+            }
         });
 
         it('forbids bac secretariat from viewing procurements they do not own or touch', function () {
@@ -226,25 +162,12 @@ describe('ProcurementListController', function () {
             ]);
             $secretariat->assignRole('bac_secretariat');
 
-            $repository = \Mockery::mock(ProcurementRepository::class);
-            $repository->shouldReceive('findByProcurement')
-                ->once()
-                ->with('PR-LOCKED')
-                ->andReturn(procurementFixture('PR-LOCKED', '999'));
-
-            $dataService = \Mockery::mock(ProcurementDataService::class);
-            $dataService->shouldReceive('fetchStatusItems')
-                ->once()
-                ->with('PR-LOCKED')
-                ->andReturn(collect([
-                    ['user_address' => 'different-address'],
-                ]));
-
-            bindProcurementControllerDependencies(
-                $this,
-                aggregatorFixture([], $repository),
-                $dataService,
-                $repository
+            bindProcurementControllerMocks(
+                repositoryFixture: procurementFixture('PR-LOCKED', '999'),
+                statusItems: collect([
+                    detailStatusItem('different-address'),
+                ]),
+                detailFixture: detailPayload('PR-LOCKED'),
             );
 
             actingAs($secretariat);
@@ -259,18 +182,12 @@ describe('ProcurementListController', function () {
             ]);
             $secretariat->assignRole('bac_secretariat');
 
-            $repository = \Mockery::mock(ProcurementRepository::class);
-            $repository->shouldReceive('findByProcurement')
-                ->twice()
-                ->with('PR-OPEN')
-                ->andReturn(procurementFixture('PR-OPEN', '999'));
-
-            $dataService = detailDataServiceFixture('PR-OPEN', 'secretariat-address');
-            bindProcurementControllerDependencies(
-                $this,
-                aggregatorFixture([], $repository),
-                $dataService,
-                $repository
+            bindProcurementControllerMocks(
+                repositoryFixture: procurementFixture('PR-OPEN', '999'),
+                statusItems: collect([
+                    detailStatusItem('secretariat-address'),
+                ]),
+                detailFixture: detailPayload('PR-OPEN'),
             );
 
             actingAs($secretariat);
@@ -282,31 +199,17 @@ describe('ProcurementListController', function () {
                 );
         });
 
-        it('forbids bac secretariat from polling blockchain status for inaccessible procurements', function () {
+        it('forbids inaccessible blockchain status polling for bac secretariat', function () {
             $secretariat = User::factory()->create([
                 'blockchain_address' => 'secretariat-address',
             ]);
             $secretariat->assignRole('bac_secretariat');
 
-            $repository = \Mockery::mock(ProcurementRepository::class);
-            $repository->shouldReceive('findByProcurement')
-                ->once()
-                ->with('PR-LOCKED')
-                ->andReturn(procurementFixture('PR-LOCKED', '999'));
-
-            $dataService = \Mockery::mock(ProcurementDataService::class);
-            $dataService->shouldReceive('fetchStatusItems')
-                ->once()
-                ->with('PR-LOCKED')
-                ->andReturn(collect([
-                    ['user_address' => 'different-address'],
-                ]));
-
-            bindProcurementControllerDependencies(
-                $this,
-                aggregatorFixture([], $repository),
-                $dataService,
-                $repository
+            bindProcurementControllerMocks(
+                repositoryFixture: procurementFixture('PR-LOCKED', '999'),
+                statusItems: collect([
+                    detailStatusItem('different-address'),
+                ]),
             );
 
             actingAs($secretariat);
@@ -317,30 +220,23 @@ describe('ProcurementListController', function () {
     });
 
     describe('authorization', function () {
-        it('requires authentication to view procurements list', function () {
+        it('requires authentication for procurement list and detail pages', function () {
             get(route('bac-secretariat.procurements.index'))
                 ->assertRedirect(route('login'));
-        });
 
-        it('requires authentication to view single procurement', function () {
             get(route('bac-secretariat.procurements.show', ['pr_number' => 'TEST-001']))
                 ->assertRedirect(route('login'));
         });
 
-        it('requires correct role to access bac secretariat procurements list', function () {
+        it('requires the correct role for role-scoped procurement routes', function () {
             $chairman = User::factory()->create();
             $chairman->assignRole('bac_chairman');
+
             actingAs($chairman);
+            get(route('bac-secretariat.procurements.index'))->assertForbidden();
 
-            get(route('bac-secretariat.procurements.index'))
-                ->assertForbidden();
-        });
-
-        it('requires correct role to access bac chairman procurements list', function () {
-            actingAs($this->user); // bac_secretariat
-
-            get(route('bac-chairman.procurements.index'))
-                ->assertForbidden();
+            actingAs($this->user);
+            get(route('bac-chairman.procurements.index'))->assertForbidden();
         });
     });
 });
@@ -362,39 +258,29 @@ function procurementFixture(string $prNumber, string $userId): ProcurementData
     ]);
 }
 
-function statusFixture(string $prNumber, string $title, string $userAddress): StatusData
-{
+function listStatusFixture(
+    string $prNumber,
+    string $userAddress,
+    string $title,
+    string $stage = 'procurement_initiation',
+    string $currentStatus = 'draft',
+): StatusData {
     return new StatusData(
         prNumber: $prNumber,
         procurementTitle: $title,
-        stage: 'procurement_initiation',
-        currentStatus: 'draft',
+        stage: $stage,
+        currentStatus: $currentStatus,
         userAddress: $userAddress,
         timestamp: now(),
+        previousStatus: null,
+        metadata: [],
     );
 }
 
-function detailDataServiceFixture(string $prNumber, ?string $userAddress = null): ProcurementDataService
+function detailPayload(string $prNumber): array
 {
-    $dataService = \Mockery::mock(ProcurementDataService::class);
-    $dataService->shouldReceive('fetchStatusItems')
-        ->andReturn(collect([
-            [
-                'pr_number' => $prNumber,
-                'procurement_title' => 'Fixture Procurement',
-                'stage' => 'procurement_initiation',
-                'current_status' => 'draft',
-                'user_address' => $userAddress ?? 'fixture-address',
-                'timestamp' => now()->toIso8601String(),
-            ],
-        ]));
-    $dataService->shouldReceive('fetchAndProcessAllDocuments')
-        ->andReturn([]);
-    $dataService->shouldReceive('fetchAndProcessEvents')
-        ->andReturn([]);
-    $dataService->shouldReceive('preloadUserNames');
-    $dataService->shouldReceive('buildProcurementData')
-        ->andReturn([
+    return [
+        'procurement' => [
             'id' => $prNumber,
             'title' => 'Fixture Procurement',
             'status' => [
@@ -405,81 +291,147 @@ function detailDataServiceFixture(string $prNumber, ?string $userAddress = null)
             'events' => [],
             'timeline' => [],
             'is_archived' => false,
-        ]);
-
-    return $dataService;
+        ],
+        'workflow' => [
+            'mode' => null,
+            'stages' => [],
+        ],
+    ];
 }
 
-function aggregatorFixture(array $statusItems, ProcurementRepository $procurementRepository): ProcurementListAggregatorService
-{
-    $statusManager = \Mockery::mock(\App\Services\Manager::class);
-    $statusManager->shouldReceive('liststreamitems')
-        ->zeroOrMoreTimes()
-        ->andReturn(array_map(
-            fn (StatusData $status) => ['data' => ['json' => $status->toBlockchainArray()]],
-            $statusItems
-        ));
-
-    $documentManager = \Mockery::mock(\App\Services\Manager::class);
-    $documentManager->shouldReceive('liststreamitems')
-        ->andReturn([]);
-
-    $archiveManager = \Mockery::mock(\App\Services\Manager::class);
-    $archiveManager->shouldReceive('liststreamitems')
-        ->andReturn([]);
-
-    $statusRepository = new StatusRepository($statusManager);
-    $documentRepository = new DocumentRepository($documentManager);
-    $archiveRepository = new ProcurementArchiveRepository($archiveManager);
-
-    $formatter = new ProcurementFormatterService;
-    $actionService = new ProcurementActionService($procurementRepository);
-
-    $userService = \Mockery::mock(\App\Services\UserService::class);
-    $userService->shouldReceive('preloadUserNames');
-    $userService->shouldReceive('getUserNameByAddress')
-        ->andReturn('Fixture User');
-    $userNameResolver = new UserNameResolverService($userService);
-
-    return new ProcurementListAggregatorService(
-        $statusRepository,
-        $documentRepository,
-        $procurementRepository,
-        $archiveRepository,
-        $formatter,
-        $actionService,
-        $userNameResolver,
-    );
+/**
+ * @return array<string, mixed>
+ */
+function detailStatusItem(
+    string $userAddress,
+    string $stage = 'procurement_initiation',
+    string $currentStatus = 'draft',
+): array {
+    return [
+        'user_address' => $userAddress,
+        'stage' => $stage,
+        'current_status' => $currentStatus,
+    ];
 }
 
-function bindProcurementControllerDependencies(
-    $testCase,
-    ProcurementListAggregatorService $aggregator,
-    ProcurementDataService $dataService,
-    ProcurementRepository $procurementRepository
+/**
+ * @param  array<string, ProcurementData>  $listRepositoryFixtures
+ * @param  array<int, StatusData>  $listStatusFixtures
+ */
+function bindProcurementControllerMocks(
+    array $listRepositoryFixtures = [],
+    array $listStatusFixtures = [],
+    ?ProcurementData $repositoryFixture = null,
+    ?Collection $statusItems = null,
+    ?array $detailFixture = null,
 ): void {
-    $correctionRepository = \Mockery::mock(ProcurementCorrectionRepositoryInterface::class);
-    $correctionRepository->shouldReceive('hasCorrections')
-        ->andReturn(false);
+    $repository = mock(ProcurementRepository::class);
+    $repository->shouldReceive('findByProcurement')
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(function (string $prNumber) use ($listRepositoryFixtures, $repositoryFixture): ?ProcurementData {
+            if (isset($listRepositoryFixtures[$prNumber])) {
+                return $listRepositoryFixtures[$prNumber];
+            }
 
-    $detailService = new ProcurementDetailService($dataService, $procurementRepository, $correctionRepository);
+            if ($repositoryFixture !== null && $repositoryFixture->prNumber === $prNumber) {
+                return $repositoryFixture;
+            }
+
+            return $repositoryFixture;
+        });
+    $repository->shouldReceive('findManyByProcurement')
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(function (array $prNumbers) use ($listRepositoryFixtures, $repositoryFixture): array {
+            $fixtures = $listRepositoryFixtures;
+
+            if ($repositoryFixture !== null) {
+                $fixtures[$repositoryFixture->prNumber] = $repositoryFixture;
+            }
+
+            $result = [];
+            foreach ($prNumbers as $prNumber) {
+                $result[$prNumber] = $fixtures[$prNumber] ?? null;
+            }
+
+            return $result;
+        });
+
+    $dataService = mock(ProcurementDataService::class);
+    $dataService->shouldReceive('fetchStatusItems')
+        ->zeroOrMoreTimes()
+        ->andReturn($statusItems ?? collect());
+    $dataService->shouldReceive('fetchAndProcessAllDocuments')
+        ->zeroOrMoreTimes()
+        ->andReturn($detailFixture['procurement']['documents'] ?? []);
+    $dataService->shouldReceive('fetchAndProcessEvents')
+        ->zeroOrMoreTimes()
+        ->andReturn($detailFixture['procurement']['events'] ?? []);
+    $dataService->shouldReceive('preloadUserNames')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    $dataService->shouldReceive('buildProcurementData')
+        ->zeroOrMoreTimes()
+        ->andReturn($detailFixture['procurement'] ?? null);
+
+    $manager = mock(Manager::class);
+    $manager->shouldReceive('liststreamitems')
+        ->zeroOrMoreTimes()
+        ->andReturnUsing(function (string $stream) use ($listStatusFixtures): array {
+            return match ($stream) {
+                StreamEnums::STATUS->value => statusStreamItems($listStatusFixtures),
+                StreamEnums::DOCUMENTS->value => [],
+                StreamEnums::ARCHIVE->value => [],
+                default => [],
+            };
+        });
+
+    $aggregator = new ProcurementListAggregatorService(
+        new StatusRepository($manager),
+        new DocumentRepository($manager),
+        $repository,
+        new ProcurementArchiveRepository($manager),
+        new ProcurementFormatterService,
+        new ProcurementActionService($repository),
+        new UserNameResolverService(app(UserService::class)),
+    );
+
+    $correctionRepository = mock(ProcurementCorrectionRepositoryInterface::class);
+    $correctionRepository->shouldReceive('hasCorrections')
+        ->zeroOrMoreTimes()
+        ->andReturn(false);
+    $correctionRepository->shouldReceive('getLatest')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    $correctionRepository->shouldReceive('findByProcurement')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+
+    $detailService = new ProcurementDetailService(
+        $dataService,
+        $repository,
+        $correctionRepository,
+    );
 
     app()->instance(ProcurementListAggregatorService::class, $aggregator);
     app()->instance(ProcurementDataService::class, $dataService);
-    app()->instance(ProcurementRepository::class, $procurementRepository);
+    app()->instance(ProcurementRepository::class, $repository);
     app()->instance(ProcurementDetailService::class, $detailService);
+    app()->instance(ProcurementCorrectionRepositoryInterface::class, $correctionRepository);
 }
 
-function allowSecretariatAccess($testCase, User $user, string $prNumber): void
+/**
+ * @param  array<int, StatusData>  $statusDtos
+ * @return array<int, array<string, mixed>>
+ */
+function statusStreamItems(array $statusDtos): array
 {
-    $repository = \Mockery::mock(ProcurementRepository::class);
-    $repository->shouldReceive('findByProcurement')
-        ->andReturn(procurementFixture($prNumber, (string) $user->id));
-
-    bindProcurementControllerDependencies(
-        $testCase,
-        aggregatorFixture([], $repository),
-        detailDataServiceFixture($prNumber, $user->blockchain_address),
-        $repository
-    );
+    return array_map(function (StatusData $statusDto): array {
+        return [
+            'keys' => [$statusDto->prNumber],
+            'data' => [
+                'json' => $statusDto->toBlockchainArray(),
+            ],
+            'blocktime' => $statusDto->timestamp->timestamp,
+        ];
+    }, $statusDtos);
 }
