@@ -23,12 +23,11 @@ export interface User {
     name: string;
     email: string;
     role: string;
-    blockchain_address: string;
+    blockchain_address: string | null;
     avatar?: string;
-    email_verified_at: string | null;
-    created_at: string;
-    updated_at: string;
-    // Account locking fields
+    email_verified_at?: string | null;
+    created_at?: string;
+    updated_at?: string;
     account_locked?: boolean;
     locked_at?: string | null;
     lock_expires_at?: string | null;
@@ -37,5 +36,6 @@ export interface User {
     locked_reason?: string | null;
     is_currently_locked?: boolean;
     lock_time_remaining?: string | null;
-    [key: string]: unknown; // This allows for additional properties...
+    two_factor_enabled?: boolean;
+    [key: string]: unknown;
 }

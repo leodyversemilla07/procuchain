@@ -10,9 +10,6 @@ on:
       - develop
       - main
 
-permissions:
-  contents: write
-
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -43,3 +40,9 @@ jobs:
 
       - name: Lint Frontend
         run: npm run lint
+
+      - name: Type Check Frontend
+        run: npm run types
+
+      - name: Run JavaScript Tests
+        run: npm run test:js

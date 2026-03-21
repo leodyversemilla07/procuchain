@@ -117,7 +117,7 @@ export default function Profile() {
 
                             <Input
                                 id="blockchain_address"
-                                value={auth.user.blockchain_address}
+                                value={auth.user.blockchain_address ?? ''}
                                 className="bg-muted mt-1 block w-full font-mono"
                                 readOnly
                                 disabled

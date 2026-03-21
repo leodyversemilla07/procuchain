@@ -26,6 +26,7 @@ use App\Services\ProcurementStageTransitionService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
+use App\Services\WorkflowDefinitionService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -42,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ProcurementStageTransitionService::class);
         $this->app->singleton(BlockchainStorageService::class);
         $this->app->singleton(NotificationService::class);
+        $this->app->singleton(WorkflowDefinitionService::class);
 
         // Register interface bindings - Cache
         $this->app->singleton(CacheStrategyInterface::class, CacheStrategyService::class);

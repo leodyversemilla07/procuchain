@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\DocumentTypeEnums;
+use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 
 /**
@@ -13,7 +14,8 @@ use App\Enums\StageEnums;
 class DocumentValidationService
 {
     public function __construct(
-        private readonly StageDocumentRequirements $requirements
+        private readonly StageDocumentRequirements $requirements,
+        private readonly WorkflowDefinitionService $workflowDefinitionService,
     ) {}
 
     /**
@@ -22,10 +24,15 @@ class DocumentValidationService
     public function validateUpload(
         StageEnums $stage,
         DocumentTypeEnums $documentType,
-        array $uploadedTypes
+        array $uploadedTypes,
+        ?ProcurementModeEnums $mode = null,
     ): array {
-        $requiredDocs = $this->requirements->getRequiredDocuments($stage);
-        $optionalDocs = $this->requirements->getOptionalDocuments($stage);
+        $requiredDocs = $mode === null
+            ? $this->requirements->getRequiredDocuments($stage)
+            : $this->workflowDefinitionService->getRequiredDocuments($stage, $mode);
+        $optionalDocs = $mode === null
+            ? $this->requirements->getOptionalDocuments($stage)
+            : $this->workflowDefinitionService->getOptionalDocuments($stage, $mode);
 
         $allValidDocs = array_merge($requiredDocs, $optionalDocs);
 

@@ -10,10 +10,10 @@ use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\Manager;
 use App\Services\ProcurementDataService;
-use App\Services\ProcurementWorkflowService;
 use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
+use App\Services\WorkflowDefinitionService;
 use Illuminate\Support\Facades\Log;
 
 class ProcurementSupportService
@@ -25,7 +25,7 @@ class ProcurementSupportService
         protected EventPublisher $eventPublisher,
         protected ProcurementDataService $procurementDataService,
         protected DocumentRepository $documentRepository,
-        protected ProcurementWorkflowService $workflowService,
+        protected WorkflowDefinitionService $workflowDefinitionService,
         protected StageStatusMapper $stageStatusMapper
     ) {}
 
@@ -130,7 +130,24 @@ class ProcurementSupportService
         }
 
         // Use workflow service for database-backed configuration
-        $nextStages = $this->workflowService->getNextStagesForMode($currentStage, $mode);
+        $workflowStages = $this->workflowDefinitionService->getStagesForMode($mode);
+        $optionalStages = $this->workflowDefinitionService->getOptionalStagesForMode($mode);
+        $currentIndex = array_search($currentStage, $workflowStages, true);
+
+        if ($currentIndex === false || $currentIndex >= count($workflowStages) - 1) {
+            return null;
+        }
+
+        $nextStages = [];
+        $nextIndex = $currentIndex + 1;
+
+        if (isset($workflowStages[$nextIndex])) {
+            $nextStages[] = $workflowStages[$nextIndex];
+
+            if (in_array($workflowStages[$nextIndex], $optionalStages, true) && isset($workflowStages[$nextIndex + 1])) {
+                $nextStages[] = $workflowStages[$nextIndex + 1];
+            }
+        }
 
         if (empty($nextStages)) {
             return null;
@@ -157,7 +174,7 @@ class ProcurementSupportService
             return true;
         }
 
-        return $this->workflowService->isStageInWorkflow($stage, $mode);
+        return $this->workflowDefinitionService->isStageInWorkflow($stage, $mode);
     }
 
     /**
@@ -189,7 +206,7 @@ class ProcurementSupportService
             return $stage->canSkip();
         }
 
-        return $this->workflowService->isStageOptional($stage, $mode);
+        return $this->workflowDefinitionService->isStageOptional($stage, $mode);
     }
 
     /**
@@ -208,7 +225,7 @@ class ProcurementSupportService
             return StageEnums::cases();
         }
 
-        return $this->workflowService->getStagesForMode($mode);
+        return $this->workflowDefinitionService->getStagesForMode($mode);
     }
 
     /**
@@ -247,8 +264,8 @@ class ProcurementSupportService
         }
 
         // Get mode-specific stages from workflow service (database-backed)
-        $workflowStages = $this->workflowService->getStagesForMode($mode);
-        $optionalStages = $this->workflowService->getOptionalStagesForMode($mode);
+        $workflowStages = $this->workflowDefinitionService->getStagesForMode($mode);
+        $optionalStages = $this->workflowDefinitionService->getOptionalStagesForMode($mode);
 
         // Determine current stage index based on actual procurement stage
         $currentIndex = 0;
