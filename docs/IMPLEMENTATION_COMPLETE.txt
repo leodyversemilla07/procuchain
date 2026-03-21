@@ -1,132 +1,24 @@
-╔══════════════════════════════════════════════════════════════════╗
-║                   IMPLEMENTATION COMPLETE                        ║
-║          Semantic Search & Report Generation Feature             ║
-╚══════════════════════════════════════════════════════════════════╝
+HISTORICAL NOTE
 
-📁 FILES CREATED (11 files total)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This file is retained only as an archival artifact from the original reporting/search feature rollout.
 
-BACKEND (3 files):
-  ✓ app\Services\SemanticSearchService.php
-  ✓ app\Services\ReportGenerationService.php
-  ✓ app\Http\Controllers\ReportController.php
+Do not use it as a source of truth for the current codebase.
 
-FRONTEND (1 file):
-  ✓ resources\js\pages\reports\index.tsx
+Current documentation lives in:
 
-TESTS (3 files):
-  ✓ tests\Feature\SemanticSearchServiceTest.php (8 tests)
-  ✓ tests\Feature\ReportGenerationServiceTest.php (9 tests)
-  ✓ tests\Feature\ReportControllerTest.php (11 tests)
-  Total: 28 test cases
+- README.md
+- docs/QUICK_START.md
+- docs/ARCHITECTURE.md
+- docs/ROUTES.md
+- docs/BLOCKCHAIN_SCHEMA.md
+- docs/DATABASE_SCHEMA.md
+- docs/REPORTING_ARCHITECTURE.md
+- docs/TESTING.md
 
-DOCUMENTATION (4 files):
-  ✓ SEMANTIC_SEARCH_README.md - Full feature documentation
-  ✓ IMPLEMENTATION_SUMMARY.md - Implementation details
-  ✓ QUICK_START.md - Getting started guide
-  ✓ ARCHITECTURE.md - System architecture diagrams
-  ✓ VERIFICATION_CHECKLIST.md - Testing checklist
+The application has since gained:
 
-MODIFIED (1 file):
-  ✓ routes\web.php - Added report and search routes
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✨ FEATURES IMPLEMENTED
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ Semantic Search
-   • Full-text search across procurement data
-   • Filter by status, stage, mode, category
-   • Date range filtering
-
-✅ Report Generation
-   • Month-based filtering
-   • Quarter-based filtering (Q1-Q4)
-   • Year-based filtering
-   • Custom date range filtering
-   • Statistical aggregation
-   • Time series data (daily/monthly)
-
-✅ Export Functionality
-   • CSV export
-   • JSON export
-   • Downloadable files
-
-✅ Interactive UI
-   • Dynamic filter selection
-   • Real-time report generation
-   • Visual statistics cards
-   • Time series line charts
-   • Distribution breakdowns
-
-✅ API Endpoints
-   • GET  /reports          - Report page
-   • POST /reports/generate - Generate report
-   • POST /reports/export   - Export report
-   • POST /search           - Semantic search
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🚀 NEXT STEPS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-1. Install dependencies:
-   composer install
-   npm install
-
-2. Build frontend:
-   npm run build
-
-3. Run tests:
-   php artisan test --filter=Report
-   php artisan test --filter=SemanticSearch
-
-4. Access the feature:
-   Navigate to: http://localhost:8000/reports
-
-5. Read documentation:
-   • QUICK_START.md - Getting started
-   • SEMANTIC_SEARCH_README.md - Full documentation
-   • VERIFICATION_CHECKLIST.md - Testing guide
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📊 CODE STATISTICS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Total Lines of Code: ~1,800 lines
-Total Files: 11 new + 1 modified
-Total Tests: 28 test cases
-Documentation: 4 comprehensive guides
-Backend Services: 3 PHP classes
-Frontend Components: 1 React page
-API Endpoints: 4 endpoints
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📋 QUICK EXAMPLE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// Generate a monthly report for January 2025
-POST /reports/generate
-{
-  'filter_type': 'month',
-  'month': 1,
-  'year': 2025,
-  'status': 'active'
-}
-
-// Search for procurements
-POST /search
-{
-  'query': 'office supplies',
-  'status': 'active'
-}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ IMPLEMENTATION STATUS: COMPLETE
-   Ready for testing and deployment!
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- consolidated workflow/document rule resolution via WorkflowDefinitionService
+- updated CI and frontend generation scripts
+- refactored procurement stage flows
+- environment-aware security headers
+- Dockerized local MultiChain bootstrap and reset procedures

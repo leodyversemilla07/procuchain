@@ -1,149 +1,169 @@
-# Route Documentation
+# Route Reference
 
-This document lists the available routes in the ProcuChain application, categorized by access level and role.
+This document summarizes the current route surface of ProcuChain.
+
+The route inventory was generated from:
+
+```bash
+php artisan route:list --json --no-interaction
+```
+
+Current snapshot: 157 routes.
+
+## Route Families
+
+| Family | Approx. Count | Purpose |
+| --- | ---: | --- |
+| Public and other framework routes | 28 | marketing pages, invitations, auth, error previews |
+| Shared authenticated routes | 18 | notifications, files, PDF viewer, verification, corrections, blockchain job polling |
+| Reports and search | 4 | reporting page, report generation/export, filtered search |
+| Settings | 21 | profile, password, 2FA, appearance, push/email notification settings |
+| BAC Secretariat | 37 | dashboard, list/detail views, stage pages, document guides, completion checks, validation |
+| BAC Chairman | 3 | dashboard and procurement list/detail views |
+| HOPE | 3 | dashboard and procurement list/detail views |
+| Admin | 43 | dashboard, explorer, audit log, users, invitations, workflow config, stage docs, security tools |
 
 ## Public Routes
 
-| Method | URI | Name | Controller/Action |
-| :--- | :--- | :--- | :--- |
-| GET | `/` | `home` | Inertia: `home` |
-| GET | `/about` | `about` | Inertia: `about` |
-| GET | `/workflow` | `workflow` | `WorkflowController` |
-| GET | `/team` | `team` | Inertia: `team` |
-| GET | `/contact` | `contact` | Inertia: `contact` |
-| GET | `/privacy` | `privacy.policy` | Inertia: `privacy` |
-| GET | `/terms` | `terms.service` | Inertia: `terms` |
-| GET | `/invitation/{token}` | `invitation.show` | `AcceptInvitationController@show` |
-| POST | `/invitation/{token}/accept` | `invitation.accept` | `AcceptInvitationController@accept` |
+Defined in `routes/web.php`:
 
-## Authenticated Routes (Shared)
+- `/`
+- `/about`
+- `/workflow`
+- `/team`
+- `/contact`
+- `/privacy`
+- `/terms`
+- invitation acceptance routes
 
-All routes below require the `auth` middleware.
+## Authentication Routes
 
-### General
-| Method | URI | Name | Controller/Action |
-| :--- | :--- | :--- | :--- |
-| GET | `/notifications` | `notifications` | `NotificationController@page` |
-| POST | `/notifications/{id}/mark-as-read` | `notifications.mark-as-read` | `NotificationController@markAsRead` |
-| POST | `/notifications/mark-all-as-read` | `notifications.mark-all-as-read` | `NotificationController@markAllAsRead` |
-| GET | `/files/{fileKey}` | `files.download` | `DocumentDownloadController@downloadFile` |
-| GET | `/pdf-viewer/{fileKey}` | `pdf.viewer` | `PdfViewerController@showPdfViewer` |
-| GET | `/procurements/{pr_number}/blockchain-status` | `procurements.blockchain-status` | `ProcurementListController@getBlockchainStatus` |
+Defined in `routes/auth.php`:
 
-### Reports & Search
-| Method | URI | Name | Controller/Action |
-| :--- | :--- | :--- | :--- |
-| GET | `/reports` | `reports.index` | `ReportController@index` |
-| POST | `/reports/generate` | `reports.generate` | `ReportController@generate` |
-| POST | `/reports/export` | `reports.export` | `ReportController@export` |
-| POST | `/search` | `reports.search` | `ReportController@search` |
+- `login`
+- `forgot-password`
+- `reset-password`
+- `logout`
 
-### Document Corrections & Verification
-| Method | URI | Name | Controller/Action | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| GET | `/procurements/{pr_number}/corrections/history` | `procurements.corrections.history` | `ProcurementCorrectionController@getProcurementCorrectionHistory` | |
-| GET | `/procurements/{pr_number}/corrections/check` | `procurements.corrections.check` | `ProcurementCorrectionController@checkProcurementCorrection` | |
-| POST | `/procurement/{pr_number}/verify` | `procurement.verify` | `DocumentVerificationController@verify` | |
-| POST | `/procurement/{pr_number}/verify/integrity` | `procurement.verify.integrity` | `DocumentVerificationController@verifyIntegrity` | |
-| GET | `/procurement/{pr_number}/verification` | `procurement.verification` | `DocumentVerificationController@showVerificationPage` | |
-| POST | `/documents/{fileKey}/verify` | `documents.verify` | `DocumentVerificationController@verifyDocument` | |
+Authentication is Fortify-backed, but the project uses custom controllers for login/session handling and account lockout logging.
+
+## Settings Routes
+
+Defined in `routes/settings.php`:
+
+- `settings/profile`
+- `settings/password`
+- `settings/push-notification`
+- `settings/email-notification`
+- `settings/appearance`
+- `settings/two-factor`
+
+These are all authenticated routes.
+
+## Shared Authenticated Routes
+
+Available to authenticated users, with additional role checks where needed:
+
+- notifications page and mark-as-read actions
+- file download and PDF viewer routes
+- procurement blockchain job polling
+- procurement/document verification routes
+- reporting and search routes
+- procurement correction history/check routes
+
+Additional role restrictions apply to:
+
+- procurement correction submission
+- document correction pages/actions
+- procurement archive/restore actions
+
+## Reports and Search
+
+Current reporting/search endpoints:
+
+- `GET /reports` -> reports page
+- `POST /reports/generate`
+- `POST /reports/export`
+- `POST /search`
+
+Important: the current search implementation is filtered keyword search. The route naming remains from the original feature rollout.
 
 ## BAC Secretariat Routes
 
-Requires `role:bac_secretariat`.
+Prefix: `/bac-secretariat`
 
-### Dashboard & Lists
-| Method | URI | Name | Controller/Action |
-| :--- | :--- | :--- | :--- |
-| GET | `/bac-secretariat/dashboard` | `bac-secretariat.dashboard` | `BacSecretariatController@dashboard` |
-| GET | `/bac-secretariat/procurements-list` | `bac-secretariat.procurements.index` | `ProcurementListController@index` |
-| GET | `/bac-secretariat/procurements-list/{pr_number}` | `bac-secretariat.procurements.show` | `ProcurementListController@show` |
+Key capabilities:
 
-### Procurement Management
-Most routes follow the pattern `/bac-secretariat/{phase}/{pr_number}/{stage}`.
+- dashboard
+- procurement list/detail pages
+- procurement initiation page and commands
+- pre-procurement stage pages and commands
+- procurement phase stage pages and commands
+- post-procurement stage pages and commands
+- document guides, completion checks, and upload validation
 
-**Phases:**
-- `procurement-initiation`
-- `pre-procurement`
-- `procurement` (Bidding)
-- `post-procurement`
+Write-heavy blockchain routes are additionally protected by:
 
-**Actions:**
-- `upload-document` (POST)
-- `complete` (POST) - Mark stage as complete
-- `skip` (POST) - Skip stage
-- `repeat` (POST) - Repeat stage (Bidding only)
-- `validate-upload` (POST)
-- `document-guide` (GET)
-
-**Specific Actions:**
-- `initiate-procurement` (POST)
-- `publish-pre-procurement-conference-decision` (POST)
-- `publish-pre-bid-conference-decision` (POST)
-- `publish-supplemental-bid-bulletin-decision` (POST)
-
-### Corrections
-| Method | URI | Name | Controller/Action |
-| :--- | :--- | :--- | :--- |
-| GET | `/procurements/{pr_number}/corrections` | `procurements.corrections.show` | `ProcurementCorrectionController@showProcurementCorrectionsPage` |
-| POST | `/procurements/{pr_number}/corrections` | `procurements.corrections.submit` | `ProcurementCorrectionController@correctProcurement` |
+- `role:bac_secretariat`
+- `throttle:blockchain_writes`
 
 ## BAC Chairman Routes
 
-Requires `role:bac_chairman`.
+Prefix: `/bac-chairman`
 
-| Method | URI | Name | Controller/Action |
-| :--- | :--- | :--- | :--- |
-| GET | `/bac-chairman/dashboard` | `bac-chairman.dashboard` | `BacChairmanController@index` |
-| GET | `/bac-chairman/procurements-list` | `bac-chairman.procurements.index` | `ProcurementListController@index` |
-| GET | `/bac-chairman/procurements-list/{pr_number}` | `bac-chairman.procurements.show` | `ProcurementListController@show` |
+Available routes:
+
+- dashboard
+- procurement list
+- procurement detail
 
 ## HOPE Routes
 
-Requires `role:hope`.
+Prefix: `/hope`
 
-| Method | URI | Name | Controller/Action |
-| :--- | :--- | :--- | :--- |
-| GET | `/hope/dashboard` | `hope.dashboard` | `HopeController@index` |
-| GET | `/hope/procurements-list` | `hope.procurements.index` | `ProcurementListController@index` |
-| GET | `/hope/procurements-list/{pr_number}` | `hope.procurements.show` | `ProcurementListController@show` |
+Available routes:
+
+- dashboard
+- procurement list
+- procurement detail
 
 ## Admin Routes
 
-Requires `role:admin`.
+Prefix: `/admin`
 
-### Dashboard & Lists
-| Method | URI | Name | Controller/Action |
-| :--- | :--- | :--- | :--- |
-| GET | `/admin/dashboard` | `admin.dashboard` | `AdminController@index` |
-| GET | `/admin/procurements-list` | `admin.procurements.index` | `ProcurementListController@index` |
-| GET | `/admin/procurements-list/{pr_number}` | `admin.procurements.show` | `ProcurementListController@show` |
+Admin modules include:
 
-### User Management
-Prefix: `/admin/users`
-- CRLUD operations for users.
-- `reset-password` (POST)
-- `bulk-delete` (DELETE)
+- dashboard
+- audit log
+- procurement list/detail views
+- user management
+- user invitations
+- login logs and blocked IP management
+- account lockout management
+- blockchain explorer and circuit-breaker reset
+- workflow configuration
+- stage document configuration
 
-### User Invitations
-Prefix: `/admin/invitations`
-- `index`, `store`, `resend`, `revoke`
+## Named Route Patterns
 
-### Login Logs
-Prefix: `/admin/login-logs`
-- Monitoring login activity, suspicious activity.
-- `block-ip`, `unblock-ip`.
+Common route naming conventions:
 
-### Accounts Security
-Prefix: `/admin/accounts`
-- Manage locked accounts (`lock`, `unlock`, `reset-attempts`).
-- Bulk operations.
+- `bac-secretariat.procurement.*`
+- `bac-chairman.procurements.*`
+- `hope.procurements.*`
+- `admin.users.*`
+- `admin.blockchain.explorer.*`
+- `admin.workflow-config.*`
+- `admin.stage-documents.*`
+- `settings.*`
+- `notifications.*`
 
-### Blockchain Explorer
-Prefix: `/admin/blockchain-explorer`
-- View blocks, transactions, streams, addresses.
-- `reset-circuit-breaker` for node health.
+## Source Files
 
-### Configuration
-- `/admin/workflow-config`: Configure workflow stages per mode.
-- `/admin/stage-documents`: Configure required documents per stage.
+The route surface is split across:
+
+- `routes/web.php`
+- `routes/auth.php`
+- `routes/settings.php`
+
+When route changes affect the frontend, regenerate Wayfinder artifacts with the project's existing generation flow instead of editing generated files directly.

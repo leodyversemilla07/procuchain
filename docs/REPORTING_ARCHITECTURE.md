@@ -1,381 +1,99 @@
-# Architecture Diagram: Semantic Search & Report Generation
+# Reporting and Search Architecture
 
-## System Architecture
+This document covers the reporting subsystem only.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         USER INTERFACE                       │
-│                  (resources/js/pages/reports)                │
-│                                                               │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Report Index Page (index.tsx)                       │  │
-│  │  - Filter Selection                                  │  │
-│  │  - Search Input                                      │  │
-│  │  - Statistics Cards                                  │  │
-│  │  - Time Series Charts                                │  │
-│  │  - Export Buttons                                    │  │
-│  └────────────────┬─────────────────────────────────────┘  │
-└───────────────────┼─────────────────────────────────────────┘
-                    │
-                    │ HTTP Requests
-                    ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    API ENDPOINTS (Routes)                    │
-│                      (routes/web.php)                        │
-│                                                               │
-│  GET  /reports           → Show report page                 │
-│  POST /reports/generate  → Generate report                  │
-│  POST /reports/export    → Export report (CSV/JSON)         │
-│  POST /search            → Semantic search                  │
-└───────────────────┬─────────────────────────────────────────┘
-                    │
-                    │ Route to Controller
-                    ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  REPORT CONTROLLER                           │
-│            (app/Http/Controllers/ReportController.php)       │
-│                                                               │
-│  - Validates input parameters                                │
-│  - Handles authentication                                    │
-│  - Coordinates services                                      │
-│  - Formats responses                                         │
-└───────────────────┬─────────────────────────────────────────┘
-                    │
-                    │ Dependency Injection
-                    ▼
-┌─────────────────────────────────────────────────────────────┐
-│              REPORT GENERATION SERVICE                       │
-│          (app/Services/ReportGenerationService.php)          │
-│                                                               │
-│  - Builds filters from parameters                            │
-│  - Converts month/year/quarter to date ranges               │
-│  - Generates time series data                                │
-│  - Exports to CSV/JSON                                       │
-│                                                               │
-│  Filter Types:                                               │
-│  ├─ Month   → [date_from, date_to]                          │
-│  ├─ Quarter → [date_from, date_to]                          │
-│  ├─ Year    → [date_from, date_to]                          │
-│  └─ Range   → [date_from, date_to]                          │
-└───────────────────┬─────────────────────────────────────────┘
-                    │
-                    │ Uses
-                    ▼
-┌─────────────────────────────────────────────────────────────┐
-│              SEMANTIC SEARCH SERVICE                         │
-│           (app/Services/SemanticSearchService.php)           │
-│                                                               │
-│  - Fetches procurement data                                  │
-│  - Applies filters (status, stage, mode, category)          │
-│  - Performs text search                                      │
-│  - Filters by date range                                     │
-│  - Calculates statistics                                     │
-│  - Aggregates results                                        │
-└───────────────────┬─────────────────────────────────────────┘
-                    │
-                    │ Fetches Data
-                    ▼
-┌─────────────────────────────────────────────────────────────┐
-│            PROCUREMENT DATA SERVICE                          │
-│          (app/Services/ProcurementDataService.php)           │
-│                                                               │
-│  - Fetches procurement data from blockchain                  │
-│  - Processes and formats data                                │
-│  - Returns structured arrays                                 │
-└───────────────────┬─────────────────────────────────────────┘
-                    │
-                    │ Reads From
-                    ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     BLOCKCHAIN LAYER                         │
-│                    (MultiChain/Storage)                      │
-│                                                               │
-│  - Procurement records                                       │
-│  - Document metadata                                         │
-│  - Status history                                            │
-│  - Event logs                                                │
-└─────────────────────────────────────────────────────────────┘
+Important naming note: parts of the codebase and docs still use the label "semantic search", but the current implementation is filtered keyword search over procurement data. It is not vector search and it does not use embeddings.
+
+## Route Surface
+
+- `GET /reports`
+- `POST /reports/generate`
+- `POST /reports/export`
+- `POST /search`
+
+All routes require authentication.
+
+## Main Components
+
+```mermaid
+graph TD
+    Page["Inertia reports page"] --> Controller["ReportController"]
+    Controller --> ReportService["ReportGenerationService"]
+    Controller --> SearchService["SemanticSearchService"]
+    ReportService --> SearchService
+    SearchService --> ProcurementData["ProcurementDataService"]
+    ProcurementData --> Blockchain["MultiChain-backed procurement reads"]
 ```
 
-## Data Flow Diagram
+## Responsibilities
 
-```
-User Input
-    ↓
-┌───────────────────────────────────────┐
-│ Filter Selection:                     │
-│ - filter_type: "month"                │
-│ - month: 1                            │
-│ - year: 2025                          │
-│ - query: "office supplies"            │
-│ - status: "active"                    │
-└───────────────┬───────────────────────┘
-                │
-                ▼
-    POST /reports/generate
-                │
-                ▼
-┌───────────────────────────────────────┐
-│ ReportController::generate()          │
-│ - Validates input                     │
-│ - CSRF check                          │
-│ - Authentication                      │
-└───────────────┬───────────────────────┘
-                │
-                ▼
-┌───────────────────────────────────────┐
-│ ReportGenerationService               │
-│   ::generateReport()                  │
-│                                       │
-│ 1. buildFilters()                     │
-│    month=1, year=2025                 │
-│    → date_from: 2025-01-01           │
-│    → date_to: 2025-01-31             │
-└───────────────┬───────────────────────┘
-                │
-                ▼
-┌───────────────────────────────────────┐
-│ SemanticSearchService::search()       │
-│                                       │
-│ 2. Fetch data                         │
-│ 3. Apply filters:                     │
-│    - Text: "office supplies"          │
-│    - Status: "active"                 │
-│    - Date: 2025-01-01 to 2025-01-31  │
-│                                       │
-│ 4. Calculate statistics               │
-│    - Total count                      │
-│    - By status/stage/mode/category    │
-│    - Total ABC amount                 │
-└───────────────┬───────────────────────┘
-                │
-                ▼
-┌───────────────────────────────────────┐
-│ Results Processing                    │
-│                                       │
-│ 5. Generate time series               │
-│    - Daily breakdown for month        │
-│    - Monthly for year/quarter         │
-│                                       │
-│ 6. Build response                     │
-└───────────────┬───────────────────────┘
-                │
-                ▼
-┌───────────────────────────────────────┐
-│ JSON Response                         │
-│ {                                     │
-│   success: true,                      │
-│   summary: {...},                     │
-│   time_series: [...],                 │
-│   data: [...]                         │
-│ }                                     │
-└───────────────┬───────────────────────┘
-                │
-                ▼
-┌───────────────────────────────────────┐
-│ Frontend Visualization                │
-│ - Statistics cards                    │
-│ - Line charts                         │
-│ - Distribution breakdowns             │
-└───────────────────────────────────────┘
-```
+### `ReportController`
 
-## Filter Processing Flow
+- renders the reports page
+- validates request input
+- delegates report generation and export
+- delegates search requests
 
-```
-┌─────────────┐
-│ User Selects│
-│ "Month"     │
-└──────┬──────┘
-       │
-       ▼
-┌────────────────────────┐
-│ Input:                 │
-│ - month: 1             │
-│ - year: 2025           │
-└──────┬─────────────────┘
-       │
-       ▼
-┌────────────────────────┐
-│ applyMonthFilter()     │
-│                        │
-│ startDate = Carbon     │
-│   ::create(2025,1,1)   │
-│   ->startOfMonth()     │
-│                        │
-│ endDate = Carbon       │
-│   ::create(2025,1,1)   │
-│   ->endOfMonth()       │
-└──────┬─────────────────┘
-       │
-       ▼
-┌────────────────────────┐
-│ Result:                │
-│ date_from: 2025-01-01  │
-│ date_to: 2025-01-31    │
-└──────┬─────────────────┘
-       │
-       ▼
-┌────────────────────────┐
-│ applyFilters()         │
-│ - Filter by date range │
-│ - Filter by status     │
-│ - Filter by query      │
-└──────┬─────────────────┘
-       │
-       ▼
-┌────────────────────────┐
-│ Filtered Results       │
-└────────────────────────┘
-```
+### `ReportGenerationService`
 
-## Export Flow
+- builds reporting filters
+- converts month/quarter/year filters into date ranges
+- assembles summary and time-series payloads
+- exports report output
 
-```
-User Clicks "Export CSV"
-    ↓
-POST /reports/export
-    ↓
-┌───────────────────────┐
-│ 1. Generate report    │
-│    (same as above)    │
-└──────────┬────────────┘
-           │
-           ▼
-┌───────────────────────┐
-│ 2. exportReport()     │
-│    format: 'csv'      │
-└──────────┬────────────┘
-           │
-           ▼
-┌───────────────────────┐
-│ 3. exportToCsv()      │
-│    - Build headers    │
-│    - Format rows      │
-│    - Escape values    │
-└──────────┬────────────┘
-           │
-           ▼
-┌───────────────────────┐
-│ 4. Stream download    │
-│    Content-Type: csv  │
-│    Filename: report-  │
-│             YYYY-MM-DD│
-└──────────┬────────────┘
-           │
-           ▼
-    Browser Download
-```
+### `SemanticSearchService`
 
-## Component Relationships
+- performs filtered keyword matching
+- narrows results by status, stage, mode, category, and date range
+- calculates summary distributions
 
-```
-┌────────────────────────────────────────────┐
-│         ReportController                   │
-│                                            │
-│  constructor(                              │
-│    ReportGenerationService,                │
-│    SemanticSearchService                   │
-│  )                                         │
-└────────┬─────────────────┬─────────────────┘
-         │                 │
-         │                 └──────────────┐
-         │                                │
-         ▼                                ▼
-┌────────────────────┐      ┌───────────────────────┐
-│ Report Generation  │      │ Semantic Search       │
-│ Service            │──────│ Service               │
-│                    │ uses │                       │
-│ - generateReport() │      │ - search()            │
-│ - exportReport()   │      │ - calculateStats()    │
-│ - buildFilters()   │      │ - applyFilters()      │
-└────────────────────┘      └──────────┬────────────┘
-                                       │
-                                       │ uses
-                                       ▼
-                            ┌───────────────────────┐
-                            │ Procurement Data      │
-                            │ Service               │
-                            │                       │
-                            │ - fetchAndProcess     │
-                            │   Procurements()      │
-                            └───────────────────────┘
-```
+### `ProcurementDataService`
 
-## Technology Stack
+- reads procurement-oriented blockchain data
+- normalizes it into structures that reporting/search services can filter and summarize
 
-```
-┌─────────────────────────────────────────────┐
-│              FRONTEND LAYER                 │
-│                                             │
-│  React 19.2.4                               │
-│  TypeScript                                 │
-│  Inertia.js v2.3.13                         │
-│  Recharts (visualization)                   │
-│  Tailwind CSS v4                            │
-└─────────────────┬───────────────────────────┘
-                  │
-                  │ HTTP/JSON
-                  │
-┌─────────────────┴───────────────────────────┐
-│              BACKEND LAYER                  │
-│                                             │
-│  Laravel 13.0.0                             │
-│  PHP 8.4.12                                 │
-│  Carbon (date library)                      │
-└─────────────────┬───────────────────────────┘
-                  │
-                  │ Queries
-                  │
-┌─────────────────┴───────────────────────────┐
-│              DATA LAYER                     │
-│                                             │
-│  MultiChain                                 │
-│  Blockchain Storage                         │
-└─────────────────────────────────────────────┘
-```
+## Data Flow
 
-## Key Design Patterns
+1. User opens the reports page.
+2. The reports page submits filter/search criteria.
+3. `ReportController` validates and routes the request.
+4. `ReportGenerationService` or `SemanticSearchService` prepares filters.
+5. `ProcurementDataService` supplies normalized procurement data.
+6. The service returns summary cards, distributions, time-series data, and result rows.
+7. The frontend renders the response and allows export.
 
-1. **Dependency Injection**: Services injected via constructor
-2. **Service Layer Pattern**: Business logic separated from controllers
-3. **Repository Pattern**: Data access abstracted
-4. **Strategy Pattern**: Different filter types handled uniformly
-5. **Single Responsibility**: Each class has one clear purpose
-6. **Open/Closed Principle**: Easy to add new filter types
+## Filters
 
-## Security Layers
+Current reporting/search filters include:
 
-```
-User Request
-    ↓
-┌────────────────┐
-│ Authentication │  ← Required for all endpoints
-└────────┬───────┘
-         ↓
-┌────────────────┐
-│ CSRF Token     │  ← Verified on POST requests
-└────────┬───────┘
-         ↓
-┌────────────────┐
-│ Input          │  ← Laravel validation
-│ Validation     │
-└────────┬───────┘
-         ↓
-┌────────────────┐
-│ Business Logic │  ← Service layer
-└────────┬───────┘
-         ↓
-┌────────────────┐
-│ Data Access    │  ← Repository pattern
-└────────────────┘
-```
+- keyword query
+- month
+- quarter
+- year
+- explicit date range
+- status
+- stage
+- procurement mode
+- category
 
----
+## Exports
 
-This architecture provides:
-- ✅ Separation of concerns
-- ✅ Testability (each layer can be mocked)
-- ✅ Maintainability (clear structure)
-- ✅ Extensibility (easy to add features)
-- ✅ Security (multiple validation layers)
+Current export formats:
+
+- CSV
+- JSON
+
+## Operational Constraints
+
+- the quality of search/report output depends on blockchain data availability
+- reports are generated on demand
+- the "semantic search" name is legacy and should not be interpreted as AI-based retrieval
+
+## Recommended Extension Points
+
+If you extend this subsystem:
+
+- keep request validation in the controller/form request layer
+- keep filtering/aggregation in services
+- keep blockchain access behind procurement data services/repositories
+- preserve route names because the frontend depends on generated Wayfinder helpers

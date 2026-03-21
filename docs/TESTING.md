@@ -1,175 +1,142 @@
 # Testing Guide
 
-This guide explains the testing infrastructure for ProcuChain, including how to run tests, the configuration setup, and troubleshooting common issues.
+This document describes the current verification surface for ProcuChain.
 
-## Overview
+## Test Stack
 
-ProcuChain uses [Pest](https://pestphp.com/) as its testing framework, built on top of PHPUnit. The test suite contains **1,202 tests with 4,404 assertions**.
+- Pest on top of PHPUnit
+- PHP feature and unit tests under `tests/Feature` and `tests/Unit`
+- lightweight TypeScript tests under `tests/js`
+- optional browser tests under `tests/Browser`
 
-Key features of the test setup:
+## Current Defaults
 
-- **Database**: Uses `sqlite` in-memory database (`:memory:`) for speed.
-- **Cache**: Uses `array` driver to avoid external Redis dependencies.
-- **Queue**: Uses `sync` driver to process jobs immediately without a worker.
-- **Session**: Uses `array` driver.
+`phpunit.xml` configures the test environment to avoid external dependencies where possible:
 
-## Running Tests
+- SQLite in-memory database
+- `array` cache/session
+- `sync` queue
+- `array` mailer
 
-### Run All Tests
+## Day-to-Day Commands
 
-Execute the full test suite:
-
-```bash
-php artisan test
-```
-
-### Run Specific Tests
-
-Filter by test file or description:
-
-```bash
-# Run tests for a specific class/feature
-php artisan test --filter=BlockchainMonitoringService
-
-# Run a specific test file
-php artisan test tests/Feature/ProcurementListControllerTest.php
-```
-
-### Compact Output
-
-For cleaner output, use the `--compact` flag:
+### Backend
 
 ```bash
 php artisan test --compact
+php artisan test --compact --filter=Dashboard
+php artisan test --compact tests/Feature/ProcurementListControllerTest.php
 ```
 
-## Configuration (`phpunit.xml`)
+### Frontend and Tooling
 
-The `phpunit.xml` file governs the test environment configuration. We have configured it to override production/local `.env` settings to ensure tests run reliably in any environment (including CI/CD) without requiring external services like Redis.
-
-```xml
-<php>
-    <env name="APP_ENV" value="testing"/>
-    <env name="BCRYPT_ROUNDS" value="4"/>
-
-    <!-- Infrastructure Isolation -->
-    <env name="CACHE_STORE" value="array"/>
-    <env name="CACHE_DRIVER" value="array"/>
-    <env name="SESSION_DRIVER" value="array"/>
-    <env name="QUEUE_CONNECTION" value="sync"/>
-    <env name="MAIL_MAILER" value="array"/>
-
-    <!-- Database Isolation -->
-    <env name="DB_CONNECTION" value="sqlite"/>
-    <env name="DB_DATABASE" value=":memory:"/>
-
-    <!-- External Service Mocking -->
-    <env name="TELESCOPE_ENABLED" value="false"/>
-    <env name="PULSE_ENABLED" value="false"/>
-</php>
+```bash
+npm run lint
+npm run lint:fix
+npm run format:check
+npm run types
+npm run test:js
 ```
 
-### Why "Array" Drivers?
+### PHP Formatting
 
-Using `array` drivers for Cache and Session means data is stored in PHP memory for the duration of the test. This prevents "state leak" between tests and eliminates the need for a running Redis server during development testing.
-
-## Service Layer Testing
-
-We extensively use **Mockery** to mock external dependencies, especially the Blockchain interface.
-
-### Mocking the Blockchain Manager
-
-Most services depend on `App\Services\Manager`. In tests, we mock this to simulate blockchain responses without making actual RPC calls.
-
-```php
-// Example Mock Setup
-beforeEach(function () {
-    $this->multichainManager = mock(Manager::class);
-    $this->service = new MyService($this->multichainManager);
-});
-
-// Example Expectation
-it('checks blockchain connection', function () {
-    $this->multichainManager
-        ->shouldReceive('getinfo')
-        ->once()
-        ->andReturn(['nodeaddress' => '1ABC...']);
-
-    expect($this->service->isHealthy())->toBeTrue();
-});
+```bash
+vendor/bin/pint --dirty --format agent
 ```
+
+## Important Script Behavior
+
+- `npm run lint` is check-only and must not mutate files
+- `npm run lint:fix` is the local autofix command
+- `npm run types` regenerates Wayfinder artifacts before type-checking
+- `npm run test:js` regenerates Wayfinder artifacts and runs the TypeScript test entrypoints
+
+## CI Workflows
+
+Required GitHub Actions:
+
+- `linter`
+- `tests`
+
+Non-blocking workflow:
+
+- browser tests/manual browser workflow
+
+The required linter flow checks:
+
+- Pint in test mode
+- Prettier format check
+- ESLint
+- TypeScript
+- JS tests
+
+## Recommended Verification Strategy
+
+Use the smallest relevant test scope first.
+
+Examples:
+
+- controller or middleware change -> targeted feature test file
+- service or DTO change -> targeted unit test file
+- route or shared frontend type change -> `npm run types` plus targeted PHP test
+- docs-only change -> command-level verification such as `php artisan route:list --json --no-interaction`
+
+## Browser Tests
+
+Browser tests live in `tests/Browser`.
+
+They are useful for:
+
+- scoped access checks
+- UI workflows that span multiple pages
+- confirming browser-only behavior around PDF viewing and navigation
+
+They are not currently part of required CI.
+
+## Areas With Strong Existing Coverage
+
+Representative high-value tests include:
+
+- procurement list/detail flows
+- dashboard services and dashboard rendering
+- blockchain write job handlers
+- workflow definition precedence and sync defaults
+- security headers and shared Inertia auth payloads
+- reporting and export flows
 
 ## Troubleshooting
 
-### `StreamInitException` / Redis Connection Refused
+### TypeScript Cannot Resolve `@/routes` or `@/actions`
 
-**Symptom**: `Predis\Connection\ConnectionException: No connection could be made because the target machine actively refused it [tcp://127.0.0.1:6379]`.
-
-**Cause**: The application is trying to connect to a real Redis server, but it's not running or reachable. This usually happens if `phpunit.xml` is configured to use `redis` driver.
-
-**Solution**:
-Ensure your `phpunit.xml` has the following overrides (as updated in the latest build):
-
-```xml
-<env name="CACHE_DRIVER" value="array"/>
-<env name="SESSION_DRIVER" value="array"/>
-<env name="QUEUE_CONNECTION" value="sync"/>
-```
-
-If you still encounter this, try clearing your config cache:
+Run:
 
 ```bash
-php artisan config:clear
+npm run types
 ```
 
-### Database Mocking Issues
+Those artifacts are generated as part of the script.
 
-**Symptom**: "Table not found" or foreign key constraint errors in tests.
+### Tests Hit External Services
 
-**Solution**:
-Ensure your test file uses the `RefreshDatabase` trait. This runs migrations for the in-memory SQLite database before each test.
+Most tests should mock MultiChain- or service-level dependencies. If a test is unexpectedly trying to reach external infrastructure, check the mocked bindings and test environment assumptions first.
 
-```php
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+### Vite Manifest Errors During Manual Testing
+
+Run one of:
+
+```bash
+composer run dev
+npm run build
 ```
 
-### "Final Class" Mocking Errors
+## Minimal Safe Verification Set
 
-**Symptom**: `Class ... is marked final and its methods cannot be replaced.`
+For a typical feature or refactor PR:
 
-**Cause**: You are trying to mock a class defined as `final class ...`. Mockery cannot create a proxy for final classes by default.
-
-**Solution**:
-
-1. Remove the `final` keyword from the class definition (recommended for services that need testing).
-2. Or use interfaces for dependency injection and mock the interface instead.
-3. Or mock the leaf dependency (e.g., `Manager`) instead of the intermediate service.
-
-## Test Coverage by Layer
-
-### Unit Tests (`tests/Unit/`)
-
-| Directory | Test File | Tests | Coverage |
-|---|---|---|---|
-| `Services/Verification/` | `DocumentVerifierTest.php` | 18 | IntegrityVerifier, CompletenessVerifier, CrossReferenceVerifier, ComplianceVerifier |
-| `Jobs/Handlers/` | `BlockchainWriteJobHandlerTest.php` | 34 | All 6 handlers + dispatch routing + HandlesTempFiles trait |
-| `Services/Procurement/` | `ProcurementCorrectionServiceTest.php` | 23 | Correction service methods, formatting, fallback lookup |
-| `Services/Procurement/` | `ProcurementDetailServiceTest.php` | 7 | Detail composition, list aggregation, archive filtering |
-| `Services/Procurement/` | `ProcurementSupportServiceTest.php` | 12 | Stage validation, workflow navigation, optional stages |
-| `Services/Blockchain/` | `FileOperationsTest.php` | 8 | FileUploader (single/chunked), FileRetriever, key generation |
-| `Models/Concerns/` | `HasAccountLockTest.php` | 7 | Lock/unlock, expiration, failed attempts |
-| `Services/` | `PdfViewerServiceTest.php` | 4 | Document data preparation, view stats |
-| `DataTransferObjects/` | `VerificationDTOsTest.php` | varies | Verification result DTOs |
-| `Enums/` | `DocumentTypeEnumsTest.php` | varies | Enum behavior |
-| Other unit tests | Various | varies | Publishers, formatters, requests |
-
-### Feature Tests (`tests/Feature/`)
-
-Feature tests cover end-to-end HTTP flows including:
-- Procurement workflow controllers
-- Authentication and account lockout
-- Blockchain monitoring and health checks
-- Dashboard and analytics
-- Document operations and corrections
-- Event/Listener integration (`EventListenerTest.php` — 14 tests)
-- Report generation
+```bash
+npm run lint
+npm run format:check
+npm run types
+npm run test:js
+php artisan test --compact <relevant-test-file>
+```
