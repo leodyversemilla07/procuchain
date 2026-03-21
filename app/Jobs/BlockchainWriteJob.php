@@ -69,6 +69,7 @@ class BlockchainWriteJob implements ShouldQueue
             Cache::put("blockchain_job:{$this->jobId}", [
                 'status' => 'done',
                 'result' => $result,
+                'user_id' => $this->userId,
             ], now()->addHour());
 
             Log::info("BlockchainWriteJob[{$this->operation}]: completed", [
@@ -79,6 +80,7 @@ class BlockchainWriteJob implements ShouldQueue
             Cache::put("blockchain_job:{$this->jobId}", [
                 'status' => 'failed',
                 'error' => $e->getMessage(),
+                'user_id' => $this->userId,
             ], now()->addHour());
 
             Log::error("BlockchainWriteJob[{$this->operation}]: failed", [
@@ -101,6 +103,7 @@ class BlockchainWriteJob implements ShouldQueue
         Cache::put("blockchain_job:{$this->jobId}", [
             'status' => 'failed',
             'error' => $exception->getMessage(),
+            'user_id' => $this->userId,
         ], now()->addHour());
 
         Log::error("BlockchainWriteJob[{$this->operation}]: permanently failed after all retries", [

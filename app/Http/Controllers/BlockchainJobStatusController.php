@@ -22,6 +22,11 @@ class BlockchainJobStatusController extends Controller
             return response()->json(['status' => 'pending'], 202);
         }
 
+        $ownerId = data_get($cached, 'user_id');
+        if ($ownerId !== null && auth()->id() !== (int) $ownerId) {
+            abort(403);
+        }
+
         $httpStatus = $cached['status'] === 'done' ? 200 : 422;
 
         return response()->json($cached, $httpStatus);
