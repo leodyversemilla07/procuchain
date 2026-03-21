@@ -8,7 +8,6 @@ use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
-use App\Services\DocumentValidationService;
 use App\Services\ModeAwareDocumentValidationService;
 use App\Services\Procurement\ProcurementSupportService;
 use App\Services\ProcurementDataService;
@@ -194,11 +193,19 @@ describe('Progressive Upload Workflow', function () {
             ],
         ];
 
-        $validation = mock(DocumentValidationService::class);
+        $validation = mock(ModeAwareDocumentValidationService::class);
         $validation->shouldReceive('validateStageCompletion')
             ->times(count($cases))
-            ->andReturn(...array_column($cases, 'completion'));
-        app()->instance(DocumentValidationService::class, $validation);
+            ->andReturn(...array_map(function (array $case): array {
+                return array_merge([
+                    'required_documents' => [],
+                    'uploaded_documents' => [],
+                    'mode' => ProcurementModeEnums::COMPETITIVE_BIDDING->value,
+                    'mode_display_name' => ProcurementModeEnums::COMPETITIVE_BIDDING->getDisplayName(),
+                    'is_alternative_mode' => false,
+                ], $case['completion']);
+            }, $cases));
+        app()->instance(ModeAwareDocumentValidationService::class, $validation);
 
         foreach ($cases as $case) {
             $response = $this->get(route('bac-secretariat.procurement.pre-procurement.check-completion', [

@@ -8,7 +8,6 @@ use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
-use App\Services\DocumentValidationService;
 use App\Services\ModeAwareDocumentValidationService;
 use App\Services\Procurement\ProcurementSupportService;
 use App\Services\ProcurementDataService;
@@ -124,22 +123,32 @@ describe('SVP Stage Pages', function () {
         actingAs($this->bacSecretariat);
         bindSvpStageSupportStubs($this->svpProcurementData);
 
-        $validation = mock(DocumentValidationService::class);
+        $validation = mock(ModeAwareDocumentValidationService::class);
         $validation->shouldReceive('validateStageCompletion')
             ->times(2)
             ->andReturn(
                 [
                     'can_complete' => false,
+                    'required_documents' => [],
+                    'uploaded_documents' => [],
                     'completion_percentage' => 0,
                     'missing_documents' => [DocumentTypeEnums::REQUEST_FOR_QUOTATION->value],
+                    'mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+                    'mode_display_name' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->getDisplayName(),
+                    'is_alternative_mode' => true,
                 ],
                 [
                     'can_complete' => false,
+                    'required_documents' => [],
+                    'uploaded_documents' => [],
                     'completion_percentage' => 0,
                     'missing_documents' => [DocumentTypeEnums::ABSTRACT_OF_QUOTATIONS->value],
+                    'mode' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->value,
+                    'mode_display_name' => ProcurementModeEnums::SMALL_VALUE_PROCUREMENT->getDisplayName(),
+                    'is_alternative_mode' => true,
                 ],
             );
-        app()->instance(DocumentValidationService::class, $validation);
+        app()->instance(ModeAwareDocumentValidationService::class, $validation);
 
         $cases = [
             route('bac-secretariat.procurement.pre-procurement.check-completion', [

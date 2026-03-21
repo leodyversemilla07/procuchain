@@ -32,6 +32,14 @@ jobs:
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
           npm ci
 
+      - name: Prepare Laravel Environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force --no-interaction
+
+      - name: Generate Wayfinder Artifacts
+        run: php artisan wayfinder:generate --no-interaction
+
       - name: Run Pint (Check Only)
         run: vendor/bin/pint --test
 
