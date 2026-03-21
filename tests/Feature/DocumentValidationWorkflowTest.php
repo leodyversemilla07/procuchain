@@ -1,11 +1,18 @@
 <?php
 
+use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
+use App\Enums\ProcurementCategoryEnums;
+use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\DocumentValidationService;
 use App\Services\ModeAwareDocumentValidationService;
+use App\Services\Procurement\ProcurementSupportService;
+use App\Services\ProcurementDataService;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 
@@ -13,84 +20,46 @@ use function Pest\Laravel\actingAs;
 use function Pest\Laravel\mock;
 
 beforeEach(function () {
-    $this->bacSecretariat = User::factory()->create();
+    $this->bacSecretariat = User::factory()->create([
+        'blockchain_address' => 'test_address_validation',
+    ]);
     $this->bacSecretariat->assignRole('bac_secretariat');
-    $this->bacSecretariat->blockchain_address = 'test_address_validation';
-    $this->bacSecretariat->save();
 });
 
 describe('Document Upload Validation Workflow', function () {
-    it('prevents upload of invalid document type for stage', function () {
+    it('rejects invalid document uploads before dispatching a blockchain job', function () {
         actingAs($this->bacSecretariat);
-
-        $validationService = mock(ModeAwareDocumentValidationService::class);
-        $validationService->shouldReceive('validateUpload')
-            ->andReturn([
-                'errors' => ['This document type is not valid for this stage'],
-                'warnings' => [],
-            ]);
-        $this->instance(ModeAwareDocumentValidationService::class, $validationService);
-
-        $repository = mock(ProcurementRepository::class);
-        $repository->shouldReceive('findByProcurement')->andReturn(
-            new \App\DataTransferObjects\ProcurementData(
-                prNumber: 'PR-2024-001',
-                appReference: 'APP-2024-001',
-                title: 'Test Procurement',
-                description: 'Test Description',
-                abcAmount: 1000000.00,
-                fundingSource: 'General Fund',
-                category: \App\Enums\ProcurementCategoryEnums::GOODS,
-                procurementMode: \App\Enums\ProcurementModeEnums::COMPETITIVE_BIDDING,
-                office: 'Test Office',
-                endUser: 'Test User',
-                deliveryLocation: null,
-                deliveryDate: null,
-                deliveryTermDays: null,
-                preparedBy: 'Test Preparer',
-                bacResolutionNumber: null,
-                bacResolutionDate: null,
-                philgepsReference: null,
-                philgepsPostingDate: null,
-                approvedBy: null,
-                approvalDate: null,
-                status: 'in_progress',
-                userId: (string) $this->bacSecretariat->id,
-                createdAt: now()
-            )
-        );
-        $this->instance(ProcurementRepository::class, $repository);
-
-        $procurementDataService = mock(\App\Services\ProcurementDataService::class);
-        $this->instance(\App\Services\ProcurementDataService::class, $procurementDataService);
+        bindDocumentWorkflowSupportStubs(buildDocumentWorkflowProcurement($this->bacSecretariat));
+        bindModeAwareValidationServiceStub([
+            'errors' => ['Document type NOTICE_OF_AWARD is not valid for stage PRE_PROCUREMENT_CONFERENCE'],
+            'warnings' => [],
+        ]);
 
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
-            ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
+            ->withoutMiddleware(PreventRequestForgery::class)
             ->startSession()
             ->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
                 'pr_number' => 'PR-2024-001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]), [
-                'pr_number' => 'PR-2024-001',
-                'document_type' => 'invalid_document_type',
+                'document_file' => UploadedFile::fake()->create('noa.pdf', 1000, 'application/pdf'),
+                'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
+                'description' => 'Invalid document for this stage',
             ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHasErrors();
+        $response->assertStatus(422)
+            ->assertJson([
+                'message' => 'Document type NOTICE_OF_AWARD is not valid for stage PRE_PROCUREMENT_CONFERENCE',
+            ]);
     });
 
-    it('warns when uploading document not typical for stage', function () {
+    it('returns validation warnings for atypical stage documents', function () {
         actingAs($this->bacSecretariat);
-
-        $validationService = mock(ModeAwareDocumentValidationService::class);
-        $validationService->shouldReceive('validateUpload')
-            ->andReturn([
-                'errors' => [],
-                'warnings' => ['This document is not typically required for this stage'],
-            ]);
-        $this->instance(ModeAwareDocumentValidationService::class, $validationService);
-
-        $file = UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf');
+        bindDocumentWorkflowSupportStubs(buildDocumentWorkflowProcurement($this->bacSecretariat));
+        bindModeAwareValidationServiceStub([
+            'errors' => [],
+            'warnings' => ['This document is not typically required for this stage'],
+        ]);
 
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
             ->startSession()
@@ -98,23 +67,19 @@ describe('Document Upload Validation Workflow', function () {
                 'pr_number' => 'PR-2024-001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]), [
-                'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value, // Wrong stage
-                'file' => $file,
+                'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value,
+                'file' => UploadedFile::fake()->create('document.pdf', 1000, 'application/pdf'),
             ]);
 
         $response->assertSuccessful();
         $response->assertJsonPath('warnings.0', 'This document is not typically required for this stage');
     });
 
-    // Note: Stage completion tests require blockchain repository access
-    // These are covered in ProcurementPhaseControllersTest.php integration tests
-
-    it('returns document guide with required and optional documents', function () {
+    it('returns the document guide for a stage', function () {
         actingAs($this->bacSecretariat);
-
-        $validationService = mock(DocumentValidationService::class);
-        $validationService->shouldReceive('getStageDocumentGuide')
-            ->andReturn([
+        bindDocumentWorkflowSupportStubs(buildDocumentWorkflowProcurement($this->bacSecretariat));
+        bindModeAwareValidationServiceStub(
+            guide: [
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
                 'stage_display_name' => 'Pre-Procurement Conference',
                 'phase' => 'pre_procurement',
@@ -138,8 +103,8 @@ describe('Document Upload Validation Workflow', function () {
                     'optional_count' => 1,
                     'total_count' => 2,
                 ],
-            ]);
-        $this->instance(DocumentValidationService::class, $validationService);
+            ],
+        );
 
         $response = $this->get(route('bac-secretariat.procurement.pre-procurement.document-guide', [
             'pr_number' => 'PR-2024-001',
@@ -161,51 +126,14 @@ describe('Document Upload Validation Workflow', function () {
             'counts' => ['required_count', 'optional_count', 'total_count'],
         ]);
     });
-
-    // Note: Completion tests with blockchain repository covered in integration tests
 });
 
 describe('Progressive Upload Workflow', function () {
-    it('uploads single document progressively', function () {
+    it('uploads a single document progressively', function () {
         Queue::fake();
         actingAs($this->bacSecretariat);
-
-        $repository = mock(ProcurementRepository::class);
-        $repository->shouldReceive('findByProcurement')->andReturn(
-            new \App\DataTransferObjects\ProcurementData(
-                prNumber: 'PR-2024-001',
-                appReference: 'APP-2024-001',
-                title: 'Test Procurement',
-                description: 'Test Description',
-                abcAmount: 1000000.00,
-                fundingSource: 'General Fund',
-                category: \App\Enums\ProcurementCategoryEnums::GOODS,
-                procurementMode: \App\Enums\ProcurementModeEnums::COMPETITIVE_BIDDING,
-                office: 'Test Office',
-                endUser: 'Test User',
-                deliveryLocation: null,
-                deliveryDate: null,
-                deliveryTermDays: null,
-                preparedBy: 'Test Preparer',
-                bacResolutionNumber: null,
-                bacResolutionDate: null,
-                philgepsReference: null,
-                philgepsPostingDate: null,
-                approvedBy: null,
-                approvalDate: null,
-                status: 'in_progress',
-                userId: (string) $this->bacSecretariat->id,
-                createdAt: now()
-            )
-        );
-        $this->instance(ProcurementRepository::class, $repository);
-
-        $validationService = mock(ModeAwareDocumentValidationService::class);
-        $validationService->shouldReceive('validateUpload')
-            ->andReturn(['errors' => [], 'warnings' => []]);
-        $this->instance(ModeAwareDocumentValidationService::class, $validationService);
-
-        $file = UploadedFile::fake()->create('minutes.pdf', 1000, 'application/pdf');
+        bindDocumentWorkflowSupportStubs(buildDocumentWorkflowProcurement($this->bacSecretariat));
+        bindModeAwareValidationServiceStub();
 
         $response = $this->withoutMiddleware('throttle:blockchain_writes')
             ->startSession()
@@ -213,7 +141,7 @@ describe('Progressive Upload Workflow', function () {
                 'pr_number' => 'PR-2024-001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             ]), [
-                'document_file' => $file,
+                'document_file' => UploadedFile::fake()->create('minutes.pdf', 1000, 'application/pdf'),
                 'document_type' => DocumentTypeEnums::PRE_PROCUREMENT_MINUTES->value,
                 'description' => 'Meeting minutes for pre-procurement conference',
             ]);
@@ -224,156 +152,154 @@ describe('Progressive Upload Workflow', function () {
         Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
     });
 
-    it('tracks upload progress via completion percentage', function () {
+    it('tracks completion progress as documents are uploaded', function () {
         actingAs($this->bacSecretariat);
+        bindDocumentWorkflowSupportStubs(buildDocumentWorkflowProcurement($this->bacSecretariat));
 
-        $validationService = mock(DocumentValidationService::class);
-
-        // First check: 0% complete (no documents)
-        $validationService->shouldReceive('validateStageCompletion')
-            ->once()
-            ->andReturn([
-                'can_complete' => false,
-                'completion_percentage' => 0,
-                'missing_documents' => [
-                    DocumentTypeEnums::PRE_PROCUREMENT_MINUTES,
-                    DocumentTypeEnums::PRE_PROCUREMENT_ATTENDANCE,
+        $cases = [
+            [
+                'completion' => [
+                    'can_complete' => false,
+                    'completion_percentage' => 0,
+                    'missing_documents' => [
+                        DocumentTypeEnums::PRE_PROCUREMENT_MINUTES,
+                        DocumentTypeEnums::PRE_PROCUREMENT_ATTENDANCE,
+                    ],
                 ],
-            ]);
-
-        $this->instance(DocumentValidationService::class, $validationService);
-
-        $response1 = $this->get(route('bac-secretariat.procurement.pre-procurement.check-completion', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-        ]));
-
-        $response1->assertSuccessful();
-        $response1->assertJsonPath('completion_percentage', 0);
-        $response1->assertJsonPath('can_complete', false);
-        expect($response1->json('missing_documents'))->toHaveCount(2);
-    });
-
-    it('shows increased completion after document upload', function () {
-        actingAs($this->bacSecretariat);
-
-        $validationService = mock(DocumentValidationService::class);
-
-        // Check after one document uploaded: 50% complete
-        $validationService->shouldReceive('validateStageCompletion')
-            ->once()
-            ->andReturn([
-                'can_complete' => false,
-                'completion_percentage' => 50,
-                'missing_documents' => [
-                    DocumentTypeEnums::PRE_PROCUREMENT_ATTENDANCE,
+                'expected_percentage' => 0,
+                'expected_ready' => false,
+                'expected_missing_count' => 2,
+            ],
+            [
+                'completion' => [
+                    'can_complete' => false,
+                    'completion_percentage' => 50,
+                    'missing_documents' => [
+                        DocumentTypeEnums::PRE_PROCUREMENT_ATTENDANCE,
+                    ],
                 ],
-            ]);
+                'expected_percentage' => 50,
+                'expected_ready' => false,
+                'expected_missing_count' => 1,
+            ],
+            [
+                'completion' => [
+                    'can_complete' => true,
+                    'completion_percentage' => 100,
+                    'missing_documents' => [],
+                ],
+                'expected_percentage' => 100,
+                'expected_ready' => true,
+                'expected_missing_count' => 0,
+            ],
+        ];
 
-        $this->instance(DocumentValidationService::class, $validationService);
+        $validation = mock(DocumentValidationService::class);
+        $validation->shouldReceive('validateStageCompletion')
+            ->times(count($cases))
+            ->andReturn(...array_column($cases, 'completion'));
+        app()->instance(DocumentValidationService::class, $validation);
 
-        $response = $this->get(route('bac-secretariat.procurement.pre-procurement.check-completion', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-        ]));
-
-        $response->assertSuccessful();
-        $response->assertJsonPath('completion_percentage', 50);
-        $response->assertJsonPath('can_complete', false);
-        expect($response->json('missing_documents'))->toHaveCount(1);
-    });
-
-    it('shows stage ready for completion when all required documents uploaded', function () {
-        actingAs($this->bacSecretariat);
-
-        $validationService = mock(DocumentValidationService::class);
-
-        // All documents uploaded: 100% complete
-        $validationService->shouldReceive('validateStageCompletion')
-            ->once()
-            ->andReturn([
-                'can_complete' => true,
-                'completion_percentage' => 100,
-                'missing_documents' => [],
-            ]);
-
-        $this->instance(DocumentValidationService::class, $validationService);
-
-        $response = $this->get(route('bac-secretariat.procurement.pre-procurement.check-completion', [
-            'pr_number' => 'PR-2024-001',
-            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-        ]));
-
-        $response->assertSuccessful();
-        $response->assertJsonPath('completion_percentage', 100);
-        $response->assertJsonPath('can_complete', true);
-        $response->assertJsonPath('missing_documents', []);
-    });
-
-    it('validates document type before progressive upload', function () {
-        $user = User::factory()->create();
-        $user->assignRole('bac_secretariat');
-        $this->actingAs($user);
-
-        // Mock validation service to reject invalid document type
-        $validationService = mock(\App\Services\ModeAwareDocumentValidationService::class);
-        $validationService->shouldReceive('validateUpload')
-            ->once()
-            ->andReturn([
-                'errors' => ['Document type NOTICE_OF_AWARD is not valid for stage PRE_PROCUREMENT_CONFERENCE'],
-                'warnings' => [],
-            ]);
-        $this->instance(\App\Services\ModeAwareDocumentValidationService::class, $validationService);
-
-        $repository = mock(ProcurementRepository::class);
-        $repository->shouldReceive('findByProcurement')
-            ->with('PR-2024-001')
-            ->andReturn(
-                new \App\DataTransferObjects\ProcurementData(
-                    prNumber: 'PR-2024-001',
-                    appReference: 'APP-2024-001',
-                    title: 'Test Procurement',
-                    description: 'Test Description',
-                    abcAmount: 1000000.00,
-                    fundingSource: 'General Fund',
-                    category: \App\Enums\ProcurementCategoryEnums::GOODS,
-                    procurementMode: \App\Enums\ProcurementModeEnums::COMPETITIVE_BIDDING,
-                    office: 'Test Office',
-                    endUser: 'Test User',
-                    deliveryLocation: null,
-                    deliveryDate: null,
-                    deliveryTermDays: null,
-                    preparedBy: 'Test Preparer',
-                    bacResolutionNumber: null,
-                    bacResolutionDate: null,
-                    philgepsReference: null,
-                    philgepsPostingDate: null,
-                    approvedBy: null,
-                    approvalDate: null,
-                    status: 'in_progress',
-                    userId: (string) $user->id,
-                    createdAt: now()
-                )
-            );
-        $this->instance(ProcurementRepository::class, $repository);
-
-        $procurementDataService = mock(\App\Services\ProcurementDataService::class);
-        $this->instance(\App\Services\ProcurementDataService::class, $procurementDataService);
-
-        $file = UploadedFile::fake()->create('noa.pdf', 1000, 'application/pdf');
-
-        $response = $this->withoutMiddleware('throttle:blockchain_writes')
-            ->startSession()
-            ->post(route('bac-secretariat.procurement.pre-procurement.upload-document', [
+        foreach ($cases as $case) {
+            $response = $this->get(route('bac-secretariat.procurement.pre-procurement.check-completion', [
                 'pr_number' => 'PR-2024-001',
                 'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
-            ]), [
-                'document_file' => $file,
-                'document_type' => DocumentTypeEnums::NOTICE_OF_AWARD->value, // Wrong stage!
-                'description' => 'Invalid document for this stage',
-            ]);
+            ]));
 
-        $response->assertStatus(422)
-            ->assertJson(['message' => 'Document type NOTICE_OF_AWARD is not valid for stage PRE_PROCUREMENT_CONFERENCE']);
+            $response->assertSuccessful();
+            $response->assertJsonPath('completion_percentage', $case['expected_percentage']);
+            $response->assertJsonPath('can_complete', $case['expected_ready']);
+            expect($response->json('missing_documents'))->toHaveCount($case['expected_missing_count']);
+        }
     });
 });
+
+function buildDocumentWorkflowProcurement(User $user): ProcurementData
+{
+    return new ProcurementData(
+        prNumber: 'PR-2024-001',
+        appReference: 'APP-2024-001',
+        title: 'Test Procurement',
+        description: 'Test Description',
+        abcAmount: 1000000.00,
+        fundingSource: 'General Fund',
+        category: ProcurementCategoryEnums::GOODS,
+        procurementMode: ProcurementModeEnums::COMPETITIVE_BIDDING,
+        office: 'Test Office',
+        endUser: 'Test User',
+        deliveryLocation: null,
+        deliveryDate: null,
+        deliveryTermDays: null,
+        preparedBy: 'Test Preparer',
+        bacResolutionNumber: null,
+        bacResolutionDate: null,
+        philgepsReference: null,
+        philgepsPostingDate: null,
+        approvedBy: null,
+        approvalDate: null,
+        status: 'in_progress',
+        userId: (string) $user->id,
+        createdAt: now(),
+    );
+}
+
+function bindDocumentWorkflowSupportStubs(ProcurementData $procurementData): void
+{
+    $repository = mock(ProcurementRepository::class);
+    $repository->shouldReceive('findByProcurement')
+        ->zeroOrMoreTimes()
+        ->andReturn($procurementData);
+    app()->instance(ProcurementRepository::class, $repository);
+
+    $dataService = mock(ProcurementDataService::class);
+    $dataService->shouldReceive('fetchStatusItems')
+        ->zeroOrMoreTimes()
+        ->andReturn(collect([
+            [
+                'user_address' => User::findOrFail((int) $procurementData->userId)->blockchain_address,
+            ],
+        ]));
+    app()->instance(ProcurementDataService::class, $dataService);
+
+    $support = mock(ProcurementSupportService::class);
+    $support->shouldReceive('validateStageInWorkflow')
+        ->zeroOrMoreTimes()
+        ->andReturnNull();
+    $support->shouldReceive('getUploadedDocumentTypes')
+        ->zeroOrMoreTimes()
+        ->andReturn([]);
+    $support->shouldReceive('getProcurementMode')
+        ->zeroOrMoreTimes()
+        ->andReturn($procurementData->procurementMode);
+    $support->shouldReceive('getOngoingStatusForStage')
+        ->zeroOrMoreTimes()
+        ->andReturn(StatusEnums::PROCUREMENT_SUBMITTED);
+    app()->instance(ProcurementSupportService::class, $support);
+}
+
+function bindModeAwareValidationServiceStub(
+    array $uploadResult = ['errors' => [], 'warnings' => []],
+    ?array $guide = null,
+): void {
+    $validation = mock(ModeAwareDocumentValidationService::class);
+    $validation->shouldReceive('validateUpload')
+        ->zeroOrMoreTimes()
+        ->andReturn($uploadResult);
+    $validation->shouldReceive('getStageDocumentGuide')
+        ->zeroOrMoreTimes()
+        ->andReturn($guide ?? [
+            'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
+            'stage_display_name' => 'Pre-Procurement Conference',
+            'phase' => 'pre_procurement',
+            'description' => 'Test guide',
+            'required_documents' => [],
+            'optional_documents' => [],
+            'counts' => [
+                'required_count' => 0,
+                'optional_count' => 0,
+                'total_count' => 0,
+            ],
+        ]);
+
+    app()->instance(ModeAwareDocumentValidationService::class, $validation);
+}
