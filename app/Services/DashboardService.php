@@ -65,6 +65,8 @@ class DashboardService
      */
     public function getProcurementsByKey(array $allStates): Collection
     {
+        $startedAt = microtime(true);
+
         try {
             // First pass: collect all PR numbers
             $prNumbers = collect($allStates)
@@ -111,6 +113,11 @@ class DashboardService
         } catch (\Exception $e) {
             Log::error('Error processing procurement data', ['error' => $e->getMessage()]);
             throw $e;
+        } finally {
+            Log::debug('Dashboard procurement aggregation completed', [
+                'state_count' => count($allStates),
+                'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+            ]);
         }
     }
 
@@ -368,24 +375,31 @@ class DashboardService
      */
     private function buildProcurementModeMap(array $prNumbers): array
     {
+        if ($prNumbers === []) {
+            return [];
+        }
+
         $modeMap = [];
 
-        foreach ($prNumbers as $prNumber) {
-            try {
-                $procurement = $this->procurementRepository->findByProcurement($prNumber);
-                if ($procurement && $procurement->procurementMode) {
+        try {
+            $procurements = $this->procurementRepository->findManyByProcurement($prNumbers);
+
+            foreach ($prNumbers as $prNumber) {
+                $procurement = $procurements[$prNumber] ?? null;
+
+                if ($procurement?->procurementMode) {
                     $modeMap[$prNumber] = [
                         'value' => $procurement->procurementMode->value,
                         'label' => $procurement->procurementMode->getDisplayName(),
                         'is_alternative' => $procurement->procurementMode->isAlternativeMode(),
                     ];
                 }
-            } catch (\Exception $e) {
-                Log::warning('Failed to get procurement mode for dashboard', [
-                    'pr_number' => $prNumber,
-                    'error' => $e->getMessage(),
-                ]);
             }
+        } catch (\Exception $e) {
+            Log::warning('Failed to batch fetch procurement modes for dashboard', [
+                'pr_numbers' => $prNumbers,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return $modeMap;

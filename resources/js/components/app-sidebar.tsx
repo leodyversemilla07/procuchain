@@ -233,7 +233,7 @@ export function AppSidebar() {
     }
 
     // Get primary role from Spatie roles array
-    const primaryRole = auth.roles?.[0] || '';
+    const primaryRole = auth.role || auth.user.role || '';
 
     const mainNavItems = getNavItemsByRole(primaryRole, permissions);
     const footerNavItems = getFooterNavItemsByRole(primaryRole);

@@ -105,7 +105,7 @@ export default function Profile() {
 
                             <Input
                                 id="role"
-                                value={getRoleName(auth.roles?.[0] || auth.user.role)}
+                                value={getRoleName(auth.role || auth.user.role)}
                                 className="bg-muted mt-1 block w-full"
                                 readOnly
                                 disabled

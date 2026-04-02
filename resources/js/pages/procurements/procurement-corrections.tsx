@@ -77,8 +77,7 @@ interface ShowProps {
 
 export default function ProcurementCorrections({ procurement, corrections, documents }: ShowProps) {
     const { auth } = usePage<SharedData>().props;
-    // Extract role from roles array (roles[0]) instead of user.role
-    const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
+    const userRole = auth?.role || auth?.user?.role || 'guest';
     const breadcrumbs = getProcurementDetailBreadcrumbs(userRole, procurement?.title);
 
     const [selectedDocument, setSelectedDocument] = useState<DocumentData | null>(null);

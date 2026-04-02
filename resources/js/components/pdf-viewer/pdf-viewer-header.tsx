@@ -22,9 +22,9 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
 
     // Check if user can correct documents
     const allowedRoles = [UserRole.ADMIN, UserRole.BAC_CHAIRMAN, UserRole.BAC_SECRETARIAT];
-    const canCorrectDocuments =
-        auth?.roles?.some((role: string) => allowedRoles.includes(role as UserRole)) ||
-        (auth?.user?.role && allowedRoles.includes(auth.user.role as UserRole));
+    const userRole = auth?.role || auth?.user?.role;
+    const canCorrectDocuments = userRole ? allowedRoles.includes(userRole as UserRole) : false;
+
     return (
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
             <CardContent className="p-4 sm:p-6">

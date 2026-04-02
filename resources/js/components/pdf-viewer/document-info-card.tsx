@@ -30,8 +30,8 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
 
     // Check if user can correct documents
     const allowedRoles = ['admin', 'bac_chairman', 'bac_secretariat'];
-    const canCorrectDocuments =
-        auth?.roles?.some((role: string) => allowedRoles.includes(role)) || (auth?.user?.role && allowedRoles.includes(auth.user.role));
+    const canCorrectDocuments = auth?.role ? allowedRoles.includes(auth.role) : allowedRoles.includes(auth?.user?.role ?? '');
+
     return (
         <Card className="border-sidebar-border/70 dark:border-sidebar-border shadow-md">
             <CardHeader>
