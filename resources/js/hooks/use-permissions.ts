@@ -25,9 +25,8 @@ interface PermissionHelpers {
 
 export function usePermissions(): PermissionHelpers {
     const { auth } = usePage<SharedData>().props;
-
-    const roles = (auth.roles as string[]) || [];
-    const permissions = (auth.permissions as string[]) || [];
+    const role = auth.role || auth.user?.role || null;
+    const roles = role ? [role] : [];
     const can = auth.can || {
         manageProcurement: false,
         approveProcurement: false,
@@ -37,6 +36,17 @@ export function usePermissions(): PermissionHelpers {
         accessBlockchain: false,
         manageUsers: false,
     };
+    const permissions = [
+        role === 'admin' ? 'view admin dashboard' : null,
+        role === 'bac_secretariat' ? 'view bac-secretariat dashboard' : null,
+        role === 'bac_chairman' ? 'view bac-chairman dashboard' : null,
+        role === 'hope' ? 'view hope dashboard' : null,
+        role ? 'view procurement' : null,
+        can.manageProcurement ? 'create procurement' : null,
+        can.manageUsers ? 'manage users' : null,
+        can.manageUsers ? 'edit users' : null,
+        can.manageUsers ? 'delete users' : null,
+    ].filter((permission): permission is string => permission !== null);
 
     /**
      * Check if user has a specific role or any of the provided roles
@@ -45,6 +55,7 @@ export function usePermissions(): PermissionHelpers {
         if (Array.isArray(role)) {
             return role.some((r) => roles.includes(r));
         }
+
         return roles.includes(role);
     };
 
@@ -55,6 +66,7 @@ export function usePermissions(): PermissionHelpers {
         if (Array.isArray(permission)) {
             return permission.some((p) => permissions.includes(p));
         }
+
         return permissions.includes(permission);
     };
 

@@ -104,7 +104,7 @@ export default function Header() {
                         <div className="hidden lg:block">
                             {auth.user ? (
                                 <Link
-                                    href={getDashboardRouteByRole(auth.roles?.[0] || auth.user.role)}
+                                    href={getDashboardRouteByRole(auth.role || auth.user.role)}
                                     className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:px-4"
                                 >
                                     Dashboard
@@ -213,7 +213,7 @@ export default function Header() {
 
                                 {auth.user ? (
                                     <Link
-                                        href={getDashboardRouteByRole(auth.roles?.[0] || auth.user.role)}
+                                        href={getDashboardRouteByRole(auth.role || auth.user.role)}
                                         onClick={() => setMobileMenuOpen(false)}
                                         className="bg-primary text-primary-foreground hover:bg-primary/90 block w-full rounded-lg px-4 py-3 text-center text-sm font-medium"
                                     >

@@ -32,6 +32,14 @@ interface ProcurementRepositoryInterface
     public function findByProcurement(string $prNumber): ?ProcurementData;
 
     /**
+     * Find multiple procurements by their PR numbers.
+     *
+     * @param  array<string>  $prNumbers
+     * @return array<string, ProcurementData|null>
+     */
+    public function findManyByProcurement(array $prNumbers): array;
+
+    /**
      * Get all procurement records
      *
      * @return Collection<int, ProcurementData>

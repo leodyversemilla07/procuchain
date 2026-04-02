@@ -77,7 +77,7 @@ export default function Home() {
 
                             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
                                 <Button size="lg" className="w-full sm:w-auto" asChild>
-                                    <Link href={auth.user ? getDashboardRouteByRole(auth.roles?.[0] || auth.user.role) : login.url()}>
+                                    <Link href={auth.user ? getDashboardRouteByRole(auth.role || auth.user.role) : login.url()}>
                                         Get Started
                                     </Link>
                                 </Button>

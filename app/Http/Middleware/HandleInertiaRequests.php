@@ -38,8 +38,7 @@ class HandleInertiaRequests extends Middleware
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
         $user = $request->user();
-        $roles = $user?->getRoleNames()->values()->toArray() ?? [];
-        $permissions = $user?->getAllPermissions()->pluck('name')->values()->toArray() ?? [];
+        $primaryRole = $user?->getPrimaryRole();
 
         return [
             ...parent::share($request),
@@ -50,12 +49,11 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $roles[0] ?? $user->getPrimaryRole(),
+                    'role' => $primaryRole,
                     'avatar' => $user->avatar ?? '',
                     'blockchain_address' => $user->blockchain_address,
                 ] : null,
-                'roles' => $roles,
-                'permissions' => $permissions,
+                'role' => $primaryRole,
                 'can' => [
                     'manageProcurement' => $user?->canManageProcurement() ?? false,
                     'approveProcurement' => $user?->canApproveProcurement() ?? false,

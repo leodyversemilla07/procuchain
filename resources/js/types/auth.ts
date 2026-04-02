@@ -5,8 +5,7 @@
 
 export interface Auth {
     user: User | null;
-    roles: string[];
-    permissions: string[];
+    role: string | null;
     can: {
         manageProcurement: boolean;
         approveProcurement: boolean;

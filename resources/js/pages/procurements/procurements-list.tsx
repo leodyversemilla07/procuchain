@@ -109,7 +109,7 @@ export default function ProcurementsList({
     is_archived: isPollArchived,
 }: ShowProps) {
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
+    const userRole = auth?.role || auth?.user?.role || 'guest';
     const breadcrumbs = getProcurementListBreadcrumbs(userRole);
 
     // Initialize search and stage from URL params to avoid infinite reload loop
@@ -306,7 +306,7 @@ export default function ProcurementsList({
             // n - New procurement (if has permission)
             if (e.key === 'n' && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
-                if (auth?.permissions?.includes('create procurement')) {
+                if (auth?.can?.manageProcurement) {
                     router.visit(procurement.initiation.index.url());
                 }
             }
@@ -347,7 +347,7 @@ export default function ProcurementsList({
                                 Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">R</kbd> Refresh
                                 {' · '}
                                 <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">/</kbd> Search
-                                {!isPollArchived && auth?.permissions?.includes('create procurement') && (
+                                {!isPollArchived && auth?.can?.manageProcurement && (
                                     <>
                                         {' · '}
                                         <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">N</kbd> New

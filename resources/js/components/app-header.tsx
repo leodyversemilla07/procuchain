@@ -87,13 +87,13 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
         return null;
     }
 
-    const mainNavItems = getNavItemsByRole(auth.roles?.[0] || auth.user.role);
+    const mainNavItems = getNavItemsByRole(auth.role || auth.user.role);
 
     // Get the dashboard URL based on user role
     const getDashboardUrl = () => {
         if (!auth.user) return '/';
 
-        const userRole = auth.roles?.[0] || auth.user.role;
+        const userRole = auth.role || auth.user.role;
         switch (userRole) {
             case 'admin':
                 return adminDashboard.url();

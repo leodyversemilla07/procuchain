@@ -26,10 +26,10 @@ beforeEach(function () {
     $this->userService = mock(UserService::class)->makePartial(); // Allow real calls
     $this->procurementRepository = mock(ProcurementRepository::class);
 
-    // Default mock: return null for any procurement lookup (no mode info)
+    // Default mock: return null for any batch procurement lookup (no mode info)
     $this->procurementRepository
-        ->shouldReceive('findByProcurement')
-        ->andReturn(null)
+        ->shouldReceive('findManyByProcurement')
+        ->andReturn([])
         ->byDefault();
 
     $this->service = new DashboardService(
@@ -135,6 +135,60 @@ describe('DashboardService', function () {
             expect($result->get('PR-001')['title'])->toBe('Test Procurement');
             expect($result->get('PR-001')['stage'])->toBe('Pre-Procurement');
             expect($result->get('PR-001')['user'])->toBe('John Doe');
+        });
+
+        test('it enriches procurements with batched mode metadata', function () {
+            $streamData = [
+                [
+                    'data' => [
+                        'json' => [
+                            'pr_number' => 'PR-001',
+                            'procurement_title' => 'Mode A Procurement',
+                            'stage' => 'Pre-Procurement',
+                            'timestamp' => '2024-01-15T10:00:00Z',
+                        ],
+                    ],
+                ],
+                [
+                    'data' => [
+                        'json' => [
+                            'pr_number' => 'PR-002',
+                            'procurement_title' => 'Mode B Procurement',
+                            'stage' => 'Bidding',
+                            'timestamp' => '2024-01-16T10:00:00Z',
+                        ],
+                    ],
+                ],
+            ];
+
+            $procurementOne = \App\DataTransferObjects\ProcurementData::fromBlockchainArray([
+                'pr_number' => 'PR-001',
+                'title' => 'Mode A Procurement',
+                'category' => 'goods',
+                'procurement_mode' => 'small_value_procurement',
+            ]);
+            $procurementTwo = \App\DataTransferObjects\ProcurementData::fromBlockchainArray([
+                'pr_number' => 'PR-002',
+                'title' => 'Mode B Procurement',
+                'category' => 'goods',
+                'procurement_mode' => 'competitive_bidding',
+            ]);
+
+            $this->procurementRepository
+                ->shouldReceive('findManyByProcurement')
+                ->with(['PR-001', 'PR-002'])
+                ->andReturn([
+                    'PR-001' => $procurementOne,
+                    'PR-002' => $procurementTwo,
+                ])
+                ->once();
+
+            $result = $this->service->getProcurementsByKey($streamData);
+
+            expect($result->get('PR-001')['procurement_mode'])->toBe('small_value_procurement')
+                ->and($result->get('PR-001')['is_alternative_mode'])->toBeTrue()
+                ->and($result->get('PR-002')['procurement_mode'])->toBe('competitive_bidding')
+                ->and($result->get('PR-002')['is_alternative_mode'])->toBeFalse();
         });
 
         test('it groups multiple entries by procurement ID and returns latest', function () {

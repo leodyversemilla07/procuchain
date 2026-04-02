@@ -150,7 +150,7 @@ class ReportController extends Controller
     }
 
     /**
-     * Perform semantic search
+     * Perform procurement search.
      */
     public function search(Request $request): JsonResponse
     {
@@ -170,7 +170,7 @@ class ReportController extends Controller
 
             return response()->json($results);
         } catch (\Exception $e) {
-            Log::error('Semantic search failed', [
+            Log::error('Procurement search failed', [
                 'error' => $e->getMessage(),
             ]);
 

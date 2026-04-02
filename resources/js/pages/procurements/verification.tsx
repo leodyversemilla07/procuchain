@@ -777,7 +777,7 @@ function ComplianceTab({ result }: { result: ComplianceResult }) {
 
 export default function VerificationPage({ prNumber, report, procurementStatus }: VerificationPageProps) {
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
+    const userRole = auth?.role || auth?.user?.role || 'guest';
 
     // Build breadcrumbs based on user role
     const getRoleBasedUrl = (path: string) => {

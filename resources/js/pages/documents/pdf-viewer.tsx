@@ -24,7 +24,7 @@ export default function PdfViewer({ document, fileKey, pdfUrl, viewStats, recent
     const statisticsPanelRef = useRef<HTMLDivElement>(null);
 
     const { auth } = usePage<SharedData>().props;
-    const userRole = auth?.roles?.[0] || auth?.user?.role || 'guest';
+    const userRole = auth?.role || auth?.user?.role || 'guest';
 
     // Build breadcrumbs using centralized utility
     const procurementsListBreadcrumb = getProcurementsListBreadcrumb(userRole);

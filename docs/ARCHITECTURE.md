@@ -29,7 +29,7 @@ The application uses MySQL for mutable operational state and MultiChain for immu
 
 ### Web Layer
 
-- `routes/web.php`, `routes/auth.php`, and `routes/settings.php` define the route surface.
+- `routes/web.php` loads the route surface from `routes/web/*.php` plus `routes/auth.php` and `routes/settings.php`.
 - Inertia pages live under `resources/js/pages`.
 - Controllers stay thin and delegate to services for workflow, publishing, reporting, dashboard assembly, and admin operations.
 
@@ -120,7 +120,8 @@ Security controls are layered:
 ## Dashboard, Reporting, and Search
 
 - dashboards aggregate procurement data per role and handle degraded blockchain availability more safely than before
-- reporting is provided by `ReportController`, `ReportGenerationService`, `SemanticSearchService`, and `ProcurementDataService`
+- reporting is provided by `ReportController`, `ReportGenerationService`, `ProcurementSearchService`, and `ProcurementDataService`
+- `SemanticSearchService` remains as a backwards-compatible alias for the procurement search subsystem
 - the current "semantic search" feature is a filtered keyword search subsystem, not an embeddings/vector retrieval stack
 
 ## Frontend Structure

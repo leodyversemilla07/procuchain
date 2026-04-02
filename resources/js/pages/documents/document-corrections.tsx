@@ -50,7 +50,7 @@ interface DocumentCorrectionsProps {
 
 export default function DocumentCorrections({ procurement, auth }: DocumentCorrectionsProps) {
     const { auth: pageAuth } = usePage<SharedData>().props;
-    const userRole = pageAuth?.roles?.[0] || auth?.user?.roles?.[0] || 'guest';
+    const userRole = pageAuth?.role || pageAuth?.user?.role || auth?.user?.roles?.[0] || 'guest';
     const breadcrumbs = getDocumentCorrectionsBreadcrumbs(userRole, procurement.title);
 
     const [selectedDocument, setSelectedDocument] = useState<ProcurementDocument | null>(null);
@@ -62,9 +62,10 @@ export default function DocumentCorrections({ procurement, auth }: DocumentCorre
 
     // Check if user can correct documents
     const allowedRoles = [UserRole.ADMIN, UserRole.BAC_CHAIRMAN, UserRole.BAC_SECRETARIAT];
-    const canCorrectDocuments =
-        auth.user.roles.some((role) => allowedRoles.includes(role as UserRole)) ||
-        (pageAuth?.user?.role && allowedRoles.includes(pageAuth.user.role as UserRole));
+    const pageRole = pageAuth?.role || pageAuth?.user?.role;
+    const canCorrectDocuments = pageRole
+        ? allowedRoles.includes(pageRole as UserRole)
+        : auth.user.roles.some((role) => allowedRoles.includes(role as UserRole));
 
     // Handle clicking "Correct Document" on a specific document
     const handleCorrectDocument = (document: ProcurementDocument) => {

@@ -35,16 +35,14 @@ interface SingleDocumentCorrectionProps {
 
 export default function SingleDocumentCorrection({ document }: SingleDocumentCorrectionProps) {
     const { auth: pageAuth } = usePage<SharedData>().props;
-    const userRole = (Array.isArray(pageAuth?.roles) && pageAuth.roles.length > 0 ? pageAuth.roles[0] : undefined) || pageAuth?.user?.role || 'guest';
+    const userRole = pageAuth?.role || pageAuth?.user?.role || 'guest';
     const breadcrumbs = getDocumentCorrectionsBreadcrumbs(userRole, document.procurement_title);
 
     const [showCorrectionSheet, setShowCorrectionSheet] = useState(true); // Auto-open the correction sheet
 
     // Check if user can correct documents
     const allowedRoles = ['admin', 'bac_chairman', 'bac_secretariat'];
-    const canCorrectDocuments =
-        (pageAuth?.roles && Array.isArray(pageAuth.roles) && pageAuth.roles.some((role) => allowedRoles.includes(role))) ||
-        (pageAuth?.user?.role && allowedRoles.includes(pageAuth.user.role));
+    const canCorrectDocuments = allowedRoles.includes(pageAuth?.role || pageAuth?.user?.role || '');
 
     if (!canCorrectDocuments) {
         return (
