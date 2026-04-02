@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Inertia\Testing\AssertableInertia as Assert;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -12,7 +13,45 @@ test('profile page is displayed', function () {
         ->withSession(['auth.password_confirmed_at' => time()])
         ->get('/settings/profile');
 
-    $response->assertOk();
+    $response
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('settings/profile')
+            ->where('auth.role', null)
+            ->where('auth.user.id', $user->id)
+            ->where('auth.user.name', $user->name)
+            ->where('auth.user.email', $user->email)
+            ->where('auth.user.role', null)
+            ->where('auth.can.manageProcurement', false)
+            ->where('mustVerifyEmail', false)
+        );
+});
+
+test('profile page shares primary role and capabilities for role-based users', function () {
+    $user = createUserWithRole('bac_secretariat', [
+        'name' => 'BAC Secretariat User',
+        'email' => 'secretariat@example.com',
+        'blockchain_address' => 'secretariat-wallet',
+    ]);
+
+    $response = $this
+        ->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->get('/settings/profile');
+
+    $response
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('settings/profile')
+            ->where('auth.role', 'bac_secretariat')
+            ->where('auth.user.id', $user->id)
+            ->where('auth.user.name', 'BAC Secretariat User')
+            ->where('auth.user.email', 'secretariat@example.com')
+            ->where('auth.user.role', 'bac_secretariat')
+            ->where('auth.user.blockchain_address', 'secretariat-wallet')
+            ->where('auth.can.manageProcurement', true)
+            ->where('auth.can.manageUsers', false)
+        );
 });
 
 test('profile information can be updated', function () {

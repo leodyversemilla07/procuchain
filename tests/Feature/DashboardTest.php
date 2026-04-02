@@ -67,6 +67,52 @@ test('users can access only their role-specific dashboard', function () {
     }
 });
 
+test('role dashboards render the expected Inertia page and shared auth role', function () {
+    $cases = [
+        'bac_secretariat' => [
+            'route' => 'bac-secretariat.dashboard',
+            'component' => 'bac-secretariat/dashboard',
+        ],
+        'bac_chairman' => [
+            'route' => 'bac-chairman.dashboard',
+            'component' => 'bac-chairman/dashboard',
+        ],
+        'hope' => [
+            'route' => 'hope.dashboard',
+            'component' => 'hope/dashboard',
+        ],
+        'admin' => [
+            'route' => 'admin.dashboard',
+            'component' => 'admin/dashboard',
+        ],
+    ];
+
+    foreach ($cases as $role => $case) {
+        bindDashboardDependencies();
+
+        $user = User::factory()->create([
+            'name' => strtoupper($role).' User',
+            'email' => "{$role}@example.com",
+            'blockchain_address' => "{$role}-address",
+        ]);
+        $user->assignRole($role);
+
+        $this->actingAs($user);
+
+        $this->get(route($case['route']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component($case['component'])
+                ->where('auth.role', $role)
+                ->where('auth.user.id', $user->id)
+                ->where('auth.user.email', "{$role}@example.com")
+                ->where('auth.user.role', $role)
+            );
+
+        $this->post('/logout');
+    }
+});
+
 test('bac secretariat dashboard uses user scoped cache keys and filtered procurements', function () {
     Cache::flush();
 
