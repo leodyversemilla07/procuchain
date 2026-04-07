@@ -8,14 +8,16 @@ import React from 'react';
 
 interface DatePickerProps {
     label?: string;
-    value: Date | undefined;
-    onChange: (date: Date | undefined) => void;
+    value: Date | string | undefined;
+    onChange: (date: string) => void;
     error?: string;
     inputLabelClassName?: string;
     buttonClassName?: string;
     popoverClassName?: string;
     required?: boolean;
     id?: string;
+    disabled?: boolean;
+    placeholder?: string;
 }
 
 const DatePicker: React.FC<DatePickerProps> = ({
@@ -28,9 +30,23 @@ const DatePicker: React.FC<DatePickerProps> = ({
     popoverClassName = '',
     required = false,
     id,
+    disabled = false,
+    placeholder = 'Pick a date',
 }) => {
     const generatedId = React.useId();
     const datePickerId = id ?? generatedId;
+
+    // Convert string to Date if needed
+    const dateValue = value ? (typeof value === 'string' ? new Date(value) : value) : undefined;
+
+    // Handle date selection
+    const handleDateChange = (date: Date | undefined) => {
+        if (date) {
+            onChange(format(date, 'yyyy-MM-dd'));
+        } else {
+            onChange('');
+        }
+    };
 
     return (
         <Field>
@@ -49,14 +65,15 @@ const DatePicker: React.FC<DatePickerProps> = ({
                     <Button
                         id={datePickerId}
                         variant="outline"
+                        disabled={disabled}
                         className={`h-9 w-full justify-between px-3 py-2 text-left font-normal ${buttonClassName}`}
                     >
-                        {value ? format(value, 'PPP') : <span>Pick a date</span>}
+                        {dateValue ? format(dateValue, 'PPP') : <span>{placeholder}</span>}
                         <ChevronDownIcon className="text-muted-foreground ml-2 h-4 w-4" />
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className={`w-auto p-0 ${popoverClassName}`} align="start">
-                    <Calendar mode="single" selected={value} onSelect={onChange} className="rounded-md border shadow-md" captionLayout="dropdown" />
+                    <Calendar mode="single" selected={dateValue} onSelect={handleDateChange} className="rounded-md border shadow-md" captionLayout="dropdown" />
                 </PopoverContent>
             </Popover>
             {error && <FieldError>{error}</FieldError>}
@@ -65,3 +82,4 @@ const DatePicker: React.FC<DatePickerProps> = ({
 };
 
 export default DatePicker;
+export { DatePicker as DatePickerInput };
