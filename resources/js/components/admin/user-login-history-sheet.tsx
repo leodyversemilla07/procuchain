@@ -342,9 +342,7 @@ export default function UserLoginHistorySheet({ open, onOpenChange, userId, user
                 </div>
 
                 <SheetFooter className="shrink-0 border-t p-4 sm:px-6 sm:py-3">
-                    <SheetClose asChild>
-                        <Button variant="outline">Close</Button>
-                    </SheetClose>
+                    <SheetClose render={<Button variant="outline" />}>Close</SheetClose>
                 </SheetFooter>
             </SheetContent>
         </Sheet>

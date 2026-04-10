@@ -102,17 +102,13 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
                 )}
             </CardContent>
             <CardFooter className="flex items-center gap-2 border-t pt-4">
-                <Button asChild variant="outline" size="sm">
-                    <Link href={workflowConfigPreview(config.mode).url}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Preview
-                    </Link>
+                <Button variant="outline" size="sm" render={<Link href={workflowConfigPreview(config.mode).url} />}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Preview
                 </Button>
-                <Button asChild variant="default" size="sm" className="flex-1">
-                    <Link href={workflowConfigEdit(config.mode).url}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Configure
-                    </Link>
+                <Button variant="default" size="sm" className="flex-1" render={<Link href={workflowConfigEdit(config.mode).url} />}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Configure
                 </Button>
                 {config.is_customized && (
                     <Button variant="ghost" size="sm" onClick={() => handleResetConfig(config.mode)} title="Reset to defaults">

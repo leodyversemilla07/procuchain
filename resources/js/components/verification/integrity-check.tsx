@@ -65,11 +65,13 @@ export function IntegrityCheck({ result, documentType, showDetails = true }: Int
                                     <span className="text-muted-foreground">Expected:</span>
                                     <TooltipProvider>
                                         <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <code className="bg-background block max-w-full cursor-help truncate rounded px-1.5 py-1 font-mono">
-                                                    {shortenHash(result.expected_hash, 6)}
-                                                </code>
-                                            </TooltipTrigger>
+                                            <TooltipTrigger
+                                                render={
+                                                    <code className="bg-background block max-w-full cursor-help truncate rounded px-1.5 py-1 font-mono">
+                                                        {shortenHash(result.expected_hash, 6)}
+                                                    </code>
+                                                }
+                                            />
                                             <TooltipContent side="bottom" className="max-w-[280px] break-all">
                                                 <p className="font-mono text-[10px] sm:text-xs">{result.expected_hash || 'N/A'}</p>
                                             </TooltipContent>
@@ -80,11 +82,13 @@ export function IntegrityCheck({ result, documentType, showDetails = true }: Int
                                     <span className="text-muted-foreground">Actual:</span>
                                     <TooltipProvider>
                                         <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <code className="bg-background block max-w-full cursor-help truncate rounded px-1.5 py-1 font-mono">
-                                                    {shortenHash(result.actual_hash, 6)}
-                                                </code>
-                                            </TooltipTrigger>
+                                            <TooltipTrigger
+                                                render={
+                                                    <code className="bg-background block max-w-full cursor-help truncate rounded px-1.5 py-1 font-mono">
+                                                        {shortenHash(result.actual_hash, 6)}
+                                                    </code>
+                                                }
+                                            />
                                             <TooltipContent side="bottom" className="max-w-[280px] break-all">
                                                 <p className="font-mono text-[10px] sm:text-xs">{result.actual_hash || 'N/A'}</p>
                                             </TooltipContent>

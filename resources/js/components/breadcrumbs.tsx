@@ -17,10 +17,8 @@ export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[]
                                         {isLast ? (
                                             <BreadcrumbPage>{item.title}</BreadcrumbPage>
                                         ) : (
-                                            <BreadcrumbLink asChild>
-                                                <Link href={item.href} prefetch="hover" cacheFor="2m">
-                                                    {item.title}
-                                                </Link>
+                                            <BreadcrumbLink render={<Link href={item.href} prefetch="hover" cacheFor="2m" />}>
+                                                {item.title}
                                             </BreadcrumbLink>
                                         )}
                                     </BreadcrumbItem>

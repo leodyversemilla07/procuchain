@@ -69,10 +69,8 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                         </Badge>
                         <TooltipProvider>
                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button className="text-muted-foreground hover:text-foreground transition-colors">
-                                        <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                    </button>
+                                <TooltipTrigger render={<button className="text-muted-foreground hover:text-foreground transition-colors" />}>
+                                    <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom" className="max-w-[280px] sm:max-w-sm">
                                     <p className="text-xs sm:text-sm">{mode.description}</p>
@@ -110,28 +108,30 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                                 {workflow.stages.map((stage, index) => (
                                     <TooltipProvider key={stage.value}>
                                         <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Link
-                                                    href={stage.url || '#'}
-                                                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all hover:scale-110 sm:h-8 sm:w-8 ${
-                                                        stage.is_current
-                                                            ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
-                                                            : stage.is_completed
-                                                              ? 'border-green-500 bg-green-500 text-white hover:bg-green-600 dark:border-green-600 dark:bg-green-600 dark:hover:bg-green-700'
-                                                              : stage.is_optional
-                                                                ? 'border-muted-foreground/50 text-muted-foreground/50 hover:bg-muted/50 border-dashed'
-                                                                : 'border-muted-foreground/30 text-muted-foreground/30 hover:bg-muted/30'
-                                                    }`}
-                                                >
-                                                    {stage.is_completed ? (
-                                                        <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                                    ) : stage.is_optional ? (
-                                                        <SkipForward className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                                                    ) : (
-                                                        <span className="text-[10px] font-medium sm:text-xs">{index + 1}</span>
-                                                    )}
-                                                </Link>
-                                            </TooltipTrigger>
+                                            <TooltipTrigger
+                                                render={
+                                                    <Link
+                                                        href={stage.url || '#'}
+                                                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all hover:scale-110 sm:h-8 sm:w-8 ${
+                                                            stage.is_current
+                                                                ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
+                                                                : stage.is_completed
+                                                                  ? 'border-green-500 bg-green-500 text-white hover:bg-green-600 dark:border-green-600 dark:bg-green-600 dark:hover:bg-green-700'
+                                                                  : stage.is_optional
+                                                                    ? 'border-muted-foreground/50 text-muted-foreground/50 hover:bg-muted/50 border-dashed'
+                                                                    : 'border-muted-foreground/30 text-muted-foreground/30 hover:bg-muted/30'
+                                                        }`}
+                                                    >
+                                                        {stage.is_completed ? (
+                                                            <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                                        ) : stage.is_optional ? (
+                                                            <SkipForward className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                                        ) : (
+                                                            <span className="text-[10px] font-medium sm:text-xs">{index + 1}</span>
+                                                        )}
+                                                    </Link>
+                                                }
+                                            />
                                             <TooltipContent side="bottom">
                                                 <div className="space-y-1">
                                                     <p className="text-xs font-medium sm:text-sm">{stage.display_name}</p>
@@ -178,28 +178,30 @@ export function WorkflowProgressIndicator({ workflowInfo, compact = false }: Wor
                         {workflow.stages.map((stage, index) => (
                             <TooltipProvider key={stage.value}>
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Link
-                                            href={stage.url || '#'}
-                                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-all hover:scale-110 ${
-                                                stage.is_current
-                                                    ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
-                                                    : stage.is_completed
-                                                      ? 'border-green-500 bg-green-500 text-white hover:bg-green-600 dark:border-green-600 dark:bg-green-600 dark:hover:bg-green-700'
-                                                      : stage.is_optional
-                                                        ? 'border-muted-foreground/50 text-muted-foreground/50 hover:bg-muted/50 border-dashed'
-                                                        : 'border-muted-foreground/30 text-muted-foreground/30 hover:bg-muted/30'
-                                            }`}
-                                        >
-                                            {stage.is_completed ? (
-                                                <CheckCircle2 className="h-4 w-4" />
-                                            ) : stage.is_optional ? (
-                                                <SkipForward className="h-3 w-3" />
-                                            ) : (
-                                                <span className="text-xs font-medium">{index + 1}</span>
-                                            )}
-                                        </Link>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Link
+                                                href={stage.url || '#'}
+                                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-all hover:scale-110 ${
+                                                    stage.is_current
+                                                        ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
+                                                        : stage.is_completed
+                                                          ? 'border-green-500 bg-green-500 text-white hover:bg-green-600 dark:border-green-600 dark:bg-green-600 dark:hover:bg-green-700'
+                                                          : stage.is_optional
+                                                            ? 'border-muted-foreground/50 text-muted-foreground/50 hover:bg-muted/50 border-dashed'
+                                                            : 'border-muted-foreground/30 text-muted-foreground/30 hover:bg-muted/30'
+                                                }`}
+                                            >
+                                                {stage.is_completed ? (
+                                                    <CheckCircle2 className="h-4 w-4" />
+                                                ) : stage.is_optional ? (
+                                                    <SkipForward className="h-3 w-3" />
+                                                ) : (
+                                                    <span className="text-xs font-medium">{index + 1}</span>
+                                                )}
+                                            </Link>
+                                        }
+                                    />
                                     <TooltipContent>
                                         <div className="space-y-1">
                                             <p className="font-medium">{stage.display_name}</p>
@@ -268,11 +270,13 @@ export function ModeBadge({ workflowInfo }: { workflowInfo: WorkflowInfo }) {
     return (
         <TooltipProvider>
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 cursor-help">
-                        {mode.display_name}
-                    </Badge>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 cursor-help">
+                            {mode.display_name}
+                        </Badge>
+                    }
+                />
                 <TooltipContent side="bottom" className="max-w-sm">
                     <p className="text-sm">{mode.description}</p>
                     <p className="text-muted-foreground mt-1 text-xs">Reference: NGPA IRR {mode.irr_section}</p>

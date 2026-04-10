@@ -359,11 +359,12 @@ export default function ProcurementsList({
                     actions={
                         !isPollArchived && (
                             <Can permission="create procurement">
-                                <Button asChild className="shrink-0">
-                                    <Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2">
-                                        <Plus className="h-4 w-4" />
-                                        <span>New Procurement</span>
-                                    </Link>
+                                <Button
+                                    className="shrink-0"
+                                    render={<Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2" />}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    <span>New Procurement</span>
                                 </Button>
                             </Can>
                         )

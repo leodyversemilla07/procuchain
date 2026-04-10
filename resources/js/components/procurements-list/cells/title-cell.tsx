@@ -50,7 +50,7 @@ export const TitleCell = ({ procurement }: TitleCellProps) => {
 
     return isTruncated ? (
         <Tooltip>
-            <TooltipTrigger asChild>{titleContent}</TooltipTrigger>
+            <TooltipTrigger render={titleContent} />
             <TooltipContent className="font-medium">{procurement.title}</TooltipContent>
         </Tooltip>
     ) : (

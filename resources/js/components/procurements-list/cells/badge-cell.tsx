@@ -41,7 +41,7 @@ export const BadgeCell = <T extends string>({ value, getStyle, formatLabel = def
 
     return isTruncated ? (
         <Tooltip>
-            <TooltipTrigger asChild>{badge}</TooltipTrigger>
+            <TooltipTrigger render={badge} />
             <TooltipContent className="font-medium">{displayValue}</TooltipContent>
         </Tooltip>
     ) : (

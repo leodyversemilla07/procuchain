@@ -43,8 +43,8 @@ export default function Error({ status }: ErrorProps) {
                     <p className="text-muted-foreground mb-8 text-lg">{description}</p>
 
                     <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-                        <Button size="lg" asChild>
-                            <Link href={home.url()}>Go back home</Link>
+                        <Button size="lg" render={<Link href={home.url()} />}>
+                            Go back home
                         </Button>
                         <Button size="lg" variant="outline" onClick={() => window.location.reload()}>
                             Try again

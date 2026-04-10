@@ -97,10 +97,10 @@ export const MobileCardView = ({
 
                             {/* Actions Dropdown */}
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Open actions menu">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </Button>
+                                <DropdownMenuTrigger
+                                    render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Open actions menu" />}
+                                >
+                                    <MoreVertical className="h-4 w-4" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <ActionButtons

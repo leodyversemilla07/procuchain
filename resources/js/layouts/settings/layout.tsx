@@ -65,14 +65,12 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 key={item.href}
                                 size="sm"
                                 variant="ghost"
-                                asChild
+                                render={<Link href={item.href} prefetch />}
                                 className={cn('w-full justify-start', {
                                     'bg-muted': currentPath === item.href,
                                 })}
                             >
-                                <Link href={item.href} prefetch>
-                                    {item.title}
-                                </Link>
+                                {item.title}
                             </Button>
                         ))}
                     </nav>

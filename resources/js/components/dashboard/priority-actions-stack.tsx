@@ -68,8 +68,13 @@ export const PriorityActionsStack = ({
                             {action.action}
                         </h3>
                         <p className="text-muted-foreground my-1.5 truncate text-xs sm:my-2 sm:text-sm">For: {action.id}</p>
-                        <Button variant="secondary" size="sm" asChild className="mt-2 w-full transition-all duration-200 hover:scale-[1.02]">
-                            <Link href={action.route}>{actionLabel}</Link>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="mt-2 w-full transition-all duration-200 hover:scale-[1.02]"
+                            render={<Link href={action.route} />}
+                        >
+                            {actionLabel}
                         </Button>
                     </CardContent>
                 </Card>

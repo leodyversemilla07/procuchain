@@ -69,11 +69,9 @@ export default function SingleDocumentCorrection({ document }: SingleDocumentCor
             <div className="w-full space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header */}
                 <div className="flex items-center gap-4">
-                    <Button variant="outline" size="sm" asChild>
-                        <a href={`/documents/corrections/${document.pr_number}`}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to All Documents
-                        </a>
+                    <Button variant="outline" size="sm" render={<a href={`/documents/corrections/${document.pr_number}`} />}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to All Documents
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold">Correct Single Document</h1>

@@ -65,18 +65,20 @@ export const ModeCell = ({ mode, modeLabel }: ModeCellProps) => {
     return (
         <TooltipProvider>
             <Tooltip>
-                <TooltipTrigger asChild>
-                    <Badge
-                        variant="outline"
-                        className={cn(
-                            style,
-                            'inline-flex cursor-help items-center px-2 py-0.5 text-xs font-medium',
-                            'border shadow-sm transition-all duration-150',
-                        )}
-                    >
-                        {shortLabel}
-                    </Badge>
-                </TooltipTrigger>
+                <TooltipTrigger
+                    render={
+                        <Badge
+                            variant="outline"
+                            className={cn(
+                                style,
+                                'inline-flex cursor-help items-center px-2 py-0.5 text-xs font-medium',
+                                'border shadow-sm transition-all duration-150',
+                            )}
+                        >
+                            {shortLabel}
+                        </Badge>
+                    }
+                />
                 <TooltipContent>
                     <p className="font-medium">{fullLabel}</p>
                 </TooltipContent>

@@ -86,18 +86,19 @@ export default function PdfViewerHeader({ document, pdfUrl, viewStats, pdfError 
                                 <span className="sm:hidden">Correct</span>
                             </Button>
                         )}
-                        <Button variant="outline" size="sm" className="text-xs" asChild>
-                            <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                                <Eye className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
-                                <span className="hidden sm:inline">Open in Tab</span>
-                                <span className="sm:hidden">Open</span>
-                            </a>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}
+                        >
+                            <Eye className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Open in Tab</span>
+                            <span className="sm:hidden">Open</span>
                         </Button>
-                        <Button size="sm" className="text-xs" asChild>
-                            <a href={pdfUrl} download>
-                                <Download className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
-                                Download
-                            </a>
+                        <Button size="sm" className="text-xs" render={<a href={pdfUrl} download />}>
+                            <Download className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+                            Download
                         </Button>
                     </div>
                 </div>
