@@ -174,6 +174,18 @@ export default function BlockchainExplorer({
     const isHealthy = health?.status === 'healthy';
     const isCircuitOpen = health?.circuit_breaker?.is_open ?? false;
 
+    const tabOptions = [
+        { value: 'overview', label: 'Overview', icon: Activity },
+        { value: 'blocks', label: 'Blocks', icon: Blocks },
+        { value: 'streams', label: 'Streams', icon: Database },
+        { value: 'addresses', label: 'Addresses', icon: Wallet },
+        { value: 'peers', label: 'Peers', icon: Users },
+        { value: 'search', label: 'Search', icon: Search },
+        { value: 'health', label: 'Health', icon: Shield },
+    ] as const;
+
+    const selectedTabLabel = tabOptions.find((tab) => tab.value === selectedTab)?.label ?? 'Select a tab';
+
     // Auto-refresh functionality using Inertia's usePoll
     const { stop, start } = usePoll(
         30000,
@@ -338,96 +350,49 @@ export default function BlockchainExplorer({
                 <OverviewStatsGrid isRefreshing={isRefreshing} overview={overview} streams={streams} addresses={addresses} />
 
                 {/* Main Content Tabs */}
-                <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1">
+                <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1 flex-col gap-4">
                     {/* Mobile Tab Navigation - Dropdown */}
-                    <div className="mb-4 md:hidden">
+                    <div className="md:hidden">
                         <Select value={selectedTab} onValueChange={(value) => value && setSelectedTab(value)}>
                             <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select a tab" />
+                                <SelectValue placeholder="Select a tab">{() => selectedTabLabel}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectItem value="overview">
-                                        <div className="flex items-center">
-                                            <Activity className="mr-2 h-4 w-4" />
-                                            Overview
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="blocks">
-                                        <div className="flex items-center">
-                                            <Blocks className="mr-2 h-4 w-4" />
-                                            Blocks
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="streams">
-                                        <div className="flex items-center">
-                                            <Database className="mr-2 h-4 w-4" />
-                                            Streams
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="addresses">
-                                        <div className="flex items-center">
-                                            <Wallet className="mr-2 h-4 w-4" />
-                                            Addresses
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="peers">
-                                        <div className="flex items-center">
-                                            <Users className="mr-2 h-4 w-4" />
-                                            Peers
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="search">
-                                        <div className="flex items-center">
-                                            <Search className="mr-2 h-4 w-4" />
-                                            Search
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="health">
-                                        <div className="flex items-center">
-                                            <Shield className="mr-2 h-4 w-4" />
-                                            Health
-                                        </div>
-                                    </SelectItem>
+                                    {tabOptions.map((tab) => {
+                                        const TabIcon = tab.icon;
+
+                                        return (
+                                            <SelectItem key={tab.value} value={tab.value}>
+                                                <div className="flex items-center gap-2">
+                                                    <TabIcon />
+                                                    {tab.label}
+                                                </div>
+                                            </SelectItem>
+                                        );
+                                    })}
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
                     </div>
 
                     {/* Desktop Tab Navigation - Tab List */}
-                    <TabsList className="hidden w-full grid-cols-7 md:grid">
-                        <TabsTrigger value="overview">
-                            <Activity className="mr-2 h-4 w-4" />
-                            Overview
-                        </TabsTrigger>
-                        <TabsTrigger value="blocks">
-                            <Blocks className="mr-2 h-4 w-4" />
-                            Blocks
-                        </TabsTrigger>
-                        <TabsTrigger value="streams">
-                            <Database className="mr-2 h-4 w-4" />
-                            Streams
-                        </TabsTrigger>
-                        <TabsTrigger value="addresses">
-                            <Wallet className="mr-2 h-4 w-4" />
-                            Addresses
-                        </TabsTrigger>
-                        <TabsTrigger value="peers">
-                            <Users className="mr-2 h-4 w-4" />
-                            Peers
-                        </TabsTrigger>
-                        <TabsTrigger value="search">
-                            <Search className="mr-2 h-4 w-4" />
-                            Search
-                        </TabsTrigger>
-                        <TabsTrigger value="health">
-                            <Shield className="mr-2 h-4 w-4" />
-                            Health
-                        </TabsTrigger>
+                    <TabsList variant="line" className="hidden md:flex md:flex-wrap md:items-center md:gap-1">
+                        {tabOptions.map((tab) => {
+                            const TabIcon = tab.icon;
+
+                            return (
+                                <TabsTrigger key={tab.value} value={tab.value}>
+                                    <TabIcon data-icon="inline-start" />
+                                    {tab.label}
+                                </TabsTrigger>
+                            );
+                        })}
                     </TabsList>
 
-                    {/* Overview Tab */}
-                    <TabsContent value="overview" className="mt-6">
+                    <div className="rounded-lg border p-4 sm:p-6">
+                        {/* Overview Tab */}
+                        <TabsContent value="overview">
                         {overview && (
                             <div className="grid gap-6 md:grid-cols-2">
                                 {/* Chain Summary - Following MultiChain Explorer pattern */}
@@ -565,7 +530,7 @@ export default function BlockchainExplorer({
                     </TabsContent>
 
                     {/* Blocks Tab */}
-                    <TabsContent value="blocks" className="mt-6">
+                    <TabsContent value="blocks">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Recent Blocks</CardTitle>
@@ -720,7 +685,7 @@ export default function BlockchainExplorer({
                     </TabsContent>
 
                     {/* Streams Tab */}
-                    <TabsContent value="streams" className="mt-6">
+                    <TabsContent value="streams">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Blockchain Streams</CardTitle>
@@ -821,7 +786,7 @@ export default function BlockchainExplorer({
                     </TabsContent>
 
                     {/* Addresses Tab */}
-                    <TabsContent value="addresses" className="mt-6">
+                    <TabsContent value="addresses">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Wallet Addresses</CardTitle>
@@ -888,7 +853,7 @@ export default function BlockchainExplorer({
                     </TabsContent>
 
                     {/* Peers Tab */}
-                    <TabsContent value="peers" className="mt-6">
+                    <TabsContent value="peers">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Network Peers</CardTitle>
@@ -1196,7 +1161,7 @@ export default function BlockchainExplorer({
                     </TabsContent>
 
                     {/* Search Results Tab */}
-                    <TabsContent value="search" className="mt-6">
+                    <TabsContent value="search">
                         {searchResults ? (
                             <div className="space-y-6">
                                 {searchResults.block && (
@@ -1252,7 +1217,7 @@ export default function BlockchainExplorer({
                     </TabsContent>
 
                     {/* Health & Monitoring Tab */}
-                    <TabsContent value="health" className="mt-6">
+                    <TabsContent value="health">
                         {health ? (
                             <div className="space-y-6">
                                 {/* Overall Health Status */}
@@ -1436,6 +1401,7 @@ export default function BlockchainExplorer({
                             </Card>
                         )}
                     </TabsContent>
+                    </div>
                 </Tabs>
             </div>
         </AppLayout>
