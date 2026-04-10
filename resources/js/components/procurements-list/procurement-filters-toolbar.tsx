@@ -53,6 +53,8 @@ export function ProcurementFiltersToolbar({
     isArchived,
     className,
 }: ProcurementFiltersToolbarProps) {
+    const selectedStageLabel = stageOptions.find((option) => option.value === stageValue)?.label ?? stageOptions[0]?.label ?? 'Select stage';
+
     return (
         <div className={cn('pb-4', className)}>
             <div className="space-y-4">
@@ -75,7 +77,7 @@ export function ProcurementFiltersToolbar({
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <Select value={stageValue} onValueChange={(value) => value && onStageChange(value)}>
                             <SelectTrigger className="h-10 w-full sm:w-45">
-                                <SelectValue placeholder={stageOptions[0]?.label ?? 'Select stage'} />
+                                <SelectValue placeholder={stageOptions[0]?.label ?? 'Select stage'}>{() => selectedStageLabel}</SelectValue>
                             </SelectTrigger>
                             <SelectContent className="max-h-72">
                                 <SelectGroup>

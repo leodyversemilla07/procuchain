@@ -109,6 +109,26 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+const roleFilterLabels: Record<string, string> = {
+    all: 'All Roles',
+    admin: 'Administrator',
+    bac_chairman: 'BAC Chairman',
+    bac_secretariat: 'BAC Secretariat',
+    hope: 'HOPE',
+};
+
+const verificationFilterLabels: Record<string, string> = {
+    all: 'All Users',
+    verified: 'Verified',
+    unverified: 'Unverified',
+};
+
+const twoFactorFilterLabels: Record<string, string> = {
+    all: 'All Users',
+    enabled: '2FA Enabled',
+    disabled: '2FA Disabled',
+};
+
 export default function AdminUserManagement() {
     const page = usePage<PageProps>();
     const { users, roles } = page.props;
@@ -880,7 +900,7 @@ export default function AdminUserManagement() {
                                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3 lg:flex lg:gap-2">
                                         <Select value={roleFilter} onValueChange={(value) => value && setRoleFilter(value)}>
                                             <SelectTrigger className="h-10 w-full text-sm md:w-[200px] lg:w-[180px]">
-                                                <SelectValue placeholder="Filter by role" />
+                                                <SelectValue placeholder="Filter by role">{() => roleFilterLabels[roleFilter] ?? 'Filter by role'}</SelectValue>
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectGroup>
@@ -894,7 +914,7 @@ export default function AdminUserManagement() {
                                         </Select>
                                         <Select value={verificationFilter} onValueChange={(value) => value && setVerificationFilter(value)}>
                                             <SelectTrigger className="h-10 w-full text-sm md:w-[200px] lg:w-[180px]">
-                                                <SelectValue placeholder="Email status" />
+                                                <SelectValue placeholder="Email status">{() => verificationFilterLabels[verificationFilter] ?? 'Email status'}</SelectValue>
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectGroup>
@@ -906,7 +926,7 @@ export default function AdminUserManagement() {
                                         </Select>
                                         <Select value={twoFactorFilter} onValueChange={(value) => value && setTwoFactorFilter(value)}>
                                             <SelectTrigger className="h-10 w-full text-sm md:w-[200px] lg:w-[180px]">
-                                                <SelectValue placeholder="2FA status" />
+                                                <SelectValue placeholder="2FA status">{() => twoFactorFilterLabels[twoFactorFilter] ?? '2FA status'}</SelectValue>
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectGroup>
@@ -930,7 +950,7 @@ export default function AdminUserManagement() {
                                             className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                         >
                                             <CheckCircle2 className="h-3 w-3" />
-                                            <span className="xs:inline hidden">Verified</span>
+                                            <span>Verified</span>
                                         </Button>
                                         <Button
                                             variant={activeQuickFilter === '2fa' ? 'default' : 'outline'}
@@ -939,7 +959,7 @@ export default function AdminUserManagement() {
                                             className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                         >
                                             <Shield className="h-3 w-3" />
-                                            <span className="xs:inline hidden">2FA</span>
+                                            <span>2FA</span>
                                         </Button>
                                         <Button
                                             variant={activeQuickFilter === 'admin' ? 'default' : 'outline'}
@@ -948,7 +968,7 @@ export default function AdminUserManagement() {
                                             className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                         >
                                             <UserCheck className="h-3 w-3" />
-                                            <span className="xs:inline hidden">Admin</span>
+                                            <span>Admin</span>
                                         </Button>
                                         <Button
                                             variant={activeQuickFilter === 'unverified' ? 'default' : 'outline'}
@@ -957,7 +977,7 @@ export default function AdminUserManagement() {
                                             className="h-8 shrink-0 gap-1 px-3 text-xs whitespace-nowrap"
                                         >
                                             <X className="h-3 w-3" />
-                                            <span className="xs:inline hidden">Unverified</span>
+                                            <span>Unverified</span>
                                         </Button>
                                     </div>
                                 </div>

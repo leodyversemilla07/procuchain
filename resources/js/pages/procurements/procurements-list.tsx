@@ -14,8 +14,11 @@ import { SupplementalBidBulletinDialog } from '@/components/supplemental-bid-bul
 import { Button } from '@/components/ui/button';
 import { useProcurementList } from '@/hooks/use-procurement-list';
 import AppLayout from '@/layouts/app-layout';
+import { index as adminProcurementsIndex } from '@/routes/admin/procurements';
+import { index as bacChairmanProcurementsIndex } from '@/routes/bac-chairman/procurements';
 import procurement from '@/routes/bac-secretariat/procurement';
-import procurementsRoutes from '@/routes/bac-secretariat/procurements';
+import { index as bacSecretariatProcurementsIndex } from '@/routes/bac-secretariat/procurements';
+import { index as hopeProcurementsIndex } from '@/routes/hope/procurements';
 import { type ProcurementListItem, type SharedData, Status } from '@/types';
 import { getProcurementListBreadcrumbs } from '@/utils/breadcrumbs';
 import { toast } from 'sonner';
@@ -123,6 +126,27 @@ export default function ProcurementsList({
     const [pageSize, setPageSize] = useState<number>(pagination?.per_page ?? 10);
     const [isPolling, setIsPolling] = useState(false);
 
+    const getProcurementsListUrl = useCallback(
+        (options?: Parameters<typeof adminProcurementsIndex.url>[0]) => {
+            switch (userRole) {
+                case 'admin': {
+                    return adminProcurementsIndex.url(options);
+                }
+                case 'bac_chairman': {
+                    return bacChairmanProcurementsIndex.url(options);
+                }
+                case 'hope': {
+                    return hopeProcurementsIndex.url(options);
+                }
+                case 'bac_secretariat':
+                default: {
+                    return bacSecretariatProcurementsIndex.url(options);
+                }
+            }
+        },
+        [userRole],
+    );
+
     const isFirstSearchRun = useRef(true);
 
     // Polling with background refresh indicator
@@ -181,7 +205,7 @@ export default function ProcurementsList({
     const handleFilterChange = useCallback(
         (filterType: 'search' | 'stage', value: string) => {
             router.get(
-                procurementsRoutes.index.url({
+                getProcurementsListUrl({
                     mergeQuery: {
                         [filterType]: value && value !== 'all' ? value : null,
                         page: null, // Reset to first page
@@ -197,13 +221,13 @@ export default function ProcurementsList({
                 },
             );
         },
-        [pageSize],
+        [getProcurementsListUrl, pageSize],
     );
 
     const handlePageNavigate = useCallback(
         (nextPageIndex: number) => {
             router.get(
-                procurementsRoutes.index.url({
+                getProcurementsListUrl({
                     mergeQuery: {
                         page: nextPageIndex + 1,
                         per_page: pageSize,
@@ -219,30 +243,33 @@ export default function ProcurementsList({
                 },
             );
         },
-        [pageSize],
+        [getProcurementsListUrl, pageSize],
     );
 
-    const handlePageSizeChange = useCallback((nextPageSize: number) => {
-        router.get(
-            procurementsRoutes.index.url({
-                mergeQuery: {
-                    page: 1,
-                    per_page: nextPageSize,
+    const handlePageSizeChange = useCallback(
+        (nextPageSize: number) => {
+            router.get(
+                getProcurementsListUrl({
+                    mergeQuery: {
+                        page: 1,
+                        per_page: nextPageSize,
+                    },
+                }),
+                {},
+                {
+                    replace: true,
+                    preserveScroll: true,
+                    preserveState: true,
+                    only: ['procurements', 'pagination'],
+                    onSuccess: () => {
+                        setPageIndex(0);
+                        setPageSize(nextPageSize);
+                    },
                 },
-            }),
-            {},
-            {
-                replace: true,
-                preserveScroll: true,
-                preserveState: true,
-                only: ['procurements', 'pagination'],
-                onSuccess: () => {
-                    setPageIndex(0);
-                    setPageSize(nextPageSize);
-                },
-            },
-        );
-    }, []);
+            );
+        },
+        [getProcurementsListUrl],
+    );
 
     const handleRefresh = useCallback(() => {
         router.reload({

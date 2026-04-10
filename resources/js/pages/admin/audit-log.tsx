@@ -119,6 +119,7 @@ export default function AuditLog() {
     };
 
     const hasActiveFilters = !!(filters.action || filters.user_id || filters.date_from || filters.date_to);
+    const selectedActionLabel = action && action !== 'all' ? (ACTION_LABELS[action] ?? action) : 'All actions';
 
     const goToPage = (url: string | null) => {
         if (url) {
@@ -146,8 +147,8 @@ export default function AuditLog() {
                     <CardContent>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <Select value={action || 'all'} onValueChange={(value) => value && setAction(value)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All actions" />
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="All actions">{() => selectedActionLabel}</SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>

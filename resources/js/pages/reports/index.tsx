@@ -128,6 +128,24 @@ export default function ReportIndex() {
     const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+    const filterTypeLabels: Record<ReportFilters['filter_type'], string> = {
+        month: 'Month',
+        quarter: 'Quarter',
+        year: 'Year',
+        date_range: 'Date Range',
+    };
+
+    const quarterLabels: Record<number, string> = {
+        1: 'Q1 (Jan-Mar)',
+        2: 'Q2 (Apr-Jun)',
+        3: 'Q3 (Jul-Sep)',
+        4: 'Q4 (Oct-Dec)',
+    };
+
+    const selectedFilterTypeLabel = filterTypeLabels[filters.filter_type] ?? 'Filter Type';
+    const selectedMonthLabel = filters.month ? (months[filters.month - 1] ?? 'Month') : 'Month';
+    const selectedQuarterLabel = filters.quarter ? (quarterLabels[filters.quarter] ?? 'Quarter') : 'Quarter';
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Semantic Search & Reports" />
@@ -149,8 +167,8 @@ export default function ReportIndex() {
                             <div className="space-y-2">
                                 <Label>Filter Type</Label>
                                 <Select value={filters.filter_type} onValueChange={(value) => value && handleFilterChange('filter_type', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue />
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue>{() => selectedFilterTypeLabel}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -171,8 +189,8 @@ export default function ReportIndex() {
                                             value={filters.month?.toString()}
                                             onValueChange={(value) => value && handleFilterChange('month', parseInt(value))}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue />
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue>{() => selectedMonthLabel}</SelectValue>
                                             </SelectTrigger>
                                             <SelectContent className="max-h-60 overflow-y-auto">
                                                 <SelectGroup>
@@ -191,8 +209,8 @@ export default function ReportIndex() {
                                             value={filters.year?.toString()}
                                             onValueChange={(value) => value && handleFilterChange('year', parseInt(value))}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue />
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue>{() => filters.year?.toString() ?? 'Year'}</SelectValue>
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectGroup>
@@ -216,8 +234,8 @@ export default function ReportIndex() {
                                             value={filters.quarter?.toString()}
                                             onValueChange={(value) => value && handleFilterChange('quarter', parseInt(value))}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue />
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue>{() => selectedQuarterLabel}</SelectValue>
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectGroup>
@@ -235,8 +253,8 @@ export default function ReportIndex() {
                                             value={filters.year?.toString()}
                                             onValueChange={(value) => value && handleFilterChange('year', parseInt(value))}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue />
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue>{() => filters.year?.toString() ?? 'Year'}</SelectValue>
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectGroup>
@@ -256,8 +274,8 @@ export default function ReportIndex() {
                                 <div className="space-y-2">
                                     <Label>Year</Label>
                                     <Select value={filters.year?.toString()} onValueChange={(value) => value && handleFilterChange('year', parseInt(value))}>
-                                        <SelectTrigger>
-                                            <SelectValue />
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue>{() => filters.year?.toString() ?? 'Year'}</SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectGroup>
