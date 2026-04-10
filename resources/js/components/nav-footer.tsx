@@ -14,7 +14,7 @@ export function NavFooter({
     return (
         <SidebarGroup {...props} className={`group-data-[collapsible=icon]:p-0 ${className || ''}`}>
             <SidebarGroupContent>
-                <SidebarMenu>
+                <SidebarMenu className="gap-1">
                     {items.map((item) => (
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton
