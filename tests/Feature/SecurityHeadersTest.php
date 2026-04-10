@@ -12,6 +12,10 @@ it('uses the development content security policy outside production', function (
     );
 
     expect($response->headers->get('Content-Security-Policy'))->toContain("'unsafe-eval'")
+        ->toContain('http://127.0.0.1:5173')
+        ->toContain('http://localhost:5173')
+        ->toContain('ws://127.0.0.1:5173')
+        ->toContain('ws://localhost:5173')
         ->and($response->headers->get('Strict-Transport-Security'))->toBeNull();
 });
 
