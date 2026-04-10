@@ -78,6 +78,20 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+const roleFilterLabels: Record<string, string> = {
+    all: 'All Roles',
+    admin: 'Administrator',
+    bac_chairman: 'BAC Chairman',
+    bac_secretariat: 'BAC Secretariat',
+    hope: 'HOPE',
+};
+
+const statusFilterLabels: Record<string, string> = {
+    all: 'All Status',
+    active: 'Active Lock',
+    expired: 'Expired Lock',
+};
+
 export default function AdminLockedAccounts() {
     const { lockedAccounts, flash } = usePage<PageProps>().props;
     const { hasPermission } = usePermissions();
@@ -440,7 +454,7 @@ export default function AdminLockedAccounts() {
                             <div className="flex flex-col gap-2 sm:flex-row">
                                 <Select value={roleFilter} onValueChange={(value) => value && setRoleFilter(value)}>
                                     <SelectTrigger className="w-full sm:w-[180px]">
-                                        <SelectValue placeholder="Filter by role" />
+                                        <SelectValue placeholder="Filter by role">{() => roleFilterLabels[roleFilter] ?? 'Filter by role'}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -454,7 +468,7 @@ export default function AdminLockedAccounts() {
                                 </Select>
                                 <Select value={statusFilter} onValueChange={(value) => value && setStatusFilter(value)}>
                                     <SelectTrigger className="w-full sm:w-[180px]">
-                                        <SelectValue placeholder="Filter by status" />
+                                        <SelectValue placeholder="Filter by status">{() => statusFilterLabels[statusFilter] ?? 'Filter by status'}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
