@@ -93,7 +93,7 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                     actions={
                         <Select value={mode.value} onValueChange={(value) => value && handleModeChange(value)}>
                             <SelectTrigger className="w-full sm:w-[280px]">
-                                <SelectValue placeholder="Select procurement mode" />
+                                <SelectValue placeholder="Select procurement mode">{() => mode.display_name}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
