@@ -87,6 +87,14 @@ export default function Notifications() {
     const [refreshing, setRefreshing] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
 
+    const filterLabels: Record<FilterType, string> = {
+        all: 'All',
+        unread: 'Unread',
+        read: 'Read',
+    };
+
+    const selectedFilterLabel = filterLabels[filter] ?? 'Filter';
+
     // Optimistic state management
     const [optimisticNotifications, setOptimisticNotifications] = useState<Notification[]>(initialNotifications);
     const [optimisticUnreadCount, setOptimisticUnreadCount] = useState(unread_count);
@@ -273,10 +281,10 @@ export default function Notifications() {
 
     const actions = (
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <Select value={filter} onValueChange={(value) => value && handleFilterChange(value)}>
+            <Select value={filter} onValueChange={(value) => value && handleFilterChange(value as FilterType)}>
                 <SelectTrigger className="w-[120px] sm:w-[140px]">
                     <Filter className="text-muted-foreground mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Filter" />
+                    <SelectValue placeholder="Filter">{() => selectedFilterLabel}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                     <SelectGroup>

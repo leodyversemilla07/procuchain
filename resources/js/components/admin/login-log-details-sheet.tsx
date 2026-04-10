@@ -114,25 +114,21 @@ export default function LoginLogDetailsSheet({ open, onOpenChange, log, category
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="flex w-full flex-col sm:max-w-[700px]" side="right">
-                <SheetHeader>
-                    <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                            <SheetTitle>Login Details</SheetTitle>
-                            <SheetDescription>
-                                Login ID: #{log.id} • {formatDateTime(log.login_at)}
-                            </SheetDescription>
-                        </div>
-                        {category === 'suspicious' && (
-                            <Badge variant="destructive" className="flex items-center gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                Suspicious
-                            </Badge>
-                        )}
-                    </div>
+            <SheetContent className="flex w-full flex-col overflow-x-hidden sm:max-w-[700px]" side="right">
+                <SheetHeader className="space-y-2 pr-8">
+                    <SheetTitle>Login Details</SheetTitle>
+                    <SheetDescription>
+                        Login ID: #{log.id} • {formatDateTime(log.login_at)}
+                    </SheetDescription>
+                    {category === 'suspicious' && (
+                        <Badge variant="destructive" className="mt-1 flex w-fit items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Suspicious
+                        </Badge>
+                    )}
                 </SheetHeader>
 
-                <div className="flex-1 space-y-6 overflow-y-auto py-6">
+                <div className="flex-1 min-h-0 space-y-6 overflow-y-auto overflow-x-hidden py-6 pr-1">
                     {/* Status Overview */}
                     <div className="space-y-4">
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -175,7 +171,7 @@ export default function LoginLogDetailsSheet({ open, onOpenChange, log, category
                                 </div>
                                 <div>
                                     <p className="text-muted-foreground text-xs">Email</p>
-                                    <p className="mt-1 font-medium">{log.user?.email || 'Unknown Email'}</p>
+                                    <p className="mt-1 break-all font-medium">{log.user?.email || 'Unknown Email'}</p>
                                 </div>
                             </div>
                             <div className="grid gap-3 sm:grid-cols-2">
@@ -222,7 +218,7 @@ export default function LoginLogDetailsSheet({ open, onOpenChange, log, category
                                 <p className="text-muted-foreground text-xs">IP Address</p>
                                 <div className="mt-1 flex items-center gap-2">
                                     <Globe className="text-muted-foreground h-4 w-4" />
-                                    <code className="bg-muted rounded px-2 py-1 font-mono text-sm">{log.ip_address}</code>
+                                    <code className="bg-muted rounded px-2 py-1 font-mono text-sm break-all">{log.ip_address}</code>
                                 </div>
                             </div>
                             <div>

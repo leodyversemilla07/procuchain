@@ -468,6 +468,25 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
         return Array.from(deviceTypes).sort();
     }, [recentLogins, suspiciousActivities]);
 
+    const categoryFilterLabels: Record<'all' | 'recent' | 'suspicious', string> = {
+        all: 'All Categories',
+        recent: 'Recent',
+        suspicious: 'Suspicious',
+    };
+
+    const statusFilterLabels: Record<'all' | 'success' | 'failed', string> = {
+        all: 'All Statuses',
+        success: 'Success',
+        failed: 'Failed',
+    };
+
+    const selectedCategoryLabel = categoryFilterLabels[selectedCategory] ?? 'Category';
+    const selectedStatusLabel = statusFilterLabels[selectedStatus as keyof typeof statusFilterLabels] ?? 'Status';
+    const selectedRoleLabel = selectedRole === 'all' ? 'All Roles' : selectedRole.replace('_', ' ').toUpperCase();
+    const selectedDeviceTypeLabel =
+        selectedDeviceType === 'all' ? 'All Devices' : selectedDeviceType.charAt(0).toUpperCase() + selectedDeviceType.slice(1);
+    const selectedBrowserLabel = selectedBrowser === 'all' ? 'All Browsers' : selectedBrowser;
+
     // Check if any filters are active
     const hasActiveFilters = useMemo(() => {
         return (
@@ -755,8 +774,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                 {/* Category Filter */}
                                 <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as 'all' | 'recent' | 'suspicious')}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Category" />
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Category">{() => selectedCategoryLabel}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -769,8 +788,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                                 {/* Status Filter */}
                                 <Select value={selectedStatus} onValueChange={(value) => value && setSelectedStatus(value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Status" />
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Status">{() => selectedStatusLabel}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -783,8 +802,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                                 {/* Role Filter */}
                                 <Select value={selectedRole} onValueChange={(value) => value && setSelectedRole(value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Role" />
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Role">{() => selectedRoleLabel}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -800,8 +819,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                                 {/* Device Type Filter */}
                                 <Select value={selectedDeviceType} onValueChange={(value) => value && setSelectedDeviceType(value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Device" />
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Device">{() => selectedDeviceTypeLabel}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -817,8 +836,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
 
                                 {/* Browser Filter */}
                                 <Select value={selectedBrowser} onValueChange={(value) => value && setSelectedBrowser(value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Browser" />
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Browser">{() => selectedBrowserLabel}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>

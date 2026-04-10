@@ -16,6 +16,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
 import { CalendarIcon, FileSearch, FilterX, ScrollText, Search } from 'lucide-react';
 import { useState } from 'react';
+import { type DateRange } from 'react-day-picker';
 
 interface Actor {
     id: number;
@@ -94,8 +95,10 @@ export default function AuditLog() {
 
     const [action, setAction] = useState(filters.action ?? '');
     const [userId, setUserId] = useState(filters.user_id ?? '');
-    const [dateFrom, setDateFrom] = useState(filters.date_from ?? '');
-    const [dateTo, setDateTo] = useState(filters.date_to ?? '');
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
+        from: filters.date_from ? parseISO(filters.date_from) : undefined,
+        to: filters.date_to ? parseISO(filters.date_to) : undefined,
+    });
 
     const applyFilters = () => {
         router.get(
@@ -103,8 +106,8 @@ export default function AuditLog() {
             {
                 ...(action && action !== 'all' ? { action } : {}),
                 ...(userId ? { user_id: userId } : {}),
-                ...(dateFrom ? { date_from: dateFrom } : {}),
-                ...(dateTo ? { date_to: dateTo } : {}),
+                ...(dateRange?.from ? { date_from: format(dateRange.from, 'yyyy-MM-dd') } : {}),
+                ...(dateRange?.to ? { date_to: format(dateRange.to, 'yyyy-MM-dd') } : {}),
             },
             { preserveState: true, replace: true },
         );
@@ -113,8 +116,7 @@ export default function AuditLog() {
     const clearFilters = () => {
         setAction('');
         setUserId('');
-        setDateFrom('');
-        setDateTo('');
+        setDateRange(undefined);
         router.get('/admin/audit-log', {}, { preserveState: false, replace: true });
     };
 
@@ -169,41 +171,31 @@ export default function AuditLog() {
                                     render={
                                         <Button
                                             variant="outline"
-                                            className={cn('w-full justify-start text-left font-normal', !dateFrom && 'text-muted-foreground')}
+                                            className={cn('w-full justify-start text-left font-normal', !dateRange?.from && 'text-muted-foreground')}
                                         />
                                     }
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {dateFrom ? format(parseISO(dateFrom), 'MMM d, yyyy') : <span>From date</span>}
+                                    {dateRange?.from ? (
+                                        dateRange.to ? (
+                                            <>
+                                                {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
+                                            </>
+                                        ) : (
+                                            format(dateRange.from, 'MMM d, yyyy')
+                                        )
+                                    ) : (
+                                        <span>Date range</span>
+                                    )}
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0" align="start">
                                     <Calendar
-                                        mode="single"
-                                        selected={dateFrom ? parseISO(dateFrom) : undefined}
-                                        onSelect={(date) => setDateFrom(date ? format(date, 'yyyy-MM-dd') : '')}
                                         initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
-
-                            <Popover>
-                                <PopoverTrigger
-                                    render={
-                                        <Button
-                                            variant="outline"
-                                            className={cn('w-full justify-start text-left font-normal', !dateTo && 'text-muted-foreground')}
-                                        />
-                                    }
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {dateTo ? format(parseISO(dateTo), 'MMM d, yyyy') : <span>To date</span>}
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={dateTo ? parseISO(dateTo) : undefined}
-                                        onSelect={(date) => setDateTo(date ? format(date, 'yyyy-MM-dd') : '')}
-                                        initialFocus
+                                        mode="range"
+                                        defaultMonth={dateRange?.from}
+                                        selected={dateRange}
+                                        onSelect={setDateRange}
+                                        numberOfMonths={2}
                                     />
                                 </PopoverContent>
                             </Popover>
