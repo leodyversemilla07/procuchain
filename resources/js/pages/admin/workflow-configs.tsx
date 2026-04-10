@@ -64,30 +64,27 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
 
     const ModeCard = ({ config }: { config: WorkflowConfig }) => (
         <Card className="group relative flex flex-col overflow-hidden transition-all hover:shadow-md">
-            <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                        <CardTitle className="text-lg">{config.display_name}</CardTitle>
-                        <CardDescription className="text-sm">{config.irr_section}</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {config.is_customized && (
-                            <Badge variant="secondary" className="text-xs">
-                                Customized
-                            </Badge>
-                        )}
-                        <Badge variant={config.is_alternative_mode ? 'outline' : 'default'} className="text-xs">
-                            {config.is_alternative_mode ? 'Alternative' : 'Competitive'}
-                        </Badge>
-                    </div>
-                </div>
+            <CardHeader>
+                <CardTitle className="text-lg">{config.display_name}</CardTitle>
+                <CardDescription>{config.irr_section}</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 space-y-3">
-                <p className="text-muted-foreground line-clamp-2 text-sm">{config.description}</p>
+            <CardContent className="flex flex-1 flex-col gap-4">
+                <div className="flex flex-wrap gap-2">
+                    {config.is_customized && (
+                        <Badge variant="secondary" className="text-xs">
+                            Customized
+                        </Badge>
+                    )}
+                    <Badge variant={config.is_alternative_mode ? 'outline' : 'default'} className="text-xs">
+                        {config.is_alternative_mode ? 'Alternative' : 'Competitive'}
+                    </Badge>
+                </div>
 
-                <div className="flex items-center gap-4 text-sm">
+                <p className="text-muted-foreground line-clamp-3 text-sm">{config.description}</p>
+
+                <div className="flex flex-wrap items-center gap-3 text-sm">
                     <div className="flex items-center gap-1.5">
-                        <GitBranch className="text-muted-foreground h-4 w-4" />
+                        <GitBranch data-icon="inline-start" className="text-muted-foreground" />
                         <span className="font-medium">{config.stage_count}</span>
                         <span className="text-muted-foreground">stages</span>
                     </div>
@@ -101,18 +98,24 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
                     </p>
                 )}
             </CardContent>
-            <CardFooter className="flex items-center gap-2 border-t pt-4">
-                <Button variant="outline" size="sm" render={<Link href={workflowConfigPreview(config.mode).url} />}>
-                    <Eye className="mr-2 h-4 w-4" />
+            <CardFooter className="flex flex-wrap items-center gap-2 border-t">
+                <Button variant="outline" size="sm" nativeButton={false} render={<Link href={workflowConfigPreview(config.mode).url} />}>
+                    <Eye data-icon="inline-start" />
                     Preview
                 </Button>
-                <Button variant="default" size="sm" className="flex-1" render={<Link href={workflowConfigEdit(config.mode).url} />}>
-                    <Edit className="mr-2 h-4 w-4" />
+                <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1 min-w-[140px]"
+                    nativeButton={false}
+                    render={<Link href={workflowConfigEdit(config.mode).url} />}
+                >
+                    <Edit data-icon="inline-start" />
                     Configure
                 </Button>
                 {config.is_customized && (
                     <Button variant="ghost" size="sm" onClick={() => handleResetConfig(config.mode)} title="Reset to defaults">
-                        <RotateCcw className="h-4 w-4" />
+                        <RotateCcw />
                     </Button>
                 )}
             </CardFooter>
@@ -156,7 +159,7 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
                     <p className="text-muted-foreground text-sm">
                         Simplified procedures. May be delegated to End-User or Procurement Unit per NGPA IRR Section 26.4.
                     </p>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         {alternativeModes.map((config) => (
                             <ModeCard key={config.mode} config={config} />
                         ))}
