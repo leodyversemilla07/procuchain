@@ -21,13 +21,12 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -439,26 +438,30 @@ export default function AdminLockedAccounts() {
                                 />
                             </div>
                             <div className="flex flex-col gap-2 sm:flex-row">
-                                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                                <Select value={roleFilter} onValueChange={(value) => value && setRoleFilter(value)}>
                                     <SelectTrigger className="w-full sm:w-[180px]">
                                         <SelectValue placeholder="Filter by role" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Roles</SelectItem>
-                                        <SelectItem value="admin">Administrator</SelectItem>
-                                        <SelectItem value="bac_chairman">BAC Chairman</SelectItem>
-                                        <SelectItem value="bac_secretariat">BAC Secretariat</SelectItem>
-                                        <SelectItem value="hope">HOPE</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="all">All Roles</SelectItem>
+                                            <SelectItem value="admin">Administrator</SelectItem>
+                                            <SelectItem value="bac_chairman">BAC Chairman</SelectItem>
+                                            <SelectItem value="bac_secretariat">BAC Secretariat</SelectItem>
+                                            <SelectItem value="hope">HOPE</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <Select value={statusFilter} onValueChange={(value) => value && setStatusFilter(value)}>
                                     <SelectTrigger className="w-full sm:w-[180px]">
                                         <SelectValue placeholder="Filter by status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Status</SelectItem>
-                                        <SelectItem value="active">Active Lock</SelectItem>
-                                        <SelectItem value="expired">Expired Lock</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="all">All Status</SelectItem>
+                                            <SelectItem value="active">Active Lock</SelectItem>
+                                            <SelectItem value="expired">Expired Lock</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -709,13 +712,11 @@ export default function AdminLockedAccounts() {
                                                   </TableCell>
                                                   <TableCell className="text-right">
                                                       <DropdownMenu>
-                                                          <DropdownMenuTrigger asChild>
-                                                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                  <MoreHorizontal className="h-4 w-4" />
-                                                              </Button>
+                                                          <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+                                                              <MoreHorizontal className="h-4 w-4" />
                                                           </DropdownMenuTrigger>
                                                           <DropdownMenuContent align="end">
-                                                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                              <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Actions</div>
                                                               <DropdownMenuSeparator />
                                                               <DropdownMenuItem
                                                                   onClick={() => {
@@ -832,13 +833,11 @@ export default function AdminLockedAccounts() {
                                                           </div>
                                                       </div>
                                                       <DropdownMenu>
-                                                          <DropdownMenuTrigger asChild>
-                                                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                  <MoreHorizontal className="h-4 w-4" />
-                                                              </Button>
+                                                          <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+                                                              <MoreHorizontal className="h-4 w-4" />
                                                           </DropdownMenuTrigger>
                                                           <DropdownMenuContent align="end">
-                                                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                              <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Actions</div>
                                                               <DropdownMenuSeparator />
                                                               <DropdownMenuItem
                                                                   onClick={() => {

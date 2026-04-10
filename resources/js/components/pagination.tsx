@@ -7,7 +7,7 @@ import {
     PaginationPrevious,
     Pagination as UIPagination,
 } from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
 
@@ -74,12 +74,14 @@ export const Pagination: React.FC<PaginationProps> = ({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {pageSizeOptions.map((size) => (
-                                    <SelectItem key={size} value={String(size)}>
-                                        {size}
-                                    </SelectItem>
-                                ))}
-                                <SelectItem value="9999">All</SelectItem>
+                                <SelectGroup>
+                                    {pageSizeOptions.map((size) => (
+                                        <SelectItem key={size} value={String(size)}>
+                                            {size}
+                                        </SelectItem>
+                                    ))}
+                                    <SelectItem value="9999">All</SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     </div>

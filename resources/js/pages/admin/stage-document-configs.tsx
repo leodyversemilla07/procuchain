@@ -2,7 +2,7 @@ import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
@@ -131,11 +131,13 @@ export default function StageDocumentConfigs({
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button asChild variant="ghost" size="sm">
-                                            <Link href={stageDocumentsEdit({ mode: selectedMode, stage: stage.stage }).url}>
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                Edit
-                                            </Link>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            render={<Link href={stageDocumentsEdit({ mode: selectedMode, stage: stage.stage }).url} />}
+                                        >
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            Edit
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -171,23 +173,28 @@ export default function StageDocumentConfigs({
                             <Label className="text-sm font-medium">Procurement Mode</Label>
                             <p className="text-muted-foreground text-xs">Select a procurement mode to view and configure its stage documents</p>
                         </div>
-                        <Select value={selectedMode} onValueChange={handleModeChange}>
+                        <Select value={selectedMode} onValueChange={(value) => value && handleModeChange(value)}>
                             <SelectTrigger className="w-[300px]">
                                 <SelectValue placeholder="Select mode" />
                             </SelectTrigger>
                             <SelectContent>
-                                <div className="text-muted-foreground px-2 py-1.5 text-xs font-semibold">Competitive Modes</div>
-                                {competitiveModes.map((mode) => (
-                                    <SelectItem key={mode.value} value={mode.value}>
-                                        {mode.display_name}
-                                    </SelectItem>
-                                ))}
-                                <div className="text-muted-foreground px-2 py-1.5 text-xs font-semibold">Alternative Modes</div>
-                                {alternativeModes.map((mode) => (
-                                    <SelectItem key={mode.value} value={mode.value}>
-                                        {mode.display_name}
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    <SelectLabel>Competitive Modes</SelectLabel>
+                                    {competitiveModes.map((mode) => (
+                                        <SelectItem key={mode.value} value={mode.value}>
+                                            {mode.display_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                                <SelectSeparator />
+                                <SelectGroup>
+                                    <SelectLabel>Alternative Modes</SelectLabel>
+                                    {alternativeModes.map((mode) => (
+                                        <SelectItem key={mode.value} value={mode.value}>
+                                            {mode.display_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     </CardContent>

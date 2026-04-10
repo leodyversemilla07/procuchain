@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
@@ -341,53 +341,55 @@ export default function BlockchainExplorer({
                 <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1">
                     {/* Mobile Tab Navigation - Dropdown */}
                     <div className="mb-4 md:hidden">
-                        <Select value={selectedTab} onValueChange={setSelectedTab}>
+                        <Select value={selectedTab} onValueChange={(value) => value && setSelectedTab(value)}>
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select a tab" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="overview">
-                                    <div className="flex items-center">
-                                        <Activity className="mr-2 h-4 w-4" />
-                                        Overview
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value="blocks">
-                                    <div className="flex items-center">
-                                        <Blocks className="mr-2 h-4 w-4" />
-                                        Blocks
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value="streams">
-                                    <div className="flex items-center">
-                                        <Database className="mr-2 h-4 w-4" />
-                                        Streams
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value="addresses">
-                                    <div className="flex items-center">
-                                        <Wallet className="mr-2 h-4 w-4" />
-                                        Addresses
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value="peers">
-                                    <div className="flex items-center">
-                                        <Users className="mr-2 h-4 w-4" />
-                                        Peers
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value="search">
-                                    <div className="flex items-center">
-                                        <Search className="mr-2 h-4 w-4" />
-                                        Search
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value="health">
-                                    <div className="flex items-center">
-                                        <Shield className="mr-2 h-4 w-4" />
-                                        Health
-                                    </div>
-                                </SelectItem>
+                                <SelectGroup>
+                                    <SelectItem value="overview">
+                                        <div className="flex items-center">
+                                            <Activity className="mr-2 h-4 w-4" />
+                                            Overview
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="blocks">
+                                        <div className="flex items-center">
+                                            <Blocks className="mr-2 h-4 w-4" />
+                                            Blocks
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="streams">
+                                        <div className="flex items-center">
+                                            <Database className="mr-2 h-4 w-4" />
+                                            Streams
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="addresses">
+                                        <div className="flex items-center">
+                                            <Wallet className="mr-2 h-4 w-4" />
+                                            Addresses
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="peers">
+                                        <div className="flex items-center">
+                                            <Users className="mr-2 h-4 w-4" />
+                                            Peers
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="search">
+                                        <div className="flex items-center">
+                                            <Search className="mr-2 h-4 w-4" />
+                                            Search
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="health">
+                                        <div className="flex items-center">
+                                            <Shield className="mr-2 h-4 w-4" />
+                                            Health
+                                        </div>
+                                    </SelectItem>
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     </div>
@@ -1329,10 +1331,8 @@ export default function BlockchainExplorer({
                                                                 will automatically retry after the recovery time.
                                                             </p>
                                                             <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button variant="outline" size="sm" className="mt-2">
-                                                                        Reset Circuit Breaker
-                                                                    </Button>
+                                                                <AlertDialogTrigger render={<Button variant="outline" size="sm" className="mt-2" />}>
+                                                                    Reset Circuit Breaker
                                                                 </AlertDialogTrigger>
                                                                 <AlertDialogContent>
                                                                     <AlertDialogHeader>

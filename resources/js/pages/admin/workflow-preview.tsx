@@ -1,7 +1,7 @@
 import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { preview as workflowPreview } from '@/routes/admin/workflow-config';
 import { BreadcrumbItem } from '@/types';
@@ -91,23 +91,25 @@ export default function WorkflowPreview({ mode, phases, summary, allModes }: Pag
                     title="Workflow Preview"
                     description="Preview what users will see for this procurement mode - including all stages and document requirements"
                     actions={
-                        <Select value={mode.value} onValueChange={handleModeChange}>
+                        <Select value={mode.value} onValueChange={(value) => value && handleModeChange(value)}>
                             <SelectTrigger className="w-full sm:w-[280px]">
                                 <SelectValue placeholder="Select procurement mode" />
                             </SelectTrigger>
                             <SelectContent>
-                                {allModes.map((m) => (
-                                    <SelectItem key={m.value} value={m.value}>
-                                        <div className="flex items-center gap-2">
-                                            <span>{m.display_name}</span>
-                                            {m.is_alternative_mode && (
-                                                <Badge variant="outline" className="text-xs">
-                                                    Alt
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    {allModes.map((m) => (
+                                        <SelectItem key={m.value} value={m.value}>
+                                            <div className="flex items-center gap-2">
+                                                <span>{m.display_name}</span>
+                                                {m.is_alternative_mode && (
+                                                    <Badge variant="outline" className="text-xs">
+                                                        Alt
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
                     }

@@ -7,13 +7,12 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -484,7 +483,8 @@ export default function AdminUserManagement() {
             id: 'select',
             header: ({ table }) => (
                 <Checkbox
-                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+                    checked={table.getIsAllPageRowsSelected()}
+                    indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
                     onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
                     aria-label="Select all"
                 />
@@ -708,14 +708,12 @@ export default function AdminUserManagement() {
 
                 return (
                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-10 w-10 p-0 md:h-8 md:w-8">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
+                        <DropdownMenuTrigger render={<Button variant="ghost" className="h-10 w-10 p-0 md:h-8 md:w-8" />}>
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Actions</div>
                             <DropdownMenuItem
                                 onClick={async () => {
                                     try {
@@ -880,36 +878,42 @@ export default function AdminUserManagement() {
                                         />
                                     </div>
                                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3 lg:flex lg:gap-2">
-                                        <Select value={roleFilter} onValueChange={setRoleFilter}>
+                                        <Select value={roleFilter} onValueChange={(value) => value && setRoleFilter(value)}>
                                             <SelectTrigger className="h-10 w-full text-sm md:w-[200px] lg:w-[180px]">
                                                 <SelectValue placeholder="Filter by role" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="all">All Roles</SelectItem>
-                                                <SelectItem value="admin">Administrator</SelectItem>
-                                                <SelectItem value="bac_chairman">BAC Chairman</SelectItem>
-                                                <SelectItem value="bac_secretariat">BAC Secretariat</SelectItem>
-                                                <SelectItem value="hope">HOPE</SelectItem>
+                                                <SelectGroup>
+                                                    <SelectItem value="all">All Roles</SelectItem>
+                                                    <SelectItem value="admin">Administrator</SelectItem>
+                                                    <SelectItem value="bac_chairman">BAC Chairman</SelectItem>
+                                                    <SelectItem value="bac_secretariat">BAC Secretariat</SelectItem>
+                                                    <SelectItem value="hope">HOPE</SelectItem>
+                                                </SelectGroup>
                                             </SelectContent>
                                         </Select>
-                                        <Select value={verificationFilter} onValueChange={setVerificationFilter}>
+                                        <Select value={verificationFilter} onValueChange={(value) => value && setVerificationFilter(value)}>
                                             <SelectTrigger className="h-10 w-full text-sm md:w-[200px] lg:w-[180px]">
                                                 <SelectValue placeholder="Email status" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="all">All Users</SelectItem>
-                                                <SelectItem value="verified">Verified</SelectItem>
-                                                <SelectItem value="unverified">Unverified</SelectItem>
+                                                <SelectGroup>
+                                                    <SelectItem value="all">All Users</SelectItem>
+                                                    <SelectItem value="verified">Verified</SelectItem>
+                                                    <SelectItem value="unverified">Unverified</SelectItem>
+                                                </SelectGroup>
                                             </SelectContent>
                                         </Select>
-                                        <Select value={twoFactorFilter} onValueChange={setTwoFactorFilter}>
+                                        <Select value={twoFactorFilter} onValueChange={(value) => value && setTwoFactorFilter(value)}>
                                             <SelectTrigger className="h-10 w-full text-sm md:w-[200px] lg:w-[180px]">
                                                 <SelectValue placeholder="2FA status" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="all">All Users</SelectItem>
-                                                <SelectItem value="enabled">2FA Enabled</SelectItem>
-                                                <SelectItem value="disabled">2FA Disabled</SelectItem>
+                                                <SelectGroup>
+                                                    <SelectItem value="all">All Users</SelectItem>
+                                                    <SelectItem value="enabled">2FA Enabled</SelectItem>
+                                                    <SelectItem value="disabled">2FA Disabled</SelectItem>
+                                                </SelectGroup>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -1163,13 +1167,13 @@ export default function AdminUserManagement() {
                                                               </div>
                                                           </div>
                                                           <DropdownMenu>
-                                                              <DropdownMenuTrigger asChild>
-                                                                  <Button variant="ghost" size="icon" className="h-10 w-10 md:h-8 md:w-8">
-                                                                      <MoreHorizontal className="h-4 w-4" />
-                                                                  </Button>
+                                                              <DropdownMenuTrigger
+                                                                  render={<Button variant="ghost" size="icon" className="h-10 w-10 md:h-8 md:w-8" />}
+                                                              >
+                                                                  <MoreHorizontal className="h-4 w-4" />
                                                               </DropdownMenuTrigger>
                                                               <DropdownMenuContent align="end">
-                                                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                                  <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Actions</div>
                                                                   <DropdownMenuItem
                                                                       onClick={async () => {
                                                                           try {

@@ -1,5 +1,5 @@
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { MUNICIPAL_OFFICES } from '@/types';
 import React from 'react';
@@ -47,7 +47,7 @@ const MunicipalOfficeSelect: React.FC<MunicipalOfficeSelectProps> = ({
                 </FieldLabel>
             )}
 
-            <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+            <Select value={value} onValueChange={(nextValue) => nextValue && onValueChange(nextValue)} disabled={disabled}>
                 <SelectTrigger
                     id={selectId}
                     className={cn(
@@ -61,11 +61,13 @@ const MunicipalOfficeSelect: React.FC<MunicipalOfficeSelectProps> = ({
                     </div>
                 </SelectTrigger>
                 <SelectContent>
-                    {MUNICIPAL_OFFICES.map((office) => (
-                        <SelectItem key={office.value} value={office.value}>
-                            {office.label}
-                        </SelectItem>
-                    ))}
+                    <SelectGroup>
+                        {MUNICIPAL_OFFICES.map((office) => (
+                            <SelectItem key={office.value} value={office.value}>
+                                {office.label}
+                            </SelectItem>
+                        ))}
+                    </SelectGroup>
                 </SelectContent>
             </Select>
 

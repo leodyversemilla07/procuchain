@@ -8,7 +8,7 @@ import { DatePickerInput } from '@/components/date-picker';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { router } from '@inertiajs/react';
@@ -151,11 +151,9 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                     <p className="text-muted-foreground text-sm">View and submit corrections to procurement metadata</p>
                 </div>
                 <Sheet open={showCorrectionDialog} onOpenChange={setShowCorrectionDialog}>
-                    <SheetTrigger asChild>
-                        <Button>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Submit Correction
-                        </Button>
+                    <SheetTrigger render={<Button />}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Submit Correction
                     </SheetTrigger>
                     <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
                         <SheetHeader>
@@ -223,15 +221,17 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                         <Label htmlFor="category">Category</Label>
                                         <Select
                                             value={correctionForm.category}
-                                            onValueChange={(value) => setCorrectionForm((prev) => ({ ...prev, category: value }))}
+                                            onValueChange={(value) => value && setCorrectionForm((prev) => ({ ...prev, category: value }))}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select category" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="goods">Goods</SelectItem>
-                                                <SelectItem value="services">Services</SelectItem>
-                                                <SelectItem value="works">Works</SelectItem>
+                                                <SelectGroup>
+                                                    <SelectItem value="goods">Goods</SelectItem>
+                                                    <SelectItem value="services">Services</SelectItem>
+                                                    <SelectItem value="works">Works</SelectItem>
+                                                </SelectGroup>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -239,25 +239,27 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                                         <Label htmlFor="procurement_mode">Procurement Mode</Label>
                                         <Select
                                             value={correctionForm.procurement_mode}
-                                            onValueChange={(value) => setCorrectionForm((prev) => ({ ...prev, procurement_mode: value }))}
+                                            onValueChange={(value) => value && setCorrectionForm((prev) => ({ ...prev, procurement_mode: value }))}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select procurement mode" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="competitive_bidding">Competitive Bidding</SelectItem>
-                                                <SelectItem value="limited_source_bidding">Limited Source Bidding</SelectItem>
-                                                <SelectItem value="competitive_dialogue">Competitive Dialogue</SelectItem>
-                                                <SelectItem value="unsolicited_offer_with_bid_matching">
-                                                    Unsolicited Offer with Bid Matching
-                                                </SelectItem>
-                                                <SelectItem value="direct_contracting">Direct Contracting</SelectItem>
-                                                <SelectItem value="direct_acquisition">Direct Acquisition</SelectItem>
-                                                <SelectItem value="repeat_order">Repeat Order</SelectItem>
-                                                <SelectItem value="small_value_procurement">Small Value Procurement</SelectItem>
-                                                <SelectItem value="negotiated_procurement">Negotiated Procurement</SelectItem>
-                                                <SelectItem value="direct_sales">Direct Sales</SelectItem>
-                                                <SelectItem value="direct_procurement_for_sti">Direct Procurement for STI</SelectItem>
+                                                <SelectGroup>
+                                                    <SelectItem value="competitive_bidding">Competitive Bidding</SelectItem>
+                                                    <SelectItem value="limited_source_bidding">Limited Source Bidding</SelectItem>
+                                                    <SelectItem value="competitive_dialogue">Competitive Dialogue</SelectItem>
+                                                    <SelectItem value="unsolicited_offer_with_bid_matching">
+                                                        Unsolicited Offer with Bid Matching
+                                                    </SelectItem>
+                                                    <SelectItem value="direct_contracting">Direct Contracting</SelectItem>
+                                                    <SelectItem value="direct_acquisition">Direct Acquisition</SelectItem>
+                                                    <SelectItem value="repeat_order">Repeat Order</SelectItem>
+                                                    <SelectItem value="small_value_procurement">Small Value Procurement</SelectItem>
+                                                    <SelectItem value="negotiated_procurement">Negotiated Procurement</SelectItem>
+                                                    <SelectItem value="direct_sales">Direct Sales</SelectItem>
+                                                    <SelectItem value="direct_procurement_for_sti">Direct Procurement for STI</SelectItem>
+                                                </SelectGroup>
                                             </SelectContent>
                                         </Select>
                                     </div>
