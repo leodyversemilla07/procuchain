@@ -330,10 +330,10 @@ export default function ProcurementsList({
                 toast.info('Keyboard shortcut', { description: 'Refreshing data (Press R)' });
             }
 
-            // n - New procurement (if has permission)
+            // n - New procurement (BAC Secretariat only)
             if (e.key === 'n' && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
-                if (auth?.can?.manageProcurement) {
+                if (userRole === 'bac_secretariat' && auth?.can?.manageProcurement) {
                     router.visit(procurement.initiation.index.url());
                 }
             }
@@ -374,7 +374,7 @@ export default function ProcurementsList({
                                 Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">R</kbd> Refresh
                                 {' · '}
                                 <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">/</kbd> Search
-                                {!isPollArchived && auth?.can?.manageProcurement && (
+                                {!isPollArchived && userRole === 'bac_secretariat' && auth?.can?.manageProcurement && (
                                     <>
                                         {' · '}
                                         <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">N</kbd> New
@@ -384,7 +384,7 @@ export default function ProcurementsList({
                         </div>
                     }
                     actions={
-                        !isPollArchived && (
+                        !isPollArchived && userRole === 'bac_secretariat' && (
                             <Can permission="create procurement">
                                 <Button
                                     className="shrink-0"
