@@ -3,7 +3,7 @@ import { RefreshCw, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 export type ProcurementFilterOption = {
@@ -73,16 +73,18 @@ export function ProcurementFiltersToolbar({
                         </div>
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <Select value={stageValue} onValueChange={onStageChange}>
+                        <Select value={stageValue} onValueChange={(value) => value && onStageChange(value)}>
                             <SelectTrigger className="h-10 w-full sm:w-45">
                                 <SelectValue placeholder={stageOptions[0]?.label ?? 'Select stage'} />
                             </SelectTrigger>
                             <SelectContent className="max-h-72">
-                                {stageOptions.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
+                                <SelectGroup>
+                                    {stageOptions.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
                             </SelectContent>
                         </Select>
 

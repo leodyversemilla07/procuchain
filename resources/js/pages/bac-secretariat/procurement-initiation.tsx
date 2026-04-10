@@ -19,7 +19,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { Spinner } from '@/components/ui/spinner';
 import { useBlockchainJob } from '@/hooks/use-blockchain-job';
@@ -604,6 +604,9 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                     <Select
                                         value={data.description}
                                         onValueChange={(value) => {
+                                            if (!value) {
+                                                return;
+                                            }
                                             handleFieldChange('description', value);
                                             // Clear other_description when switching away from Other
                                             if (value !== 'Other') {
@@ -615,11 +618,13 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                             <SelectValue placeholder="Select description" />
                                         </SelectTrigger>
                                         <SelectContent className="max-h-60 overflow-y-auto">
-                                            {PROCUREMENT_DESCRIPTIONS.map((desc) => (
-                                                <SelectItem key={desc.value} value={desc.value}>
-                                                    {desc.label}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectGroup>
+                                                {PROCUREMENT_DESCRIPTIONS.map((desc) => (
+                                                    <SelectItem key={desc.value} value={desc.value}>
+                                                        {desc.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                     {hasError('description') && <FieldError>{errors.description}</FieldError>}
@@ -900,16 +905,18 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         <span className="text-destructive">*</span>
                                     </FieldLabel>
                                     <FieldDescription>Select the office requesting this procurement</FieldDescription>
-                                    <Select value={data.office} onValueChange={(value) => handleFieldChange('office', value)}>
+                                    <Select value={data.office} onValueChange={(value) => value && handleFieldChange('office', value)}>
                                         <SelectTrigger className={hasError('office') ? 'border-destructive ring-destructive/30' : ''}>
                                             <SelectValue placeholder="Select office" />
                                         </SelectTrigger>
                                         <SelectContent className="max-h-60 overflow-y-auto">
-                                            {MUNICIPAL_OFFICES.map((office) => (
-                                                <SelectItem key={office.value} value={office.value}>
-                                                    {office.label}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectGroup>
+                                                {MUNICIPAL_OFFICES.map((office) => (
+                                                    <SelectItem key={office.value} value={office.value}>
+                                                        {office.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                     {hasError('office') && <FieldError>{errors.office}</FieldError>}
@@ -922,6 +929,9 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                     <Select
                                         value={data.end_user}
                                         onValueChange={(value) => {
+                                            if (!value) {
+                                                return;
+                                            }
                                             handleFieldChange('end_user', value);
                                             // Clear other_end_user when switching away from Other
                                             if (value !== 'Other') {
@@ -933,12 +943,14 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                             <SelectValue placeholder="Same as Office" />
                                         </SelectTrigger>
                                         <SelectContent className="max-h-60 overflow-y-auto">
-                                            {MUNICIPAL_OFFICES.map((office) => (
-                                                <SelectItem key={office.value} value={office.value}>
-                                                    {office.label}
-                                                </SelectItem>
-                                            ))}
-                                            <SelectItem value="Other">Other (Please specify)</SelectItem>
+                                            <SelectGroup>
+                                                {MUNICIPAL_OFFICES.map((office) => (
+                                                    <SelectItem key={office.value} value={office.value}>
+                                                        {office.label}
+                                                    </SelectItem>
+                                                ))}
+                                                <SelectItem value="Other">Other (Please specify)</SelectItem>
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                     {data.end_user === 'Other' && (

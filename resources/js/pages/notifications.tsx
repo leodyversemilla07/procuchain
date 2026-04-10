@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '@/components/ui/item';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
@@ -273,15 +273,17 @@ export default function Notifications() {
 
     const actions = (
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <Select value={filter} onValueChange={handleFilterChange}>
+            <Select value={filter} onValueChange={(value) => value && handleFilterChange(value)}>
                 <SelectTrigger className="w-[120px] sm:w-[140px]">
                     <Filter className="text-muted-foreground mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Filter">{filter === 'all' ? 'All' : filter === 'read' ? 'Read' : 'Unread'}</SelectValue>
+                    <SelectValue placeholder="Filter" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="unread">Unread</SelectItem>
-                    <SelectItem value="read">Read</SelectItem>
+                    <SelectGroup>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="unread">Unread</SelectItem>
+                        <SelectItem value="read">Read</SelectItem>
+                    </SelectGroup>
                 </SelectContent>
             </Select>
             <Button

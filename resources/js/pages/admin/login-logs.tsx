@@ -12,14 +12,13 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -760,97 +759,109 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                         <SelectValue placeholder="Category" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Categories</SelectItem>
-                                        <SelectItem value="recent">Recent</SelectItem>
-                                        <SelectItem value="suspicious">Suspicious</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="all">All Categories</SelectItem>
+                                            <SelectItem value="recent">Recent</SelectItem>
+                                            <SelectItem value="suspicious">Suspicious</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
 
                                 {/* Status Filter */}
-                                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                                <Select value={selectedStatus} onValueChange={(value) => value && setSelectedStatus(value)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Statuses</SelectItem>
-                                        <SelectItem value="success">Success</SelectItem>
-                                        <SelectItem value="failed">Failed</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="all">All Statuses</SelectItem>
+                                            <SelectItem value="success">Success</SelectItem>
+                                            <SelectItem value="failed">Failed</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
 
                                 {/* Role Filter */}
-                                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                                <Select value={selectedRole} onValueChange={(value) => value && setSelectedRole(value)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Role" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Roles</SelectItem>
-                                        {getUniqueRoles.map((role) => (
-                                            <SelectItem key={role} value={role}>
-                                                {role.replace('_', ' ').toUpperCase()}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            <SelectItem value="all">All Roles</SelectItem>
+                                            {getUniqueRoles.map((role) => (
+                                                <SelectItem key={role} value={role}>
+                                                    {role.replace('_', ' ').toUpperCase()}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
 
                                 {/* Device Type Filter */}
-                                <Select value={selectedDeviceType} onValueChange={setSelectedDeviceType}>
+                                <Select value={selectedDeviceType} onValueChange={(value) => value && setSelectedDeviceType(value)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Device" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Devices</SelectItem>
-                                        {getUniqueDeviceTypes.map((deviceType) => (
-                                            <SelectItem key={deviceType} value={deviceType}>
-                                                {deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            <SelectItem value="all">All Devices</SelectItem>
+                                            {getUniqueDeviceTypes.map((deviceType) => (
+                                                <SelectItem key={deviceType} value={deviceType}>
+                                                    {deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
 
                                 {/* Browser Filter */}
-                                <Select value={selectedBrowser} onValueChange={setSelectedBrowser}>
+                                <Select value={selectedBrowser} onValueChange={(value) => value && setSelectedBrowser(value)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Browser" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Browsers</SelectItem>
-                                        {getUniqueBrowsers.map((browser) => (
-                                            <SelectItem key={browser} value={browser}>
-                                                {browser}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectGroup>
+                                            <SelectItem value="all">All Browsers</SelectItem>
+                                            {getUniqueBrowsers.map((browser) => (
+                                                <SelectItem key={browser} value={browser}>
+                                                    {browser}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
 
                                 {/* Date Range Filter */}
                                 <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className={cn('justify-start text-left font-normal', !dateRange && 'text-muted-foreground')}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {dateRange?.from ? (
-                                                dateRange.to ? (
-                                                    <>
-                                                        <span className="hidden sm:inline">
-                                                            {format(dateRange.from, 'MMM dd')} - {format(dateRange.to, 'MMM dd')}
-                                                        </span>
-                                                        <span className="sm:hidden">
-                                                            {format(dateRange.from, 'M/d')} - {format(dateRange.to, 'M/d')}
-                                                        </span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span className="hidden sm:inline">{format(dateRange.from, 'MMM dd, y')}</span>
-                                                        <span className="sm:hidden">{format(dateRange.from, 'M/d/yy')}</span>
-                                                    </>
-                                                )
+                                    <PopoverTrigger
+                                        render={
+                                            <Button
+                                                variant="outline"
+                                                className={cn('justify-start text-left font-normal', !dateRange && 'text-muted-foreground')}
+                                            />
+                                        }
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {dateRange?.from ? (
+                                            dateRange.to ? (
+                                                <>
+                                                    <span className="hidden sm:inline">
+                                                        {format(dateRange.from, 'MMM dd')} - {format(dateRange.to, 'MMM dd')}
+                                                    </span>
+                                                    <span className="sm:hidden">
+                                                        {format(dateRange.from, 'M/d')} - {format(dateRange.to, 'M/d')}
+                                                    </span>
+                                                </>
                                             ) : (
-                                                <span>Date Range</span>
-                                            )}
-                                        </Button>
+                                                <>
+                                                    <span className="hidden sm:inline">{format(dateRange.from, 'MMM dd, y')}</span>
+                                                    <span className="sm:hidden">{format(dateRange.from, 'M/d/yy')}</span>
+                                                </>
+                                            )
+                                        ) : (
+                                            <span>Date Range</span>
+                                        )}
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
                                         <div className="border-b p-3">
@@ -1101,10 +1112,8 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-muted-foreground text-xs">{formatDateTime(log.login_at)}</span>
                                                         <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                                    <MoreVertical className="h-4 w-4" />
-                                                                </Button>
+                                                            <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
+                                                                <MoreVertical className="h-4 w-4" />
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
                                                                 <DropdownMenuItem onClick={() => handleViewDetails(log, log.category)}>
@@ -1324,14 +1333,14 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                         </TableCell>
                                                         <TableCell className="pr-6">
                                                             <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                                        <MoreVertical className="h-4 w-4" />
-                                                                        <span className="sr-only">Open menu</span>
-                                                                    </Button>
+                                                                <DropdownMenuTrigger
+                                                                    render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" />}
+                                                                >
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                    <span className="sr-only">Open menu</span>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
-                                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                                    <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Actions</div>
                                                                     <DropdownMenuItem onClick={() => handleViewDetails(log, log.category)}>
                                                                         <Eye className="mr-2 h-4 w-4" />
                                                                         View Details

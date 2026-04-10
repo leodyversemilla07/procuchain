@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
@@ -145,31 +145,35 @@ export default function AuditLog() {
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <Select value={action || 'all'} onValueChange={setAction}>
+                            <Select value={action || 'all'} onValueChange={(value) => value && setAction(value)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All actions" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All actions</SelectItem>
-                                    {distinctActions.map((a) => (
-                                        <SelectItem key={a} value={a}>
-                                            {ACTION_LABELS[a] ?? a}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectGroup>
+                                        <SelectItem value="all">All actions</SelectItem>
+                                        {distinctActions.map((a) => (
+                                            <SelectItem key={a} value={a}>
+                                                {ACTION_LABELS[a] ?? a}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
                                 </SelectContent>
                             </Select>
 
                             <Input type="number" placeholder="User ID" value={userId} onChange={(e) => setUserId(e.target.value)} />
 
                             <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className={cn('w-full justify-start text-left font-normal', !dateFrom && 'text-muted-foreground')}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {dateFrom ? format(parseISO(dateFrom), 'MMM d, yyyy') : <span>From date</span>}
-                                    </Button>
+                                <PopoverTrigger
+                                    render={
+                                        <Button
+                                            variant="outline"
+                                            className={cn('w-full justify-start text-left font-normal', !dateFrom && 'text-muted-foreground')}
+                                        />
+                                    }
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {dateFrom ? format(parseISO(dateFrom), 'MMM d, yyyy') : <span>From date</span>}
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0" align="start">
                                     <Calendar
@@ -182,14 +186,16 @@ export default function AuditLog() {
                             </Popover>
 
                             <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className={cn('w-full justify-start text-left font-normal', !dateTo && 'text-muted-foreground')}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {dateTo ? format(parseISO(dateTo), 'MMM d, yyyy') : <span>To date</span>}
-                                    </Button>
+                                <PopoverTrigger
+                                    render={
+                                        <Button
+                                            variant="outline"
+                                            className={cn('w-full justify-start text-left font-normal', !dateTo && 'text-muted-foreground')}
+                                        />
+                                    }
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {dateTo ? format(parseISO(dateTo), 'MMM d, yyyy') : <span>To date</span>}
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0" align="start">
                                     <Calendar

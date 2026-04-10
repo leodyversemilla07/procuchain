@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -148,15 +148,17 @@ export default function ReportIndex() {
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             <div className="space-y-2">
                                 <Label>Filter Type</Label>
-                                <Select value={filters.filter_type} onValueChange={(value) => handleFilterChange('filter_type', value)}>
+                                <Select value={filters.filter_type} onValueChange={(value) => value && handleFilterChange('filter_type', value)}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="month">Month</SelectItem>
-                                        <SelectItem value="quarter">Quarter</SelectItem>
-                                        <SelectItem value="year">Year</SelectItem>
-                                        <SelectItem value="date_range">Date Range</SelectItem>
+                                        <SelectGroup>
+                                            <SelectItem value="month">Month</SelectItem>
+                                            <SelectItem value="quarter">Quarter</SelectItem>
+                                            <SelectItem value="year">Year</SelectItem>
+                                            <SelectItem value="date_range">Date Range</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -167,17 +169,19 @@ export default function ReportIndex() {
                                         <Label>Month</Label>
                                         <Select
                                             value={filters.month?.toString()}
-                                            onValueChange={(value) => handleFilterChange('month', parseInt(value))}
+                                            onValueChange={(value) => value && handleFilterChange('month', parseInt(value))}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent className="max-h-60 overflow-y-auto">
-                                                {months.map((month, index) => (
-                                                    <SelectItem key={index} value={(index + 1).toString()}>
-                                                        {month}
-                                                    </SelectItem>
-                                                ))}
+                                                <SelectGroup>
+                                                    {months.map((month, index) => (
+                                                        <SelectItem key={index} value={(index + 1).toString()}>
+                                                            {month}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectGroup>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -185,17 +189,19 @@ export default function ReportIndex() {
                                         <Label>Year</Label>
                                         <Select
                                             value={filters.year?.toString()}
-                                            onValueChange={(value) => handleFilterChange('year', parseInt(value))}
+                                            onValueChange={(value) => value && handleFilterChange('year', parseInt(value))}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {years.map((year) => (
-                                                    <SelectItem key={year} value={year.toString()}>
-                                                        {year}
-                                                    </SelectItem>
-                                                ))}
+                                                <SelectGroup>
+                                                    {years.map((year) => (
+                                                        <SelectItem key={year} value={year.toString()}>
+                                                            {year}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectGroup>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -208,16 +214,18 @@ export default function ReportIndex() {
                                         <Label>Quarter</Label>
                                         <Select
                                             value={filters.quarter?.toString()}
-                                            onValueChange={(value) => handleFilterChange('quarter', parseInt(value))}
+                                            onValueChange={(value) => value && handleFilterChange('quarter', parseInt(value))}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
-                                                <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
-                                                <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
-                                                <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
+                                                <SelectGroup>
+                                                    <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
+                                                    <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
+                                                    <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
+                                                    <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
+                                                </SelectGroup>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -225,17 +233,19 @@ export default function ReportIndex() {
                                         <Label>Year</Label>
                                         <Select
                                             value={filters.year?.toString()}
-                                            onValueChange={(value) => handleFilterChange('year', parseInt(value))}
+                                            onValueChange={(value) => value && handleFilterChange('year', parseInt(value))}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {years.map((year) => (
-                                                    <SelectItem key={year} value={year.toString()}>
-                                                        {year}
-                                                    </SelectItem>
-                                                ))}
+                                                <SelectGroup>
+                                                    {years.map((year) => (
+                                                        <SelectItem key={year} value={year.toString()}>
+                                                            {year}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectGroup>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -245,16 +255,18 @@ export default function ReportIndex() {
                             {filters.filter_type === 'year' && (
                                 <div className="space-y-2">
                                     <Label>Year</Label>
-                                    <Select value={filters.year?.toString()} onValueChange={(value) => handleFilterChange('year', parseInt(value))}>
+                                    <Select value={filters.year?.toString()} onValueChange={(value) => value && handleFilterChange('year', parseInt(value))}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {years.map((year) => (
-                                                <SelectItem key={year} value={year.toString()}>
-                                                    {year}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectGroup>
+                                                {years.map((year) => (
+                                                    <SelectItem key={year} value={year.toString()}>
+                                                        {year}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
                                 </div>
