@@ -134,6 +134,7 @@ export default function StageDocumentConfigs({
                                         <Button
                                             variant="ghost"
                                             size="sm"
+                                            nativeButton={false}
                                             render={<Link href={stageDocumentsEdit({ mode: selectedMode, stage: stage.stage }).url} />}
                                         >
                                             <Edit className="mr-2 h-4 w-4" />
@@ -152,6 +153,7 @@ export default function StageDocumentConfigs({
     // Group competitive and alternative modes
     const competitiveModes = modes.filter((m) => !m.is_alternative);
     const alternativeModes = modes.filter((m) => m.is_alternative);
+    const selectedModeLabel = modes.find((mode) => mode.value === selectedMode)?.display_name ?? selectedModeDisplayName;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -175,7 +177,7 @@ export default function StageDocumentConfigs({
                         </div>
                         <Select value={selectedMode} onValueChange={(value) => value && handleModeChange(value)}>
                             <SelectTrigger className="w-[300px]">
-                                <SelectValue placeholder="Select mode" />
+                                <SelectValue placeholder="Select mode">{() => selectedModeLabel}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
