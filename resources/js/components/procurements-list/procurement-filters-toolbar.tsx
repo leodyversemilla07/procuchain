@@ -56,9 +56,8 @@ export function ProcurementFiltersToolbar({
     const selectedStageLabel = stageOptions.find((option) => option.value === stageValue)?.label ?? stageOptions[0]?.label ?? 'Select stage';
 
     return (
-        <div className={cn('pb-4', className)}>
-            <div className="space-y-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className={cn('flex flex-col gap-4 pb-4', className)}>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
                         <div className="relative max-w-md flex-1">
                             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
@@ -131,7 +130,7 @@ export function ProcurementFiltersToolbar({
                             disabled={refreshDisabled}
                             variant="outline"
                             size="default"
-                            className="flex h-10 w-full items-center space-x-2 sm:w-auto"
+                            className="flex h-10 w-full items-center gap-2 sm:w-auto"
                             aria-label={isRefreshing ? 'Refreshing data' : 'Refresh procurement data'}
                         >
                             <RefreshCw className={cn('h-4 w-4', isRefreshing ? 'animate-spin' : undefined)} aria-hidden="true" />
@@ -139,7 +138,6 @@ export function ProcurementFiltersToolbar({
                         </Button>
                     </div>
                 </div>
-            </div>
         </div>
     );
 }

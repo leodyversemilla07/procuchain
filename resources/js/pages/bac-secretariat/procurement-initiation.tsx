@@ -17,7 +17,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -315,6 +314,15 @@ export default function ProcurementInitiationForm({ categories = [], procurement
         },
         [prPrefix, prYear, prSequence1, prSequence2, handleFieldChange],
     );
+
+    const selectedDescriptionLabel = PROCUREMENT_DESCRIPTIONS.find((description) => description.value === data.description)?.label ?? 'Select description';
+    const selectedOfficeLabel = MUNICIPAL_OFFICES.find((office) => office.value === data.office)?.label ?? 'Select office';
+    const selectedEndUserLabel =
+        data.end_user === ''
+            ? 'Same as Office'
+            : data.end_user === 'Other'
+              ? 'Other (Please specify)'
+              : MUNICIPAL_OFFICES.find((office) => office.value === data.end_user)?.label ?? 'Same as Office';
 
     // Find selected mode for displaying requirements
     const selectedMode = procurementModes.find((mode) => mode.value === data.procurement_mode);
@@ -615,7 +623,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         }}
                                     >
                                         <SelectTrigger className={hasError('description') ? 'border-destructive ring-destructive/30' : ''}>
-                                            <SelectValue placeholder="Select description" />
+                                            <SelectValue placeholder="Select description">{() => selectedDescriptionLabel}</SelectValue>
                                         </SelectTrigger>
                                         <SelectContent className="max-h-60 overflow-y-auto">
                                             <SelectGroup>
@@ -673,16 +681,16 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         {categories.map((category) => (
                                             <div
                                                 key={category.value}
-                                                className={`flex items-center space-x-3 rounded-lg border p-3 transition-colors ${
+                                                className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
                                                     data.category === category.value
                                                         ? 'border-primary bg-primary/5'
                                                         : 'border-input hover:bg-muted/50'
                                                 } ${hasError('category') ? 'border-destructive' : ''}`}
                                             >
                                                 <RadioGroupItem value={category.value} id={`category-${category.value}`} />
-                                                <Label htmlFor={`category-${category.value}`} className="flex-1 cursor-pointer font-medium">
+                                                <FieldLabel htmlFor={`category-${category.value}`} className="flex-1 cursor-pointer font-medium">
                                                     {category.label}
-                                                </Label>
+                                                </FieldLabel>
                                             </div>
                                         ))}
                                     </RadioGroup>
@@ -707,15 +715,15 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2"
                                     >
                                         {FUNDING_SOURCES.map((source) => (
-                                            <div key={source.value} className="flex items-center space-x-2">
+                                            <div key={source.value} className="flex items-center gap-2">
                                                 <RadioGroupItem
                                                     value={source.value}
                                                     id={`funding-${source.value}`}
                                                     className={hasError('funding_source') ? 'border-destructive' : ''}
                                                 />
-                                                <Label htmlFor={`funding-${source.value}`} className="cursor-pointer text-sm font-normal">
+                                                <FieldLabel htmlFor={`funding-${source.value}`} className="cursor-pointer text-sm font-normal">
                                                     {source.label}
-                                                </Label>
+                                                </FieldLabel>
                                             </div>
                                         ))}
                                     </RadioGroup>
@@ -759,21 +767,21 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         {procurementModes.map((mode) => (
                                             <div
                                                 key={mode.value}
-                                                className={`flex items-center space-x-3 rounded-lg border p-3 transition-colors ${
+                                                className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
                                                     data.procurement_mode === mode.value
                                                         ? 'border-primary bg-primary/5'
                                                         : 'border-input hover:bg-muted/50'
                                                 } ${hasError('procurement_mode') ? 'border-destructive' : ''}`}
                                             >
                                                 <RadioGroupItem value={mode.value} id={`mode-${mode.value}`} />
-                                                <Label htmlFor={`mode-${mode.value}`} className="flex-1 cursor-pointer">
+                                                <FieldLabel htmlFor={`mode-${mode.value}`} className="flex-1 cursor-pointer">
                                                     <span className="font-medium">{mode.label}</span>
                                                     {mode.threshold && (
                                                         <span className="text-muted-foreground ml-2 text-xs">
                                                             (≤ ₱{mode.threshold.toLocaleString()})
                                                         </span>
                                                     )}
-                                                </Label>
+                                                </FieldLabel>
                                             </div>
                                         ))}
                                     </RadioGroup>
@@ -795,19 +803,19 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                                 {negotiatedProcurementTypes.map((type) => (
                                                     <div
                                                         key={type.value}
-                                                        className={`flex items-center space-x-3 rounded-lg border p-2.5 transition-colors ${
+                                                        className={`flex items-center gap-3 rounded-lg border p-2.5 transition-colors ${
                                                             data.negotiated_procurement_type === type.value
                                                                 ? 'border-primary bg-primary/5'
                                                                 : 'border-input hover:bg-muted/50'
                                                         } ${hasError('negotiated_procurement_type') ? 'border-destructive' : ''}`}
                                                     >
                                                         <RadioGroupItem value={type.value} id={`neg-type-${type.value}`} />
-                                                        <Label
+                                                        <FieldLabel
                                                             htmlFor={`neg-type-${type.value}`}
                                                             className="flex-1 cursor-pointer text-sm font-medium"
                                                         >
                                                             {type.label}
-                                                        </Label>
+                                                        </FieldLabel>
                                                     </div>
                                                 ))}
                                             </RadioGroup>
@@ -907,7 +915,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                     <FieldDescription>Select the office requesting this procurement</FieldDescription>
                                     <Select value={data.office} onValueChange={(value) => value && handleFieldChange('office', value)}>
                                         <SelectTrigger className={hasError('office') ? 'border-destructive ring-destructive/30' : ''}>
-                                            <SelectValue placeholder="Select office" />
+                                            <SelectValue placeholder="Select office">{() => selectedOfficeLabel}</SelectValue>
                                         </SelectTrigger>
                                         <SelectContent className="max-h-60 overflow-y-auto">
                                             <SelectGroup>
@@ -940,7 +948,7 @@ export default function ProcurementInitiationForm({ categories = [], procurement
                                         }}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Same as Office" />
+                                            <SelectValue placeholder="Same as Office">{() => selectedEndUserLabel}</SelectValue>
                                         </SelectTrigger>
                                         <SelectContent className="max-h-60 overflow-y-auto">
                                             <SelectGroup>

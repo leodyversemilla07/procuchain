@@ -362,7 +362,7 @@ export default function ReportIndex() {
                     <>
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                             <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="text-sm font-medium">Total Procurements</CardTitle>
                                     <FileText className="text-muted-foreground h-4 w-4" />
                                 </CardHeader>
@@ -372,7 +372,7 @@ export default function ReportIndex() {
                             </Card>
 
                             <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="text-sm font-medium">Total ABC Amount</CardTitle>
                                     <TrendingUp className="text-muted-foreground h-4 w-4" />
                                 </CardHeader>
@@ -382,7 +382,7 @@ export default function ReportIndex() {
                             </Card>
 
                             <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="text-sm font-medium">Unique Stages</CardTitle>
                                     <Calendar className="text-muted-foreground h-4 w-4" />
                                 </CardHeader>
@@ -392,7 +392,7 @@ export default function ReportIndex() {
                             </Card>
 
                             <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="text-sm font-medium">Procurement Modes</CardTitle>
                                     <BarChart3 className="text-muted-foreground h-4 w-4" />
                                 </CardHeader>
@@ -476,7 +476,7 @@ export default function ReportIndex() {
                                     <CardTitle>Distribution by Status</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         {Object.entries(reportData.summary.by_status).map(([status, count]) => (
                                             <div key={status} className="flex items-center justify-between">
                                                 <span className="text-sm capitalize">{status.replace(/_/g, ' ')}</span>
@@ -492,7 +492,7 @@ export default function ReportIndex() {
                                     <CardTitle>Distribution by Mode</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="space-y-2">
+                                    <div className="flex flex-col gap-2">
                                         {Object.entries(reportData.summary.by_mode).map(([mode, count]) => (
                                             <div key={mode} className="flex items-center justify-between">
                                                 <span className="text-sm capitalize">{mode.replace(/_/g, ' ')}</span>

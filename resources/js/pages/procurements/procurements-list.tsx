@@ -368,7 +368,7 @@ export default function ProcurementsList({
                     icon={FileText}
                     title="Procurement List"
                     description={
-                        <div className="space-y-1">
+                        <div className="flex flex-col gap-1">
                             <p>View and manage {isPollArchived ? 'archived' : 'active'} procurement items across all stages</p>
                             <p className="hidden text-xs opacity-80 sm:block">
                                 Shortcuts: <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">R</kbd> Refresh
@@ -387,6 +387,7 @@ export default function ProcurementsList({
                         !isPollArchived && userRole === 'bac_secretariat' && (
                             <Can permission="create procurement">
                                 <Button
+                                    nativeButton={false}
                                     className="shrink-0"
                                     render={<Link href={procurement.initiation.index.url()} className="flex items-center justify-center gap-2" />}
                                 >
