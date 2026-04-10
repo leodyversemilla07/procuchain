@@ -32,11 +32,9 @@ export default function RecentViewersCard({ recentViews }: Props) {
                     </div>
                     {recentViews.length > 10 && (
                         <Sheet open={showAllViewersDialog} onOpenChange={setShowAllViewersDialog}>
-                            <SheetTrigger asChild>
-                                <Button variant="outline" size="sm" className="text-xs">
-                                    <span className="hidden sm:inline">View All ({recentViews.length})</span>
-                                    <span className="sm:hidden">All ({recentViews.length})</span>
-                                </Button>
+                            <SheetTrigger render={<Button variant="outline" size="sm" className="text-xs" />}>
+                                <span className="hidden sm:inline">View All ({recentViews.length})</span>
+                                <span className="sm:hidden">All ({recentViews.length})</span>
                             </SheetTrigger>
                             <SheetContent side="right" className="w-full sm:max-w-2xl">
                                 <SheetHeader>

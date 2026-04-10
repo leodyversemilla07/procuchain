@@ -41,21 +41,19 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             </Label>
         )}
         <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="outline" className={`h-9 w-full justify-between px-3 py-2 text-left font-normal ${buttonClassName}`}>
-                    {value?.from ? (
-                        value.to ? (
-                            <>
-                                {format(value.from, 'LLL dd, y')} - {format(value.to, 'LLL dd, y')}
-                            </>
-                        ) : (
-                            format(value.from, 'LLL dd, y')
-                        )
+            <PopoverTrigger render={<Button variant="outline" className={`h-9 w-full justify-between px-3 py-2 text-left font-normal ${buttonClassName}`} />}>
+                {value?.from ? (
+                    value.to ? (
+                        <>
+                            {format(value.from, 'LLL dd, y')} - {format(value.to, 'LLL dd, y')}
+                        </>
                     ) : (
-                        <span>Pick a date range</span>
-                    )}
-                    <ChevronDownIcon className="text-muted-foreground ml-2 h-4 w-4" />
-                </Button>
+                        format(value.from, 'LLL dd, y')
+                    )
+                ) : (
+                    <span>Pick a date range</span>
+                )}
+                <ChevronDownIcon className="text-muted-foreground ml-2 h-4 w-4" />
             </PopoverTrigger>
             <PopoverContent className={`w-auto p-0 ${popoverClassName}`} align="start">
                 <Calendar

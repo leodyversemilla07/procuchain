@@ -42,26 +42,28 @@ export function WorkflowProgressPanel({
                             {workflowInfo.workflow.stages.map((stage, index) => (
                                 <TooltipProvider key={stage.value}>
                                     <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Link
-                                                href={stage.url || '#'}
-                                                className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all hover:scale-110 ${
-                                                    stage.value === procurement.stage_value
-                                                        ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
-                                                        : stage.is_completed
-                                                          ? 'border-green-500 bg-green-500 text-white shadow-sm'
-                                                          : stage.is_optional
-                                                            ? 'border-muted-foreground/40 text-muted-foreground/40 border-dashed'
-                                                            : 'border-muted-foreground/20 text-muted-foreground/20 bg-muted/30'
-                                                }`}
-                                            >
-                                                {stage.is_completed ? (
-                                                    <CheckCircle2 className="h-4 w-4" />
-                                                ) : (
-                                                    <span className="text-xs font-bold">{index + 1}</span>
-                                                )}
-                                            </Link>
-                                        </TooltipTrigger>
+                                        <TooltipTrigger
+                                            render={
+                                                <Link
+                                                    href={stage.url || '#'}
+                                                    className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all hover:scale-110 ${
+                                                        stage.value === procurement.stage_value
+                                                            ? 'bg-primary border-primary text-primary-foreground ring-primary/20 ring-4'
+                                                            : stage.is_completed
+                                                              ? 'border-green-500 bg-green-500 text-white shadow-sm'
+                                                              : stage.is_optional
+                                                                ? 'border-muted-foreground/40 text-muted-foreground/40 border-dashed'
+                                                                : 'border-muted-foreground/20 text-muted-foreground/20 bg-muted/30'
+                                                    }`}
+                                                >
+                                                    {stage.is_completed ? (
+                                                        <CheckCircle2 className="h-4 w-4" />
+                                                    ) : (
+                                                        <span className="text-xs font-bold">{index + 1}</span>
+                                                    )}
+                                                </Link>
+                                            }
+                                        />
                                         <TooltipContent side="right" className="flex flex-col gap-1">
                                             <span className="font-bold">{stage.display_name}</span>
                                             <span className="text-[10px] opacity-70">Step {index + 1}</span>

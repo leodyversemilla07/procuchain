@@ -219,7 +219,7 @@ function SummaryCard({ title, value, subtitle, isValid, icon: Icon, tooltipText,
     if (tooltipText) {
         return (
             <Tooltip>
-                <TooltipTrigger asChild>{content}</TooltipTrigger>
+                <TooltipTrigger render={content} />
                 <TooltipContent side="bottom" className="max-w-xs">
                     <p>{tooltipText}</p>
                 </TooltipContent>
@@ -811,11 +811,9 @@ export default function VerificationPage({ prNumber, report, procurementStatus }
                 <div className="flex h-full flex-1 flex-col p-3 sm:p-4 md:p-6 lg:p-8">
                     {/* Back Button */}
                     <div className="mb-6">
-                        <Button variant="ghost" size="sm" asChild>
-                            <Link href={getRoleBasedUrl(`/procurements-list/${displayPrNumber}`)}>
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back to Procurement
-                            </Link>
+                        <Button variant="ghost" size="sm" render={<Link href={getRoleBasedUrl(`/procurements-list/${displayPrNumber}`)} />}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Procurement
                         </Button>
                     </div>
 
@@ -923,11 +921,13 @@ export default function VerificationPage({ prNumber, report, procurementStatus }
                                     </>
                                 )}
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span className="text-muted-foreground hidden cursor-help sm:inline">
-                                            Generated {formatDistanceToNow(new Date(report.generated_at), { addSuffix: true })}
-                                        </span>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <span className="text-muted-foreground hidden cursor-help sm:inline">
+                                                Generated {formatDistanceToNow(new Date(report.generated_at), { addSuffix: true })}
+                                            </span>
+                                        }
+                                    />
                                     <TooltipContent>{format(new Date(report.generated_at), 'PPpp')}</TooltipContent>
                                 </Tooltip>
                             </span>
@@ -945,34 +945,36 @@ export default function VerificationPage({ prNumber, report, procurementStatus }
                                 <VerificationStatus status={overallStatus} lastVerified={report.generated_at} size="lg" />
                                 <div className="flex gap-1 print:hidden">
                                     <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => window.print()}>
-                                                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                                <span className="sr-only">Print report</span>
-                                            </Button>
+                                        <TooltipTrigger
+                                            render={<Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => window.print()} />}
+                                        >
+                                            <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                            <span className="sr-only">Print report</span>
                                         </TooltipTrigger>
                                         <TooltipContent>Print Report</TooltipContent>
                                     </Tooltip>
                                     <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={handleExport}>
-                                                <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                                <span className="sr-only">Export report</span>
-                                            </Button>
+                                        <TooltipTrigger
+                                            render={<Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={handleExport} />}
+                                        >
+                                            <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                            <span className="sr-only">Export report</span>
                                         </TooltipTrigger>
                                         <TooltipContent>Export as PDF</TooltipContent>
                                     </Tooltip>
                                     <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={handleRefresh}
-                                                className="h-8 gap-1.5 px-2 sm:h-9 sm:gap-2 sm:px-3"
-                                            >
-                                                <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                                <span className="hidden sm:inline">Refresh</span>
-                                            </Button>
+                                        <TooltipTrigger
+                                            render={
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={handleRefresh}
+                                                    className="h-8 gap-1.5 px-2 sm:h-9 sm:gap-2 sm:px-3"
+                                                />
+                                            }
+                                        >
+                                            <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                            <span className="hidden sm:inline">Refresh</span>
                                         </TooltipTrigger>
                                         <TooltipContent>Refresh Report</TooltipContent>
                                     </Tooltip>

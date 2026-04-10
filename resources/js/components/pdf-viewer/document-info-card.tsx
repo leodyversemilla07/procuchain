@@ -142,11 +142,13 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                                 File Key:
                             </span>
                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <span className="bg-muted max-w-[140px] cursor-help truncate rounded px-2 py-1 font-mono text-xs sm:max-w-[180px]">
-                                        {fileKey}
-                                    </span>
-                                </TooltipTrigger>
+                                <TooltipTrigger
+                                    render={
+                                        <span className="bg-muted max-w-[140px] cursor-help truncate rounded px-2 py-1 font-mono text-xs sm:max-w-[180px]">
+                                            {fileKey}
+                                        </span>
+                                    }
+                                />
                                 <TooltipContent className="max-w-md">
                                     <p className="font-mono text-xs break-all">{fileKey}</p>
                                 </TooltipContent>
@@ -167,11 +169,13 @@ export default function DocumentInfoCard({ document, fileKey, viewStats }: Props
                                 {document.hash && document.hash.trim() !== '' ? (
                                     <>
                                         <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <span className="bg-muted text-muted-foreground cursor-help rounded px-2 py-1 font-mono text-xs">
-                                                    {formatUserAddress(document.hash)}
-                                                </span>
-                                            </TooltipTrigger>
+                                            <TooltipTrigger
+                                                render={
+                                                    <span className="bg-muted text-muted-foreground cursor-help rounded px-2 py-1 font-mono text-xs">
+                                                        {formatUserAddress(document.hash)}
+                                                    </span>
+                                                }
+                                            />
                                             <TooltipContent className="max-w-md">
                                                 <p className="font-mono text-xs break-all">{document.hash}</p>
                                             </TooltipContent>

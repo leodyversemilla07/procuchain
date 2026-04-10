@@ -81,10 +81,7 @@ export function PreBidConferenceDialog({ open, onOpenChange, pr_number, procurem
                 if (!processing) onOpenChange(newOpen);
             }}
         >
-            <DialogContent
-                className="max-h-[90vh] w-[90%] overflow-y-auto sm:max-w-[500px] md:max-w-[600px]"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-            >
+            <DialogContent className="max-h-[90vh] w-[90%] overflow-y-auto sm:max-w-[500px] md:max-w-[600px]" initialFocus={false}>
                 <DialogHeader className="space-y-3">
                     <DialogTitle className="text-xl font-semibold tracking-tight sm:text-2xl">Pre-Bid Conference Decision</DialogTitle>
                     <DialogDescription className="text-sm leading-relaxed sm:text-base">

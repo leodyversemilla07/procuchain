@@ -129,17 +129,17 @@ export const RecentProcurementsTable = ({
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        asChild
-                                                        className="h-8 px-2 transition-all duration-200 hover:scale-110"
-                                                    >
-                                                        <Link href={getViewProcurementHref(procurement)} prefetch="hover" cacheFor="1m">
-                                                            <EyeIcon className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
+                                                <TooltipTrigger
+                                                    render={
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 px-2 transition-all duration-200 hover:scale-110"
+                                                            render={<Link href={getViewProcurementHref(procurement)} prefetch="hover" cacheFor="1m" />}
+                                                        />
+                                                    }
+                                                >
+                                                    <EyeIcon className="h-4 w-4" />
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     <p>{actionTooltip}</p>

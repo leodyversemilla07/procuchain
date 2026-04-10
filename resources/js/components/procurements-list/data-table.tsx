@@ -32,7 +32,8 @@ import { ProcurementListItem } from '@/types';
 export { BadgeCell, DocumentCountCell, IdCell, LastUpdatedCell, ModeCell, StageCell, StatusCell, TitleCell } from './cells';
 
 interface DataTableCheckboxProps {
-    checked: boolean | 'indeterminate';
+    checked: boolean;
+    indeterminate?: boolean;
     onCheckedChange: (value: boolean) => void;
     disabled?: boolean;
     title?: string;
@@ -72,11 +73,12 @@ export interface ProcurementsDataTableProps {
     isArchived?: boolean;
 }
 
-export function DataTableCheckbox({ checked, onCheckedChange, disabled = false, title }: DataTableCheckboxProps) {
+export function DataTableCheckbox({ checked, indeterminate = false, onCheckedChange, disabled = false, title }: DataTableCheckboxProps) {
     return (
         <div className="flex h-full w-full min-w-6 items-center justify-center">
             <Checkbox
                 checked={checked}
+                indeterminate={indeterminate}
                 onCheckedChange={(value) => onCheckedChange(!!value)}
                 disabled={disabled}
                 aria-label={title || 'Select row'}

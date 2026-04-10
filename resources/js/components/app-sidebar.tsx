@@ -239,14 +239,12 @@ export function AppSidebar() {
     const footerNavItems = getFooterNavItemsByRole(primaryRole);
 
     return (
-        <Sidebar collapsible="icon" variant="sidebar">
+        <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={getRoleUrl(primaryRole)} prefetch>
-                                <AppLogo />
-                            </Link>
+                        <SidebarMenuButton size="lg" render={<Link href={getRoleUrl(primaryRole)} prefetch />}>
+                            <AppLogo />
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

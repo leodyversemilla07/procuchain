@@ -76,13 +76,15 @@ export default function Home() {
                             </p>
 
                             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-                                <Button size="lg" className="w-full sm:w-auto" asChild>
-                                    <Link href={auth.user ? getDashboardRouteByRole(auth.role || auth.user.role) : login.url()}>
-                                        Get Started
-                                    </Link>
+                                <Button
+                                    size="lg"
+                                    className="w-full sm:w-auto"
+                                    render={<Link href={auth.user ? getDashboardRouteByRole(auth.role || auth.user.role) : login.url()} />}
+                                >
+                                    Get Started
                                 </Button>
-                                <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-                                    <Link href={about.url()}>Learn More</Link>
+                                <Button size="lg" variant="outline" className="w-full sm:w-auto" render={<Link href={about.url()} />}>
+                                    Learn More
                                 </Button>
                             </div>
                         </div>

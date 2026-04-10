@@ -111,17 +111,13 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, pdfError, onLoadingCh
                                 Unable to display the PDF in the browser. You can view the document using the options below.
                             </p>
                             <div className="space-y-2 sm:space-y-3">
-                                <Button asChild className="w-full text-xs sm:text-sm">
-                                    <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                                        <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                                        Open PDF in New Tab
-                                    </a>
+                                <Button className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}>
+                                    <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                    Open PDF in New Tab
                                 </Button>
-                                <Button variant="outline" asChild className="w-full text-xs sm:text-sm">
-                                    <a href={pdfUrl} download>
-                                        <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                                        Download PDF
-                                    </a>
+                                <Button variant="outline" className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} download />}>
+                                    <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                    Download PDF
                                 </Button>
                             </div>
                         </div>
@@ -149,17 +145,16 @@ export default function PdfViewerPane({ pdfUrl, pdfHeight, pdfError, onLoadingCh
                                         There was an error loading the PDF. Please try again or use the options below.
                                     </p>
                                     <div className="space-y-2 sm:space-y-3">
-                                        <Button asChild className="w-full text-xs sm:text-sm">
-                                            <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                                                <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                                                Open PDF in New Tab
-                                            </a>
+                                        <Button
+                                            className="w-full text-xs sm:text-sm"
+                                            render={<a href={pdfUrl} target="_blank" rel="noopener noreferrer" />}
+                                        >
+                                            <Eye className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                            Open PDF in New Tab
                                         </Button>
-                                        <Button variant="outline" asChild className="w-full text-xs sm:text-sm">
-                                            <a href={pdfUrl} download>
-                                                <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                                                Download PDF
-                                            </a>
+                                        <Button variant="outline" className="w-full text-xs sm:text-sm" render={<a href={pdfUrl} download />}>
+                                            <Download className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                            Download PDF
                                         </Button>
                                     </div>
                                 </div>

@@ -19,7 +19,6 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -54,7 +53,8 @@ export const createColumns = ({
         id: 'select',
         header: ({ table }) => (
             <DataTableCheckbox
-                checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+                checked={table.getIsAllPageRowsSelected()}
+                indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
                 onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
                 title="Select all"
             />
@@ -163,14 +163,12 @@ const ActionsCell = ({ procurement, onOpenPreProcurementDialog, onOpenPreBidDial
     return (
         <>
             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+                    <span className="sr-only">Open menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Actions</div>
                     <DropdownMenuItem
                         onClick={async () => {
                             try {

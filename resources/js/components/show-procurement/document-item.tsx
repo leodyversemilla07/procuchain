@@ -70,14 +70,16 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                             {/* Hash with copy (Subtle) */}
                             <TooltipProvider>
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            onClick={handleCopyHash}
-                                            className="hover:text-foreground flex cursor-pointer items-center gap-1 whitespace-nowrap transition-colors"
-                                        >
-                                            <Hash className="h-3 w-3" />
-                                            <span className="font-mono">{shortenHash(doc.hash || '', 6, 4)}</span>
-                                        </button>
+                                    <TooltipTrigger
+                                        render={
+                                            <button
+                                                onClick={handleCopyHash}
+                                                className="hover:text-foreground flex cursor-pointer items-center gap-1 whitespace-nowrap transition-colors"
+                                            />
+                                        }
+                                    >
+                                        <Hash className="h-3 w-3" />
+                                        <span className="font-mono">{shortenHash(doc.hash || '', 6, 4)}</span>
                                     </TooltipTrigger>
                                     <TooltipContent>
                                         <p className="font-mono text-xs">{doc.hash}</p>
@@ -101,24 +103,25 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 Corrections
                             </Button>
                         )}
-                        <Button variant="outline" size="sm" className="h-8" asChild>
-                            <Link href={pdf.viewer.url({ fileKey: doc.file_key })}>
-                                <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
-                                View
-                            </Link>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8"
+                            render={<Link href={pdf.viewer.url({ fileKey: doc.file_key })} />}
+                        >
+                            <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
+                            View
                         </Button>
                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
+                            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
+                                <MoreVertical className="h-4 w-4" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                    <a href={files.download.url({ fileKey: doc.file_key })} target="_blank" rel="noopener noreferrer">
-                                        <Download className="mr-2 h-4 w-4" />
-                                        Download
-                                    </a>
+                                <DropdownMenuItem
+                                    render={<a href={files.download.url({ fileKey: doc.file_key })} target="_blank" rel="noopener noreferrer" />}
+                                >
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Download
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleCopyHash}>
                                     <Hash className="mr-2 h-4 w-4" />
@@ -146,13 +149,16 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                     </Button>
                 )}
                 <div className="ml-auto flex gap-2">
-                    <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
-                        <Link href={pdf.viewer.url({ fileKey: doc.file_key })}>View</Link>
+                    <Button variant="outline" size="sm" className="h-8 text-xs" render={<Link href={pdf.viewer.url({ fileKey: doc.file_key })} />}>
+                        View
                     </Button>
-                    <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
-                        <a href={files.download.url({ fileKey: doc.file_key })} target="_blank" rel="noopener noreferrer">
-                            Download
-                        </a>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs"
+                        render={<a href={files.download.url({ fileKey: doc.file_key })} target="_blank" rel="noopener noreferrer" />}
+                    >
+                        Download
                     </Button>
                 </div>
             </div>
