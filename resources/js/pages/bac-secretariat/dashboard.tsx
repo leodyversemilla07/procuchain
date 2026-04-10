@@ -288,7 +288,7 @@ export default function BACSecretariatDashboard() {
                         data="priorityActions"
                         fallback={
                             <Card className="shadow-sm">
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="flex items-center text-sm font-semibold sm:text-base md:text-lg">
                                         <Bell className="text-primary mr-2 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                                         Priority Actions
@@ -301,7 +301,7 @@ export default function BACSecretariatDashboard() {
                         }
                     >
                         <Card className="shadow-sm">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="flex items-center text-sm font-semibold sm:text-base md:text-lg">
                                     <Bell className="text-primary mr-2 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                                     Priority Actions
