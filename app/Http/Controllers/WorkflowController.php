@@ -2,47 +2,50 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementModeEnums;
-use App\Models\ProcurementWorkflowConfig;
-use App\Models\StageDocumentConfig;
-use Illuminate\Http\Request;
+use App\Enums\StageEnums;
+use App\Services\WorkflowDefinitionService;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class WorkflowController extends Controller
 {
+    public function __construct(
+        private readonly WorkflowDefinitionService $workflowDefinitionService,
+    ) {}
+
     /**
      * Display the dynamic procurement workflow page.
      */
-    public function __invoke(Request $request): Response
+    public function __invoke(): Response
     {
-        $workflowConfigs = ProcurementWorkflowConfig::active()->get();
-        $documentConfigs = StageDocumentConfig::active()->get();
+        $workflows = collect(ProcurementModeEnums::cases())->map(function (ProcurementModeEnums $mode): array {
+            $optionalStages = $this->workflowDefinitionService->getOptionalStagesForMode($mode);
+            $stages = $this->workflowDefinitionService->getStagesForMode($mode);
 
-        $workflows = $workflowConfigs->map(function ($config) use ($documentConfigs) {
-            $mode = $config->procurement_mode;
-            $stages = $config->getStagesAsEnums();
-
-            $stageDetails = collect($stages)->map(function ($stageEnum) use ($mode, $config, $documentConfigs) {
-                $docConfig = $documentConfigs->first(function ($doc) use ($stageEnum, $mode) {
-                    return $doc->stage === $stageEnum->value && $doc->procurement_mode === $mode;
-                });
+            $stageDetails = collect($stages)->map(function (StageEnums $stageEnum) use ($mode, $optionalStages): array {
+                $requiredDocuments = $this->workflowDefinitionService->getRequiredDocuments($stageEnum, $mode);
+                $optionalDocuments = $this->workflowDefinitionService->getOptionalDocuments($stageEnum, $mode);
 
                 return [
                     'id' => $stageEnum->value,
                     'name' => $stageEnum->getDisplayName(),
                     'phase' => $stageEnum->getPhase(),
                     'description' => $stageEnum->getDescription(),
-                    'optional' => $config->isStageOptional($stageEnum),
+                    'optional' => in_array($stageEnum, $optionalStages, true),
                     'repeatable' => $stageEnum->isRepeatable(),
                     'details' => $stageEnum->getKeyActivities(),
-                    'documents' => $docConfig ? array_merge($docConfig->required_documents ?? [], $docConfig->optional_documents ?? []) : [],
+                    'documents' => array_map(
+                        fn (DocumentTypeEnums $document): string => $document->getDisplayName(),
+                        array_merge($requiredDocuments, $optionalDocuments),
+                    ),
                 ];
             });
 
             return [
-                'mode' => $mode,
-                'name' => ProcurementModeEnums::tryFrom($mode)?->getDisplayName() ?? $mode,
+                'mode' => $mode->value,
+                'name' => $mode->getDisplayName(),
                 'stages' => $stageDetails,
             ];
         });
