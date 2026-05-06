@@ -348,7 +348,7 @@ export default function ProcurementsList({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [auth, handleRefresh]);
+    }, [auth, handleRefresh, userRole]);
 
     const columns = createColumns({
         onOpenPreProcurementDialog: handleOpenPreProcurementDialog,
