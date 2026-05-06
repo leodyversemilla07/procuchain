@@ -41,7 +41,9 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             </Label>
         )}
         <Popover>
-            <PopoverTrigger render={<Button variant="outline" className={`h-9 w-full justify-between px-3 py-2 text-left font-normal ${buttonClassName}`} />}>
+            <PopoverTrigger
+                render={<Button variant="outline" className={`h-9 w-full justify-between px-3 py-2 text-left font-normal ${buttonClassName}`} />}
+            >
                 {value?.from ? (
                     value.to ? (
                         <>

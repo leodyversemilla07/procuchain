@@ -273,7 +273,10 @@ export default function ReportIndex() {
                             {filters.filter_type === 'year' && (
                                 <div className="space-y-2">
                                     <Label>Year</Label>
-                                    <Select value={filters.year?.toString()} onValueChange={(value) => value && handleFilterChange('year', parseInt(value))}>
+                                    <Select
+                                        value={filters.year?.toString()}
+                                        onValueChange={(value) => value && handleFilterChange('year', parseInt(value))}
+                                    >
                                         <SelectTrigger className="w-full">
                                             <SelectValue>{() => filters.year?.toString() ?? 'Year'}</SelectValue>
                                         </SelectTrigger>

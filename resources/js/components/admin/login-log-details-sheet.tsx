@@ -128,7 +128,7 @@ export default function LoginLogDetailsSheet({ open, onOpenChange, log, category
                     )}
                 </SheetHeader>
 
-                <div className="flex-1 min-h-0 space-y-6 overflow-y-auto overflow-x-hidden py-6 pr-1">
+                <div className="min-h-0 flex-1 space-y-6 overflow-x-hidden overflow-y-auto py-6 pr-1">
                     {/* Status Overview */}
                     <div className="space-y-4">
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -171,7 +171,7 @@ export default function LoginLogDetailsSheet({ open, onOpenChange, log, category
                                 </div>
                                 <div>
                                     <p className="text-muted-foreground text-xs">Email</p>
-                                    <p className="mt-1 break-all font-medium">{log.user?.email || 'Unknown Email'}</p>
+                                    <p className="mt-1 font-medium break-all">{log.user?.email || 'Unknown Email'}</p>
                                 </div>
                             </div>
                             <div className="grid gap-3 sm:grid-cols-2">

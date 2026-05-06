@@ -1,8 +1,8 @@
 import { Calendar, Clock, FileCheck, Hash, Tag } from 'lucide-react';
 
+import { Stepper } from '@/components/stepper';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Stepper } from '@/components/stepper';
 import { STAGE_ORDER } from '@/types/constants';
 
 import { calculateProgress } from '../../utils/show-procurement/helpers';

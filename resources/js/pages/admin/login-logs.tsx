@@ -8,13 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -1131,7 +1125,9 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-muted-foreground text-xs">{formatDateTime(log.login_at)}</span>
                                                         <DropdownMenu>
-                                                            <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" />}>
+                                                            <DropdownMenuTrigger
+                                                                render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" />}
+                                                            >
                                                                 <MoreVertical className="h-4 w-4" />
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
@@ -1359,7 +1355,9 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                                                                     <span className="sr-only">Open menu</span>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
-                                                                    <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Actions</div>
+                                                                    <div className="text-muted-foreground px-1.5 py-1 text-xs font-medium">
+                                                                        Actions
+                                                                    </div>
                                                                     <DropdownMenuItem onClick={() => handleViewDetails(log, log.category)}>
                                                                         <Eye className="mr-2 h-4 w-4" />
                                                                         View Details

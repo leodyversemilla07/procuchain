@@ -17,13 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -454,7 +448,9 @@ export default function AdminLockedAccounts() {
                             <div className="flex flex-col gap-2 sm:flex-row">
                                 <Select value={roleFilter} onValueChange={(value) => value && setRoleFilter(value)}>
                                     <SelectTrigger className="w-full sm:w-[180px]">
-                                        <SelectValue placeholder="Filter by role">{() => roleFilterLabels[roleFilter] ?? 'Filter by role'}</SelectValue>
+                                        <SelectValue placeholder="Filter by role">
+                                            {() => roleFilterLabels[roleFilter] ?? 'Filter by role'}
+                                        </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -468,7 +464,9 @@ export default function AdminLockedAccounts() {
                                 </Select>
                                 <Select value={statusFilter} onValueChange={(value) => value && setStatusFilter(value)}>
                                     <SelectTrigger className="w-full sm:w-[180px]">
-                                        <SelectValue placeholder="Filter by status">{() => statusFilterLabels[statusFilter] ?? 'Filter by status'}</SelectValue>
+                                        <SelectValue placeholder="Filter by status">
+                                            {() => statusFilterLabels[statusFilter] ?? 'Filter by status'}
+                                        </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -730,7 +728,7 @@ export default function AdminLockedAccounts() {
                                                               <MoreHorizontal className="h-4 w-4" />
                                                           </DropdownMenuTrigger>
                                                           <DropdownMenuContent align="end">
-                                                              <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Actions</div>
+                                                              <div className="text-muted-foreground px-1.5 py-1 text-xs font-medium">Actions</div>
                                                               <DropdownMenuSeparator />
                                                               <DropdownMenuItem
                                                                   onClick={() => {
@@ -851,7 +849,7 @@ export default function AdminLockedAccounts() {
                                                               <MoreHorizontal className="h-4 w-4" />
                                                           </DropdownMenuTrigger>
                                                           <DropdownMenuContent align="end">
-                                                              <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Actions</div>
+                                                              <div className="text-muted-foreground px-1.5 py-1 text-xs font-medium">Actions</div>
                                                               <DropdownMenuSeparator />
                                                               <DropdownMenuItem
                                                                   onClick={() => {

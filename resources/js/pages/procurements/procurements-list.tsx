@@ -384,7 +384,8 @@ export default function ProcurementsList({
                         </div>
                     }
                     actions={
-                        !isPollArchived && userRole === 'bac_secretariat' && (
+                        !isPollArchived &&
+                        userRole === 'bac_secretariat' && (
                             <Can permission="create procurement">
                                 <Button
                                     nativeButton={false}
