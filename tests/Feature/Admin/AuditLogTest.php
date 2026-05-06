@@ -6,6 +6,7 @@ use App\Services\AccountLockoutService;
 use App\Services\AuditLogger;
 use App\Services\Manager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
@@ -51,7 +52,7 @@ it('non-admin is forbidden from viewing the audit log', function () {
 // ─── UserManagementController writes audit entries ───────────────────────────
 
 it('creating a user writes a user.created audit log entry', function () {
-    $managerMock = \Mockery::mock(Manager::class);
+    $managerMock = Mockery::mock(Manager::class);
     $managerMock->shouldReceive('getNewAddress')->andReturn('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2');
     $managerMock->shouldReceive('validateAddress')->andReturn(['isvalid' => true]);
     $this->app->instance(Manager::class, $managerMock);
@@ -121,7 +122,7 @@ it('bulk-deleting users writes a user.bulk_deleted audit log entry', function ()
 it('locking an account writes an account.locked audit log entry', function () {
     $target = User::factory()->create();
 
-    $lockoutMock = \Mockery::mock(AccountLockoutService::class);
+    $lockoutMock = Mockery::mock(AccountLockoutService::class);
     $lockoutMock->shouldReceive('lockAccount')->once()->andReturn(true);
     $this->app->instance(AccountLockoutService::class, $lockoutMock);
 
@@ -141,7 +142,7 @@ it('locking an account writes an account.locked audit log entry', function () {
 it('unlocking an account writes an account.unlocked audit log entry', function () {
     $target = User::factory()->create(['account_locked' => true]);
 
-    $lockoutMock = \Mockery::mock(AccountLockoutService::class);
+    $lockoutMock = Mockery::mock(AccountLockoutService::class);
     $lockoutMock->shouldReceive('unlockAccount')->once()->andReturn(true);
     $this->app->instance(AccountLockoutService::class, $lockoutMock);
 
@@ -158,7 +159,7 @@ it('unlocking an account writes an account.unlocked audit log entry', function (
 it('resetting login attempts writes an account.attempts_reset audit log entry', function () {
     $target = User::factory()->create(['failed_login_attempts' => 5]);
 
-    $lockoutMock = \Mockery::mock(AccountLockoutService::class);
+    $lockoutMock = Mockery::mock(AccountLockoutService::class);
     $lockoutMock->shouldReceive('resetFailedAttempts')->once()->andReturn(true);
     $this->app->instance(AccountLockoutService::class, $lockoutMock);
 
@@ -177,7 +178,7 @@ it('resetting login attempts writes an account.attempts_reset audit log entry', 
 it('AuditLogger does not throw when the database write fails', function () {
     $logger = $this->app->make(AuditLogger::class);
 
-    \Illuminate\Support\Facades\Schema::drop('audit_logs');
+    Schema::drop('audit_logs');
 
-    expect(fn () => $logger->log('user.created', 'user', '1'))->not->toThrow(\Exception::class);
+    expect(fn () => $logger->log('user.created', 'user', '1'))->not->toThrow(Exception::class);
 });

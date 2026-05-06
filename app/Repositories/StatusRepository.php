@@ -7,6 +7,7 @@ namespace App\Repositories;
 use App\DataTransferObjects\StatusData;
 use App\Enums\StreamEnums;
 use App\Services\Manager;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -64,8 +65,8 @@ final readonly class StatusRepository
 
         // Sort by timestamp descending (most recent first)
         usort($filtered, function (StatusData $a, StatusData $b): int {
-            $timeA = $a->timestamp instanceof \Carbon\Carbon ? $a->timestamp->timestamp : strtotime($a->timestamp);
-            $timeB = $b->timestamp instanceof \Carbon\Carbon ? $b->timestamp->timestamp : strtotime($b->timestamp);
+            $timeA = $a->timestamp instanceof Carbon ? $a->timestamp->timestamp : strtotime($a->timestamp);
+            $timeB = $b->timestamp instanceof Carbon ? $b->timestamp->timestamp : strtotime($b->timestamp);
 
             return $timeB - $timeA;
         });
@@ -170,10 +171,10 @@ final readonly class StatusRepository
                     $grouped[$prNumber] = $status;
                 } else {
                     // Keep the latest by timestamp
-                    $currentTime = $grouped[$prNumber]->timestamp instanceof \Carbon\Carbon
+                    $currentTime = $grouped[$prNumber]->timestamp instanceof Carbon
                         ? $grouped[$prNumber]->timestamp->timestamp
                         : strtotime($grouped[$prNumber]->timestamp);
-                    $newTime = $status->timestamp instanceof \Carbon\Carbon
+                    $newTime = $status->timestamp instanceof Carbon
                         ? $status->timestamp->timestamp
                         : strtotime($status->timestamp);
 

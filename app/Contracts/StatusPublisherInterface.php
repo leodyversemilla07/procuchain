@@ -6,6 +6,7 @@ namespace App\Contracts;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Exceptions\BlockchainException;
 
 /**
  * Interface for publishing status updates to the blockchain
@@ -32,7 +33,7 @@ interface StatusPublisherInterface
      *     timestamp: string
      * }
      *
-     * @throws \App\Exceptions\BlockchainException If publication fails
+     * @throws BlockchainException If publication fails
      */
     public function publish(
         string $prNumber,
@@ -54,7 +55,7 @@ interface StatusPublisherInterface
      * @param  array<string, mixed>|null  $metadata  Additional metadata
      * @return array<string, mixed>
      *
-     * @throws \App\Exceptions\BlockchainException If publication fails
+     * @throws BlockchainException If publication fails
      */
     public function publishCompletion(
         string $prNumber,

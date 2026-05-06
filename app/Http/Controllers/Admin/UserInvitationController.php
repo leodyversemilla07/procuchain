@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Events\UserInvited;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\SendInvitationRequest;
+use App\Models\User;
 use App\Models\UserInvitation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ class UserInvitationController extends Controller
      */
     public function index(): Response
     {
-        $this->authorize('viewAny', \App\Models\User::class);
+        $this->authorize('viewAny', User::class);
 
         $invitations = UserInvitation::with(['invitedBy:id,name,email', 'user:id,name,email', 'revokedBy:id,name,email'])
             ->orderBy('created_at', 'desc')
@@ -110,7 +111,7 @@ class UserInvitationController extends Controller
      */
     public function resend(UserInvitation $invitation): RedirectResponse
     {
-        $this->authorize('create', \App\Models\User::class);
+        $this->authorize('create', User::class);
 
         if (! $invitation->isPending()) {
             return redirect()->back()->withErrors(['error' => 'This invitation cannot be resent. It may have expired, been accepted, or revoked.']);
@@ -150,7 +151,7 @@ class UserInvitationController extends Controller
      */
     public function destroy(UserInvitation $invitation): RedirectResponse
     {
-        $this->authorize('create', \App\Models\User::class);
+        $this->authorize('create', User::class);
 
         if ($invitation->isAccepted()) {
             return redirect()->back()->withErrors(['error' => 'Cannot revoke an invitation that has already been accepted.']);

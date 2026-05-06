@@ -2,6 +2,8 @@
 
 use App\Models\DocumentView;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -33,14 +35,14 @@ describe('DocumentView Model - Configuration', function () {
         ]);
 
         expect($view->metadata)->toBeArray();
-        expect($view->viewed_at)->toBeInstanceOf(\Carbon\Carbon::class);
+        expect($view->viewed_at)->toBeInstanceOf(Carbon::class);
     });
 
     test('timestamps are managed automatically', function () {
         $view = DocumentView::factory()->create();
 
-        expect($view->created_at)->toBeInstanceOf(\Carbon\Carbon::class);
-        expect($view->updated_at)->toBeInstanceOf(\Carbon\Carbon::class);
+        expect($view->created_at)->toBeInstanceOf(Carbon::class);
+        expect($view->updated_at)->toBeInstanceOf(Carbon::class);
     });
 });
 
@@ -341,8 +343,8 @@ describe('DocumentView Model - Static Methods - File Statistics', function () {
 
         expect($stats['first_viewed'])->not->toBeNull();
         expect($stats['last_viewed'])->not->toBeNull();
-        expect($stats['first_viewed'])->toBeInstanceOf(\Carbon\Carbon::class);
-        expect($stats['last_viewed'])->toBeInstanceOf(\Carbon\Carbon::class);
+        expect($stats['first_viewed'])->toBeInstanceOf(Carbon::class);
+        expect($stats['last_viewed'])->toBeInstanceOf(Carbon::class);
     });
 
     test('getFileStatistics returns all expected keys', function () {
@@ -439,7 +441,7 @@ describe('DocumentView Model - Data Integrity', function () {
             'file_key' => 'test-file',
             'pr_number' => 'PR-001',
             'viewed_at' => now(),
-        ]))->toThrow(\Illuminate\Database\QueryException::class);
+        ]))->toThrow(QueryException::class);
     });
 
     test('requires file_key', function () {
@@ -449,7 +451,7 @@ describe('DocumentView Model - Data Integrity', function () {
             'user_id' => $user->id,
             'pr_number' => 'PR-001',
             'viewed_at' => now(),
-        ]))->toThrow(\Illuminate\Database\QueryException::class);
+        ]))->toThrow(QueryException::class);
     });
 
     test('can store nullable fields', function () {

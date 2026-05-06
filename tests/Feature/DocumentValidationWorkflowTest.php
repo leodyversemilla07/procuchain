@@ -6,6 +6,7 @@ use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
@@ -148,7 +149,7 @@ describe('Progressive Upload Workflow', function () {
         $response->assertStatus(202)
             ->assertJsonStructure(['job_id', 'status', 'document_type']);
 
-        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
+        Queue::assertPushed(BlockchainWriteJob::class);
     });
 
     it('tracks completion progress as documents are uploaded', function () {

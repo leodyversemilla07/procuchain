@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Contracts\CacheStrategyInterface;
 use App\Enums\StreamEnums;
 use App\Enums\UserRoleEnums;
+use App\Repositories\ProcurementRepository;
 use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
 use App\Services\Manager;
@@ -86,7 +87,7 @@ abstract class BaseDashboardController extends Controller
 
             return Inertia::render($this->getViewName(), $dashboardData);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Failed to retrieve {$this->getRoleLabel()} Dashboard data", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -149,7 +150,7 @@ abstract class BaseDashboardController extends Controller
             $this->storeProcurementCollection($snapshotKey, $procurementsByKey, now()->addDay());
 
             return $procurementsByKey;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning("Failed to refresh {$roleLabel} dashboard procurements, attempting snapshot fallback", [
                 'error' => $e->getMessage(),
                 'cache_key' => $cacheKey,
@@ -237,7 +238,7 @@ abstract class BaseDashboardController extends Controller
         $prNumbers = $procurementsByKey->keys()->all();
 
         // Fetch procurement metadata to check ownership
-        $procurements = app(\App\Repositories\ProcurementRepository::class)->findManyByProcurement($prNumbers);
+        $procurements = app(ProcurementRepository::class)->findManyByProcurement($prNumbers);
 
         // Filter to only include procurements owned by the user
         $allowedPrNumbers = [];
@@ -298,7 +299,7 @@ abstract class BaseDashboardController extends Controller
             );
 
             return $this->dashboardService->calculateStats($procurementsByKey, $totalDocuments);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error("Failed to calculate {$this->getRoleLabel()} Dashboard stats", ['error' => $e->getMessage()]);
             Cache::forget(DashboardCacheKeys::totalDocuments($this->getRoleName(), $this->getDashboardCacheUserId($this->getRoleName())));
 
@@ -320,7 +321,7 @@ abstract class BaseDashboardController extends Controller
     /**
      * Render error response with empty dashboard data
      */
-    protected function renderErrorResponse(\Exception $e): Response
+    protected function renderErrorResponse(Exception $e): Response
     {
         return Inertia::render($this->getViewName(), array_merge([
             'recentProcurements' => [],

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Enums\StreamEnums;
+use App\Services\DashboardCacheKeys;
 use App\Services\Manager;
 use Illuminate\Support\Facades\Log;
 
@@ -52,7 +53,7 @@ class ProcurementArchiveRepository
         ]);
 
         // Clear caches
-        \App\Services\DashboardCacheKeys::clearAllProcurementCaches();
+        DashboardCacheKeys::clearAllProcurementCaches();
     }
 
     /**
@@ -78,7 +79,7 @@ class ProcurementArchiveRepository
         ]);
 
         // Clear caches
-        \App\Services\DashboardCacheKeys::clearAllProcurementCaches();
+        DashboardCacheKeys::clearAllProcurementCaches();
     }
 
     /**

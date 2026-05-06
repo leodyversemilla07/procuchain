@@ -180,7 +180,7 @@ describe('DocumentPolicy', function () {
 
 function bindInaccessibleDocumentContext($testCase, string $reference, string $prNumber, bool $isTxid = false): void
 {
-    $dataService = \Mockery::mock(ProcurementDataService::class);
+    $dataService = Mockery::mock(ProcurementDataService::class);
     $dataService->shouldReceive('getDocumentDataByFileKey')
         ->zeroOrMoreTimes()
         ->andReturn($isTxid ? null : [
@@ -193,7 +193,7 @@ function bindInaccessibleDocumentContext($testCase, string $reference, string $p
             ['user_address' => 'different-address'],
         ]));
 
-    $documentRepository = \Mockery::mock(DocumentRepository::class);
+    $documentRepository = Mockery::mock(DocumentRepository::class);
     $documentRepository->shouldReceive('findByFileKey')
         ->once()
         ->with($reference)
@@ -202,7 +202,7 @@ function bindInaccessibleDocumentContext($testCase, string $reference, string $p
         ->zeroOrMoreTimes()
         ->andReturn($isTxid ? inaccessibleDocumentFixture('locked-file.pdf', $prNumber, $reference) : null);
 
-    $repository = \Mockery::mock(ProcurementRepository::class);
+    $repository = Mockery::mock(ProcurementRepository::class);
     $repository->shouldReceive('findByProcurement')
         ->once()
         ->with($prNumber)

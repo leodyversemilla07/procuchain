@@ -13,6 +13,7 @@ use App\Mail\AccountUnlockedMail;
 use App\Mail\NewLocationLoginAlert;
 use App\Mail\UserInvitationMail;
 use App\Models\UserInvitation;
+use App\Services\AccountLockoutService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 
@@ -28,7 +29,7 @@ describe('Event dispatching', function () {
             'email_notifications_enabled' => true,
         ]);
 
-        $service = app(\App\Services\AccountLockoutService::class);
+        $service = app(AccountLockoutService::class);
         $service->handleFailedLoginAttempt($user);
         $service->handleFailedLoginAttempt($user);
         $service->handleFailedLoginAttempt($user);
@@ -123,7 +124,7 @@ describe('SendAccountLockedNotification listener', function () {
     });
 
     it('does not throw when mail fails', function () {
-        Mail::shouldReceive('to')->andThrow(new \Exception('SMTP error'));
+        Mail::shouldReceive('to')->andThrow(new Exception('SMTP error'));
 
         $user = createUserWithRole('bac_secretariat', [
             'email_notifications_enabled' => true,
@@ -132,7 +133,7 @@ describe('SendAccountLockedNotification listener', function () {
         $event = new AccountLocked($user, 'Test', '30 minutes');
 
         expect(fn () => (new SendAccountLockedNotification)->handle($event))
-            ->not->toThrow(\Exception::class);
+            ->not->toThrow(Exception::class);
     });
 });
 
@@ -212,7 +213,7 @@ describe('SendLoginAnomalyAlert listener', function () {
     });
 
     it('does not throw when mail queue fails', function () {
-        Mail::shouldReceive('to')->andThrow(new \Exception('Queue error'));
+        Mail::shouldReceive('to')->andThrow(new Exception('Queue error'));
 
         $user = createUserWithRole('bac_secretariat');
 
@@ -224,7 +225,7 @@ describe('SendLoginAnomalyAlert listener', function () {
         );
 
         expect(fn () => (new SendLoginAnomalyAlert)->handle($event))
-            ->not->toThrow(\Exception::class);
+            ->not->toThrow(Exception::class);
     });
 });
 
@@ -248,7 +249,7 @@ describe('SendUserInvitationEmail listener', function () {
     });
 
     it('does not throw when mail fails', function () {
-        Mail::shouldReceive('to')->andThrow(new \Exception('SMTP error'));
+        Mail::shouldReceive('to')->andThrow(new Exception('SMTP error'));
 
         $invitation = UserInvitation::factory()->create();
         $acceptUrl = 'https://example.com/accept?token=test';
@@ -256,6 +257,6 @@ describe('SendUserInvitationEmail listener', function () {
         $event = new UserInvited($invitation, $acceptUrl);
 
         expect(fn () => (new SendUserInvitationEmail)->handle($event))
-            ->not->toThrow(\Exception::class);
+            ->not->toThrow(Exception::class);
     });
 });

@@ -62,7 +62,7 @@ it('forbids bac secretariat from correcting inaccessible documents by txid', fun
 
 function bindLockedDocumentAccess(string $reference, string $prNumber, bool $isTxid = false): void
 {
-    $dataService = \Mockery::mock(ProcurementDataService::class);
+    $dataService = Mockery::mock(ProcurementDataService::class);
     $dataService->shouldReceive('getDocumentDataByFileKey')
         ->zeroOrMoreTimes()
         ->andReturn($isTxid ? null : lockedDocumentFixture($reference, $prNumber)->toBlockchainArray());
@@ -74,7 +74,7 @@ function bindLockedDocumentAccess(string $reference, string $prNumber, bool $isT
         ]));
     app()->instance(ProcurementDataService::class, $dataService);
 
-    $documentRepository = \Mockery::mock(DocumentRepository::class);
+    $documentRepository = Mockery::mock(DocumentRepository::class);
     $documentRepository->shouldReceive('findByFileKey')
         ->once()
         ->with($reference)
@@ -84,7 +84,7 @@ function bindLockedDocumentAccess(string $reference, string $prNumber, bool $isT
         ->andReturn($isTxid ? lockedDocumentFixture('locked-file.pdf', $prNumber, $reference) : null);
     app()->instance(DocumentRepository::class, $documentRepository);
 
-    $procurementRepository = \Mockery::mock(ProcurementRepository::class);
+    $procurementRepository = Mockery::mock(ProcurementRepository::class);
     $procurementRepository->shouldReceive('findByProcurement')
         ->once()
         ->with($prNumber)

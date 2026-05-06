@@ -1,6 +1,7 @@
 <?php
 
 use App\DataTransferObjects\EventData;
+use App\DataTransferObjects\ProcurementData;
 use App\Enums\StreamEnums;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
@@ -161,13 +162,13 @@ describe('DashboardService', function () {
                 ],
             ];
 
-            $procurementOne = \App\DataTransferObjects\ProcurementData::fromBlockchainArray([
+            $procurementOne = ProcurementData::fromBlockchainArray([
                 'pr_number' => 'PR-001',
                 'title' => 'Mode A Procurement',
                 'category' => 'goods',
                 'procurement_mode' => 'small_value_procurement',
             ]);
-            $procurementTwo = \App\DataTransferObjects\ProcurementData::fromBlockchainArray([
+            $procurementTwo = ProcurementData::fromBlockchainArray([
                 'pr_number' => 'PR-002',
                 'title' => 'Mode B Procurement',
                 'category' => 'goods',
@@ -285,7 +286,7 @@ describe('DashboardService', function () {
             $this->service->getProcurementsByKey($streamData);
 
             Log::shouldHaveReceived('warning')
-                ->with('Invalid procurement data structure', \Mockery::type('array'))
+                ->with('Invalid procurement data structure', Mockery::type('array'))
                 ->once();
         });
 
@@ -670,7 +671,7 @@ describe('DashboardService', function () {
             expect($result)->toBeEmpty();
 
             Log::shouldHaveReceived('error')
-                ->with('Failed to retrieve all events', \Mockery::type('array'))
+                ->with('Failed to retrieve all events', Mockery::type('array'))
                 ->once();
         });
     });
@@ -746,7 +747,7 @@ describe('DashboardService', function () {
             expect($result)->toBe(3);
 
             Log::shouldHaveReceived('info')
-                ->with('Dashboard document count calculated', \Mockery::on(function ($data) {
+                ->with('Dashboard document count calculated', Mockery::on(function ($data) {
                     return isset($data['total_documents']) && $data['total_documents'] === 3;
                 }))
                 ->once();

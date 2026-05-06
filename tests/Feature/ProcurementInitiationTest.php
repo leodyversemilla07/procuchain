@@ -1,11 +1,16 @@
 <?php
 
+use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
+use App\Repositories\DocumentRepository;
+use App\Repositories\ProcurementRepository;
 use App\Services\Manager;
+use App\Services\Publishers\EventPublisher;
+use App\Services\Publishers\StatusPublisher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
@@ -404,7 +409,7 @@ test('users without permission cannot initiate procurement', function () {
  */
 test('can mark procurement initiation stage as complete when all documents uploaded', function () {
     // Mock the required services
-    $statusPublisher = Mockery::mock(\App\Services\Publishers\StatusPublisher::class);
+    $statusPublisher = Mockery::mock(StatusPublisher::class);
     $statusPublisher->shouldReceive('publish')->andReturn([
         'success' => true,
         'status_txid' => 'test_txid_123',
@@ -412,21 +417,21 @@ test('can mark procurement initiation stage as complete when all documents uploa
         'current_status' => 'procurement_submitted',
         'previous_status' => null,
     ]);
-    $this->app->instance(\App\Services\Publishers\StatusPublisher::class, $statusPublisher);
+    $this->app->instance(StatusPublisher::class, $statusPublisher);
 
-    $eventPublisher = Mockery::mock(\App\Services\Publishers\EventPublisher::class);
+    $eventPublisher = Mockery::mock(EventPublisher::class);
     $eventPublisher->shouldReceive('publish')->andReturn([
         'success' => true,
         'event_txid' => 'test_event_txid_123',
         'event_type' => 'stage_completed',
         'category' => 'stage_transition',
     ]);
-    $this->app->instance(\App\Services\Publishers\EventPublisher::class, $eventPublisher);
+    $this->app->instance(EventPublisher::class, $eventPublisher);
 
     $prNumber = 'PR-2025-TEST-0001';
 
     // Mock document repository to return uploaded documents
-    $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class)->makePartial();
+    $documentRepo = Mockery::mock(DocumentRepository::class)->makePartial();
     $documentRepo->shouldReceive('findByProcurement')
         ->with($prNumber)
         ->andReturn(collect([
@@ -437,21 +442,21 @@ test('can mark procurement initiation stage as complete when all documents uploa
             (object) ['stage' => 'procurement_initiation', 'documentType' => 'approved_budget_contract'],
             (object) ['stage' => 'procurement_initiation', 'documentType' => 'technical_specifications'],
         ]));
-    $this->app->instance(\App\Repositories\DocumentRepository::class, $documentRepo);
+    $this->app->instance(DocumentRepository::class, $documentRepo);
 
     // Mock procurement repository
-    $procurementRepo = Mockery::mock(\App\Repositories\ProcurementRepository::class);
+    $procurementRepo = Mockery::mock(ProcurementRepository::class);
     $procurementRepo->shouldReceive('findByProcurement')
         ->with($prNumber)
-        ->andReturn(new \App\DataTransferObjects\ProcurementData(
+        ->andReturn(new ProcurementData(
             prNumber: $prNumber,
             appReference: 'APP-2025-TEST',
             title: 'Test Procurement',
             description: 'Test procurement for stage completion',
             abcAmount: 150000.00,
             fundingSource: 'General Fund',
-            category: \App\Enums\ProcurementCategoryEnums::GOODS,
-            procurementMode: \App\Enums\ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
+            category: ProcurementCategoryEnums::GOODS,
+            procurementMode: ProcurementModeEnums::SMALL_VALUE_PROCUREMENT,
             office: 'Test Office',
             endUser: 'Test Department',
             // Delivery details are populated at Contract Implementation stage per NGPA IRR
@@ -469,7 +474,7 @@ test('can mark procurement initiation stage as complete when all documents uploa
             userId: '1',
             createdAt: now(),
         ));
-    $this->app->instance(\App\Repositories\ProcurementRepository::class, $procurementRepo);
+    $this->app->instance(ProcurementRepository::class, $procurementRepo);
 
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");
@@ -487,11 +492,11 @@ test('cannot mark procurement initiation stage as complete without required docu
     $prNumber = 'PR-2025-TEST-0002';
 
     // Mock document repository to return no documents
-    $documentRepo = Mockery::mock(\App\Repositories\DocumentRepository::class)->makePartial();
+    $documentRepo = Mockery::mock(DocumentRepository::class)->makePartial();
     $documentRepo->shouldReceive('findByProcurement')
         ->with($prNumber)
         ->andReturn(collect([]));
-    $this->app->instance(\App\Repositories\DocumentRepository::class, $documentRepo);
+    $this->app->instance(DocumentRepository::class, $documentRepo);
 
     $response = $this->actingAs($this->user)
         ->withoutMiddleware('throttle:blockchain_writes')->startSession()->post("/bac-secretariat/procurement-initiation/{$prNumber}/complete");

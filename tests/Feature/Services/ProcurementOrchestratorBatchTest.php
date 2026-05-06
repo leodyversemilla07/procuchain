@@ -3,7 +3,10 @@
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
 use App\Services\Manager;
+use App\Services\Publishers\DocumentPublisher;
+use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
+use App\Services\Publishers\StatusPublisher;
 use Illuminate\Support\Facades\Log;
 
 use function Pest\Laravel\mock;
@@ -52,9 +55,9 @@ it('publishes status and event in single atomic batch transaction', function () 
 
     // Create orchestrator with mocked dependencies
     $orchestrator = new ProcurementOrchestrator(
-        documentPublisher: mock(\App\Services\Publishers\DocumentPublisher::class),
-        statusPublisher: mock(\App\Services\Publishers\StatusPublisher::class),
-        eventPublisher: mock(\App\Services\Publishers\EventPublisher::class),
+        documentPublisher: mock(DocumentPublisher::class),
+        statusPublisher: mock(StatusPublisher::class),
+        eventPublisher: mock(EventPublisher::class),
     );
 
     // Execute batch publish
@@ -102,9 +105,9 @@ it('publishes only status when no event data provided', function () {
         ->andReturn('mock-txid-67890');
 
     $orchestrator = new ProcurementOrchestrator(
-        mock(\App\Services\Publishers\DocumentPublisher::class),
-        mock(\App\Services\Publishers\StatusPublisher::class),
-        mock(\App\Services\Publishers\EventPublisher::class)
+        mock(DocumentPublisher::class),
+        mock(StatusPublisher::class),
+        mock(EventPublisher::class)
     );
 
     $result = $orchestrator->publishStatusWithEventBatch(
@@ -135,9 +138,9 @@ it('includes previous status when provided', function () {
         ->andReturn('mock-txid-11111');
 
     $orchestrator = new ProcurementOrchestrator(
-        mock(\App\Services\Publishers\DocumentPublisher::class),
-        mock(\App\Services\Publishers\StatusPublisher::class),
-        mock(\App\Services\Publishers\EventPublisher::class)
+        mock(DocumentPublisher::class),
+        mock(StatusPublisher::class),
+        mock(EventPublisher::class)
     );
 
     $result = $orchestrator->publishStatusWithEventBatch(
@@ -161,9 +164,9 @@ it('logs performance metrics for batch operations', function () {
         ->andReturn('mock-txid-metrics');
 
     $orchestrator = new ProcurementOrchestrator(
-        mock(\App\Services\Publishers\DocumentPublisher::class),
-        mock(\App\Services\Publishers\StatusPublisher::class),
-        mock(\App\Services\Publishers\EventPublisher::class)
+        mock(DocumentPublisher::class),
+        mock(StatusPublisher::class),
+        mock(EventPublisher::class)
     );
 
     $orchestrator->publishStatusWithEventBatch(

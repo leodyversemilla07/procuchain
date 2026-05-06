@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Repositories\ProcurementArchiveRepository;
 use App\Services\Procurement\ProcurementFetcherService;
 use App\Services\Procurement\ProcurementFormatterService;
 use App\Services\Procurement\ProcurementListAggregatorService;
@@ -22,16 +23,16 @@ use Illuminate\Support\Collection;
  *
  * All public methods maintain backward compatibility with existing code.
  *
- * @see \App\Services\Procurement\ProcurementFetcherService
- * @see \App\Services\Procurement\ProcurementListAggregatorService
- * @see \App\Services\Procurement\ProcurementFormatterService
+ * @see ProcurementFetcherService
+ * @see ProcurementListAggregatorService
+ * @see ProcurementFormatterService
  */
 class ProcurementDataService
 {
     public function __construct(
         private readonly ProcurementFetcherService $fetcher,
         private readonly ProcurementFormatterService $formatter,
-        private readonly \App\Repositories\ProcurementArchiveRepository $archiveRepository,
+        private readonly ProcurementArchiveRepository $archiveRepository,
         private readonly ProcurementListAggregatorService $listAggregator,
     ) {}
 

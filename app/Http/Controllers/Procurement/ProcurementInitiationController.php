@@ -13,6 +13,7 @@ use App\Http\Requests\Procurement\InitiateProcurementRequest;
 use App\Http\Requests\Procurement\UploadSingleDocumentRequest;
 use App\Jobs\BlockchainWriteJob;
 use App\Repositories\ProcurementRepository;
+use App\Repositories\StatusRepository;
 use App\Services\Procurement\ProcurementStageCompletionService;
 use App\Services\Procurement\ProcurementStagePageService;
 use App\Services\Procurement\ProcurementStageUploadService;
@@ -46,7 +47,7 @@ class ProcurementInitiationController extends BaseController
             }
 
             // Get the latest status from blockchain to check if stage is complete
-            $statusRepo = app(\App\Repositories\StatusRepository::class);
+            $statusRepo = app(StatusRepository::class);
             $statuses = $statusRepo->findByProcurement($id);
             // findByProcurement returns statuses sorted by timestamp descending (newest first)
             $latestStatus = ! empty($statuses) ? $statuses[0] : null;

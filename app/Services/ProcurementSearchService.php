@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -129,7 +130,7 @@ class ProcurementSearchService
                     return false;
                 }
 
-                if ($dateField instanceof \Carbon\Carbon) {
+                if ($dateField instanceof Carbon) {
                     $timestamp = $dateField->timestamp;
                 } else {
                     $timestamp = strtotime($dateField);

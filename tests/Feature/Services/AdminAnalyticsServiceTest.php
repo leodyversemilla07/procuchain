@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Models\UserLoginLog;
 use App\Services\AdminAnalyticsService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 
@@ -70,7 +71,7 @@ describe('AdminAnalyticsService', function () {
             try {
                 $result = $this->service->getLoginPatterns('30_days', null);
                 expect($result['peak_hours'])->toBeArray();
-            } catch (\Illuminate\Database\QueryException $e) {
+            } catch (QueryException $e) {
                 // SQLite doesn't support HOUR() function - this is expected in testing
                 expect($e->getMessage())->toContain('no such function: HOUR');
             }
@@ -95,7 +96,7 @@ describe('AdminAnalyticsService', function () {
                 if (! empty($result['peak_hours'])) {
                     expect($result['peak_hours'][0])->toHaveKeys(['hour', 'count', 'formatted_hour']);
                 }
-            } catch (\Illuminate\Database\QueryException $e) {
+            } catch (QueryException $e) {
                 // SQLite doesn't support HOUR() function - this is expected in testing
                 expect($e->getMessage())->toContain('no such function: HOUR');
             }

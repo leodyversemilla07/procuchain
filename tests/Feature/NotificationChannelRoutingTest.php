@@ -3,9 +3,10 @@
 use App\Models\User;
 use App\Notifications\ProcurementCorrectionSubmitted;
 use App\Notifications\ProcurementStageNotification;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use NotificationChannels\WebPush\WebPushChannel;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 describe('ProcurementStageNotification channels', function () {
     it('includes email when procurement_stage_updates email is enabled', function () {

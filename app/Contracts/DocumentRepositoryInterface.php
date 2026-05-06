@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Contracts;
 
 use App\DataTransferObjects\DocumentData;
+use App\Exceptions\BlockchainException;
 use Illuminate\Support\Collection;
 
 /**
@@ -20,7 +21,7 @@ interface DocumentRepositoryInterface
      * @param  DocumentData  $document  Document data to store
      * @return string Transaction ID from blockchain
      *
-     * @throws \App\Exceptions\BlockchainException If creation fails
+     * @throws BlockchainException If creation fails
      */
     public function create(DocumentData $document): string;
 

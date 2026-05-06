@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Procurement\Traits;
 
+use Illuminate\Contracts\Validation\ValidationRule;
+
 /**
  * Shared validation rules for conference document requests.
  *
@@ -17,7 +19,7 @@ trait HasConferenceValidation
     /**
      * Get the validation rules for conference documents.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     protected function conferenceRules(): array
     {

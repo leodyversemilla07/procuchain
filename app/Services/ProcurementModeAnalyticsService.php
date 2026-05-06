@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Repositories\ProcurementRepository;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -323,7 +324,7 @@ class ProcurementModeAnalyticsService
             }
 
             try {
-                $procTime = \Carbon\Carbon::parse($timestamp);
+                $procTime = Carbon::parse($timestamp);
 
                 return $procTime->gte($cutoffDate);
             } catch (\Exception $e) {

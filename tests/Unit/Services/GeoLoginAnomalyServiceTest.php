@@ -11,8 +11,8 @@ uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     // Swap Cache facade with ArrayStore to avoid Redis dependency
-    \Illuminate\Support\Facades\Cache::swap(app('cache')->store('array'));
-    \Illuminate\Support\Facades\Cache::flush();
+    Cache::swap(app('cache')->store('array'));
+    Cache::flush();
 
     $this->service = new GeoLoginAnomalyService;
     Mail::fake();

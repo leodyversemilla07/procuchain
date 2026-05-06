@@ -2,8 +2,10 @@
 
 use App\Models\User;
 use App\Services\NotificationPreferenceService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use NotificationChannels\WebPush\WebPushChannel;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 describe('NotificationPreferenceService', function () {
     it('returns default preferences for user with no saved preferences', function () {
@@ -86,7 +88,7 @@ describe('NotificationPreferenceService', function () {
 
         expect($channels)->toContain('database')
             ->and($channels)->toContain('mail')
-            ->and($channels)->not->toContain(\NotificationChannels\WebPush\WebPushChannel::class);
+            ->and($channels)->not->toContain(WebPushChannel::class);
     });
 
     it('provides frontend payload with all required keys', function () {

@@ -7,6 +7,7 @@ namespace App\Repositories;
 use App\Contracts\ProcurementRepositoryInterface;
 use App\DataTransferObjects\ProcurementData;
 use App\Enums\StreamEnums;
+use App\Services\DashboardCacheKeys;
 use App\Services\Manager;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +33,7 @@ class ProcurementRepository implements ProcurementRepositoryInterface
         );
 
         // Clear caches to show new procurement
-        \App\Services\DashboardCacheKeys::clearAllProcurementCaches();
+        DashboardCacheKeys::clearAllProcurementCaches();
 
         Log::info('Procurement published to blockchain', [
             'pr_number' => $procurement->prNumber,
@@ -162,7 +163,7 @@ class ProcurementRepository implements ProcurementRepositoryInterface
         );
 
         // Clear caches to show updated procurement data
-        \App\Services\DashboardCacheKeys::clearAllProcurementCaches();
+        DashboardCacheKeys::clearAllProcurementCaches();
 
         Log::info('Procurement metadata updated on blockchain', [
             'pr_number' => $procurement->prNumber,

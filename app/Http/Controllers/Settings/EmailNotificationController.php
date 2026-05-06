@@ -8,6 +8,7 @@ use App\Services\NotificationPreferenceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class EmailNotificationController extends Controller
 {
@@ -16,7 +17,7 @@ class EmailNotificationController extends Controller
     /**
      * Show the email notification settings page.
      */
-    public function edit(): \Inertia\Response
+    public function edit(): Response
     {
         $user = Auth::user();
 

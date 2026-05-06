@@ -6,6 +6,7 @@ use App\Services\Manager;
 use App\Services\Publishers\CorrectionPublisher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -13,8 +14,8 @@ uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     // Swap Cache facade with ArrayStore to avoid Redis dependency
-    \Illuminate\Support\Facades\Cache::swap(app('cache')->store('array'));
-    \Illuminate\Support\Facades\Cache::flush();
+    Cache::swap(app('cache')->store('array'));
+    Cache::flush();
 
     $this->mockMultichain = Mockery::mock(Manager::class);
     $this->mockFileStorageMultichain = Mockery::mock(Manager::class);

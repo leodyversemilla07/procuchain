@@ -6,6 +6,7 @@ use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
@@ -123,7 +124,7 @@ describe('ProcurementStageController (Actions)', function () {
             $response->assertStatus(202)->assertJsonStructure(['job_id', 'status', 'document_type']);
         }
 
-        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class, 4);
+        Queue::assertPushed(BlockchainWriteJob::class, 4);
     });
 
     it('returns the document guide for a stage', function () {
@@ -160,7 +161,7 @@ describe('ProcurementStageController (Actions)', function () {
             ]);
 
         $response->assertStatus(202)->assertJsonStructure(['job_id', 'status']);
-        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
+        Queue::assertPushed(BlockchainWriteJob::class);
     });
 
     it('checks stage completion status', function () {

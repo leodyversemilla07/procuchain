@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\SeedsPermissions;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
-uses(\Tests\SeedsPermissions::class);
+uses(RefreshDatabase::class);
+uses(SeedsPermissions::class);
 
 describe('Authentication Browser Flow', function () {
     it('displays the login page correctly', function () {

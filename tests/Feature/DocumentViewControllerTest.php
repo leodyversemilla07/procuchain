@@ -3,6 +3,8 @@
 use App\DataTransferObjects\ProcurementData;
 use App\Models\DocumentView;
 use App\Models\User;
+use App\Repositories\ProcurementRepository;
+use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
@@ -134,7 +136,7 @@ it('forbids bac secretariat from viewing inaccessible procurement documents', fu
     ]);
     $user->assignRole('bac_secretariat');
 
-    $dataService = \Mockery::mock(\App\Services\ProcurementDataService::class);
+    $dataService = Mockery::mock(ProcurementDataService::class);
     $dataService->shouldReceive('getDocumentDataByFileKey')
         ->once()
         ->with('locked-document')
@@ -147,14 +149,14 @@ it('forbids bac secretariat from viewing inaccessible procurement documents', fu
         ->andReturn(collect([
             ['user_address' => 'different-address'],
         ]));
-    app()->instance(\App\Services\ProcurementDataService::class, $dataService);
+    app()->instance(ProcurementDataService::class, $dataService);
 
-    $repository = \Mockery::mock(\App\Repositories\ProcurementRepository::class);
+    $repository = Mockery::mock(ProcurementRepository::class);
     $repository->shouldReceive('findByProcurement')
         ->once()
         ->with('PR-LOCKED')
         ->andReturn(viewerLockedProcurementFixture());
-    app()->instance(\App\Repositories\ProcurementRepository::class, $repository);
+    app()->instance(ProcurementRepository::class, $repository);
 
     actingAs($user);
 

@@ -2,10 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
+use App\Models\UserLoginLog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\UserLoginLog>
+ * @extends Factory<UserLoginLog>
  */
 class UserLoginLogFactory extends Factory
 {
@@ -17,7 +19,7 @@ class UserLoginLogFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => \App\Models\User::factory(),
+            'user_id' => User::factory(),
             'ip_address' => fake()->ipv4(),
             'user_agent' => fake()->userAgent(),
             'device_type' => fake()->randomElement(['desktop', 'mobile', 'tablet']),

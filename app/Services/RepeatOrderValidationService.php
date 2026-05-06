@@ -17,7 +17,7 @@ use Carbon\Carbon;
  * - Cannot exceed 25% of quantity from original contract
  * - Unit price must be equal to or lower than original contract
  *
- * @see \App\Enums\ProcurementModeEnums::REPEAT_ORDER
+ * @see ProcurementModeEnums::REPEAT_ORDER
  */
 final readonly class RepeatOrderValidationService
 {

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
@@ -84,7 +85,7 @@ class ReportController extends Controller
     /**
      * Export report in various formats
      */
-    public function export(Request $request): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse|\Symfony\Component\HttpFoundation\Response
+    public function export(Request $request): JsonResponse|StreamedResponse|\Symfony\Component\HttpFoundation\Response
     {
         $validated = $request->validate([
             'filter_type' => 'nullable|string|in:month,year,quarter,date_range',

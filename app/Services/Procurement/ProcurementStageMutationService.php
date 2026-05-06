@@ -3,6 +3,7 @@
 namespace App\Services\Procurement;
 
 use App\Enums\StageEnums;
+use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -15,7 +16,7 @@ class ProcurementStageMutationService
     {
         $jobId = Str::uuid()->toString();
 
-        \App\Jobs\BlockchainWriteJob::dispatch('skip_stage', [
+        BlockchainWriteJob::dispatch('skip_stage', [
             'pr_number' => $prNumber,
             'stage' => $stage->value,
             'reason' => $reason,
@@ -35,7 +36,7 @@ class ProcurementStageMutationService
     {
         $jobId = Str::uuid()->toString();
 
-        \App\Jobs\BlockchainWriteJob::dispatch('repeat_stage', [
+        BlockchainWriteJob::dispatch('repeat_stage', [
             'pr_number' => $prNumber,
             'stage' => $stage->value,
             'reason' => $reason,
@@ -60,7 +61,7 @@ class ProcurementStageMutationService
     ): array {
         $jobId = Str::uuid()->toString();
 
-        \App\Jobs\BlockchainWriteJob::dispatch('publish_decision', [
+        BlockchainWriteJob::dispatch('publish_decision', [
             'decision_type' => $decisionType,
             'pr_number' => $prNumber,
             'procurement_title' => $procurementTitle,
@@ -87,7 +88,7 @@ class ProcurementStageMutationService
     ): array {
         $jobId = Str::uuid()->toString();
 
-        \App\Jobs\BlockchainWriteJob::dispatch('update_delivery_details', [
+        BlockchainWriteJob::dispatch('update_delivery_details', [
             'pr_number' => $prNumber,
             'delivery_location' => $deliveryLocation,
             'delivery_date' => $deliveryDate,

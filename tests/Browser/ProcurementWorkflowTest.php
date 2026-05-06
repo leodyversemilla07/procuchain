@@ -8,11 +8,13 @@ use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\SeedsPermissions;
 
 use function Pest\Laravel\mock;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
-uses(\Tests\SeedsPermissions::class);
+uses(RefreshDatabase::class);
+uses(SeedsPermissions::class);
 
 describe('Procurement Initiation Browser Flow', function () {
     beforeEach(function () {

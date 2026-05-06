@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\CacheStrategyInterface;
+use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
+use App\Services\DashboardCacheKeys;
 use App\Services\DashboardService;
 use App\Services\Manager;
 use App\Services\ProcurementStageTransitionService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class BacSecretariatController extends BaseDashboardController
 {
@@ -46,10 +50,10 @@ class BacSecretariatController extends BaseDashboardController
 
         // Defer priority actions - they're heavy and can load after initial render
         return [
-            'priorityActions' => \Inertia\Inertia::defer(function () use ($cacheUserId, $procurementsByKey, $roleName) {
+            'priorityActions' => Inertia::defer(function () use ($cacheUserId, $procurementsByKey, $roleName) {
                 // Use database cache for potentially large priority actions list
                 return Cache::store('database')->remember(
-                    \App\Services\DashboardCacheKeys::priorityActions($roleName, $cacheUserId),
+                    DashboardCacheKeys::priorityActions($roleName, $cacheUserId),
                     now()->addMinutes(config('dashboard.cache_ttl.priority_actions')),
                     function () use ($procurementsByKey) {
                         $allPriorityActions = $this->getPriorityActions($procurementsByKey);
@@ -74,7 +78,7 @@ class BacSecretariatController extends BaseDashboardController
 
         // Get all priority actions count - small data, can use default cache
         $allPriorityActionsCount = Cache::remember(
-            \App\Services\DashboardCacheKeys::priorityActionsCount($this->getRoleName(), $cacheUserId),
+            DashboardCacheKeys::priorityActionsCount($this->getRoleName(), $cacheUserId),
             now()->addMinutes(config('dashboard.cache_ttl.priority_actions')),
             function () use ($procurementsByKey) {
                 return count($this->getPriorityActions($procurementsByKey));
@@ -95,8 +99,8 @@ class BacSecretariatController extends BaseDashboardController
             foreach ($procurementsByKey as $procurement) {
                 try {
                     // Convert enum values to display names for priority action matching
-                    $stageEnum = \App\Enums\StageEnums::tryFrom($procurement['stage']);
-                    $statusEnum = \App\Enums\StatusEnums::tryFrom($procurement['status']);
+                    $stageEnum = StageEnums::tryFrom($procurement['stage']);
+                    $statusEnum = StatusEnums::tryFrom($procurement['status']);
 
                     $displayStage = $stageEnum ? $stageEnum->getDisplayName() : $procurement['stage'];
                     $displayStatus = $statusEnum ? $statusEnum->getDisplayName() : $procurement['status'];

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use NotificationChannels\WebPush\WebPushChannel;
 
 class NotificationPreferenceService
 {
@@ -109,7 +110,7 @@ class NotificationPreferenceService
         }
 
         if ($this->isEnabled($user, $eventType, 'push')) {
-            $channels[] = \NotificationChannels\WebPush\WebPushChannel::class;
+            $channels[] = WebPushChannel::class;
         }
 
         return $channels;
