@@ -120,7 +120,7 @@ const procurementModesMetadata: Record<string, { category: string; section: stri
         description: 'Two-stage process for complex or innovative procurement needs',
         icon: MessageSquare,
     },
-    unsolicited_offer: {
+    unsolicited_offer_with_bid_matching: {
         category: 'competitive',
         section: 'Section 30',
         description: 'Consideration of unsolicited offers for new concepts or technology with bid matching',
@@ -163,7 +163,7 @@ const procurementModesMetadata: Record<string, { category: string; section: stri
         description: 'Purchase from supplier that satisfactorily delivered to another government agency',
         icon: Store,
     },
-    direct_procurement_sti: {
+    direct_procurement_for_sti: {
         category: 'alternative',
         section: 'Section 37',
         description: 'Procurement for science, technology, innovation, and research & development',
@@ -426,15 +426,15 @@ export default function Workflow({ workflows }: WorkflowProps) {
                         <div className="mb-10 sm:mb-16">
                             <h2 className="mb-6 text-center text-2xl font-bold sm:mb-8 sm:text-3xl">Select Procurement Mode</h2>
 
-                            <Tabs defaultValue="competitive" className="mx-auto w-full max-w-6xl">
-                                <TabsList className="mb-4 grid h-auto w-full grid-cols-2 sm:mb-6">
-                                    <TabsTrigger value="competitive" className="gap-1.5 px-2 py-2 text-xs sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm">
-                                        <Scale className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            <Tabs defaultValue="competitive" className="mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-6">
+                                <TabsList className="mx-auto grid w-full max-w-xl grid-cols-2">
+                                    <TabsTrigger value="competitive" className="gap-2">
+                                        <Scale data-icon="inline-start" />
                                         <span className="xs:inline hidden">Competitive</span>
                                         <span className="xs:hidden">Competitive</span>
                                     </TabsTrigger>
-                                    <TabsTrigger value="alternative" className="gap-1.5 px-2 py-2 text-xs sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm">
-                                        <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                    <TabsTrigger value="alternative" className="gap-2">
+                                        <Layers data-icon="inline-start" />
                                         <span className="xs:inline hidden">Alternative</span>
                                         <span className="xs:hidden">Alternative</span>
                                     </TabsTrigger>

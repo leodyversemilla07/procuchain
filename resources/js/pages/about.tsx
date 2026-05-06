@@ -129,7 +129,7 @@ export default function About() {
                             <h2 className="mb-8 text-center text-3xl font-bold">Technologies Used</h2>
 
                             <Tabs defaultValue="blockchain" className="mx-auto w-full max-w-4xl">
-                                <TabsList className="mb-6 grid w-full grid-cols-3">
+                                <TabsList className="mb-6 w-full justify-start">
                                     <TabsTrigger value="blockchain">Blockchain</TabsTrigger>
                                     <TabsTrigger value="frontend">Frontend</TabsTrigger>
                                     <TabsTrigger value="backend">Backend</TabsTrigger>

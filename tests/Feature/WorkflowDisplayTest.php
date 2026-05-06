@@ -4,9 +4,11 @@ use App\DataTransferObjects\ProcurementData;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
+use App\Models\ProcurementWorkflowConfig;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
+use App\Services\Manager;
 use App\Services\ModeAwareDocumentValidationService;
 use App\Services\Procurement\ProcurementSupportService;
 use Tests\TestCase;
@@ -33,6 +35,24 @@ beforeEach(function () {
         'Test SVP Procurement',
         100000.00,
     );
+});
+
+describe('Public Workflow Page', function () {
+    it('uses default workflow definitions when database configs have not been materialized', function () {
+        expect(ProcurementWorkflowConfig::query()->count())->toBe(0);
+
+        $response = $this->get(route('workflow'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('workflow')
+            ->has('workflows', count(ProcurementModeEnums::cases()))
+            ->where('workflows.0.mode', ProcurementModeEnums::COMPETITIVE_BIDDING->value)
+            ->where('workflows.0.name', ProcurementModeEnums::COMPETITIVE_BIDDING->getDisplayName())
+            ->has('workflows.0.stages', count(StageEnums::getStagesForMode(ProcurementModeEnums::COMPETITIVE_BIDDING)))
+            ->where('workflows.0.stages.0.id', StageEnums::PROCUREMENT_INITIATION->value)
+        );
+    });
 });
 
 describe('Workflow Info Structure', function () {
@@ -119,7 +139,7 @@ describe('Procurement Initiation With Workflow Info', function () {
         bindWorkflowSupportStub($this->competitiveProcurementData);
         bindWorkflowDocumentGuideStub();
 
-        $multichain = mock(\App\Services\Manager::class);
+        $multichain = mock(Manager::class);
         $multichain->shouldReceive('liststreamitems')
             ->once()
             ->with('procurement.status', false, 1000, 0, false)
