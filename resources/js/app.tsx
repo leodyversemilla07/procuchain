@@ -1,25 +1,27 @@
 import '../css/app.css';
+import '@fontsource/geist/400.css';
+import '@fontsource/geist/500.css';
+import '@fontsource/geist/600.css';
+import '@fontsource/geist/700.css';
 
-import { Toaster } from '@/components/ui/sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from './hooks/use-appearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
-    setup({ el, App, props }) {
-        const root = createRoot(el);
-
-        root.render(
+    withApp(app) {
+        return (
             <TooltipProvider>
-                <App {...props} />
+                {app}
                 <Toaster />
-            </TooltipProvider>,
+            </TooltipProvider>
         );
     },
     progress: {

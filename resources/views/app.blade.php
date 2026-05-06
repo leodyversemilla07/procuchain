@@ -47,14 +47,8 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="apple-touch-icon" href="/logo.png">
 
-    {{-- Fonts - Using Google Fonts CDN for better reliability --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap"
-        rel="stylesheet">
-
-    @viteReactRefresh
-    @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+    {{-- Fonts - Using local @fontsource/geist --}}
+    @vite(['resources/js/app.tsx'])
     @inertiaHead
 </head>
 

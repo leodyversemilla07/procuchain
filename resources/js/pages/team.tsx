@@ -3,7 +3,7 @@ import Header from '@/components/header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Head } from '@inertiajs/react';
-import { Facebook, Github, Mail } from 'lucide-react';
+import { Code2, Link, Mail } from 'lucide-react';
 
 export default function Team() {
     const teamMembers = [
@@ -126,9 +126,9 @@ export default function Team() {
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="text-muted-foreground hover:text-primary transition-colors"
-                                                            aria-label={`${member.name}'s Github Profile`}
+                                                            aria-label={`${member.name}'s GitHub Profile`}
                                                         >
-                                                            <Github className="h-5 w-5" />
+                                                            <Code2 className="h-5 w-5" />
                                                         </a>
                                                     )}
                                                     {member.email && (
@@ -148,7 +148,7 @@ export default function Team() {
                                                             className="text-muted-foreground hover:text-primary transition-colors"
                                                             aria-label={`${member.name}'s Facebook Profile`}
                                                         >
-                                                            <Facebook className="h-4 w-4 sm:h-5 sm:w-5" />
+                                                            <Link className="h-4 w-4 sm:h-5 sm:w-5" />
                                                         </a>
                                                     )}
                                                 </div>
