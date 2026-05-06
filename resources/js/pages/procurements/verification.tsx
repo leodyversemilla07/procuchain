@@ -946,7 +946,14 @@ export default function VerificationPage({ prNumber, report, procurementStatus }
                                 <div className="flex gap-1 print:hidden">
                                     <Tooltip>
                                         <TooltipTrigger
-                                            render={<Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => window.print()} />}
+                                            render={
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="h-8 w-8 sm:h-9 sm:w-9"
+                                                    onClick={() => window.print()}
+                                                />
+                                            }
                                         >
                                             <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                             <span className="sr-only">Print report</span>

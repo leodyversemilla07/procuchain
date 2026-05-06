@@ -315,14 +315,15 @@ export default function ProcurementInitiationForm({ categories = [], procurement
         [prPrefix, prYear, prSequence1, prSequence2, handleFieldChange],
     );
 
-    const selectedDescriptionLabel = PROCUREMENT_DESCRIPTIONS.find((description) => description.value === data.description)?.label ?? 'Select description';
+    const selectedDescriptionLabel =
+        PROCUREMENT_DESCRIPTIONS.find((description) => description.value === data.description)?.label ?? 'Select description';
     const selectedOfficeLabel = MUNICIPAL_OFFICES.find((office) => office.value === data.office)?.label ?? 'Select office';
     const selectedEndUserLabel =
         data.end_user === ''
             ? 'Same as Office'
             : data.end_user === 'Other'
               ? 'Other (Please specify)'
-              : MUNICIPAL_OFFICES.find((office) => office.value === data.end_user)?.label ?? 'Same as Office';
+              : (MUNICIPAL_OFFICES.find((office) => office.value === data.end_user)?.label ?? 'Same as Office');
 
     // Find selected mode for displaying requirements
     const selectedMode = procurementModes.find((mode) => mode.value === data.procurement_mode);

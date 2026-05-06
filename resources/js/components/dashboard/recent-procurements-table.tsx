@@ -135,7 +135,9 @@ export const RecentProcurementsTable = ({
                                                             variant="ghost"
                                                             size="sm"
                                                             className="h-8 px-2 transition-all duration-200 hover:scale-110"
-                                                            render={<Link href={getViewProcurementHref(procurement)} prefetch="hover" cacheFor="1m" />}
+                                                            render={
+                                                                <Link href={getViewProcurementHref(procurement)} prefetch="hover" cacheFor="1m" />
+                                                            }
                                                         />
                                                     }
                                                 >

@@ -103,12 +103,7 @@ export const DocumentItem: FC<DocumentItemProps> = ({ doc }) => {
                                 Corrections
                             </Button>
                         )}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8"
-                            render={<Link href={pdf.viewer.url({ fileKey: doc.file_key })} />}
-                        >
+                        <Button variant="outline" size="sm" className="h-8" render={<Link href={pdf.viewer.url({ fileKey: doc.file_key })} />}>
                             <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
                             View
                         </Button>

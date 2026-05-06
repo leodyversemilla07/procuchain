@@ -311,7 +311,11 @@ export default function StageDocumentConfigEdit({ mode, stage, currentRequiredDo
                 <div className="grid gap-6 lg:grid-cols-2">
                     {/* Left: Selected Documents */}
                     <div className="space-y-4">
-                        <Tabs value={selectedDocsTab} onValueChange={(value) => setSelectedDocsTab(value as 'required' | 'optional')} className="flex flex-col gap-4">
+                        <Tabs
+                            value={selectedDocsTab}
+                            onValueChange={(value) => setSelectedDocsTab(value as 'required' | 'optional')}
+                            className="flex flex-col gap-4"
+                        >
                             <TabsList variant="line">
                                 <TabsTrigger value="required">Required ({requiredDocs.length})</TabsTrigger>
                                 <TabsTrigger value="optional">Optional ({optionalDocs.length})</TabsTrigger>

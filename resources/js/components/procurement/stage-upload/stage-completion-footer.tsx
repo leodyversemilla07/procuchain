@@ -34,11 +34,7 @@ export function StageCompletionFooter({
                         <span className="text-xs font-bold tracking-tight uppercase">Stage Complete</span>
                     </div>
                     {nextStageInfo && (
-                        <Button
-                            variant="outline"
-                            className="border-green-500/20 bg-white text-green-700"
-                            render={<Link href={nextStageInfo.url} />}
-                        >
+                        <Button variant="outline" className="border-green-500/20 bg-white text-green-700" render={<Link href={nextStageInfo.url} />}>
                             NEXT: {nextStageInfo.name} <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                     )}

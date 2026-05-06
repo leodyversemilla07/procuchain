@@ -106,7 +106,7 @@ export default function WorkflowConfigs({ competitiveModes, alternativeModes }: 
                 <Button
                     variant="default"
                     size="sm"
-                    className="flex-1 min-w-[140px]"
+                    className="min-w-[140px] flex-1"
                     nativeButton={false}
                     render={<Link href={workflowConfigEdit(config.mode).url} />}
                 >

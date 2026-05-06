@@ -75,7 +75,13 @@ const DatePicker: React.FC<DatePickerProps> = ({
                     <ChevronDownIcon className="text-muted-foreground ml-2 h-4 w-4" />
                 </PopoverTrigger>
                 <PopoverContent className={`w-auto p-0 ${popoverClassName}`} align="start">
-                    <Calendar mode="single" selected={dateValue} onSelect={handleDateChange} className="rounded-md border shadow-md" captionLayout="dropdown" />
+                    <Calendar
+                        mode="single"
+                        selected={dateValue}
+                        onSelect={handleDateChange}
+                        className="rounded-md border shadow-md"
+                        captionLayout="dropdown"
+                    />
                 </PopoverContent>
             </Popover>
             {error && <FieldError>{error}</FieldError>}

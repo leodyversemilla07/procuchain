@@ -15,13 +15,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { ProcurementListItem } from '@/types';
 
 import procurementRoutes from '@/routes/procurement';
@@ -168,7 +162,7 @@ const ActionsCell = ({ procurement, onOpenPreProcurementDialog, onOpenPreBidDial
                     <MoreHorizontal className="h-4 w-4" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                    <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Actions</div>
+                    <div className="text-muted-foreground px-1.5 py-1 text-xs font-medium">Actions</div>
                     <DropdownMenuItem
                         onClick={async () => {
                             try {
