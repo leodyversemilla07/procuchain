@@ -13,11 +13,15 @@ namespace App\Http\Controllers;
 
 use App\Enums\StageEnums;
 use App\Enums\UserRoleEnums;
+use App\Models\User;
+use App\Repositories\DocumentRepository;
 use App\Services\Procurement\ProcurementDetailService;
+use App\Services\Procurement\ProcurementListAggregatorService;
 use App\Services\ProcurementDataService;
 use Exception;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -29,7 +33,7 @@ class ProcurementListController extends BaseController
 
     private ProcurementDataService $procurementDataService;
 
-    private \App\Services\Procurement\ProcurementListAggregatorService $listAggregator;
+    private ProcurementListAggregatorService $listAggregator;
 
     private ProcurementDetailService $detailService;
 
@@ -38,7 +42,7 @@ class ProcurementListController extends BaseController
      */
     public function __construct(
         ProcurementDataService $procurementDataService,
-        \App\Services\Procurement\ProcurementListAggregatorService $listAggregator,
+        ProcurementListAggregatorService $listAggregator,
         ProcurementDetailService $detailService
     ) {
         $this->procurementDataService = $procurementDataService;
@@ -49,7 +53,7 @@ class ProcurementListController extends BaseController
     /**
      * Display a listing of procurements
      */
-    public function index(\Illuminate\Http\Request $request): Response
+    public function index(Request $request): Response
     {
         $this->authorize('view-procurement');
 
@@ -117,7 +121,7 @@ class ProcurementListController extends BaseController
                 'filters' => compact('search', 'status', 'stage'),
                 'is_archived' => $showArchived,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to retrieve procurements list', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -197,7 +201,7 @@ class ProcurementListController extends BaseController
                 'workflow' => $result['workflow'],
                 'now' => now()->toIso8601String(),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to retrieve procurement details', [
                 'pr_number' => $pr_number,
                 'error' => $e->getMessage(),
@@ -243,7 +247,7 @@ class ProcurementListController extends BaseController
 
         try {
             // Fetch documents from blockchain for this procurement
-            $documentRepository = app(\App\Repositories\DocumentRepository::class);
+            $documentRepository = app(DocumentRepository::class);
             $documentDataArray = $documentRepository->findByProcurement($pr_number);
 
             // Transform DocumentData objects to status response format
@@ -287,7 +291,7 @@ class ProcurementListController extends BaseController
                 ],
                 'documents' => array_values($documents),
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to fetch blockchain status', [
                 'pr_number' => $pr_number,
                 'error' => $e->getMessage(),
@@ -309,7 +313,7 @@ class ProcurementListController extends BaseController
     }
 
     /**
-     * @param  \App\Models\User  $user
+     * @param  User  $user
      * @return array{user_id: ?string, user_address: ?string}
      */
     private function getVisibilityFilters($user): array

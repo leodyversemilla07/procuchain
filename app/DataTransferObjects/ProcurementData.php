@@ -6,6 +6,7 @@ namespace App\DataTransferObjects;
 
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
+use App\Enums\StageEnums;
 use Carbon\Carbon;
 
 /**
@@ -16,7 +17,7 @@ use Carbon\Carbon;
  * across all three phases (Pre-Procurement, Procurement, Post-Procurement).
  * Fields are populated progressively as the procurement advances through stages.
  *
- * @see \App\Enums\StageEnums For the complete procurement workflow stages
+ * @see StageEnums For the complete procurement workflow stages
  */
 final class ProcurementData
 {

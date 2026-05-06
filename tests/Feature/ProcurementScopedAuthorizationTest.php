@@ -80,13 +80,13 @@ describe('procurement-scoped authorization', function () {
 
 function denyProcurementAccess(string $prNumber): void
 {
-    $repository = \Mockery::mock(ProcurementRepository::class);
+    $repository = Mockery::mock(ProcurementRepository::class);
     $repository->shouldReceive('findByProcurement')
         ->atLeast()->once()
         ->with($prNumber)
         ->andReturn(scopedProcurementFixture($prNumber, '999'));
 
-    $dataService = \Mockery::mock(ProcurementDataService::class);
+    $dataService = Mockery::mock(ProcurementDataService::class);
     $dataService->shouldReceive('fetchStatusItems')
         ->atLeast()->once()
         ->with($prNumber)

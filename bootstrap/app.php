@@ -1,7 +1,10 @@
 <?php
 
+use App\Enums\StageEnums;
+use App\Http\Middleware\CheckBlockedIp;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -10,7 +13,11 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Sentry\Laravel\Integration;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,8 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             // Custom route model binding for StageEnums to handle kebab-case URLs
             Route::bind('stage', function (string $value) {
-                return \App\Enums\StageEnums::fromSlug($value)
-                    ?? throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException("Stage not found: {$value}");
+                return StageEnums::fromSlug($value)
+                    ?? throw new NotFoundHttpException("Stage not found: {$value}");
             });
         },
     )
@@ -29,17 +36,17 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance']);
 
         $middleware->web(append: [
-            \App\Http\Middleware\SecurityHeaders::class,
-            \App\Http\Middleware\CheckBlockedIp::class,
+            SecurityHeaders::class,
+            CheckBlockedIp::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         $middleware->alias([
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
-            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
 
         // Configure rate limiters for blockchain operations (Issue #18 fix)

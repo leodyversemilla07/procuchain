@@ -143,7 +143,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
             && $collection->keys()->all() === ['PR-001'];
     };
 
-    $manager = \Mockery::mock(Manager::class);
+    $manager = Mockery::mock(Manager::class);
     $manager->shouldReceive('liststreamitems')
         ->once()
         ->withAnyArgs()
@@ -152,7 +152,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
             ['data' => ['json' => ['pr_number' => 'PR-002', 'procurement_title' => 'Blocked Procurement']]],
         ]);
 
-    $dashboardService = \Mockery::mock(DashboardService::class);
+    $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getProcurementsByKey')
         ->once()
         ->andReturn($procurementsByKey);
@@ -161,15 +161,15 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
         ->andReturn([]);
     $dashboardService->shouldReceive('getTotalDocuments')
         ->once()
-        ->with(\Mockery::on($filteredExpectation))
+        ->with(Mockery::on($filteredExpectation))
         ->andReturn(0);
     $dashboardService->shouldReceive('calculateStats')
         ->once()
-        ->with(\Mockery::on($filteredExpectation), 0)
+        ->with(Mockery::on($filteredExpectation), 0)
         ->andReturn(['total' => 1]);
     $dashboardService->shouldReceive('getProcurementDistributionData')
         ->once()
-        ->with(\Mockery::on($filteredExpectation))
+        ->with(Mockery::on($filteredExpectation))
         ->andReturn([]);
     $dashboardService->shouldReceive('getEmptyStats')
         ->zeroOrMoreTimes()
@@ -180,7 +180,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
             'totalDocuments' => 0,
         ]);
 
-    $cacheStrategy = \Mockery::mock(CacheStrategyInterface::class);
+    $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
             if ($key === DashboardCacheKeys::recentActivities('bac_secretariat')) {
@@ -206,7 +206,7 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
             throw new RuntimeException("Unexpected small cache key [{$key}]");
         });
 
-    $procurementRepository = \Mockery::mock(ProcurementRepository::class);
+    $procurementRepository = Mockery::mock(ProcurementRepository::class);
     $procurementRepository->shouldReceive('findManyByProcurement')
         ->once()
         ->with(['PR-001', 'PR-002'])
@@ -215,13 +215,13 @@ test('bac secretariat dashboard uses user scoped cache keys and filtered procure
             'PR-002' => dashboardProcurementFixture('PR-002', '999'),
         ]);
 
-    $stageTransitionService = \Mockery::mock(ProcurementStageTransitionService::class);
+    $stageTransitionService = Mockery::mock(ProcurementStageTransitionService::class);
     $stageTransitionService->shouldReceive('getPriorityAction')
         ->once()
         ->withAnyArgs()
         ->andReturn(null);
 
-    $analyticsService = \Mockery::mock(AdminAnalyticsService::class);
+    $analyticsService = Mockery::mock(AdminAnalyticsService::class);
     $analyticsService->shouldReceive('getUserActivityAnalytics')
         ->zeroOrMoreTimes()
         ->andReturn(null);
@@ -254,23 +254,23 @@ test('bac secretariat dashboard renders without global error when multichain is 
     ]);
     $secretariatUser->assignRole('bac_secretariat');
 
-    $manager = \Mockery::mock(Manager::class);
+    $manager = Mockery::mock(Manager::class);
     $manager->shouldReceive('liststreamitems')
         ->once()
         ->withAnyArgs()
         ->andThrow(new RuntimeException('MultiChain Error: Empty reply from server'));
 
-    $dashboardService = \Mockery::mock(DashboardService::class);
+    $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getRecentActivities')
         ->once()
         ->andReturn([]);
     $dashboardService->shouldReceive('getTotalDocuments')
         ->once()
-        ->with(\Mockery::type(Collection::class))
+        ->with(Mockery::type(Collection::class))
         ->andReturn(0);
     $dashboardService->shouldReceive('calculateStats')
         ->once()
-        ->with(\Mockery::type(Collection::class), 0)
+        ->with(Mockery::type(Collection::class), 0)
         ->andReturn([
             'ongoingProjects' => 0,
             'pendingActions' => 0,
@@ -279,7 +279,7 @@ test('bac secretariat dashboard renders without global error when multichain is 
         ]);
     $dashboardService->shouldReceive('getProcurementDistributionData')
         ->once()
-        ->with(\Mockery::type(Collection::class))
+        ->with(Mockery::type(Collection::class))
         ->andReturn([]);
     $dashboardService->shouldReceive('getEmptyStats')
         ->zeroOrMoreTimes()
@@ -304,7 +304,7 @@ test('bac secretariat dashboard renders without global error when multichain is 
         now()->addDay()
     );
 
-    $cacheStrategy = \Mockery::mock(CacheStrategyInterface::class);
+    $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
             if ($key === DashboardCacheKeys::recentActivities('bac_secretariat')) {
@@ -330,17 +330,17 @@ test('bac secretariat dashboard renders without global error when multichain is 
             throw new RuntimeException("Unexpected small cache key [{$key}]");
         });
 
-    $procurementRepository = \Mockery::mock(ProcurementRepository::class);
+    $procurementRepository = Mockery::mock(ProcurementRepository::class);
     $procurementRepository->shouldReceive('findManyByProcurement')
         ->zeroOrMoreTimes()
         ->andReturn([]);
 
-    $stageTransitionService = \Mockery::mock(ProcurementStageTransitionService::class);
+    $stageTransitionService = Mockery::mock(ProcurementStageTransitionService::class);
     $stageTransitionService->shouldReceive('getPriorityAction')
         ->zeroOrMoreTimes()
         ->andReturn(null);
 
-    $analyticsService = \Mockery::mock(AdminAnalyticsService::class);
+    $analyticsService = Mockery::mock(AdminAnalyticsService::class);
     $analyticsService->shouldReceive('getUserActivityAnalytics')
         ->zeroOrMoreTimes()
         ->andReturn(null);
@@ -388,20 +388,20 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
         now()->addMinutes(config('dashboard.cache_ttl.procurements'))
     );
 
-    $manager = \Mockery::mock(Manager::class);
+    $manager = Mockery::mock(Manager::class);
     $manager->shouldReceive('liststreamitems')->never();
 
-    $dashboardService = \Mockery::mock(DashboardService::class);
+    $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getRecentActivities')
         ->once()
         ->andReturn([]);
     $dashboardService->shouldReceive('getTotalDocuments')
         ->once()
-        ->with(\Mockery::type(Collection::class))
+        ->with(Mockery::type(Collection::class))
         ->andReturn(0);
     $dashboardService->shouldReceive('calculateStats')
         ->once()
-        ->with(\Mockery::type(Collection::class), 0)
+        ->with(Mockery::type(Collection::class), 0)
         ->andReturn([
             'ongoingProjects' => 0,
             'pendingActions' => 0,
@@ -410,7 +410,7 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
         ]);
     $dashboardService->shouldReceive('getProcurementDistributionData')
         ->once()
-        ->with(\Mockery::type(Collection::class))
+        ->with(Mockery::type(Collection::class))
         ->andReturn([]);
     $dashboardService->shouldReceive('getEmptyStats')
         ->zeroOrMoreTimes()
@@ -421,7 +421,7 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
             'totalDocuments' => 0,
         ]);
 
-    $cacheStrategy = \Mockery::mock(CacheStrategyInterface::class);
+    $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->andReturnUsing(function ($key, $ttl, $callback) use ($secretariatUser) {
             if ($key === DashboardCacheKeys::recentActivities('bac_secretariat')) {
@@ -447,18 +447,18 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
             throw new RuntimeException("Unexpected small cache key [{$key}]");
         });
 
-    $procurementRepository = \Mockery::mock(ProcurementRepository::class);
+    $procurementRepository = Mockery::mock(ProcurementRepository::class);
     $procurementRepository->shouldReceive('findManyByProcurement')
         ->zeroOrMoreTimes()
         ->andReturn([]);
 
-    $stageTransitionService = \Mockery::mock(ProcurementStageTransitionService::class);
+    $stageTransitionService = Mockery::mock(ProcurementStageTransitionService::class);
     $stageTransitionService->shouldReceive('getPriorityAction')
         ->once()
         ->withAnyArgs()
         ->andReturn(null);
 
-    $analyticsService = \Mockery::mock(AdminAnalyticsService::class);
+    $analyticsService = Mockery::mock(AdminAnalyticsService::class);
     $analyticsService->shouldReceive('getUserActivityAnalytics')
         ->zeroOrMoreTimes()
         ->andReturn(null);
@@ -477,12 +477,12 @@ test('bac secretariat dashboard reads procurements from array cache without bloc
 
 function bindDashboardDependencies(): void
 {
-    $manager = \Mockery::mock(Manager::class);
+    $manager = Mockery::mock(Manager::class);
     $manager->shouldReceive('liststreamitems')
         ->zeroOrMoreTimes()
         ->andReturn([]);
 
-    $dashboardService = \Mockery::mock(DashboardService::class);
+    $dashboardService = Mockery::mock(DashboardService::class);
     $dashboardService->shouldReceive('getProcurementsByKey')
         ->zeroOrMoreTimes()
         ->andReturn(collect());
@@ -524,7 +524,7 @@ function bindDashboardDependencies(): void
             'pendingActions' => 0,
         ]);
 
-    $cacheStrategy = \Mockery::mock(CacheStrategyInterface::class);
+    $cacheStrategy = Mockery::mock(CacheStrategyInterface::class);
     $cacheStrategy->shouldReceive('rememberLarge')
         ->zeroOrMoreTimes()
         ->andReturnUsing(fn ($key, $ttl, $callback) => $callback());
@@ -532,17 +532,17 @@ function bindDashboardDependencies(): void
         ->zeroOrMoreTimes()
         ->andReturnUsing(fn ($key, $ttl, $callback) => $callback());
 
-    $procurementRepository = \Mockery::mock(ProcurementRepository::class);
+    $procurementRepository = Mockery::mock(ProcurementRepository::class);
     $procurementRepository->shouldReceive('findManyByProcurement')
         ->zeroOrMoreTimes()
         ->andReturn([]);
 
-    $stageTransitionService = \Mockery::mock(ProcurementStageTransitionService::class);
+    $stageTransitionService = Mockery::mock(ProcurementStageTransitionService::class);
     $stageTransitionService->shouldReceive('getPriorityAction')
         ->zeroOrMoreTimes()
         ->andReturn(null);
 
-    $analyticsService = \Mockery::mock(AdminAnalyticsService::class);
+    $analyticsService = Mockery::mock(AdminAnalyticsService::class);
     $analyticsService->shouldReceive('getUserActivityAnalytics')
         ->zeroOrMoreTimes()
         ->andReturn(null);

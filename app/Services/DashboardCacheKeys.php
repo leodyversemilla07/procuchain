@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Centralized cache key management for dashboard controllers
@@ -125,11 +127,11 @@ class DashboardCacheKeys
             try {
                 $cacheTable = config('cache.stores.database.table', 'cache');
                 $prefix = "dashboard:{$role}:%:user:%";
-                \Illuminate\Support\Facades\DB::table($cacheTable)
+                DB::table($cacheTable)
                     ->where('key', 'like', $prefix)
                     ->delete();
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Failed to clear user-specific caches', [
+                Log::warning('Failed to clear user-specific caches', [
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -149,7 +151,7 @@ class DashboardCacheKeys
                     }
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Failed to clear user-specific Redis caches', [
+                Log::warning('Failed to clear user-specific Redis caches', [
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -197,7 +199,7 @@ class DashboardCacheKeys
                             $cleanKey = str_replace($prefix.':', '', $key);
                             Cache::forget($cleanKey);
                         }
-                        \Illuminate\Support\Facades\Log::info('Cleared procurement caches', [
+                        Log::info('Cleared procurement caches', [
                             'pattern' => $pattern,
                             'count' => count($keys),
                         ]);
@@ -218,12 +220,12 @@ class DashboardCacheKeys
                 Cache::forget('procurements:list:v6:all:with-actions');
                 Cache::forget('procurements:list:v6:all:no-actions');
 
-                \Illuminate\Support\Facades\Log::info('Cleared procurement caches (non-Redis)', [
+                Log::info('Cleared procurement caches (non-Redis)', [
                     'method' => 'manual',
                 ]);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to clear some procurement caches', [
+            Log::warning('Failed to clear some procurement caches', [
                 'error' => $e->getMessage(),
             ]);
         }

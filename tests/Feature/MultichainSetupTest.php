@@ -1,8 +1,10 @@
 <?php
 
+use App\Services\Manager;
+
 beforeEach(function () {
-    $this->multichain = mock(\App\Services\Manager::class);
-    $this->app->instance(\App\Services\Manager::class, $this->multichain);
+    $this->multichain = mock(Manager::class);
+    $this->app->instance(Manager::class, $this->multichain);
 });
 
 it('checks connection with correct RPC method name', function () {

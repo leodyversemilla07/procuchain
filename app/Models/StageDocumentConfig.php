@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,8 +24,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array|null $optional_documents
  * @property bool $is_active
  * @property int|null $updated_by
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  */
 class StageDocumentConfig extends Model
 {

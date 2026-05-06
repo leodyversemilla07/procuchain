@@ -6,6 +6,7 @@ namespace App\Jobs\Handlers;
 
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Services\NotificationService;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
 use Exception;
@@ -148,7 +149,7 @@ class StageCompletionHandler
     private function sendStageNotification(array $data, StageEnums $stage, StatusEnums $completionStatus, ?string $nextStageName): void
     {
         try {
-            app(\App\Services\NotificationService::class)->notifyStageUpdate(
+            app(NotificationService::class)->notifyStageUpdate(
                 pr_number: $data['pr_number'],
                 procurementTitle: $data['procurement_title'],
                 stageIdentifier: $stage->getDisplayName(),

@@ -2,6 +2,8 @@
 
 use App\DataTransferObjects\ProcurementData;
 use App\Models\User;
+use App\Repositories\ProcurementRepository;
+use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -31,7 +33,7 @@ it('forbids bac secretariat from downloading inaccessible procurement documents'
     ]);
     $user->assignRole('bac_secretariat');
 
-    $dataService = \Mockery::mock(\App\Services\ProcurementDataService::class);
+    $dataService = Mockery::mock(ProcurementDataService::class);
     $dataService->shouldReceive('getDocumentDataByFileKey')
         ->once()
         ->with('locked-file.pdf')
@@ -44,14 +46,14 @@ it('forbids bac secretariat from downloading inaccessible procurement documents'
         ->andReturn(collect([
             ['user_address' => 'different-address'],
         ]));
-    app()->instance(\App\Services\ProcurementDataService::class, $dataService);
+    app()->instance(ProcurementDataService::class, $dataService);
 
-    $repository = \Mockery::mock(\App\Repositories\ProcurementRepository::class);
+    $repository = Mockery::mock(ProcurementRepository::class);
     $repository->shouldReceive('findByProcurement')
         ->once()
         ->with('PR-LOCKED')
         ->andReturn(downloadLockedProcurementFixture());
-    app()->instance(\App\Repositories\ProcurementRepository::class, $repository);
+    app()->instance(ProcurementRepository::class, $repository);
 
     $this->actingAs($user)
         ->get('/files/locked-file.pdf')

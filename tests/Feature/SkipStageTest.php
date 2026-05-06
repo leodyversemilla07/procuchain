@@ -14,8 +14,11 @@ use App\DataTransferObjects\ProcurementData;
 use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
+use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
+use App\Services\Manager;
 use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\actingAs;
@@ -114,10 +117,10 @@ describe('Skip Optional Stage', function () {
         $this->instance(ProcurementRepository::class, $repository);
 
         // Mock the Manager for blockchain operations
-        $multichain = mock(\App\Services\Manager::class);
+        $multichain = mock(Manager::class);
         $multichain->shouldReceive('listStreamKeyItems')
             ->andReturn([]);
-        $this->instance(\App\Services\Manager::class, $multichain);
+        $this->instance(Manager::class, $multichain);
 
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.skip', [
             'pr_number' => 'PR-2024-001',
@@ -127,7 +130,7 @@ describe('Skip Optional Stage', function () {
         ]);
 
         $response->assertStatus(202)->assertJsonStructure(['job_id', 'status']);
-        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
+        Queue::assertPushed(BlockchainWriteJob::class);
     });
 });
 
@@ -171,10 +174,10 @@ describe('Cannot Skip Required Stage', function () {
         $this->instance(ProcurementRepository::class, $repository);
 
         // Mock the Manager for blockchain operations
-        $multichain = mock(\App\Services\Manager::class);
+        $multichain = mock(Manager::class);
         $multichain->shouldReceive('listStreamKeyItems')
             ->andReturn([]);
-        $this->instance(\App\Services\Manager::class, $multichain);
+        $this->instance(Manager::class, $multichain);
 
         // RFQ is required for SVP - controller dispatches job async, validation happens in job
         $response = $this->post(route('bac-secretariat.procurement.pre-procurement.skip', [
@@ -183,13 +186,13 @@ describe('Cannot Skip Required Stage', function () {
         ]));
 
         $response->assertStatus(202)->assertJsonStructure(['job_id', 'status']);
-        Queue::assertPushed(\App\Jobs\BlockchainWriteJob::class);
+        Queue::assertPushed(BlockchainWriteJob::class);
     });
 });
 
 describe('Skip Stage Status Enum', function () {
     it('has STAGE_SKIPPED status enum', function () {
-        $status = \App\Enums\StatusEnums::STAGE_SKIPPED;
+        $status = StatusEnums::STAGE_SKIPPED;
 
         expect($status->value)->toBe('stage_skipped');
         expect($status->getDisplayName())->toBe('Stage Skipped');

@@ -11,8 +11,9 @@ use App\Services\Procurement\ProcurementCorrectionService;
 use App\Services\ProcurementDataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Tests\TestCase;
 
-uses(\Tests\TestCase::class, RefreshDatabase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 /**
  * Helper: build a ProcurementCorrectionService with Manager-backed final repos.
@@ -212,7 +213,7 @@ describe('ProcurementCorrectionService', function () {
 
             // The service's fallback ProcurementData construction uses invalid named params
             expect(fn () => $this->service->findProcurementForCorrection('PR-2025-001'))
-                ->toThrow(\Error::class, 'Unknown named parameter $stage');
+                ->toThrow(Error::class, 'Unknown named parameter $stage');
         })->note('Documents pre-existing bug in service fallback path');
 
         it('throws RuntimeException when not found in any stream', function () {
@@ -231,7 +232,7 @@ describe('ProcurementCorrectionService', function () {
             $this->actingAs(createUserWithRole('bac_secretariat'));
 
             expect(fn () => $this->service->findProcurementForCorrection('PR-2025-001'))
-                ->toThrow(\RuntimeException::class, 'Procurement not found in blockchain.');
+                ->toThrow(RuntimeException::class, 'Procurement not found in blockchain.');
         });
     });
 

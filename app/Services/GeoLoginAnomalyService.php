@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Events\SuspiciousLoginDetected;
 use App\Models\User;
 use App\Models\UserLoginLog;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -207,7 +208,7 @@ class GeoLoginAnomalyService
     /**
      * Get previous successful logins for a user
      */
-    private function getPreviousSuccessfulLogins(int $userId): \Illuminate\Database\Eloquent\Collection
+    private function getPreviousSuccessfulLogins(int $userId): Collection
     {
         return UserLoginLog::where('user_id', $userId)
             ->where('successful', true)

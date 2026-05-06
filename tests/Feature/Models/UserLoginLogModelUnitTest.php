@@ -2,6 +2,8 @@
 
 use App\Models\User;
 use App\Models\UserLoginLog;
+use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -32,16 +34,16 @@ describe('UserLoginLog Model - Configuration', function () {
             'successful' => true,
         ]);
 
-        expect($log->login_at)->toBeInstanceOf(\Carbon\Carbon::class);
-        expect($log->logout_at)->toBeInstanceOf(\Carbon\Carbon::class);
+        expect($log->login_at)->toBeInstanceOf(Carbon::class);
+        expect($log->logout_at)->toBeInstanceOf(Carbon::class);
         expect($log->successful)->toBeBool();
     });
 
     test('timestamps are managed automatically', function () {
         $log = UserLoginLog::factory()->create();
 
-        expect($log->created_at)->toBeInstanceOf(\Carbon\Carbon::class);
-        expect($log->updated_at)->toBeInstanceOf(\Carbon\Carbon::class);
+        expect($log->created_at)->toBeInstanceOf(Carbon::class);
+        expect($log->updated_at)->toBeInstanceOf(Carbon::class);
     });
 });
 
@@ -285,7 +287,7 @@ describe('UserLoginLog Model - Data Integrity', function () {
             'ip_address' => '127.0.0.1',
             'successful' => true,
             'login_at' => now(),
-        ]))->toThrow(\Illuminate\Database\QueryException::class);
+        ]))->toThrow(QueryException::class);
     });
 
     test('can store nullable fields', function () {

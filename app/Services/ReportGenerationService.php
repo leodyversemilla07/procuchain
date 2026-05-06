@@ -220,7 +220,7 @@ class ReportGenerationService
             }
 
             // Handle Carbon instances
-            if ($createdAt instanceof \Carbon\Carbon) {
+            if ($createdAt instanceof Carbon) {
                 $date = $createdAt->toDateString();
             } else {
                 $date = Carbon::parse($createdAt)->toDateString();
@@ -254,7 +254,7 @@ class ReportGenerationService
             }
 
             // Handle Carbon instances
-            if ($createdAt instanceof \Carbon\Carbon) {
+            if ($createdAt instanceof Carbon) {
                 $month = $createdAt->format('Y-m');
             } else {
                 $month = Carbon::parse($createdAt)->format('Y-m');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataTransferObjects\Verification;
 
+use App\Enums\DocumentTypeEnums;
 use Carbon\Carbon;
 
 /**
@@ -76,7 +77,7 @@ final class CrossReferenceResult
     {
         // Add display names to pr_number_checks
         $prNumberChecksWithDisplayNames = array_map(function ($check) {
-            $documentType = \App\Enums\DocumentTypeEnums::tryFrom($check['document_type'] ?? '');
+            $documentType = DocumentTypeEnums::tryFrom($check['document_type'] ?? '');
             $check['document_type_display'] = $documentType?->getDisplayName() ?? ucwords(str_replace('_', ' ', $check['document_type'] ?? 'Unknown'));
 
             return $check;

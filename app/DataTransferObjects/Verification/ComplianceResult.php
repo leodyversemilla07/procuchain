@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataTransferObjects\Verification;
 
+use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use Carbon\Carbon;
 
@@ -77,7 +78,7 @@ final class ComplianceResult
     {
         // Add display names to document_type_checks
         $documentTypeChecksWithDisplayNames = array_map(function ($check) {
-            $documentType = \App\Enums\DocumentTypeEnums::tryFrom($check['document_type'] ?? '');
+            $documentType = DocumentTypeEnums::tryFrom($check['document_type'] ?? '');
             $check['document_type_display'] = $documentType?->getDisplayName() ?? ucwords(str_replace('_', ' ', $check['document_type'] ?? 'Unknown'));
 
             return $check;

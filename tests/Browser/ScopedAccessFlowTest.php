@@ -14,11 +14,12 @@ use App\Services\ProcurementDataService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Tests\SeedsPermissions;
 
 use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
-uses(\Tests\SeedsPermissions::class);
+uses(SeedsPermissions::class);
 
 describe('Scoped Access Browser Flow', function () {
     beforeEach(function () {
@@ -139,7 +140,7 @@ function browserBindProcurementDetailMocks(string $prNumber, User $user, bool $a
         ->andReturnNull();
     $dataService->shouldReceive('buildProcurementData')
         ->zeroOrMoreTimes()
-        ->with($prNumber, \Mockery::any(), [], [], \Mockery::any())
+        ->with($prNumber, Mockery::any(), [], [], Mockery::any())
         ->andReturn(browserProcurementViewData(
             prNumber: $prNumber,
             title: $title,
@@ -224,7 +225,7 @@ function browserBindPdfViewerMocks(string $fileKey, string $prNumber, User $user
     $pdfViewerService = mock(PdfViewerService::class);
     $pdfViewerService->shouldReceive('prepareDocumentData')
         ->zeroOrMoreTimes()
-        ->with($fileKey, \Mockery::type(Request::class))
+        ->with($fileKey, Mockery::type(Request::class))
         ->andReturn([
             'id' => 'browser-document',
             'pr_number' => $prNumber,

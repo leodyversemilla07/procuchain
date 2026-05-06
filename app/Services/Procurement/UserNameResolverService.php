@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Procurement;
 
+use App\DataTransferObjects\StatusData;
+use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Support\Collection;
 
@@ -27,11 +29,11 @@ final class UserNameResolverService
     /**
      * Preload user names from StatusData DTOs for performance
      *
-     * @param  Collection<int, \App\DataTransferObjects\StatusData>  $statusDtos
+     * @param  Collection<int, StatusData>  $statusDtos
      */
     public function preloadFromStatusDtos(Collection $statusDtos): void
     {
-        $addresses = $statusDtos->map(fn (\App\DataTransferObjects\StatusData $dto) => $dto->userAddress)
+        $addresses = $statusDtos->map(fn (StatusData $dto) => $dto->userAddress)
             ->unique()
             ->filter()
             ->toArray();
@@ -49,7 +51,7 @@ final class UserNameResolverService
             return;
         }
 
-        $names = \App\Models\User::whereIn('blockchain_address', $addresses)
+        $names = User::whereIn('blockchain_address', $addresses)
             ->pluck('name', 'blockchain_address')
             ->all();
 

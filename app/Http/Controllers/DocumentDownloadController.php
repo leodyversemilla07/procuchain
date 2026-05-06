@@ -70,7 +70,7 @@ class DocumentDownloadController extends BaseController
                     ->header('X-Frame-Options', 'SAMEORIGIN')
                     ->header('Accept-Ranges', 'bytes')
                     ->header('Content-Security-Policy', "default-src 'self'; object-src 'self'; frame-src 'self';");
-            } catch (\Exception $blockchainError) {
+            } catch (Exception $blockchainError) {
                 Log::error('Failed to retrieve file from blockchain', [
                     'file_key' => $fileKey,
                     'data_txid' => $dataTxid ?? 'not_available',
@@ -93,7 +93,7 @@ class DocumentDownloadController extends BaseController
                     ->header('Accept-Ranges', 'bytes')
                     ->header('Content-Security-Policy', "default-src 'self'; object-src 'self'; frame-src 'self';");
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Secure file download failed', [
                 'file_key' => $fileKey,
                 'error' => $e->getMessage(),
@@ -131,7 +131,7 @@ class DocumentDownloadController extends BaseController
             }
 
             return null;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('File access validation failed', [
                 'file_key' => $fileKey,
                 'error' => $e->getMessage(),

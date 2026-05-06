@@ -27,6 +27,7 @@ use App\Services\Publishers\DocumentPublisher;
 use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\StatusPublisher;
 use App\Services\WorkflowDefinitionService;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -98,7 +99,7 @@ class AppServiceProvider extends ServiceProvider
             // Per-user rate limiting for blockchain write operations
             // Prevents abuse and protects blockchain node from overload
             // Uses database cache driver to avoid Redis dependency
-            return \Illuminate\Cache\RateLimiting\Limit::perMinute($limit)
+            return Limit::perMinute($limit)
                 ->by($request->user()?->id ?: $request->ip())
                 ->response(function ($request, $headers) use ($limit) {
                     // Handle Inertia requests by redirecting back with error message

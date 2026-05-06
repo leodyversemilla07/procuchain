@@ -8,6 +8,7 @@ use App\Enums\ProcurementCategoryEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
@@ -70,7 +71,7 @@ class ProcurementStageUploadService
         $tempPath = $file->store('temp/blockchain-uploads');
         $jobId = Str::uuid()->toString();
 
-        \App\Jobs\BlockchainWriteJob::dispatch('upload_document', [
+        BlockchainWriteJob::dispatch('upload_document', [
             'pr_number' => $prNumber,
             'procurement_title' => $procurement->title,
             'user_address' => $user->blockchain_address,

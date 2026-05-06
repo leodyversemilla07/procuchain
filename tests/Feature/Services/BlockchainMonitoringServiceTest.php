@@ -194,7 +194,7 @@ describe('BlockchainMonitoringService', function () {
             expect($result)->toBeTrue();
 
             Log::shouldHaveReceived('warning')
-                ->with('Circuit breaker recovery failed - staying open', \Mockery::type('array'));
+                ->with('Circuit breaker recovery failed - staying open', Mockery::type('array'));
         });
 
         test('it extends recovery time on failed recovery attempt', function () {
@@ -224,7 +224,7 @@ describe('BlockchainMonitoringService', function () {
             expect($circuitState['recovery_time'])->toBeGreaterThan($originalRecoveryTime);
 
             Log::shouldHaveReceived('info')
-                ->with('Circuit breaker recovery time extended', \Mockery::type('array'));
+                ->with('Circuit breaker recovery time extended', Mockery::type('array'));
         });
     });
 
@@ -302,7 +302,7 @@ describe('BlockchainMonitoringService', function () {
             }
 
             Log::shouldHaveReceived('error')
-                ->with('CIRCUIT BREAKER OPENED - Blockchain appears down', \Mockery::type('array'));
+                ->with('CIRCUIT BREAKER OPENED - Blockchain appears down', Mockery::type('array'));
         });
 
         test('it clears health check cache on failure', function () {

@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\DataTransferObjects\DocumentData;
 use App\DataTransferObjects\EventData;
+use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\EventRepository;
@@ -110,7 +112,7 @@ class DashboardService
                 ->map(function ($group) {
                     return $group->sortByDesc('blockchain_time')->first();
                 });
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Error processing procurement data', ['error' => $e->getMessage()]);
             throw $e;
         } finally {
@@ -133,8 +135,8 @@ class DashboardService
             ->take(config('dashboard.display_limits.recent_procurements'))
             ->values()
             ->map(function ($item) {
-                $stageEnum = \App\Enums\StageEnums::tryFrom($item['stage']);
-                $statusEnum = \App\Enums\StatusEnums::tryFrom($item['status']);
+                $stageEnum = StageEnums::tryFrom($item['stage']);
+                $statusEnum = StatusEnums::tryFrom($item['status']);
 
                 return [
                     'id' => $item['id'],
@@ -160,8 +162,8 @@ class DashboardService
         return $procurementsByKey->sortByDesc('timestamp')
             ->values()
             ->map(function ($item) {
-                $stageEnum = \App\Enums\StageEnums::tryFrom($item['stage']);
-                $statusEnum = \App\Enums\StatusEnums::tryFrom($item['status']);
+                $stageEnum = StageEnums::tryFrom($item['stage']);
+                $statusEnum = StatusEnums::tryFrom($item['status']);
 
                 return [
                     'id' => $item['id'],
@@ -395,7 +397,7 @@ class DashboardService
                     ];
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to batch fetch procurement modes for dashboard', [
                 'pr_numbers' => $prNumbers,
                 'error' => $e->getMessage(),

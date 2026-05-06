@@ -10,6 +10,7 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Repositories\DocumentRepository;
 use App\Services\BlockchainStorageService;
+use App\Services\DashboardCacheKeys;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -257,7 +258,7 @@ class DocumentPublisher implements DocumentPublisherInterface
      */
     private function clearProcurementListCache(): void
     {
-        \App\Services\DashboardCacheKeys::clearAllProcurementCaches();
+        DashboardCacheKeys::clearAllProcurementCaches();
 
         Log::info('Cleared all procurement caches after document upload');
     }

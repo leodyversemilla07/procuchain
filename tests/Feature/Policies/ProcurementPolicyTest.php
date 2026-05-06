@@ -101,13 +101,13 @@ describe('ProcurementPolicy', function () {
 
 function bindScopedProcurementPolicyStubs(string $prNumber, string $procurementUserId, ?string $touchedAddress): void
 {
-    $repository = \Mockery::mock(ProcurementRepository::class);
+    $repository = Mockery::mock(ProcurementRepository::class);
     $repository->shouldReceive('findByProcurement')
         ->once()
         ->with($prNumber)
         ->andReturn(policyProcurementFixture($prNumber, $procurementUserId));
 
-    $dataService = \Mockery::mock(ProcurementDataService::class);
+    $dataService = Mockery::mock(ProcurementDataService::class);
 
     if ($touchedAddress === null) {
         $dataService->shouldNotReceive('fetchStatusItems');

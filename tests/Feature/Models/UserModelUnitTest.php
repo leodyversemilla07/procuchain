@@ -2,6 +2,8 @@
 
 use App\Models\User;
 use App\Models\UserLoginLog;
+use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -61,8 +63,8 @@ describe('User Model - Configuration', function () {
         ]);
 
         expect($user->account_locked)->toBeBool();
-        expect($user->locked_at)->toBeInstanceOf(\Carbon\Carbon::class);
-        expect($user->lock_expires_at)->toBeInstanceOf(\Carbon\Carbon::class);
+        expect($user->locked_at)->toBeInstanceOf(Carbon::class);
+        expect($user->lock_expires_at)->toBeInstanceOf(Carbon::class);
         expect($user->email_notifications_enabled)->toBeBool();
     });
 });
@@ -426,7 +428,7 @@ describe('User Model - Two Factor Authentication', function () {
         ]);
 
         // Check database has encrypted value
-        $dbValue = \DB::table('users')->where('id', $user->id)->value('two_factor_secret');
+        $dbValue = DB::table('users')->where('id', $user->id)->value('two_factor_secret');
         expect($dbValue)->not->toBe('secret123');
 
         // Check model returns decrypted value
@@ -438,7 +440,7 @@ describe('User Model - Two Factor Authentication', function () {
             'two_factor_confirmed_at' => now(),
         ]);
 
-        expect($user->two_factor_confirmed_at)->toBeInstanceOf(\Carbon\Carbon::class);
+        expect($user->two_factor_confirmed_at)->toBeInstanceOf(Carbon::class);
     });
 });
 
@@ -447,14 +449,14 @@ describe('User Model - Data Integrity', function () {
         expect(fn () => User::create([
             'name' => 'Test User',
             'password' => bcrypt('password'),
-        ]))->toThrow(\Illuminate\Database\QueryException::class);
+        ]))->toThrow(QueryException::class);
     });
 
     test('email must be unique', function () {
         User::factory()->create(['email' => 'test@example.com']);
 
         expect(fn () => User::factory()->create(['email' => 'test@example.com']))
-            ->toThrow(\Illuminate\Database\QueryException::class);
+            ->toThrow(QueryException::class);
     });
 
     test('password is hashed automatically', function () {
@@ -469,8 +471,8 @@ describe('User Model - Data Integrity', function () {
     test('timestamps are managed automatically', function () {
         $user = User::factory()->create();
 
-        expect($user->created_at)->toBeInstanceOf(\Carbon\Carbon::class);
-        expect($user->updated_at)->toBeInstanceOf(\Carbon\Carbon::class);
+        expect($user->created_at)->toBeInstanceOf(Carbon::class);
+        expect($user->updated_at)->toBeInstanceOf(Carbon::class);
     });
 
     test('nullable fields work correctly', function () {

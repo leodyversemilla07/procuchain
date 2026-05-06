@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\ProcurementModeEnums;
 use App\Services\Procurement\ProcurementActionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class ProcurementActionsController extends Controller
         $userRole = $user?->getRoleNames()->first() ?? 'guest';
 
         // Parse mode enum if provided
-        $modeEnum = $mode ? \App\Enums\ProcurementModeEnums::tryFrom($mode) : null;
+        $modeEnum = $mode ? ProcurementModeEnums::tryFrom($mode) : null;
 
         try {
             $workflowActions = $this->actionService->getAvailableActions(

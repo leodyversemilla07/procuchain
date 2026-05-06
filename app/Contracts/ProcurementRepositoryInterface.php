@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Contracts;
 
 use App\DataTransferObjects\ProcurementData;
+use App\Exceptions\BlockchainException;
 use Illuminate\Support\Collection;
 
 /**
@@ -19,7 +20,7 @@ interface ProcurementRepositoryInterface
      *
      * @param  ProcurementData  $procurement  Procurement data to store
      *
-     * @throws \App\Exceptions\BlockchainException If creation fails
+     * @throws BlockchainException If creation fails
      */
     public function create(ProcurementData $procurement): void;
 
@@ -51,7 +52,7 @@ interface ProcurementRepositoryInterface
      *
      * @param  ProcurementData  $procurement  Updated procurement data
      *
-     * @throws \App\Exceptions\BlockchainException If update fails
+     * @throws BlockchainException If update fails
      */
     public function update(ProcurementData $procurement): void;
 

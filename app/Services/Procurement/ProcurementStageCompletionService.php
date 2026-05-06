@@ -3,6 +3,8 @@
 namespace App\Services\Procurement;
 
 use App\Enums\StageEnums;
+use App\Enums\StatusEnums;
+use App\Jobs\BlockchainWriteJob;
 use App\Models\User;
 use App\Repositories\ProcurementRepository;
 use App\Services\ModeAwareDocumentValidationService;
@@ -53,7 +55,7 @@ class ProcurementStageCompletionService
         $jobId = Str::uuid()->toString();
 
         if ($stage === StageEnums::PROCUREMENT_INITIATION) {
-            \App\Jobs\BlockchainWriteJob::dispatch('mark_stage_complete', [
+            BlockchainWriteJob::dispatch('mark_stage_complete', [
                 'operation_variant' => 'initiation_complete',
                 'pr_number' => $prNumber,
                 'procurement_title' => $procurement->title,
@@ -75,10 +77,10 @@ class ProcurementStageCompletionService
             ];
         }
 
-        $previousStatus = \App\Enums\StatusEnums::tryFrom($procurement->status);
+        $previousStatus = StatusEnums::tryFrom($procurement->status);
         $completionStatus = $this->procurementSupport->getCompletionStatusForStage($stage);
 
-        \App\Jobs\BlockchainWriteJob::dispatch('mark_stage_complete', [
+        BlockchainWriteJob::dispatch('mark_stage_complete', [
             'pr_number' => $prNumber,
             'procurement_title' => $procurement->title,
             'user_address' => $user->blockchain_address ?? $user->email,

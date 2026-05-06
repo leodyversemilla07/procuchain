@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Publishers;
 
+use App\DataTransferObjects\ProcurementData;
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Repositories\ProcurementRepository;
+use App\Services\Manager;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
@@ -326,7 +329,7 @@ class ProcurementOrchestrator
             }
 
             // Use publishmulti for atomic batch operation
-            $multichain = app(\App\Services\Manager::class);
+            $multichain = app(Manager::class);
             $txid = $multichain->publishmulti('procurement.status', $items);
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
@@ -419,8 +422,8 @@ class ProcurementOrchestrator
             // Step 1: Create procurement metadata (CRITICAL)
             Log::info('Orchestrator: Step 1 - Creating procurement metadata', ['pr_number' => $prNumber]);
 
-            $metadataResult = app(\App\Repositories\ProcurementRepository::class)->create(
-                \App\DataTransferObjects\ProcurementData::fromArray($procurementData)
+            $metadataResult = app(ProcurementRepository::class)->create(
+                ProcurementData::fromArray($procurementData)
             );
 
             $this->publishedTransactions['metadata'] = [

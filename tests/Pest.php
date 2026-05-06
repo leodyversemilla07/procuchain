@@ -1,7 +1,14 @@
 <?php
 
+use App\Models\User;
+use GuzzleHttp\Promise\Utils;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
+
 // Disable Guzzle's shutdown task queue to prevent stale HTTP calls during teardown
-\GuzzleHttp\Promise\Utils::queue()->disableShutdown();
+Utils::queue()->disableShutdown();
 
 // Ensure unlimited execution time during tests (prevents shutdown timeouts)
 set_time_limit(0);
@@ -17,12 +24,12 @@ set_time_limit(0);
 |
 */
 
-pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
     ->in('Feature');
 
-pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
     ->in('Browser');
 
 // Configure browser testing
@@ -45,7 +52,7 @@ expect()->extend('toBeOne', function () {
 });
 
 expect()->extend('toBeValidUser', function () {
-    return $this->toBeInstanceOf(App\Models\User::class)
+    return $this->toBeInstanceOf(User::class)
         ->and($this->value->exists)
         ->toBeTrue();
 });
@@ -57,7 +64,7 @@ expect()->extend('toHaveValidationError', function (string $field) {
 });
 
 expect()->extend('toBeSuccessfulResponse', function () {
-    return $this->toBeInstanceOf(Illuminate\Testing\TestResponse::class)
+    return $this->toBeInstanceOf(TestResponse::class)
         ->and($this->value->status())
         ->toBeBetween(200, 299);
 });
@@ -73,20 +80,20 @@ expect()->extend('toBeSuccessfulResponse', function () {
 |
 */
 
-function createUserWithRole(string $role, array $attributes = []): App\Models\User
+function createUserWithRole(string $role, array $attributes = []): User
 {
     // Create role if it doesn't exist
-    \Spatie\Permission\Models\Role::firstOrCreate(['name' => $role, 'guard_name' => 'web', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => $role, 'guard_name' => 'web', 'guard_name' => 'web']);
 
-    $user = App\Models\User::factory()->create($attributes);
+    $user = User::factory()->create($attributes);
     $user->assignRole($role);
 
     return $user;
 }
 
-function createLockedUser(array $attributes = []): App\Models\User
+function createLockedUser(array $attributes = []): User
 {
-    return App\Models\User::factory()->create(array_merge([
+    return User::factory()->create(array_merge([
         'account_locked' => true,
         'locked_at' => now(),
         'lock_expires_at' => now()->addMinutes(30),
@@ -101,7 +108,7 @@ function createLockedUser(array $attributes = []): App\Models\User
  */
 function setPrivate(object $object, string $property, mixed $value): void
 {
-    $ref = new \ReflectionClass($object);
+    $ref = new ReflectionClass($object);
     $prop = $ref->getProperty($property);
     $prop->setAccessible(true);
     $prop->setValue($object, $value);

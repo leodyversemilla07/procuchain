@@ -37,12 +37,12 @@ describe('SmartContractSetup Command', function () {
 
         $this->multichainManager
             ->shouldReceive('create')
-            ->with('streamfilter', \Mockery::type('string'), false, \Mockery::type('string'))
+            ->with('streamfilter', Mockery::type('string'), false, Mockery::type('string'))
             ->andReturn('txid-123');
 
         $this->multichainManager
             ->shouldReceive('create')
-            ->with('txfilter', \Mockery::type('string'), false, \Mockery::type('string'))
+            ->with('txfilter', Mockery::type('string'), false, Mockery::type('string'))
             ->andReturn('txid-456');
 
         $this->artisan('smartcontract:setup')
@@ -101,12 +101,12 @@ describe('SmartContractSetup Command', function () {
 
         $this->multichainManager
             ->shouldReceive('create')
-            ->with('streamfilter', \Mockery::type('string'), false, \Mockery::type('string'))
+            ->with('streamfilter', Mockery::type('string'), false, Mockery::type('string'))
             ->andReturn('txid-123');
 
         $this->multichainManager
             ->shouldReceive('create')
-            ->with('txfilter', \Mockery::type('string'), false, \Mockery::type('string'))
+            ->with('txfilter', Mockery::type('string'), false, Mockery::type('string'))
             ->andReturn('txid-456');
 
         $this->artisan('smartcontract:setup')

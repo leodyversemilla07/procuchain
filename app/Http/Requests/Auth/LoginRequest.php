@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use App\Services\AccountLockoutService;
 use App\Services\LoginLoggerService;
 use Illuminate\Auth\Events\Lockout;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -24,7 +26,7 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -37,9 +39,9 @@ class LoginRequest extends FormRequest
     /**
      * Attempt to authenticate the request's credentials.
      *
-     * @return \App\Models\User
+     * @return User
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function authenticate()
     {
@@ -58,7 +60,7 @@ class LoginRequest extends FormRequest
             app(LoginLoggerService::class)->logFailedLogin($this['email'], $this);
 
             if ($this['email']) {
-                $user = \App\Models\User::where('email', $this['email'])->first();
+                $user = User::where('email', $this['email'])->first();
                 if ($user) {
                     app(AccountLockoutService::class)->handleFailedLoginAttempt($user);
                 }
@@ -82,13 +84,13 @@ class LoginRequest extends FormRequest
     /**
      * Ensure the account is not locked.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     protected function ensureAccountNotLocked(): void
     {
         if (app(AccountLockoutService::class)->isAccountLocked($this['email'])) {
             // Get user to check lock details
-            $user = \App\Models\User::where('email', $this['email'])->first();
+            $user = User::where('email', $this['email'])->first();
 
             if ($user && $user->isAccountLocked()) {
                 $timeRemaining = $user->getLockTimeRemaining();
@@ -107,7 +109,7 @@ class LoginRequest extends FormRequest
     /**
      * Ensure the login request is not rate limited.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {

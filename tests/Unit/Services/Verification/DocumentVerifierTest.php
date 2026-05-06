@@ -14,8 +14,9 @@ use App\Services\Verification\DocumentCrossReferenceVerifier;
 use App\Services\Verification\DocumentIntegrityVerifier;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Tests\TestCase;
 
-uses(Tests\TestCase::class);
+uses(TestCase::class);
 
 function makeDocumentData(array $overrides = []): DocumentData
 {

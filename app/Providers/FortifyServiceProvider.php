@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\LoginResponse;
+use App\Http\Responses\TwoFactorLoginResponse;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Http\JsonResponse;
@@ -52,7 +55,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         // Use custom email verification notification
-        $this->app->resolving(\Illuminate\Contracts\Auth\MustVerifyEmail::class, function ($user) {
+        $this->app->resolving(MustVerifyEmail::class, function ($user) {
             $user->sendEmailVerificationNotification();
         });
 
@@ -78,8 +81,8 @@ class FortifyServiceProvider extends ServiceProvider
      */
     protected function registerResponseBindings(): void
     {
-        $this->app->singleton(LoginResponseContract::class, \App\Http\Responses\LoginResponse::class);
-        $this->app->singleton(TwoFactorLoginResponseContract::class, \App\Http\Responses\TwoFactorLoginResponse::class);
+        $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
+        $this->app->singleton(TwoFactorLoginResponseContract::class, TwoFactorLoginResponse::class);
         $this->app->singleton(TwoFactorEnabledResponseContract::class, TwoFactorEnabledResponse::class);
         $this->app->singleton(TwoFactorConfirmedResponseContract::class, TwoFactorConfirmedResponse::class);
         $this->app->singleton(TwoFactorDisabledResponseContract::class, TwoFactorDisabledResponse::class);

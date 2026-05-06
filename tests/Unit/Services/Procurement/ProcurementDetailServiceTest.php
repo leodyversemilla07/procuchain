@@ -2,17 +2,25 @@
 
 use App\DataTransferObjects\ProcurementData;
 use App\DataTransferObjects\StatusData;
+use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementArchiveRepository;
 use App\Repositories\ProcurementCorrectionRepository;
 use App\Repositories\ProcurementRepository;
+use App\Repositories\StatusRepository;
 use App\Services\Manager;
+use App\Services\Procurement\ProcurementActionService;
 use App\Services\Procurement\ProcurementDetailService;
+use App\Services\Procurement\ProcurementFormatterService;
 use App\Services\Procurement\ProcurementListAggregatorService;
+use App\Services\Procurement\UserNameResolverService;
 use App\Services\ProcurementDataService;
+use App\Services\UserService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Tests\TestCase;
 
-uses(\Tests\TestCase::class, RefreshDatabase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     Log::spy();
@@ -170,19 +178,19 @@ describe('ProcurementDetailService', function () {
 describe('ProcurementListAggregatorService', function () {
     beforeEach(function () {
         $this->statusManager = Mockery::mock(Manager::class);
-        $this->documentRepository = Mockery::mock(\App\Repositories\DocumentRepository::class);
+        $this->documentRepository = Mockery::mock(DocumentRepository::class);
         $this->procurementRepository = Mockery::mock(ProcurementRepository::class);
         $this->archiveRepository = Mockery::mock(ProcurementArchiveRepository::class);
-        $this->userService = Mockery::mock(\App\Services\UserService::class);
+        $this->userService = Mockery::mock(UserService::class);
 
         $this->aggregator = new ProcurementListAggregatorService(
-            new \App\Repositories\StatusRepository($this->statusManager),
+            new StatusRepository($this->statusManager),
             $this->documentRepository,
             $this->procurementRepository,
             $this->archiveRepository,
-            new \App\Services\Procurement\ProcurementFormatterService,
-            new \App\Services\Procurement\ProcurementActionService($this->procurementRepository),
-            new \App\Services\Procurement\UserNameResolverService($this->userService),
+            new ProcurementFormatterService,
+            new ProcurementActionService($this->procurementRepository),
+            new UserNameResolverService($this->userService),
         );
     });
 
@@ -199,7 +207,7 @@ describe('ProcurementListAggregatorService', function () {
         });
 
         it('fetches and processes procurements with skip actions', function () {
-            $timestamp = \Carbon\Carbon::now()->toIso8601String();
+            $timestamp = Carbon::now()->toIso8601String();
 
             // Mock the Manager to return status data
             $this->statusManager
@@ -264,7 +272,7 @@ describe('ProcurementListAggregatorService', function () {
                 stage: 'procurement_initiation',
                 currentStatus: 'procurement_submitted',
                 userAddress: '1abc',
-                timestamp: \Carbon\Carbon::now(),
+                timestamp: Carbon::now(),
             );
 
             $archivedDto = new StatusData(
@@ -273,7 +281,7 @@ describe('ProcurementListAggregatorService', function () {
                 stage: 'completed',
                 currentStatus: 'completed',
                 userAddress: '1abc',
-                timestamp: \Carbon\Carbon::now(),
+                timestamp: Carbon::now(),
             );
 
             $collection = collect([$activeDto, $archivedDto]);
@@ -299,7 +307,7 @@ describe('ProcurementListAggregatorService', function () {
                 stage: 'procurement_initiation',
                 currentStatus: 'procurement_submitted',
                 userAddress: '1abc',
-                timestamp: \Carbon\Carbon::now(),
+                timestamp: Carbon::now(),
             );
 
             $archivedDto = new StatusData(
@@ -308,7 +316,7 @@ describe('ProcurementListAggregatorService', function () {
                 stage: 'completed',
                 currentStatus: 'completed',
                 userAddress: '1abc',
-                timestamp: \Carbon\Carbon::now(),
+                timestamp: Carbon::now(),
             );
 
             $collection = collect([$activeDto, $archivedDto]);

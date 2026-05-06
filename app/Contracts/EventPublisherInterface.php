@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Contracts;
 
+use App\Exceptions\BlockchainException;
+
 /**
  * Interface for publishing events to the blockchain audit trail
  *
@@ -31,7 +33,7 @@ interface EventPublisherInterface
      *     timestamp: string
      * }
      *
-     * @throws \App\Exceptions\BlockchainException If publication fails
+     * @throws BlockchainException If publication fails
      */
     public function publish(
         string $prNumber,
@@ -57,7 +59,7 @@ interface EventPublisherInterface
      * @param  array<string, mixed>|null  $metadata  Additional metadata
      * @return array<string, mixed>
      *
-     * @throws \App\Exceptions\BlockchainException If publication fails
+     * @throws BlockchainException If publication fails
      */
     public function publishStageTransition(
         string $prNumber,
@@ -80,7 +82,7 @@ interface EventPublisherInterface
      * @param  array<string, mixed>|null  $metadata  Additional metadata
      * @return array<string, mixed>
      *
-     * @throws \App\Exceptions\BlockchainException If publication fails
+     * @throws BlockchainException If publication fails
      */
     public function publishDocumentUpload(
         string $prNumber,

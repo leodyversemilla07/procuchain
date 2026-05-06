@@ -20,11 +20,13 @@ use App\Services\Publishers\EventPublisher;
 use App\Services\Publishers\ProcurementCorrectionPublisher;
 use App\Services\Publishers\ProcurementOrchestrator;
 use App\Services\Publishers\StatusPublisher;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
 
-uses(Tests\TestCase::class);
+uses(TestCase::class);
 
 // ============================================================================
 // BlockchainWriteJob – Dispatch Routing Tests
@@ -300,7 +302,7 @@ describe('DocumentUploadHandler', function () {
             ->once()
             ->withArgs(function ($procurementData, $file, $documentData, $statusData, $eventData) {
                 return $procurementData['pr_number'] === 'PR-DOC'
-                    && $file instanceof \Illuminate\Http\UploadedFile
+                    && $file instanceof UploadedFile
                     && $documentData['stage'] === StageEnums::BID_OPENING
                     && $documentData['document_type'] === DocumentTypeEnums::PURCHASE_REQUEST
                     && $statusData['stage'] === StageEnums::BID_OPENING
@@ -428,7 +430,7 @@ describe('HandlesTempFiles trait', function () {
 
         $file = $reflection->invoke($handler, 'temp/trait-test.pdf', 'original.pdf', 'application/pdf');
 
-        expect($file)->toBeInstanceOf(\Illuminate\Http\UploadedFile::class)
+        expect($file)->toBeInstanceOf(UploadedFile::class)
             ->and($file->getClientOriginalName())->toBe('original.pdf')
             ->and($file->getClientMimeType())->toBe('application/pdf');
     });
@@ -496,7 +498,7 @@ describe('CorrectionHandler', function () {
                 return $prNumber === 'PR-CORR'
                     && $originalTxid === 'txid-original'
                     && $action === 'replace'
-                    && $correctedFile instanceof \Illuminate\Http\UploadedFile
+                    && $correctedFile instanceof UploadedFile
                     && $originalStage === 'bid_opening';
             })
             ->andReturn(['correction_txid' => 'corr-tx-1']);

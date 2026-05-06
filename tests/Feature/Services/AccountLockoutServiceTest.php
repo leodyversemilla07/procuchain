@@ -4,6 +4,7 @@ use App\Mail\AccountLockedMail;
 use App\Models\User;
 use App\Services\AccountLockoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -37,7 +38,7 @@ describe('AccountLockoutService', function () {
             expect($user->lock_expires_at)->toBeNull();
 
             Log::shouldHaveReceived('info')
-                ->with('User account unlocked', \Mockery::type('array'))
+                ->with('User account unlocked', Mockery::type('array'))
                 ->once();
         });
 
@@ -102,7 +103,7 @@ describe('AccountLockoutService', function () {
             expect($result)->toBeFalse();
 
             Log::shouldHaveReceived('error')
-                ->with('Failed to unlock user account', \Mockery::type('array'))
+                ->with('Failed to unlock user account', Mockery::type('array'))
                 ->once();
         });
 
@@ -138,7 +139,7 @@ describe('AccountLockoutService', function () {
             expect($user->failed_login_attempts)->toBe(0);
 
             Log::shouldHaveReceived('info')
-                ->with('Failed login attempts reset', \Mockery::type('array'))
+                ->with('Failed login attempts reset', Mockery::type('array'))
                 ->once();
         });
 
@@ -186,7 +187,7 @@ describe('AccountLockoutService', function () {
             expect($result)->toBeFalse();
 
             Log::shouldHaveReceived('error')
-                ->with('Failed to reset failed login attempts', \Mockery::type('array'))
+                ->with('Failed to reset failed login attempts', Mockery::type('array'))
                 ->once();
         });
 
@@ -426,7 +427,7 @@ describe('AccountLockoutService', function () {
             expect($user->account_locked)->toBeFalse();
 
             Log::shouldHaveReceived('info')
-                ->with('User account manually unlocked', \Mockery::type('array'))
+                ->with('User account manually unlocked', Mockery::type('array'))
                 ->once();
         });
 
@@ -450,7 +451,7 @@ describe('AccountLockoutService', function () {
             $this->service->unlockUserAccount($user->id);
 
             Log::shouldHaveReceived('info')
-                ->with('User account manually unlocked', \Mockery::type('array'))
+                ->with('User account manually unlocked', Mockery::type('array'))
                 ->once();
         });
 
@@ -460,7 +461,7 @@ describe('AccountLockoutService', function () {
             expect($result)->toBeFalse();
 
             Log::shouldHaveReceived('error')
-                ->with('Failed to unlock user account', \Mockery::type('array'))
+                ->with('Failed to unlock user account', Mockery::type('array'))
                 ->once();
         });
 
@@ -475,7 +476,7 @@ describe('AccountLockoutService', function () {
             $this->service->unlockUserAccount($user->id, $customReason);
 
             Log::shouldHaveReceived('info')
-                ->with('User account manually unlocked', \Mockery::type('array'))
+                ->with('User account manually unlocked', Mockery::type('array'))
                 ->once();
         });
     });
@@ -495,7 +496,7 @@ describe('AccountLockoutService', function () {
             expect($user->locked_reason)->toBe('Policy violation');
 
             Log::shouldHaveReceived('warning')
-                ->with('User account manually locked', \Mockery::type('array'))
+                ->with('User account manually locked', Mockery::type('array'))
                 ->once();
         });
 
@@ -528,7 +529,7 @@ describe('AccountLockoutService', function () {
             });
 
             Log::shouldHaveReceived('info')
-                ->with('Account locked notification sent', \Mockery::type('array'))
+                ->with('Account locked notification sent', Mockery::type('array'))
                 ->once();
         });
 
@@ -572,7 +573,7 @@ describe('AccountLockoutService', function () {
             $this->service->lockAccount($user, 'Test lock');
 
             Log::shouldHaveReceived('error')
-                ->with('Failed to send account locked notification', \Mockery::type('array'))
+                ->with('Failed to send account locked notification', Mockery::type('array'))
                 ->once();
         });
 
@@ -587,7 +588,7 @@ describe('AccountLockoutService', function () {
 
             $user->refresh();
             // Verify lock expires at approximately 2 hours from now
-            expect($user->lock_expires_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+            expect($user->lock_expires_at)->toBeInstanceOf(Carbon::class);
             expect($user->lock_expires_at->greaterThan($now))->toBeTrue();
 
             // Check duration is approximately 120 minutes (allow 1 minute tolerance)
@@ -607,7 +608,7 @@ describe('AccountLockoutService', function () {
             expect($result)->toBeFalse();
 
             Log::shouldHaveReceived('error')
-                ->with('Failed to lock user account', \Mockery::type('array'))
+                ->with('Failed to lock user account', Mockery::type('array'))
                 ->once();
         });
 

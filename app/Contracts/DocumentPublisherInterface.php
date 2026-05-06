@@ -6,6 +6,8 @@ namespace App\Contracts;
 
 use App\Enums\DocumentTypeEnums;
 use App\Enums\StageEnums;
+use App\Exceptions\BlockchainException;
+use App\Exceptions\DocumentUploadException;
 use Illuminate\Http\UploadedFile;
 
 /**
@@ -42,7 +44,7 @@ interface DocumentPublisherInterface
      *     timestamp: string
      * }
      *
-     * @throws \App\Exceptions\DocumentUploadException If publication fails
+     * @throws DocumentUploadException If publication fails
      */
     public function publish(
         string $prNumber,
@@ -71,7 +73,7 @@ interface DocumentPublisherInterface
      * @param  array<string, mixed>|null  $stageMetadata  Optional stage-specific metadata
      * @return array<string, mixed>
      *
-     * @throws \App\Exceptions\BlockchainException If publication fails
+     * @throws BlockchainException If publication fails
      */
     public function publishMetadataOnly(
         string $prNumber,
