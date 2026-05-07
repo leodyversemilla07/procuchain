@@ -8,5 +8,4 @@ test('procurements list shows New Procurement action only for BAC Secretariat ro
 
     assert.match(source, /if \(userRole === 'bac_secretariat' && auth\?\.can\?\.manageProcurement\) \{/);
     assert.match(source, /!isPollArchived && userRole === 'bac_secretariat' && auth\?\.can\?\.manageProcurement && \(/);
-    assert.match(source, /!isPollArchived && userRole === 'bac_secretariat' && \(/);
 });

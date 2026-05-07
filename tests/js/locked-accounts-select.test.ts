@@ -8,6 +8,6 @@ test('locked accounts filters show readable select labels and full-width trigger
 
     assert.match(source, /const roleFilterLabels: Record<string, string> = \{/);
     assert.match(source, /const statusFilterLabels: Record<string, string> = \{/);
-    assert.match(source, /<SelectTrigger className="w-full sm:w-\[180px\]">\s*<SelectValue placeholder="Filter by role">\{\(\) => roleFilterLabels\[roleFilter\] \?\? 'Filter by role'\}<\/SelectValue>/s);
-    assert.match(source, /<SelectTrigger className="w-full sm:w-\[180px\]">\s*<SelectValue placeholder="Filter by status">\{\(\) => statusFilterLabels\[statusFilter\] \?\? 'Filter by status'\}<\/SelectValue>/s);
+    assert.match(source, /<SelectTrigger className="w-full sm:w-\[180px\]">\s*<SelectValue placeholder="Filter by role">\s*\{\(\) => roleFilterLabels\[roleFilter\] \?\? 'Filter by role'\}\s*<\/SelectValue>/s);
+    assert.match(source, /<SelectTrigger className="w-full sm:w-\[180px\]">\s*<SelectValue placeholder="Filter by status">\s*\{\(\) => statusFilterLabels\[statusFilter\] \?\? 'Filter by status'\}\s*<\/SelectValue>/s);
 });
