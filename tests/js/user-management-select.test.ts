@@ -10,7 +10,7 @@ test('user management filters show readable select labels', () => {
     assert.match(source, /const verificationFilterLabels: Record<string, string> = \{/);
     assert.match(source, /const twoFactorFilterLabels: Record<string, string> = \{/);
 
-    assert.match(source, /<SelectValue placeholder="Filter by role">\{\(\) => roleFilterLabels\[roleFilter\] \?\? 'Filter by role'\}<\/SelectValue>/);
-    assert.match(source, /<SelectValue placeholder="Email status">\{\(\) => verificationFilterLabels\[verificationFilter\] \?\? 'Email status'\}<\/SelectValue>/);
-    assert.match(source, /<SelectValue placeholder="2FA status">\{\(\) => twoFactorFilterLabels\[twoFactorFilter\] \?\? '2FA status'\}<\/SelectValue>/);
+    assert.match(source, /<SelectValue placeholder="Filter by role">\s*\{\(\) => roleFilterLabels\[roleFilter\] \?\? 'Filter by role'\}\s*<\/SelectValue>/);
+    assert.match(source, /<SelectValue placeholder="Email status">\s*\{\(\) => verificationFilterLabels\[verificationFilter\] \?\? 'Email status'\}\s*<\/SelectValue>/);
+    assert.match(source, /<SelectValue placeholder="2FA status">\s*\{\(\) => twoFactorFilterLabels\[twoFactorFilter\] \?\? '2FA status'\}\s*<\/SelectValue>/);
 });
