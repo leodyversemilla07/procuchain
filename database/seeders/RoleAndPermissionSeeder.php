@@ -150,6 +150,10 @@ class RoleAndPermissionSeeder extends Seeder
             'view settings',
         ]);
 
-        $this->command->info('Roles and permissions created successfully!');
+        if ($this->command) {
+            $this->command->info('Roles and permissions created successfully!');
+        } else {
+            echo "Roles and permissions created successfully.\n";
+        }
     }
 }
