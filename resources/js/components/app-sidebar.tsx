@@ -22,12 +22,14 @@ import { index as bacSecretariatProcurementsList } from '@/routes/bac-secretaria
 import { dashboard as hopeDashboard } from '@/routes/hope';
 import { index as hopeProcurementsList } from '@/routes/hope/procurements';
 import { index as reportsIndex } from '@/routes/reports';
+import { sharedLedger } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
     BarChart3,
     Bell,
     Blocks,
+    BookOpen,
     Eye,
     FileText,
     GitBranch,
@@ -119,6 +121,13 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
         title: 'Reports',
         href: reportsIndex().url,
         icon: BarChart3,
+    });
+
+    // Shared Ledger - available to all authenticated users (transparent blockchain record)
+    items.push({
+        title: 'Shared Ledger',
+        href: sharedLedger.url(),
+        icon: BookOpen,
     });
 
     // Procurement Initiation - only for BAC Secretariat with permission

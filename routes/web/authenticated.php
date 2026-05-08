@@ -10,6 +10,7 @@ use App\Http\Controllers\Procurement\ProcurementArchiveController;
 use App\Http\Controllers\ProcurementCorrectionController;
 use App\Http\Controllers\ProcurementListController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SharedLedgerController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -38,6 +39,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/generate', [ReportController::class, 'generate'])->name('generate');
         Route::post('/export', [ReportController::class, 'export'])->name('export');
     });
+
+    // Shared Ledger — available to all authenticated users
+    Route::get('/shared-ledger', [SharedLedgerController::class, 'index'])->name('shared-ledger');
 
     Route::post('/search', [ReportController::class, 'search'])->name('search');
 

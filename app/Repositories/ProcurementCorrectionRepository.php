@@ -52,16 +52,40 @@ final readonly class ProcurementCorrectionRepository implements ProcurementCorre
     /**
      * Find corrections by procurement ID
      *
+     * Uses liststreamkeyitems for efficient key-based lookup.
+     *
      * @return ProcurementCorrectionData[]
      */
     public function findByProcurement(string $prNumber): array
     {
-        $allCorrections = $this->all();
+        try {
+            $items = $this->multichain->liststreamkeyitems(
+                StreamEnums::PROCUREMENTS_CORRECTIONS->value,
+                $prNumber,
+                true,
+                1000
+            );
 
-        return array_filter(
-            $allCorrections,
-            fn (ProcurementCorrectionData $correction) => $correction->prNumber === $prNumber
-        );
+            if (! $items) {
+                return [];
+            }
+
+            $corrections = [];
+            foreach ($items as $item) {
+                if (isset($item['data']['json'])) {
+                    $corrections[] = ProcurementCorrectionData::fromBlockchainArray($item['data']['json'], $item['txid']);
+                }
+            }
+
+            return $corrections;
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve corrections by procurement', [
+                'pr_number' => $prNumber,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 
     /**
@@ -108,38 +132,7 @@ final readonly class ProcurementCorrectionRepository implements ProcurementCorre
      */
     public function getHistory(string $prNumber): array
     {
-        try {
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::PROCUREMENTS_CORRECTIONS->value,
-                true,
-                1000,
-                0,
-                false
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $history = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    $correction = ProcurementCorrectionData::fromBlockchainArray($item['data']['json'], $item['txid']);
-                    if ($correction->prNumber === $prNumber) {
-                        $history[] = $correction;
-                    }
-                }
-            }
-
-            return $history;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve procurement correction history', [
-                'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        return $this->findByProcurement($prNumber);
     }
 
     /**

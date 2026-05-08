@@ -239,7 +239,7 @@ describe('ProcurementCorrectionService', function () {
     describe('checkCorrections', function () {
         it('returns has_corrections true when corrections exist in blockchain', function () {
             $this->procCorrectionManager
-                ->shouldReceive('liststreamitems')
+                ->shouldReceive('liststreamkeyitems')
                 ->andReturn([
                     [
                         'txid' => 'tx_correction_1',
@@ -265,7 +265,7 @@ describe('ProcurementCorrectionService', function () {
 
         it('returns has_corrections false when no corrections exist', function () {
             $this->procCorrectionManager
-                ->shouldReceive('liststreamitems')
+                ->shouldReceive('liststreamkeyitems')
                 ->andReturn([]);
 
             $result = $this->service->checkCorrections('PR-2025-001');
@@ -333,7 +333,7 @@ describe('ProcurementCorrectionService', function () {
 
             // Mock procurement corrections manager
             $this->procCorrectionManager
-                ->shouldReceive('liststreamitems')
+                ->shouldReceive('liststreamkeyitems')
                 ->andReturn([
                     [
                         'txid' => 'tx_proc_1',
@@ -353,7 +353,7 @@ describe('ProcurementCorrectionService', function () {
 
             // Mock document corrections manager
             $this->correctionManager
-                ->shouldReceive('liststreamitems')
+                ->shouldReceive('liststreamkeyitems')
                 ->andReturn([
                     [
                         'txid' => 'tx_doc_1',
@@ -385,11 +385,11 @@ describe('ProcurementCorrectionService', function () {
             $this->actingAs(createUserWithRole('bac_secretariat'));
 
             $this->procCorrectionManager
-                ->shouldReceive('liststreamitems')
+                ->shouldReceive('liststreamkeyitems')
                 ->andReturn([]);
 
             $this->correctionManager
-                ->shouldReceive('liststreamitems')
+                ->shouldReceive('liststreamkeyitems')
                 ->andReturn([]);
 
             $result = $this->service->getCorrectionHistory('PR-2025-001');

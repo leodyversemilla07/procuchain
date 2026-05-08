@@ -52,26 +52,52 @@ final readonly class StatusRepository
     /**
      * Find status records by procurement ID
      *
+     * Uses liststreamkeyitems for efficient key-based lookup
+     * instead of scanning all stream items.
+     *
      * @return StatusData[]
      */
     public function findByProcurement(string $prNumber): array
     {
-        $allStatuses = $this->all();
+        try {
+            $items = $this->multichain->liststreamkeyitems(
+                StreamEnums::STATUS->value,
+                $prNumber,
+                false,
+                1000
+            );
 
-        $filtered = array_filter(
-            $allStatuses,
-            fn (StatusData $status): bool => $status->prNumber === $prNumber
-        );
+            if (! $items) {
+                return [];
+            }
 
-        // Sort by timestamp descending (most recent first)
-        usort($filtered, function (StatusData $a, StatusData $b): int {
-            $timeA = $a->timestamp instanceof Carbon ? $a->timestamp->timestamp : strtotime($a->timestamp);
-            $timeB = $b->timestamp instanceof Carbon ? $b->timestamp->timestamp : strtotime($b->timestamp);
+            $statuses = [];
+            foreach ($items as $item) {
+                if (isset($item['data']['json'])) {
+                    try {
+                        $statuses[] = StatusData::fromBlockchainArray($item['data']['json']);
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to parse status data in findByProcurement', [
+                            'pr_number' => $prNumber,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
 
-            return $timeB - $timeA;
-        });
+            // Sort by timestamp descending (most recent first)
+            usort($statuses, fn (StatusData $a, StatusData $b): int => $b->timestamp->timestamp - $a->timestamp->timestamp
+            );
 
-        return array_values($filtered);
+            return array_values($statuses);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve status by procurement', [
+                'pr_number' => $prNumber,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 
     /**
@@ -85,8 +111,6 @@ final readonly class StatusRepository
             return null;
         }
 
-        usort($statuses, fn ($a, $b) => $b->timestamp->timestamp - $a->timestamp->timestamp);
-
         return $statuses[0];
     }
 
@@ -98,10 +122,9 @@ final readonly class StatusRepository
     public function all(int $limit = 1000, int $offset = 0): array
     {
         try {
-            // Optimization: Use verbose=false to reduce data transfer, we only need the JSON
             $items = $this->multichain->liststreamitems(
                 StreamEnums::STATUS->value,
-                false,  // verbose=false for faster response
+                false,
                 $limit,
                 $offset,
                 false
@@ -138,39 +161,21 @@ final readonly class StatusRepository
     /**
      * Get only the latest status for each unique procurement (OPTIMIZED)
      * Uses single-query approach to avoid N+1 blockchain queries
-     *
-     * SCALING NOTES:
-     * - Fetches $limit * 10 items in single query to find all unique procurements
-     * - Current performance: ~1.5s for 150 items, ~3-5s for 500 items
-     * - If blockchain grows beyond 1000+ status items, consider:
-     *   1. Adding pagination to the procurement list
-     *   2. Using blockchain caching
-     *   3. Implementing background sync to database
-     *
-     * @param  int  $limit  Hint for expected unique procurements (multiplied by 10 internally)
-     * @return StatusData[] Array of latest status for each procurement
      */
     public function getLatestByProcurement(int $limit = 100): array
     {
         try {
-            // OPTIMIZED: Always use single-query method to avoid N+1 blockchain queries
-            // This prevents timeout issues when fetching multiple procurements
-            // Fetch all status items in a single query, then group by PR number
             Log::info('Using optimized single-query method', ['limit' => $limit]);
 
-            // Fetch enough items to cover all procurements (multiply by expected items per procurement)
-            // 150 items should cover ~15-20 unique procurements with ~8-10 status updates each
             $fetchLimit = max($limit * 10, 150);
             $allStatuses = $this->all($fetchLimit, 0);
 
-            // Group by PR and get latest for each
             $grouped = [];
             foreach ($allStatuses as $status) {
                 $prNumber = $status->prNumber;
                 if (! isset($grouped[$prNumber])) {
                     $grouped[$prNumber] = $status;
                 } else {
-                    // Keep the latest by timestamp
                     $currentTime = $grouped[$prNumber]->timestamp instanceof Carbon
                         ? $grouped[$prNumber]->timestamp->timestamp
                         : strtotime($grouped[$prNumber]->timestamp);
@@ -184,7 +189,6 @@ final readonly class StatusRepository
                 }
             }
 
-            // Return all unique procurements found (don't truncate)
             $result = array_values($grouped);
 
             Log::info('Found unique procurements', [
@@ -193,17 +197,11 @@ final readonly class StatusRepository
             ]);
 
             return $result;
-
-            // NOTE: The N+1 query method has been removed to prevent timeout issues
-            // The single-query method above is now used for all cases
-            // This code block is kept as a fallback but should never be reached
-            return [];
         } catch (\Exception $e) {
             Log::error('Failed to retrieve latest statuses by procurement', [
                 'error' => $e->getMessage(),
             ]);
 
-            // Fallback to old method
             return $this->all($limit);
         }
     }
@@ -215,37 +213,6 @@ final readonly class StatusRepository
      */
     public function getHistory(string $prNumber): array
     {
-        try {
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::STATUS->value,
-                true,
-                1000,
-                0,
-                false
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $history = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    $status = StatusData::fromBlockchainArray($item['data']['json']);
-                    if ($status->prNumber === $prNumber) {
-                        $history[] = $status;
-                    }
-                }
-            }
-
-            return $history;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve status history', [
-                'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        return $this->findByProcurement($prNumber);
     }
 }

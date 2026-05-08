@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\NotificationServiceInterface;
 use App\Models\User;
+use App\Notifications\AuditEventNotification;
 use App\Notifications\ProcurementStageNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -67,11 +68,54 @@ class NotificationService implements NotificationServiceInterface
         }
 
         Notification::send($usersToNotify, new ProcurementStageNotification($notificationData));
+
         Log::info('Procurement stage update notification sent', [
             'pr_number' => $pr_number,
             'stage' => $stageIdentifier,
             'next_stage' => $stageTransition ? $nextStage : 'none',
             'roles_notified' => $rolesToNotify,
+            'recipients_count' => $usersToNotify->count(),
+        ]);
+    }
+
+    /**
+     * Notify admin users about audit events.
+     */
+    public function notifyAuditEvent(
+        string $action,
+        string $actorName,
+        ?string $subjectType = null,
+        ?string $subjectId = null,
+        ?string $details = null,
+        ?string $timestamp = null,
+        array $rolesToNotify = ['admin']
+    ): void {
+        $usersToNotify = User::whereHas('roles', function ($query) use ($rolesToNotify) {
+            $query->whereIn('name', $rolesToNotify);
+        })->get();
+
+        if ($usersToNotify->isEmpty()) {
+            Log::warning('No users found with specified roles to notify for audit event', [
+                'action' => $action,
+                'roles' => $rolesToNotify,
+            ]);
+
+            return;
+        }
+
+        $notificationData = [
+            'action' => $action,
+            'actor_name' => $actorName,
+            'subject_type' => $subjectType,
+            'subject_id' => $subjectId,
+            'details' => $details ?? '',
+            'timestamp' => $timestamp ?? now()->toIso8601String(),
+        ];
+
+        Notification::send($usersToNotify, new AuditEventNotification($notificationData));
+        Log::info('Audit event notification sent', [
+            'action' => $action,
+            'actor_name' => $actorName,
             'recipients_count' => $usersToNotify->count(),
         ]);
     }

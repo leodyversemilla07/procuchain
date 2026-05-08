@@ -40,6 +40,45 @@ export interface BlockchainProcurementEvent {
     document_count: number;
 }
 
+export interface LedgerEntry {
+    timestamp: string;
+    formatted_timestamp: string;
+    stream: string;
+    stream_display: string;
+    key: string;
+    pr_number: string;
+    action: string;
+    summary: string;
+    actor_address: string;
+    txid: string;
+    raw_json: Record<string, unknown>;
+    procurement_title: string | null;
+    old_values: Record<string, unknown>;
+    new_values: Record<string, unknown>;
+    original_txid: string | null;
+}
+
+export interface LedgerPagination {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
+export interface StreamOption {
+    value: string;
+    label: string;
+}
+
+export interface LedgerFilters {
+    pr_number?: string;
+    stream?: string;
+    date_from?: string;
+    date_to?: string;
+    search?: string;
+    page?: number;
+}
+
 export interface StreamPublication {
     key: string;
     data: Document | BlockchainProcurementState | Event;
