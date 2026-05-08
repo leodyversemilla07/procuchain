@@ -6,8 +6,11 @@ namespace App\Jobs\Handlers;
 
 use App\DataTransferObjects\ProcurementData;
 use App\Jobs\Handlers\Concerns\HandlesTempFiles;
+use App\Models\User;
+use App\Notifications\ProcurementCorrectionSubmitted;
 use App\Services\Publishers\CorrectionPublisher;
 use App\Services\Publishers\ProcurementCorrectionPublisher;
+use Illuminate\Support\Facades\Log;
 
 class CorrectionHandler
 {
@@ -31,7 +34,7 @@ class CorrectionHandler
         }
 
         try {
-            return $this->correctionPublisher->publish(
+            $result = $this->correctionPublisher->publish(
                 prNumber: $data['pr_number'],
                 procurementTitle: $data['procurement_title'],
                 originalTxid: $data['original_txid'],
@@ -44,6 +47,10 @@ class CorrectionHandler
                 correctedFile: $correctedFile,
                 originalStage: $data['original_stage'] ?? null,
             );
+
+            $this->sendCorrectionNotifications($data['pr_number'], $data['procurement_title'], $data['corrected_by'], $data['reason'], $result['correction_txid'] ?? null);
+
+            return $result;
         } finally {
             if (! empty($data['temp_file_path'])) {
                 $this->cleanupTempFile($data['temp_file_path']);
@@ -55,12 +62,65 @@ class CorrectionHandler
     {
         $originalProcurement = ProcurementData::fromArray($data['original_procurement']);
 
-        return $this->procurementCorrectionPublisher->publishCorrection(
+        $result = $this->procurementCorrectionPublisher->publishCorrection(
             originalProcurement: $originalProcurement,
             correctedData: $data['corrected_data'],
             reason: $data['reason'],
             correctedBy: $data['corrected_by'],
             userAddress: $data['user_address'],
         );
+
+        $this->sendCorrectionNotifications($data['pr_number'], $originalProcurement->title, $data['corrected_by'], $data['reason'], $result['txid'] ?? null);
+
+        return $result;
+    }
+
+    /**
+     * Notify BAC Chairman, HOPE, and admin about corrections.
+     */
+    private function sendCorrectionNotifications(
+        string $prNumber,
+        string $procurementTitle,
+        string $correctedBy,
+        string $reason,
+        ?string $correctionTxid = null,
+    ): void {
+        try {
+            $changedFields = [];
+
+            $usersToNotify = User::whereHas('roles', function ($query) {
+                $query->whereIn('name', ['bac_chairman', 'hope', 'admin']);
+            })->get();
+
+            if ($usersToNotify->isEmpty()) {
+                Log::info('No users to notify for correction', [
+                    'pr_number' => $prNumber,
+                ]);
+
+                return;
+            }
+
+            $notificationData = [
+                'pr_number' => $prNumber,
+                'procurement_title' => $procurementTitle,
+                'corrected_by' => $correctedBy,
+                'reason' => $reason,
+                'changed_fields' => $changedFields,
+                'timestamp' => now()->toIso8601String(),
+                'correction_txid' => $correctionTxid ?? '',
+            ];
+
+            \Illuminate\Support\Facades\Notification::send($usersToNotify, new ProcurementCorrectionSubmitted($notificationData));
+
+            Log::info('Correction notifications sent', [
+                'pr_number' => $prNumber,
+                'recipients_count' => $usersToNotify->count(),
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Failed to send correction notifications', [
+                'pr_number' => $prNumber,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

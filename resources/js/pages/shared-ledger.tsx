@@ -497,21 +497,28 @@ export default function SharedLedger({ entries, pagination, available_streams, f
                             <span className="text-muted-foreground text-sm">
                                 Page {pagination.current_page} of {pagination.last_page}
                             </span>
-                            <div className="flex gap-2">
-                                {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map((page) => (
-                                    <Button
-                                        key={page}
-                                        variant={pagination.current_page === page ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={() => {
-                                            const params = new URLSearchParams(window.location.search);
-                                            params.set('page', String(page));
-                                            router.get(`/shared-ledger?${params.toString()}`, {}, { preserveState: true });
-                                        }}
-                                    >
-                                        {page}
-                                    </Button>
-                                ))}
+                            <div className="flex gap-1">
+                                {getPaginationPages(pagination.current_page, pagination.last_page).map((page, i) =>
+                                    page === '...' ? (
+                                        <span key={`ellipsis-${i}`} className="flex items-center px-2 text-xs text-muted-foreground">
+                                            ...
+                                        </span>
+                                    ) : (
+                                        <Button
+                                            key={page}
+                                            variant={pagination.current_page === page ? 'default' : 'outline'}
+                                            size="sm"
+                                            className="min-w-[32px]"
+                                            onClick={() => {
+                                                const params = new URLSearchParams(window.location.search);
+                                                params.set('page', String(page));
+                                                router.get(`/shared-ledger?${params.toString()}`, {}, { preserveState: true });
+                                            }}
+                                        >
+                                            {page}
+                                        </Button>
+                                    )
+                                )}
                             </div>
                         </CardFooter>
                     )}
@@ -519,4 +526,28 @@ export default function SharedLedger({ entries, pagination, available_streams, f
             </div>
         </AppLayout>
     );
+}
+
+function getPaginationPages(current: number, last: number): (number | string)[] {
+    const pages: (number | string)[] = [];
+
+    if (last <= 7) {
+        for (let i = 1; i <= last; i++) pages.push(i);
+        return pages;
+    }
+
+    pages.push(1);
+
+    if (current > 3) pages.push('...');
+
+    const start = Math.max(2, current - 1);
+    const end = Math.min(last - 1, current + 1);
+
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (current < last - 2) pages.push('...');
+
+    pages.push(last);
+
+    return pages;
 }
