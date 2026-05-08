@@ -193,6 +193,39 @@ class SharedLedgerController extends Controller
     }
 
     /**
+     * Quick check whether the MultiChain RPC node is reachable.
+     * Returns false immediately if the connection fails, avoiding
+     * sequential timeouts on every stream call.
+     */
+    private function isNodeReachable(): bool
+    {
+        // Skip check in console/testing — those environments mock the Manager
+        if (app()->runningInConsole() || app()->environment('testing')) {
+            return true;
+        }
+
+        $host = config('multichain.rpc.host', '127.0.0.1');
+        $port = (int) config('multichain.rpc.port', 4786);
+
+        try {
+            $fp = @fsockopen($host, $port, $errno, $errstr, 2);
+            if ($fp !== false) {
+                fclose($fp);
+                return true;
+            }
+        } catch (\Exception $e) {
+            // Fall through
+        }
+
+        Log::info('SharedLedger: MultiChain node not reachable, returning empty ledger', [
+            'host' => $host,
+            'port' => $port,
+        ]);
+
+        return false;
+    }
+
+    /**
      * Get a human-readable display name for a stream.
      */
     private function getStreamDisplayName(string $stream): string
