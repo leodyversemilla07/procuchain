@@ -140,9 +140,9 @@ describe('Procurement Initiation With Workflow Info', function () {
         bindWorkflowDocumentGuideStub();
 
         $multichain = mock(Manager::class);
-        $multichain->shouldReceive('liststreamitems')
+        $multichain->shouldReceive('liststreamkeyitems')
             ->once()
-            ->with('procurement.status', false, 1000, 0, false)
+            ->with('procurement.status', 'PR-2024-001', false, 1000)
             ->andReturn([]);
         $this->instance(StatusRepository::class, new StatusRepository($multichain));
 
