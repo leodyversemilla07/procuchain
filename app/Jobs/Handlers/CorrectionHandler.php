@@ -70,7 +70,7 @@ class CorrectionHandler
             userAddress: $data['user_address'],
         );
 
-        $this->sendCorrectionNotifications($data['pr_number'], $originalProcurement->title, $data['corrected_by'], $data['reason'], $result['txid'] ?? null);
+        $this->sendCorrectionNotifications($data['pr_number'] ?? $originalProcurement->prNumber, $originalProcurement->title, $data['corrected_by'], $data['reason'], $result['txid'] ?? null);
 
         return $result;
     }
