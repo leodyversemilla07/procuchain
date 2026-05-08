@@ -40,9 +40,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/export', [ReportController::class, 'export'])->name('export');
     });
 
-    // Shared Ledger — available to all authenticated users
-    Route::get('/shared-ledger', [SharedLedgerController::class, 'index'])->name('shared-ledger');
-
     Route::post('/search', [ReportController::class, 'search'])->name('search');
 
     Route::middleware(['role:bac_secretariat'])->group(function () {

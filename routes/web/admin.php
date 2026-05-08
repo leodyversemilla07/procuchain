@@ -9,6 +9,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BlockchainExplorerController;
 use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\ProcurementListController;
+use App\Http\Controllers\SharedLedgerController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
@@ -81,4 +82,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::put('/{mode}/{stage}', [StageDocumentConfigController::class, 'update'])->name('update');
         Route::post('/{mode}/{stage}/reset', [StageDocumentConfigController::class, 'resetToDefaults'])->name('reset');
     });
+
+    // Shared Ledger
+    Route::get('/shared-ledger', [SharedLedgerController::class, 'index'])->name('shared-ledger');
 });
