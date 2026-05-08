@@ -29,6 +29,11 @@ const sidebarNavItems: NavItem[] = [
         icon: null,
     },
     {
+        title: 'Notifications',
+        href: '/settings/notification-preferences',
+        icon: null,
+    },
+    {
         title: 'Push Notifications',
         href: editPushNotification.url(),
         icon: null,

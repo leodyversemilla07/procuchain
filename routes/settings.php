@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Settings\AppearanceController;
 use App\Http\Controllers\Settings\EmailNotificationController;
+use App\Http\Controllers\Settings\NotificationPreferenceController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\PushNotificationController;
@@ -33,6 +34,10 @@ Route::middleware('auth')->group(function () {
     // Email notification settings
     Route::get('settings/email-notification', [EmailNotificationController::class, 'edit'])->name('settings.email-notification.edit');
     Route::patch('settings/email-notification', [EmailNotificationController::class, 'update'])->name('settings.email-notification.update');
+
+    // Notification preferences — per-event-type toggles for all channels
+    Route::get('settings/notification-preferences', [NotificationPreferenceController::class, 'edit'])->name('settings.notification-preferences.edit');
+    Route::patch('settings/notification-preferences', [NotificationPreferenceController::class, 'update'])->name('settings.notification-preferences.update');
 
     // Appearance settings
     Route::get('settings/appearance', [AppearanceController::class, 'edit'])->name('settings.appearance.edit');
