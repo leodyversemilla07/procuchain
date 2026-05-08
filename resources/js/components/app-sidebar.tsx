@@ -22,7 +22,6 @@ import { index as bacSecretariatProcurementsList } from '@/routes/bac-secretaria
 import { dashboard as hopeDashboard } from '@/routes/hope';
 import { index as hopeProcurementsList } from '@/routes/hope/procurements';
 import { index as reportsIndex } from '@/routes/reports';
-import { sharedLedger } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
@@ -123,12 +122,30 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
         icon: BarChart3,
     });
 
-    // Shared Ledger - available to all authenticated users (transparent blockchain record)
-    items.push({
-        title: 'Shared Ledger',
-        href: sharedLedger.url(),
-        icon: BookOpen,
-    });
+    // Shared Ledger - role-based URL per role
+    let sharedLedgerUrl = '';
+    switch (role) {
+        case 'admin':
+            sharedLedgerUrl = '/admin/shared-ledger';
+            break;
+        case 'bac_secretariat':
+            sharedLedgerUrl = '/bac-secretariat/shared-ledger';
+            break;
+        case 'bac_chairman':
+            sharedLedgerUrl = '/bac-chairman/shared-ledger';
+            break;
+        case 'hope':
+            sharedLedgerUrl = '/hope/shared-ledger';
+            break;
+    }
+
+    if (sharedLedgerUrl) {
+        items.push({
+            title: 'Shared Ledger',
+            href: sharedLedgerUrl,
+            icon: BookOpen,
+        });
+    }
 
     // Procurement Initiation - only for BAC Secretariat with permission
     if (role === 'bac_secretariat' && can.manageProcurement) {

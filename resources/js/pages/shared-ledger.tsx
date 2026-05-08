@@ -12,7 +12,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import type { LedgerEntry, LedgerFilters, LedgerPagination, StreamOption } from '@/types/blockchain';
 import { cn } from '@/lib/utils';
-import { sharedLedger } from '@/routes';
 import { Head, router } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
 import {
@@ -61,7 +60,7 @@ const getStreamConfig = (stream: string) =>
     STREAM_CONFIG[stream] ?? { label: stream, color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: ScrollText };
 
 const breadcrumbs = [
-    { title: 'Shared Ledger', href: sharedLedger.url() },
+    { title: 'Shared Ledger', href: '/shared-ledger' },
 ];
 
 /**

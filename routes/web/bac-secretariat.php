@@ -4,6 +4,7 @@ use App\Http\Controllers\BacSecretariatController;
 use App\Http\Controllers\Procurement\ProcurementInitiationController;
 use App\Http\Controllers\Procurement\ProcurementStageController;
 use App\Http\Controllers\ProcurementListController;
+use App\Http\Controllers\SharedLedgerController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:bac_secretariat', 'throttle:blockchain_writes'])
@@ -99,4 +100,7 @@ Route::middleware(['auth', 'role:bac_secretariat'])
             ->name('procurement.post-procurement.check-completion');
         Route::post('/post-procurement/{pr_number}/{stage}/validate-upload', [ProcurementStageController::class, 'validateUpload'])
             ->name('procurement.post-procurement.validate-upload');
+
+        // Shared Ledger
+        Route::get('/shared-ledger', [SharedLedgerController::class, 'index'])->name('shared-ledger');
     });
