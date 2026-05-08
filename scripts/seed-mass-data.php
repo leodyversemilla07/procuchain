@@ -34,7 +34,9 @@ $stages = [
     'post_procurement_monitoring', 'completion',
 ];
 
-$modes = ['public_bidding', 'alternative_mode_shopping', 'alternative_mode_direct_contracting', 'alternative_mode_negotiated'];
+$modes = ['competitive_bidding', 'small_value_procurement', 'direct_contracting', 'negotiated_procurement'];
+
+$categories = ['goods', 'infrastructure_projects', 'consulting_services'];
 
 $offices = [
     'City Engineering Office', 'City Health Office', 'City Mayor\'s Office',
@@ -83,7 +85,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
             'procurement_mode' => $mode,
             'office' => $office,
             'end_user' => $office,
-            'category' => ['goods', 'infrastructure', 'consulting'][array_rand([0,1,2])],
+            'category' => $categories[array_rand([0,1,2])],
             'funding_source' => ['GAA', 'LGU Fund', 'Trust Fund', 'Foreign Assistance'][array_rand([0,1,2,3])],
             'delivery_location' => $office,
             'delivery_date' => $now->copy()->addDays(90)->toDateString(),
