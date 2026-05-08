@@ -5,6 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
@@ -496,29 +497,58 @@ export default function SharedLedger({ entries, pagination, available_streams, f
                             <span className="text-muted-foreground text-sm">
                                 Page {pagination.current_page} of {pagination.last_page}
                             </span>
-                            <div className="flex gap-1">
-                                {getPaginationPages(pagination.current_page, pagination.last_page).map((page, i) =>
-                                    page === '...' ? (
-                                        <span key={`ellipsis-${i}`} className="flex items-center px-2 text-xs text-muted-foreground">
-                                            ...
-                                        </span>
-                                    ) : (
-                                        <Button
-                                            key={page}
-                                            variant={pagination.current_page === page ? 'default' : 'outline'}
-                                            size="sm"
-                                            className="min-w-[32px]"
-                                            onClick={() => {
+                            <Pagination className="mx-0 w-auto">
+                                <PaginationContent>
+                                    <PaginationItem>
+                                        <PaginationPrevious
+                                            href={pagination.current_page > 1 ? `?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(window.location.search)), page: String(pagination.current_page - 1) }).toString()}` : undefined}
+                                            onClick={(e) => {
+                                                if (pagination.current_page <= 1) { e.preventDefault(); return; }
+                                                e.preventDefault();
                                                 const params = new URLSearchParams(window.location.search);
-                                                params.set('page', String(page));
+                                                params.set('page', String(pagination.current_page - 1));
                                                 router.get(`/shared-ledger?${params.toString()}`, {}, { preserveState: true });
                                             }}
-                                        >
-                                            {page}
-                                        </Button>
-                                    )
-                                )}
-                            </div>
+                                            className={pagination.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
+                                        />
+                                    </PaginationItem>
+                                    {getPaginationPages(pagination.current_page, pagination.last_page).map((page, i) =>
+                                        page === '...' ? (
+                                            <PaginationItem key={`ellipsis-${i}`}>
+                                                <PaginationEllipsis />
+                                            </PaginationItem>
+                                        ) : (
+                                            <PaginationItem key={page}>
+                                                <PaginationLink
+                                                    isActive={pagination.current_page === page}
+                                                    href={`?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(window.location.search)), page: String(page) }).toString()}`}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        const params = new URLSearchParams(window.location.search);
+                                                        params.set('page', String(page));
+                                                        router.get(`/shared-ledger?${params.toString()}`, {}, { preserveState: true });
+                                                    }}
+                                                >
+                                                    {page}
+                                                </PaginationLink>
+                                            </PaginationItem>
+                                        )
+                                    )}
+                                    <PaginationItem>
+                                        <PaginationNext
+                                            href={pagination.current_page < pagination.last_page ? `?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(window.location.search)), page: String(pagination.current_page + 1) }).toString()}` : undefined}
+                                            onClick={(e) => {
+                                                if (pagination.current_page >= pagination.last_page) { e.preventDefault(); return; }
+                                                e.preventDefault();
+                                                const params = new URLSearchParams(window.location.search);
+                                                params.set('page', String(pagination.current_page + 1));
+                                                router.get(`/shared-ledger?${params.toString()}`, {}, { preserveState: true });
+                                            }}
+                                            className={pagination.current_page >= pagination.last_page ? 'pointer-events-none opacity-50' : ''}
+                                        />
+                                    </PaginationItem>
+                                </PaginationContent>
+                            </Pagination>
                         </CardFooter>
                     )}
                 </Card>
