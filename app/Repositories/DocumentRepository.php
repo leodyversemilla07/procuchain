@@ -216,37 +216,6 @@ class DocumentRepository implements DocumentRepositoryInterface
      */
     public function getHistory(string $prNumber): array
     {
-        try {
-            $items = $this->multichain->liststreamitems(
-                StreamEnums::DOCUMENTS->value,
-                true,
-                10000,
-                0,
-                false
-            );
-
-            if (! $items) {
-                return [];
-            }
-
-            $history = [];
-            foreach ($items as $item) {
-                if (isset($item['data']['json'])) {
-                    $doc = DocumentData::fromBlockchainArray($item['data']['json']);
-                    if ($doc->prNumber === $prNumber) {
-                        $history[] = $doc;
-                    }
-                }
-            }
-
-            return $history;
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve document history', [
-                'pr_number' => $pr_number,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        return $this->findByProcurement($prNumber)->all();
     }
 }

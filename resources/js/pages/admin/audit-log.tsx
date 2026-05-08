@@ -1,3 +1,4 @@
+import { DiffView } from '@/components/diff-view';
 import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { dashboard } from '@/routes/admin';
 import adminAuditLog from '@/routes/admin/audit-log';
 import { Head, router, usePage } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
-import { CalendarIcon, FileSearch, FilterX, ScrollText, Search } from 'lucide-react';
+import { ArrowDownUp, CalendarIcon, FileSearch, FilterX, ScrollText, Search } from 'lucide-react';
 import { useState } from 'react';
 import { type DateRange } from 'react-day-picker';
 
@@ -279,17 +280,19 @@ export default function AuditLog() {
                                                 {!entry.subject_type && !entry.subject_id && '—'}
                                             </TableCell>
                                             <TableCell className="max-w-xs">
-                                                {entry.new_values && (
+                                                {entry.new_values && entry.old_values ? (
+                                                    <DiffView oldValues={entry.old_values} newValues={entry.new_values} />
+                                                ) : entry.new_values ? (
                                                     <pre className="bg-muted/50 overflow-x-auto rounded p-1 text-xs">
                                                         {JSON.stringify(entry.new_values, null, 1)}
                                                     </pre>
-                                                )}
-                                                {!entry.new_values && entry.old_values && (
+                                                ) : entry.old_values ? (
                                                     <pre className="overflow-x-auto rounded bg-red-50 p-1 text-xs dark:bg-red-950/20">
                                                         {JSON.stringify(entry.old_values, null, 1)}
                                                     </pre>
+                                                ) : (
+                                                    <span className="text-muted-foreground text-xs">—</span>
                                                 )}
-                                                {!entry.new_values && !entry.old_values && <span className="text-muted-foreground text-xs">—</span>}
                                             </TableCell>
                                             <TableCell className="text-muted-foreground font-mono text-xs">{entry.ip_address ?? '—'}</TableCell>
                                         </TableRow>
