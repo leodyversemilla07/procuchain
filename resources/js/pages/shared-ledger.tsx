@@ -48,8 +48,10 @@ interface SharedLedgerPageProps {
     error?: string;
 }
 
+const basePath = window.location.pathname;
+
 const breadcrumbs = [
-    { title: 'Shared Ledger', href: '/shared-ledger' },
+    { title: 'Shared Ledger', href: basePath },
 ];
 
 /** Stream badge configuration */
@@ -120,7 +122,7 @@ export default function SharedLedger({ entries, pagination, available_streams, s
 
     const applyFilters = () => {
         router.get(
-            '/shared-ledger',
+            basePath,
             {
                 ...(prNumber ? { pr_number: prNumber } : {}),
                 ...(stream && stream !== 'all' ? { stream } : {}),
@@ -135,7 +137,7 @@ export default function SharedLedger({ entries, pagination, available_streams, s
         setPrNumber('');
         setStream('');
         setDateRange(undefined);
-        router.get('/shared-ledger', {}, { preserveState: false, replace: true });
+        router.get(basePath, {}, { preserveState: false, replace: true });
     };
 
     const selectedStreamLabel = stream && stream !== 'all'
@@ -535,7 +537,7 @@ export default function SharedLedger({ entries, pagination, available_streams, s
                                                 e.preventDefault();
                                                 const params = new URLSearchParams(window.location.search);
                                                 params.set('page', String(pagination.current_page - 1));
-                                                router.get(`/shared-ledger?${params.toString()}`, {}, { preserveState: true });
+                                                router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
                                             }}
                                             className={pagination.current_page <= 1 ? 'pointer-events-none opacity-50' : ''}
                                         />
@@ -554,7 +556,7 @@ export default function SharedLedger({ entries, pagination, available_streams, s
                                                         e.preventDefault();
                                                         const params = new URLSearchParams(window.location.search);
                                                         params.set('page', String(page));
-                                                        router.get(`/shared-ledger?${params.toString()}`, {}, { preserveState: true });
+                                                        router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
                                                     }}
                                                 >
                                                     {page}
@@ -570,7 +572,7 @@ export default function SharedLedger({ entries, pagination, available_streams, s
                                                 e.preventDefault();
                                                 const params = new URLSearchParams(window.location.search);
                                                 params.set('page', String(pagination.current_page + 1));
-                                                router.get(`/shared-ledger?${params.toString()}`, {}, { preserveState: true });
+                                                router.get(`${basePath}?${params.toString()}`, {}, { preserveState: true });
                                             }}
                                             className={pagination.current_page >= pagination.last_page ? 'pointer-events-none opacity-50' : ''}
                                         />
