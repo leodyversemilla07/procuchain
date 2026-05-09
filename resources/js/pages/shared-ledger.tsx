@@ -1,120 +1,122 @@
 import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import type { LedgerEntry, LedgerFilters, LedgerPagination, StreamOption } from '@/types/blockchain';
 import { cn } from '@/lib/utils';
 import { Head, router } from '@inertiajs/react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import {
-    Activity,
-    AlertTriangle,
     Archive,
     ArrowDownUp,
     BookOpen,
-    CalendarIcon,
-    Check,
+    CheckCircle2,
     ChevronDown,
-    ClipboardCopy,
+    Circle,
+    Clock,
     Download,
-    ExternalLink,
     FileText,
     FilterX,
     GitBranch,
-    Pencil,
+    Hash,
+    MapPin,
     ScrollText,
-    BookOpenText,
+    Shield,
+    Wallet,
 } from 'lucide-react';
 import React, { useState } from 'react';
-import { type DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 
-interface SharedLedgerPageProps {
-    entries: LedgerEntry[];
-    pagination: LedgerPagination;
-    available_streams: StreamOption[];
-    filters: LedgerFilters;
-    error?: string;
+interface Procurement {
+    pr_number: string;
+    title: string;
+    description: string;
+    abc_amount: string;
+    procurement_mode: string;
+    category: string;
+    office: string;
+    funding_source: string;
+    prepared_by: string;
+    approved_by: string;
+    approval_date: string | null;
+    delivery_location: string;
+    delivery_date: string | null;
+    created_at: string | null;
+    current_stage: string;
+    current_status: string;
+    document_count: number;
+    event_count: number;
+    correction_count: number;
+    is_archived: boolean;
+    metadata_txid: string;
+    status_txid: string;
+    blocktime: number | null;
+    confirmations: number;
 }
 
-/** Stream badge configuration */
-const STREAM_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-    'procurement.events': { label: 'Events', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300', icon: Activity },
-    'procurement.status': { label: 'Status', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300', icon: GitBranch },
-    'procurement.metadata': { label: 'Metadata', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300', icon: BookOpenText },
-    'procurement.documents': { label: 'Documents', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300', icon: FileText },
-    'procurement.corrections': { label: 'Document Corrections', color: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300', icon: AlertTriangle },
-    'procurement.metadata.corrections': { label: 'Metadata Corrections', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300', icon: Pencil },
-    'procurement.archive': { label: 'Archive', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: Archive },
-};
-
-const getStreamConfig = (stream: string) =>
-    STREAM_CONFIG[stream] ?? { label: stream, color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: ScrollText };
+interface SharedLedgerPageProps {
+    procurements: Procurement[];
+    pagination: { current_page: number; last_page: number; per_page: number; total: number };
+    available_stages: { value: string; label: string }[];
+    available_statuses: { value: string; label: string }[];
+    filters: Record<string, string | undefined>;
+    error?: string;
+}
 
 const breadcrumbs = [
     { title: 'Shared Ledger', href: '/shared-ledger' },
 ];
 
-/**
- * Compute the diff fields between old and new values.
- * Returns only the fields that actually changed.
- */
-function computeDiff(oldValues: Record<string, unknown>, newValues: Record<string, unknown>): Array<{ key: string; old: string; new: string }> {
-    const diff: Array<{ key: string; old: string; new: string }> = [];
-    const allKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
+const STAGE_LABELS: Record<string, string> = {
+    procurement_initiation: 'Procurement Initiation',
+    pre_procurement_conference: 'Pre-Procurement Conference',
+    bidding_documents: 'Bidding Documents',
+    pre_bid_conference: 'Pre-Bid Conference',
+    bid_opening: 'Bid Opening',
+    bid_evaluation: 'Bid Evaluation',
+    post_qualification: 'Post-Qualification',
+    bac_resolution: 'BAC Resolution',
+    notice_of_award: 'Notice of Award',
+    performance_bond: 'Performance Bond',
+    notice_to_proceed: 'Notice to Proceed',
+    post_procurement_monitoring: 'Post-Procurement Monitoring',
+    completion: 'Completion',
+};
 
-    for (const key of allKeys) {
-        const oldVal = oldValues[key];
-        const newVal = newValues[key];
-        const oldStr = oldVal !== undefined ? String(oldVal) : '';
-        const newStr = newVal !== undefined ? String(newVal) : '';
+const MODE_LABELS: Record<string, string> = {
+    competitive_bidding: 'Competitive Bidding',
+    small_value_procurement: 'Small Value Procurement',
+    direct_contracting: 'Direct Contracting',
+    negotiated_procurement: 'Negotiated Procurement',
+};
 
-        if (oldStr !== newStr) {
-            diff.push({ key, old: oldStr, new: newStr });
-        }
-    }
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+    procurement_initiated: { label: 'Initiated', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
+    stage_completed: { label: 'Stage Complete', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
+};
 
-    return diff;
-}
-
-export default function SharedLedger({ entries, pagination, available_streams, filters, error }: SharedLedgerPageProps) {
+export default function SharedLedger({ procurements, pagination, available_stages, available_statuses, filters, error }: SharedLedgerPageProps) {
     const [prNumber, setPrNumber] = useState(filters.pr_number ?? '');
-    const [stream, setStream] = useState(filters.stream ?? '');
-    const [dateRange, setDateRange] = useState<DateRange | undefined>({
-        from: filters.date_from ? parseISO(filters.date_from) : undefined,
-        to: filters.date_to ? parseISO(filters.date_to) : undefined,
-    });
-
+    const [stage, setStage] = useState(filters.stage ?? '');
+    const [status, setStatus] = useState(filters.status ?? '');
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-    const hasActiveFilters = !!(filters.pr_number || filters.stream || filters.date_from || filters.date_to);
+    const hasActiveFilters = !!(filters.pr_number || filters.stage || filters.status || filters.date_from || filters.date_to);
 
-    const toggleRow = (txid: string) => {
+    const toggleRow = (prNumber: string) => {
         setExpandedRows((prev) => {
             const next = new Set(prev);
-            if (next.has(txid)) {
-                next.delete(txid);
+            if (next.has(prNumber)) {
+                next.delete(prNumber);
             } else {
-                next.add(txid);
+                next.add(prNumber);
             }
             return next;
-        });
-    };
-
-    const copyTxid = (txid: string) => {
-        navigator.clipboard.writeText(txid).then(() => {
-            toast.success('TX ID copied to clipboard', { description: txid });
-        }).catch(() => {
-            toast.error('Failed to copy TX ID');
         });
     };
 
@@ -123,9 +125,8 @@ export default function SharedLedger({ entries, pagination, available_streams, f
             '/shared-ledger',
             {
                 ...(prNumber ? { pr_number: prNumber } : {}),
-                ...(stream && stream !== 'all' ? { stream } : {}),
-                ...(dateRange?.from ? { date_from: format(dateRange.from, 'yyyy-MM-dd') } : {}),
-                ...(dateRange?.to ? { date_to: format(dateRange.to, 'yyyy-MM-dd') } : {}),
+                ...(stage ? { stage } : {}),
+                ...(status ? { status } : {}),
             },
             { preserveState: true, replace: true },
         );
@@ -133,27 +134,27 @@ export default function SharedLedger({ entries, pagination, available_streams, f
 
     const clearFilters = () => {
         setPrNumber('');
-        setStream('');
-        setDateRange(undefined);
+        setStage('');
+        setStatus('');
         router.get('/shared-ledger', {}, { preserveState: false, replace: true });
     };
 
-    const selectedStreamLabel = stream && stream !== 'all'
-        ? (STREAM_CONFIG[stream]?.label ?? stream)
-        : 'All streams';
-
-    /** Export ledger to CSV */
     const handleExport = () => {
-        const headers = ['Timestamp', 'Stream', 'PR Number', 'Action', 'Summary', 'Actor Address', 'TX ID', 'Procurement Title'];
-        const rows = entries.map((e) => [
-            e.formatted_timestamp,
-            e.stream_display,
-            e.pr_number,
-            e.action,
-            e.summary,
-            e.actor_address,
-            e.txid,
-            e.procurement_title ?? '',
+        const headers = ['PR Number', 'Title', 'Office', 'Stage', 'Status', 'ABC Amount', 'Mode', 'Documents', 'Events', 'Corrections', 'Archived', 'Created', 'TX ID'];
+        const rows = procurements.map((p) => [
+            p.pr_number,
+            p.title,
+            p.office,
+            STAGE_LABELS[p.current_stage] ?? p.current_stage,
+            STATUS_CONFIG[p.current_status]?.label ?? p.current_status,
+            p.abc_amount,
+            MODE_LABELS[p.procurement_mode] ?? p.procurement_mode,
+            String(p.document_count),
+            String(p.event_count),
+            String(p.correction_count),
+            p.is_archived ? 'Yes' : 'No',
+            p.created_at ?? '',
+            p.metadata_txid,
         ]);
 
         const csv = [headers.join(','), ...rows.map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(','))].join('\n');
@@ -175,9 +176,9 @@ export default function SharedLedger({ entries, pagination, available_streams, f
                 <HeroCard
                     icon={BookOpen}
                     title="Shared Ledger"
-                    description="Immutable blockchain record of all procurement activity. Every entry is backed by a blockchain transaction (TX ID) that can be independently verified."
+                    description="Immutable blockchain record of every procurement. Each row is a single procurement showing its full lifecycle — metadata, documents, status changes, and corrections — all backed by MultiChain."
                     actions={
-                        <Button variant="outline" onClick={handleExport} disabled={entries.length === 0}>
+                        <Button variant="outline" onClick={handleExport} disabled={procurements.length === 0}>
                             <Download className="mr-2 h-4 w-4" />
                             Export CSV
                         </Button>
@@ -197,66 +198,49 @@ export default function SharedLedger({ entries, pagination, available_streams, f
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             <Input
                                 type="text"
-                                placeholder="PR Number (e.g. PR-2025-001 or system)"
+                                placeholder="PR Number (e.g. PR-2026-001)"
                                 value={prNumber}
                                 onChange={(e) => setPrNumber(e.target.value)}
                             />
 
-                            <Select value={stream || 'all'} onValueChange={(value) => value && setStream(value)}>
+                            <Select value={stage || ''} onValueChange={(v) => v && setStage(v)}>
                                 <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="All streams">{() => selectedStreamLabel}</SelectValue>
+                                    <SelectValue placeholder="All stages">{() =>
+                                        stage ? (STAGE_LABELS[stage] ?? stage) : 'All stages'
+                                    }</SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
-                                        <SelectItem value="all">All streams</SelectItem>
-                                        {available_streams.map((s) => (
+                                        <SelectItem value="">All stages</SelectItem>
+                                        {available_stages.map((s) => (
                                             <SelectItem key={s.value} value={s.value}>
-                                                <div className="flex items-center gap-2">
-                                                    {React.createElement(STREAM_CONFIG[s.value]?.icon ?? ScrollText, { className: 'h-3.5 w-3.5' })}
-                                                    {s.label}
-                                                </div>
+                                                {s.label}
                                             </SelectItem>
                                         ))}
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
 
-                            <Popover>
-                                <PopoverTrigger
-                                    render={
-                                        <Button
-                                            variant="outline"
-                                            className={cn('w-full justify-start text-left font-normal', !dateRange?.from && 'text-muted-foreground')}
-                                        />
-                                    }
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {dateRange?.from ? (
-                                        dateRange.to ? (
-                                            <>
-                                                {format(dateRange.from, 'MMM d, yyyy')} - {format(dateRange.to, 'MMM d, yyyy')}
-                                            </>
-                                        ) : (
-                                            format(dateRange.from, 'MMM d, yyyy')
-                                        )
-                                    ) : (
-                                        <span>Date range</span>
-                                    )}
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        initialFocus
-                                        mode="range"
-                                        defaultMonth={dateRange?.from}
-                                        selected={dateRange}
-                                        onSelect={setDateRange}
-                                        numberOfMonths={2}
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <Select value={status || ''} onValueChange={(v) => v && setStatus(v)}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="All statuses">{() =>
+                                        status ? (STATUS_CONFIG[status]?.label ?? status) : 'All statuses'
+                                    }</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem value="">All statuses</SelectItem>
+                                        {available_statuses.map((s) => (
+                                            <SelectItem key={s.value} value={s.value}>
+                                                {STATUS_CONFIG[s.value]?.label ?? s.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </CardContent>
                     <CardFooter className="flex gap-2">
@@ -276,37 +260,38 @@ export default function SharedLedger({ entries, pagination, available_streams, f
                 {/* Immutability Notice */}
                 <div className="bg-primary/5 border-primary/20 rounded-lg border px-4 py-3 text-sm">
                     <p className="text-primary flex items-center gap-2 font-medium">
-                        <Check className="h-4 w-4" />
-                        Immutable Record — Expand any row to see what changed
+                        <Shield className="h-4 w-4" />
+                        Blockchain-Verified Records — Every procurement is backed by MultiChain
                     </p>
                     <p className="text-muted-foreground mt-1">
-                        All entries below are stored on the MultiChain blockchain. Each entry's <strong>TX ID</strong> is the permanent proof.
-                        Corrections do not delete entries — they create new entries referencing the original. Expand a row to see both old and new values.
+                        Expand any row to see the blockchain TX IDs and raw data. Each document, status change, and correction
+                        is an immutable entry on the chain. The counts below (documents, events, corrections) reflect actual
+                        blockchain transactions.
                     </p>
                 </div>
 
-                {/* Ledger Entries Table */}
+                {/* Procurement Ledger Table */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between text-base">
                             <span>
-                                {pagination.total.toLocaleString()} transaction{pagination.total !== 1 ? 's' : ''}
+                                {pagination.total.toLocaleString()} procurement{pagination.total !== 1 ? 's' : ''}
                             </span>
                             {hasActiveFilters && <Badge variant="secondary">Filtered</Badge>}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        {entries.length === 0 ? (
+                        {procurements.length === 0 ? (
                             <Empty className="py-16">
                                 <EmptyMedia>
                                     <BookOpen className="h-12 w-12" />
                                 </EmptyMedia>
                                 <EmptyHeader>
-                                    <EmptyTitle>No ledger entries</EmptyTitle>
+                                    <EmptyTitle>No procurements found</EmptyTitle>
                                     <EmptyDescription>
                                         {hasActiveFilters
-                                            ? 'No entries match the current filters.'
-                                            : 'Blockchain transactions will appear here once procurement activity begins.'}
+                                            ? 'No procurements match the current filters.'
+                                            : 'Blockchain records will appear here once procurement activity begins.'}
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>
@@ -315,30 +300,34 @@ export default function SharedLedger({ entries, pagination, available_streams, f
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="w-8"></TableHead>
-                                        <TableHead>Timestamp</TableHead>
-                                        <TableHead>Stream</TableHead>
                                         <TableHead>PR Number</TableHead>
-                                        <TableHead>Summary</TableHead>
-                                        <TableHead>Actor</TableHead>
-                                        <TableHead>TX ID</TableHead>
+                                        <TableHead>Title / Office</TableHead>
+                                        <TableHead>Stage</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Activity</TableHead>
+                                        <TableHead>Status</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {entries.map((entry) => {
-                                        const streamCfg = getStreamConfig(entry.stream);
-                                        const isExpanded = expandedRows.has(entry.txid);
-                                        const StreamIcon = streamCfg.icon;
-                                        const isSystem = entry.pr_number === 'system';
-                                        const hasChanges =
-                                            Object.keys(entry.old_values).length > 0 ||
-                                            Object.keys(entry.new_values).length > 0;
-                                        const diff = hasChanges ? computeDiff(entry.old_values, entry.new_values) : [];
+                                    {procurements.map((proc) => {
+                                        const isExpanded = expandedRows.has(proc.pr_number);
+                                        const stageLabel = STAGE_LABELS[proc.current_stage] ?? proc.current_stage;
+                                        const statusCfg = STATUS_CONFIG[proc.current_status] ?? {
+                                            label: proc.current_status,
+                                            color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
+                                        };
+                                        const modeLabel = MODE_LABELS[proc.procurement_mode] ?? proc.procurement_mode;
+                                        const formattedAmount = Number(proc.abc_amount).toLocaleString('en-PH', {
+                                            style: 'currency',
+                                            currency: 'PHP',
+                                            minimumFractionDigits: 2,
+                                        });
 
                                         return (
-                                            <React.Fragment key={entry.txid}>
+                                            <React.Fragment key={proc.pr_number}>
                                                 <TableRow
                                                     className="hover:bg-muted/50 cursor-pointer"
-                                                    onClick={() => toggleRow(entry.txid)}
+                                                    onClick={() => toggleRow(proc.pr_number)}
                                                 >
                                                     <TableCell>
                                                         <ChevronDown
@@ -348,140 +337,161 @@ export default function SharedLedger({ entries, pagination, available_streams, f
                                                             )}
                                                         />
                                                     </TableCell>
-                                                    <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                                                        {entry.formatted_timestamp}
-                                                    </TableCell>
                                                     <TableCell>
-                                                        <Badge className={cn('gap-1 font-normal whitespace-nowrap', streamCfg.color)}>
-                                                            <StreamIcon className="h-3 w-3" />
-                                                            {entry.stream_display}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {isSystem ? (
-                                                            <Badge variant="secondary" className="font-mono text-xs">
-                                                                System
-                                                            </Badge>
-                                                        ) : (
-                                                            <span className="font-mono text-xs font-medium">{entry.pr_number}</span>
-                                                        )}
+                                                        <span className="font-mono text-sm font-medium">{proc.pr_number}</span>
                                                     </TableCell>
                                                     <TableCell className="max-w-xs">
-                                                        <div className="truncate text-sm" title={entry.summary}>
-                                                            {entry.summary}
+                                                        <div className="truncate text-sm font-medium" title={proc.title}>
+                                                            {proc.title}
                                                         </div>
-                                                        {entry.procurement_title && (
-                                                            <div className="text-muted-foreground truncate text-xs">
-                                                                {entry.procurement_title}
-                                                            </div>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="font-mono text-xs">
-                                                        {entry.actor_address
-                                                            ? `${entry.actor_address.substring(0, 10)}...`
-                                                            : <span className="text-muted-foreground italic">—</span>
-                                                        }
+                                                        <div className="text-muted-foreground flex items-center gap-1 truncate text-xs">
+                                                            <MapPin className="h-3 w-3" />
+                                                            {proc.office}
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell>
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="font-mono text-xs">
-                                                                {entry.txid.substring(0, 8)}...
-                                                            </span>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-6 w-6"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    copyTxid(entry.txid);
-                                                                }}
-                                                                title="Copy TX ID"
-                                                            >
-                                                                <ClipboardCopy className="h-3 w-3" />
-                                                            </Button>
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-sm">{stageLabel}</span>
+                                                            {proc.current_stage && (
+                                                                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">
+                                                                    {proc.current_stage.replace(/_/g, ' ')}
+                                                                </span>
+                                                            )}
                                                         </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-1 text-sm font-medium">
+                                                            <Wallet className="text-muted-foreground h-3 w-3" />
+                                                            {formattedAmount}
+                                                        </div>
+                                                        <span className="text-muted-foreground text-[10px] uppercase tracking-wide">
+                                                            {modeLabel}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            <Badge variant="outline" className="gap-1 text-xs">
+                                                                <FileText className="h-3 w-3" />
+                                                                {proc.document_count} docs
+                                                            </Badge>
+                                                            <Badge variant="outline" className="gap-1 text-xs">
+                                                                <GitBranch className="h-3 w-3" />
+                                                                {proc.event_count} events
+                                                            </Badge>
+                                                            {proc.correction_count > 0 && (
+                                                                <Badge variant="outline" className="gap-1 text-xs">
+                                                                    <ScrollText className="h-3 w-3" />
+                                                                    {proc.correction_count} corrections
+                                                                </Badge>
+                                                            )}
+                                                            {proc.is_archived && (
+                                                                <Badge variant="secondary" className="gap-1 text-xs">
+                                                                    <Archive className="h-3 w-3" />
+                                                                    Archived
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge className={cn('gap-1 font-normal', statusCfg.color)}>
+                                                            {proc.current_status === 'procurement_initiated' ? (
+                                                                <Circle className="h-3 w-3 fill-current" />
+                                                            ) : (
+                                                                <CheckCircle2 className="h-3 w-3" />
+                                                            )}
+                                                            {statusCfg.label}
+                                                        </Badge>
                                                     </TableCell>
                                                 </TableRow>
                                                 {isExpanded && (
                                                     <TableRow>
                                                         <TableCell colSpan={7} className="bg-muted/20 p-0">
-                                                            <Collapsible open={isExpanded}>
-                                                                <CollapsibleContent className="px-6 py-4">
-                                                                    <div className="space-y-4">
-                                                                        {/* Diff View */}
-                                                                        {diff.length > 0 && (
-                                                                            <div>
-                                                                                <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
-                                                                                    <ArrowDownUp className="h-4 w-4" />
-                                                                                    Changes
-                                                                                </h4>
-                                                                                <div className="overflow-x-auto rounded-lg border">
-                                                                                    <Table>
-                                                                                        <TableHeader>
-                                                                                            <TableRow>
-                                                                                                <TableHead className="w-1/4">Field</TableHead>
-                                                                                                <TableHead className="w-1/3">Old Value</TableHead>
-                                                                                                <TableHead className="w-1/3">New Value</TableHead>
-                                                                                            </TableRow>
-                                                                                        </TableHeader>
-                                                                                        <TableBody>
-                                                                                            {diff.map((d) => (
-                                                                                                <TableRow key={d.key}>
-                                                                                                    <TableCell className="font-mono text-xs font-medium">
-                                                                                                        {d.key}
-                                                                                                    </TableCell>
-                                                                                                    <TableCell className="bg-red-50/50 font-mono text-xs break-all dark:bg-red-950/20">
-                                                                                                        {d.old || <span className="text-muted-foreground italic">empty</span>}
-                                                                                                    </TableCell>
-                                                                                                    <TableCell className="bg-green-50/50 font-mono text-xs break-all dark:bg-green-950/20">
-                                                                                                        {d.new || <span className="text-muted-foreground italic">empty</span>}
-                                                                                                    </TableCell>
-                                                                                                </TableRow>
-                                                                                            ))}
-                                                                                        </TableBody>
-                                                                                    </Table>
+                                                            <div className="px-6 py-4">
+                                                                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                                                    {/* Details Card */}
+                                                                    <div className="space-y-3">
+                                                                        <h4 className="flex items-center gap-2 text-sm font-medium">
+                                                                            <BookOpen className="h-4 w-4" />
+                                                                            Procurement Details
+                                                                        </h4>
+                                                                        <div className="space-y-2 text-sm">
+                                                                            <div className="flex justify-between">
+                                                                                <span className="text-muted-foreground">Category</span>
+                                                                                <span>{proc.category.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between">
+                                                                                <span className="text-muted-foreground">Funding</span>
+                                                                                <span>{proc.funding_source}</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between">
+                                                                                <span className="text-muted-foreground">Delivery</span>
+                                                                                <span>{proc.delivery_location || 'N/A'}</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between">
+                                                                                <span className="text-muted-foreground">Prepared By</span>
+                                                                                <span>{proc.prepared_by}</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between">
+                                                                                <span className="text-muted-foreground">Approved By</span>
+                                                                                <span>{proc.approved_by}</span>
+                                                                            </div>
+                                                                            {proc.created_at && (
+                                                                                <div className="flex justify-between">
+                                                                                    <span className="text-muted-foreground">Created</span>
+                                                                                    <span className="text-xs">{format(new Date(proc.created_at), 'MMM d, yyyy')}</span>
                                                                                 </div>
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* Original TX ID link */}
-                                                                        {entry.original_txid && (
-                                                                            <div className="flex items-center gap-2 text-sm">
-                                                                                <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                                                                                <span className="text-muted-foreground">References original TX:</span>
-                                                                                <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">
-                                                                                    {entry.original_txid.substring(0, 16)}...
-                                                                                </code>
-                                                                                <Button
-                                                                                    variant="ghost"
-                                                                                    size="icon"
-                                                                                    className="h-6 w-6"
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        copyTxid(entry.original_txid!);
-                                                                                    }}
-                                                                                    title="Copy original TX ID"
-                                                                                >
-                                                                                    <ClipboardCopy className="h-3 w-3" />
-                                                                                </Button>
-                                                                            </div>
-                                                                        )}
-
-                                                                        {/* Raw Blockchain Data */}
-                                                                        <div>
-                                                                            <div className="mb-2 flex items-center justify-between">
-                                                                                <h4 className="text-sm font-medium">Raw Blockchain Data</h4>
-                                                                                <Badge variant="outline" className="text-xs font-mono">
-                                                                                    TX: {entry.txid}
-                                                                                </Badge>
-                                                                            </div>
-                                                                            <pre className="bg-muted max-h-64 overflow-x-auto rounded-lg p-4 text-xs leading-relaxed">
-                                                                                {JSON.stringify(entry.raw_json, null, 2)}
-                                                                            </pre>
+                                                                            )}
                                                                         </div>
                                                                     </div>
-                                                                </CollapsibleContent>
-                                                            </Collapsible>
+
+                                                                    {/* Blockchain Proof Card */}
+                                                                    <div className="space-y-3">
+                                                                        <h4 className="flex items-center gap-2 text-sm font-medium">
+                                                                            <Hash className="h-4 w-4" />
+                                                                            Blockchain Proof
+                                                                        </h4>
+                                                                        <div className="space-y-2 text-sm">
+                                                                            <div>
+                                                                                <div className="text-muted-foreground text-xs">Metadata TX</div>
+                                                                                <code className="mt-0.5 block truncate rounded bg-muted px-2 py-1 font-mono text-xs">
+                                                                                    {proc.metadata_txid || 'Pending...'}
+                                                                                </code>
+                                                                            </div>
+                                                                            {proc.status_txid && (
+                                                                                <div>
+                                                                                    <div className="text-muted-foreground text-xs">Latest Status TX</div>
+                                                                                    <code className="mt-0.5 block truncate rounded bg-muted px-2 py-1 font-mono text-xs">
+                                                                                        {proc.status_txid}
+                                                                                    </code>
+                                                                                </div>
+                                                                            )}
+                                                                            {proc.blocktime && (
+                                                                                <div className="flex justify-between">
+                                                                                    <span className="text-muted-foreground">Block</span>
+                                                                                    <span className="font-mono text-xs">#{proc.blocktime}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="flex justify-between">
+                                                                                <span className="text-muted-foreground">Confirmations</span>
+                                                                                <span className={cn('font-mono text-xs', proc.confirmations === 0 && 'text-amber-500')}>
+                                                                                    {proc.confirmations > 0 ? proc.confirmations : 'Pending'}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Description Card */}
+                                                                    <div className="space-y-3 sm:col-span-2 lg:col-span-1">
+                                                                        <h4 className="flex items-center gap-2 text-sm font-medium">
+                                                                            <Clock className="h-4 w-4" />
+                                                                            Timeline & Description
+                                                                        </h4>
+                                                                        <p className="text-muted-foreground text-sm leading-relaxed">
+                                                                            {proc.description || 'No description available.'}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </TableCell>
                                                     </TableRow>
                                                 )}
@@ -501,7 +511,7 @@ export default function SharedLedger({ entries, pagination, available_streams, f
                                 <PaginationContent>
                                     <PaginationItem>
                                         <PaginationPrevious
-                                            href={pagination.current_page > 1 ? `?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(window.location.search)), page: String(pagination.current_page - 1) }).toString()}` : undefined}
+                                            href={pagination.current_page > 1 ? `?page=${pagination.current_page - 1}` : undefined}
                                             onClick={(e) => {
                                                 if (pagination.current_page <= 1) { e.preventDefault(); return; }
                                                 e.preventDefault();
@@ -521,7 +531,7 @@ export default function SharedLedger({ entries, pagination, available_streams, f
                                             <PaginationItem key={page}>
                                                 <PaginationLink
                                                     isActive={pagination.current_page === page}
-                                                    href={`?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(window.location.search)), page: String(page) }).toString()}`}
+                                                    href={`?page=${page}`}
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         const params = new URLSearchParams(window.location.search);
@@ -536,7 +546,7 @@ export default function SharedLedger({ entries, pagination, available_streams, f
                                     )}
                                     <PaginationItem>
                                         <PaginationNext
-                                            href={pagination.current_page < pagination.last_page ? `?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(window.location.search)), page: String(pagination.current_page + 1) }).toString()}` : undefined}
+                                            href={pagination.current_page < pagination.last_page ? `?page=${pagination.current_page + 1}` : undefined}
                                             onClick={(e) => {
                                                 if (pagination.current_page >= pagination.last_page) { e.preventDefault(); return; }
                                                 e.preventDefault();
