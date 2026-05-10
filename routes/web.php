@@ -8,6 +8,7 @@ require __DIR__.'/web/authenticated.php';
 require __DIR__.'/web/bac-secretariat.php';
 require __DIR__.'/web/role-dashboards.php';
 require __DIR__.'/web/admin.php';
+require __DIR__.'/web/reports.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/settings.php';
 

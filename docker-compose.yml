@@ -1,5 +1,5 @@
 services:
-  # Single MultiChain Node for Development
+  # Primary MultiChain Node
   multichain:
     build:
       context: .
@@ -26,7 +26,7 @@ services:
     networks:
       - procuchain
 
-  # HAProxy Load Balancer (single node for future scaling)
+  # HAProxy Load Balancer
   haproxy:
     build:
       context: .

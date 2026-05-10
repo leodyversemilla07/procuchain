@@ -13,6 +13,7 @@ import adminLoginLogs from '@/routes/admin/login-logs';
 import { index as adminProcurementsList } from '@/routes/admin/procurements';
 import { index as stageDocumentsIndex } from '@/routes/admin/stage-documents';
 import adminUsers from '@/routes/admin/users';
+import adminNetwork from '@/routes/admin/network';
 import { index as workflowConfigIndex, preview as workflowPreview } from '@/routes/admin/workflow-config';
 import { dashboard as bacChairmanDashboard } from '@/routes/bac-chairman';
 import { index as bacChairmanProcurementsList } from '@/routes/bac-chairman/procurements';
@@ -38,6 +39,7 @@ import {
     Shield,
     ShieldOff,
     Table2,
+    Share2,
     Upload,
     Users,
 } from 'lucide-react';
@@ -195,6 +197,12 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
             title: 'Blockchain Explorer',
             href: adminBlockchain.explorer.index.url(),
             icon: Blocks,
+        });
+
+        items.push({
+            title: 'Network View',
+            href: adminNetwork.index.url(),
+            icon: Share2,
         });
 
         // Procurement Configuration (Workflow & Documents)

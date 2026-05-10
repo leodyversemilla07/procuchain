@@ -9,8 +9,6 @@ use App\Http\Controllers\PdfViewerController;
 use App\Http\Controllers\Procurement\ProcurementArchiveController;
 use App\Http\Controllers\ProcurementCorrectionController;
 use App\Http\Controllers\ProcurementListController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\SharedLedgerController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -33,14 +31,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/blockchain-job/{jobId}/status', [BlockchainJobStatusController::class, 'status'])
         ->name('blockchain.job.status');
-
-    Route::prefix('reports')->name('reports.')->group(function () {
-        Route::get('/', [ReportController::class, 'index'])->name('index');
-        Route::post('/generate', [ReportController::class, 'generate'])->name('generate');
-        Route::post('/export', [ReportController::class, 'export'])->name('export');
-    });
-
-    Route::post('/search', [ReportController::class, 'search'])->name('search');
 
     Route::middleware(['role:bac_secretariat'])->group(function () {
         Route::get('/procurements/{pr_number}/corrections', [ProcurementCorrectionController::class, 'showProcurementCorrectionsPage'])

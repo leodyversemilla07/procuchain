@@ -11,6 +11,7 @@ use App\Notifications\ProcurementCorrectionSubmitted;
 use App\Services\Publishers\CorrectionPublisher;
 use App\Services\Publishers\ProcurementCorrectionPublisher;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class CorrectionHandler
 {
@@ -110,7 +111,7 @@ class CorrectionHandler
                 'correction_txid' => $correctionTxid ?? '',
             ];
 
-            \Illuminate\Support\Facades\Notification::send($usersToNotify, new ProcurementCorrectionSubmitted($notificationData));
+            Notification::send($usersToNotify, new ProcurementCorrectionSubmitted($notificationData));
 
             Log::info('Correction notifications sent', [
                 'pr_number' => $prNumber,

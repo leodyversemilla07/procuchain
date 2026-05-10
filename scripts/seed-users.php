@@ -2,16 +2,17 @@
 
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Hash;
 
 require __DIR__.'/../vendor/autoload.php';
 
 $app = require __DIR__.'/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
 echo "Seeding roles and permissions...\n";
-$seeder = new RoleAndPermissionSeeder();
+$seeder = new RoleAndPermissionSeeder;
 $seeder->run();
 echo "Roles and permissions created.\n";
 
@@ -37,4 +38,4 @@ foreach ($users as $u) {
     echo "✓ {$u['email']} ({$u['role']})\n";
 }
 
-echo "Done! " . User::count() . " users total.\n";
+echo 'Done! '.User::count()." users total.\n";

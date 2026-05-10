@@ -5,16 +5,17 @@ use App\Models\User;
 use App\Services\Manager;
 use Carbon\Carbon;
 use Illuminate\Console\OutputStyle;
+use Illuminate\Contracts\Console\Kernel;
 use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
 require __DIR__.'/../vendor/autoload.php';
 
 $app = require __DIR__.'/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-$output = new OutputStyle(new StringInput(''), new ConsoleOutput());
+$output = new OutputStyle(new StringInput(''), new ConsoleOutput);
 
 /** @var Manager $multichain */
 $multichain = app(Manager::class);
@@ -71,7 +72,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
     $user = $users->random();
     $mode = $modes[array_rand($modes)];
     $office = $offices[array_rand($offices)];
-    $title = $titles[array_rand($titles)] . ' - ' . $office;
+    $title = $titles[array_rand($titles)].' - '.$office;
     $abcAmount = rand(500000, 50000000);
     $now = Carbon::now()->subDays($procurementCount - $i);
 
@@ -80,13 +81,13 @@ for ($i = 1; $i <= $procurementCount; $i++) {
         $multichain->publish(StreamEnums::METADATA->value, $prNumber, ['json' => [
             'pr_number' => $prNumber,
             'title' => $title,
-            'description' => "Procurement for {$office} FY " . date('Y'),
+            'description' => "Procurement for {$office} FY ".date('Y'),
             'abc_amount' => (string) $abcAmount,
             'procurement_mode' => $mode,
             'office' => $office,
             'end_user' => $office,
-            'category' => $categories[array_rand([0,1,2])],
-            'funding_source' => ['GAA', 'LGU Fund', 'Trust Fund', 'Foreign Assistance'][array_rand([0,1,2,3])],
+            'category' => $categories[array_rand([0, 1, 2])],
+            'funding_source' => ['GAA', 'LGU Fund', 'Trust Fund', 'Foreign Assistance'][array_rand([0, 1, 2, 3])],
             'delivery_location' => $office,
             'delivery_date' => $now->copy()->addDays(90)->toDateString(),
             'prepared_by' => $user->name,
@@ -96,7 +97,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
             'user_address' => $user->blockchain_address ?? '',
             'created_at' => $now->toIso8601String(),
         ]]);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // silently skip
     }
 
@@ -120,7 +121,8 @@ for ($i = 1; $i <= $procurementCount; $i++) {
                 'timestamp' => $ts->toIso8601String(),
                 'stage_index' => $s,
             ]]);
-        } catch (\Exception $e) {}
+        } catch (Exception $e) {
+        }
 
         $prevStatus = $status;
 
@@ -131,13 +133,14 @@ for ($i = 1; $i <= $procurementCount; $i++) {
                 'procurement_title' => $title,
                 'stage' => $stage,
                 'event_type' => 'stage_transition',
-                'category' => ['workflow', 'milestone'][array_rand([0,1])],
+                'category' => ['workflow', 'milestone'][array_rand([0, 1])],
                 'severity' => 'info',
                 'details' => "Stage transition: {$stage}",
                 'user_address' => $user->blockchain_address ?? '',
                 'timestamp' => $ts->toIso8601String(),
             ]]);
-        } catch (\Exception $e) {}
+        } catch (Exception $e) {
+        }
     }
 
     // 3. DOCUMENTS (3-8)
@@ -146,7 +149,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
         $stageIdx = min($d, count($stages) - 1);
         $docTs = (clone $now)->addHours($d * rand(12, 72));
         $docType = $docTypes[array_rand($docTypes)];
-        $fileName = $docType . '-' . bin2hex(random_bytes(4)) . '.pdf';
+        $fileName = $docType.'-'.bin2hex(random_bytes(4)).'.pdf';
 
         try {
             $multichain->publish(StreamEnums::DOCUMENTS->value, $prNumber, ['json' => [
@@ -164,7 +167,8 @@ for ($i = 1; $i <= $procurementCount; $i++) {
                 'metadata_txid' => bin2hex(random_bytes(16)),
                 'timestamp' => $docTs->toIso8601String(),
             ]]);
-        } catch (\Exception $e) {}
+        } catch (Exception $e) {
+        }
 
         // Document upload events
         try {
@@ -179,7 +183,8 @@ for ($i = 1; $i <= $procurementCount; $i++) {
                 'user_address' => $user->blockchain_address ?? '',
                 'timestamp' => $docTs->toIso8601String(),
             ]]);
-        } catch (\Exception $e) {}
+        } catch (Exception $e) {
+        }
     }
 
     // 4. CORRECTIONS (30% chance)
@@ -200,7 +205,8 @@ for ($i = 1; $i <= $procurementCount; $i++) {
                 'original_txid' => bin2hex(random_bytes(16)),
                 'timestamp' => $corrTs->toIso8601String(),
             ]]);
-        } catch (\Exception $e) {}
+        } catch (Exception $e) {
+        }
 
         // Correction event
         try {
@@ -215,7 +221,8 @@ for ($i = 1; $i <= $procurementCount; $i++) {
                 'user_address' => $user->blockchain_address ?? '',
                 'timestamp' => $corrTs->toIso8601String(),
             ]]);
-        } catch (\Exception $e) {}
+        } catch (Exception $e) {
+        }
     }
 
     // 5. ARCHIVE (25% chance)
@@ -228,9 +235,10 @@ for ($i = 1; $i <= $procurementCount; $i++) {
                 'archived_by' => $user->name,
                 'user_address' => $user->blockchain_address ?? '',
                 'archived_at' => $archTs->toIso8601String(),
-                'reason' => ['Completed', 'Cancelled - budget realignment', 'Awarded', 'Closed'][array_rand([0,1,2,3])],
+                'reason' => ['Completed', 'Cancelled - budget realignment', 'Awarded', 'Closed'][array_rand([0, 1, 2, 3])],
             ]]);
-        } catch (\Exception $e) {}
+        } catch (Exception $e) {
+        }
     }
 
     $progress->advance();
@@ -238,7 +246,7 @@ for ($i = 1; $i <= $procurementCount; $i++) {
 
 $progress->finish();
 $output->newLine(2);
-$output->writeln('<info>✓ Done! All ' . $procurementCount . ' procurements seeded.</info>');
+$output->writeln('<info>✓ Done! All '.$procurementCount.' procurements seeded.</info>');
 $output->newLine();
 
 // Count items per stream
@@ -248,7 +256,7 @@ foreach (StreamEnums::cases() as $stream) {
         $items = $multichain->liststreamitems($stream->value, true, 5000, 0, false);
         $count = is_array($items) ? count($items) : 0;
         $output->writeln("  {$stream->value}: {$count}");
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         $output->writeln("  {$stream->value}: <error>Error - {$e->getMessage()}</error>");
     }
 }

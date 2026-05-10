@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->user = User::factory()->create();
+    $this->user = User::factory()->create()->assignRole('admin');
     $this->actingAs($this->user);
 });
 
@@ -171,6 +171,19 @@ test('report generation requires authentication', function () {
     $response->assertUnauthorized();
 });
 
+test('report generation requires appropriate role', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $response = $this->postJson('/reports/generate', [
+        'filter_type' => 'month',
+        'month' => 1,
+        'year' => 2025,
+    ]);
+
+    $response->assertForbidden();
+});
+
 test('report generation validates month parameter', function () {
     $response = $this->postJson('/reports/generate', [
         'filter_type' => 'month',
@@ -281,7 +294,7 @@ test('report can be exported as PDF', function () {
 });
 
 test('semantic search requires query parameter', function () {
-    $response = $this->postJson('/search', []);
+    $response = $this->postJson('/search', ['query' => '']);
 
     $response->assertStatus(422);
     $response->assertJsonValidationErrors(['query']);

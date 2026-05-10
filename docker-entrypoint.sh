@@ -6,10 +6,22 @@ RPC_CONF="${CHAIN_DIR}/multichain.conf"
 
 # Create blockchain if it doesn't exist
 if [ ! -f "${CHAIN_DIR}/params.dat" ]; then
-    echo "Creating '${CHAIN_NAME}' blockchain..."
+    echo "Creating '${CHAIN_NAME}' blockchain with open permissions for dev..."
     multichain-util create ${CHAIN_NAME} \
         -default-network-port=${P2P_PORT} \
-        -default-rpc-port=${RPC_PORT}
+        -default-rpc-port=${RPC_PORT} \
+        -anyone-can-connect=true \
+        -anyone-can-send=true \
+        -anyone-can-receive=true \
+        -anyone-can-create=true \
+        -anyone-can-issue=true \
+        -anyone-can-mine=true \
+        -anyone-can-activate=true \
+        -anyone-can-admin=true \
+        -setup-first-blocks=1 \
+        -mining-diversity=0 \
+        -mining-requires-peers=false \
+        -max-std-tx-size=4194304
 fi
 
 # Create/update multichain.conf

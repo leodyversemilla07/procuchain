@@ -11,7 +11,7 @@ return [
             'worker_src' => ["'self'", 'blob:'],
         ],
         'production' => [
-            'script_src' => ["'self'"],
+            'script_src' => ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
             'style_src' => ["'self'", "'unsafe-inline'"],
             'img_src' => ["'self'", 'data:', 'blob:'],
             'connect_src' => ["'self'"],

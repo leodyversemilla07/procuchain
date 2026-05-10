@@ -13,13 +13,14 @@ use App\Models\User;
 use App\Services\Manager;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class MassDataSeeder extends Seeder
 {
     private const PROCUREMENT_COUNT = 25;
+
     private const DOCUMENTS_PER_PROCUREMENT = 4;
+
     private const STAGES = [
         'procurement_initiation',
         'pre_procurement_conference',
@@ -83,10 +84,11 @@ class MassDataSeeder extends Seeder
         $users = User::all();
         if ($users->isEmpty()) {
             $this->command->error('No users found. Run seed-users.php first.');
+
             return;
         }
 
-        $this->command->info("Generating " . self::PROCUREMENT_COUNT . " procurements with blockchain data...");
+        $this->command->info('Generating '.self::PROCUREMENT_COUNT.' procurements with blockchain data...');
         $this->command->newLine();
 
         $progressBar = $this->command->getOutput()->createProgressBar(self::PROCUREMENT_COUNT);
@@ -98,7 +100,7 @@ class MassDataSeeder extends Seeder
 
         $progressBar->finish();
         $this->command->newLine(2);
-        $this->command->info('Done! Generated ' . self::PROCUREMENT_COUNT . ' procurements with blockchain data.');
+        $this->command->info('Done! Generated '.self::PROCUREMENT_COUNT.' procurements with blockchain data.');
         $this->command->info("\nStream counts:");
         $this->showStreamCounts();
     }
@@ -128,7 +130,7 @@ class MassDataSeeder extends Seeder
         $this->publish(StreamEnums::METADATA->value, $prNumber, array_merge(
             $procurementData->toBlockchainArray(),
             [
-                'description' => "This procurement covers the acquisition of various items needed by {$office} for the fiscal year " . now()->year . ".",
+                'description' => "This procurement covers the acquisition of various items needed by {$office} for the fiscal year ".now()->year.'.',
                 'abc_amount' => (string) $abcAmount,
                 'funding_source' => $this->randomItem(['GAA', 'LGU Fund', 'Trust Fund', 'Foreign Assistance']),
                 'category' => $this->randomItem(['goods', 'infrastructure', 'consulting']),
@@ -138,7 +140,7 @@ class MassDataSeeder extends Seeder
                 'delivery_date' => $now->addDays(90)->toDateString(),
                 'delivery_term_days' => (string) rand(30, 180),
                 'prepared_by' => $user->name,
-                'approved_by' => $users->where('bac_chairman', fn($q) => $q)->first()?->name ?? 'Admin',
+                'approved_by' => $users->where('bac_chairman', fn ($q) => $q)->first()?->name ?? 'Admin',
                 'approval_date' => $now->toDateString(),
             ]
         ));
@@ -177,7 +179,7 @@ class MassDataSeeder extends Seeder
             $docTimestamp = (clone $now)->addHours($d * rand(12, 72));
             $docTypes = ['bid_documents', 'technical_proposal', 'financial_proposal', 'eligibility_documents', 'performance_security', 'contract'];
             $docType = $docTypes[array_rand($docTypes)];
-            $fileName = str_replace('_', '_', $docType) . '_' . strtolower(str_replace(' ', '_', $vendor)) . '.pdf';
+            $fileName = str_replace('_', '_', $docType).'_'.strtolower(str_replace(' ', '_', $vendor)).'.pdf';
 
             $docData = new ProcurementDocumentData(
                 prNumber: $prNumber,
@@ -190,14 +192,14 @@ class MassDataSeeder extends Seeder
                 fileSize: (string) rand(100000, 5000000),
                 mimeType: 'application/pdf',
                 hash: bin2hex(random_bytes(32)),
-                dataTxid: 'data_tx_' . bin2hex(random_bytes(8)),
-                metadataTxid: 'meta_tx_' . bin2hex(random_bytes(8)),
+                dataTxid: 'data_tx_'.bin2hex(random_bytes(8)),
+                metadataTxid: 'meta_tx_'.bin2hex(random_bytes(8)),
                 description: "{$docType} document for {$prNumber}",
                 timestamp: $docTimestamp,
             );
 
             $docArray = $docData->toBlockchainArray();
-            $docArray['file_key'] = 'file_' . bin2hex(random_bytes(8));
+            $docArray['file_key'] = 'file_'.bin2hex(random_bytes(8));
             $this->publish(StreamEnums::DOCUMENTS->value, $prNumber, $docArray);
 
             // event for document upload
@@ -258,7 +260,7 @@ class MassDataSeeder extends Seeder
         $correctionData = new CorrectionData(
             prNumber: $prNumber,
             procurementTitle: $title,
-            originalTxid: 'orig_tx_' . bin2hex(random_bytes(8)),
+            originalTxid: 'orig_tx_'.bin2hex(random_bytes(8)),
             originalDocumentHash: bin2hex(random_bytes(32)),
             correctionType: 'document_replacement',
             action: 'replace',
@@ -268,7 +270,7 @@ class MassDataSeeder extends Seeder
             timestamp: $correctionTimestamp,
             correctedMetadata: [
                 'vendor' => $vendor,
-                'new_filename' => 'corrected_' . strtolower(str_replace(' ', '_', $vendor)) . '.pdf',
+                'new_filename' => 'corrected_'.strtolower(str_replace(' ', '_', $vendor)).'.pdf',
             ],
         );
 
