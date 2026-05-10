@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\DataTransferObjects\LedgerEntryData;
-use App\Enums\StreamEnums;
 use App\Services\Manager;
 use Exception;
 use Illuminate\Http\Request;
@@ -59,36 +58,31 @@ class SharedLedgerController extends Controller
             // Apply filters
             if ($request->filled('pr_number')) {
                 $search = strtolower((string) $request->string('pr_number'));
-                $entries = array_filter($entries, fn (LedgerEntryData $e) =>
-                    str_contains(strtolower($e->prNumber), $search)
+                $entries = array_filter($entries, fn (LedgerEntryData $e) => str_contains(strtolower($e->prNumber), $search)
                 );
             }
 
             if ($request->filled('stream')) {
                 $stream = (string) $request->string('stream');
-                $entries = array_filter($entries, fn (LedgerEntryData $e) =>
-                    $e->stream === $stream
+                $entries = array_filter($entries, fn (LedgerEntryData $e) => $e->stream === $stream
                 );
             }
 
             if ($request->filled('date_from')) {
                 $from = strtotime((string) $request->string('date_from'));
-                $entries = array_filter($entries, fn (LedgerEntryData $e) =>
-                    $e->getSortableTimestamp() >= $from
+                $entries = array_filter($entries, fn (LedgerEntryData $e) => $e->getSortableTimestamp() >= $from
                 );
             }
 
             if ($request->filled('date_to')) {
-                $to = strtotime((string) $request->string('date_to') . ' 23:59:59');
-                $entries = array_filter($entries, fn (LedgerEntryData $e) =>
-                    $e->getSortableTimestamp() <= $to
+                $to = strtotime((string) $request->string('date_to').' 23:59:59');
+                $entries = array_filter($entries, fn (LedgerEntryData $e) => $e->getSortableTimestamp() <= $to
                 );
             }
 
             if ($request->filled('search')) {
                 $search = strtolower((string) $request->string('search'));
-                $entries = array_filter($entries, fn (LedgerEntryData $e) =>
-                    str_contains(strtolower($e->prNumber), $search)
+                $entries = array_filter($entries, fn (LedgerEntryData $e) => str_contains(strtolower($e->prNumber), $search)
                     || str_contains(strtolower($e->summary), $search)
                     || str_contains(strtolower($e->action), $search)
                     || str_contains(strtolower($e->txid), $search)
@@ -96,8 +90,7 @@ class SharedLedgerController extends Controller
             }
 
             // Sort by timestamp descending (newest first)
-            usort($entries, fn (LedgerEntryData $a, LedgerEntryData $b) =>
-                $b->getSortableTimestamp() <=> $a->getSortableTimestamp()
+            usort($entries, fn (LedgerEntryData $a, LedgerEntryData $b) => $b->getSortableTimestamp() <=> $a->getSortableTimestamp()
             );
 
             // Paginate

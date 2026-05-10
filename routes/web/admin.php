@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BlockchainExplorerController;
 use App\Http\Controllers\LoginLogController;
+use App\Http\Controllers\NodeNetworkController;
 use App\Http\Controllers\ProcurementListController;
 use App\Http\Controllers\SharedLedgerController;
 use App\Http\Controllers\UserManagementController;
@@ -66,6 +67,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/address/{address}', [BlockchainExplorerController::class, 'getAddress'])->name('address');
         Route::get('/search', [BlockchainExplorerController::class, 'search'])->name('search');
         Route::post('/reset-circuit-breaker', [BlockchainExplorerController::class, 'resetCircuitBreaker'])->name('reset');
+    });
+
+    Route::prefix('network')->name('network.')->group(function () {
+        Route::get('/', [NodeNetworkController::class, 'index'])->name('index');
+        Route::get('/data', [NodeNetworkController::class, 'data'])->name('data');
     });
 
     Route::prefix('workflow-config')->name('workflow-config.')->group(function () {

@@ -3,16 +3,17 @@
 use App\Enums\StreamEnums;
 use App\Services\Manager;
 use Illuminate\Console\OutputStyle;
+use Illuminate\Contracts\Console\Kernel;
 use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
 require __DIR__.'/../vendor/autoload.php';
 
 $app = require __DIR__.'/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-$output = new OutputStyle(new StringInput(''), new ConsoleOutput());
+$output = new OutputStyle(new StringInput(''), new ConsoleOutput);
 
 /** @var Manager $multichain */
 $multichain = app(Manager::class);
@@ -39,12 +40,12 @@ $fixed = 0;
 // Fetch all metadata items
 $items = $multichain->liststreamitems(StreamEnums::METADATA->value, true, 5000, 0, false);
 
-if (!is_array($items)) {
+if (! is_array($items)) {
     $output->error('No items found in metadata stream');
     exit(1);
 }
 
-$output->writeln('Found ' . count($items) . ' metadata items');
+$output->writeln('Found '.count($items).' metadata items');
 
 foreach ($items as $item) {
     $keys = $item['keys'] ?? [];
@@ -77,12 +78,12 @@ foreach ($items as $item) {
         }
     }
 
-    if (!empty($changes)) {
+    if (! empty($changes)) {
         try {
             $multichain->publish(StreamEnums::METADATA->value, $prNumber, ['json' => $data]);
             $fixed++;
-            $output->writeln("  Fixed {$prNumber}: " . implode(', ', $changes));
-        } catch (\Exception $e) {
+            $output->writeln("  Fixed {$prNumber}: ".implode(', ', $changes));
+        } catch (Exception $e) {
             $output->writeln("  <error>Failed to fix {$prNumber}: {$e->getMessage()}</error>");
         }
     }
@@ -95,10 +96,10 @@ $output->writeln("<info>✓ Fixed {$fixed} records</info>");
 if ($fixed > 0) {
     $output->writeln("\n<comment>Verifying fix...</comment>");
     $verifyItems = $multichain->liststreamitems(StreamEnums::METADATA->value, true, 2, 0, false);
-    if (!empty($verifyItems[0])) {
+    if (! empty($verifyItems[0])) {
         $sample = $verifyItems[0]['data']['json'] ?? [];
-        $output->writeln("  category: " . ($sample['category'] ?? 'N/A'));
-        $output->writeln("  procurement_mode: " . ($sample['procurement_mode'] ?? 'N/A'));
+        $output->writeln('  category: '.($sample['category'] ?? 'N/A'));
+        $output->writeln('  procurement_mode: '.($sample['procurement_mode'] ?? 'N/A'));
     }
 }
 

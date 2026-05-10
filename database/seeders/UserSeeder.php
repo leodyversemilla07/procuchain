@@ -35,10 +35,10 @@ class UserSeeder extends Seeder
         Role::firstOrCreate(['name' => UserRoleEnums::BAC_CHAIRMAN->value, 'guard_name' => 'web']);
         $bacChairmanAddress = $multichain->getnewaddress();
         $bacChairman = User::create([
-            'name' => 'Lunar Spectre',
-            'email' => 'lunarspectre00@gmail.com',
+            'name' => 'Adrian Gupit',
+            'email' => 'adriangupit18@gmail.com',
             'blockchain_address' => $bacChairmanAddress,
-            'password' => Hash::make('LunarSpectre00'),
+            'password' => Hash::make('Adrian10'),
         ]);
         $bacChairman->assignRole(UserRoleEnums::BAC_CHAIRMAN->value);
         Log::info('BAC Chairman user created', ['address' => $bacChairmanAddress]);
