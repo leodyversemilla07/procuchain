@@ -49,7 +49,14 @@ class AuditLogController extends Controller
             ]);
 
             return Inertia::render('admin/audit-log', [
-                'logs' => [],
+                'logs' => [
+                    'data' => [],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 50,
+                    'total' => 0,
+                    'links' => [],
+                ],
                 'distinctActions' => [],
                 'filters' => [],
                 'error' => 'Failed to load audit logs. Please try again.',

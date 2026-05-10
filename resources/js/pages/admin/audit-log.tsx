@@ -93,6 +93,14 @@ const ACTION_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 
 
 export default function AuditLog() {
     const { logs, distinctActions, filters, error } = usePage<PageProps>().props;
+    const safeLogs = logs ?? {
+        data: [],
+        current_page: 1,
+        last_page: 1,
+        per_page: 50,
+        total: 0,
+        links: [],
+    };
 
     const [action, setAction] = useState(filters.action ?? '');
     const [userId, setUserId] = useState(filters.user_id ?? '');
@@ -221,13 +229,13 @@ export default function AuditLog() {
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between text-base">
                             <span>
-                                {logs.total.toLocaleString()} entr{logs.total === 1 ? 'y' : 'ies'}
+                                {safeLogs.total.toLocaleString()} entr{safeLogs.total === 1 ? 'y' : 'ies'}
                             </span>
                             {hasActiveFilters && <Badge variant="secondary">Filtered</Badge>}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        {logs.data.length === 0 ? (
+                        {safeLogs.data.length === 0 ? (
                             <Empty className="py-16">
                                 <EmptyMedia>
                                     <FileSearch className="h-12 w-12" />
@@ -254,7 +262,7 @@ export default function AuditLog() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {logs.data.map((entry) => (
+                                    {safeLogs.data.map((entry) => (
                                         <TableRow key={entry.id}>
                                             <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                                                 {format(new Date(entry.created_at), 'MMM d, yyyy HH:mm:ss')}
@@ -301,13 +309,13 @@ export default function AuditLog() {
                             </Table>
                         )}
                     </CardContent>
-                    {logs.last_page > 1 && (
+                    {safeLogs.last_page > 1 && (
                         <CardFooter className="flex items-center justify-between pt-4">
                             <span className="text-muted-foreground text-sm">
                                 Page {logs.current_page} of {logs.last_page}
                             </span>
                             <div className="flex gap-2">
-                                {logs.links.map((link, i) => (
+                                {safeLogs.links.map((link, i) => (
                                     <Button
                                         key={i}
                                         variant={link.active ? 'default' : 'outline'}
