@@ -39,4 +39,4 @@ yarn-error.log
 /test-results/
 
 # Scripts
-/scripts/inspect-*.mjs
+/scripts/*.mjs
