@@ -30,7 +30,6 @@ class SyncProductionUsers extends Command
             'roles' => ['bac_secretariat'],
         ],
         [
-        [
             'email' => 'leifsagesemilla@gmail.com',
             'name' => 'Leif Sage Semilla',
             'blockchain_address' => '13JUtJaimUnhbXcUeE97Uzj4c4vwLyJvqHhMw9',
