@@ -27,7 +27,7 @@ it('returns the shared ledger page for authenticated users', function () {
     $this->app->instance(Manager::class, $managerMock);
 
     $this->actingAs($user)
-        ->get('/shared-ledger')
+        ->get('/admin/shared-ledger')
         ->assertOk()
         ->assertInertia(fn ($assert) => $assert
             ->component('shared-ledger')
@@ -38,50 +38,17 @@ it('returns the shared ledger page for authenticated users', function () {
         );
 });
 
-it('is accessible by bac_secretariat role', function () {
+it('is not accessible without admin role', function () {
     $user = User::factory()->create();
     $user->assignRole('bac_secretariat');
 
-    $managerMock = Mockery::mock(Manager::class);
-    $managerMock->shouldReceive('liststreamitems')
-        ->andReturn([]);
-    $this->app->instance(Manager::class, $managerMock);
-
     $this->actingAs($user)
-        ->get('/shared-ledger')
-        ->assertOk();
-});
-
-it('is accessible by bac_chairman role', function () {
-    $user = User::factory()->create();
-    $user->assignRole('bac_chairman');
-
-    $managerMock = Mockery::mock(Manager::class);
-    $managerMock->shouldReceive('liststreamitems')
-        ->andReturn([]);
-    $this->app->instance(Manager::class, $managerMock);
-
-    $this->actingAs($user)
-        ->get('/shared-ledger')
-        ->assertOk();
-});
-
-it('is accessible by hope role', function () {
-    $user = User::factory()->create();
-    $user->assignRole('hope');
-
-    $managerMock = Mockery::mock(Manager::class);
-    $managerMock->shouldReceive('liststreamitems')
-        ->andReturn([]);
-    $this->app->instance(Manager::class, $managerMock);
-
-    $this->actingAs($user)
-        ->get('/shared-ledger')
-        ->assertOk();
+        ->get('/admin/shared-ledger')
+        ->assertForbidden();
 });
 
 it('redirects unauthenticated users to login', function () {
-    $this->get('/shared-ledger')
+    $this->get('/admin/shared-ledger')
         ->assertRedirect('/login');
 });
 
@@ -122,17 +89,16 @@ it('filters ledger entries by pr_number', function () {
         ],
     ];
 
-    // Only procurement.events has data, others return empty
     $managerMock = Mockery::mock(Manager::class);
     $managerMock->shouldReceive('liststreamitems')
-        ->with('procurement.events', true, 500, 0, false)
+        ->with('procurement.metadata', true, 5000, 0, false)
         ->andReturn($mockData);
     $managerMock->shouldReceive('liststreamitems')
         ->andReturn([]);
     $this->app->instance(Manager::class, $managerMock);
 
     $this->actingAs($user)
-        ->get('/shared-ledger?pr_number=PR-2025-001')
+        ->get('/admin/shared-ledger?pr_number=PR-2025-001')
         ->assertOk()
         ->assertInertia(fn ($assert) => $assert
             ->component('shared-ledger')
@@ -146,16 +112,13 @@ it('handles blockchain unavailability gracefully', function () {
     $user->assignRole('admin');
 
     $managerMock = Mockery::mock(Manager::class);
-    // Return data for events but throw for all other streams to trigger error
+    // Throw on first stream call to trigger exception handling
     $managerMock->shouldReceive('liststreamitems')
-        ->with('procurement.events', true, 500, 0, false)
         ->andThrow(new Exception('Connection refused'));
-    $managerMock->shouldReceive('liststreamitems')
-        ->andReturn([]);
     $this->app->instance(Manager::class, $managerMock);
 
     $this->actingAs($user)
-        ->get('/shared-ledger')
+        ->get('/admin/shared-ledger')
         ->assertOk()
         ->assertInertia(fn ($assert) => $assert
             ->component('shared-ledger')
