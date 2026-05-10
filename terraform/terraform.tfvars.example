@@ -1,0 +1,15 @@
+# Copy this file to terraform.tfvars and fill in the values
+
+aws_region      = "us-east-1"
+project_name    = "procuchain"
+environment     = "production"
+
+# RDS
+rds_master_username = "procuchain"
+rds_master_password = "procuchain"
+
+# Laravel APP_KEY
+app_key = "base64:your-app-key-here"
+
+# GitHub
+github_repo_url = "https://github.com/leodyversemilla07/procuchain.git"
