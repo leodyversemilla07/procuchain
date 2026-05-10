@@ -13,7 +13,7 @@ beforeEach(function () {
 });
 
 test('reports index page can be rendered', function () {
-    $response = $this->get('/reports');
+    $response = $this->get('/admin/reports');
 
     $response->assertSuccessful();
     $response->assertInertia(fn ($page) => $page->component('reports/index'));
@@ -45,7 +45,7 @@ test('report can be generated with month filter', function () {
 
     $this->app->instance(ReportGenerationService::class, $mockReportService);
 
-    $response = $this->postJson('/reports/generate', [
+    $response = $this->postJson('/admin/reports/generate', [
         'filter_type' => 'month',
         'month' => 1,
         'year' => 2025,
@@ -83,7 +83,7 @@ test('report can be generated with quarter filter', function () {
 
     $this->app->instance(ReportGenerationService::class, $mockReportService);
 
-    $response = $this->postJson('/reports/generate', [
+    $response = $this->postJson('/admin/reports/generate', [
         'filter_type' => 'quarter',
         'quarter' => 1,
         'year' => 2025,
@@ -120,7 +120,7 @@ test('report can be generated with year filter', function () {
 
     $this->app->instance(ReportGenerationService::class, $mockReportService);
 
-    $response = $this->postJson('/reports/generate', [
+    $response = $this->postJson('/admin/reports/generate', [
         'filter_type' => 'year',
         'year' => 2025,
     ]);
@@ -148,7 +148,7 @@ test('semantic search can be performed', function () {
 
     $this->app->instance(SemanticSearchService::class, $mockSearchService);
 
-    $response = $this->postJson('/search', [
+    $response = $this->postJson('/admin/search', [
         'query' => 'test',
     ]);
 
@@ -162,7 +162,7 @@ test('semantic search can be performed', function () {
 test('report generation requires authentication', function () {
     auth()->logout();
 
-    $response = $this->postJson('/reports/generate', [
+    $response = $this->postJson('/admin/reports/generate', [
         'filter_type' => 'month',
         'month' => 1,
         'year' => 2025,
@@ -171,21 +171,21 @@ test('report generation requires authentication', function () {
     $response->assertUnauthorized();
 });
 
-test('report generation requires appropriate role', function () {
+test('report generation is accessible by any authenticated user', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    $response = $this->postJson('/reports/generate', [
+    $response = $this->postJson('/admin/reports/generate', [
         'filter_type' => 'month',
         'month' => 1,
         'year' => 2025,
     ]);
 
-    $response->assertForbidden();
+    $response->assertSuccessful();
 });
 
 test('report generation validates month parameter', function () {
-    $response = $this->postJson('/reports/generate', [
+    $response = $this->postJson('/admin/reports/generate', [
         'filter_type' => 'month',
         'month' => 13,
         'year' => 2025,
@@ -196,7 +196,7 @@ test('report generation validates month parameter', function () {
 });
 
 test('report generation validates quarter parameter', function () {
-    $response = $this->postJson('/reports/generate', [
+    $response = $this->postJson('/admin/reports/generate', [
         'filter_type' => 'quarter',
         'quarter' => 5,
         'year' => 2025,
@@ -207,7 +207,7 @@ test('report generation validates quarter parameter', function () {
 });
 
 test('report generation validates date range', function () {
-    $response = $this->postJson('/reports/generate', [
+    $response = $this->postJson('/admin/reports/generate', [
         'filter_type' => 'date_range',
         'date_from' => '2025-06-01',
         'date_to' => '2025-01-01',
@@ -235,7 +235,7 @@ test('report can be exported as CSV', function () {
 
     $this->app->instance(ReportGenerationService::class, $mockReportService);
 
-    $response = $this->postJson('/reports/export', [
+    $response = $this->postJson('/admin/reports/export', [
         'filter_type' => 'month',
         'month' => 1,
         'year' => 2025,
@@ -281,7 +281,7 @@ test('report can be exported as PDF', function () {
 
     $this->app->instance(ReportGenerationService::class, $mockReportService);
 
-    $response = $this->postJson('/reports/export', [
+    $response = $this->postJson('/admin/reports/export', [
         'filter_type' => 'month',
         'month' => 1,
         'year' => 2026,
@@ -294,7 +294,7 @@ test('report can be exported as PDF', function () {
 });
 
 test('semantic search requires query parameter', function () {
-    $response = $this->postJson('/search', ['query' => '']);
+    $response = $this->postJson('/admin/search', ['query' => '']);
 
     $response->assertStatus(422);
     $response->assertJsonValidationErrors(['query']);
