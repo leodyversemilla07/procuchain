@@ -22,7 +22,7 @@ import { index as bacSecretariatProcurementInitiation } from '@/routes/bac-secre
 import { index as bacSecretariatProcurementsList } from '@/routes/bac-secretariat/procurements';
 import { dashboard as hopeDashboard } from '@/routes/hope';
 import { index as hopeProcurementsList } from '@/routes/hope/procurements';
-import { index as reportsIndex } from '@/routes/admin/reports';
+
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
@@ -117,12 +117,30 @@ const getNavItemsByRole = (role: string, permissions: ReturnType<typeof usePermi
         }
     }
 
-    // Reports - available to all authenticated users
-    items.push({
-        title: 'Reports',
-        href: reportsIndex().url,
-        icon: BarChart3,
-    });
+    // Reports - role-based URL per role
+    let reportsUrl = '';
+    switch (role) {
+        case 'admin':
+            reportsUrl = '/admin/reports';
+            break;
+        case 'bac_secretariat':
+            reportsUrl = '/bac-secretariat/reports';
+            break;
+        case 'bac_chairman':
+            reportsUrl = '/bac-chairman/reports';
+            break;
+        case 'hope':
+            reportsUrl = '/hope/reports';
+            break;
+    }
+
+    if (reportsUrl) {
+        items.push({
+            title: 'Reports',
+            href: reportsUrl,
+            icon: BarChart3,
+        });
+    }
 
     // Shared Ledger - role-based URL per role
     let sharedLedgerUrl = '';
