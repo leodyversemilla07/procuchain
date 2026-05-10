@@ -3,7 +3,7 @@
 use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'role:admin|bac_secretariat|bac_chairman|hope'])->group(function () {
+Route::middleware(['auth', 'role:admin|bac_secretariat|bac_chairman|hope'])->prefix('admin')->name('admin.')->group(function () {
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
         Route::post('/generate', [ReportController::class, 'generate'])->name('generate');
