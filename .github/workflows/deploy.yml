@@ -7,7 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -30,73 +30,63 @@ jobs:
       - name: Install Node Dependencies
         run: npm ci
 
-      - name: Install Composer Dependencies
-        run: composer install --no-ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader --no-dev
-
       - name: Build Assets
         run: npm run build
 
-      - name: Deploy via Rsync
-        uses: easingthemes/ssh-deploy@v5.0.0
+      - name: Generate Laravel App Key
+        run: echo "APP_KEY=$(php -r 'echo "base64:" . base64_encode(random_bytes(32));')" >> .env
+
+      - name: Generate .env for Production
+        run: |
+          cat > .env << 'EOF'
+APP_ENV=production
+APP_DEBUG=false
+APP_KEY=${{ secrets.APP_KEY }}
+APP_URL=http://procuchain-prod.eba-vujm352s.us-east-1.elasticbeanstalk.com
+DB_CONNECTION=mysql
+DB_HOST=${{ secrets.DB_HOST }}
+DB_PORT=3306
+DB_DATABASE=${{ secrets.DB_DATABASE }}
+DB_USERNAME=${{ secrets.DB_USERNAME }}
+DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+CACHE_STORE=file
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=file
+MAIL_MAILER=log
+EOF
+
+      - name: Generate deployment package
+        run: |
+          # EB requires a zip with all files
+          # We need vendor/ installed already
+          composer install --no-ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader --no-dev
+          
+          # Create the zip source bundle
+          zip -ryq /tmp/procuchain-deploy.zip . \
+            -x "*.git*" \
+            -x "node_modules/*" \
+            -x "tests/*" \
+            -x ".github/*" \
+            -x ".agents/*" \
+            -x "storage/framework/cache/*" \
+            -x "storage/framework/sessions/*" \
+            -x "storage/framework/views/*" \
+            -x "storage/logs/*" \
+            -x "haproxy/*" \
+            -x "docker-compose.yml" \
+            -x "Dockerfile*" \
+            -x "docker-*" \
+            -x ".editorconfig" \
+            -x ".gitattributes" \
+            -x ".gitignore"
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
         with:
-          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
-          REMOTE_USER: ubuntu
-          SOURCE: ''
-          TARGET: /var/www/procuchain-tmp
-          EXCLUDE: |
-            .env
-            .env.bak
-            .git
-            node_modules
-            .github
-            .agents
-            .editorconfig
-            .dockerignore
-            .gitattributes
-            .gitkeep
-            .gitignore
-            Dockerfile*
-            docker-*
-
-      - name: Post-deploy (swap, migrate, restart)
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ubuntu
-          command_timeout: 60s
-          script: |
-            set -e
-
-            cd /var/www/procuchain-tmp
-
-            # Restore .env from current release
-            cp /var/www/procuchain/.env .env || true
-
-            # Set proper ownership
-            sudo chown -R www-data:www-data .
-
-            # Cache everything
-            php artisan optimize:clear 2>&1
-            php artisan optimize 2>&1
-            php artisan config:cache 2>&1
-            php artisan route:cache 2>&1
-            php artisan view:cache 2>&1
-
-            # Run migrations (safe — checks for existing tables)
-            php artisan migrate --force --no-interaction 2>&1
-
-            # Set permissions
-            sudo chmod -R 775 storage bootstrap/cache
-
-            # Swap directories
-            sudo rm -rf /var/www/procuchain-old 2>/dev/null || true
-            sudo mv /var/www/procuchain /var/www/procuchain-old 2>/dev/null || true
-            sudo mv /var/www/procuchain-tmp /var/www/procuchain
-
-            # Restart FPM
-            sudo systemctl reload php8.4-fpm 2>/dev/null || sudo systemctl restart php8.4-fpm
-
-            # Health check
-            curl -s -o /dev/null -w "Health: %{http_code}\n" http://localhost/ || echo "Health check failed"
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: procuchain
+          environment_name: procuchain-prod
+          version_label: "v-${{ github.sha }}"
+          region: us-east-1
+          deployment_package: /tmp/procuchain-deploy.zip
