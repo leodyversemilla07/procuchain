@@ -12,6 +12,7 @@ use Inertia\Response;
 class NodeNetworkController extends Controller
 {
     private const RPC_USER = 'multichainrpc';
+
     private const RPC_PASSWORD = 'multichainrpc';
 
     private const NODES = [
@@ -68,7 +69,7 @@ class NodeNetworkController extends Controller
 
         $connections = $this->buildFullMeshConnections($allPeers);
 
-        $enrichedNodes = array_map(fn($node) => [
+        $enrichedNodes = array_map(fn ($node) => [
             'id' => $node['id'],
             'name' => $node['name'],
             'role' => $node['role'],
@@ -82,9 +83,9 @@ class NodeNetworkController extends Controller
             'subver' => $liveNodeData[$node['id']]['subver'] ?? 'Unknown',
         ], $nodes);
 
-        $connectedNodes = count(array_filter($liveNodeData, fn($d) => $d['connected'] ?? false));
-        $totalPeers = array_sum(array_map(fn($d) => count($d['peerInfo'] ?? []), $liveNodeData));
-        $blocks = max(array_map(fn($d) => $d['blocks'] ?? 0, $liveNodeData));
+        $connectedNodes = count(array_filter($liveNodeData, fn ($d) => $d['connected'] ?? false));
+        $totalPeers = array_sum(array_map(fn ($d) => count($d['peerInfo'] ?? []), $liveNodeData));
+        $blocks = max(array_map(fn ($d) => $d['blocks'] ?? 0, $liveNodeData));
 
         return [
             'nodes' => $enrichedNodes,
@@ -140,7 +141,8 @@ class NodeNetworkController extends Controller
                 'peerInfo' => $mappedPeers,
             ];
         } catch (Exception $e) {
-            Log::warning("NodeNetwork: Failed to query node {$nodeId} at {$host}:{$port}: " . $e->getMessage());
+            Log::warning("NodeNetwork: Failed to query node {$nodeId} at {$host}:{$port}: ".$e->getMessage());
+
             return [
                 'blocks' => 0, 'connected' => false, 'lastSeen' => 0,
                 'subver' => 'Unknown', 'peerInfo' => [],
@@ -154,14 +156,14 @@ class NodeNetworkController extends Controller
 
         foreach ($allPeers as $nodeId => $peers) {
             foreach ($peers as $peer) {
-                if (!isset($peer['id'])) {
+                if (! isset($peer['id'])) {
                     continue;
                 }
                 $from = $nodeId;
                 $to = $peer['id'];
                 $pairKey = $from < $to ? "{$from}-{$to}" : "{$to}-{$from}";
 
-                if (!isset($bestData[$pairKey]) || ($peer['ping_time'] ?? 0) > ($bestData[$pairKey]['ping_time'] ?? 0)) {
+                if (! isset($bestData[$pairKey]) || ($peer['ping_time'] ?? 0) > ($bestData[$pairKey]['ping_time'] ?? 0)) {
                     $bestData[$pairKey] = [
                         'bytes_sent' => (int) ($peer['bytes_sent'] ?? 0),
                         'bytes_recv' => (int) ($peer['bytes_recv'] ?? 0),
