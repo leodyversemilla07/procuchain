@@ -1,4 +1,4 @@
-name: Deploy to Elastic Beanstalk
+name: Deploy to Production (EC2)
 
 on:
   push:
@@ -10,7 +10,8 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -32,52 +33,38 @@ jobs:
           npm run build
           composer install --no-ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader --no-dev
 
-      - name: Create .env
-        run: |
-          cat > .env << 'EOF'
-APP_ENV=production
-APP_DEBUG=false
-APP_KEY=${{ secrets.APP_KEY }}
-APP_URL=http://procuchain-prod.eba-vujm352s.us-east-1.elasticbeanstalk.com
-DB_CONNECTION=mysql
-DB_HOST=${{ secrets.DB_HOST }}
-DB_PORT=3306
-DB_DATABASE=${{ secrets.DB_DATABASE }}
-DB_USERNAME=${{ secrets.DB_USERNAME }}
-DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-CACHE_STORE=file
-QUEUE_CONNECTION=sync
-SESSION_DRIVER=file
-MAIL_MAILER=log
-EOF
-
-      - name: Create deployment package
-        run: |
-          zip -ryq /tmp/deploy.zip . \
-            -x "*.git*" \
-            -x "node_modules/*" \
-            -x "tests/*" \
-            -x ".github/*" \
-            -x ".agents/*" \
-            -x "haproxy/*" \
-            -x "docker-compose.yml" \
-            -x "Dockerfile*" \
-            -x "docker-*" \
-            -x ".editorconfig" \
-            -x ".gitattributes" \
-            -x ".gitignore" \
-            -x "storage/framework/cache/*" \
-            -x "storage/framework/sessions/*" \
-            -x "storage/framework/views/*" \
-            -x "storage/logs/*"
-
-      - name: Deploy to EB
-        uses: einaregilsson/beanstalk-deploy@v22
+      - name: Deploy via SSH
+        uses: appleboy/scp-action@v0.1.7
         with:
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: procuchain
-          environment_name: procuchain-prod
-          version_label: "v-${{ github.sha }}"
-          region: us-east-1
-          deployment_package: /tmp/deploy.zip
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ubuntu
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "."
+          target: "/var/www/procuchain-tmp"
+          strip_components: 0
+          rm: true
+          tar_tmp_path: "/tmp/"
+          tar_exec: "tar"
+          overwrite: true
+
+      - name: Post-deploy
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ubuntu
+          command_timeout: 60s
+          script: |
+            set -e
+            cd /var/www/procuchain-tmp
+            cp /var/www/procuchain/.env .env || true
+            sudo chown -R www-data:www-data .
+            php artisan optimize:clear 2>&1
+            php artisan optimize 2>&1
+            php artisan migrate --force --no-interaction 2>&1
+            sudo chmod -R 775 storage bootstrap/cache
+            sudo rm -rf /var/www/procuchain-old 2>/dev/null || true
+            sudo mv /var/www/procuchain /var/www/procuchain-old 2>/dev/null || true
+            sudo mv /var/www/procuchain-tmp /var/www/procuchain
+            sudo systemctl reload php8.4-fpm 2>/dev/null || sudo systemctl restart php8.4-fpm
+            curl -s -o /dev/null -w "Health: %{http_code}\n" http://localhost/ || echo "Health check failed"
