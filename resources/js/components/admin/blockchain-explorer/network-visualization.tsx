@@ -183,14 +183,9 @@ function TopologyCanvas({
                         <feGaussianBlur stdDeviation="1.5" result="blur" />
                         <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
                     </filter>
-                    <linearGradient id="line-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(var(--primary), 0.3)" />
-                        <stop offset="50%" stopColor="rgba(var(--primary), 0.7)" />
-                        <stop offset="100%" stopColor="rgba(var(--primary), 0.3)" />
-                    </linearGradient>
                     {/* Background grid */}
                     <pattern id="net-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-                        <path d="M 32 0 L 0 0 0 32" fill="none" stroke="hsl(var(--border))" strokeWidth="0.3" opacity="0.3" />
+                        <path d="M 32 0 L 0 0 0 32" fill="none" stroke="hsl(var(--border))" strokeWidth="0.3" opacity="0.5" />
                     </pattern>
                 </defs>
 
@@ -232,25 +227,25 @@ function TopologyCanvas({
                             onMouseEnter={() => setHoveredEdge(key)}
                             onMouseLeave={() => setHoveredEdge(null)}
                             className="cursor-pointer"
-                            opacity={isHov ? 1 : 0.65}
+                            opacity={isHov ? 1 : 0.8}
                         >
                             {/* Glow underlay */}
                             <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                                stroke="hsl(var(--primary))" strokeWidth={isHov ? 8 : 4}
-                                opacity={0.04} strokeLinecap="round" />
-                            {/* Main line */}
+                                stroke="hsl(var(--primary))" strokeWidth={isHov ? 10 : 6}
+                                opacity={0.12} strokeLinecap="round" />
+                            {/* Main line - solid, visible in both modes */}
                             <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                                stroke="url(#line-grad)" strokeWidth={isHov ? 2 : 1.2}
-                                strokeLinecap="round" />
+                                stroke="hsl(var(--primary))" strokeWidth={isHov ? 2.5 : 1.5}
+                                strokeLinecap="round" opacity={0.9} />
                             {/* Animated particles */}
                             {[0.15, 0.35, 0.55, 0.75, 0.95].map((offset, i) => {
                                 const phase = (t * 0.8 + i * 0.2) % 1;
                                 const px = from.x + (to.x - from.x) * phase;
                                 const py = from.y + (to.y - from.y) * phase;
                                 return (
-                                    <circle key={i} cx={px} cy={py} r={1.5}
+                                    <circle key={i} cx={px} cy={py} r={isHov ? 2 : 1.5}
                                         fill="hsl(var(--primary))"
-                                        opacity={0.5 + sin(t * 2 + i) * 0.3}
+                                        opacity={isHov ? 0.9 : 0.6}
                                         filter="url(#glow-dot)" />
                                 );
                             })}

@@ -10,40 +10,18 @@ export default defineConfig({
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
-            ssr: 'resources/js/ssr.tsx',
             refresh: true,
         }),
-        inertia(),
+        inertia({ ssr: false }),
         react(),
         tailwindcss(),
-        wayfinder(),
+        wayfinder({
+            formVariants: true,
+        }),
     ],
-    optimizeDeps: {
-        include: ['react-pdf'],
-    },
-    esbuild: {
-        jsx: 'automatic',
-    },
     resolve: {
         alias: {
             '@': resolve(__dirname, 'resources/js'),
-        },
-        extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json', '.d.ts'],
-    },
-    build: {
-        rollupOptions: {
-            output: {
-                manualChunks(id) {
-                    if (id.includes('node_modules')) {
-                        if (id.includes('recharts')) {
-                            return 'vendor-recharts';
-                        }
-                        if (id.includes('react-pdf') || id.includes('pdfjs-dist')) {
-                            return 'vendor-pdf';
-                        }
-                    }
-                },
-            },
         },
     },
 });

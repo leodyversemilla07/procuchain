@@ -17,8 +17,7 @@ $seeder->run();
 echo "Roles and permissions created.\n";
 
 $users = [
-    ['name' => 'Leodyver Semilla', 'email' => 'admin@example.com', 'password' => 'Leodyver07', 'role' => 'bac_secretariat'],
-    ['name' => 'Lunar Spectre', 'email' => 'lunarspectre00@gmail.com', 'password' => 'LunarSpectre00', 'role' => 'bac_chairman'],
+    ['name' => 'Bryle Maamo', 'email' => 'brylemaamo@gmail.com', 'password' => 'BryleMaamo00', 'role' => 'bac_secretariat'],
     ['name' => 'Leif Sage Semilla', 'email' => 'leifsagesemilla@gmail.com', 'password' => 'LeifSage07', 'role' => 'hope'],
     ['name' => 'LeoBriel Zilvrak', 'email' => 'leobrielzilvrak@gmail.com', 'password' => 'LeoBriel07', 'role' => 'admin'],
 ];
