@@ -27,3 +27,16 @@ yarn-error.log
 /.zed
 /.codex
 /blockchain
+
+# Terraform
+/terraform/.terraform/
+/terraform/*.tfstate
+/terraform/*.tfstate.backup
+/terraform/*.tfvars.backup
+/terraform/main2.bak
+
+# Test results
+/test-results/
+
+# Scripts
+/scripts/inspect-*.mjs
