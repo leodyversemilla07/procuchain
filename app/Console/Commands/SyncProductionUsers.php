@@ -24,17 +24,12 @@ class SyncProductionUsers extends Command
      */
     private array $productionUsers = [
         [
-            'email' => 'leodyversemilla07@gmail.com',
-            'name' => 'Leodyver Semilla',
+            'email' => 'brylemaamo@gmail.com',
+            'name' => 'Bryle Maamo',
             'blockchain_address' => '1R5Be5615e3b7MjDiWxA9HAuzAAE3xTuVS3N54',
             'roles' => ['bac_secretariat'],
         ],
         [
-            'email' => 'lunarspectre00@gmail.com',
-            'name' => 'Lunar Spectre',
-            'blockchain_address' => '1Peoatte9cRGah5XQykUi62PJuBZM5otZjZkrz',
-            'roles' => ['bac_chairman'],
-        ],
         [
             'email' => 'leifsagesemilla@gmail.com',
             'name' => 'Leif Sage Semilla',

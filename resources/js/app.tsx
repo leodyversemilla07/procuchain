@@ -7,7 +7,7 @@ import '../css/app.css';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { createInertiaApp } from '@inertiajs/react';
-import { initializeTheme } from './hooks/use-appearance';
+import { initializeTheme } from '@/hooks/use-appearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -15,7 +15,7 @@ createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     withApp(app) {
         return (
-            <TooltipProvider>
+            <TooltipProvider delayDuration={0}>
                 {app}
                 <Toaster />
             </TooltipProvider>
@@ -24,6 +24,7 @@ createInertiaApp({
     progress: {
         color: '#4B5563',
     },
+    strictMode: true,
 });
 
 // This will set light / dark mode on load...

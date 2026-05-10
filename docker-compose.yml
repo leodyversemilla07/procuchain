@@ -63,6 +63,25 @@ services:
     networks:
       - procuchain
 
+  # phpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: procuchain-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: procuchain
+      PMA_PASSWORD: ''
+      PMA_ARBITRARY: 0
+    ports:
+      - '8080:80'
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - procuchain
+
 volumes:
   multichain_data:
     driver: local
