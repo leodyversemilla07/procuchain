@@ -1,0 +1,102 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          extensions: mbstring, xml, ctype, json, bcmath, sockets
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Install Composer Dependencies
+        run: composer install --no-ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader --no-dev
+
+      - name: Build Assets
+        run: npm run build
+
+      - name: Deploy via Rsync
+        uses: easingthemes/ssh-deploy@v4.1.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          remote-host: ${{ secrets.DEPLOY_HOST }}
+          remote-user: ubuntu
+          source: ''
+          target: /var/www/procuchain-tmp
+          exclude: |
+            .env
+            .env.bak
+            .git
+            node_modules
+            .github
+            .agents
+            .editorconfig
+            .dockerignore
+            .gitattributes
+            .gitkeep
+            .gitignore
+            Dockerfile*
+            docker-*
+
+      - name: Post-deploy (swap, migrate, restart)
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ubuntu
+          command_timeout: 60s
+          script: |
+            set -e
+
+            cd /var/www/procuchain-tmp
+
+            # Restore .env from current release
+            cp /var/www/procuchain/.env .env || true
+
+            # Set proper ownership
+            sudo chown -R www-data:www-data .
+
+            # Cache everything
+            php artisan optimize:clear 2>&1
+            php artisan optimize 2>&1
+            php artisan config:cache 2>&1
+            php artisan route:cache 2>&1
+            php artisan view:cache 2>&1
+
+            # Run migrations (safe — checks for existing tables)
+            php artisan migrate --force --no-interaction 2>&1
+
+            # Set permissions
+            sudo chmod -R 775 storage bootstrap/cache
+
+            # Swap directories
+            sudo rm -rf /var/www/procuchain-old 2>/dev/null || true
+            sudo mv /var/www/procuchain /var/www/procuchain-old 2>/dev/null || true
+            sudo mv /var/www/procuchain-tmp /var/www/procuchain
+
+            # Restart FPM
+            sudo systemctl reload php8.4-fpm 2>/dev/null || sudo systemctl restart php8.4-fpm
+
+            # Health check
+            curl -s -o /dev/null -w "Health: %{http_code}\n" http://localhost/ || echo "Health check failed"
