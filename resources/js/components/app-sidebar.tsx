@@ -22,7 +22,7 @@ import { index as bacSecretariatProcurementInitiation } from '@/routes/bac-secre
 import { index as bacSecretariatProcurementsList } from '@/routes/bac-secretariat/procurements';
 import { dashboard as hopeDashboard } from '@/routes/hope';
 import { index as hopeProcurementsList } from '@/routes/hope/procurements';
-import { index as reportsIndex } from '@/routes/reports';
+import { index as reportsIndex } from '@/routes/admin/reports';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
