@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: Deploy to Elastic Beanstalk
 
 on:
   push:
@@ -7,11 +7,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -27,16 +26,13 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install Node Dependencies
-        run: npm ci
+      - name: Install Dependencies & Build
+        run: |
+          npm ci
+          npm run build
+          composer install --no-ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader --no-dev
 
-      - name: Build Assets
-        run: npm run build
-
-      - name: Generate Laravel App Key
-        run: echo "APP_KEY=$(php -r 'echo "base64:" . base64_encode(random_bytes(32));')" >> .env
-
-      - name: Generate .env for Production
+      - name: Create .env
         run: |
           cat > .env << 'EOF'
 APP_ENV=production
@@ -55,32 +51,27 @@ SESSION_DRIVER=file
 MAIL_MAILER=log
 EOF
 
-      - name: Generate deployment package
+      - name: Create deployment package
         run: |
-          # EB requires a zip with all files
-          # We need vendor/ installed already
-          composer install --no-ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader --no-dev
-          
-          # Create the zip source bundle
-          zip -ryq /tmp/procuchain-deploy.zip . \
+          zip -ryq /tmp/deploy.zip . \
             -x "*.git*" \
             -x "node_modules/*" \
             -x "tests/*" \
             -x ".github/*" \
             -x ".agents/*" \
-            -x "storage/framework/cache/*" \
-            -x "storage/framework/sessions/*" \
-            -x "storage/framework/views/*" \
-            -x "storage/logs/*" \
             -x "haproxy/*" \
             -x "docker-compose.yml" \
             -x "Dockerfile*" \
             -x "docker-*" \
             -x ".editorconfig" \
             -x ".gitattributes" \
-            -x ".gitignore"
+            -x ".gitignore" \
+            -x "storage/framework/cache/*" \
+            -x "storage/framework/sessions/*" \
+            -x "storage/framework/views/*" \
+            -x "storage/logs/*"
 
-      - name: Deploy to Elastic Beanstalk
+      - name: Deploy to EB
         uses: einaregilsson/beanstalk-deploy@v22
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -89,4 +80,4 @@ EOF
           environment_name: procuchain-prod
           version_label: "v-${{ github.sha }}"
           region: us-east-1
-          deployment_package: /tmp/procuchain-deploy.zip
+          deployment_package: /tmp/deploy.zip
