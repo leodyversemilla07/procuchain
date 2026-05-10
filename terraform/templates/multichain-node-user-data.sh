@@ -24,7 +24,7 @@ cd /opt
 # Check if already downloaded
 if [ ! -f "multichain-$${MC_VER}/multichaind" ]; then
   MC_TAR="multichain-$${MC_VER}.tar.gz"
-  MC_URL="https://github.com/MultiChain/multichain/releases/download/v$${MC_VER}/$${MC_TAR}"
+  MC_URL="https://www.multichain.com/download/multichain-$${MC_VER}.tar.gz"
   wget -q "$${MC_URL}" -O "$${MC_TAR}"
   tar xzf "$${MC_TAR}"
 fi
