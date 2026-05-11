@@ -18,31 +18,31 @@ class NodeNetworkController extends Controller
     private const NODES = [
         [
             'id' => 'admin', 'name' => 'Primary Node', 'role' => 'Administrator',
-            'ip' => '98.92.215.176', 'p2p_port' => 7449, 'rpc_port' => 7450,
-            'private_ip' => '172.31.11.120',
+            'ip' => '32.196.225.21', 'p2p_port' => 6835, 'rpc_port' => 6834,
+            'private_ip' => '172.31.13.41',
         ],
         [
             'id' => 'bac-secretariat', 'name' => 'BAC Secretariat', 'role' => 'Secretariat',
-            'ip' => '13.220.241.131', 'p2p_port' => 7549, 'rpc_port' => 7550,
-            'private_ip' => '172.31.4.20',
+            'ip' => '13.222.22.7', 'p2p_port' => 6835, 'rpc_port' => 6834,
+            'private_ip' => '172.31.88.136',
         ],
         [
             'id' => 'bac-chairman', 'name' => 'BAC Chairman', 'role' => 'Chairman',
-            'ip' => '3.231.53.193', 'p2p_port' => 7649, 'rpc_port' => 7650,
-            'private_ip' => '172.31.9.45',
+            'ip' => '34.234.63.203', 'p2p_port' => 6835, 'rpc_port' => 6834,
+            'private_ip' => '172.31.23.21',
         ],
         [
             'id' => 'hope', 'name' => 'HOPE', 'role' => 'HOPE',
-            'ip' => '44.200.134.154', 'p2p_port' => 7749, 'rpc_port' => 7750,
-            'private_ip' => '172.31.15.37',
+            'ip' => '204.236.254.103', 'p2p_port' => 6835, 'rpc_port' => 6834,
+            'private_ip' => '172.31.42.5',
         ],
     ];
 
     private const IP_MAP = [
-        '13.220.241.131' => 'bac-secretariat', '3.231.53.193' => 'bac-chairman',
-        '44.200.134.154' => 'hope', '98.92.215.176' => 'admin',
-        '172.31.4.20' => 'bac-secretariat', '172.31.9.45' => 'bac-chairman',
-        '172.31.15.37' => 'hope', '172.31.11.120' => 'admin',
+        '13.222.22.7' => 'bac-secretariat', '34.234.63.203' => 'bac-chairman',
+        '204.236.254.103' => 'hope', '32.196.225.21' => 'admin',
+        '172.31.88.136' => 'bac-secretariat', '172.31.23.21' => 'bac-chairman',
+        '172.31.42.5' => 'hope', '172.31.13.41' => 'admin',
     ];
 
     public function index(): Response
@@ -95,7 +95,7 @@ class NodeNetworkController extends Controller
                 'connected_nodes' => $connectedNodes,
                 'total_nodes' => count($nodes),
                 'total_peers' => $totalPeers,
-                'chain_name' => 'procuchain-dev',
+                'chain_name' => 'procuchain',
                 'version' => $liveNodeData['admin']['subver'] ?? 'Unknown',
                 'all_connected' => $connectedNodes === count($nodes),
             ],

@@ -23,6 +23,11 @@ output "app_private_ip" {
   value       = aws_instance.app.private_ip
 }
 
+output "app_url" {
+  description = "Laravel application URL"
+  value       = "http://${aws_eip.app.public_ip}"
+}
+
 output "app_security_group_id" {
   description = "Security group ID"
   value       = aws_security_group.main.id
@@ -41,7 +46,7 @@ output "admin_node_private_ip" {
 
 output "multichain_connection_string" {
   description = "Connection string for MultiChain nodes"
-  value       = "${var.multichain_chain_name}@${aws_instance.admin_node[0].public_ip}:${var.multichain_network_port}"
+  value       = "${var.multichain_chain_name}@${aws_instance.admin_node[0].private_ip}:${var.multichain_network_port}"
 }
 
 # Other Nodes Outputs
@@ -59,14 +64,10 @@ output "node_private_ips" {
   }
 }
 
-output "app_url" {
-  description = "Laravel application URL"
-  value       = "http://${aws_eip.app.public_ip}"
-}
-
 output "multichain_rpc_url" {
   description = "MultiChain RPC URL for the admin node"
-  value       = "http://${var.multichain_rpc_user}:${var.multichain_rpc_password}@${aws_instance.admin_node[0].public_ip}:${var.multichain_rpc_port}"
+  value       = "http://${var.multichain_rpc_user}:***@${aws_instance.admin_node[0].private_ip}:${var.multichain_rpc_port}"
+  sensitive   = true
 }
 
 output "multichain_chain_name" {

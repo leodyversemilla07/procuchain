@@ -1,15 +1,22 @@
 #!/bin/bash
-set -e
+set -euxo pipefail
 
-# Install system dependencies
+# ============================================
+# ProcuChain — Laravel Application Server
+# Amazon Linux 2023 + PHP 8.4 + Nginx + Node.js 22
+# ============================================
+
+# Install system dependencies (AL2023: curl conflicts with curl-minimal)
 dnf update -y
-dnf install -y docker git nginx
+dnf install -y --allowerasing git nginx curl
 
-# Enable PHP 8.4 via Amazon Linux Extras
-amazon-linux-extras enable php8.4
-dnf clean metadata
+# Install AWS SSM Agent for remote management
+dnf install -y amazon-ssm-agent
+systemctl enable amazon-ssm-agent
+systemctl start amazon-ssm-agent
 
-# Install PHP 8.4 extensions (using correct names)
+# Install PHP 8.4 on Amazon Linux 2023
+# AL2023 uses dnf (not amazon-linux-extras which was AL2 only)
 dnf install -y \
   php \
   php-fpm \
@@ -20,23 +27,26 @@ dnf install -y \
   php-bcmath \
   php-curl \
   php-zip \
-  php-dom \
-  php-simplexml \
-  php-tokenizer \
-  php-fileinfo
+  php-gd \
+  php-intl \
+  php-opcache
+
+php -v
 
 # Install Composer
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Clone the application
+# ============================================
+# CLONE AND SET UP LARAVEL APP
+# ============================================
 mkdir -p /var/www
 cd /var/www
 rm -rf procuchain
-git clone ${github_repo_url} procuchain
+git clone -b "${github_branch}" "${github_repo_url}" procuchain
 cd procuchain
 
-# Create .env
-cat > .env << ENV
+# Create .env from template
+cat > .env <<ENV
 APP_NAME=ProcuChain
 APP_ENV=production
 APP_KEY=${app_key}
@@ -50,37 +60,39 @@ DB_DATABASE=${rds_database}
 DB_USERNAME=${rds_username}
 DB_PASSWORD=${rds_password}
 
+# MultiChain — admin node RPC endpoint
 MULTICHAIN_CHAIN_NAME=${chain_name}
 MULTICHAIN_RPC_USER=${rpc_user}
 MULTICHAIN_RPC_PASSWORD=${rpc_password}
 MULTICHAIN_RPC_PORT=${rpc_port}
+MULTICHAIN_RPC_HOST=${admin_node_ip}
+
+# All MultiChain node IPs (JSON) — app can query any node
+MULTICHAIN_NODES='${node_ips}'
 
 SESSION_DRIVER=database
 SESSION_LIFETIME=120
-SESSION_ENCRYPT=false
-SESSION_PATH=/
-SESSION_DOMAIN=null
-
 CACHE_STORE=file
-CACHE_DRIVER=file
+QUEUE_CONNECTION=database
 ENV
 
-# Install dependencies
+# Install PHP dependencies
 composer install --no-ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader --no-dev
 
 # Install Node.js 22
 curl -fsSL https://rpm.nodesource.com/setup_22.x | bash -
 dnf install -y nodejs
 
-# Build assets
+# Build frontend assets
 npm ci
 npm run build
 
-# Create PHP-FPM socket directory
+# ============================================
+# CONFIGURE PHP-FPM
+# ============================================
 mkdir -p /var/run/php
 
-# Configure PHP-FPM
-cat > /etc/php-fpm.d/www.conf << 'PHPFPM'
+cat > /etc/php-fpm.d/www.conf <<'PHPFPM'
 [www]
 user = nginx
 group = nginx
@@ -98,8 +110,10 @@ php_admin_value[error_log] = /var/log/php-fpm/www-error.log
 php_admin_flag[log_errors] = on
 PHPFPM
 
-# Configure Nginx
-cat > /etc/nginx/conf.d/procuchain.conf << 'NGINX'
+# ============================================
+# CONFIGURE NGINX
+# ============================================
+cat > /etc/nginx/conf.d/procuchain.conf <<'NGINX'
 server {
     listen 80;
     server_name _;
@@ -110,7 +124,6 @@ server {
     add_header X-XSS-Protection "1; mode=block";
 
     index index.php;
-
     charset utf-8;
 
     location / {
@@ -118,7 +131,7 @@ server {
     }
 
     location = /favicon.ico { access_log off; log_not_found off; }
-    location = /robots.txt  { access_log off; log_not_found off; }
+    location = /robots.txt { access_log off; log_not_found off; }
 
     error_page 404 /index.php;
 
@@ -134,29 +147,63 @@ server {
 }
 NGINX
 
-# Permissions
+rm -f /etc/nginx/conf.d/default.conf 2>/dev/null || true
+
+# ============================================
+# PERMISSIONS & LOGS
+# ============================================
 chown -R nginx:nginx /var/www/procuchain
 chmod -R 775 /var/www/procuchain/storage /var/www/procuchain/bootstrap/cache
-
-# Create log directories
 mkdir -p /var/log/php-fpm
 touch /var/log/php-fpm/www-error.log
 chown nginx:nginx /var/log/php-fpm/www-error.log
 
-# Run migrations (wait for DB to be ready)
-for i in {1..30}; do
-  if php artisan migrate --force --no-interaction 2>/dev/null; then
-    echo "Migrations completed successfully"
-    break
-  fi
-  echo "Waiting for database... ($$i/30)"
-  sleep 10
+# ============================================
+# RUN MIGRATIONS (wait for RDS to be ready)
+# ============================================
+for i in $(seq 1 30); do
+    if php artisan migrate --force --no-interaction 2>/dev/null; then
+        echo "Migrations completed successfully."
+        break
+    fi
+    echo "Waiting for database... ($$i/30)"
+    sleep 10
 done
 
-# Start services
+# ============================================
+# START SERVICES
+# ============================================
 systemctl enable php-fpm nginx
 systemctl start php-fpm nginx
-systemctl enable docker
-systemctl start docker
 
-echo "App server setup complete!"
+# Queue worker via supervisor
+dnf install -y supervisor 2>/dev/null || true
+if command -v supervisord &>/dev/null; then
+    cat > /etc/supervisord.d/procuchain-worker.ini <<'SUPERVISOR'
+[program:procuchain-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/procuchain/artisan queue:work database --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=nginx
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/var/www/procuchain/storage/logs/worker.log
+stopwaitsecs=3600
+SUPERVISOR
+
+    systemctl enable supervisord
+    systemctl start supervisord
+    supervisorctl reread
+    supervisorctl update
+fi
+
+# Laravel scheduler cron
+(crontab -l 2>/dev/null; echo "* * * * * cd /var/www/procuchain && php artisan schedule:run >> /dev/null 2>&1") | crontab -
+
+echo "========================================"
+echo "APP SERVER READY"
+echo "URL: http://$(curl -s ifconfig.me 2>/dev/null || echo 'pending')"
+echo "========================================"

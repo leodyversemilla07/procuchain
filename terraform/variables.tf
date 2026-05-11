@@ -1,3 +1,9 @@
+variable "aws_profile" {
+  description = "AWS CLI profile name"
+  type        = string
+  default     = "adrian"
+}
+
 variable "aws_region" {
   description = "AWS region to deploy resources"
   type        = string
@@ -41,7 +47,7 @@ variable "ssh_key_name" {
 }
 
 variable "allowed_ssh_cidr" {
-  description = "CIDR block allowed for SSH access"
+  description = "CIDR block allowed for SSH access — restrict in production!"
   type        = string
   default     = "0.0.0.0/0"
 }
@@ -53,13 +59,13 @@ variable "rds_master_username" {
 }
 
 variable "rds_master_password" {
-  description = "RDS master password"
+  description = "RDS master password — MUST be set via TF_VAR_rds_master_password env var or .tfvars (gitignored)"
   type        = string
   sensitive   = true
 }
 
 variable "app_key" {
-  description = "Laravel APP_KEY (base64 encoded, e.g. base64:...)"
+  description = "Laravel APP_KEY (base64 encoded) — MUST be set via TF_VAR_app_key env var"
   type        = string
   sensitive   = true
 }
@@ -68,6 +74,12 @@ variable "github_repo_url" {
   description = "GitHub repository URL for Laravel app"
   type        = string
   default     = "https://github.com/leodyversemilla07/procuchain.git"
+}
+
+variable "github_branch" {
+  description = "Git branch to deploy"
+  type        = string
+  default     = "main"
 }
 
 variable "multichain_chain_name" {
@@ -83,9 +95,9 @@ variable "multichain_rpc_user" {
 }
 
 variable "multichain_rpc_password" {
-  description = "MultiChain RPC password"
+  description = "MultiChain RPC password — MUST be set via TF_VAR_multichain_rpc_password"
   type        = string
-  default     = "multichainrpc"
+  sensitive   = true
 }
 
 variable "multichain_rpc_port" {
@@ -101,16 +113,17 @@ variable "multichain_network_port" {
 }
 
 variable "node_roles" {
-  description = "List of MultiChain node roles"
+  description = "List of MultiChain node roles — each gets its own EC2 instance in a different AZ for decentralization"
   type = list(object({
     name = string
     role = string
+    az   = string
   }))
   default = [
-    { name = "admin", role = "admin" },
-    { name = "bac-secretariat", role = "bac-secretariat" },
-    { name = "bac-chairman", role = "bac-chairman" },
-    { name = "hope", role = "hope" },
+    { name = "admin",            role = "admin",            az = "us-east-1a" },
+    { name = "bac-secretariat",  role = "bac-secretariat",  az = "us-east-1b" },
+    { name = "bac-chairman",     role = "bac-chairman",     az = "us-east-1c" },
+    { name = "hope",             role = "hope",             az = "us-east-1d" },
   ]
 }
 

@@ -23,18 +23,21 @@ resource "aws_db_instance" "main" {
   allocated_storage     = 20
   max_allocated_storage = 0
   storage_type          = "gp3"
-  storage_encrypted     = false
+  storage_encrypted     = true
 
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.main.id]
 
-  backup_retention_period = 0
+  # Backups — 1 day for free tier compatibility (7-day needs paid plan)
+  backup_retention_period = 1
+  backup_window           = "08:25-08:55"
   maintenance_window      = "sun:04:00-sun:05:00"
 
   auto_minor_version_upgrade  = true
   allow_major_version_upgrade = false
-  skip_final_snapshot         = true
-  deletion_protection         = false
+  skip_final_snapshot         = false
+  final_snapshot_identifier   = "${var.project_name}-db-final-snapshot"
+  deletion_protection         = true
 
   apply_immediately = true
 
