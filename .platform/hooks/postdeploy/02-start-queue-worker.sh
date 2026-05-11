@@ -1,30 +1,36 @@
 #!/usr/bin/env bash
-# Start Laravel queue worker on EB AL2023
-# Must exit quickly — EB kills hooks that run longer than ~5 min
+# Register Laravel queue worker as a systemd service (AL2023)
 set -e
 
 APP_DIR="/var/app/current"
-WORKER_LOG="$APP_DIR/storage/logs/queue-worker.log"
+SERVICE_FILE="/etc/systemd/system/laravel-queue-worker.service"
 
-# Ensure log directory is writable
+cat > "$SERVICE_FILE" << 'EOF'
+[Unit]
+Description=Laravel Queue Worker
+After=php-fpm.service
+
+[Service]
+Type=simple
+User=webapp
+Group=webapp
+Restart=always
+RestartSec=5
+ExecStart=/usr/bin/php /var/app/current/artisan queue:work database --sleep=3 --tries=3
+StandardOutput=append:/var/app/current/storage/logs/queue-worker.log
+StandardError=append:/var/app/current/storage/logs/queue-worker.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Ensure log dir exists
 mkdir -p "$APP_DIR/storage/logs"
-chown -R webapp:webapp "$APP_DIR/storage/logs"
+chown -R webapp:webapp "$APP_DIR/storage"
 
-# Kill any existing queue worker
-pkill -f "php artisan queue:work" 2>/dev/null || true
-sleep 1
+# Enable and start
+systemctl daemon-reload
+systemctl enable laravel-queue-worker
+systemctl start laravel-queue-worker
 
-# Fully detach queue worker using setsid + disown
-cd "$APP_DIR"
-su -s /bin/bash webapp -c "setsid php artisan queue:work database --sleep=3 --tries=3 --max-time=3600 >> $WORKER_LOG 2>&1 < /dev/null &"
-
-# Brief check — don't wait for worker, just confirm it spawned
-sleep 1
-if pgrep -f 'queue:work' > /dev/null 2>&1; then
-    echo "Queue worker started successfully"
-else
-    echo "WARNING: Queue worker may not have started"
-fi
-
-# Exit immediately — don't let EB think we're still running
-exit 0
+echo "Laravel queue worker service started"
