@@ -1,0 +1,1 @@
+import{_ as e,b as t}from"./dist-0PRlmvnN.js";import{S as n,n as r}from"./safeReact-BwlWqjCS.js";var i=t(e());function a(e,t){let a=i.useRef(e),o=r(t);n(()=>{a.current!==e&&o(a.current)},[e,o]),n(()=>{a.current=e},[e])}export{a as t};
