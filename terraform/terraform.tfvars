@@ -1,10 +1,12 @@
-aws_region   = "us-east-1"
-project_name = "procuchain"
-environment  = "production"
+aws_region            = "us-east-1"
+project_name          = "procuchain"
+environment           = "production"
 
 # RDS
-rds_master_username = "procuchain"
-rds_master_password = "procuchain"
+rds_master_username   = "procuchain"
 
-# Laravel APP_KEY - you can get this by running: php artisan key:generate --show
-app_key = "base64:tP8d/gYxjHigUo4LvZMg1GvC/XUCbtxFW69BxR/a484="
+# SSH — restrict this! 0.0.0.0/0 is open to the world
+allowed_ssh_cidr      = "0.0.0.0/0"
+
+# MultiChain
+multichain_rpc_user   = "multichainrpc"

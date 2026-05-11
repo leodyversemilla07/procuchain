@@ -11,41 +11,44 @@ import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
 import AppLayout from '@/layouts/app-layout';
-import type { LedgerEntry, LedgerFilters, LedgerPagination, StreamOption } from '@/types/blockchain';
+import type { LedgerEntry, LedgerFilters, LedgerPagination, NodeOption, StreamOption } from '@/types/blockchain';
 import { cn } from '@/lib/utils';
 import { Head, router } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
 import {
-    Activity,
-    AlertTriangle,
-    Archive,
-    ArrowDownUp,
-    BookOpen,
-    BookOpenText,
-    CalendarIcon,
-    Check,
-    ChevronDown,
-    ClipboardCopy,
-    Download,
-    ExternalLink,
-    FileText,
-    FilterX,
-    GitBranch,
-    Pencil,
-    ScrollText,
-    Shield,
+  Activity,
+  AlertTriangle,
+  Archive,
+  ArrowDownUp,
+  BookOpen,
+  BookOpenText,
+  CalendarIcon,
+  Check,
+  ChevronDown,
+  ClipboardCopy,
+  Download,
+  ExternalLink,
+  FileText,
+  FilterX,
+  GitBranch,
+  Pencil,
+  ScrollText,
+  Server,
+  Shield,
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { type DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 
 interface SharedLedgerPageProps {
-    entries: LedgerEntry[];
-    pagination: LedgerPagination;
-    available_streams: StreamOption[];
-    stream_totals: Record<string, number>;
-    filters: LedgerFilters;
-    error?: string;
+  entries: LedgerEntry[];
+  pagination: LedgerPagination;
+  available_streams: StreamOption[];
+  available_nodes: NodeOption[];
+  stream_totals: Record<string, number>;
+  selected_node: string;
+  filters: LedgerFilters;
+  error?: string;
 }
 
 const basePath = window.location.pathname;
@@ -88,17 +91,18 @@ function computeDiff(oldValues: Record<string, unknown>, newValues: Record<strin
     return diff;
 }
 
-export default function SharedLedger({ entries, pagination, available_streams, stream_totals, filters, error }: SharedLedgerPageProps) {
-    const [prNumber, setPrNumber] = useState(filters.pr_number ?? '');
-    const [stream, setStream] = useState(filters.stream ?? '');
-    const [dateRange, setDateRange] = useState<DateRange | undefined>({
+export default function SharedLedger({ entries, pagination, available_streams, available_nodes, stream_totals, selected_node, filters, error }: SharedLedgerPageProps) {
+  const [prNumber, setPrNumber] = useState(filters.pr_number ?? '');
+  const [stream, setStream] = useState(filters.stream ?? '');
+  const [node, setNode] = useState(filters.node ?? selected_node ?? 'all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: filters.date_from ? parseISO(filters.date_from) : undefined,
         to: filters.date_to ? parseISO(filters.date_to) : undefined,
     });
 
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-    const hasActiveFilters = !!(filters.pr_number || filters.stream || filters.date_from || filters.date_to);
+    const hasActiveFilters = !!(filters.pr_number || filters.stream || filters.date_from || filters.date_to || (filters.node && filters.node !== 'all'));
 
     const toggleRow = (txid: string) => {
         setExpandedRows((prev) => {
@@ -120,25 +124,27 @@ export default function SharedLedger({ entries, pagination, available_streams, s
         });
     };
 
-    const applyFilters = () => {
-        router.get(
-            basePath,
-            {
-                ...(prNumber ? { pr_number: prNumber } : {}),
-                ...(stream && stream !== 'all' ? { stream } : {}),
-                ...(dateRange?.from ? { date_from: format(dateRange.from, 'yyyy-MM-dd') } : {}),
-                ...(dateRange?.to ? { date_to: format(dateRange.to, 'yyyy-MM-dd') } : {}),
-            },
-            { preserveState: true, replace: true },
-        );
-    };
+  const applyFilters = () => {
+    router.get(
+      basePath,
+      {
+        ...(prNumber ? { pr_number: prNumber } : {}),
+        ...(stream && stream !== 'all' ? { stream } : {}),
+        ...(node && node !== 'all' ? { node } : {}),
+        ...(dateRange?.from ? { date_from: format(dateRange.from, 'yyyy-MM-dd') } : {}),
+        ...(dateRange?.to ? { date_to: format(dateRange.to, 'yyyy-MM-dd') } : {}),
+      },
+      { preserveState: true, replace: true },
+    );
+  };
 
-    const clearFilters = () => {
-        setPrNumber('');
-        setStream('');
-        setDateRange(undefined);
-        router.get(basePath, {}, { preserveState: false, replace: true });
-    };
+  const clearFilters = () => {
+    setPrNumber('');
+    setStream('');
+    setNode('all');
+    setDateRange(undefined);
+    router.get(basePath, {}, { preserveState: false, replace: true });
+  };
 
     const selectedStreamLabel = stream && stream !== 'all'
         ? (STREAM_CONFIG[stream]?.label ?? stream)
@@ -219,33 +225,61 @@ export default function SharedLedger({ entries, pagination, available_streams, s
                             Filters
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <Input
-                                type="text"
-                                placeholder="PR Number (e.g. PR-2026-001)"
-                                value={prNumber}
-                                onChange={(e) => setPrNumber(e.target.value)}
-                            />
+      <CardContent>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <Input
+            type="text"
+            placeholder="PR Number (e.g. PR-2026-001)"
+            value={prNumber}
+            onChange={(e) => setPrNumber(e.target.value)}
+          />
 
-                            <Select value={stream || 'all'} onValueChange={(value) => value && setStream(value)}>
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="All transactions">{() => selectedStreamLabel}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="all">All transactions</SelectItem>
-                                        {available_streams.map((s) => (
-                                            <SelectItem key={s.value} value={s.value}>
-                                                <div className="flex items-center gap-2">
-                                                    {React.createElement(STREAM_CONFIG[s.value]?.icon ?? ScrollText, { className: 'h-3.5 w-3.5' })}
-                                                    {s.label}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
+          <Select value={node || 'all'} onValueChange={(value) => value && setNode(value)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="All nodes">{() =>
+                node && node !== 'all'
+                  ? available_nodes.find((n) => n.id === node)?.name ?? node
+                  : 'All nodes'
+              }</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <Server className="h-3.5 w-3.5" />
+                    All nodes (shared)
+                  </div>
+                </SelectItem>
+                {available_nodes.map((n) => (
+                  <SelectItem key={n.id} value={n.id}>
+                    <div className="flex items-center gap-2">
+                      <Server className="h-3.5 w-3.5" />
+                      {n.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+
+          <Select value={stream || 'all'} onValueChange={(value) => value && setStream(value)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="All transactions">{() => selectedStreamLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="all">All transactions</SelectItem>
+                {available_streams.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    <div className="flex items-center gap-2">
+                      {React.createElement(STREAM_CONFIG[s.value]?.icon ?? ScrollText, { className: 'h-3.5 w-3.5' })}
+                      {s.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
 
                             <Popover>
                                 <PopoverTrigger
@@ -302,18 +336,19 @@ export default function SharedLedger({ entries, pagination, available_streams, s
                     </CardFooter>
                 </Card>
 
-                {/* Immutability Notice */}
-                <div className="bg-primary/5 border-primary/20 rounded-lg border px-4 py-3 text-sm">
-                    <p className="text-primary flex items-center gap-2 font-medium">
-                        <Shield className="h-4 w-4" />
-                        Immutable & Shared — Every entry is a verified MultiChain transaction
-                    </p>
-                    <p className="text-muted-foreground mt-1">
-                        This ledger is shared across all roles — Admin, BAC Secretariat, BAC Chairman, and HOPE all see the exact same data.
-                        Each entry has a <strong>TX ID</strong> that cryptographically proves it exists on the blockchain.
-                        Expand any row to see what changed and the raw blockchain data.
-                    </p>
-                </div>
+  {/* Immutability Notice */}
+  <div className="bg-primary/5 border-primary/20 rounded-lg border px-4 py-3 text-sm">
+    <p className="text-primary flex items-center gap-2 font-medium">
+      <Shield className="h-4 w-4" />
+      Immutable & Shared — Every entry is a verified MultiChain transaction
+    </p>
+    <p className="text-muted-foreground mt-1">
+      {node && node !== 'all'
+        ? `Showing data from the ${available_nodes.find((n) => n.id === node)?.name ?? node} node's perspective. Each entry has a TX ID that cryptographically proves it exists on the blockchain.`
+        : 'This ledger is shared across all roles — Admin, BAC Secretariat, BAC Chairman, and HOPE all see the exact same data. Each entry has a TX ID that cryptographically proves it exists on the blockchain.'}
+      Expand any row to see what changed and the raw blockchain data.
+    </p>
+  </div>
 
                 {/* Ledger Entries Table */}
                 <Card>

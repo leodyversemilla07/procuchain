@@ -1,15 +1,25 @@
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.15"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
+  }
+
+  # Remote state backend (S3 + native locking)
+  backend "s3" {
+    profile      = "adrian"
+    region       = "us-east-1"
+    bucket       = "procuchain-terraform-state-722261000462"
+    key          = "procuchain/terraform.tfstate"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 
 provider "aws" {
-  profile = "adrian"
+  profile = var.aws_profile
   region  = var.aws_region
 }
 
@@ -48,8 +58,14 @@ data "aws_ami" "amazon_linux_2023" {
 }
 
 locals {
-  all_subnet_ids = sort([for s in data.aws_subnet.selected : s.id])
-  subnet_a       = local.all_subnet_ids[0]
-  subnet_b       = length(local.all_subnet_ids) > 1 ? local.all_subnet_ids[1] : local.all_subnet_ids[0]
-  subnet_ids     = local.all_subnet_ids
+  # Map: AZ name → subnet ID (for spreading nodes across AZs)
+  az_subnet_map = {
+    for s in data.aws_subnet.selected : s.availability_zone => s.id
+  }
+
+  # App server goes in us-east-1a
+  app_subnet_id = lookup(local.az_subnet_map, "us-east-1a", data.aws_subnets.available.ids[0])
+
+  # All subnet IDs (for RDS subnet group)
+  subnet_ids = sort([for s in data.aws_subnet.selected : s.id])
 }

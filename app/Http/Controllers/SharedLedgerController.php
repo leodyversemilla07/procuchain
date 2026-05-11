@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\DataTransferObjects\LedgerEntryData;
+use App\Libraries\MultiChain\Client;
 use App\Services\Manager;
 use Exception;
 use Illuminate\Http\Request;
@@ -18,30 +19,49 @@ use Inertia\Response;
  * The true shared ledger: every meaningful blockchain transaction
  * across ALL streams, aggregated into a single chronological view.
  *
- * This is the immutable audit trail — the single source of truth
- * for every action ever taken in the procurement system.
- *
- * Each row = one blockchain transaction with:
- *   - What happened (summary)
- *   - When it happened (timestamp)
- *   - Who did it (actor address/name)
- *   - What changed (diff of old → new values)
- *   - Cryptographic proof (TX ID)
+ * Supports node-based filtering:
+ * - "all" (default): merged data from all nodes, deduplicated by txid
+ * - Specific node (e.g. "admin", "bac-secretariat"): data from that node's perspective
  */
 class SharedLedgerController extends Controller
 {
     /** Streams to include in the shared ledger. */
     private const LEDGER_STREAMS = [
-        'procurement.metadata',       // Procurement created / updated
-        'procurement.status',         // Status changes / stage transitions
-        'procurement.documents',      // Document uploads
-        'procurement.corrections',     // Document corrections
-        'procurement.metadata.corrections', // Metadata corrections
-        'procurement.archive',        // Archive / restore
+        'procurement.metadata',
+        'procurement.status',
+        'procurement.documents',
+        'procurement.corrections',
+        'procurement.metadata.corrections',
+        'procurement.archive',
     ];
 
     /** Items per page. */
     private const PER_PAGE = 50;
+
+    /** RPC credentials (same across all nodes in the chain) */
+    private const RPC_USER = 'multichainrpc';
+
+    private const RPC_PASSWORD = 'multichainrpc';
+
+    /** Node registry — kept in sync with Terraform outputs */
+    private const NODES = [
+        [
+            'id' => 'admin', 'name' => 'Primary Node', 'role' => 'Administrator',
+            'private_ip' => '172.31.13.41', 'rpc_port' => 6834,
+        ],
+        [
+            'id' => 'bac-secretariat', 'name' => 'BAC Secretariat', 'role' => 'Secretariat',
+            'private_ip' => '172.31.88.136', 'rpc_port' => 6834,
+        ],
+        [
+            'id' => 'bac-chairman', 'name' => 'BAC Chairman', 'role' => 'Chairman',
+            'private_ip' => '172.31.23.21', 'rpc_port' => 6834,
+        ],
+        [
+            'id' => 'hope', 'name' => 'HOPE', 'role' => 'HOPE',
+            'private_ip' => '172.31.42.5', 'rpc_port' => 6834,
+        ],
+    ];
 
     public function __construct(
         private Manager $multichain,
@@ -53,7 +73,10 @@ class SharedLedgerController extends Controller
     public function index(Request $request): Response
     {
         try {
-            $entries = $this->fetchLedgerEntries();
+            $selectedNode = $request->string('node', 'all')->toString();
+
+            // Fetch entries from the selected node(s)
+            $entries = $this->fetchLedgerEntries($selectedNode);
 
             // Apply filters
             if ($request->filled('pr_number')) {
@@ -138,6 +161,13 @@ class SharedLedgerController extends Controller
                 $streamTotals[$e->stream] = ($streamTotals[$e->stream] ?? 0) + 1;
             }
 
+            // Build available nodes list
+            $availableNodes = collect(self::NODES)->map(fn ($node) => [
+                'id' => $node['id'],
+                'name' => $node['name'],
+                'role' => $node['role'],
+            ])->values()->toArray();
+
             return Inertia::render('shared-ledger', [
                 'entries' => $mapped,
                 'pagination' => [
@@ -148,7 +178,9 @@ class SharedLedgerController extends Controller
                 ],
                 'available_streams' => $availableStreams,
                 'stream_totals' => $streamTotals,
-                'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'page']),
+                'available_nodes' => $availableNodes,
+                'selected_node' => $selectedNode,
+                'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
             ]);
         } catch (Exception $e) {
             Log::error('SharedLedger: Failed to fetch ledger entries', [
@@ -166,7 +198,13 @@ class SharedLedgerController extends Controller
                 ],
                 'available_streams' => [],
                 'stream_totals' => [],
-                'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'page']),
+                'available_nodes' => collect(self::NODES)->map(fn ($node) => [
+                    'id' => $node['id'],
+                    'name' => $node['name'],
+                    'role' => $node['role'],
+                ])->values()->toArray(),
+                'selected_node' => 'all',
+                'filters' => $request->only(['pr_number', 'stream', 'date_from', 'date_to', 'search', 'node', 'page']),
                 'error' => 'Failed to load the shared ledger. The blockchain node may be unavailable. Please try again.',
             ]);
         }
@@ -175,15 +213,113 @@ class SharedLedgerController extends Controller
     /**
      * Fetch all entries from all ledger streams.
      *
+     * @param  string  $nodeId  'all' to merge from all nodes, or a specific node ID
      * @return LedgerEntryData[]
      */
-    private function fetchLedgerEntries(): array
+    private function fetchLedgerEntries(string $nodeId = 'all'): array
+    {
+        if ($nodeId === 'all') {
+            return $this->fetchFromAllNodes();
+        }
+
+        return $this->fetchFromNode($nodeId);
+    }
+
+    /**
+     * Fetch ledger entries from a specific node by ID.
+     *
+     * @return LedgerEntryData[]
+     */
+    private function fetchFromNode(string $nodeId): array
+    {
+        $nodeConfig = collect(self::NODES)->first(fn ($n) => $n['id'] === $nodeId);
+
+        if ($nodeConfig === null) {
+            // Fallback to the default Manager connection
+            return $this->fetchFromDefaultClient();
+        }
+
+        try {
+            $client = new Client(
+                $nodeConfig['private_ip'],
+                $nodeConfig['rpc_port'],
+                self::RPC_USER,
+                self::RPC_PASSWORD,
+                false
+            );
+            $client->setoption('chain_name', config('multichain.chain_name'));
+            $client->setoption('use_curl', true);
+            $client->setoption('verify_ssl', false);
+            $client->setTimeout(15);
+
+            return $this->fetchEntriesFromClient($client);
+        } catch (Exception $e) {
+            Log::warning("SharedLedger: Failed to connect to node {$nodeId}, falling back to default", [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->fetchFromDefaultClient();
+        }
+    }
+
+    /**
+     * Fetch from all nodes and merge, deduplicating by txid.
+     *
+     * @return LedgerEntryData[]
+     */
+    private function fetchFromAllNodes(): array
+    {
+        $allEntries = [];
+        $seenTxids = [];
+
+        foreach (self::NODES as $nodeConfig) {
+            try {
+                $client = new Client(
+                    $nodeConfig['private_ip'],
+                    $nodeConfig['rpc_port'],
+                    self::RPC_USER,
+                    self::RPC_PASSWORD,
+                    false
+                );
+                $client->setoption('chain_name', config('multichain.chain_name'));
+                $client->setoption('use_curl', true);
+                $client->setoption('verify_ssl', false);
+                $client->setTimeout(15);
+
+                $nodeEntries = $this->fetchEntriesFromClient($client);
+
+                foreach ($nodeEntries as $entry) {
+                    if (! isset($seenTxids[$entry->txid])) {
+                        $seenTxids[$entry->txid] = true;
+                        $allEntries[] = $entry;
+                    }
+                }
+            } catch (Exception $e) {
+                Log::warning("SharedLedger: Failed to query node {$nodeConfig['id']}", [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // If all nodes failed, fall back to the default Manager
+        if (empty($allEntries)) {
+            return $this->fetchFromDefaultClient();
+        }
+
+        return $allEntries;
+    }
+
+    /**
+     * Fetch entries using the default Manager (singleton) connection.
+     *
+     * @return LedgerEntryData[]
+     */
+    private function fetchFromDefaultClient(): array
     {
         $entries = [];
 
         foreach (self::LEDGER_STREAMS as $stream) {
             try {
-                // Fetch plenty of items — the ledger is meant to contain everything
                 $items = $this->multichain->liststreamitems($stream, true, 5000, 0, false);
 
                 if (! $items || ! is_array($items)) {
@@ -196,8 +332,7 @@ class SharedLedgerController extends Controller
                     }
 
                     try {
-                        $entry = LedgerEntryData::fromStreamItem($stream, $item);
-                        $entries[] = $entry;
+                        $entries[] = LedgerEntryData::fromStreamItem($stream, $item);
                     } catch (Exception $e) {
                         Log::warning('SharedLedger: Skipping invalid stream item', [
                             'stream' => $stream,
@@ -207,6 +342,48 @@ class SharedLedgerController extends Controller
                 }
             } catch (Exception $e) {
                 Log::warning('SharedLedger: Failed to read stream', [
+                    'stream' => $stream,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Fetch entries from a specific Client instance.
+     *
+     * @return LedgerEntryData[]
+     */
+    private function fetchEntriesFromClient(Client $client): array
+    {
+        $entries = [];
+
+        foreach (self::LEDGER_STREAMS as $stream) {
+            try {
+                $items = $client->liststreamitems($stream, true, 5000, 0, false);
+
+                if (! $items || ! is_array($items)) {
+                    continue;
+                }
+
+                foreach ($items as $item) {
+                    if (! isset($item['data']['json'])) {
+                        continue;
+                    }
+
+                    try {
+                        $entries[] = LedgerEntryData::fromStreamItem($stream, $item);
+                    } catch (Exception $e) {
+                        Log::warning('SharedLedger: Skipping invalid stream item', [
+                            'stream' => $stream,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            } catch (Exception $e) {
+                Log::warning('SharedLedger: Failed to read stream from client', [
                     'stream' => $stream,
                     'error' => $e->getMessage(),
                 ]);
