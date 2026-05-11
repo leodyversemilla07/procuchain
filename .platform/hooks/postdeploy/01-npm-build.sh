@@ -1,15 +1,7 @@
 #!/usr/bin/env bash
-# Build frontend assets with Vite after deployment
-# EB PHP platform only runs composer install — we need to handle npm ourselves
+# Post-deploy hook — runs after the app is live
+# Frontend build is now done in prebuild phase
+# This hook is kept for any future post-deploy tasks
 
-set -e
-
-cd /var/app/current
-
-echo "Installing npm dependencies..."
-npm install
-
-echo "Building frontend assets..."
-npm run build
-
-echo "Frontend build complete"
+echo "Post-deploy hook running..."
+echo "No post-deploy tasks configured yet."
