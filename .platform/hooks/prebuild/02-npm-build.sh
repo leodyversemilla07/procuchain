@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
-# Build frontend assets with Vite during pre-deploy phase
-# This runs BEFORE the app goes live, so it's within the deployment timeout
-# MUST complete quickly — no npm install here, that's done in 01-install-deps.sh
+# Build frontend assets with Vite during prebuild phase
+# CWD is /var/app/staging/ — the staged application source
+# This runs BEFORE the app is configured and deployed
 
 set -e
-
-APP_DIR=/var/app/staging
-cd "$APP_DIR"
 
 echo "Installing npm dependencies..."
 npm install --no-audit --no-fund
