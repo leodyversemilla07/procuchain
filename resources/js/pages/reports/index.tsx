@@ -10,10 +10,22 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { BarChart3, Calendar, Download, FileText, Search, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+
+/**
+ * Resolve the correct Wayfinder route function for the current role prefix.
+ * Wayfinder exports multi-role routes as objects keyed by path (e.g. generate['/admin/reports/generate']).
+ * We pick the one matching the current URL prefix.
+ */
+function resolveRouteFn(routeMap: Record<string, { url: () => string }>): () => string {
+    const prefix = window.location.pathname.replace(/\/reports.*/, '/reports');
+    const key = Object.keys(routeMap).find((k) => k.startsWith(prefix));
+    const routeFn = key ? routeMap[key] : Object.values(routeMap)[0];
+    return () => routeFn.url();
+}
 
 interface ReportFilters {
     filter_type: 'month' | 'year' | 'quarter' | 'date_range';
@@ -46,17 +58,21 @@ interface ReportData {
 }
 
 export default function ReportIndex() {
-    const [filters, setFilters] = useState<ReportFilters>({
-        filter_type: 'month',
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
-    });
+ const [filters, setFilters] = useState<ReportFilters>({
+ filter_type: 'month',
+ month: new Date().getMonth() + 1,
+ year: new Date().getFullYear(),
+ });
 
-    const [reportData, setReportData] = useState<ReportData | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+ const [reportData, setReportData] = useState<ReportData | null>(null);
+ const [loading, setLoading] = useState(false);
+ const [error, setError] = useState<string | null>(null);
 
-    const breadcrumbs: BreadcrumbItem[] = [{ title: 'Reports', href: '/reports' }];
+ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Reports', href: '/reports' }];
+
+ // Resolve role-specific route URLs from Wayfinder multi-role exports
+ const generateUrl = useMemo(() => resolveRouteFn(generate), []);
+ const exportUrl = useMemo(() => resolveRouteFn(exportMethod), []);
 
     const handleFilterChange = (key: keyof ReportFilters, value: string | number | undefined) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -67,7 +83,7 @@ export default function ReportIndex() {
         setError(null);
 
         try {
-            const response = await fetch(generate.url(), {
+            const response = await fetch(generateUrl(), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -92,7 +108,7 @@ export default function ReportIndex() {
 
     const exportReport = async (format: 'json' | 'csv' | 'pdf') => {
         try {
-            const response = await fetch(exportMethod.url(), {
+            const response = await fetch(exportUrl(), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
