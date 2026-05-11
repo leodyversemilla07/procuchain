@@ -10,6 +10,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Sentry\Laravel\Integration;
@@ -32,10 +33,13 @@ return Application::configure(basePath: dirname(__DIR__))
             });
         },
     )
-    ->withMiddleware(function (Middleware $middleware) {
-        $middleware->encryptCookies(except: ['appearance']);
+ ->withMiddleware(function (Middleware $middleware) {
+ $middleware->encryptCookies(except: ['appearance']);
 
-        $middleware->web(append: [
+ // Trust the Elastic Beanstalk ALB proxy
+ $middleware->trustProxies(at: '*');
+
+ $middleware->web(append: [
             SecurityHeaders::class,
             CheckBlockedIp::class,
             HandleAppearance::class,
