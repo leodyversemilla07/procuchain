@@ -11,9 +11,9 @@ use Inertia\Response;
 
 class NodeNetworkController extends Controller
 {
-    private const RPC_USER = 'multichainrpc';
-
-    private const RPC_PASSWORD = 'multichainrpc';
+    /** RPC credentials (read from config for consistency with .env) */
+    private function getRpcUser(): string { return config('multichain.rpc.username', 'multichainrpc'); }
+    private function getRpcPassword(): string { return config('multichain.rpc.password', 'procuchain2026'); }
 
     private const NODES = [
         [
@@ -105,7 +105,7 @@ class NodeNetworkController extends Controller
     private function queryNode(string $nodeId, string $host, int $port): array
     {
         try {
-            $client = new Client($host, $port, self::RPC_USER, self::RPC_PASSWORD, false);
+            $client = new Client($host, $port, $this->getRpcUser(), $this->getRpcPassword(), false);
             $info = $client->getinfo();
             $peers = $client->getpeerinfo();
 
