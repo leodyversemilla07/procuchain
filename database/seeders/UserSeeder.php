@@ -21,50 +21,54 @@ class UserSeeder extends Seeder
 
         // Create BAC Secretariat user
         Role::firstOrCreate(['name' => UserRoleEnums::BAC_SECRETARIAT->value, 'guard_name' => 'web']);
-        $bacSecretariatAddress = $multichain->getnewaddress();
-        $bacSecretariat = User::create([
-            'name' => 'Bryle Maamo',
-            'email' => 'brylemaamo@gmail.com',
-            'blockchain_address' => $bacSecretariatAddress,
-            'password' => Hash::make('BryleMaamo00'),
-        ]);
+        $bacSecretariat = User::firstOrCreate(
+            ['email' => 'brylemaamo@gmail.com'],
+            [
+                'name' => 'Bryle Maamo',
+                'blockchain_address' => $multichain->getnewaddress(),
+                'password' => Hash::make('BryleMaamo00'),
+            ]
+        );
         $bacSecretariat->assignRole(UserRoleEnums::BAC_SECRETARIAT->value);
-        Log::info('BAC Secretariat user created', ['address' => $bacSecretariatAddress]);
+        Log::info('BAC Secretariat user ready', ['address' => $bacSecretariat->blockchain_address]);
 
         // Create BAC Chairman user
         Role::firstOrCreate(['name' => UserRoleEnums::BAC_CHAIRMAN->value, 'guard_name' => 'web']);
-        $bacChairmanAddress = $multichain->getnewaddress();
-        $bacChairman = User::create([
-            'name' => 'Adrian Gupit',
-            'email' => 'adriangupit18@gmail.com',
-            'blockchain_address' => $bacChairmanAddress,
-            'password' => Hash::make('Adrian18'),
-        ]);
+        $bacChairman = User::firstOrCreate(
+            ['email' => 'adriangupit18@gmail.com'],
+            [
+                'name' => 'Adrian Gupit',
+                'blockchain_address' => $multichain->getnewaddress(),
+                'password' => Hash::make('Adrian18'),
+            ]
+        );
         $bacChairman->assignRole(UserRoleEnums::BAC_CHAIRMAN->value);
-        Log::info('BAC Chairman user created', ['address' => $bacChairmanAddress]);
+        Log::info('BAC Chairman user ready', ['address' => $bacChairman->blockchain_address]);
 
         // Create HOPE user
         Role::firstOrCreate(['name' => UserRoleEnums::HOPE->value, 'guard_name' => 'web']);
-        $hopeAddress = $multichain->getnewaddress();
-        $hope = User::create([
-            'name' => 'Leif Sage Semilla',
-            'email' => 'leifsagesemilla@gmail.com',
-            'blockchain_address' => $hopeAddress,
-            'password' => Hash::make('LeifSage07'),
-        ]);
+        $hope = User::firstOrCreate(
+            ['email' => 'leifsagesemilla@gmail.com'],
+            [
+                'name' => 'Leif Sage Semilla',
+                'blockchain_address' => $multichain->getnewaddress(),
+                'password' => Hash::make('LeifSage07'),
+            ]
+        );
         $hope->assignRole(UserRoleEnums::HOPE->value);
-        Log::info('HOPE user created', ['address' => $hopeAddress]);
+        Log::info('HOPE user ready', ['address' => $hope->blockchain_address]);
 
         // Create Admin user
         Role::firstOrCreate(['name' => UserRoleEnums::ADMIN->value, 'guard_name' => 'web']);
-        $adminAddress = $multichain->getnewaddress();
-        $admin = User::create([
-            'name' => 'LeoBriel Zilvrak',
-            'email' => 'leobrielzilvrak@gmail.com',
-            'blockchain_address' => $adminAddress,
-            'password' => Hash::make('LeoBriel07'),
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'leobrielzilvrak@gmail.com'],
+            [
+                'name' => 'LeoBriel Zilvrak',
+                'blockchain_address' => $multichain->getnewaddress(),
+                'password' => Hash::make('LeoBriel07'),
+            ]
+        );
         $admin->assignRole(UserRoleEnums::ADMIN->value);
-        Log::info('Admin user created', ['address' => $adminAddress]);
+        Log::info('Admin user ready', ['address' => $admin->blockchain_address]);
     }
 }
