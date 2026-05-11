@@ -1,0 +1,1 @@
+import{_ as e,b as t}from"./dist-0PRlmvnN.js";import{c as n}from"./useRenderElement-hOzuEjlY.js";var r=t(e()),i=r.createContext({formRef:{current:{fields:new Map}},errors:{},clearErrors:n,validationMode:`onSubmit`,submitAttemptedRef:{current:!1}});function a(){return r.useContext(i)}export{a as t};
