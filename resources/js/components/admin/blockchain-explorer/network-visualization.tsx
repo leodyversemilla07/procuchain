@@ -5,7 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Activity, ArrowDownUp, Cpu, Database, GitBranch, Globe, HardDrive, Network, Server, Wifi } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
-const { abs, atan2, cos, min, sin, PI, max } = Math;
+const { cos, min, sin, PI, max } = Math;
 
 // ─────────────────────────────────────────────────
 // Types

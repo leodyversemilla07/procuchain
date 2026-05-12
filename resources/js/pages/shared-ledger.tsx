@@ -212,8 +212,6 @@ export default function SharedLedger({
     };
 
     const totalTransactions = pagination.total;
-    const totalProcurements =
-        available_streams.filter((s) => s.value === 'procurement.metadata').length > 0 ? (stream_totals['procurement.metadata'] ?? 0) : 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
