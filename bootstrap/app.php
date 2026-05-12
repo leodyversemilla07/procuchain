@@ -84,21 +84,28 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         Integration::handles($exceptions);
 
-        $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
-            $status = $response->getStatusCode();
+ $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
+ $status = $response->getStatusCode();
 
-            // In local environment, we want to see the actual error for 500s (Server Errors)
-            // but we can show the custom page for 404s, 403s, etc.
-            if (app()->environment('local') && $status === 500) {
-                return $response;
-            }
+ // 419 CSRF mismatch: redirect back with flash instead of error page
+ // The XSRF-TOKEN cookie will be refreshed on the redirect response,
+ // so the next request will succeed automatically.
+ if ($status === 419 && $request->hasSession()) {
+ return back()->with('message', 'The page expired, please try again.');
+ }
 
-            if (in_array($status, [500, 503, 404, 403, 401, 419, 429])) {
-                return Inertia::render('error', ['status' => $status])
-                    ->toResponse($request)
-                    ->setStatusCode($status);
-            }
+ // In local environment, we want to see the actual error for 500s (Server Errors)
+ // but we can show the custom page for 404s, 403s, etc.
+ if (app()->environment('local') && $status === 500) {
+ return $response;
+ }
 
-            return $response;
-        });
+ if (in_array($status, [500, 503, 404, 403, 401, 429])) {
+ return Inertia::render('error', ['status' => $status])
+ ->toResponse($request)
+ ->setStatusCode($status);
+ }
+
+ return $response;
+ });
     })->create();

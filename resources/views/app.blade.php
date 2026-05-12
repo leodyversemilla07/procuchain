@@ -32,9 +32,11 @@
     </style>
 
     <title inertia>{{ config('app.name', 'Laravel') }}</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+ {{-- CSRF token is handled via XSRF-TOKEN cookie + X-XSRF-TOKEN header --}}
+ {{-- Do NOT add a csrf-token meta tag: it goes stale after Inertia navigation and causes 419 errors --}}
+ {{-- @see https://inertiajs.com/csrf-protection --}}
 
-    {{-- SEO Meta Tags --}}
+ {{-- SEO Meta Tags --}}
     <meta name="robots" content="index, follow">
     <meta name="author" content="ProcuChain Team">
     <link rel="canonical" href="{{ url()->current() }}">

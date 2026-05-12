@@ -1,4 +1,5 @@
 import { exportMethod, generate } from '@/actions/App/Http/Controllers/ReportController';
+import { getXsrfToken } from '@/lib/csrf';
 import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -83,14 +84,15 @@ export default function ReportIndex() {
         setError(null);
 
         try {
-            const response = await fetch(generateUrl(), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '',
-                },
-                body: JSON.stringify(filters),
-            });
+ const response = await fetch(generateUrl(), {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'X-XSRF-TOKEN': getXsrfToken(),
+ },
+ credentials: 'same-origin',
+ body: JSON.stringify(filters),
+ });
 
             const data = await response.json();
 
@@ -108,14 +110,15 @@ export default function ReportIndex() {
 
     const exportReport = async (format: 'json' | 'csv' | 'pdf') => {
         try {
-            const response = await fetch(exportUrl(), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '',
-                },
-                body: JSON.stringify({ ...filters, format }),
-            });
+ const response = await fetch(exportUrl(), {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'X-XSRF-TOKEN': getXsrfToken(),
+ },
+ credentials: 'same-origin',
+ body: JSON.stringify({ ...filters, format }),
+ });
 
             if (format === 'csv' || format === 'pdf') {
                 const blob = await response.blob();
