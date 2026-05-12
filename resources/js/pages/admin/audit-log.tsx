@@ -15,7 +15,7 @@ import { dashboard } from '@/routes/admin';
 import adminAuditLog from '@/routes/admin/audit-log';
 import { Head, router, usePage } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
-import { ArrowDownUp, CalendarIcon, FileSearch, FilterX, ScrollText, Search } from 'lucide-react';
+import { CalendarIcon, FileSearch, FilterX, ScrollText, Search } from 'lucide-react';
 import { useState } from 'react';
 import { type DateRange } from 'react-day-picker';
 

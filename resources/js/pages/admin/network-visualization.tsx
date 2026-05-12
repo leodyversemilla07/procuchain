@@ -52,7 +52,12 @@ interface NetworkVisualizationPageProps {
     overview: OverviewData;
 }
 
-export default function NetworkVisualizationPage({ nodes, connections, overview, auth }: NetworkVisualizationPageProps & { auth: PageProps['auth'] }) {
+export default function NetworkVisualizationPage({
+    nodes,
+    connections,
+    overview,
+    auth,
+}: NetworkVisualizationPageProps & { auth: PageProps['auth'] }) {
     usePoll(
         15000,
         {
@@ -112,7 +117,7 @@ export default function NetworkVisualizationPage({ nodes, connections, overview,
                     actions={
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
-                                <div className={`h-3 w-3 rounded-full ${overview.all_connected ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
+                                <div className={`h-3 w-3 rounded-full ${overview.all_connected ? 'animate-pulse bg-green-500' : 'bg-amber-500'}`} />
                                 <span className="text-sm font-medium">{overview.all_connected ? 'All Nodes Connected' : 'Partial Network'}</span>
                             </div>
                             <Badge variant="secondary" className="font-mono">
@@ -122,12 +127,7 @@ export default function NetworkVisualizationPage({ nodes, connections, overview,
                     }
                 />
 
-                <NetworkVisualization
-                    nodes={nodeInfos}
-                    connections={connectionLines}
-                    onRefresh={handleRefresh}
-                    isRefreshing={false}
-                />
+                <NetworkVisualization nodes={nodeInfos} connections={connectionLines} onRefresh={handleRefresh} isRefreshing={false} />
             </div>
         </AppLayout>
     );

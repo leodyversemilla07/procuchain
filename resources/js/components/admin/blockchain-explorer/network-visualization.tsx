@@ -2,18 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import {
-    Activity,
-    ArrowDownUp,
-    Cpu,
-    Database,
-    GitBranch,
-    Globe,
-    HardDrive,
-    Network,
-    Server,
-    Wifi,
-} from 'lucide-react';
+import { Activity, ArrowDownUp, Cpu, Database, GitBranch, Globe, HardDrive, Network, Server, Wifi } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 const { abs, atan2, cos, min, sin, PI, max } = Math;
@@ -60,7 +49,7 @@ interface NodeIdentity {
     label: string;
     role: string;
     color: string; // Tailwind border/ring color
-    rgb: string;   // for SVG glow filters
+    rgb: string; // for SVG glow filters
     icon: React.ElementType;
 }
 
@@ -144,9 +133,14 @@ function TopologyCanvas({
 
     useEffect(() => {
         let running = true;
-        const tick = () => { if (running) setT((p) => p + 0.01); };
+        const tick = () => {
+            if (running) setT((p) => p + 0.01);
+        };
         const id = setInterval(tick, 16);
-        return () => { running = false; clearInterval(id); };
+        return () => {
+            running = false;
+            clearInterval(id);
+        };
     }, []);
 
     const { w, h } = dims;
@@ -170,18 +164,24 @@ function TopologyCanvas({
     const activeConnections = connections.filter((c) => c.status === 'active');
 
     return (
-        <div ref={containerRef} className="relative w-full overflow-hidden rounded-lg border bg-card">
+        <div ref={containerRef} className="bg-card relative w-full overflow-hidden rounded-lg border">
             <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} className="block">
                 <defs>
                     {Object.values(NODE_IDENTITIES).map((v) => (
                         <filter key={v.id} id={`glow-${v.id}`}>
                             <feGaussianBlur stdDeviation="2.5" result="blur" />
-                            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
                         </filter>
                     ))}
                     <filter id="glow-dot">
                         <feGaussianBlur stdDeviation="1.5" result="blur" />
-                        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
                     </filter>
                     {/* Background grid */}
                     <pattern id="net-grid" width="32" height="32" patternUnits="userSpaceOnUse">
@@ -195,8 +195,10 @@ function TopologyCanvas({
                 {[0.6, 0.8].map((r, i) => (
                     <ellipse
                         key={i}
-                        cx={cx} cy={cy}
-                        rx={radius * r} ry={radius * r * 0.7}
+                        cx={cx}
+                        cy={cy}
+                        rx={radius * r}
+                        ry={radius * r * 0.7}
                         fill="none"
                         stroke="hsl(var(--border))"
                         strokeWidth={0.5}
@@ -230,32 +232,66 @@ function TopologyCanvas({
                             opacity={isHov ? 1 : 0.8}
                         >
                             {/* Glow underlay */}
-                            <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                                stroke="hsl(var(--primary))" strokeWidth={isHov ? 10 : 6}
-                                opacity={0.12} strokeLinecap="round" />
+                            <line
+                                x1={from.x}
+                                y1={from.y}
+                                x2={to.x}
+                                y2={to.y}
+                                stroke="hsl(var(--primary))"
+                                strokeWidth={isHov ? 10 : 6}
+                                opacity={0.12}
+                                strokeLinecap="round"
+                            />
                             {/* Main line - solid, visible in both modes */}
-                            <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                                stroke="hsl(var(--primary))" strokeWidth={isHov ? 2.5 : 1.5}
-                                strokeLinecap="round" opacity={0.9} />
+                            <line
+                                x1={from.x}
+                                y1={from.y}
+                                x2={to.x}
+                                y2={to.y}
+                                stroke="hsl(var(--primary))"
+                                strokeWidth={isHov ? 2.5 : 1.5}
+                                strokeLinecap="round"
+                                opacity={0.9}
+                            />
                             {/* Animated particles */}
                             {[0.15, 0.35, 0.55, 0.75, 0.95].map((offset, i) => {
                                 const phase = (t * 0.8 + i * 0.2) % 1;
                                 const px = from.x + (to.x - from.x) * phase;
                                 const py = from.y + (to.y - from.y) * phase;
                                 return (
-                                    <circle key={i} cx={px} cy={py} r={isHov ? 2 : 1.5}
+                                    <circle
+                                        key={i}
+                                        cx={px}
+                                        cy={py}
+                                        r={isHov ? 2 : 1.5}
                                         fill="hsl(var(--primary))"
                                         opacity={isHov ? 0.9 : 0.6}
-                                        filter="url(#glow-dot)" />
+                                        filter="url(#glow-dot)"
+                                    />
                                 );
                             })}
                             {/* Hover tooltip */}
                             {isHov && (
                                 <g>
-                                    <rect x={midX - 50} y={midY - 13} width={100} height={26} rx={5}
-                                        fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth={0.5} />
-                                    <text x={midX} y={midY + 4} textAnchor="middle"
-                                        fill="hsl(var(--foreground))" fontSize={9} fontFamily="monospace" fontWeight={600}>
+                                    <rect
+                                        x={midX - 50}
+                                        y={midY - 13}
+                                        width={100}
+                                        height={26}
+                                        rx={5}
+                                        fill="hsl(var(--background))"
+                                        stroke="hsl(var(--border))"
+                                        strokeWidth={0.5}
+                                    />
+                                    <text
+                                        x={midX}
+                                        y={midY + 4}
+                                        textAnchor="middle"
+                                        fill="hsl(var(--foreground))"
+                                        fontSize={9}
+                                        fontFamily="monospace"
+                                        fontWeight={600}
+                                    >
                                         ↕ {conn.pingTime?.toFixed(1)}ms
                                     </text>
                                 </g>
@@ -281,14 +317,20 @@ function TopologyCanvas({
                         >
                             {/* Selection ring */}
                             {isSel && (
-                                <circle r={r + 6} fill="none" stroke={ident.color.replace('border-', '')}
-                                    strokeWidth={1.5} opacity={0.5}
+                                <circle
+                                    r={r + 6}
+                                    fill="none"
+                                    stroke={ident.color.replace('border-', '')}
+                                    strokeWidth={1.5}
+                                    opacity={0.5}
                                     strokeDasharray="3 3"
                                     style={{ stroke: `rgb(${ident.rgb})` }}
                                 />
                             )}
                             {/* Node circle */}
-                            <circle r={r} fill="hsl(var(--background))"
+                            <circle
+                                r={r}
+                                fill="hsl(var(--background))"
                                 style={{ stroke: `rgb(${ident.rgb})` }}
                                 strokeWidth={isSel ? 2.5 : 1.5}
                                 filter={`url(#glow-${ident.id})`}
@@ -309,12 +351,10 @@ function TopologyCanvas({
                                 </g>
                             )}
                             {/* Label */}
-                            <text textAnchor="middle" y={r + 14}
-                                fill="hsl(var(--foreground))" fontSize={10} fontWeight={600} fontFamily="monospace">
+                            <text textAnchor="middle" y={r + 14} fill="hsl(var(--foreground))" fontSize={10} fontWeight={600} fontFamily="monospace">
                                 {ident.label}
                             </text>
-                            <text textAnchor="middle" y={r + 26}
-                                fill="hsl(var(--muted-foreground))" fontSize={8}>
+                            <text textAnchor="middle" y={r + 26} fill="hsl(var(--muted-foreground))" fontSize={8}>
                                 Block #{node.blocks}
                             </text>
                         </g>
@@ -345,14 +385,16 @@ function StatsBar({ nodes, connections }: { nodes: NodeInfo[]; connections: Conn
             ].map((s) => (
                 <Card key={s.label} className={cn(s.good ? '' : 'opacity-60')}>
                     <CardContent className="flex items-center gap-3 p-3">
-                        <div className={cn(
-                            'flex h-9 w-9 items-center justify-center rounded-lg',
-                            s.good ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
-                        )}>
+                        <div
+                            className={cn(
+                                'flex h-9 w-9 items-center justify-center rounded-lg',
+                                s.good ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+                            )}
+                        >
                             <s.icon className="h-4 w-4" />
                         </div>
                         <div>
-                            <p className="font-mono text-lg font-bold leading-none">{s.value}</p>
+                            <p className="font-mono text-lg leading-none font-bold">{s.value}</p>
                             <p className="text-muted-foreground text-[11px]">{s.label}</p>
                         </div>
                     </CardContent>
@@ -374,25 +416,16 @@ function NodeInfoPanel({ node }: { node: NodeInfo }) {
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                        <div className={cn(
-                            'flex h-10 w-10 items-center justify-center rounded-lg border',
-                            ident.color,
-                        )}>
-                            <ident.icon className="h-5 w-5 text-foreground" />
+                        <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg border', ident.color)}>
+                            <ident.icon className="text-foreground h-5 w-5" />
                         </div>
                         <div>
                             <CardTitle className="text-base">{ident.label}</CardTitle>
                             <CardDescription>{node.role}</CardDescription>
                         </div>
                     </div>
-                    <Badge
-                        variant={node.connected ? 'default' : 'secondary'}
-                        className="gap-1.5"
-                    >
-                        <span className={cn(
-                            'h-1.5 w-1.5 rounded-full',
-                            node.connected ? 'bg-primary-foreground' : 'bg-muted-foreground',
-                        )} />
+                    <Badge variant={node.connected ? 'default' : 'secondary'} className="gap-1.5">
+                        <span className={cn('h-1.5 w-1.5 rounded-full', node.connected ? 'bg-primary-foreground' : 'bg-muted-foreground')} />
                         {node.connected ? 'Live' : 'Offline'}
                     </Badge>
                 </div>
@@ -404,11 +437,15 @@ function NodeInfoPanel({ node }: { node: NodeInfo }) {
                         { label: 'Peers', value: `${node.peers} connected`, icon: Wifi },
                         { label: 'Address', value: `${node.ip}:${node.p2pPort}`, icon: Globe },
                         { label: 'Version', value: node.subver, icon: Activity },
-                        { label: 'Seen', value: node.lastSeen > 0 ? formatDistanceToNow(new Date(node.lastSeen * 1000), { addSuffix: true }) : 'Now', icon: Activity },
+                        {
+                            label: 'Seen',
+                            value: node.lastSeen > 0 ? formatDistanceToNow(new Date(node.lastSeen * 1000), { addSuffix: true }) : 'Now',
+                            icon: Activity,
+                        },
                         { label: 'Port', value: `${node.p2pPort} / ${node.rpcPort}`, icon: ArrowDownUp },
                     ].map((item) => (
-                        <div key={item.label} className="flex items-center gap-2 rounded-md bg-muted/50 px-2.5 py-2">
-                            <item.icon className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <div key={item.label} className="bg-muted/50 flex items-center gap-2 rounded-md px-2.5 py-2">
+                            <item.icon className="text-muted-foreground h-3 w-3 shrink-0" />
                             <div className="min-w-0">
                                 <p className="text-muted-foreground text-[10px] font-medium">{item.label}</p>
                                 <p className="truncate font-mono text-xs font-semibold">{item.value}</p>
@@ -432,7 +469,7 @@ function ConnectionTable({ connections }: { connections: ConnectionLine[] }) {
         <Card>
             <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-sm">
-                    <Wifi className="h-4 w-4 text-primary" />
+                    <Wifi className="text-primary h-4 w-4" />
                     Network Connections
                 </CardTitle>
                 <CardDescription>
@@ -451,31 +488,26 @@ function ConnectionTable({ connections }: { connections: ConnectionLine[] }) {
                         return (
                             <div
                                 key={i}
-                                className={cn(
-                                    'flex items-center gap-4 px-4 py-2.5 transition-colors hover:bg-muted/30',
-                                    !isActive && 'opacity-40',
-                                )}
+                                className={cn('hover:bg-muted/30 flex items-center gap-4 px-4 py-2.5 transition-colors', !isActive && 'opacity-40')}
                             >
                                 <span className={cn('h-2 w-2 shrink-0 rounded-full', isActive ? 'bg-primary' : 'bg-muted-foreground')} />
                                 <div className="flex min-w-0 flex-1 items-center gap-2 font-mono text-xs">
-                                    <span className="font-semibold" style={{ color: `rgb(${fromIdent.rgb})` }}>{fromLabel}</span>
+                                    <span className="font-semibold" style={{ color: `rgb(${fromIdent.rgb})` }}>
+                                        {fromLabel}
+                                    </span>
                                     <span className="text-muted-foreground">→</span>
-                                    <span className="font-semibold" style={{ color: `rgb(${toIdent.rgb})` }}>{toLabel}</span>
+                                    <span className="font-semibold" style={{ color: `rgb(${toIdent.rgb})` }}>
+                                        {toLabel}
+                                    </span>
                                 </div>
                                 {isActive ? (
                                     <div className="hidden items-center gap-4 sm:flex">
-                                        <span className="font-mono text-[10px] text-muted-foreground">
-                                            ↕ {conn.pingTime?.toFixed(1)}ms
-                                        </span>
-                                        <span className="font-mono text-[10px] text-muted-foreground">
-                                            ↑ {(conn.bytesSent / 1024).toFixed(1)}KB
-                                        </span>
-                                        <span className="font-mono text-[10px] text-muted-foreground">
-                                            ↓ {(conn.bytesRecv / 1024).toFixed(1)}KB
-                                        </span>
+                                        <span className="text-muted-foreground font-mono text-[10px]">↕ {conn.pingTime?.toFixed(1)}ms</span>
+                                        <span className="text-muted-foreground font-mono text-[10px]">↑ {(conn.bytesSent / 1024).toFixed(1)}KB</span>
+                                        <span className="text-muted-foreground font-mono text-[10px]">↓ {(conn.bytesRecv / 1024).toFixed(1)}KB</span>
                                     </div>
                                 ) : (
-                                    <span className="font-mono text-[10px] text-muted-foreground">—</span>
+                                    <span className="text-muted-foreground font-mono text-[10px]">—</span>
                                 )}
                                 <Badge variant={isActive ? 'outline' : 'secondary'} className="text-[9px]">
                                     {isActive ? 'LIVE' : 'DORMANT'}
@@ -501,12 +533,7 @@ export function NetworkVisualization({ nodes, connections, onRefresh, isRefreshi
             <StatsBar nodes={nodes} connections={connections} />
 
             {/* Topology */}
-            <TopologyCanvas
-                nodes={nodes}
-                connections={connections}
-                selectedNode={selectedNode}
-                onNodeSelect={setSelectedNode}
-            />
+            <TopologyCanvas nodes={nodes} connections={connections} selectedNode={selectedNode} onNodeSelect={setSelectedNode} />
 
             {/* Detail + Connections */}
             <div className="grid gap-4 lg:grid-cols-3">
@@ -516,9 +543,9 @@ export function NetworkVisualization({ nodes, connections, onRefresh, isRefreshi
                     ) : (
                         <Card className="h-full">
                             <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-                                <Network className="mb-3 h-8 w-8 text-muted-foreground/30" />
-                                <p className="text-sm text-muted-foreground">Click a node in the topology</p>
-                                <p className="text-xs text-muted-foreground/50">for detailed information</p>
+                                <Network className="text-muted-foreground/30 mb-3 h-8 w-8" />
+                                <p className="text-muted-foreground text-sm">Click a node in the topology</p>
+                                <p className="text-muted-foreground/50 text-xs">for detailed information</p>
                             </CardContent>
                         </Card>
                     )}
@@ -534,11 +561,22 @@ export function NetworkVisualization({ nodes, connections, onRefresh, isRefreshi
                     onClick={onRefresh}
                     disabled={isRefreshing}
                     className={cn(
-                        'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted',
+                        'hover:bg-muted inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
                         isRefreshing && 'opacity-50',
                     )}
                 >
-                    <svg className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" /><path d="M16 16h5v5" /></svg>
+                    <svg
+                        className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                    >
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                        <path d="M16 16h5v5" />
+                    </svg>
                     {isRefreshing ? 'Refreshing...' : 'Refresh'}
                 </button>
             </div>

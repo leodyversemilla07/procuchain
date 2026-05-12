@@ -71,19 +71,19 @@ export interface StreamOption {
 }
 
 export interface NodeOption {
-  id: string;
-  name: string;
-  role: string;
+    id: string;
+    name: string;
+    role: string;
 }
 
 export interface LedgerFilters {
-  pr_number?: string;
-  stream?: string;
-  date_from?: string;
-  date_to?: string;
-  search?: string;
-  node?: string;
-  page?: number;
+    pr_number?: string;
+    stream?: string;
+    date_from?: string;
+    date_to?: string;
+    search?: string;
+    node?: string;
+    page?: number;
 }
 
 export interface StreamPublication {

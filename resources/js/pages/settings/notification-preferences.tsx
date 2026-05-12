@@ -55,9 +55,7 @@ export default function NotificationPreferences() {
     const data = props.data ?? props;
 
     const [emailEnabled, setEmailEnabled] = useState(data.email_notifications_enabled ?? true);
-    const [preferences, setPreferences] = useState<Record<string, { email: boolean; push: boolean }>>(
-        data.notification_preferences ?? {},
-    );
+    const [preferences, setPreferences] = useState<Record<string, { email: boolean; push: boolean }>>(data.notification_preferences ?? {});
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
 
@@ -125,7 +123,10 @@ export default function NotificationPreferences() {
             <Head title="Notification preferences" />
             <SettingsLayout>
                 <div className="space-y-6">
-                    <HeadingSmall title="Notification preferences" description="Choose which notifications you'd like to receive and through which channels" />
+                    <HeadingSmall
+                        title="Notification preferences"
+                        description="Choose which notifications you'd like to receive and through which channels"
+                    />
 
                     {/* Master toggle */}
                     <Card>
