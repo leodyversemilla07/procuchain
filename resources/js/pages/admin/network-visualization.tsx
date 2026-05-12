@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes/admin';
 import network from '@/routes/admin/network';
-import { PageProps } from '@inertiajs/core';
 import { Head, router, usePoll } from '@inertiajs/react';
 import { Share2 } from 'lucide-react';
 import { useCallback } from 'react';
@@ -52,12 +51,7 @@ interface NetworkVisualizationPageProps {
     overview: OverviewData;
 }
 
-export default function NetworkVisualizationPage({
-    nodes,
-    connections,
-    overview,
-    auth,
-}: NetworkVisualizationPageProps & { auth: PageProps['auth'] }) {
+export default function NetworkVisualizationPage({ nodes, connections, overview }: NetworkVisualizationPageProps) {
     usePoll(
         15000,
         {

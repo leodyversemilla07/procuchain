@@ -41,15 +41,6 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
     system_announcements: 'System Announcements',
 };
 
-const EVENT_TYPE_ICONS: Record<string, typeof Bell> = {
-    procurement_stage_updates: Bell,
-    procurement_corrections: Bell,
-    document_uploads: Bell,
-    account_security: Bell,
-    user_invitations: Bell,
-    system_announcements: Bell,
-};
-
 export default function NotificationPreferences() {
     const { props } = usePage<{ data: NotificationPreferencesPageProps }>();
     const data = props.data ?? props;
