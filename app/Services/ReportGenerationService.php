@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class ReportGenerationService
 {
     public function __construct(
-        private readonly SemanticSearchService $semanticSearchService
+        private readonly ProcurementSearchService $procurementSearchService
     ) {}
 
     /**
@@ -23,7 +23,7 @@ class ReportGenerationService
     {
         try {
             $filters = $this->buildFilters($params);
-            $searchResults = $this->semanticSearchService->search($params['query'] ?? '', $filters);
+            $searchResults = $this->procurementSearchService->search($params['query'] ?? '', $filters);
 
             if (! $searchResults['success']) {
                 return [
@@ -32,7 +32,7 @@ class ReportGenerationService
                 ];
             }
 
-            $statistics = $this->semanticSearchService->calculateStatistics($searchResults['results']);
+            $statistics = $this->procurementSearchService->calculateStatistics($searchResults['results']);
             $timeSeriesData = $this->generateTimeSeriesData($searchResults['results'], $params);
 
             return [

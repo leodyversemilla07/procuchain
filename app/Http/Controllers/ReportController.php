@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Services\ProcurementSearchService;
 use App\Services\ReportGenerationService;
-use App\Services\SemanticSearchService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ class ReportController extends Controller
 {
     public function __construct(
         private readonly ReportGenerationService $reportGenerationService,
-        private readonly SemanticSearchService $semanticSearchService
+        private readonly ProcurementSearchService $procurementSearchService
     ) {
         //
     }
@@ -167,7 +167,7 @@ class ReportController extends Controller
             $query = $validated['query'];
             unset($validated['query']);
 
-            $results = $this->semanticSearchService->search($query, $validated);
+            $results = $this->procurementSearchService->search($query, $validated);
 
             return response()->json($results);
         } catch (\Exception $e) {

@@ -79,7 +79,16 @@ class ProcurementSearchService
     }
 
     /**
+     * Minimum similarity percentage (0-100) for fuzzy matching fallback.
+     * Below this threshold, a partial match is considered unrelated.
+     */
+    private const FUZZY_MIN_SIMILARITY = 60;
+
+    /**
      * Apply filters to procurement data.
+     *
+     * Uses exact substring matching first, then falls back to fuzzy matching
+     * (similar_text) to catch typos and minor misspellings.
      *
      * @param  array<int, array<string, mixed>>  $procurements
      * @param  array<string, mixed>  $filters
@@ -89,12 +98,7 @@ class ProcurementSearchService
     {
         return array_values(array_filter($procurements, function ($procurement) use ($query, $filters) {
             if (! empty($query)) {
-                $searchLower = strtolower($query);
-                $matchesTitle = str_contains(strtolower($procurement['title'] ?? ''), $searchLower);
-                $matchesId = str_contains(strtolower($procurement['id'] ?? ''), $searchLower);
-                $matchesDescription = str_contains(strtolower($procurement['description'] ?? ''), $searchLower);
-
-                if (! $matchesTitle && ! $matchesId && ! $matchesDescription) {
+                if (! $this->matchesQuery($query, $procurement)) {
                     return false;
                 }
             }
@@ -159,6 +163,54 @@ class ProcurementSearchService
 
             return true;
         }));
+    }
+
+    /**
+     * Check if a procurement matches the search query.
+     *
+     * First tries exact substring match (fast path). If that fails,
+     * falls back to fuzzy matching using similar_text on each word
+     * in the procurement's text fields. This catches typos like
+     * "infrastucture" → "infrastructure" or "procurement" → "procuement".
+     */
+    private function matchesQuery(string $query, array $procurement): bool
+    {
+        $searchLower = strtolower($query);
+        $searchableText = implode(' ', [
+            $procurement['title'] ?? '',
+            $procurement['id'] ?? '',
+            $procurement['description'] ?? '',
+        ]);
+        $searchableLower = strtolower($searchableText);
+
+        // Fast path: exact substring match
+        if (str_contains($searchableLower, $searchLower)) {
+            return true;
+        }
+
+        // Fuzzy path: compare query against each word in the text
+        $queryWords = explode(' ', $searchLower);
+        $textWords = explode(' ', $searchableLower);
+
+        foreach ($queryWords as $queryWord) {
+            if ($queryWord === '') {
+                continue;
+            }
+
+            foreach ($textWords as $textWord) {
+                if ($textWord === '') {
+                    continue;
+                }
+
+                similar_text($queryWord, $textWord, $percent);
+
+                if ($percent >= self::FUZZY_MIN_SIMILARITY) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
