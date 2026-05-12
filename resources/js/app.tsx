@@ -16,7 +16,7 @@ createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     withApp(app) {
         return (
-            <TooltipProvider delayDuration={0}>
+            <TooltipProvider delay={0}>
                 {app}
                 <Toaster />
                 <ThemeInitializer />
