@@ -22,7 +22,7 @@ class DocumentCorrectionController extends Controller
         protected CorrectionPublisher $correctionPublisher
     ) {}
 
-    public function correctDocument(CorrectDocumentRequest $request, string $txid): JsonResponse
+    public function correctDocument(CorrectDocumentRequest $request, string $txid)
     {
         $this->authorize('correct-document', $txid);
 
@@ -32,14 +32,14 @@ class DocumentCorrectionController extends Controller
             $originalDocument = $this->documentRepository->findByTxid($txid);
 
             if (! $originalDocument) {
-                return response()->json(['error' => 'Document not found in blockchain.'], 404);
+                return back()->with('error', 'Document not found in blockchain.');
             }
 
             $pr_number = $originalDocument->prNumber;
             $procurementTitle = $originalDocument->procurementTitle;
 
             if (! $pr_number || ! $procurementTitle) {
-                return response()->json(['error' => 'Invalid document: missing procurement information.'], 422);
+                return back()->with('error', 'Invalid document: missing procurement information.');
             }
 
             $userAddress = auth()->user()->blockchain_address ?? '';
@@ -75,10 +75,7 @@ class DocumentCorrectionController extends Controller
             $jobId = Str::uuid()->toString();
             BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId, auth()->id());
 
-            return response()->json([
-                'job_id' => $jobId,
-                'status' => 'pending',
-            ], 202);
+            return back()->with('success', 'Document correction submitted successfully. The blockchain update is being processed.');
         } catch (\Exception $e) {
             Log::error('Failed to submit document correction', [
                 'txid' => $txid,
@@ -86,7 +83,7 @@ class DocumentCorrectionController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json(['error' => 'Failed to submit correction: '.$e->getMessage()], 500);
+            return back()->with('error', 'Failed to submit correction: '.$e->getMessage());
         }
     }
 
