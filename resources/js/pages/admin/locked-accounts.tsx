@@ -254,15 +254,13 @@ export default function AdminLockedAccounts() {
             { account_ids: accountIds },
             {
                 // Reload locked accounts data to sync across tabs/windows
-                only: ['lockedAccounts'],
-                onSuccess: () => {
-                    setSelectedAccounts(new Set());
-                    toast.success(`Successfully unlocked ${accountIds.length} account(s)`);
-                },
-                onError: (errors) => {
-                    console.error('Bulk unlock errors:', errors);
-                    toast.error('Failed to unlock some accounts');
-                },
+ only: ['lockedAccounts'],
+ onSuccess: () => {
+ setSelectedAccounts(new Set());
+ },
+ onError: () => {
+ // Error toast handled by flash message from server
+ },
                 preserveScroll: true,
             },
         );
@@ -280,15 +278,13 @@ export default function AdminLockedAccounts() {
             { account_ids: accountIds },
             {
                 // Reload locked accounts data to sync across tabs/windows
-                only: ['lockedAccounts'],
-                onSuccess: () => {
-                    setSelectedAccounts(new Set());
-                    toast.success(`Successfully reset attempts for ${accountIds.length} account(s)`);
-                },
-                onError: (errors) => {
-                    console.error('Bulk reset attempts errors:', errors);
-                    toast.error('Failed to reset some accounts');
-                },
+ only: ['lockedAccounts'],
+ onSuccess: () => {
+ setSelectedAccounts(new Set());
+ },
+ onError: () => {
+ // Error toast handled by flash message from server
+ },
                 preserveScroll: true,
             },
         );
@@ -311,16 +307,14 @@ export default function AdminLockedAccounts() {
             { reason: 'Unlocked by administrator' },
             {
                 // Reload locked accounts data to sync across tabs/windows
-                only: ['lockedAccounts'],
-                onSuccess: () => {
-                    setIsUnlockDialogOpen(false);
-                    setSelectedUser(null);
-                    toast.success('Account unlocked successfully');
-                },
-                onError: (errors) => {
-                    console.error('Unlock account errors:', errors);
-                    toast.error('Failed to unlock account');
-                },
+ only: ['lockedAccounts'],
+ onSuccess: () => {
+ setIsUnlockDialogOpen(false);
+ setSelectedUser(null);
+ },
+ onError: () => {
+ // Error toast handled by flash message from server
+ },
                 preserveScroll: true,
             },
         );
@@ -333,16 +327,14 @@ export default function AdminLockedAccounts() {
             {},
             {
                 // Reload locked accounts data to sync across tabs/windows
-                only: ['lockedAccounts'],
-                onSuccess: () => {
-                    setIsResetDialogOpen(false);
-                    setSelectedUser(null);
-                    toast.success('Failed login attempts reset successfully');
-                },
-                onError: (errors) => {
-                    console.error('Reset attempts errors:', errors);
-                    toast.error('Failed to reset attempts');
-                },
+ only: ['lockedAccounts'],
+ onSuccess: () => {
+ setIsResetDialogOpen(false);
+ setSelectedUser(null);
+ },
+ onError: () => {
+ // Error toast handled by flash message from server
+ },
                 preserveScroll: true,
             },
         );

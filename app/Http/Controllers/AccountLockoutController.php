@@ -90,24 +90,8 @@ class AccountLockoutController extends Controller
                     newValues: ['email' => $user->email, 'reason' => $validated['reason'] ?? 'Manually unlocked by admin']
                 );
 
-                // Return JSON response for API calls
-                if ($request->expectsJson() || $request->is('admin/accounts/*/unlock')) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Account unlocked successfully',
-                    ]);
-                }
-
                 return back()->with('success', "Account unlocked successfully for {$user->name}");
             } else {
-                // Return JSON response for API calls
-                if ($request->expectsJson() || $request->is('admin/accounts/*/unlock')) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Account was not locked or unlock failed',
-                    ], 400);
-                }
-
                 return back()->with('error', 'Account was not locked or unlock failed');
             }
         } catch (\Exception $e) {
@@ -116,14 +100,6 @@ class AccountLockoutController extends Controller
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
-
-            // Return JSON response for API calls
-            if ($request->expectsJson() || $request->is('admin/accounts/*/unlock')) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Failed to unlock account',
-                ], 500);
-            }
 
             return back()->with('error', 'Failed to unlock account');
         }
@@ -142,10 +118,7 @@ class AccountLockoutController extends Controller
 
             // Prevent admin from locking their own account
             if ($user->id === Auth::id()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'You cannot lock your own account',
-                ], 400);
+                return back()->with('error', 'You cannot lock your own account.');
             }
 
             $durationHours = $validated['duration_hours'] ?? 24; // Default 24 hours
@@ -167,15 +140,9 @@ class AccountLockoutController extends Controller
                     newValues: ['email' => $user->email, 'reason' => $validated['reason'], 'duration_hours' => $durationHours]
                 );
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Account locked successfully',
-                ]);
+                return back()->with('success', 'Account locked successfully.');
             } else {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Account is already locked or lock failed',
-                ], 400);
+                return back()->with('error', 'Account is already locked or lock failed.');
             }
         } catch (\Exception $e) {
             Log::error('Failed to lock user account', [
@@ -184,10 +151,7 @@ class AccountLockoutController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to lock account',
-            ], 500);
+            return back()->with('error', 'Failed to lock account.');
         }
     }
 
@@ -213,24 +177,8 @@ class AccountLockoutController extends Controller
                     newValues: ['email' => $user->email]
                 );
 
-                // Return JSON response for API calls
-                if (request()->expectsJson() || request()->is('admin/accounts/*/reset-attempts')) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Failed login attempts reset successfully',
-                    ]);
-                }
-
                 return back()->with('success', "Failed login attempts reset successfully for {$user->name}");
             } else {
-                // Return JSON response for API calls
-                if (request()->expectsJson() || request()->is('admin/accounts/*/reset-attempts')) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'No failed attempts to reset',
-                    ], 400);
-                }
-
                 return back()->with('error', 'No failed attempts to reset');
             }
         } catch (\Exception $e) {
@@ -239,14 +187,6 @@ class AccountLockoutController extends Controller
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
-
-            // Return JSON response for API calls
-            if (request()->expectsJson() || request()->is('admin/accounts/*/reset-attempts')) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Failed to reset failed attempts',
-                ], 500);
-            }
 
             return back()->with('error', 'Failed to reset failed attempts');
         }

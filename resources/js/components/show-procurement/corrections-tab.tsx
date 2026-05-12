@@ -97,10 +97,9 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
             });
 
             router.post(`/procurements/${prNumber}/corrections`, formData, {
-                onSuccess: () => {
-                    toast.success('Procurement correction submitted successfully.');
-                    setShowCorrectionDialog(false);
-                    setCorrectionForm({
+ onSuccess: () => {
+ setShowCorrectionDialog(false);
+ setCorrectionForm({
                         correction_reason: '',
                         title: procurement?.title || '',
                         description: procurement?.description || '',
@@ -120,8 +119,7 @@ export function ProcurementCorrectionsTab({ prNumber, latestCorrection, correcti
                     // Reload the page to get updated correction data
                     router.reload();
                 },
-                onError: (errors) => {
-                    console.error('Form submission errors:', errors);
+ onError: (errors) => {
                     toast.error(errors.message || 'Failed to submit correction.');
                 },
                 onFinish: () => {
