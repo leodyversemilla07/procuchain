@@ -8,6 +8,7 @@ export interface HeroCardProps {
     title: string | ReactNode;
     description: string | ReactNode;
     actions?: ReactNode;
+    children?: ReactNode;
     className?: string;
     iconWrapperClassName?: string;
     iconClassName?: string;
@@ -18,6 +19,7 @@ export const HeroCard = ({
     title,
     description,
     actions,
+    children,
     className,
     iconWrapperClassName = 'bg-primary/10',
     iconClassName = 'text-primary',
@@ -41,6 +43,7 @@ export const HeroCard = ({
                     </div>
                     {actions ? <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end">{actions}</div> : null}
                 </div>
+                {children && <div className="mt-2">{children}</div>}
             </CardContent>
         </Card>
     );
