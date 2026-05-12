@@ -9,6 +9,6 @@
  * @see https://inertiajs.com/csrf-protection
  */
 export function getXsrfToken(): string {
-	const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-	return match ? decodeURIComponent(match[1]) : '';
+    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
 }

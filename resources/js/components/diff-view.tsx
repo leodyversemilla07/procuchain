@@ -40,9 +40,11 @@ export function DiffView({ oldValues, newValues, className }: DiffViewProps) {
 
     return (
         <div className={className}>
-            <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="text-muted-foreground mb-1 flex items-center gap-1 text-xs">
                 <ArrowDownUp className="h-3 w-3" />
-                <span>{diff.length} change{diff.length !== 1 ? 's' : ''}</span>
+                <span>
+                    {diff.length} change{diff.length !== 1 ? 's' : ''}
+                </span>
             </div>
             <div className="overflow-x-auto rounded border">
                 <Table>

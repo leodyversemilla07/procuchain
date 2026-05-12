@@ -1,5 +1,4 @@
 import { exportMethod, generate } from '@/actions/App/Http/Controllers/ReportController';
-import { getXsrfToken } from '@/lib/csrf';
 import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,8 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
+import { getXsrfToken } from '@/lib/csrf';
 import { type BreadcrumbItem } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { BarChart3, Calendar, Download, FileText, Search, TrendingUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
@@ -59,21 +59,21 @@ interface ReportData {
 }
 
 export default function ReportIndex() {
- const [filters, setFilters] = useState<ReportFilters>({
- filter_type: 'month',
- month: new Date().getMonth() + 1,
- year: new Date().getFullYear(),
- });
+    const [filters, setFilters] = useState<ReportFilters>({
+        filter_type: 'month',
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+    });
 
- const [reportData, setReportData] = useState<ReportData | null>(null);
- const [loading, setLoading] = useState(false);
- const [error, setError] = useState<string | null>(null);
+    const [reportData, setReportData] = useState<ReportData | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
- const breadcrumbs: BreadcrumbItem[] = [{ title: 'Reports', href: '/reports' }];
+    const breadcrumbs: BreadcrumbItem[] = [{ title: 'Reports', href: '/reports' }];
 
- // Resolve role-specific route URLs from Wayfinder multi-role exports
- const generateUrl = useMemo(() => resolveRouteFn(generate), []);
- const exportUrl = useMemo(() => resolveRouteFn(exportMethod), []);
+    // Resolve role-specific route URLs from Wayfinder multi-role exports
+    const generateUrl = useMemo(() => resolveRouteFn(generate), []);
+    const exportUrl = useMemo(() => resolveRouteFn(exportMethod), []);
 
     const handleFilterChange = (key: keyof ReportFilters, value: string | number | undefined) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -84,15 +84,15 @@ export default function ReportIndex() {
         setError(null);
 
         try {
- const response = await fetch(generateUrl(), {
- method: 'POST',
- headers: {
- 'Content-Type': 'application/json',
- 'X-XSRF-TOKEN': getXsrfToken(),
- },
- credentials: 'same-origin',
- body: JSON.stringify(filters),
- });
+            const response = await fetch(generateUrl(), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': getXsrfToken(),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(filters),
+            });
 
             const data = await response.json();
 
@@ -110,15 +110,15 @@ export default function ReportIndex() {
 
     const exportReport = async (format: 'json' | 'csv' | 'pdf') => {
         try {
- const response = await fetch(exportUrl(), {
- method: 'POST',
- headers: {
- 'Content-Type': 'application/json',
- 'X-XSRF-TOKEN': getXsrfToken(),
- },
- credentials: 'same-origin',
- body: JSON.stringify({ ...filters, format }),
- });
+            const response = await fetch(exportUrl(), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': getXsrfToken(),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ ...filters, format }),
+            });
 
             if (format === 'csv' || format === 'pdf') {
                 const blob = await response.blob();

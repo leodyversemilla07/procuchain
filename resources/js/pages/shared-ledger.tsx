@@ -1,69 +1,89 @@
 import { HeroCard } from '@/components/hero-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar } from '@/components/ui/calendar';
 import AppLayout from '@/layouts/app-layout';
-import type { LedgerEntry, LedgerFilters, LedgerPagination, NodeOption, StreamOption } from '@/types/blockchain';
 import { cn } from '@/lib/utils';
+import type { LedgerEntry, LedgerFilters, LedgerPagination, NodeOption, StreamOption } from '@/types/blockchain';
 import { Head, router } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
 import {
-  Activity,
-  AlertTriangle,
-  Archive,
-  ArrowDownUp,
-  BookOpen,
-  BookOpenText,
-  CalendarIcon,
-  Check,
-  ChevronDown,
-  ClipboardCopy,
-  Download,
-  ExternalLink,
-  FileText,
-  FilterX,
-  GitBranch,
-  Pencil,
-  ScrollText,
-  Server,
-  Shield,
+    AlertTriangle,
+    Archive,
+    ArrowDownUp,
+    BookOpen,
+    BookOpenText,
+    CalendarIcon,
+    ChevronDown,
+    ClipboardCopy,
+    Download,
+    ExternalLink,
+    FileText,
+    FilterX,
+    GitBranch,
+    Pencil,
+    ScrollText,
+    Server,
+    Shield,
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { type DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 
 interface SharedLedgerPageProps {
-  entries: LedgerEntry[];
-  pagination: LedgerPagination;
-  available_streams: StreamOption[];
-  available_nodes: NodeOption[];
-  stream_totals: Record<string, number>;
-  selected_node: string;
-  filters: LedgerFilters;
-  error?: string;
+    entries: LedgerEntry[];
+    pagination: LedgerPagination;
+    available_streams: StreamOption[];
+    available_nodes: NodeOption[];
+    stream_totals: Record<string, number>;
+    selected_node: string;
+    filters: LedgerFilters;
+    error?: string;
 }
 
 const basePath = window.location.pathname;
 
-const breadcrumbs = [
-    { title: 'Shared Ledger', href: basePath },
-];
+const breadcrumbs = [{ title: 'Shared Ledger', href: basePath }];
 
 /** Stream badge configuration */
 const STREAM_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-    'procurement.metadata': { label: 'Created / Updated', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300', icon: BookOpenText },
-    'procurement.status': { label: 'Status Change', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300', icon: GitBranch },
+    'procurement.metadata': {
+        label: 'Created / Updated',
+        color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+        icon: BookOpenText,
+    },
+    'procurement.status': {
+        label: 'Status Change',
+        color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+        icon: GitBranch,
+    },
     'procurement.documents': { label: 'Document', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300', icon: FileText },
-    'procurement.corrections': { label: 'Document Correction', color: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300', icon: AlertTriangle },
-    'procurement.metadata.corrections': { label: 'Metadata Correction', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300', icon: Pencil },
+    'procurement.corrections': {
+        label: 'Document Correction',
+        color: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+        icon: AlertTriangle,
+    },
+    'procurement.metadata.corrections': {
+        label: 'Metadata Correction',
+        color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+        icon: Pencil,
+    },
     'procurement.archive': { label: 'Archive', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: Archive },
 };
 
@@ -91,18 +111,33 @@ function computeDiff(oldValues: Record<string, unknown>, newValues: Record<strin
     return diff;
 }
 
-export default function SharedLedger({ entries, pagination, available_streams, available_nodes, stream_totals, selected_node, filters, error }: SharedLedgerPageProps) {
-  const [prNumber, setPrNumber] = useState(filters.pr_number ?? '');
-  const [stream, setStream] = useState(filters.stream ?? '');
-  const [node, setNode] = useState(filters.node ?? selected_node ?? 'all');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+export default function SharedLedger({
+    entries,
+    pagination,
+    available_streams,
+    available_nodes,
+    stream_totals,
+    selected_node,
+    filters,
+    error,
+}: SharedLedgerPageProps) {
+    const [prNumber, setPrNumber] = useState(filters.pr_number ?? '');
+    const [stream, setStream] = useState(filters.stream ?? '');
+    const [node, setNode] = useState(filters.node ?? selected_node ?? 'all');
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: filters.date_from ? parseISO(filters.date_from) : undefined,
         to: filters.date_to ? parseISO(filters.date_to) : undefined,
     });
 
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-    const hasActiveFilters = !!(filters.pr_number || filters.stream || filters.date_from || filters.date_to || (filters.node && filters.node !== 'all'));
+    const hasActiveFilters = !!(
+        filters.pr_number ||
+        filters.stream ||
+        filters.date_from ||
+        filters.date_to ||
+        (filters.node && filters.node !== 'all')
+    );
 
     const toggleRow = (txid: string) => {
         setExpandedRows((prev) => {
@@ -117,38 +152,39 @@ export default function SharedLedger({ entries, pagination, available_streams, a
     };
 
     const copyTxid = (txid: string) => {
-        navigator.clipboard.writeText(txid).then(() => {
-            toast.success('TX ID copied to clipboard');
-        }).catch(() => {
-            toast.error('Failed to copy TX ID');
-        });
+        navigator.clipboard
+            .writeText(txid)
+            .then(() => {
+                toast.success('TX ID copied to clipboard');
+            })
+            .catch(() => {
+                toast.error('Failed to copy TX ID');
+            });
     };
 
-  const applyFilters = () => {
-    router.get(
-      basePath,
-      {
-        ...(prNumber ? { pr_number: prNumber } : {}),
-        ...(stream && stream !== 'all' ? { stream } : {}),
-        ...(node && node !== 'all' ? { node } : {}),
-        ...(dateRange?.from ? { date_from: format(dateRange.from, 'yyyy-MM-dd') } : {}),
-        ...(dateRange?.to ? { date_to: format(dateRange.to, 'yyyy-MM-dd') } : {}),
-      },
-      { preserveState: true, replace: true },
-    );
-  };
+    const applyFilters = () => {
+        router.get(
+            basePath,
+            {
+                ...(prNumber ? { pr_number: prNumber } : {}),
+                ...(stream && stream !== 'all' ? { stream } : {}),
+                ...(node && node !== 'all' ? { node } : {}),
+                ...(dateRange?.from ? { date_from: format(dateRange.from, 'yyyy-MM-dd') } : {}),
+                ...(dateRange?.to ? { date_to: format(dateRange.to, 'yyyy-MM-dd') } : {}),
+            },
+            { preserveState: true, replace: true },
+        );
+    };
 
-  const clearFilters = () => {
-    setPrNumber('');
-    setStream('');
-    setNode('all');
-    setDateRange(undefined);
-    router.get(basePath, {}, { preserveState: false, replace: true });
-  };
+    const clearFilters = () => {
+        setPrNumber('');
+        setStream('');
+        setNode('all');
+        setDateRange(undefined);
+        router.get(basePath, {}, { preserveState: false, replace: true });
+    };
 
-    const selectedStreamLabel = stream && stream !== 'all'
-        ? (STREAM_CONFIG[stream]?.label ?? stream)
-        : 'All streams';
+    const selectedStreamLabel = stream && stream !== 'all' ? (STREAM_CONFIG[stream]?.label ?? stream) : 'All streams';
 
     /** Export ledger to CSV */
     const handleExport = () => {
@@ -176,9 +212,8 @@ export default function SharedLedger({ entries, pagination, available_streams, a
     };
 
     const totalTransactions = pagination.total;
-    const totalProcurements = available_streams
-        .filter((s) => s.value === 'procurement.metadata')
-        .length > 0 ? (stream_totals['procurement.metadata'] ?? 0) : 0;
+    const totalProcurements =
+        available_streams.filter((s) => s.value === 'procurement.metadata').length > 0 ? (stream_totals['procurement.metadata'] ?? 0) : 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -213,9 +248,7 @@ export default function SharedLedger({ entries, pagination, available_streams, a
                     </div>
                 </HeroCard>
 
-                {error && (
-                    <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">{error}</div>
-                )}
+                {error && <div className="bg-destructive/10 text-destructive rounded-md px-4 py-3 text-sm">{error}</div>}
 
                 {/* Filters */}
                 <Card>
@@ -225,61 +258,59 @@ export default function SharedLedger({ entries, pagination, available_streams, a
                             Filters
                         </CardTitle>
                     </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <Input
-            type="text"
-            placeholder="PR Number (e.g. PR-2026-001)"
-            value={prNumber}
-            onChange={(e) => setPrNumber(e.target.value)}
-          />
+                    <CardContent>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                            <Input
+                                type="text"
+                                placeholder="PR Number (e.g. PR-2026-001)"
+                                value={prNumber}
+                                onChange={(e) => setPrNumber(e.target.value)}
+                            />
 
-          <Select value={node || 'all'} onValueChange={(value) => value && setNode(value)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="All nodes">{() =>
-                node && node !== 'all'
-                  ? available_nodes.find((n) => n.id === node)?.name ?? node
-                  : 'All nodes'
-              }</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">
-                  <div className="flex items-center gap-2">
-                    <Server className="h-3.5 w-3.5" />
-                    All nodes (shared)
-                  </div>
-                </SelectItem>
-                {available_nodes.map((n) => (
-                  <SelectItem key={n.id} value={n.id}>
-                    <div className="flex items-center gap-2">
-                      <Server className="h-3.5 w-3.5" />
-                      {n.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+                            <Select value={node || 'all'} onValueChange={(value) => value && setNode(value)}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="All nodes">
+                                        {() => (node && node !== 'all' ? (available_nodes.find((n) => n.id === node)?.name ?? node) : 'All nodes')}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem value="all">
+                                            <div className="flex items-center gap-2">
+                                                <Server className="h-3.5 w-3.5" />
+                                                All nodes (shared)
+                                            </div>
+                                        </SelectItem>
+                                        {available_nodes.map((n) => (
+                                            <SelectItem key={n.id} value={n.id}>
+                                                <div className="flex items-center gap-2">
+                                                    <Server className="h-3.5 w-3.5" />
+                                                    {n.name}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
 
-          <Select value={stream || 'all'} onValueChange={(value) => value && setStream(value)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="All transactions">{() => selectedStreamLabel}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">All transactions</SelectItem>
-                {available_streams.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    <div className="flex items-center gap-2">
-                      {React.createElement(STREAM_CONFIG[s.value]?.icon ?? ScrollText, { className: 'h-3.5 w-3.5' })}
-                      {s.label}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+                            <Select value={stream || 'all'} onValueChange={(value) => value && setStream(value)}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="All transactions">{() => selectedStreamLabel}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem value="all">All transactions</SelectItem>
+                                        {available_streams.map((s) => (
+                                            <SelectItem key={s.value} value={s.value}>
+                                                <div className="flex items-center gap-2">
+                                                    {React.createElement(STREAM_CONFIG[s.value]?.icon ?? ScrollText, { className: 'h-3.5 w-3.5' })}
+                                                    {s.label}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
 
                             <Popover>
                                 <PopoverTrigger
@@ -336,19 +367,19 @@ export default function SharedLedger({ entries, pagination, available_streams, a
                     </CardFooter>
                 </Card>
 
-  {/* Immutability Notice */}
-  <div className="bg-primary/5 border-primary/20 rounded-lg border px-4 py-3 text-sm">
-    <p className="text-primary flex items-center gap-2 font-medium">
-      <Shield className="h-4 w-4" />
-      Immutable & Shared — Every entry is a verified MultiChain transaction
-    </p>
-    <p className="text-muted-foreground mt-1">
-      {node && node !== 'all'
-        ? `Showing data from the ${available_nodes.find((n) => n.id === node)?.name ?? node} node's perspective. Each entry has a TX ID that cryptographically proves it exists on the blockchain.`
-        : 'This ledger is shared across all roles — Admin, BAC Secretariat, BAC Chairman, and HOPE all see the exact same data. Each entry has a TX ID that cryptographically proves it exists on the blockchain.'}
-      Expand any row to see what changed and the raw blockchain data.
-    </p>
-  </div>
+                {/* Immutability Notice */}
+                <div className="bg-primary/5 border-primary/20 rounded-lg border px-4 py-3 text-sm">
+                    <p className="text-primary flex items-center gap-2 font-medium">
+                        <Shield className="h-4 w-4" />
+                        Immutable & Shared — Every entry is a verified MultiChain transaction
+                    </p>
+                    <p className="text-muted-foreground mt-1">
+                        {node && node !== 'all'
+                            ? `Showing data from the ${available_nodes.find((n) => n.id === node)?.name ?? node} node's perspective. Each entry has a TX ID that cryptographically proves it exists on the blockchain.`
+                            : 'This ledger is shared across all roles — Admin, BAC Secretariat, BAC Chairman, and HOPE all see the exact same data. Each entry has a TX ID that cryptographically proves it exists on the blockchain.'}
+                        Expand any row to see what changed and the raw blockchain data.
+                    </p>
+                </div>
 
                 {/* Ledger Entries Table */}
                 <Card>
@@ -394,17 +425,12 @@ export default function SharedLedger({ entries, pagination, available_streams, a
                                         const isExpanded = expandedRows.has(entry.txid);
                                         const StreamIcon = streamCfg.icon;
                                         const isSystem = entry.pr_number === 'system';
-                                        const hasChanges =
-                                            Object.keys(entry.old_values).length > 0 ||
-                                            Object.keys(entry.new_values).length > 0;
+                                        const hasChanges = Object.keys(entry.old_values).length > 0 || Object.keys(entry.new_values).length > 0;
                                         const diff = hasChanges ? computeDiff(entry.old_values, entry.new_values) : [];
 
                                         return (
                                             <React.Fragment key={entry.txid}>
-                                                <TableRow
-                                                    className="hover:bg-muted/50 cursor-pointer"
-                                                    onClick={() => toggleRow(entry.txid)}
-                                                >
+                                                <TableRow className="hover:bg-muted/50 cursor-pointer" onClick={() => toggleRow(entry.txid)}>
                                                     <TableCell>
                                                         <ChevronDown
                                                             className={cn(
@@ -436,22 +462,19 @@ export default function SharedLedger({ entries, pagination, available_streams, a
                                                             {entry.summary}
                                                         </div>
                                                         {entry.procurement_title && (
-                                                            <div className="text-muted-foreground truncate text-xs">
-                                                                {entry.procurement_title}
-                                                            </div>
+                                                            <div className="text-muted-foreground truncate text-xs">{entry.procurement_title}</div>
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="font-mono text-xs">
-                                                        {entry.actor_address
-                                                            ? `${entry.actor_address.substring(0, 10)}...`
-                                                            : <span className="text-muted-foreground italic">—</span>
-                                                        }
+                                                        {entry.actor_address ? (
+                                                            `${entry.actor_address.substring(0, 10)}...`
+                                                        ) : (
+                                                            <span className="text-muted-foreground italic">—</span>
+                                                        )}
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex items-center gap-1">
-                                                            <span className="font-mono text-xs">
-                                                                {entry.txid.substring(0, 8)}...
-                                                            </span>
+                                                            <span className="font-mono text-xs">{entry.txid.substring(0, 8)}...</span>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
@@ -496,10 +519,18 @@ export default function SharedLedger({ entries, pagination, available_streams, a
                                                                                                         {d.key}
                                                                                                     </TableCell>
                                                                                                     <TableCell className="bg-red-50/50 font-mono text-xs break-all dark:bg-red-950/20">
-                                                                                                        {d.old || <span className="text-muted-foreground italic">empty</span>}
+                                                                                                        {d.old || (
+                                                                                                            <span className="text-muted-foreground italic">
+                                                                                                                empty
+                                                                                                            </span>
+                                                                                                        )}
                                                                                                     </TableCell>
                                                                                                     <TableCell className="bg-green-50/50 font-mono text-xs break-all dark:bg-green-950/20">
-                                                                                                        {d.new || <span className="text-muted-foreground italic">empty</span>}
+                                                                                                        {d.new || (
+                                                                                                            <span className="text-muted-foreground italic">
+                                                                                                                empty
+                                                                                                            </span>
+                                                                                                        )}
                                                                                                     </TableCell>
                                                                                                 </TableRow>
                                                                                             ))}
@@ -512,9 +543,9 @@ export default function SharedLedger({ entries, pagination, available_streams, a
                                                                         {/* Original TX ID link */}
                                                                         {entry.original_txid && (
                                                                             <div className="flex items-center gap-2 text-sm">
-                                                                                <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                                                                                <ExternalLink className="text-muted-foreground h-4 w-4" />
                                                                                 <span className="text-muted-foreground">References original TX:</span>
-                                                                                <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">
+                                                                                <code className="bg-muted rounded px-2 py-0.5 font-mono text-xs">
                                                                                     {entry.original_txid.substring(0, 16)}...
                                                                                 </code>
                                                                                 <Button
@@ -536,7 +567,7 @@ export default function SharedLedger({ entries, pagination, available_streams, a
                                                                         <div>
                                                                             <div className="mb-2 flex items-center justify-between">
                                                                                 <h4 className="text-sm font-medium">Raw Blockchain Data</h4>
-                                                                                <Badge variant="outline" className="text-xs font-mono">
+                                                                                <Badge variant="outline" className="font-mono text-xs">
                                                                                     TX: {entry.txid}
                                                                                 </Badge>
                                                                             </div>
@@ -568,7 +599,10 @@ export default function SharedLedger({ entries, pagination, available_streams, a
                                         <PaginationPrevious
                                             href={pagination.current_page > 1 ? `?page=${pagination.current_page - 1}` : undefined}
                                             onClick={(e) => {
-                                                if (pagination.current_page <= 1) { e.preventDefault(); return; }
+                                                if (pagination.current_page <= 1) {
+                                                    e.preventDefault();
+                                                    return;
+                                                }
                                                 e.preventDefault();
                                                 const params = new URLSearchParams(window.location.search);
                                                 params.set('page', String(pagination.current_page - 1));
@@ -597,13 +631,16 @@ export default function SharedLedger({ entries, pagination, available_streams, a
                                                     {page}
                                                 </PaginationLink>
                                             </PaginationItem>
-                                        )
+                                        ),
                                     )}
                                     <PaginationItem>
                                         <PaginationNext
                                             href={pagination.current_page < pagination.last_page ? `?page=${pagination.current_page + 1}` : undefined}
                                             onClick={(e) => {
-                                                if (pagination.current_page >= pagination.last_page) { e.preventDefault(); return; }
+                                                if (pagination.current_page >= pagination.last_page) {
+                                                    e.preventDefault();
+                                                    return;
+                                                }
                                                 e.preventDefault();
                                                 const params = new URLSearchParams(window.location.search);
                                                 params.set('page', String(pagination.current_page + 1));
