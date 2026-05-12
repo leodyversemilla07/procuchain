@@ -1,15 +1,15 @@
 <?php
 
 use App\Services\ProcurementDataService;
+use App\Services\ProcurementSearchService;
 use App\Services\ReportGenerationService;
-use App\Services\SemanticSearchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->mockProcurementDataService = Mockery::mock(ProcurementDataService::class);
-    $this->mockSemanticSearchService = Mockery::mock(SemanticSearchService::class);
+    $this->mockProcurementSearchService = Mockery::mock(ProcurementSearchService::class);
     $this->app->instance(ProcurementDataService::class, $this->mockProcurementDataService);
 });
 
@@ -34,12 +34,12 @@ test('report generation service generates report with month filter', function ()
         ],
     ];
 
-    $this->mockSemanticSearchService
+    $this->mockProcurementSearchService
         ->shouldReceive('search')
         ->once()
         ->andReturn($mockResults);
 
-    $this->mockSemanticSearchService
+    $this->mockProcurementSearchService
         ->shouldReceive('calculateStatistics')
         ->once()
         ->andReturn([
@@ -51,7 +51,7 @@ test('report generation service generates report with month filter', function ()
             'total_abc_amount' => 100000,
         ]);
 
-    $service = new ReportGenerationService($this->mockSemanticSearchService);
+    $service = new ReportGenerationService($this->mockProcurementSearchService);
     $report = $service->generateReport([
         'filter_type' => 'month',
         'month' => 1,
@@ -76,12 +76,12 @@ test('report generation service generates report with quarter filter', function 
         'results' => [],
     ];
 
-    $this->mockSemanticSearchService
+    $this->mockProcurementSearchService
         ->shouldReceive('search')
         ->once()
         ->andReturn($mockResults);
 
-    $this->mockSemanticSearchService
+    $this->mockProcurementSearchService
         ->shouldReceive('calculateStatistics')
         ->once()
         ->andReturn([
@@ -93,7 +93,7 @@ test('report generation service generates report with quarter filter', function 
             'total_abc_amount' => 0,
         ]);
 
-    $service = new ReportGenerationService($this->mockSemanticSearchService);
+    $service = new ReportGenerationService($this->mockProcurementSearchService);
     $report = $service->generateReport([
         'filter_type' => 'quarter',
         'quarter' => 1,
@@ -116,12 +116,12 @@ test('report generation service generates report with year filter', function () 
         'results' => [],
     ];
 
-    $this->mockSemanticSearchService
+    $this->mockProcurementSearchService
         ->shouldReceive('search')
         ->once()
         ->andReturn($mockResults);
 
-    $this->mockSemanticSearchService
+    $this->mockProcurementSearchService
         ->shouldReceive('calculateStatistics')
         ->once()
         ->andReturn([
@@ -133,7 +133,7 @@ test('report generation service generates report with year filter', function () 
             'total_abc_amount' => 0,
         ]);
 
-    $service = new ReportGenerationService($this->mockSemanticSearchService);
+    $service = new ReportGenerationService($this->mockProcurementSearchService);
     $report = $service->generateReport([
         'filter_type' => 'year',
         'year' => 2025,
@@ -160,7 +160,7 @@ test('report generation service exports to CSV', function () {
         ],
     ];
 
-    $service = new ReportGenerationService($this->mockSemanticSearchService);
+    $service = new ReportGenerationService($this->mockProcurementSearchService);
     $csv = $service->exportReport($reportData, 'csv');
 
     expect($csv)->toBeString()
@@ -176,14 +176,14 @@ test('report generation service handles empty data for CSV export', function () 
         'data' => [],
     ];
 
-    $service = new ReportGenerationService($this->mockSemanticSearchService);
+    $service = new ReportGenerationService($this->mockProcurementSearchService);
     $csv = $service->exportReport($reportData, 'csv');
 
     expect($csv)->toBe('');
 });
 
 test('report generation service handles search failure', function () {
-    $this->mockSemanticSearchService
+    $this->mockProcurementSearchService
         ->shouldReceive('search')
         ->once()
         ->andReturn([
@@ -191,7 +191,7 @@ test('report generation service handles search failure', function () {
             'error' => 'Test error',
         ]);
 
-    $service = new ReportGenerationService($this->mockSemanticSearchService);
+    $service = new ReportGenerationService($this->mockProcurementSearchService);
     $report = $service->generateReport([
         'filter_type' => 'month',
         'month' => 1,
@@ -214,12 +214,12 @@ test('report generation service applies custom date range filter', function () {
         'results' => [],
     ];
 
-    $this->mockSemanticSearchService
+    $this->mockProcurementSearchService
         ->shouldReceive('search')
         ->once()
         ->andReturn($mockResults);
 
-    $this->mockSemanticSearchService
+    $this->mockProcurementSearchService
         ->shouldReceive('calculateStatistics')
         ->once()
         ->andReturn([
@@ -231,7 +231,7 @@ test('report generation service applies custom date range filter', function () {
             'total_abc_amount' => 0,
         ]);
 
-    $service = new ReportGenerationService($this->mockSemanticSearchService);
+    $service = new ReportGenerationService($this->mockProcurementSearchService);
     $report = $service->generateReport([
         'filter_type' => 'date_range',
         'date_from' => '2025-01-01',

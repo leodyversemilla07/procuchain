@@ -1,7 +1,7 @@
 <?php
 
 use App\Services\ProcurementDataService;
-use App\Services\SemanticSearchService;
+use App\Services\ProcurementSearchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -11,7 +11,7 @@ beforeEach(function () {
     $this->app->instance(ProcurementDataService::class, $this->mockProcurementDataService);
 });
 
-test('semantic search service searches without filters', function () {
+test('procurement search service searches without filters', function () {
     $mockData = [
         [
             'id' => 'PR-001',
@@ -27,7 +27,7 @@ test('semantic search service searches without filters', function () {
         ->once()
         ->andReturn($mockData);
 
-    $service = new SemanticSearchService($this->mockProcurementDataService);
+    $service = new ProcurementSearchService($this->mockProcurementDataService);
     $results = $service->search('test');
 
     expect($results)->toHaveKey('success')
@@ -36,7 +36,7 @@ test('semantic search service searches without filters', function () {
         ->and($results['total'])->toBe(1);
 });
 
-test('semantic search service filters by status', function () {
+test('procurement search service filters by status', function () {
     $mockData = [
         [
             'id' => 'PR-001',
@@ -59,7 +59,7 @@ test('semantic search service filters by status', function () {
         ->once()
         ->andReturn($mockData);
 
-    $service = new SemanticSearchService($this->mockProcurementDataService);
+    $service = new ProcurementSearchService($this->mockProcurementDataService);
     $results = $service->search('', ['status' => 'active']);
 
     expect($results['success'])->toBeTrue()
@@ -67,7 +67,7 @@ test('semantic search service filters by status', function () {
         ->and($results['results'][0]['id'])->toBe('PR-001');
 });
 
-test('semantic search service filters by date range', function () {
+test('procurement search service filters by date range', function () {
     $mockData = [
         [
             'id' => 'PR-001',
@@ -90,7 +90,7 @@ test('semantic search service filters by date range', function () {
         ->once()
         ->andReturn($mockData);
 
-    $service = new SemanticSearchService($this->mockProcurementDataService);
+    $service = new ProcurementSearchService($this->mockProcurementDataService);
     $results = $service->search('', [
         'date_from' => '2025-01-01',
         'date_to' => '2025-01-31',
@@ -101,7 +101,7 @@ test('semantic search service filters by date range', function () {
         ->and($results['results'][0]['id'])->toBe('PR-001');
 });
 
-test('semantic search service calculates statistics correctly', function () {
+test('procurement search service calculates statistics correctly', function () {
     $mockData = [
         [
             'id' => 'PR-001',
@@ -125,7 +125,7 @@ test('semantic search service calculates statistics correctly', function () {
         ],
     ];
 
-    $service = new SemanticSearchService($this->mockProcurementDataService);
+    $service = new ProcurementSearchService($this->mockProcurementDataService);
     $statistics = $service->calculateStatistics($mockData);
 
     expect($statistics)->toHaveKey('total_count')
@@ -136,13 +136,13 @@ test('semantic search service calculates statistics correctly', function () {
         ->and($statistics['total_abc_amount'])->toBe(300000.0);
 });
 
-test('semantic search service handles empty results', function () {
+test('procurement search service handles empty results', function () {
     $this->mockProcurementDataService
         ->shouldReceive('fetchAndProcessProcurements')
         ->once()
         ->andReturn([]);
 
-    $service = new SemanticSearchService($this->mockProcurementDataService);
+    $service = new ProcurementSearchService($this->mockProcurementDataService);
     $results = $service->search('nonexistent');
 
     expect($results['success'])->toBeTrue()
@@ -150,16 +150,41 @@ test('semantic search service handles empty results', function () {
         ->and($results['results'])->toBeEmpty();
 });
 
-test('semantic search service handles exceptions', function () {
+test('procurement search service handles exceptions', function () {
     $this->mockProcurementDataService
         ->shouldReceive('fetchAndProcessProcurements')
         ->once()
         ->andThrow(new Exception('Test exception'));
 
-    $service = new SemanticSearchService($this->mockProcurementDataService);
+    $service = new ProcurementSearchService($this->mockProcurementDataService);
     $results = $service->search('test');
 
     expect($results['success'])->toBeFalse()
         ->and($results)->toHaveKey('error')
         ->and($results['total'])->toBe(0);
+});
+
+test('procurement search service catches typos via fuzzy matching', function () {
+    $mockData = [
+        [
+            'id' => 'PR-001',
+            'title' => 'Infrastructure Development Project',
+            'current_status' => 'active',
+            'stage' => 'bidding',
+            'created_at' => '2025-01-15',
+        ],
+    ];
+
+    $this->mockProcurementDataService
+        ->shouldReceive('fetchAndProcessProcurements')
+        ->once()
+        ->andReturn($mockData);
+
+    $service = new ProcurementSearchService($this->mockProcurementDataService);
+    // Typo: "infrastucture" (missing 'r') should still match "infrastructure"
+    $results = $service->search('infrastucture');
+
+    expect($results['success'])->toBeTrue()
+        ->and($results['total'])->toBe(1)
+        ->and($results['results'][0]['id'])->toBe('PR-001');
 });

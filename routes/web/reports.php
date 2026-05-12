@@ -17,6 +17,7 @@ foreach (['admin', 'bac_chairman', 'bac_secretariat', 'hope'] as $role) {
             Route::get('/', [ReportController::class, 'index'])->name('index');
             Route::post('/generate', [ReportController::class, 'generate'])->name('generate');
             Route::post('/export', [ReportController::class, 'export'])->name('export');
+            Route::post('/search', [ReportController::class, 'search'])->name('search');
         });
     });
 }

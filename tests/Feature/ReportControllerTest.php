@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\ProcurementSearchService;
 use App\Services\ReportGenerationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -130,11 +131,32 @@ test('report can be generated with year filter', function () {
     ]);
 });
 
-// TODO: Implement semantic search JSON API endpoint (POST /admin/search)
-// The current search route is GET /admin/blockchain-explorer/search (Inertia page)
-// These tests should be re-enabled once the API endpoint is built
-test('semantic search can be performed', function () {
-    $this->markTestSkipped('Semantic search API endpoint not yet implemented');
+test('procurement search can be performed', function () {
+    $mockSearchService = Mockery::mock(ProcurementSearchService::class);
+    $mockSearchService->shouldReceive('search')
+        ->once()
+        ->with('test', [])
+        ->andReturn([
+            'success' => true,
+            'query' => 'test',
+            'filters' => [],
+            'total' => 1,
+            'results' => [
+                ['id' => 'PR-001', 'title' => 'Test Procurement'],
+            ],
+        ]);
+
+    $this->app->instance(ProcurementSearchService::class, $mockSearchService);
+
+    $response = $this->postJson('/admin/reports/search', [
+        'query' => 'test',
+    ]);
+
+    $response->assertSuccessful();
+    $response->assertJson([
+        'success' => true,
+        'total' => 1,
+    ]);
 });
 
 test('report generation requires authentication', function () {
@@ -271,7 +293,9 @@ test('report can be exported as PDF', function () {
     expect($response->headers->get('Content-Disposition'))->toContain('procurement-report-');
 });
 
-// TODO: Re-enable when semantic search API endpoint is implemented
-test('semantic search requires query parameter', function () {
-    $this->markTestSkipped('Semantic search API endpoint not yet implemented');
+test('procurement search requires query parameter', function () {
+    $response = $this->postJson('/admin/reports/search', []);
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['query']);
 });
