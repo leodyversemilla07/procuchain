@@ -78,11 +78,11 @@ final class ProcurementData
     // METADATA - Throughout Procurement Lifecycle
     // ═══════════════════════════════════════════════════════════════════
     // Status changes as procurement progresses through stages
-    public readonly string $status,
-    public readonly string $userId,
-    public readonly ?string $userAddress = null,
-    public readonly Carbon $createdAt,
-    ) {}
+ public readonly string $status,
+ public readonly string $userId,
+ public readonly Carbon $createdAt,
+ public readonly ?string $userAddress = null,
+ ) {}
 
     /**
      * Convert the procurement data to a blockchain-compatible array format.
