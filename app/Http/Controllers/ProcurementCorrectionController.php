@@ -18,7 +18,7 @@ class ProcurementCorrectionController extends Controller
         private readonly ProcurementCorrectionService $correctionService,
     ) {}
 
-    public function correctProcurement(CorrectProcurementRequest $request, string $prNumber): JsonResponse
+    public function correctProcurement(CorrectProcurementRequest $request, string $prNumber)
     {
         $this->authorize('correct-procurement', $prNumber);
 
@@ -38,12 +38,9 @@ class ProcurementCorrectionController extends Controller
                 'pr_number' => $prNumber,
             ], $jobId, auth()->id());
 
-            return response()->json([
-                'job_id' => $jobId,
-                'status' => 'pending',
-            ], 202);
+            return back()->with('success', 'Procurement correction submitted successfully. The blockchain write will complete in the background.');
         } catch (\RuntimeException $e) {
-            return response()->json(['error' => $e->getMessage()], 404);
+            return back()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             Log::error('Failed to submit procurement correction', [
                 'pr_number' => $prNumber,
@@ -51,7 +48,7 @@ class ProcurementCorrectionController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json(['error' => 'Failed to submit correction: '.$e->getMessage()], 500);
+            return back()->with('error', 'Failed to submit correction: '.$e->getMessage());
         }
     }
 

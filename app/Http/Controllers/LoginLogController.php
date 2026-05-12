@@ -141,7 +141,7 @@ class LoginLogController extends Controller
                 $expiresAt = now()->addDays(30);
             }
 
-            $block = $this->blockedIpService->blockIp(
+            $this->blockedIpService->blockIp(
                 $validated['ip_address'],
                 $validated['reason'] ?? 'Blocked due to suspicious activity',
                 $expiresAt
@@ -154,21 +154,14 @@ class LoginLogController extends Controller
                 'expires_at' => $expiresAt?->toDateTimeString(),
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'IP address blocked successfully',
-                'data' => $block,
-            ]);
+            return back()->with('success', 'IP address blocked successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to block IP address', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to block IP address',
-            ], 500);
+            return back()->with('error', 'Failed to block IP address.');
         }
     }
 
@@ -185,10 +178,7 @@ class LoginLogController extends Controller
             $result = $this->blockedIpService->unblockIp($validated['ip_address']);
 
             if (! $result) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'IP address not found in blocked list',
-                ], 404);
+                return back()->with('error', 'IP address not found in blocked list.');
             }
 
             Log::info('IP address unblocked via admin panel', [
@@ -196,20 +186,14 @@ class LoginLogController extends Controller
                 'unblocked_by' => Auth::id(),
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'IP address unblocked successfully',
-            ]);
+            return back()->with('success', 'IP address unblocked successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to unblock IP address', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to unblock IP address',
-            ], 500);
+            return back()->with('error', 'Failed to unblock IP address.');
         }
     }
 

@@ -84,9 +84,15 @@ interface LoginStatistics {
 }
 
 interface Props {
-    recentLogins: LoginLog[];
-    statistics: LoginStatistics;
-    suspiciousActivities?: LoginLog[]; // Optional - loaded via Deferred
+ recentLogins: LoginLog[];
+ statistics: LoginStatistics;
+ suspiciousActivities?: LoginLog[]; // Optional - loaded via Deferred
+ flash?: {
+ success?: string;
+ error?: string;
+ warning?: string;
+ info?: string;
+ };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -100,7 +106,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function LoginLogs({ recentLogins, statistics, suspiciousActivities }: Props) {
+export default function LoginLogs({ recentLogins, statistics, suspiciousActivities, flash }: Props) {
     // Access authentication data to get current user
     const page = usePage<Props & SharedData>();
     const { auth } = page.props;
@@ -125,9 +131,17 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [selectedLogs, setSelectedLogs] = useState<Set<number>>(new Set());
-    const [isExporting, setIsExporting] = useState(false);
+ const [isExporting, setIsExporting] = useState(false);
 
-    // Dialog state for viewing log details
+ // Handle flash messages from Inertia redirects
+ useEffect(() => {
+ if (flash?.success) toast.success(flash.success);
+ if (flash?.error) toast.error(flash.error);
+ if (flash?.warning) toast.warning(flash.warning);
+ if (flash?.info) toast.info(flash.info);
+ }, [flash]);
+
+ // Dialog state for viewing log details
     const [selectedLog, setSelectedLog] = useState<LoginLog | null>(null);
     const [selectedLogCategory, setSelectedLogCategory] = useState<'recent' | 'suspicious' | undefined>(undefined);
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -522,22 +536,16 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     reason,
                     duration,
                 },
-                {
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        toast.success('IP Address Blocked', {
-                            description: `${ipToBlock} has been blocked successfully.`,
-                        });
-                        setIsBlockDialogOpen(false);
-                        setIpToBlock(null);
-                    },
-                    onError: (errors) => {
-                        console.error('Error blocking IP:', errors);
-                        toast.error('Failed to block IP', {
-                            description: errors.message || 'An error occurred while blocking the IP address.',
-                        });
-                    },
-                    onFinish: () => {
+ {
+ preserveScroll: true,
+ onSuccess: () => {
+ setIsBlockDialogOpen(false);
+ setIpToBlock(null);
+ },
+ onError: () => {
+ // Error toast handled by flash message from server
+ },
+ onFinish: () => {
                         setIsBlocking(false);
                     },
                 },
