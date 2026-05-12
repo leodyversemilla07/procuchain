@@ -7,7 +7,7 @@ it('keeps key named routes stable after route extraction', function () {
 
     expect($routes->getByName('home')?->uri())->toBe('/')
         ->and($routes->getByName('admin.reports.index')?->uri())->toBe('admin/reports')
-        ->and($routes->getByName('admin.search')?->uri())->toBe('admin/search')
+        ->and($routes->getByName('admin.blockchain.explorer.search')?->uri())->toBe('admin/blockchain-explorer/search')
         ->and($routes->getByName('bac-secretariat.dashboard')?->uri())->toBe('bac-secretariat/dashboard')
         ->and($routes->getByName('admin.dashboard')?->uri())->toBe('admin/dashboard')
         ->and($routes->getByName('procurement.verify')?->uri())->toBe('procurement/{pr_number}/verify');
