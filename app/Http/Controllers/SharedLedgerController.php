@@ -39,8 +39,15 @@ class SharedLedgerController extends Controller
     private const PER_PAGE = 50;
 
     /** RPC credentials (read from config for consistency with .env) */
-    private function getRpcUser(): string { return config('multichain.rpc.username', 'multichainrpc'); }
-    private function getRpcPassword(): string { return config('multichain.rpc.password', 'procuchain2026'); }
+    private function getRpcUser(): string
+    {
+        return config('multichain.rpc.username', 'multichainrpc');
+    }
+
+    private function getRpcPassword(): string
+    {
+        return config('multichain.rpc.password', 'procuchain2026');
+    }
 
     /** Node registry — kept in sync with Terraform outputs */
     private const NODES = [
@@ -276,16 +283,16 @@ class SharedLedgerController extends Controller
                 $client = new Client(
                     $nodeConfig['private_ip'],
                     $nodeConfig['rpc_port'],
-                $this->getRpcUser(),
-                $this->getRpcPassword(),
-                false
-            );
-            $client->setoption('chain_name', config('multichain.chain_name'));
-            $client->setoption('use_curl', true);
-            $client->setoption('verify_ssl', false);
-            $client->setTimeout(15);
+                    $this->getRpcUser(),
+                    $this->getRpcPassword(),
+                    false
+                );
+                $client->setoption('chain_name', config('multichain.chain_name'));
+                $client->setoption('use_curl', true);
+                $client->setoption('verify_ssl', false);
+                $client->setTimeout(15);
 
-            $nodeEntries = $this->fetchEntriesFromClient($client);
+                $nodeEntries = $this->fetchEntriesFromClient($client);
 
                 foreach ($nodeEntries as $entry) {
                     if (! isset($seenTxids[$entry->txid])) {

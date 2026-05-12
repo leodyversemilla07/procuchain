@@ -12,8 +12,15 @@ use Inertia\Response;
 class NodeNetworkController extends Controller
 {
     /** RPC credentials (read from config for consistency with .env) */
-    private function getRpcUser(): string { return config('multichain.rpc.username', 'multichainrpc'); }
-    private function getRpcPassword(): string { return config('multichain.rpc.password', 'procuchain2026'); }
+    private function getRpcUser(): string
+    {
+        return config('multichain.rpc.username', 'multichainrpc');
+    }
+
+    private function getRpcPassword(): string
+    {
+        return config('multichain.rpc.password', 'procuchain2026');
+    }
 
     private const NODES = [
         [

@@ -10,7 +10,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
-use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Sentry\Laravel\Integration;
@@ -33,13 +32,13 @@ return Application::configure(basePath: dirname(__DIR__))
             });
         },
     )
- ->withMiddleware(function (Middleware $middleware) {
- $middleware->encryptCookies(except: ['appearance']);
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->encryptCookies(except: ['appearance']);
 
- // Trust the Elastic Beanstalk ALB proxy
- $middleware->trustProxies(at: '*');
+        // Trust the Elastic Beanstalk ALB proxy
+        $middleware->trustProxies(at: '*');
 
- $middleware->web(append: [
+        $middleware->web(append: [
             SecurityHeaders::class,
             CheckBlockedIp::class,
             HandleAppearance::class,
@@ -84,28 +83,28 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         Integration::handles($exceptions);
 
- $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
- $status = $response->getStatusCode();
+        $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
+            $status = $response->getStatusCode();
 
- // 419 CSRF mismatch: redirect back with flash instead of error page
- // The XSRF-TOKEN cookie will be refreshed on the redirect response,
- // so the next request will succeed automatically.
- if ($status === 419 && $request->hasSession()) {
- return back()->with('message', 'The page expired, please try again.');
- }
+            // 419 CSRF mismatch: redirect back with flash instead of error page
+            // The XSRF-TOKEN cookie will be refreshed on the redirect response,
+            // so the next request will succeed automatically.
+            if ($status === 419 && $request->hasSession()) {
+                return back()->with('message', 'The page expired, please try again.');
+            }
 
- // In local environment, we want to see the actual error for 500s (Server Errors)
- // but we can show the custom page for 404s, 403s, etc.
- if (app()->environment('local') && $status === 500) {
- return $response;
- }
+            // In local environment, we want to see the actual error for 500s (Server Errors)
+            // but we can show the custom page for 404s, 403s, etc.
+            if (app()->environment('local') && $status === 500) {
+                return $response;
+            }
 
- if (in_array($status, [500, 503, 404, 403, 401, 429])) {
- return Inertia::render('error', ['status' => $status])
- ->toResponse($request)
- ->setStatusCode($status);
- }
+            if (in_array($status, [500, 503, 404, 403, 401, 429])) {
+                return Inertia::render('error', ['status' => $status])
+                    ->toResponse($request)
+                    ->setStatusCode($status);
+            }
 
- return $response;
- });
+            return $response;
+        });
     })->create();

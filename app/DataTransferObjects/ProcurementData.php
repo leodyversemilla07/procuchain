@@ -74,15 +74,15 @@ final class ProcurementData
         public readonly ?string $approvedBy,
         public readonly ?Carbon $approvalDate,
 
-    // ═══════════════════════════════════════════════════════════════════
-    // METADATA - Throughout Procurement Lifecycle
-    // ═══════════════════════════════════════════════════════════════════
-    // Status changes as procurement progresses through stages
- public readonly string $status,
- public readonly string $userId,
- public readonly Carbon $createdAt,
- public readonly ?string $userAddress = null,
- ) {}
+        // ═══════════════════════════════════════════════════════════════════
+        // METADATA - Throughout Procurement Lifecycle
+        // ═══════════════════════════════════════════════════════════════════
+        // Status changes as procurement progresses through stages
+        public readonly string $status,
+        public readonly string $userId,
+        public readonly Carbon $createdAt,
+        public readonly ?string $userAddress = null,
+    ) {}
 
     /**
      * Convert the procurement data to a blockchain-compatible array format.
@@ -115,10 +115,10 @@ final class ProcurementData
             'philgeps_posting_date' => $this->philgepsPostingDate?->toIso8601String(),
             'approved_by' => $this->approvedBy,
             'approval_date' => $this->approvalDate?->toIso8601String(),
-        'status' => $this->status,
-        'user_id' => $this->userId,
-        'user_address' => $this->userAddress,
-        'created_at' => $this->createdAt->toIso8601String(),
+            'status' => $this->status,
+            'user_id' => $this->userId,
+            'user_address' => $this->userAddress,
+            'created_at' => $this->createdAt->toIso8601String(),
         ];
     }
 
