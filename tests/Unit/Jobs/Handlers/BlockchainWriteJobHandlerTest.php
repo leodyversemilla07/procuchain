@@ -202,8 +202,9 @@ describe('BlockchainWriteJob dispatch routing', function () {
         }
 
         $cached = Cache::get('blockchain_job:job-uuid-fail');
-        expect($cached['status'])->toBe('failed')
-            ->and($cached['error'])->toBe('Blockchain RPC timeout');
+        expect($cached['status'])->toBe('retrying')
+            ->and($cached['attempt'])->toBe(1)
+            ->and($cached['max_attempts'])->toBe(3);
     });
 
     it('caches result in Redis with key blockchain_job:{jobId}', function () {

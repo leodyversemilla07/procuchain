@@ -8,7 +8,6 @@ use App\Services\ProcurementDataService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 
@@ -43,7 +42,7 @@ class DocumentDownloadController extends BaseController
             Log::info('Retrieving file from blockchain', [
                 'file_key' => $fileKey,
                 'data_txid' => $dataTxid,
-                'user_id' => Auth::id(),
+                'user_id' => $request->user()->id,
             ]);
 
             // Retrieve file from blockchain using data_txid
@@ -55,7 +54,7 @@ class DocumentDownloadController extends BaseController
                 Log::info('Secure file access from blockchain', [
                     'file_key' => $fileKey,
                     'data_txid' => $dataTxid ?? 'not_available',
-                    'user_id' => Auth::id(),
+                    'user_id' => $request->user()->id,
                     'user_role' => $request->user()->role ?? 'unknown',
                     'ip' => $request->ip(),
                 ]);
@@ -99,7 +98,7 @@ class DocumentDownloadController extends BaseController
             Log::error('Secure file download failed', [
                 'file_key' => $fileKey,
                 'error' => 'An error occurred downloading the document.',
-                'user_id' => Auth::id() ?? 'guest',
+                'user_id' => $request->user()->id ?? 'guest',
             ]);
 
             abort(500, 'Unable to retrieve file');
@@ -165,7 +164,7 @@ class DocumentDownloadController extends BaseController
     {
         try {
             DocumentView::create([
-                'user_id' => Auth::id(),
+                'user_id' => $request->user()->id,
                 'file_key' => $fileKey,
                 'pr_number' => $documentData['pr_number'] ?? '',
                 'procurement_title' => $documentData['procurement_title'] ?? null,
@@ -184,7 +183,7 @@ class DocumentDownloadController extends BaseController
             report($e);
             Log::error('Failed to record document view', [
                 'file_key' => $fileKey,
-                'user_id' => Auth::id(),
+                'user_id' => $request->user()->id,
                 'error' => 'An error occurred downloading the document.',
             ]);
         }

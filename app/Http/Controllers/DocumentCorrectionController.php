@@ -42,7 +42,7 @@ class DocumentCorrectionController extends Controller
                 return back()->with('error', 'Invalid document: missing procurement information.');
             }
 
-            $userAddress = auth()->user()->blockchain_address ?? '';
+            $userAddress = $request->user()->blockchain_address ?? '';
             $action = $validated['correction_type'] === 'replace' ? 'replace' : 'invalidate';
             $correctionType = match ($validated['correction_type']) {
                 'replace' => 'document_correction',
@@ -60,7 +60,7 @@ class DocumentCorrectionController extends Controller
                 'correction_type' => $correctionType,
                 'action' => $action,
                 'reason' => $validated['correction_reason'],
-                'corrected_by' => auth()->user()->name ?? 'System',
+                'corrected_by' => $request->user()->name ?? 'System',
                 'user_address' => $userAddress,
                 'original_stage' => $originalDocument->stage ?? null,
             ];
@@ -73,14 +73,14 @@ class DocumentCorrectionController extends Controller
             }
 
             $jobId = Str::uuid()->toString();
-            BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId, auth()->id());
+            BlockchainWriteJob::dispatch('correct_document', $jobData, $jobId, $request->user()->id);
 
             return back()->with('success', 'Document correction submitted successfully. The blockchain update is being processed.');
         } catch (\Exception $e) {
             Log::error('Failed to submit document correction', [
                 'txid' => $txid,
                 'error' => 'An error occurred with the document correction.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return back()->with('error', 'Failed to submit correction. Please try again.');

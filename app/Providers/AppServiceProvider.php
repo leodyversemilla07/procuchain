@@ -74,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
         // Register procurement policy abilities as named Gates (no Eloquent model binding).
         Gate::define('view-procurement', [ProcurementPolicy::class, 'view']);
         Gate::define('create-procurement', [ProcurementPolicy::class, 'create']);
+        Gate::define('initiate-procurement', [ProcurementPolicy::class, 'create']);
         Gate::define('archive-procurement', [ProcurementPolicy::class, 'archive']);
         Gate::define('restore-procurement', [ProcurementPolicy::class, 'restore']);
         Gate::define('correct-procurement', [ProcurementPolicy::class, 'correct']);

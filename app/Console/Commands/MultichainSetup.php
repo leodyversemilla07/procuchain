@@ -136,7 +136,7 @@ class MultichainSetup extends Command
             // Log the full exception for debugging
             Log::error('MultichainSetup command failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return self::FAILURE;

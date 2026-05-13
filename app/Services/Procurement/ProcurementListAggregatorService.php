@@ -14,7 +14,6 @@ use App\Repositories\ProcurementRepository;
 use App\Repositories\StatusRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -102,7 +101,7 @@ final class ProcurementListAggregatorService
         } catch (\Exception $e) {
             Log::error('Failed to fetch procurement data, blockchain may be unavailable', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             if (str_contains($e->getMessage(), 'execution time') || str_contains($e->getMessage(), 'timeout')) {
@@ -387,7 +386,7 @@ final class ProcurementListAggregatorService
      */
     private function getCurrentUserRole(?User $authUser = null): string
     {
-        $user = $authUser ?? Auth::user();
+        $user = $authUser;
 
         if (! $user instanceof User) {
             return 'guest';

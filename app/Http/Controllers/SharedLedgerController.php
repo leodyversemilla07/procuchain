@@ -46,28 +46,19 @@ class SharedLedgerController extends Controller
 
     private function getRpcPassword(): string
     {
-        return config('multichain.rpc.password', 'procuchain2026');
+        return config('multichain.rpc.password');
     }
 
-    /** Node registry — kept in sync with Terraform outputs */
-    private const NODES = [
-        [
-            'id' => 'admin', 'name' => 'Primary Node', 'role' => 'Administrator',
-            'private_ip' => '172.31.13.41', 'rpc_port' => 6834,
-        ],
-        [
-            'id' => 'bac-secretariat', 'name' => 'BAC Secretariat', 'role' => 'Secretariat',
-            'private_ip' => '172.31.88.136', 'rpc_port' => 6834,
-        ],
-        [
-            'id' => 'bac-chairman', 'name' => 'BAC Chairman', 'role' => 'Chairman',
-            'private_ip' => '172.31.23.21', 'rpc_port' => 6834,
-        ],
-        [
-            'id' => 'hope', 'name' => 'HOPE', 'role' => 'HOPE',
-            'private_ip' => '172.31.42.5', 'rpc_port' => 6834,
-        ],
-    ];
+    /**
+     * Node registry — sourced from config/multichain.php (env-driven).
+     * Falls back to localhost defaults if no env vars are set.
+     *
+     * @return array<int, array{id: string, name: string, role: string, private_ip: string, rpc_port: int}>
+     */
+    private function getNodes(): array
+    {
+        return config('multichain.nodes', []);
+    }
 
     public function __construct(
         private Manager $multichain,
@@ -168,7 +159,7 @@ class SharedLedgerController extends Controller
             }
 
             // Build available nodes list
-            $availableNodes = collect(self::NODES)->map(fn ($node) => [
+            $availableNodes = collect($this->getNodes())->map(fn ($node) => [
                 'id' => $node['id'],
                 'name' => $node['name'],
                 'role' => $node['role'],
@@ -192,7 +183,7 @@ class SharedLedgerController extends Controller
             report($e);
             Log::error('SharedLedger: Failed to fetch ledger entries', [
                 'error' => 'An error occurred loading the shared ledger.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return Inertia::render('shared-ledger', [
@@ -205,7 +196,7 @@ class SharedLedgerController extends Controller
                 ],
                 'available_streams' => [],
                 'stream_totals' => [],
-                'available_nodes' => collect(self::NODES)->map(fn ($node) => [
+                'available_nodes' => collect($this->getNodes())->map(fn ($node) => [
                     'id' => $node['id'],
                     'name' => $node['name'],
                     'role' => $node['role'],
@@ -239,7 +230,7 @@ class SharedLedgerController extends Controller
      */
     private function fetchFromNode(string $nodeId): array
     {
-        $nodeConfig = collect(self::NODES)->first(fn ($n) => $n['id'] === $nodeId);
+        $nodeConfig = collect($this->getNodes())->first(fn ($n) => $n['id'] === $nodeId);
 
         if ($nodeConfig === null) {
             // Fallback to the default Manager connection
@@ -280,7 +271,7 @@ class SharedLedgerController extends Controller
         $allEntries = [];
         $seenTxids = [];
 
-        foreach (self::NODES as $nodeConfig) {
+        foreach ($this->getNodes() as $nodeConfig) {
             try {
                 $client = new Client(
                     $nodeConfig['private_ip'],

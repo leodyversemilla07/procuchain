@@ -13,7 +13,7 @@ class UploadSingleDocumentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('bac_secretariat');
+        return $this->user()?->hasRole('bac_secretariat') ?? false;
     }
 
     /**

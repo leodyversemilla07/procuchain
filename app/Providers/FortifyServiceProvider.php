@@ -70,7 +70,7 @@ class FortifyServiceProvider extends ServiceProvider
                 {
                     return $request->wantsJson()
                         ? new JsonResponse('', 201)
-                        : redirect()->intended($this->redirectToDashboard());
+                        : redirect()->intended($this->redirectToDashboard($request, $request->user()));
                 }
             };
         });

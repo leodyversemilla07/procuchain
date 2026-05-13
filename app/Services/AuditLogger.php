@@ -6,7 +6,6 @@ use App\Contracts\EventPublisherInterface;
 use App\Contracts\NotificationServiceInterface;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class AuditLogger
@@ -48,7 +47,7 @@ class AuditLogger
         $log = null;
         try {
             $log = AuditLog::create([
-                'user_id' => Auth::id(),
+                'user_id' => $this->request->user()?->id,
                 'action' => $action,
                 'subject_type' => $subjectType,
                 'subject_id' => $subjectId,
@@ -68,7 +67,7 @@ class AuditLogger
 
         // 2. Publish to blockchain (immutable record — best effort, never blocks)
         try {
-            $user = Auth::user();
+            $user = $this->request->user();
             $userAddress = $user?->blockchain_address ?? '';
             $userName = $user?->name ?? 'System';
             $details = $this->buildBlockchainDetails($action, $subjectType, $subjectId, $oldValues, $newValues);
@@ -131,7 +130,7 @@ class AuditLogger
         }
 
         try {
-            $user = Auth::user();
+            $user = $this->request->user();
             $actorName = $user?->name ?? 'System';
             $details = $this->buildBlockchainDetails($action, $subjectType, $subjectId, $oldValues, $newValues);
 

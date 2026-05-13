@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Models\UserInvitation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,7 +18,7 @@ class UserInvitationController extends Controller
     /**
      * Display invitation management page
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $this->authorize('viewAny', User::class);
 
@@ -79,7 +78,7 @@ class UserInvitationController extends Controller
                 'email' => $validated['email'],
                 'name' => $validated['name'],
                 'role' => $validated['role'],
-                'invited_by' => Auth::id(),
+                'invited_by' => $request->user()->id,
             ]);
 
             // Generate acceptance URL
@@ -90,7 +89,7 @@ class UserInvitationController extends Controller
 
             Log::info('User invitation sent', [
                 'invitation_id' => $invitation->id,
-                'invited_by' => Auth::id(),
+                'invited_by' => $request->user()->id,
                 'invitee_email' => $invitation->email,
                 'role' => $invitation->role,
             ]);
@@ -99,7 +98,7 @@ class UserInvitationController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to send user invitation', [
                 'error' => 'An error occurred with the user invitation.',
-                'invited_by' => Auth::id(),
+                'invited_by' => $request->user()->id,
                 'email' => $validated['email'],
             ]);
 
@@ -110,7 +109,7 @@ class UserInvitationController extends Controller
     /**
      * Resend an invitation
      */
-    public function resend(UserInvitation $invitation): RedirectResponse
+    public function resend(Request $request, UserInvitation $invitation): RedirectResponse
     {
         $this->authorize('create', User::class);
 
@@ -132,7 +131,7 @@ class UserInvitationController extends Controller
 
             Log::info('User invitation resent', [
                 'invitation_id' => $invitation->id,
-                'resent_by' => Auth::id(),
+                'resent_by' => $request->user()->id,
                 'invitee_email' => $invitation->email,
             ]);
 
@@ -167,7 +166,7 @@ class UserInvitationController extends Controller
 
             Log::info('User invitation revoked', [
                 'invitation_id' => $invitation->id,
-                'revoked_by' => Auth::id(),
+                'revoked_by' => $request->user()->id,
                 'invitee_email' => $invitation->email,
             ]);
 

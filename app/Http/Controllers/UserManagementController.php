@@ -9,7 +9,7 @@ use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\Manager;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -24,14 +24,14 @@ class UserManagementController extends Controller
     /**
      * Display user management page
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $this->authorize('viewAny', User::class);
 
         // SECURITY: Only select non-sensitive columns - never expose tokens, secrets, or recovery codes
         $users = User::select('id', 'name', 'email', 'blockchain_address', 'email_verified_at', 'created_at', 'updated_at', 'account_locked', 'locked_at', 'lock_expires_at', 'failed_login_attempts', 'last_failed_login_at', 'locked_reason', 'two_factor_confirmed_at')
             ->with('roles:id,name')
-            ->where('id', '!=', Auth::id())
+            ->where('id', '!=', $request->user()->id)
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($user) {
@@ -102,7 +102,7 @@ class UserManagementController extends Controller
             $user->assignRole($validated['role']);
 
             Log::info('Admin created new user', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'created_user_id' => $user->id,
                 'user_email' => $user->email,
                 'user_role' => $validated['role'],
@@ -119,7 +119,7 @@ class UserManagementController extends Controller
             return redirect()->back()->with('success', 'User created successfully with blockchain address.');
         } catch (\Exception $e) {
             Log::error('Failed to create user', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'error' => 'An error occurred managing users. Please try again.',
             ]);
 
@@ -158,7 +158,7 @@ class UserManagementController extends Controller
             $user->syncRoles([$validated['role']]);
 
             Log::info('Admin updated user', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'updated_user_id' => $user->id,
                 'user_email' => $user->email,
                 'user_role' => $validated['role'],
@@ -174,7 +174,7 @@ class UserManagementController extends Controller
             return redirect()->back()->with('success', 'User updated successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to update user', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'user_id' => $user->id,
                 'error' => 'An error occurred managing users. Please try again.',
             ]);
@@ -186,13 +186,13 @@ class UserManagementController extends Controller
     /**
      * Delete a user
      */
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
         $this->authorize('delete', $user);
 
         try {
             // Policy already prevents deleting own account, but keeping check for explicit error message
-            if ($user->id === Auth::id()) {
+            if ($user->id === $request->user()->id) {
                 return redirect()->back()->with('error', 'You cannot delete your own account.');
             }
 
@@ -200,7 +200,7 @@ class UserManagementController extends Controller
             $userId = $user->id;
             $user->delete();
             Log::info('Admin deleted user', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'deleted_user_email' => $userEmail,
             ]);
 
@@ -214,7 +214,7 @@ class UserManagementController extends Controller
             return redirect()->back()->with('success', 'User deleted successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to delete user', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'user_id' => $user->id,
                 'error' => 'An error occurred managing users. Please try again.',
             ]);
@@ -257,12 +257,12 @@ class UserManagementController extends Controller
             }
 
             // Prevent deleting yourself via bulk action
-            if ($usersToDelete->pluck('id')->contains(Auth::id())) {
+            if ($usersToDelete->pluck('id')->contains($request->user()->id)) {
                 return redirect()->back()->with('error', 'You cannot delete your own account.');
             }
 
             // Perform bulk deletion within a transaction
-            $currentUserId = Auth::id();
+            $currentUserId = $request->user()->id;
             DB::transaction(function () use ($userIds, $usersToDelete, $currentUserId) {
                 User::whereIn('id', $userIds)->delete();
 
@@ -296,7 +296,7 @@ class UserManagementController extends Controller
             return redirect()->back()->with('success', $message);
         } catch (\Exception $e) {
             Log::error('Failed to bulk delete users', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'user_ids' => $validated['user_ids'] ?? [],
                 'error' => 'An error occurred managing users. Please try again.',
             ]);
@@ -316,7 +316,7 @@ class UserManagementController extends Controller
 
         try {
             // Policy already prevents resetting own password, but keeping check for explicit error message
-            if ($user->id === Auth::id()) {
+            if ($user->id === $request->user()->id) {
                 return redirect()->back()->with('error', 'You cannot reset your own password from here. Please use the profile settings.');
             }
 
@@ -328,7 +328,7 @@ class UserManagementController extends Controller
             if ($status === Password::RESET_LINK_SENT) {
                 // Log the password reset action
                 Log::info('Admin initiated password reset for user', [
-                    'admin_id' => Auth::id(),
+                    'admin_id' => $request->user()->id,
                     'admin_email' => $request->user()->email,
                     'user_id' => $user->id,
                     'user_email' => $user->email,
@@ -346,7 +346,7 @@ class UserManagementController extends Controller
                 return redirect()->back()->with('success', "Password reset link sent to {$user->email}");
             } else {
                 Log::warning('Failed to send password reset link', [
-                    'admin_id' => Auth::id(),
+                    'admin_id' => $request->user()->id,
                     'user_id' => $user->id,
                     'user_email' => $user->email,
                     'status' => $status,
@@ -356,10 +356,10 @@ class UserManagementController extends Controller
             }
         } catch (\Exception $e) {
             Log::error('Error sending password reset link', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'user_id' => $user->id,
                 'error' => 'An error occurred managing users. Please try again.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return redirect()->back()->with('error', 'An error occurred while sending the reset link.');

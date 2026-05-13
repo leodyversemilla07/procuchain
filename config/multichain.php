@@ -73,6 +73,59 @@ return [
     'node_address' => env('MULTICHAIN_NODE_ADDRESS'),
 
     /*
+ |--------------------------------------------------------------------------
+ | Node Registry
+ |--------------------------------------------------------------------------
+ |
+ | The list of MultiChain nodes in the network. Each node entry defines
+ | its id, display name, role, and connection details (public IP,
+ | private IP, P2P port, RPC port). Sourced from Terraform outputs
+ | and set via .env so deployments don't require code changes.
+ |
+ | The key format is: MULTICHAIN_NODE_{ID}_* (e.g. MULTICHAIN_NODE_ADMIN_IP)
+ |
+ */
+
+    'nodes' => [
+        [
+            'id' => 'admin',
+            'name' => env('MULTICHAIN_NODE_ADMIN_NAME', 'Primary Node'),
+            'role' => env('MULTICHAIN_NODE_ADMIN_ROLE', 'Administrator'),
+            'ip' => env('MULTICHAIN_NODE_ADMIN_IP', '127.0.0.1'),
+            'private_ip' => env('MULTICHAIN_NODE_ADMIN_PRIVATE_IP', '127.0.0.1'),
+            'p2p_port' => (int) env('MULTICHAIN_NODE_ADMIN_P2P_PORT', 6835),
+            'rpc_port' => (int) env('MULTICHAIN_NODE_ADMIN_RPC_PORT', 6834),
+        ],
+        [
+            'id' => 'bac-secretariat',
+            'name' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_NAME', 'BAC Secretariat'),
+            'role' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_ROLE', 'Secretariat'),
+            'ip' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_IP', '127.0.0.1'),
+            'private_ip' => env('MULTICHAIN_NODE_BAC_SECRETARIAT_PRIVATE_IP', '127.0.0.1'),
+            'p2p_port' => (int) env('MULTICHAIN_NODE_BAC_SECRETARIAT_P2P_PORT', 6835),
+            'rpc_port' => (int) env('MULTICHAIN_NODE_BAC_SECRETARIAT_RPC_PORT', 6834),
+        ],
+        [
+            'id' => 'bac-chairman',
+            'name' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_NAME', 'BAC Chairman'),
+            'role' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_ROLE', 'Chairman'),
+            'ip' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_IP', '127.0.0.1'),
+            'private_ip' => env('MULTICHAIN_NODE_BAC_CHAIRMAN_PRIVATE_IP', '127.0.0.1'),
+            'p2p_port' => (int) env('MULTICHAIN_NODE_BAC_CHAIRMAN_P2P_PORT', 6835),
+            'rpc_port' => (int) env('MULTICHAIN_NODE_BAC_CHAIRMAN_RPC_PORT', 6834),
+        ],
+        [
+            'id' => 'hope',
+            'name' => env('MULTICHAIN_NODE_HOPE_NAME', 'HOPE'),
+            'role' => env('MULTICHAIN_NODE_HOPE_ROLE', 'HOPE'),
+            'ip' => env('MULTICHAIN_NODE_HOPE_IP', '127.0.0.1'),
+            'private_ip' => env('MULTICHAIN_NODE_HOPE_PRIVATE_IP', '127.0.0.1'),
+            'p2p_port' => (int) env('MULTICHAIN_NODE_HOPE_P2P_PORT', 6835),
+            'rpc_port' => (int) env('MULTICHAIN_NODE_HOPE_RPC_PORT', 6834),
+        ],
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Connection Settings
     |--------------------------------------------------------------------------

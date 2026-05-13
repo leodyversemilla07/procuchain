@@ -19,6 +19,6 @@ class TwoFactorLoginResponse extends Controller implements TwoFactorLoginRespons
     {
         return $request->wantsJson()
             ? response()->json(['two_factor' => false])
-            : redirect()->intended($this->redirectToDashboard($request->user()));
+            : redirect()->intended($this->redirectToDashboard($request, $request->user()));
     }
 }

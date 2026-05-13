@@ -1,7 +1,7 @@
 import { getXsrfToken } from '@/lib/csrf';
 import { useCallback, useRef } from 'react';
 
-export type BlockchainJobStatus = 'pending' | 'done' | 'failed';
+export type BlockchainJobStatus = 'pending' | 'retrying' | 'done' | 'failed';
 
 export interface BlockchainJobResult {
     status: BlockchainJobStatus;
