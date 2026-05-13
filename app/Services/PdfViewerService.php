@@ -134,7 +134,7 @@ class PdfViewerService
                 'file_size' => $this->getFileSize($fileKey),
                 'timestamp' => $documentView->created_at->toISOString(),
                 'hash' => $alternativeHash ?: '',
-                'user_address' => Auth::user()->blockchain_address ?? 'no-blockchain-address',
+                'user_address' => $request->user()->blockchain_address ?? 'no-blockchain-address',
             ];
 
             if ($pr_number !== 'Unknown') {

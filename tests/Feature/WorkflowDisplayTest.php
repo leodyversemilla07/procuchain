@@ -122,12 +122,12 @@ describe('Procurement Initiation With Workflow Info', function () {
 
         $repository = mock(ProcurementRepository::class);
         $repository->shouldReceive('findByProcurement')
-            ->with('PR-NON-EXISTENT')
+            ->with('PR-2025-997-0001')
             ->andReturn(null);
         $this->instance(ProcurementRepository::class, $repository);
 
         $response = $this->get(route('bac-secretariat.procurement.initiation.show', [
-            'pr_number' => 'PR-NON-EXISTENT',
+            'pr_number' => 'PR-2025-997-0001',
         ]));
 
         $response->assertNotFound();

@@ -60,14 +60,14 @@ it('filters procurements for bac secretariat ownership or blockchain interaction
 
     $aggregator = buildIsolationAggregator(
         repositoryFixtures: [
-            'PR-OWNED' => isolationProcurementFixture('PR-OWNED', (string) $secretariat->id),
-            'PR-TOUCHED' => isolationProcurementFixture('PR-TOUCHED', '999'),
-            'PR-BLOCKED' => isolationProcurementFixture('PR-BLOCKED', '888'),
+            'PR-2025-994-0001' => isolationProcurementFixture('PR-2025-994-0001', (string) $secretariat->id),
+            'PR-2025-994-0002' => isolationProcurementFixture('PR-2025-994-0002', '999'),
+            'PR-2025-994-0003' => isolationProcurementFixture('PR-2025-994-0003', '888'),
         ],
         statusFixtures: [
-            isolationStatusFixture('PR-OWNED', 'different-address', 'Owned Procurement'),
-            isolationStatusFixture('PR-TOUCHED', 'secretariat-address', 'Touched Procurement'),
-            isolationStatusFixture('PR-BLOCKED', 'different-address', 'Blocked Procurement'),
+            isolationStatusFixture('PR-2025-994-0001', 'different-address', 'Owned Procurement'),
+            isolationStatusFixture('PR-2025-994-0002', 'secretariat-address', 'Touched Procurement'),
+            isolationStatusFixture('PR-2025-994-0003', 'different-address', 'Blocked Procurement'),
         ],
     );
 
@@ -79,20 +79,20 @@ it('filters procurements for bac secretariat ownership or blockchain interaction
 
     expect(collect($procurements)->pluck('id')->all())
         ->toHaveCount(2)
-        ->toContain('PR-OWNED', 'PR-TOUCHED');
+        ->toContain('PR-2025-994-0001', 'PR-2025-994-0002');
 });
 
 it('returns all procurements when no visibility filters are applied', function () {
     $aggregator = buildIsolationAggregator(
         repositoryFixtures: [
-            'PR-OWNED' => isolationProcurementFixture('PR-OWNED', '1'),
-            'PR-TOUCHED' => isolationProcurementFixture('PR-TOUCHED', '2'),
-            'PR-BLOCKED' => isolationProcurementFixture('PR-BLOCKED', '3'),
+            'PR-2025-994-0001' => isolationProcurementFixture('PR-2025-994-0001', '1'),
+            'PR-2025-994-0002' => isolationProcurementFixture('PR-2025-994-0002', '2'),
+            'PR-2025-994-0003' => isolationProcurementFixture('PR-2025-994-0003', '3'),
         ],
         statusFixtures: [
-            isolationStatusFixture('PR-OWNED', 'first-address', 'Owned Procurement'),
-            isolationStatusFixture('PR-TOUCHED', 'second-address', 'Touched Procurement'),
-            isolationStatusFixture('PR-BLOCKED', 'third-address', 'Blocked Procurement'),
+            isolationStatusFixture('PR-2025-994-0001', 'first-address', 'Owned Procurement'),
+            isolationStatusFixture('PR-2025-994-0002', 'second-address', 'Touched Procurement'),
+            isolationStatusFixture('PR-2025-994-0003', 'third-address', 'Blocked Procurement'),
         ],
     );
 
@@ -100,7 +100,7 @@ it('returns all procurements when no visibility filters are applied', function (
 
     expect(collect($procurements)->pluck('id')->all())
         ->toHaveCount(3)
-        ->toContain('PR-OWNED', 'PR-TOUCHED', 'PR-BLOCKED');
+        ->toContain('PR-2025-994-0001', 'PR-2025-994-0002', 'PR-2025-994-0003');
 });
 
 it('builds distinct dashboard cache keys for scoped and unscoped access', function () {

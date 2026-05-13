@@ -8,6 +8,7 @@ use App\Http\Requests\User\SendInvitationRequest;
 use App\Models\User;
 use App\Models\UserInvitation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -149,7 +150,7 @@ class UserInvitationController extends Controller
     /**
      * Revoke an invitation
      */
-    public function destroy(UserInvitation $invitation): RedirectResponse
+    public function destroy(Request $request, UserInvitation $invitation): RedirectResponse
     {
         $this->authorize('create', User::class);
 
@@ -162,7 +163,7 @@ class UserInvitationController extends Controller
         }
 
         try {
-            $invitation->revoke(Auth::user());
+            $invitation->revoke($request->user());
 
             Log::info('User invitation revoked', [
                 'invitation_id' => $invitation->id,

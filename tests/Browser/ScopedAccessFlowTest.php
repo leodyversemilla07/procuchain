@@ -33,14 +33,14 @@ describe('Scoped Access Browser Flow', function () {
 
     it('allows bac secretariat to open an accessible procurement detail page', function () {
         browserBindProcurementDetailMocks(
-            prNumber: 'PR-OPEN',
+            prNumber: 'PR-2025-993-0001',
             user: $this->bacSecretariat,
             accessible: true,
         );
 
         $this->actingAs($this->bacSecretariat);
 
-        $page = visit(route('bac-secretariat.procurements.show', ['pr_number' => 'PR-OPEN']));
+        $page = visit(route('bac-secretariat.procurements.show', ['pr_number' => 'PR-2025-993-0001']));
 
         $page->assertSee('Accessible Procurement')
             ->assertSee('Workflow Progress')
@@ -51,14 +51,14 @@ describe('Scoped Access Browser Flow', function () {
 
     it('blocks bac secretariat from opening a procurement they do not own or touch', function () {
         browserBindProcurementDetailMocks(
-            prNumber: 'PR-LOCKED',
+            prNumber: 'PR-2025-993-0002',
             user: $this->bacSecretariat,
             accessible: false,
         );
 
         $this->actingAs($this->bacSecretariat);
 
-        $page = visit(route('bac-secretariat.procurements.show', ['pr_number' => 'PR-LOCKED']));
+        $page = visit(route('bac-secretariat.procurements.show', ['pr_number' => 'PR-2025-993-0002']));
 
         $page->assertSee('403: Forbidden')
             ->assertSee('Sorry, you are forbidden from accessing this page.')
@@ -69,7 +69,7 @@ describe('Scoped Access Browser Flow', function () {
     it('allows bac secretariat to open an accessible PDF viewer page', function () {
         browserBindPdfViewerMocks(
             fileKey: 'open-document.pdf',
-            prNumber: 'PR-OPEN',
+            prNumber: 'PR-2025-993-0001',
             user: $this->bacSecretariat,
             accessible: true,
         );
@@ -86,7 +86,7 @@ describe('Scoped Access Browser Flow', function () {
     it('blocks bac secretariat from opening a locked PDF viewer page', function () {
         browserBindPdfViewerMocks(
             fileKey: 'locked-document.pdf',
-            prNumber: 'PR-LOCKED',
+            prNumber: 'PR-2025-993-0002',
             user: $this->bacSecretariat,
             accessible: false,
         );

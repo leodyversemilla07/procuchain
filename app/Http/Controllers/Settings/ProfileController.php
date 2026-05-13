@@ -20,7 +20,7 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = $request->user();
 
         return Inertia::render('settings/profile', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
@@ -34,7 +34,7 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         /** @var User $user */
-        $user = Auth::user();
+        $user = $request->user();
 
         $user->fill($request->validated());
 
@@ -57,7 +57,7 @@ class ProfileController extends Controller
         ]);
 
         /** @var User $user */
-        $user = Auth::user();
+        $user = $request->user();
 
         Auth::logout();
 

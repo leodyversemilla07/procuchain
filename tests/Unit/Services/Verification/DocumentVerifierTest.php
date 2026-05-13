@@ -357,7 +357,7 @@ describe('DocumentCrossReferenceVerifier', function () {
                 'timestamp' => Carbon::now(),
             ]);
             $doc2 = makeDocumentData([
-                'prNumber' => 'PR-WRONG-999',
+                'prNumber' => 'PR-2025-989-0001',
                 'timestamp' => Carbon::now()->addMinute(),
             ]);
 

@@ -38,11 +38,11 @@ it('forbids bac secretariat from downloading inaccessible procurement documents'
         ->once()
         ->with('locked-file.pdf')
         ->andReturn([
-            'pr_number' => 'PR-LOCKED',
+            'pr_number' => 'PR-2025-998-0001',
         ]);
     $dataService->shouldReceive('fetchStatusItems')
         ->once()
-        ->with('PR-LOCKED')
+        ->with('PR-2025-998-0001')
         ->andReturn(collect([
             ['user_address' => 'different-address'],
         ]));
@@ -51,7 +51,7 @@ it('forbids bac secretariat from downloading inaccessible procurement documents'
     $repository = Mockery::mock(ProcurementRepository::class);
     $repository->shouldReceive('findByProcurement')
         ->once()
-        ->with('PR-LOCKED')
+        ->with('PR-2025-998-0001')
         ->andReturn(downloadLockedProcurementFixture());
     app()->instance(ProcurementRepository::class, $repository);
 
@@ -63,7 +63,7 @@ it('forbids bac secretariat from downloading inaccessible procurement documents'
 function downloadLockedProcurementFixture(): ProcurementData
 {
     return ProcurementData::fromArray([
-        'pr_number' => 'PR-LOCKED',
+        'pr_number' => 'PR-2025-998-0001',
         'title' => 'Locked Procurement',
         'description' => 'Fixture',
         'abc_amount' => 1000,

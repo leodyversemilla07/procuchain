@@ -16,11 +16,11 @@ describe('ProcurementActionService', function () {
     describe('getAvailableActions', function () {
         it('returns empty array for invalid stage', function () {
             $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-TEST-001')
+                ->with('PR-2025-995-0001')
                 ->andReturn(null);
 
             $actions = $this->service->getAvailableActions(
-                'PR-TEST-001',
+                'PR-2025-995-0001',
                 'invalid_stage',
                 'procurement_initiated',
                 'bac_secretariat'
@@ -32,11 +32,11 @@ describe('ProcurementActionService', function () {
 
         it('returns empty array for invalid status', function () {
             $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-TEST-001')
+                ->with('PR-2025-995-0001')
                 ->andReturn(null);
 
             $actions = $this->service->getAvailableActions(
-                'PR-TEST-001',
+                'PR-2025-995-0001',
                 'procurement_initiation',
                 'invalid_status',
                 'bac_secretariat'
@@ -48,11 +48,11 @@ describe('ProcurementActionService', function () {
 
         it('returns upload action for procurement initiation stage', function () {
             $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-TEST-001')
+                ->with('PR-2025-995-0001')
                 ->andReturn(null);
 
             $actions = $this->service->getAvailableActions(
-                'PR-TEST-001',
+                'PR-2025-995-0001',
                 StageEnums::PROCUREMENT_INITIATION->value,
                 StatusEnums::PROCUREMENT_INITIATED->value,
                 'bac_secretariat'
@@ -66,13 +66,13 @@ describe('ProcurementActionService', function () {
 
         it('returns dialog action for pre-procurement decision', function () {
             $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-TEST-001')
+                ->with('PR-2025-995-0001')
                 ->andReturn(null);
 
             // After procurement initiation is complete, the stage transitions to PRE_PROCUREMENT_CONFERENCE
             // with status PROCUREMENT_SUBMITTED for Competitive Bidding mode
             $actions = $this->service->getAvailableActions(
-                'PR-TEST-001',
+                'PR-2025-995-0001',
                 StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
                 StatusEnums::PROCUREMENT_SUBMITTED->value,
                 'bac_secretariat'
@@ -86,11 +86,11 @@ describe('ProcurementActionService', function () {
 
         it('returns upload action for bid evaluation', function () {
             $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-TEST-001')
+                ->with('PR-2025-995-0001')
                 ->andReturn(null);
 
             $actions = $this->service->getAvailableActions(
-                'PR-TEST-001',
+                'PR-2025-995-0001',
                 StageEnums::BID_EVALUATION->value,
                 StatusEnums::BIDS_OPENED->value,
                 'bac_secretariat'
@@ -104,11 +104,11 @@ describe('ProcurementActionService', function () {
 
         it('returns no workflow actions for non-bac-secretariat role', function () {
             $this->mockRepository->shouldReceive('findByProcurement')
-                ->with('PR-TEST-001')
+                ->with('PR-2025-995-0001')
                 ->andReturn(null);
 
             $actions = $this->service->getAvailableActions(
-                'PR-TEST-001',
+                'PR-2025-995-0001',
                 StageEnums::PROCUREMENT_INITIATION->value,
                 StatusEnums::PROCUREMENT_INITIATED->value,
                 'bac_chairman'
@@ -121,7 +121,7 @@ describe('ProcurementActionService', function () {
 
     describe('getStaticActions', function () {
         it('returns view details action for all roles', function () {
-            $actions = $this->service->getStaticActions('PR-TEST-001', 'bac_secretariat');
+            $actions = $this->service->getStaticActions('PR-2025-995-0001', 'bac_secretariat');
 
             $viewAction = collect($actions)->firstWhere('type', 'view');
             expect($viewAction)->not->toBeNull()
@@ -130,7 +130,7 @@ describe('ProcurementActionService', function () {
         });
 
         it('returns verification report action', function () {
-            $actions = $this->service->getStaticActions('PR-TEST-001', 'bac_secretariat');
+            $actions = $this->service->getStaticActions('PR-2025-995-0001', 'bac_secretariat');
 
             $verifyAction = collect($actions)->firstWhere('type', 'verify');
             expect($verifyAction)->not->toBeNull()
@@ -139,27 +139,27 @@ describe('ProcurementActionService', function () {
         });
 
         it('returns corrections action for bac_secretariat only', function () {
-            $bacActions = $this->service->getStaticActions('PR-TEST-001', 'bac_secretariat');
+            $bacActions = $this->service->getStaticActions('PR-2025-995-0001', 'bac_secretariat');
             $correctionsAction = collect($bacActions)->firstWhere('type', 'corrections');
             expect($correctionsAction)->not->toBeNull();
 
-            $chairmanActions = $this->service->getStaticActions('PR-TEST-001', 'bac_chairman');
+            $chairmanActions = $this->service->getStaticActions('PR-2025-995-0001', 'bac_chairman');
             $noCorrectionsAction = collect($chairmanActions)->firstWhere('type', 'corrections');
             expect($noCorrectionsAction)->toBeNull();
         });
 
         it('uses correct href based on role', function () {
-            $bacSecretariatActions = $this->service->getStaticActions('PR-TEST-001', 'bac_secretariat');
+            $bacSecretariatActions = $this->service->getStaticActions('PR-2025-995-0001', 'bac_secretariat');
             $viewAction = collect($bacSecretariatActions)->firstWhere('type', 'view');
-            expect($viewAction['href'])->toContain('/bac-secretariat/procurements-list/PR-TEST-001');
+            expect($viewAction['href'])->toContain('/bac-secretariat/procurements-list/PR-2025-995-0001');
 
-            $chairmanActions = $this->service->getStaticActions('PR-TEST-001', 'bac_chairman');
+            $chairmanActions = $this->service->getStaticActions('PR-2025-995-0001', 'bac_chairman');
             $viewAction = collect($chairmanActions)->firstWhere('type', 'view');
-            expect($viewAction['href'])->toContain('/bac-chairman/procurements-list/PR-TEST-001');
+            expect($viewAction['href'])->toContain('/bac-chairman/procurements-list/PR-2025-995-0001');
 
-            $hopeActions = $this->service->getStaticActions('PR-TEST-001', 'hope');
+            $hopeActions = $this->service->getStaticActions('PR-2025-995-0001', 'hope');
             $viewAction = collect($hopeActions)->firstWhere('type', 'view');
-            expect($viewAction['href'])->toContain('/hope/procurements-list/PR-TEST-001');
+            expect($viewAction['href'])->toContain('/hope/procurements-list/PR-2025-995-0001');
         });
     });
 
@@ -186,7 +186,7 @@ describe('ProcurementActionService', function () {
 
             foreach ($stages as [$stage, $status]) {
                 $actions = $this->service->getAvailableActions(
-                    'PR-TEST-001',
+                    'PR-2025-995-0001',
                     $stage->value,
                     $status->value,
                     'bac_secretariat'
@@ -203,7 +203,7 @@ describe('ProcurementActionService', function () {
                 ->andReturn(null);
 
             $actions = $this->service->getAvailableActions(
-                'PR-TEST-001',
+                'PR-2025-995-0001',
                 StageEnums::REQUEST_FOR_QUOTATION->value,
                 StatusEnums::PROCUREMENT_SUBMITTED->value,
                 'bac_secretariat'
@@ -218,7 +218,7 @@ describe('ProcurementActionService', function () {
                 ->andReturn(null);
 
             $actions = $this->service->getAvailableActions(
-                'PR-TEST-001',
+                'PR-2025-995-0001',
                 StageEnums::ABSTRACT_OF_QUOTATIONS->value,
                 StatusEnums::QUOTATIONS_RECEIVED->value,
                 'bac_secretariat'
