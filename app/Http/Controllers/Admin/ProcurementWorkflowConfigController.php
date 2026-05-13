@@ -23,7 +23,7 @@ class ProcurementWorkflowConfigController extends Controller
     /**
      * Display a listing of workflow configurations.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $configs = [];
 
@@ -59,7 +59,7 @@ class ProcurementWorkflowConfigController extends Controller
     /**
      * Show the form for editing a workflow configuration.
      */
-    public function edit(string|ProcurementModeEnums $mode): Response
+    public function edit(Request $request, string|ProcurementModeEnums $mode): Response
     {
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
 
@@ -144,7 +144,7 @@ class ProcurementWorkflowConfigController extends Controller
             $modeEnum,
             $stages,
             $optionalStages,
-            auth()->id()
+            $request->user()->id
         );
 
         return redirect()
@@ -155,7 +155,7 @@ class ProcurementWorkflowConfigController extends Controller
     /**
      * Reset workflow configuration to defaults.
      */
-    public function resetToDefaults(string|ProcurementModeEnums $mode): RedirectResponse
+    public function resetToDefaults(Request $request, string|ProcurementModeEnums $mode): RedirectResponse
     {
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
 
@@ -163,7 +163,7 @@ class ProcurementWorkflowConfigController extends Controller
             abort(404, 'Invalid procurement mode');
         }
 
-        $this->workflowService->resetToDefaults($modeEnum, auth()->id());
+        $this->workflowService->resetToDefaults($modeEnum, $request->user()->id);
 
         return redirect()
             ->route('admin.workflow-config.index')
@@ -174,7 +174,7 @@ class ProcurementWorkflowConfigController extends Controller
      * Preview the complete workflow and document configuration for a mode.
      * Shows admins what users will see for a given procurement mode.
      */
-    public function preview(string|ProcurementModeEnums $mode): Response
+    public function preview(Request $request, string|ProcurementModeEnums $mode): Response
     {
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
 

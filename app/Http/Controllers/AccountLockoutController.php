@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Services\AccountLockoutService;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,7 +20,7 @@ class AccountLockoutController extends Controller
     /**
      * Display locked accounts page
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
         try {
             $lockedUsers = $this->accountLockout->getLockedAccounts();
@@ -54,7 +53,7 @@ class AccountLockoutController extends Controller
             report($e);
 
             Log::error('Failed to fetch locked accounts', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
             ]);
 
             return Inertia::render('admin/locked-accounts', [
@@ -73,11 +72,11 @@ class AccountLockoutController extends Controller
                 'reason' => 'nullable|string|max:255',
             ]);
 
-            $result = $this->accountLockout->unlockAccount($user, $validated['reason'] ?? 'Manually unlocked by admin');
+            $result = $this->accountLockout->unlockAccount($user, $validated['reason'] ?? 'Manually unlocked by admin', $request->user());
 
             if ($result) {
                 Log::info('Admin unlocked user account', [
-                    'admin_id' => Auth::id(),
+                    'admin_id' => $request->user()->id,
                     'unlocked_user_id' => $user->id,
                     'unlocked_user_email' => $user->email,
                     'reason' => $validated['reason'] ?? 'Manually unlocked by admin',
@@ -98,7 +97,7 @@ class AccountLockoutController extends Controller
             report($e);
 
             Log::error('Failed to unlock user account', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'user_id' => $user->id,
             ]);
 
@@ -118,7 +117,7 @@ class AccountLockoutController extends Controller
             ]);
 
             // Prevent admin from locking their own account
-            if ($user->id === Auth::id()) {
+            if ($user->id === $request->user()->id) {
                 return back()->with('error', 'You cannot lock your own account.');
             }
 
@@ -127,7 +126,7 @@ class AccountLockoutController extends Controller
 
             if ($result) {
                 Log::info('Admin manually locked user account', [
-                    'admin_id' => Auth::id(),
+                    'admin_id' => $request->user()->id,
                     'locked_user_id' => $user->id,
                     'locked_user_email' => $user->email,
                     'reason' => $validated['reason'],
@@ -149,7 +148,7 @@ class AccountLockoutController extends Controller
             report($e);
 
             Log::error('Failed to lock user account', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'user_id' => $user->id,
             ]);
 
@@ -160,14 +159,14 @@ class AccountLockoutController extends Controller
     /**
      * Reset failed login attempts for a user
      */
-    public function resetAttempts(User $user)
+    public function resetAttempts(Request $request, User $user)
     {
         try {
-            $result = $this->accountLockout->resetFailedAttempts($user);
+            $result = $this->accountLockout->resetFailedAttempts($user, $request->user());
 
             if ($result) {
                 Log::info('Admin reset failed login attempts', [
-                    'admin_id' => Auth::id(),
+                    'admin_id' => $request->user()->id,
                     'user_id' => $user->id,
                     'user_email' => $user->email,
                 ]);
@@ -187,7 +186,7 @@ class AccountLockoutController extends Controller
             report($e);
 
             Log::error('Failed to reset failed login attempts', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'user_id' => $user->id,
             ]);
 
@@ -207,7 +206,7 @@ class AccountLockoutController extends Controller
 
         try {
             $accountIds = $validated['account_ids'];
-            $currentUserId = Auth::id();
+            $currentUserId = $request->user()->id;
             $successCount = 0;
             $failedAccounts = [];
 
@@ -219,7 +218,7 @@ class AccountLockoutController extends Controller
 
                 $user = User::find($userId);
                 if ($user && $user->isAccountLocked()) {
-                    $result = $this->accountLockout->unlockAccount($user, 'Bulk unlocked by administrator');
+                    $result = $this->accountLockout->unlockAccount($user, 'Bulk unlocked by administrator', $request->user());
                     if ($result) {
                         $successCount++;
                     } else {
@@ -253,7 +252,7 @@ class AccountLockoutController extends Controller
             report($e);
 
             Log::error('Failed to bulk unlock accounts', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'account_ids' => $validated['account_ids'] ?? [],
             ]);
 
@@ -273,14 +272,14 @@ class AccountLockoutController extends Controller
 
         try {
             $accountIds = $validated['account_ids'];
-            $currentUserId = Auth::id();
+            $currentUserId = $request->user()->id;
             $successCount = 0;
             $failedAccounts = [];
 
             foreach ($accountIds as $userId) {
                 $user = User::find($userId);
                 if ($user && $user->failed_login_attempts > 0) {
-                    $result = $this->accountLockout->resetFailedAttempts($user);
+                    $result = $this->accountLockout->resetFailedAttempts($user, $request->user());
                     if ($result) {
                         $successCount++;
                     } else {
@@ -314,7 +313,7 @@ class AccountLockoutController extends Controller
             report($e);
 
             Log::error('Failed to bulk reset login attempts', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'account_ids' => $validated['account_ids'] ?? [],
             ]);
 

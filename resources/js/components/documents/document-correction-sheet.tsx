@@ -110,21 +110,21 @@ export function DocumentCorrectionSheet({
             {
                 forceFormData: true,
                 preserveScroll: true,
- onSuccess: () => {
- // Reset form on success
- form.reset();
- setCorrectedFile(null);
- setIsSubmitting(false);
- // Reset the input value
- const fileInput = document.getElementById('corrected_file') as HTMLInputElement;
- if (fileInput) {
- fileInput.value = '';
- }
- onOpenChange(false);
- },
- onError: (errors) => {
- setIsSubmitting(false);
- const errorMessage = typeof errors === 'object' ? Object.values(errors).flat().join(', ') : 'Failed to submit correction';
+                onSuccess: () => {
+                    // Reset form on success
+                    form.reset();
+                    setCorrectedFile(null);
+                    setIsSubmitting(false);
+                    // Reset the input value
+                    const fileInput = document.getElementById('corrected_file') as HTMLInputElement;
+                    if (fileInput) {
+                        fileInput.value = '';
+                    }
+                    onOpenChange(false);
+                },
+                onError: (errors) => {
+                    setIsSubmitting(false);
+                    const errorMessage = typeof errors === 'object' ? Object.values(errors).flat().join(', ') : 'Failed to submit correction';
                     toast.error('Failed to submit correction', {
                         description: errorMessage,
                     });

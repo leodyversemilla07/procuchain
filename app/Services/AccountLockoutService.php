@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Events\AccountLocked;
 use App\Models\User;
 use App\Models\UserLoginLog;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class AccountLockoutService
@@ -77,7 +76,7 @@ class AccountLockoutService
         ];
     }
 
-    public function unlockAccount(User $user, string $reason = 'Manually unlocked by admin'): bool
+    public function unlockAccount(User $user, string $reason = 'Manually unlocked by admin', ?User $authUser = null): bool
     {
         try {
             if (! $user->isAccountLocked()) {
@@ -88,7 +87,7 @@ class AccountLockoutService
                 'user_id' => $user->id,
                 'user_email' => $user->email,
                 'reason' => $reason,
-                'unlocked_by' => Auth::check() ? Auth::id() : null,
+                'unlocked_by' => $authUser?->id,
             ]);
 
             return true;
@@ -102,7 +101,7 @@ class AccountLockoutService
         }
     }
 
-    public function resetFailedAttempts(User $user): bool
+    public function resetFailedAttempts(User $user, ?User $authUser = null): bool
     {
         try {
             $previousAttempts = $user->failed_login_attempts;
@@ -111,7 +110,7 @@ class AccountLockoutService
                 'user_id' => $user->id,
                 'user_email' => $user->email,
                 'previous_attempts' => $previousAttempts,
-                'reset_by' => Auth::check() ? Auth::id() : null,
+                'reset_by' => $authUser?->id,
             ]);
 
             return true;

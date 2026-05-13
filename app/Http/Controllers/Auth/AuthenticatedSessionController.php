@@ -54,7 +54,7 @@ class AuthenticatedSessionController extends Controller
         $this->loginLogger->logLogin($user, $request);
 
         // Redirect to appropriate dashboard based on user role
-        $targetUrl = $this->redirectToDashboard($user);
+        $targetUrl = $this->redirectToDashboard($request, $user);
 
         // Clear any stale intended URL and set our target
         $request->session()->forget('url.intended');

@@ -84,15 +84,15 @@ interface LoginStatistics {
 }
 
 interface Props {
- recentLogins: LoginLog[];
- statistics: LoginStatistics;
- suspiciousActivities?: LoginLog[]; // Optional - loaded via Deferred
- flash?: {
- success?: string;
- error?: string;
- warning?: string;
- info?: string;
- };
+    recentLogins: LoginLog[];
+    statistics: LoginStatistics;
+    suspiciousActivities?: LoginLog[]; // Optional - loaded via Deferred
+    flash?: {
+        success?: string;
+        error?: string;
+        warning?: string;
+        info?: string;
+    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -131,17 +131,17 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [selectedLogs, setSelectedLogs] = useState<Set<number>>(new Set());
- const [isExporting, setIsExporting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
- // Handle flash messages from Inertia redirects
- useEffect(() => {
- if (flash?.success) toast.success(flash.success);
- if (flash?.error) toast.error(flash.error);
- if (flash?.warning) toast.warning(flash.warning);
- if (flash?.info) toast.info(flash.info);
- }, [flash]);
+    // Handle flash messages from Inertia redirects
+    useEffect(() => {
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
+        if (flash?.warning) toast.warning(flash.warning);
+        if (flash?.info) toast.info(flash.info);
+    }, [flash]);
 
- // Dialog state for viewing log details
+    // Dialog state for viewing log details
     const [selectedLog, setSelectedLog] = useState<LoginLog | null>(null);
     const [selectedLogCategory, setSelectedLogCategory] = useState<'recent' | 'suspicious' | undefined>(undefined);
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -536,16 +536,16 @@ export default function LoginLogs({ recentLogins, statistics, suspiciousActiviti
                     reason,
                     duration,
                 },
- {
- preserveScroll: true,
- onSuccess: () => {
- setIsBlockDialogOpen(false);
- setIpToBlock(null);
- },
- onError: () => {
- // Error toast handled by flash message from server
- },
- onFinish: () => {
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setIsBlockDialogOpen(false);
+                        setIpToBlock(null);
+                    },
+                    onError: () => {
+                        // Error toast handled by flash message from server
+                    },
+                    onFinish: () => {
                         setIsBlocking(false);
                     },
                 },

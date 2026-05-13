@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class BlockchainJobStatusController extends Controller
@@ -14,7 +15,7 @@ class BlockchainJobStatusController extends Controller
      *
      * Statuses: pending → done | failed
      */
-    public function status(string $jobId): JsonResponse
+    public function status(Request $request, string $jobId): JsonResponse
     {
         $cached = Cache::get("blockchain_job:{$jobId}");
 
@@ -23,7 +24,7 @@ class BlockchainJobStatusController extends Controller
         }
 
         $ownerId = data_get($cached, 'user_id');
-        if ($ownerId !== null && auth()->id() !== (int) $ownerId) {
+        if ($ownerId !== null && $request->user()->id !== (int) $ownerId) {
             abort(403);
         }
 

@@ -4,7 +4,6 @@ namespace App\Http\Requests\Procurement;
 
 use App\Enums\UserRoleEnums;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * Base Form Request for procurement operations.
@@ -21,7 +20,7 @@ abstract class BaseProcurementRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return Auth::check() && Auth::user()->hasRole(UserRoleEnums::BAC_SECRETARIAT->value);
+        return $this->user()?->hasRole(UserRoleEnums::BAC_SECRETARIAT->value) ?? false;
     }
 
     /**

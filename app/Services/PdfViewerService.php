@@ -7,7 +7,6 @@ use App\Enums\StageEnums;
 use App\Models\DocumentView;
 use App\Repositories\DocumentRepository;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class PdfViewerService
@@ -89,7 +88,7 @@ class PdfViewerService
 
             if (! $documentView) {
                 $documentView = DocumentView::create([
-                    'user_id' => Auth::id(),
+                    'user_id' => $this->request->user()?->id,
                     'file_key' => $fileKey,
                     'pr_number' => $pr_number,
                     'procurement_title' => 'Document Viewer (Development Mode)',

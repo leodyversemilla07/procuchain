@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Services\BlockedIpService;
 use App\Services\LoginAnalyticsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,7 +19,7 @@ class LoginLogController extends Controller
     /**
      * Display login logs page
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
         try {
             $recentLogins = $this->loginAnalytics->getRecentLogins(50);
@@ -34,7 +33,7 @@ class LoginLogController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch login logs', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
@@ -62,7 +61,7 @@ class LoginLogController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch recent logins', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
@@ -76,7 +75,7 @@ class LoginLogController extends Controller
     /**
      * Get login statistics (API endpoint)
      */
-    public function statistics()
+    public function statistics(Request $request)
     {
         try {
             $statistics = $this->loginAnalytics->getLoginStatistics();
@@ -87,7 +86,7 @@ class LoginLogController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch login statistics', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
@@ -101,7 +100,7 @@ class LoginLogController extends Controller
     /**
      * Get suspicious activities (API endpoint)
      */
-    public function suspicious()
+    public function suspicious(Request $request)
     {
         try {
             $activities = $this->loginAnalytics->getSuspiciousActivities();
@@ -112,7 +111,7 @@ class LoginLogController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch suspicious activities', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
@@ -144,12 +143,13 @@ class LoginLogController extends Controller
             $this->blockedIpService->blockIp(
                 $validated['ip_address'],
                 $validated['reason'] ?? 'Blocked due to suspicious activity',
-                $expiresAt
+                $expiresAt,
+                $request->user()
             );
 
             Log::warning('IP address blocked via admin panel', [
                 'ip_address' => $validated['ip_address'],
-                'blocked_by' => Auth::id(),
+                'blocked_by' => $request->user()->id,
                 'reason' => $validated['reason'] ?? 'Blocked due to suspicious activity',
                 'expires_at' => $expiresAt?->toDateTimeString(),
             ]);
@@ -157,7 +157,7 @@ class LoginLogController extends Controller
             return back()->with('success', 'IP address blocked successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to block IP address', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
@@ -175,7 +175,7 @@ class LoginLogController extends Controller
                 'ip_address' => 'required|ip',
             ]);
 
-            $result = $this->blockedIpService->unblockIp($validated['ip_address']);
+            $result = $this->blockedIpService->unblockIp($validated['ip_address'], $request->user());
 
             if (! $result) {
                 return back()->with('error', 'IP address not found in blocked list.');
@@ -183,13 +183,13 @@ class LoginLogController extends Controller
 
             Log::info('IP address unblocked via admin panel', [
                 'ip_address' => $validated['ip_address'],
-                'unblocked_by' => Auth::id(),
+                'unblocked_by' => $request->user()->id,
             ]);
 
             return back()->with('success', 'IP address unblocked successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to unblock IP address', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 
@@ -200,7 +200,7 @@ class LoginLogController extends Controller
     /**
      * Get list of blocked IPs
      */
-    public function blockedIps()
+    public function blockedIps(Request $request)
     {
         try {
             $blockedIps = $this->blockedIpService->getBlockedIps();
@@ -211,7 +211,7 @@ class LoginLogController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch blocked IPs', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'error' => 'An error occurred loading login logs. Please try again.',
             ]);
 

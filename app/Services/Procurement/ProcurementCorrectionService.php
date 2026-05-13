@@ -11,6 +11,7 @@ use App\Enums\DocumentTypeEnums;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\ProcurementDataService;
@@ -31,7 +32,7 @@ final class ProcurementCorrectionService
      *
      * @throws \RuntimeException If procurement is not found in any stream
      */
-    public function findProcurementForCorrection(string $prNumber): ProcurementData
+    public function findProcurementForCorrection(string $prNumber, ?User $authUser = null): ProcurementData
     {
         $originalProcurement = $this->procurementRepository->findByProcurement($prNumber);
 
@@ -41,7 +42,7 @@ final class ProcurementCorrectionService
 
         Log::warning('Procurement not found in METADATA stream for correction, attempting fallback to STATUS stream', [
             'pr_number' => $prNumber,
-            'user' => auth()->user()->email,
+            'user' => $authUser?->email ?? 'unknown',
         ]);
 
         $statusData = $this->procurementDataService->fetchStatusItems($prNumber)->first();
@@ -56,7 +57,7 @@ final class ProcurementCorrectionService
             stage: StageEnums::tryFrom($statusData['stage'] ?? '') ?? StageEnums::PROCUREMENT_INITIATION,
             procurementMode: ProcurementModeEnums::PUBLIC_BIDDING,
             timestamp: $statusData['timestamp'] ?? now()->toIso8601String(),
-            userAddress: $statusData['user_address'] ?? auth()->user()->blockchain_address ?? '',
+            userAddress: $statusData['user_address'] ?? $authUser?->blockchain_address ?? '',
         );
     }
 
@@ -125,9 +126,9 @@ final class ProcurementCorrectionService
     /**
      * Get correction history for the API endpoint (full detail).
      */
-    public function getCorrectionHistory(string $prNumber): array
+    public function getCorrectionHistory(string $prNumber, ?User $authUser = null): array
     {
-        Log::info('Fetching correction history', ['pr_number' => $prNumber, 'user' => auth()->id()]);
+        Log::info('Fetching correction history', ['pr_number' => $prNumber, 'user' => $authUser?->id]);
 
         $procurementCorrections = $this->procurementCorrectionRepository->findByProcurement($prNumber);
         $documentCorrections = $this->correctionRepository->findByProcurement($prNumber);

@@ -10,6 +10,7 @@ use App\DataTransferObjects\Verification\CrossReferenceResult;
 use App\DataTransferObjects\Verification\VerificationReportDTO;
 use App\DataTransferObjects\Verification\VerificationResult;
 use App\Enums\StageEnums;
+use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Services\Verification\DocumentCompletenessVerifier;
 use App\Services\Verification\DocumentComplianceVerifier;
@@ -65,7 +66,7 @@ final class DocumentVerificationService
     /**
      * Generate a comprehensive verification report for a procurement.
      */
-    public function generateVerificationReport(string $prNumber, ?StageEnums $stage = null): VerificationReportDTO
+    public function generateVerificationReport(string $prNumber, ?StageEnums $stage = null, ?User $authUser = null): VerificationReportDTO
     {
         $documents = $this->documentRepository->findByProcurement($prNumber);
 
@@ -107,7 +108,7 @@ final class DocumentVerificationService
             completenessResult: $completenessResult,
             crossReferenceResult: $crossReferenceResult,
             complianceResult: $complianceResult,
-            verifiedBy: auth()->id(),
+            verifiedBy: $authUser?->id,
         );
     }
 

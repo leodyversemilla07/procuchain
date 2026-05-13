@@ -6,6 +6,7 @@ use App\DataTransferObjects\ProcurementData;
 use App\Enums\ProcurementModeEnums;
 use App\Enums\StageEnums;
 use App\Enums\StatusEnums;
+use App\Models\User;
 use App\Repositories\DocumentRepository;
 use App\Repositories\ProcurementRepository;
 use App\Services\Manager;
@@ -347,7 +348,7 @@ class ProcurementSupportService
      *
      * @throws \Exception If the stage cannot be skipped
      */
-    public function performSkipStage(string $prNumber, StageEnums $stage, ?string $reason = null): array
+    public function performSkipStage(string $prNumber, StageEnums $stage, ?string $reason = null, ?User $authUser = null): array
     {
         // Verify stage is optional for this procurement's mode
         if (! $this->isStageOptional($prNumber, $stage)) {
@@ -360,8 +361,8 @@ class ProcurementSupportService
             throw new \Exception('Procurement not found.');
         }
 
-        $user = auth()->user();
-        $userAddress = $user->blockchain_address ?? $user->email;
+        $user = $authUser;
+        $userAddress = $user?->blockchain_address ?? $user?->email ?? 'unknown';
 
         // 1. Publish status update to blockchain with skipped metadata
         $statusResult = $this->statusPublisher->publish(
@@ -498,11 +499,12 @@ class ProcurementSupportService
         array $procurement,
         StageEnums $fromStage,
         StageEnums $toStage,
-        StatusEnums $currentStatus
+        StatusEnums $currentStatus,
+        ?User $authUser = null
     ): void {
         try {
-            $user = auth()->user();
-            $userAddress = $user->blockchain_address ?? 'unknown';
+            $user = $authUser;
+            $userAddress = $user?->blockchain_address ?? 'unknown';
 
             // Publish the new stage status
             $this->statusPublisher->publish(

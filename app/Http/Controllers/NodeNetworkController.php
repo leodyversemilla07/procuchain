@@ -19,38 +19,36 @@ class NodeNetworkController extends Controller
 
     private function getRpcPassword(): string
     {
-        return config('multichain.rpc.password', 'procuchain2026');
+        return config('multichain.rpc.password');
     }
 
-    private const NODES = [
-        [
-            'id' => 'admin', 'name' => 'Primary Node', 'role' => 'Administrator',
-            'ip' => '32.196.225.21', 'p2p_port' => 6835, 'rpc_port' => 6834,
-            'private_ip' => '172.31.13.41',
-        ],
-        [
-            'id' => 'bac-secretariat', 'name' => 'BAC Secretariat', 'role' => 'Secretariat',
-            'ip' => '13.222.22.7', 'p2p_port' => 6835, 'rpc_port' => 6834,
-            'private_ip' => '172.31.88.136',
-        ],
-        [
-            'id' => 'bac-chairman', 'name' => 'BAC Chairman', 'role' => 'Chairman',
-            'ip' => '34.234.63.203', 'p2p_port' => 6835, 'rpc_port' => 6834,
-            'private_ip' => '172.31.23.21',
-        ],
-        [
-            'id' => 'hope', 'name' => 'HOPE', 'role' => 'HOPE',
-            'ip' => '204.236.254.103', 'p2p_port' => 6835, 'rpc_port' => 6834,
-            'private_ip' => '172.31.42.5',
-        ],
-    ];
+    /**
+     * Node registry — sourced from config/multichain.php (env-driven).
+     * Falls back to localhost defaults if no env vars are set.
+     *
+     * @return array<int, array{id: string, name: string, role: string, ip: string, private_ip: string, p2p_port: int, rpc_port: int}>
+     */
+    private function getNodes(): array
+    {
+        return config('multichain.nodes', []);
+    }
 
-    private const IP_MAP = [
-        '13.222.22.7' => 'bac-secretariat', '34.234.63.203' => 'bac-chairman',
-        '204.236.254.103' => 'hope', '32.196.225.21' => 'admin',
-        '172.31.88.136' => 'bac-secretariat', '172.31.23.21' => 'bac-chairman',
-        '172.31.42.5' => 'hope', '172.31.13.41' => 'admin',
-    ];
+    /**
+     * Build a reverse-lookup map: IP address → node ID.
+     * Covers both public and private IPs for peer matching.
+     *
+     * @return array<string, string>
+     */
+    private function getIpMap(): array
+    {
+        $map = [];
+        foreach ($this->getNodes() as $node) {
+            $map[$node['ip']] = $node['id'];
+            $map[$node['private_ip']] = $node['id'];
+        }
+
+        return $map;
+    }
 
     public function index(): Response
     {
@@ -64,7 +62,7 @@ class NodeNetworkController extends Controller
 
     private function getNetworkData(): array
     {
-        $nodes = self::NODES;
+        $nodes = $this->getNodes();
         $allPeers = [];
         $liveNodeData = [];
 
@@ -80,7 +78,7 @@ class NodeNetworkController extends Controller
             'id' => $node['id'],
             'name' => $node['name'],
             'role' => $node['role'],
-            'ip' => $node['ip'],
+            'ip' => $this->maskIp($node['ip']),
             'p2p_port' => $node['p2p_port'],
             'rpc_port' => $node['rpc_port'],
             'blocks' => $liveNodeData[$node['id']]['blocks'] ?? 0,
@@ -102,7 +100,7 @@ class NodeNetworkController extends Controller
                 'connected_nodes' => $connectedNodes,
                 'total_nodes' => count($nodes),
                 'total_peers' => $totalPeers,
-                'chain_name' => 'procuchain',
+                'chain_name' => config('multichain.chain_name', 'procuchain'),
                 'version' => $liveNodeData['admin']['subver'] ?? 'Unknown',
                 'all_connected' => $connectedNodes === count($nodes),
             ],
@@ -115,13 +113,14 @@ class NodeNetworkController extends Controller
             $client = new Client($host, $port, $this->getRpcUser(), $this->getRpcPassword(), false);
             $info = $client->getinfo();
             $peers = $client->getpeerinfo();
+            $ipMap = $this->getIpMap();
 
             $mappedPeers = [];
             foreach ($peers as $peer) {
                 $addr = $peer['addr'] ?? '';
                 $matchedId = null;
 
-                foreach (self::IP_MAP as $ip => $nid) {
+                foreach ($ipMap as $ip => $nid) {
                     if (str_contains($addr, $ip)) {
                         $matchedId = $nid;
                         break;
@@ -158,6 +157,20 @@ class NodeNetworkController extends Controller
         }
     }
 
+    /**
+     * Mask an IP address for safe frontend display.
+     * Preserves first octet for subnet awareness: "32.xxx.xxx.xxx"
+     */
+    private function maskIp(string $ip): string
+    {
+        $parts = explode('.', $ip);
+        if (count($parts) === 4) {
+            return $parts[0].'.xxx.xxx.xxx';
+        }
+
+        return '***';
+    }
+
     private function buildFullMeshConnections(array $allPeers): array
     {
         $bestData = [];
@@ -183,7 +196,7 @@ class NodeNetworkController extends Controller
             }
         }
 
-        $allIds = ['admin', 'bac-secretariat', 'bac-chairman', 'hope'];
+        $allIds = array_map(fn ($node) => $node['id'], $this->getNodes());
         $connections = [];
 
         for ($i = 0; $i < count($allIds); $i++) {

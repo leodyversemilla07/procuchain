@@ -224,7 +224,7 @@ class DashboardService
         } catch (Exception $e) {
             Log::error('Failed to retrieve recent activities', [
                 'error' => $e->getMessage(),
-                'stack_trace' => $e->getTraceAsString(),
+                'stack_trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return [];
@@ -274,7 +274,7 @@ class DashboardService
         } catch (Exception $e) {
             Log::error('Failed to calculate total documents for dashboard', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return 0;

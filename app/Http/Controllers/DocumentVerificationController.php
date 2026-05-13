@@ -10,6 +10,7 @@ use App\Http\Requests\Document\VerifySingleDocumentRequest;
 use App\Services\DocumentVerificationService;
 use App\Services\ProcurementDataService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,7 +38,7 @@ final class DocumentVerificationController extends Controller
 
         Log::info('Starting procurement verification', [
             'pr_number' => $prNumber,
-            'user_id' => auth()->id(),
+            'user_id' => $request->user()->id,
             'ip' => $request->ip(),
         ]);
 
@@ -80,7 +81,7 @@ final class DocumentVerificationController extends Controller
             'verification_types' => $verificationTypes,
             'results' => $results,
             'verified_at' => now()->toIso8601String(),
-            'verified_by' => auth()->id(),
+            'verified_by' => $request->user()->id,
         ]);
     }
 
@@ -89,13 +90,13 @@ final class DocumentVerificationController extends Controller
      *
      * POST /procurement/{pr_number}/verify/integrity
      */
-    public function verifyIntegrity(string $prNumber): JsonResponse
+    public function verifyIntegrity(Request $request, string $prNumber): JsonResponse
     {
         $this->authorize('view-procurement', $prNumber);
 
         Log::info('Starting integrity verification', [
             'pr_number' => $prNumber,
-            'user_id' => auth()->id(),
+            'user_id' => $request->user()->id,
         ]);
 
         $results = $this->verificationService->batchVerifyDocuments($prNumber);
@@ -132,7 +133,7 @@ final class DocumentVerificationController extends Controller
 
         Log::info('Verifying single document', [
             'file_key' => $decodedFileKey,
-            'user_id' => auth()->id(),
+            'user_id' => $request->user()->id,
             'ip' => $request->ip(),
         ]);
 
@@ -149,11 +150,11 @@ final class DocumentVerificationController extends Controller
      *
      * GET /procurement/{pr_number}/verification
      */
-    public function showVerificationPage(string $prNumber): Response
+    public function showVerificationPage(Request $request, string $prNumber): Response
     {
         $this->authorize('view-procurement', $prNumber);
 
-        $report = $this->verificationService->generateVerificationReport($prNumber);
+        $report = $this->verificationService->generateVerificationReport($prNumber, null, $request->user());
 
         // Fetch procurement status information
         $statusItems = $this->procurementDataService->fetchStatusItems($prNumber);

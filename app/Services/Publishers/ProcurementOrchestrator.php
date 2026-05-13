@@ -555,7 +555,7 @@ class ProcurementOrchestrator
                 'pr_number' => $prNumber,
                 'error' => $e->getMessage(),
                 'completed_steps' => array_keys($this->publishedTransactions),
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             $this->errors[] = [
