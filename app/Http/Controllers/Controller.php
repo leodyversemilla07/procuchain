@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 abstract class Controller
 {
@@ -14,9 +14,9 @@ abstract class Controller
     /**
      * Get the dashboard route for a given user based on their role.
      */
-    protected function redirectToDashboard(?User $user = null): string
+    protected function redirectToDashboard(Request $request, ?User $user = null): string
     {
-        $user = $user ?? Auth::user();
+        $user = $user ?? $request->user();
 
         if (! $user) {
             return '/';

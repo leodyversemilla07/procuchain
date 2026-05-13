@@ -12,7 +12,7 @@ class CorrectProcurementRequest extends FormRequest
     public function authorize(): bool
     {
         // Check if user has permission to manage procurements (which includes corrections)
-        return auth()->user()?->canManageProcurement() ?? false;
+        return $this->user()?->canManageProcurement() ?? false;
     }
 
     /**

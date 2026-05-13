@@ -25,7 +25,7 @@ class ProcurementCorrectionController extends Controller
         $validated = $request->validated();
 
         try {
-            $originalProcurement = $this->correctionService->findProcurementForCorrection($prNumber);
+            $originalProcurement = $this->correctionService->findProcurementForCorrection($prNumber, $request->user());
             $correctedData = $this->correctionService->extractCorrectedData($validated);
             $jobId = Str::uuid()->toString();
 
@@ -33,10 +33,10 @@ class ProcurementCorrectionController extends Controller
                 'original_procurement' => $originalProcurement->toBlockchainArray(),
                 'corrected_data' => $correctedData,
                 'reason' => $validated['correction_reason'],
-                'corrected_by' => auth()->user()->name ?? 'System',
-                'user_address' => auth()->user()->blockchain_address ?? '',
+                'corrected_by' => $request->user()->name ?? 'System',
+                'user_address' => $request->user()->blockchain_address ?? '',
                 'pr_number' => $prNumber,
-            ], $jobId, auth()->id());
+            ], $jobId, $request->user()->id);
 
             return back()->with('success', 'Procurement correction submitted successfully. The blockchain write will complete in the background.');
         } catch (\RuntimeException $e) {
@@ -45,7 +45,7 @@ class ProcurementCorrectionController extends Controller
             Log::error('Failed to submit procurement correction', [
                 'pr_number' => $prNumber,
                 'error' => 'An error occurred with the procurement correction.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return back()->with('error', 'Failed to submit correction. Please try again.');
@@ -60,7 +60,7 @@ class ProcurementCorrectionController extends Controller
         $this->authorize('view-procurement', $pr_number);
 
         try {
-            $corrections = $this->correctionService->getCorrectionHistory($pr_number);
+            $corrections = $this->correctionService->getCorrectionHistory($pr_number, $request->user());
 
             return response()->json([
                 'success' => true,

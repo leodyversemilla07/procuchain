@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\BlockedIp;
+use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class BlockedIpService
@@ -20,7 +20,7 @@ class BlockedIpService
     /**
      * Block an IP address
      */
-    public function blockIp(string $ipAddress, ?string $reason = null, ?Carbon $expiresAt = null): BlockedIp
+    public function blockIp(string $ipAddress, ?string $reason = null, ?Carbon $expiresAt = null, ?User $authUser = null): BlockedIp
     {
         // Check if already blocked
         $existingBlock = BlockedIp::forIp($ipAddress)->first();
@@ -28,7 +28,7 @@ class BlockedIpService
         if ($existingBlock) {
             // Update existing block
             $existingBlock->update([
-                'blocked_by' => Auth::id(),
+                'blocked_by' => $authUser?->id,
                 'reason' => $reason ?? $existingBlock->reason,
                 'expires_at' => $expiresAt,
                 'is_active' => true,
@@ -36,7 +36,7 @@ class BlockedIpService
 
             Log::info('IP address block updated', [
                 'ip_address' => $ipAddress,
-                'blocked_by' => Auth::id(),
+                'blocked_by' => $authUser?->id,
                 'reason' => $reason,
                 'expires_at' => $expiresAt?->toDateTimeString(),
             ]);
@@ -47,7 +47,7 @@ class BlockedIpService
         // Create new block
         $block = BlockedIp::create([
             'ip_address' => $ipAddress,
-            'blocked_by' => Auth::id(),
+            'blocked_by' => $authUser?->id,
             'reason' => $reason,
             'expires_at' => $expiresAt,
             'is_active' => true,
@@ -55,7 +55,7 @@ class BlockedIpService
 
         Log::info('IP address blocked', [
             'ip_address' => $ipAddress,
-            'blocked_by' => Auth::id(),
+            'blocked_by' => $authUser?->id,
             'reason' => $reason,
             'expires_at' => $expiresAt?->toDateTimeString(),
         ]);
@@ -66,7 +66,7 @@ class BlockedIpService
     /**
      * Unblock an IP address
      */
-    public function unblockIp(string $ipAddress): bool
+    public function unblockIp(string $ipAddress, ?User $authUser = null): bool
     {
         $block = BlockedIp::forIp($ipAddress)->first();
 
@@ -78,7 +78,7 @@ class BlockedIpService
 
         Log::info('IP address unblocked', [
             'ip_address' => $ipAddress,
-            'unblocked_by' => Auth::id(),
+            'unblocked_by' => $authUser?->id,
         ]);
 
         return true;

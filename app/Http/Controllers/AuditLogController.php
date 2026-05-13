@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -44,7 +43,7 @@ class AuditLogController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch audit logs', [
-                'admin_id' => Auth::id(),
+                'admin_id' => $request->user()->id,
                 'error' => 'An error occurred loading audit log data.',
             ]);
 

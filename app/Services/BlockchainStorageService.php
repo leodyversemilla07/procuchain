@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\BlockchainStorageInterface;
 use App\Enums\StreamEnums;
+use App\Models\User;
 use App\Services\Blockchain\FileRetriever;
 use App\Services\Blockchain\FileUploader;
 use Exception;
@@ -279,8 +280,8 @@ class BlockchainStorageService implements BlockchainStorageInterface
      * @param  string  $procurementTitle  Procurement title
      * @return array Complete metadata array with blockchain transaction IDs
      */
-    public function uploadAndPrepare(array $files, array $metadata, string $prNumber, int $stageId, string $procurementTitle): array
+    public function uploadAndPrepare(array $files, array $metadata, string $prNumber, int $stageId, string $procurementTitle, ?User $authUser = null): array
     {
-        return $this->uploader->uploadAndPrepare($files, $metadata, $prNumber, $stageId, $procurementTitle);
+        return $this->uploader->uploadAndPrepare($files, $metadata, $prNumber, $stageId, $procurementTitle, $authUser);
     }
 }

@@ -43,6 +43,9 @@ class BlockchainWriteJob implements ShouldQueue
     /** @var int Seconds the job may run before timing out */
     public int $timeout = 90;
 
+    /** @var array Seconds to wait between retry attempts */
+    public array $backoff = [10, 30, 60];
+
     public function __construct(
         public readonly string $operation,
         public readonly array $data,
@@ -77,14 +80,22 @@ class BlockchainWriteJob implements ShouldQueue
                 'pr_number' => $this->data['pr_number'] ?? 'N/A',
             ]);
         } catch (Exception $e) {
-            Cache::put("blockchain_job:{$this->jobId}", [
-                'status' => 'failed',
-                'error' => $e->getMessage(),
-                'user_id' => $this->userId,
-            ], now()->addHour());
+            // Only log — do NOT write 'failed' to cache yet, because this
+            // attempt may still be retried. The cache should only reflect
+            // permanent failure once all retries are exhausted (see failed()).
+            // Update cache to 'retrying' so the polling frontend can show progress.
+            if ($this->attempts() < $this->tries) {
+                Cache::put("blockchain_job:{$this->jobId}", [
+                    'status' => 'retrying',
+                    'attempt' => $this->attempts(),
+                    'max_attempts' => $this->tries,
+                    'user_id' => $this->userId,
+                ], now()->addHour());
+            }
 
-            Log::error("BlockchainWriteJob[{$this->operation}]: failed", [
+            Log::warning("BlockchainWriteJob[{$this->operation}]: attempt {$this->attempts()}/{$this->tries} failed", [
                 'job_id' => $this->jobId,
+                'attempt' => $this->attempts(),
                 'error' => $e->getMessage(),
             ]);
 

@@ -62,7 +62,7 @@ describe('AccountLockoutService', function () {
                 'lock_expires_at' => now()->addHours(24),
             ]);
 
-            $this->service->unlockAccount($user, 'Admin override');
+            $this->service->unlockAccount($user, 'Admin override', $admin);
 
             Log::shouldHaveReceived('info')
                 ->withArgs(function ($message, $context) use ($admin, $user) {
@@ -167,7 +167,7 @@ describe('AccountLockoutService', function () {
                 'failed_login_attempts' => 2,
             ]);
 
-            $this->service->resetFailedAttempts($user);
+            $this->service->resetFailedAttempts($user, $admin);
 
             Log::shouldHaveReceived('info')
                 ->withArgs(function ($message, $context) use ($admin) {

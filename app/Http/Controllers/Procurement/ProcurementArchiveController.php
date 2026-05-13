@@ -41,7 +41,7 @@ class ProcurementArchiveController extends Controller
                 Log::warning('Attempted to archive incomplete procurement', [
                     'pr_number' => $pr_number,
                     'stage' => $stage,
-                    'user_id' => auth()->id(),
+                    'user_id' => $request->user()->id,
                 ]);
 
                 return back()->with('error', 'Only fully completed procurements can be archived.');
@@ -49,7 +49,7 @@ class ProcurementArchiveController extends Controller
 
             $this->archiveRepository->archive(
                 $pr_number,
-                (string) auth()->id(),
+                (string) $request->user()->id,
                 $request->input('reason')
             );
 
@@ -67,14 +67,14 @@ class ProcurementArchiveController extends Controller
     /**
      * Restore an archived procurement
      */
-    public function destroy(string $pr_number): RedirectResponse
+    public function destroy(Request $request, string $pr_number): RedirectResponse
     {
         $this->authorize('restore-procurement', $pr_number);
 
         try {
             $this->archiveRepository->restore(
                 $pr_number,
-                (string) auth()->id()
+                (string) $request->user()->id
             );
 
             return back()->with('success', 'Procurement restored successfully.');

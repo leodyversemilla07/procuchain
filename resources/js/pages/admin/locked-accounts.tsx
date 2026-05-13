@@ -254,13 +254,13 @@ export default function AdminLockedAccounts() {
             { account_ids: accountIds },
             {
                 // Reload locked accounts data to sync across tabs/windows
- only: ['lockedAccounts'],
- onSuccess: () => {
- setSelectedAccounts(new Set());
- },
- onError: () => {
- // Error toast handled by flash message from server
- },
+                only: ['lockedAccounts'],
+                onSuccess: () => {
+                    setSelectedAccounts(new Set());
+                },
+                onError: () => {
+                    // Error toast handled by flash message from server
+                },
                 preserveScroll: true,
             },
         );
@@ -278,13 +278,13 @@ export default function AdminLockedAccounts() {
             { account_ids: accountIds },
             {
                 // Reload locked accounts data to sync across tabs/windows
- only: ['lockedAccounts'],
- onSuccess: () => {
- setSelectedAccounts(new Set());
- },
- onError: () => {
- // Error toast handled by flash message from server
- },
+                only: ['lockedAccounts'],
+                onSuccess: () => {
+                    setSelectedAccounts(new Set());
+                },
+                onError: () => {
+                    // Error toast handled by flash message from server
+                },
                 preserveScroll: true,
             },
         );
@@ -307,14 +307,14 @@ export default function AdminLockedAccounts() {
             { reason: 'Unlocked by administrator' },
             {
                 // Reload locked accounts data to sync across tabs/windows
- only: ['lockedAccounts'],
- onSuccess: () => {
- setIsUnlockDialogOpen(false);
- setSelectedUser(null);
- },
- onError: () => {
- // Error toast handled by flash message from server
- },
+                only: ['lockedAccounts'],
+                onSuccess: () => {
+                    setIsUnlockDialogOpen(false);
+                    setSelectedUser(null);
+                },
+                onError: () => {
+                    // Error toast handled by flash message from server
+                },
                 preserveScroll: true,
             },
         );
@@ -327,14 +327,14 @@ export default function AdminLockedAccounts() {
             {},
             {
                 // Reload locked accounts data to sync across tabs/windows
- only: ['lockedAccounts'],
- onSuccess: () => {
- setIsResetDialogOpen(false);
- setSelectedUser(null);
- },
- onError: () => {
- // Error toast handled by flash message from server
- },
+                only: ['lockedAccounts'],
+                onSuccess: () => {
+                    setIsResetDialogOpen(false);
+                    setSelectedUser(null);
+                },
+                onError: () => {
+                    // Error toast handled by flash message from server
+                },
                 preserveScroll: true,
             },
         );

@@ -66,7 +66,7 @@ class ProcurementListController extends BaseController
                 set_time_limit(28); // Give 2 seconds buffer
             }
 
-            $user = auth()->user();
+            $user = $request->user();
             $visibilityFilters = $this->getVisibilityFilters($user);
             $showArchived = $request->boolean('archived');
 
@@ -126,7 +126,7 @@ class ProcurementListController extends BaseController
             report($e);
             Log::error('Failed to retrieve procurements list', [
                 'error' => 'An error occurred loading procurement data.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return Inertia::render('procurements/procurements-list', [
@@ -208,7 +208,7 @@ class ProcurementListController extends BaseController
             Log::error('Failed to retrieve procurement details', [
                 'pr_number' => $pr_number,
                 'error' => 'An error occurred loading procurement data.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return Inertia::render('procurements/show-procurement', [
@@ -299,7 +299,7 @@ class ProcurementListController extends BaseController
             Log::error('Failed to fetch blockchain status', [
                 'pr_number' => $pr_number,
                 'error' => 'An error occurred loading procurement data.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             // Return safe default on error

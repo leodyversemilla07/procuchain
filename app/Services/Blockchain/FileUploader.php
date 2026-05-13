@@ -4,6 +4,7 @@ namespace App\Services\Blockchain;
 
 use App\DataTransferObjects\FileMetadata;
 use App\Enums\StreamEnums;
+use App\Models\User;
 use App\Services\Manager;
 use Exception;
 use Illuminate\Http\UploadedFile;
@@ -100,7 +101,7 @@ class FileUploader
      * @param  string  $procurementTitle  Procurement title
      * @return array Complete metadata array with blockchain transaction IDs
      */
-    public function uploadAndPrepare(array $files, array $metadata, string $prNumber, int $stageId, string $procurementTitle): array
+    public function uploadAndPrepare(array $files, array $metadata, string $prNumber, int $stageId, string $procurementTitle, ?User $authUser = null): array
     {
         $results = [];
 
@@ -117,7 +118,7 @@ class FileUploader
                 [
                     'procurement_title' => $procurementTitle,
                     'description' => $meta['description'] ?? null,
-                    'uploaded_by' => auth()->id(),
+                    'uploaded_by' => $authUser?->id,
                 ]
             );
 

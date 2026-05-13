@@ -91,7 +91,7 @@ abstract class BaseDashboardController extends Controller
             report($e);
             Log::error("Failed to retrieve {$this->getRoleLabel()} Dashboard data", [
                 'error' => 'An error occurred loading dashboard data.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             DashboardCacheKeys::clearAll($this->getRoleName());
@@ -110,7 +110,7 @@ abstract class BaseDashboardController extends Controller
      */
     protected function getCachedProcurements(string $roleName, string $roleLabel): Collection
     {
-        $user = auth()->user();
+        $user = request()->user();
         $isBacSecretariat = $roleName === UserRoleEnums::BAC_SECRETARIAT->value;
         $cacheUserId = $this->getDashboardCacheUserId($roleName);
         $cacheKey = DashboardCacheKeys::procurements($roleName, $cacheUserId);
@@ -316,7 +316,7 @@ abstract class BaseDashboardController extends Controller
             return null;
         }
 
-        $userId = auth()->id();
+        $userId = request()->user()?->id;
 
         return $userId === null ? null : (string) $userId;
     }

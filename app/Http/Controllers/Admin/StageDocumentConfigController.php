@@ -77,7 +77,7 @@ class StageDocumentConfigController extends Controller
     /**
      * Show the form for editing a stage document configuration.
      */
-    public function edit(string|ProcurementModeEnums $mode, string|StageEnums $stage): Response
+    public function edit(Request $request, string|ProcurementModeEnums $mode, string|StageEnums $stage): Response
     {
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
         $stageEnum = $stage instanceof StageEnums ? $stage : StageEnums::tryFrom($stage);
@@ -160,7 +160,7 @@ class StageDocumentConfigController extends Controller
             $modeEnum,
             $requiredDocuments,
             $optionalDocuments,
-            auth()->id()
+            $request->user()->id
         );
 
         return redirect()
@@ -171,7 +171,7 @@ class StageDocumentConfigController extends Controller
     /**
      * Reset stage document configuration to defaults.
      */
-    public function resetToDefaults(string|ProcurementModeEnums $mode, string|StageEnums $stage): RedirectResponse
+    public function resetToDefaults(Request $request, string|ProcurementModeEnums $mode, string|StageEnums $stage): RedirectResponse
     {
         $modeEnum = $mode instanceof ProcurementModeEnums ? $mode : ProcurementModeEnums::tryFrom($mode);
         $stageEnum = $stage instanceof StageEnums ? $stage : StageEnums::tryFrom($stage);
@@ -180,7 +180,7 @@ class StageDocumentConfigController extends Controller
             abort(404, 'Invalid mode or stage');
         }
 
-        $this->documentConfigService->resetToDefaults($stageEnum, $modeEnum, auth()->id());
+        $this->documentConfigService->resetToDefaults($stageEnum, $modeEnum, $request->user()->id);
 
         return redirect()
             ->route('admin.stage-documents.index', ['mode' => $modeEnum->value])

@@ -59,7 +59,7 @@ class ProcurementStageController extends BaseController
     ): JsonResponse {
         $this->authorize('view-procurement', $pr_number);
 
-        $user = auth()->user();
+        $user = $request->user();
 
         try {
             $documentTypeValue = $request->input('document_type');
@@ -85,7 +85,7 @@ class ProcurementStageController extends BaseController
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
                 'error' => 'An error occurred processing the procurement stage.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return response()->json(['message' => 'An error occurred while uploading the document'], 500);
@@ -112,7 +112,7 @@ class ProcurementStageController extends BaseController
         $this->procurementSupport->validateStageInWorkflow($pr_number, $stage);
 
         try {
-            $user = auth()->user();
+            $user = $request->user();
             $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, $user);
 
             return response()->json($response['data'], $response['status']);
@@ -141,7 +141,7 @@ class ProcurementStageController extends BaseController
                 $pr_number,
                 $stage,
                 $request->input('reason', 'Stage marked as optional and skipped by user.'),
-                auth()->user(),
+                $request->user(),
             ), 202);
         } catch (\Exception $e) {
             Log::error('Error skipping stage', [
@@ -206,6 +206,7 @@ class ProcurementStageController extends BaseController
         $validated = $request->validated();
 
         return $this->handleDecisionPublishing(
+            request: $request,
             decisionType: 'pre_procurement_conference',
             prNumber: $validated['pr_number'],
             procurementTitle: $validated['procurement_title'],
@@ -222,6 +223,7 @@ class ProcurementStageController extends BaseController
         $validated = $request->validated();
 
         return $this->handleDecisionPublishing(
+            request: $request,
             decisionType: 'pre_bid_conference',
             prNumber: $validated['pr_number'],
             procurementTitle: $validated['procurement_title'],
@@ -238,6 +240,7 @@ class ProcurementStageController extends BaseController
         $validated = $request->validated();
 
         return $this->handleDecisionPublishing(
+            request: $request,
             decisionType: 'supplemental_bid_bulletin',
             prNumber: $validated['pr_number'],
             procurementTitle: $validated['procurement_title'],
@@ -272,7 +275,7 @@ class ProcurementStageController extends BaseController
                 $pr_number,
                 $stage,
                 $request->input('reason', 'Additional bulletin required'),
-                auth()->user(),
+                $request->user(),
             ), 202);
         } catch (\Exception $e) {
             Log::error('Error repeating stage', [
@@ -307,13 +310,13 @@ class ProcurementStageController extends BaseController
                 $request->input('delivery_location'),
                 $request->input('delivery_date'),
                 (int) $request->input('delivery_term_days'),
-                auth()->user(),
+                $request->user(),
             ), 202);
         } catch (\Exception $e) {
             Log::error('Failed to update delivery details', [
                 'pr_number' => $pr_number,
                 'error' => 'An error occurred processing the procurement stage.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return response()->json(['error' => 'Failed to update delivery details. Please try again.'], 500);
@@ -328,6 +331,7 @@ class ProcurementStageController extends BaseController
      * Unified handler for publishing procurement decisions.
      */
     private function handleDecisionPublishing(
+        Request $request,
         string $decisionType,
         string $prNumber,
         string $procurementTitle,
@@ -341,7 +345,7 @@ class ProcurementStageController extends BaseController
                 $prNumber,
                 $procurementTitle,
                 $wasHeld,
-                auth()->user(),
+                $request->user(),
             ), 202);
         } catch (\Exception $e) {
             Log::error("Failed to dispatch {$decisionType} decision job", [

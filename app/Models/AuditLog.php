@@ -22,7 +22,7 @@ class AuditLog extends Model
     /** Audit logs are never updated — only created. */
     const UPDATED_AT = null;
 
-    public function casts(): array
+    protected function casts(): array
     {
         return [
             'old_values' => 'array',

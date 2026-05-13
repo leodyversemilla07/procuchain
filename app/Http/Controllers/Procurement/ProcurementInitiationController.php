@@ -113,8 +113,10 @@ class ProcurementInitiationController extends BaseController
 
     public function initiate(InitiateProcurementRequest $request): JsonResponse
     {
+        $this->authorize('initiate-procurement');
+
         $prNumber = $request->input('pr_number');
-        $user = auth()->user();
+        $user = $request->user();
 
         // Duplicate check stays synchronous
         $existing = $this->procurements->findByProcurement($prNumber);
@@ -168,7 +170,7 @@ class ProcurementInitiationController extends BaseController
         $this->authorize('view-procurement', $pr_number);
 
         $stage = StageEnums::PROCUREMENT_INITIATION;
-        $user = auth()->user();
+        $user = $request->user();
 
         try {
             $file = $request->file('document_file');
@@ -195,7 +197,7 @@ class ProcurementInitiationController extends BaseController
                 'pr_number' => $pr_number,
                 'stage' => $stage->value,
                 'error' => 'An error occurred initiating the procurement.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return response()->json(['message' => 'An error occurred while uploading the document'], 500);
@@ -251,14 +253,14 @@ class ProcurementInitiationController extends BaseController
         $stage = StageEnums::PROCUREMENT_INITIATION;
 
         try {
-            $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, auth()->user());
+            $response = $this->stageCompletionService->queueStageCompletion($pr_number, $stage, $request->user());
 
             return response()->json($response['data'], $response['status']);
         } catch (\Exception $e) {
             Log::error('Failed to mark Procurement Initiation stage as complete', [
                 'pr_number' => $pr_number,
                 'error' => 'An error occurred initiating the procurement.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return response()->json(['error' => 'Failed to mark stage as complete. Please try again.'], 500);

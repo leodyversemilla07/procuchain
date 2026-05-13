@@ -108,7 +108,7 @@ class AcceptInvitationController extends Controller
             Auth::login($user);
 
             // Redirect to role-specific dashboard
-            return redirect($this->redirectToDashboard($user))
+            return redirect($this->redirectToDashboard($request, $user))
                 ->with('success', 'Welcome to Procuchain! Your account has been created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -116,7 +116,7 @@ class AcceptInvitationController extends Controller
             Log::error('Failed to accept invitation', [
                 'error' => 'An error occurred accepting the invitation.',
                 'invitation_id' => $invitation->id,
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return redirect()->back()->with('error', 'Failed to create account. Please try again or contact support.');

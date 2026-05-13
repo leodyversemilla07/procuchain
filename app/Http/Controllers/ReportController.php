@@ -72,7 +72,7 @@ class ReportController extends Controller
         } catch (\Exception $e) {
             Log::error('Report generation failed', [
                 'error' => 'An error occurred generating the report.',
-                'trace' => $e->getTraceAsString(),
+                'trace' => sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
             ]);
 
             return response()->json([
