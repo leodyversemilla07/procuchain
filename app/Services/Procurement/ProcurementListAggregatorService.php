@@ -61,7 +61,7 @@ final class ProcurementListAggregatorService
      * @param  bool  $archived  Filter for archived procurements (true = show archived only, false = show active only)
      * @return array<int, array<string, mixed>>
      */
-    public function fetchAllProcurements(bool $skipActions = false, ?string $filterByUserId = null, ?string $filterByUserAddress = null, bool $archived = false): array
+    public function fetchAllProcurements(bool $skipActions = false, ?string $filterByUserId = null, ?string $filterByUserAddress = null, bool $archived = false, ?User $authUser = null): array
     {
         $blockchainHealthKey = 'blockchain:health:procurement_fetch';
 
@@ -92,7 +92,7 @@ final class ProcurementListAggregatorService
                 $statusItems = $this->filterBySecurity($statusItems, $filterByUserId, $filterByUserAddress);
             }
 
-            $result = $this->buildListResult($statusItems, $documentCountMap, $procurementModeMap, $skipActions);
+            $result = $this->buildListResult($statusItems, $documentCountMap, $procurementModeMap, $skipActions, $authUser);
 
             Log::info('ProcurementListAggregatorService: Final procurements result count', ['count' => count($result)]);
 
@@ -293,10 +293,10 @@ final class ProcurementListAggregatorService
      * @param  array<string, array{value: string, label: string, abc_amount: float|int}>  $procurementModeMap
      * @return array<int, array<string, mixed>>
      */
-    private function buildListResult(Collection $statusItems, array $documentCountMap, array $procurementModeMap, bool $skipActions): array
+    private function buildListResult(Collection $statusItems, array $documentCountMap, array $procurementModeMap, bool $skipActions, ?User $authUser = null): array
     {
         return $statusItems
-            ->map(function (StatusData $statusDto) use ($documentCountMap, $procurementModeMap, $skipActions) {
+            ->map(function (StatusData $statusDto) use ($documentCountMap, $procurementModeMap, $skipActions, $authUser) {
                 $originalTimestamp = $statusDto->timestamp;
                 $displayTimestamp = Carbon::parse($statusDto->timestamp)->toDateString();
 
@@ -313,7 +313,7 @@ final class ProcurementListAggregatorService
                 $modeInfo = $procurementModeMap[$statusDto->prNumber] ?? null;
                 $modeEnum = isset($modeInfo['value']) ? ProcurementModeEnums::tryFrom($modeInfo['value']) : null;
 
-                $userRole = $this->getCurrentUserRole();
+                $userRole = $this->getCurrentUserRole($authUser);
 
                 $workflowActions = [];
                 $staticActions = [];
@@ -385,9 +385,9 @@ final class ProcurementListAggregatorService
     /**
      * Get the current authenticated user's role
      */
-    private function getCurrentUserRole(): string
+    private function getCurrentUserRole(?User $authUser = null): string
     {
-        $user = Auth::user();
+        $user = $authUser ?? Auth::user();
 
         if (! $user instanceof User) {
             return 'guest';

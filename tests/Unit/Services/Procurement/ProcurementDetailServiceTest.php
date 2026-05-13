@@ -43,18 +43,18 @@ describe('ProcurementDetailService', function () {
         it('returns null when no status items exist', function () {
             $this->dataService
                 ->shouldReceive('fetchStatusItems')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn(collect());
 
-            $result = $this->service->getDetail('PR-2025-001');
+            $result = $this->service->getDetail('PR-2025-001-0001');
 
             expect($result)->toBeNull();
         });
 
         it('builds complete procurement detail when data exists', function () {
             $statusData = [
-                'pr_number' => 'PR-2025-001',
+                'pr_number' => 'PR-2025-001-0001',
                 'procurement_title' => 'Test Procurement',
                 'stage' => 'procurement_initiation',
                 'current_status' => 'procurement_submitted',
@@ -64,19 +64,19 @@ describe('ProcurementDetailService', function () {
 
             $this->dataService
                 ->shouldReceive('fetchStatusItems')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn(collect([$statusData]));
 
             $this->dataService
                 ->shouldReceive('fetchAndProcessAllDocuments')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn([]);
 
             $this->dataService
                 ->shouldReceive('fetchAndProcessEvents')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn([]);
 
@@ -88,7 +88,7 @@ describe('ProcurementDetailService', function () {
                 ->shouldReceive('buildProcurementData')
                 ->once()
                 ->andReturn([
-                    'id' => 'PR-2025-001',
+                    'id' => 'PR-2025-001-0001',
                     'title' => 'Test Procurement',
                     'status' => 'procurement_submitted',
                     'stage' => 'procurement_initiation',
@@ -96,11 +96,11 @@ describe('ProcurementDetailService', function () {
 
             $this->procurementRepository
                 ->shouldReceive('findByProcurement')
-                ->with('PR-2025-001')
+                ->with('PR-2025-001-0001')
                 ->once()
                 ->andReturn(null);
 
-            $result = $this->service->getDetail('PR-2025-001');
+            $result = $this->service->getDetail('PR-2025-001-0001');
 
             expect($result)
                 ->toHaveKeys(['procurement', 'workflow'])
@@ -110,7 +110,7 @@ describe('ProcurementDetailService', function () {
 
         it('includes workflow and details when procurement details exist', function () {
             $statusData = [
-                'pr_number' => 'PR-2025-001',
+                'pr_number' => 'PR-2025-001-0001',
                 'procurement_title' => 'Test Procurement',
                 'stage' => 'procurement_initiation',
                 'current_status' => 'procurement_submitted',
@@ -119,7 +119,7 @@ describe('ProcurementDetailService', function () {
             ];
 
             $procurementDetails = ProcurementData::fromBlockchainArray([
-                'pr_number' => 'PR-2025-001',
+                'pr_number' => 'PR-2025-001-0001',
                 'title' => 'Test Procurement',
                 'description' => 'Test description',
                 'abc_amount' => '500000',
@@ -150,7 +150,7 @@ describe('ProcurementDetailService', function () {
             $this->dataService
                 ->shouldReceive('buildProcurementData')
                 ->andReturn([
-                    'id' => 'PR-2025-001',
+                    'id' => 'PR-2025-001-0001',
                     'title' => 'Test Procurement',
                     'status' => 'procurement_submitted',
                     'stage' => 'procurement_initiation',
@@ -165,7 +165,7 @@ describe('ProcurementDetailService', function () {
                 ->shouldReceive('liststreamitems')
                 ->andReturn([]);
 
-            $result = $this->service->getDetail('PR-2025-001');
+            $result = $this->service->getDetail('PR-2025-001-0001');
 
             expect($result['workflow'])->not->toBeNull()
                 ->and($result['workflow'])->toHaveKeys(['mode', 'name', 'stages'])
@@ -216,7 +216,7 @@ describe('ProcurementListAggregatorService', function () {
                     [
                         'data' => [
                             'json' => [
-                                'pr_number' => 'PR-2025-001',
+                                'pr_number' => 'PR-2025-001-0001',
                                 'procurement_title' => 'Test Procurement',
                                 'stage' => 'procurement_initiation',
                                 'current_status' => 'procurement_submitted',
@@ -255,7 +255,7 @@ describe('ProcurementListAggregatorService', function () {
             $result = $this->aggregator->fetchAllProcurements(skipActions: true);
 
             expect($result)->toHaveCount(1)
-                ->and($result[0]['id'])->toBe('PR-2025-001')
+                ->and($result[0]['id'])->toBe('PR-2025-001-0001')
                 ->and($result[0]['title'])->toBe('Test Procurement');
         });
     });
@@ -267,7 +267,7 @@ describe('ProcurementListAggregatorService', function () {
             $method->setAccessible(true);
 
             $activeDto = new StatusData(
-                prNumber: 'PR-ACTIVE',
+                prNumber: 'PR-2025-991-0001',
                 procurementTitle: 'Active',
                 stage: 'procurement_initiation',
                 currentStatus: 'procurement_submitted',
@@ -276,7 +276,7 @@ describe('ProcurementListAggregatorService', function () {
             );
 
             $archivedDto = new StatusData(
-                prNumber: 'PR-ARCHIVED',
+                prNumber: 'PR-2025-991-0002',
                 procurementTitle: 'Archived',
                 stage: 'completed',
                 currentStatus: 'completed',
@@ -289,12 +289,12 @@ describe('ProcurementListAggregatorService', function () {
             $this->archiveRepository
                 ->shouldReceive('getArchivedPrNumbers')
                 ->once()
-                ->andReturn(['PR-ARCHIVED']);
+                ->andReturn(['PR-2025-991-0002']);
 
             $result = $method->invoke($this->aggregator, $collection, false);
 
             expect($result)->toHaveCount(1)
-                ->and($result->first()->prNumber)->toBe('PR-ACTIVE');
+                ->and($result->first()->prNumber)->toBe('PR-2025-991-0001');
         });
 
         it('filters correctly for archived procurements', function () {
@@ -302,7 +302,7 @@ describe('ProcurementListAggregatorService', function () {
             $method->setAccessible(true);
 
             $activeDto = new StatusData(
-                prNumber: 'PR-ACTIVE',
+                prNumber: 'PR-2025-991-0001',
                 procurementTitle: 'Active',
                 stage: 'procurement_initiation',
                 currentStatus: 'procurement_submitted',
@@ -311,7 +311,7 @@ describe('ProcurementListAggregatorService', function () {
             );
 
             $archivedDto = new StatusData(
-                prNumber: 'PR-ARCHIVED',
+                prNumber: 'PR-2025-991-0002',
                 procurementTitle: 'Archived',
                 stage: 'completed',
                 currentStatus: 'completed',
@@ -324,12 +324,12 @@ describe('ProcurementListAggregatorService', function () {
             $this->archiveRepository
                 ->shouldReceive('getArchivedPrNumbers')
                 ->once()
-                ->andReturn(['PR-ARCHIVED']);
+                ->andReturn(['PR-2025-991-0002']);
 
             $result = $method->invoke($this->aggregator, $collection, true);
 
             expect($result)->toHaveCount(1)
-                ->and($result->first()->prNumber)->toBe('PR-ARCHIVED');
+                ->and($result->first()->prNumber)->toBe('PR-2025-991-0002');
         });
     });
 });

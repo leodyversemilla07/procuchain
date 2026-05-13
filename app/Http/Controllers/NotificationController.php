@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRoleEnums;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 
@@ -15,7 +14,7 @@ class NotificationController extends Controller
      */
     public function markAsRead(Request $request, $id)
     {
-        $user = Auth::user();
+        $user = $request->user();
 
         if (! $user) {
             return redirect()->back()->with('error', 'User not authenticated');
@@ -37,9 +36,9 @@ class NotificationController extends Controller
     /**
      * Mark all notifications as read.
      */
-    public function markAllAsRead()
+    public function markAllAsRead(Request $request)
     {
-        $user = Auth::user();
+        $user = $request->user();
 
         if (! $user) {
             return redirect()->back()->with('error', 'User not authenticated');
@@ -55,7 +54,7 @@ class NotificationController extends Controller
      */
     public function page(Request $request)
     {
-        $user = Auth::user();
+        $user = $request->user();
 
         if ($user && $user->role === UserRoleEnums::BAC_SECRETARIAT->value) {
             Log::info('User is BAC Secretariat (ID: '.$user->id.'), redirecting from notifications page to dashboard.');

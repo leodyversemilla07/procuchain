@@ -157,7 +157,7 @@ describe('DocumentView Model - Static Methods - Recent Views', function () {
 
 describe('DocumentView Model - Static Methods - Procurement Stats', function () {
     test('getProcurementViewStats returns stats grouped by file', function () {
-        $pr_number = 'PR-STATS-001';
+        $pr_number = 'PR-2025-996-0001';
 
         DocumentView::factory()->count(3)->create([
             'pr_number' => $pr_number,
@@ -489,7 +489,7 @@ describe('DocumentView Model - Data Integrity', function () {
 
 describe('DocumentView Model - Query Scenarios', function () {
     test('can filter by pr_number', function () {
-        $pr_number = 'PR-FILTER-001';
+        $pr_number = 'PR-2025-996-0002';
 
         DocumentView::factory()->count(3)->create([
             'pr_number' => $pr_number,

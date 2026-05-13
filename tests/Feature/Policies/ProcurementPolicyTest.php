@@ -49,24 +49,24 @@ describe('ProcurementPolicy', function () {
         $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
 
         bindScopedProcurementPolicyStubs(
-            prNumber: 'PR-OWNED',
+            prNumber: 'PR-2025-994-0001',
             procurementUserId: (string) $this->secretariat->id,
             touchedAddress: null,
         );
 
-        expect($this->secretariat->can('view-procurement', 'PR-OWNED'))->toBeTrue();
+        expect($this->secretariat->can('view-procurement', 'PR-2025-994-0001'))->toBeTrue();
     });
 
     it('allows bac secretariat to view a procurement they interacted with', function () {
         $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
 
         bindScopedProcurementPolicyStubs(
-            prNumber: 'PR-TOUCHED',
+            prNumber: 'PR-2025-994-0002',
             procurementUserId: '999',
             touchedAddress: 'secretariat-address',
         );
 
-        expect($this->secretariat->can('view-procurement', 'PR-TOUCHED'))->toBeTrue();
+        expect($this->secretariat->can('view-procurement', 'PR-2025-994-0002'))->toBeTrue();
     });
 
     it('denies inaccessible scoped procurement abilities for bac secretariat', function () {
@@ -74,12 +74,12 @@ describe('ProcurementPolicy', function () {
 
         foreach (['view-procurement', 'archive-procurement', 'restore-procurement', 'correct-procurement'] as $ability) {
             bindScopedProcurementPolicyStubs(
-                prNumber: 'PR-BLOCKED',
+                prNumber: 'PR-2025-994-0003',
                 procurementUserId: '999',
                 touchedAddress: 'different-address',
             );
 
-            expect($this->secretariat->can($ability, 'PR-BLOCKED'))->toBeFalse();
+            expect($this->secretariat->can($ability, 'PR-2025-994-0003'))->toBeFalse();
         }
     });
 

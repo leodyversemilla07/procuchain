@@ -56,7 +56,7 @@ class DocumentDownloadController extends BaseController
                     'file_key' => $fileKey,
                     'data_txid' => $dataTxid ?? 'not_available',
                     'user_id' => Auth::id(),
-                    'user_role' => Auth::user()->role ?? 'unknown',
+                    'user_role' => $request->user()->role ?? 'unknown',
                     'ip' => $request->ip(),
                 ]);
 

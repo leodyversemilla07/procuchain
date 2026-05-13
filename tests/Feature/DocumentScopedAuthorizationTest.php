@@ -37,7 +37,7 @@ beforeEach(function () {
 });
 
 it('forbids bac secretariat from verifying inaccessible documents by file key', function () {
-    bindLockedDocumentAccess('locked-file.pdf', 'PR-LOCKED');
+    bindLockedDocumentAccess('locked-file.pdf', 'PR-2025-998-0002');
 
     $this->actingAs($this->secretariat)
         ->post(route('documents.verify', ['fileKey' => 'locked-file.pdf']))
@@ -46,13 +46,13 @@ it('forbids bac secretariat from verifying inaccessible documents by file key', 
 
 it('forbids bac secretariat from correcting inaccessible documents by txid', function () {
     $txid = str_repeat('a', 64);
-    bindLockedDocumentAccess($txid, 'PR-LOCKED', true);
+    bindLockedDocumentAccess($txid, 'PR-2025-998-0002', true);
 
     $this->actingAs($this->secretariat)
         ->post(route('documents.correct', ['document' => $txid]), [
             'correction_reason' => 'Correcting inaccessible document',
             'correction_type' => 'invalidate',
-            'pr_number' => 'PR-LOCKED',
+            'pr_number' => 'PR-2025-998-0002',
             'procurement_title' => 'Locked Procurement',
             'original_document_hash' => 'hash',
             'original_txid' => $txid,

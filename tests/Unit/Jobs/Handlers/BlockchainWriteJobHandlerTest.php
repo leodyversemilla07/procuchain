@@ -193,7 +193,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
 
         app()->instance(DocumentUploadHandler::class, $mockHandler);
 
-        $job = new BlockchainWriteJob('upload_document', ['pr_number' => 'PR-FAIL'], 'job-uuid-fail');
+        $job = new BlockchainWriteJob('upload_document', ['pr_number' => 'PR-2025-992-0001'], 'job-uuid-fail');
 
         try {
             $job->handle();
@@ -215,7 +215,7 @@ describe('BlockchainWriteJob dispatch routing', function () {
         app()->instance(ProcurementInitiationHandler::class, $mockHandler);
 
         $jobId = 'specific-job-id-test';
-        $job = new BlockchainWriteJob('initiate_procurement', ['pr_number' => 'PR-CACHE'], $jobId);
+        $job = new BlockchainWriteJob('initiate_procurement', ['pr_number' => 'PR-2025-992-0002'], $jobId);
         $job->handle();
 
         $cached = Cache::get("blockchain_job:{$jobId}");
@@ -263,7 +263,7 @@ describe('ProcurementInitiationHandler', function () {
 
         $handler = new ProcurementInitiationHandler($orchestrator);
         $handler->execute([
-            'procurement_data' => ['pr_number' => 'PR-ERR'],
+            'procurement_data' => ['pr_number' => 'PR-2025-992-0003'],
             'user_name' => 'Test User',
         ]);
     })->throws(Exception::class, 'Stream write failed');
@@ -276,7 +276,7 @@ describe('ProcurementInitiationHandler', function () {
 
         $handler = new ProcurementInitiationHandler($orchestrator);
         $handler->execute([
-            'procurement_data' => ['pr_number' => 'PR-GENERIC'],
+            'procurement_data' => ['pr_number' => 'PR-2025-992-0004'],
             'user_name' => 'Test User',
         ]);
     })->throws(Exception::class, 'Orchestrator returned failure during initiation');
@@ -301,7 +301,7 @@ describe('DocumentUploadHandler', function () {
         $orchestrator->shouldReceive('publishDocumentWorkflow')
             ->once()
             ->withArgs(function ($procurementData, $file, $documentData, $statusData, $eventData) {
-                return $procurementData['pr_number'] === 'PR-DOC'
+                return $procurementData['pr_number'] === 'PR-2025-992-0005'
                     && $file instanceof UploadedFile
                     && $documentData['stage'] === StageEnums::BID_OPENING
                     && $documentData['document_type'] === DocumentTypeEnums::PURCHASE_REQUEST
@@ -316,7 +316,7 @@ describe('DocumentUploadHandler', function () {
             'temp_file_path' => 'temp/test-doc.pdf',
             'original_filename' => 'purchase_request.pdf',
             'mime_type' => 'application/pdf',
-            'pr_number' => 'PR-DOC',
+            'pr_number' => 'PR-2025-992-0005',
             'procurement_title' => 'Test Procurement',
             'user_address' => '0xABC',
             'stage' => StageEnums::BID_OPENING->value,
@@ -343,7 +343,7 @@ describe('DocumentUploadHandler', function () {
             'temp_file_path' => 'temp/cleanup-test.pdf',
             'original_filename' => 'cleanup.pdf',
             'mime_type' => 'application/pdf',
-            'pr_number' => 'PR-CLEAN',
+            'pr_number' => 'PR-2025-992-0006',
             'procurement_title' => 'Cleanup Test',
             'user_address' => '0xDEF',
             'stage' => StageEnums::PROCUREMENT_INITIATION->value,
@@ -371,7 +371,7 @@ describe('DocumentUploadHandler', function () {
                 'temp_file_path' => 'temp/fail-cleanup.pdf',
                 'original_filename' => 'fail.pdf',
                 'mime_type' => 'application/pdf',
-                'pr_number' => 'PR-FAILCLEAN',
+                'pr_number' => 'PR-2025-992-0007',
                 'procurement_title' => 'Fail Cleanup Test',
                 'user_address' => '0xGHI',
                 'stage' => StageEnums::PROCUREMENT_INITIATION->value,
@@ -395,7 +395,7 @@ describe('DocumentUploadHandler', function () {
             'temp_file_path' => 'temp/nonexistent.pdf',
             'original_filename' => 'ghost.pdf',
             'mime_type' => 'application/pdf',
-            'pr_number' => 'PR-MISSING',
+            'pr_number' => 'PR-2025-992-0008',
             'procurement_title' => 'Missing File Test',
             'user_address' => '0xMIS',
             'stage' => StageEnums::PROCUREMENT_INITIATION->value,
@@ -495,7 +495,7 @@ describe('CorrectionHandler', function () {
                 $correctedFile,
                 ?string $originalStage,
             ) {
-                return $prNumber === 'PR-CORR'
+                return $prNumber === 'PR-2025-992-0009'
                     && $originalTxid === 'txid-original'
                     && $action === 'replace'
                     && $correctedFile instanceof UploadedFile
@@ -507,7 +507,7 @@ describe('CorrectionHandler', function () {
 
         $handler = new CorrectionHandler($correctionPublisher, $procurementCorrectionPublisher);
         $result = $handler->executeDocumentCorrection([
-            'pr_number' => 'PR-CORR',
+            'pr_number' => 'PR-2025-992-0009',
             'procurement_title' => 'Correction Test',
             'original_txid' => 'txid-original',
             'original_document_hash' => 'hash-abc',
@@ -549,7 +549,7 @@ describe('CorrectionHandler', function () {
 
         $handler = new CorrectionHandler($correctionPublisher, $procurementCorrectionPublisher);
         $result = $handler->executeDocumentCorrection([
-            'pr_number' => 'PR-INVAL',
+            'pr_number' => 'PR-2025-992-0010',
             'procurement_title' => 'Invalidation Test',
             'original_txid' => 'txid-original-2',
             'original_document_hash' => 'hash-def',
@@ -568,7 +568,7 @@ describe('CorrectionHandler', function () {
         $procurementCorrectionPublisher = Mockery::mock(ProcurementCorrectionPublisher::class);
 
         $originalProcurementArray = [
-            'pr_number' => 'PR-PCORR',
+            'pr_number' => 'PR-2025-992-0011',
             'title' => 'Original Title',
             'description' => 'Original Description',
             'abc_amount' => '100000',
@@ -590,7 +590,7 @@ describe('CorrectionHandler', function () {
                 string $correctedBy,
                 string $userAddress,
             ) {
-                return $originalProcurement->prNumber === 'PR-PCORR'
+                return $originalProcurement->prNumber === 'PR-2025-992-0011'
                     && $correctedData['title'] === 'Corrected Title'
                     && $reason === 'Title was wrong'
                     && $correctedBy === 'Admin'
@@ -634,7 +634,7 @@ describe('StageCompletionHandler', function () {
                 StatusEnums $currentStatus,
                 string $userAddress,
             ) {
-                return $prNumber === 'PR-SC'
+                return $prNumber === 'PR-2025-992-0012'
                     && $stage === StageEnums::BID_OPENING
                     && $currentStatus === StatusEnums::BIDS_OPENED;
             })
@@ -648,7 +648,7 @@ describe('StageCompletionHandler', function () {
                 string $stage,
                 string $eventType,
             ) {
-                return $prNumber === 'PR-SC'
+                return $prNumber === 'PR-2025-992-0012'
                     && $stage === StageEnums::BID_OPENING->value
                     && $eventType === 'stage_completed';
             })
@@ -656,7 +656,7 @@ describe('StageCompletionHandler', function () {
 
         $handler = new StageCompletionHandler($statusPublisher, $eventPublisher);
         $result = $handler->execute([
-            'pr_number' => 'PR-SC',
+            'pr_number' => 'PR-2025-992-0012',
             'procurement_title' => 'Stage Completion Test',
             'current_stage' => StageEnums::BID_OPENING->value,
             'completion_status' => StatusEnums::BIDS_OPENED->value,
@@ -704,7 +704,7 @@ describe('StageCompletionHandler', function () {
 
         $handler = new StageCompletionHandler($statusPublisher, $eventPublisher);
         $result = $handler->execute([
-            'pr_number' => 'PR-SC-TRANS',
+            'pr_number' => 'PR-2025-992-0013',
             'procurement_title' => 'Transition Test',
             'current_stage' => StageEnums::BID_OPENING->value,
             'completion_status' => StatusEnums::BIDS_OPENED->value,
@@ -752,7 +752,7 @@ describe('StageCompletionHandler', function () {
         $handler = new StageCompletionHandler($statusPublisher, $eventPublisher);
         $result = $handler->execute([
             'operation_variant' => 'initiation_complete',
-            'pr_number' => 'PR-INIT-COMP',
+            'pr_number' => 'PR-2025-992-0014',
             'procurement_title' => 'Initiation Complete Test',
             'current_stage' => StageEnums::PROCUREMENT_INITIATION->value,
             'next_stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
@@ -782,7 +782,7 @@ describe('StageTransitionHandler', function () {
         $procurementRepo = Mockery::mock(ProcurementRepository::class);
 
         $procurement = ProcurementData::fromArray([
-            'pr_number' => 'PR-SKIP',
+            'pr_number' => 'PR-2025-992-0015',
             'title' => 'Skip Test',
             'description' => 'Testing skip',
             'abc_amount' => '50000',
@@ -797,7 +797,7 @@ describe('StageTransitionHandler', function () {
 
         $procurementRepo->shouldReceive('findByProcurement')
             ->once()
-            ->with('PR-SKIP')
+            ->with('PR-2025-992-0015')
             ->andReturn($procurement);
 
         $statusPublisher->shouldReceive('publish')
@@ -808,7 +808,7 @@ describe('StageTransitionHandler', function () {
                 StageEnums $stage,
                 StatusEnums $currentStatus,
             ) {
-                return $prNumber === 'PR-SKIP'
+                return $prNumber === 'PR-2025-992-0015'
                     && $stage === StageEnums::PRE_PROCUREMENT_CONFERENCE
                     && $currentStatus === StatusEnums::STAGE_SKIPPED;
             })
@@ -829,7 +829,7 @@ describe('StageTransitionHandler', function () {
 
         $handler = new StageTransitionHandler($statusPublisher, $eventPublisher, $procurementRepo);
         $result = $handler->executeSkip([
-            'pr_number' => 'PR-SKIP',
+            'pr_number' => 'PR-2025-992-0015',
             'stage' => StageEnums::PRE_PROCUREMENT_CONFERENCE->value,
             'reason' => 'Not required for this mode',
             'user_address' => '0xSKIP',
@@ -847,16 +847,16 @@ describe('StageTransitionHandler', function () {
 
         $procurementRepo->shouldReceive('findByProcurement')
             ->once()
-            ->with('PR-NOTFOUND')
+            ->with('PR-2025-992-0016')
             ->andReturnNull();
 
         $handler = new StageTransitionHandler($statusPublisher, $eventPublisher, $procurementRepo);
         $handler->executeSkip([
-            'pr_number' => 'PR-NOTFOUND',
+            'pr_number' => 'PR-2025-992-0016',
             'stage' => StageEnums::PRE_BID_CONFERENCE->value,
             'user_address' => '0xNF',
         ]);
-    })->throws(Exception::class, 'Procurement not found: PR-NOTFOUND');
+    })->throws(Exception::class, 'Procurement not found: PR-2025-992-0016');
 
     it('executeRepeat repeats stages with event and status publishing', function () {
         $statusPublisher = Mockery::mock(StatusPublisher::class);
@@ -864,7 +864,7 @@ describe('StageTransitionHandler', function () {
         $procurementRepo = Mockery::mock(ProcurementRepository::class);
 
         $procurement = ProcurementData::fromArray([
-            'pr_number' => 'PR-REPEAT',
+            'pr_number' => 'PR-2025-992-0017',
             'title' => 'Repeat Test',
             'description' => 'Testing repeat',
             'abc_amount' => '75000',
@@ -879,7 +879,7 @@ describe('StageTransitionHandler', function () {
 
         $procurementRepo->shouldReceive('findByProcurement')
             ->once()
-            ->with('PR-REPEAT')
+            ->with('PR-2025-992-0017')
             ->andReturn($procurement);
 
         $eventPublisher->shouldReceive('publish')
@@ -890,7 +890,7 @@ describe('StageTransitionHandler', function () {
                 string $stage,
                 string $eventType,
             ) {
-                return $prNumber === 'PR-REPEAT'
+                return $prNumber === 'PR-2025-992-0017'
                     && $stage === StageEnums::SUPPLEMENTAL_BID_BULLETIN->value
                     && $eventType === 'stage_repeated';
             })
@@ -904,7 +904,7 @@ describe('StageTransitionHandler', function () {
                 StageEnums $stage,
                 StatusEnums $currentStatus,
             ) {
-                return $prNumber === 'PR-REPEAT'
+                return $prNumber === 'PR-2025-992-0017'
                     && $stage === StageEnums::SUPPLEMENTAL_BID_BULLETIN
                     && $currentStatus === StatusEnums::SUPPLEMENTAL_BULLETINS_ONGOING;
             })
@@ -912,7 +912,7 @@ describe('StageTransitionHandler', function () {
 
         $handler = new StageTransitionHandler($statusPublisher, $eventPublisher, $procurementRepo);
         $result = $handler->executeRepeat([
-            'pr_number' => 'PR-REPEAT',
+            'pr_number' => 'PR-2025-992-0017',
             'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
             'reason' => 'Additional bulletin required',
             'user_address' => '0xREP',
@@ -930,16 +930,16 @@ describe('StageTransitionHandler', function () {
 
         $procurementRepo->shouldReceive('findByProcurement')
             ->once()
-            ->with('PR-REPNF')
+            ->with('PR-2025-992-0018')
             ->andReturnNull();
 
         $handler = new StageTransitionHandler($statusPublisher, $eventPublisher, $procurementRepo);
         $handler->executeRepeat([
-            'pr_number' => 'PR-REPNF',
+            'pr_number' => 'PR-2025-992-0018',
             'stage' => StageEnums::SUPPLEMENTAL_BID_BULLETIN->value,
             'user_address' => '0xRNF',
         ]);
-    })->throws(Exception::class, 'Procurement not found: PR-REPNF');
+    })->throws(Exception::class, 'Procurement not found: PR-2025-992-0018');
 });
 
 // ============================================================================
@@ -958,7 +958,7 @@ describe('ProcurementUpdateHandler', function () {
         $decisionPublisher = Mockery::mock(DecisionPublisher::class);
 
         $procurement = ProcurementData::fromArray([
-            'pr_number' => 'PR-DEL',
+            'pr_number' => 'PR-2025-992-0019',
             'title' => 'Delivery Test',
             'description' => 'Testing delivery update',
             'abc_amount' => '120000',
@@ -973,7 +973,7 @@ describe('ProcurementUpdateHandler', function () {
 
         $procurementRepo->shouldReceive('findByProcurement')
             ->once()
-            ->with('PR-DEL')
+            ->with('PR-2025-992-0019')
             ->andReturn($procurement);
 
         $procurementRepo->shouldReceive('update')
@@ -981,7 +981,7 @@ describe('ProcurementUpdateHandler', function () {
             ->withArgs(function (ProcurementData $updated) {
                 return $updated->deliveryLocation === 'Manila'
                     && $updated->deliveryTermDays === 30
-                    && $updated->prNumber === 'PR-DEL';
+                    && $updated->prNumber === 'PR-2025-992-0019';
             });
 
         $eventPublisher->shouldReceive('publish')
@@ -992,7 +992,7 @@ describe('ProcurementUpdateHandler', function () {
                 string $stage,
                 string $eventType,
             ) {
-                return $prNumber === 'PR-DEL'
+                return $prNumber === 'PR-2025-992-0019'
                     && $stage === StageEnums::NOTICE_TO_PROCEED->value
                     && $eventType === 'delivery_details_updated';
             })
@@ -1000,7 +1000,7 @@ describe('ProcurementUpdateHandler', function () {
 
         $handler = new ProcurementUpdateHandler($eventPublisher, $procurementRepo, $decisionPublisher);
         $result = $handler->executeDeliveryDetails([
-            'pr_number' => 'PR-DEL',
+            'pr_number' => 'PR-2025-992-0019',
             'user_address' => '0xDEL',
             'delivery_location' => 'Manila',
             'delivery_date' => '2024-06-15',
@@ -1017,18 +1017,18 @@ describe('ProcurementUpdateHandler', function () {
 
         $procurementRepo->shouldReceive('findByProcurement')
             ->once()
-            ->with('PR-DELNF')
+            ->with('PR-2025-992-0020')
             ->andReturnNull();
 
         $handler = new ProcurementUpdateHandler($eventPublisher, $procurementRepo, $decisionPublisher);
         $handler->executeDeliveryDetails([
-            'pr_number' => 'PR-DELNF',
+            'pr_number' => 'PR-2025-992-0020',
             'user_address' => '0xDNF',
             'delivery_location' => 'Cebu',
             'delivery_date' => '2024-06-15',
             'delivery_term_days' => '15',
         ]);
-    })->throws(Exception::class, 'Procurement not found: PR-DELNF');
+    })->throws(Exception::class, 'Procurement not found: PR-2025-992-0020');
 
     // Note: ProcurementUpdateHandler passes ProcurementData to publishDecision()
     // but the publisher expects ?array — pre-existing type mismatch. Testing with null procurement.
@@ -1039,7 +1039,7 @@ describe('ProcurementUpdateHandler', function () {
 
         $procurementRepo->shouldReceive('findByProcurement')
             ->once()
-            ->with('PR-DEC')
+            ->with('PR-2025-992-0021')
             ->andReturnNull();
 
         $decisionPublisher->shouldReceive('publishDecision')
@@ -1053,7 +1053,7 @@ describe('ProcurementUpdateHandler', function () {
                 $procurementArg,
             ) {
                 return $decisionType === 'pre_procurement_conference'
-                    && $prNumber === 'PR-DEC'
+                    && $prNumber === 'PR-2025-992-0021'
                     && $wasHeld === true
                     && $procurementArg === null;
             })
@@ -1061,7 +1061,7 @@ describe('ProcurementUpdateHandler', function () {
 
         $handler = new ProcurementUpdateHandler($eventPublisher, $procurementRepo, $decisionPublisher);
         $result = $handler->executeDecision([
-            'pr_number' => 'PR-DEC',
+            'pr_number' => 'PR-2025-992-0021',
             'user_address' => '0xDEC',
             'decision_type' => 'pre_procurement_conference',
             'procurement_title' => 'Decision Test',

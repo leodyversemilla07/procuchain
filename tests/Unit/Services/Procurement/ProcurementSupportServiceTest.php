@@ -162,7 +162,7 @@ describe('ProcurementSupportService', function () {
                 ->andReturn(null);
             app()->instance(ProcurementRepository::class, $repo);
 
-            $result = $this->service->getNextStageForProcurement('PR-UNKNOWN', StageEnums::PROCUREMENT_INITIATION);
+            $result = $this->service->getNextStageForProcurement('PR-2025-990-0001', StageEnums::PROCUREMENT_INITIATION);
 
             // Should use the enum's getNextStage method as fallback
             expect($result)->toBeInstanceOf(StageEnums::class);
@@ -204,7 +204,7 @@ describe('ProcurementSupportService', function () {
                 ->andReturn(null);
             app()->instance(ProcurementRepository::class, $repo);
 
-            $result = $this->service->stageExistsInWorkflow('PR-UNKNOWN', StageEnums::BID_OPENING);
+            $result = $this->service->stageExistsInWorkflow('PR-2025-990-0001', StageEnums::BID_OPENING);
 
             expect($result)->toBeTrue();
         });
@@ -246,7 +246,7 @@ describe('ProcurementSupportService', function () {
             app()->instance(ProcurementRepository::class, $repo);
 
             // PROCUREMENT_INITIATION should not be skippable
-            $result = $this->service->isStageOptional('PR-UNKNOWN', StageEnums::PROCUREMENT_INITIATION);
+            $result = $this->service->isStageOptional('PR-2025-990-0001', StageEnums::PROCUREMENT_INITIATION);
 
             expect($result)->toBeFalse();
         });

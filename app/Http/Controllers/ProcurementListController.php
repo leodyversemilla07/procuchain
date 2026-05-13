@@ -74,7 +74,8 @@ class ProcurementListController extends BaseController
                 skipActions: false,
                 filterByUserId: $visibilityFilters['user_id'],
                 filterByUserAddress: $visibilityFilters['user_address'],
-                archived: $showArchived
+                archived: $showArchived,
+                authUser: $user
             );
 
             // Log result count

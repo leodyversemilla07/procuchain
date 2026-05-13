@@ -329,7 +329,7 @@ class UserManagementController extends Controller
                 // Log the password reset action
                 Log::info('Admin initiated password reset for user', [
                     'admin_id' => Auth::id(),
-                    'admin_email' => Auth::user()->email,
+                    'admin_email' => $request->user()->email,
                     'user_id' => $user->id,
                     'user_email' => $user->email,
                     'reason' => $validated['reason'],

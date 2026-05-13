@@ -80,7 +80,7 @@ describe('DocumentPolicy', function () {
         it('denies bac_secretariat from viewing inaccessible procurement documents', function () {
             $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
 
-            bindInaccessibleDocumentContext($this, 'locked-file', 'PR-LOCKED');
+            bindInaccessibleDocumentContext($this, 'locked-file', 'PR-2025-998-0004');
 
             expect($this->secretariat->can('view-document', 'locked-file'))->toBeFalse();
         });
@@ -110,7 +110,7 @@ describe('DocumentPolicy', function () {
         it('denies bac_secretariat from downloading inaccessible procurement documents', function () {
             $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
 
-            bindInaccessibleDocumentContext($this, 'locked-file', 'PR-LOCKED');
+            bindInaccessibleDocumentContext($this, 'locked-file', 'PR-2025-998-0004');
 
             expect($this->secretariat->can('download-document', 'locked-file'))->toBeFalse();
         });
@@ -158,7 +158,7 @@ describe('DocumentPolicy', function () {
         it('denies bac_secretariat from correcting inaccessible procurement documents', function () {
             $this->secretariat->forceFill(['blockchain_address' => 'secretariat-address'])->save();
 
-            bindInaccessibleDocumentContext($this, str_repeat('a', 64), 'PR-LOCKED', true);
+            bindInaccessibleDocumentContext($this, str_repeat('a', 64), 'PR-2025-998-0004', true);
 
             expect($this->secretariat->can('correct-document', str_repeat('a', 64)))->toBeFalse();
         });

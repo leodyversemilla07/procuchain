@@ -8,7 +8,6 @@ use App\Enums\ProcurementModeEnums;
 use App\Services\Procurement\ProcurementActionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * Controller for fetching procurement actions on-demand
@@ -38,7 +37,7 @@ class ProcurementActionsController extends Controller
         }
 
         // Get user role
-        $user = Auth::user();
+        $user = $request->user();
         $userRole = $user?->getRoleNames()->first() ?? 'guest';
 
         // Parse mode enum if provided

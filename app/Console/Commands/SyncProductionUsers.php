@@ -93,13 +93,14 @@ class SyncProductionUsers extends Command
                     $user->syncRoles($userData['roles']);
                     $updated++;
                 } else {
-                    $user = User::create([
+                    $user = User::make([
                         'name' => $userData['name'],
                         'email' => $userData['email'],
-                        'password' => Hash::make('password'),
                         'email_verified_at' => now(),
                         'blockchain_address' => $userData['blockchain_address'],
                     ]);
+                    $user->password = Hash::make('password');
+                    $user->save();
                     $user->assignRole($userData['roles']);
                     $created++;
                 }
